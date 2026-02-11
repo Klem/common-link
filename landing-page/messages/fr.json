@@ -148,6 +148,144 @@
       ]
     }
   },
+  "partners": {
+    "hero": {
+      "badge": "Partenaires & Investisseurs",
+      "title": "Restaurer la confiance des donateurs grâce à la transparence des fonds",
+      "description": "Le secteur associatif fait face à une crise de confiance. Lien commun y répond avec une infrastructure de traçabilité simple, vérifiable et conforme."
+    },
+    "stats": [
+      { "number": "44%", "label": "des Français freinés par le manque de transparence" },
+      { "number": "53%", "label": "des associations jugent leur situation financière difficile" },
+      { "number": "1,5M", "label": "d'associations en France — un marché colossal" }
+    ],
+    "vision": {
+      "title": "Notre vision",
+      "promote": {
+        "title": "Promouvoir la transparence",
+        "text": "Inspirer la confiance des donateurs en rendant visible l'utilisation de chaque euro. Stimuler la générosité afin de démultiplier l'impact des associations."
+      },
+      "mission": {
+        "title": "Notre mission",
+        "text": "Restaurer la confiance des donateurs grâce à une transparence totale des fonds. Offrir des outils de traçabilité pour une gestion claire et vérifiable. Proposer une plateforme de dons intuitive et des services de support dédiés."
+      }
+    },
+    "architecture": {
+      "title": "Architecture & flux des fonds",
+      "description": "Chaque don est tracé de bout en bout. La technologie blockchain sert de registre de preuves, mais reste invisible pour les utilisateurs finaux.",
+      "steps": [
+        { "icon": "money", "title": "1. Réception du don en euros", "text": "Le donateur donne en euros via la plateforme. Zéro friction, zéro jargon crypto." },
+        { "icon": "convert", "title": "2. Conversion en EURCV", "text": "Les fonds sont convertis en stablecoin euro (EURCV) via notre partenaire institutionnel, garantissant conformité et auditabilité." },
+        { "icon": "lock", "title": "3. Transfert on-chain vers l'association", "text": "Les EURCV sont transférés sur le wallet de l'association. Chaque mouvement est inscrit dans la blockchain." },
+        { "icon": "chart", "title": "4. Répartition & dépenses", "text": "L'association répartit les fonds entre ses membres. Chaque paiement est tracé, avec reconversion EURCV → EUR pour les virements bancaires." },
+        { "icon": "receipt", "title": "5. Preuves & reçu fiscal NFT", "text": "À chaque étape, une preuve est inscrite on-chain. Le donateur reçoit son reçu fiscal sous forme de NFT, consultable à tout moment." }
+      ]
+    },
+    "infrastructure": {
+      "title": "Infrastructure & conformité",
+      "description": "Nous recherchons un partenaire institutionnel pour gérer la conformité et assurer la traçabilité et la preuve d'impact de chaque don.",
+      "items": [
+        { "title": "Conformité", "text": "KYB associations, KYC donateurs, procédures AML, alertes fraude.", "tag": "Régulé" },
+        { "title": "Gestion de fonds", "text": "Réception EUR, conversion EURCV, wallets à la demande, transferts on-chain, reconversion EUR.", "tag": "Automatisé" },
+        { "title": "Transparence", "text": "Adresses de wallets comme source de vérité, API ouverte, indexation des événements, NFT reçus fiscaux.", "tag": "Vérifiable" }
+      ]
+    },
+    "team": {
+      "title": "Une équipe engagée pour l'ESS",
+      "members": [
+        { "initials": "JM", "role": "Chief Executive Officer", "name": "Julian Maïolino", "bio": "Direction et développement de projets associatifs. + 5 ans en France et à l'international. Vision stratégique et partenariats." },
+        { "initials": "CL", "role": "Chief Operations Officer", "name": "Colin Lalouette", "bio": "Expert en structuration et croissance opérationnelle. + 20 ans en startups et conseil. Pilotage, scalabilité et exécution." },
+        { "initials": "CP", "role": "Chief Technology Officer", "name": "Clément Pignon", "bio": "Architecte de systèmes numériques de confiance Web2/3. + 20 ans de développement. Environnements régulés & critiques." }
+      ]
+    },
+    "roadmap": {
+      "title": "Feuille de route",
+      "steps": [
+        { "title": "T1 2026 — Structure & partenariats", "text": "Constitution juridique, partenariat institutionnel (conformité & infrastructure blockchain), premières associations pilotes identifiées." },
+        { "title": "T2 2026 — Lancement pilote", "text": "Onboarding des associations pilotes, premiers flux de dons tracés, tableau de bord donateur en beta." },
+        { "title": "T3-T4 2026 — Croissance", "text": "Ouverture progressive aux associations et donateurs, itérations produit, campagnes d'acquisition." }
+      ]
+    },
+    "cta": {
+      "title": "Construisons ensemble la transparence associative",
+      "description": "Investisseur, partenaire institutionnel ou technologique — échangeons sur notre vision commune."
+    },
+    "contact": {
+      "title": "Prenons contact",
+      "name": "Nom complet",
+      "namePlaceholder": "Votre nom",
+      "email": "Email professionnel",
+      "emailPlaceholder": "vous@entreprise.com",
+      "org": "Organisation",
+      "orgPlaceholder": "Nom de votre structure",
+      "type": "Type de partenariat",
+      "typeOptions": [
+        { "value": "", "label": "Sélectionnez..." },
+        { "value": "investisseur", "label": "Investisseur / Business Angel" },
+        { "value": "institutionnel", "label": "Partenaire institutionnel" },
+        { "value": "tech", "label": "Partenaire technologique" },
+        { "value": "autre", "label": "Autre" }
+      ],
+      "message": "Message (optionnel)",
+      "messagePlaceholder": "En quoi souhaitez-vous contribuer ?",
+      "submit": "Envoyer ma demande",
+      "note": "Nous répondons sous 48h. Vos données sont traitées conformément au RGPD.",
+      "success": "Merci ! Votre demande a bien été envoyée. Nous vous recontacterons sous 48h."
+    }
+  },
+  "associations": {
+    "hero": {
+      "badge": "Associations",
+      "title": "Offrez la transparence à vos donateurs",
+      "description": "Rejoignez les premières associations pilotes de Lien commun. Nous vous accompagnons pour simplifier votre gestion et renforcer la confiance de vos soutiens."
+    },
+    "benefits": {
+      "title": "Pourquoi rejoindre Lien commun ?",
+      "items": [
+        {
+          "title": "Attirez plus de donateurs",
+          "text": "La transparence rassure. Les donateurs privilégient les structures qui montrent comment leurs fonds sont utilisés."
+        },
+        {
+          "title": "Simplifiez votre reporting",
+          "text": "Les justificatifs et preuves de dépenses sont enregistrés automatiquement. Moins de paperasse, plus de terrain."
+        },
+        {
+          "title": "Zéro compétence technique",
+          "text": "Vous gérez votre association en euros, comme d'habitude. La technologie est invisible — on s'occupe de tout."
+        }
+      ]
+    },
+    "search": {
+      "title": "Inscrivez votre association",
+      "description": "Commencez par rechercher votre association dans le répertoire officiel. Cela nous permet de vérifier que votre structure existe et de pré-remplir vos informations.",
+      "placeholder": "Nom de votre association, SIREN, ville...",
+      "button": "Rechercher",
+      "loading": "Recherche en cours...",
+      "resultsCount": "{count} associations trouvées — sélectionnez la vôtre",
+      "noResults": "Aucune association trouvée. Vérifiez le nom ou le SIREN.",
+      "active": "Active",
+      "closed": "Cessée",
+      "city": "Ville",
+      "postalCode": "CP",
+      "siren": "SIREN",
+      "created": "Création",
+      "select": "Sélectionner"
+    },
+    "form": {
+      "selectedTitle": "Association sélectionnée",
+      "change": "Changer",
+      "responsibleName": "Nom du responsable",
+      "responsibleNamePlaceholder": "Prénom Nom",
+      "email": "Email de contact",
+      "emailPlaceholder": "contact@association.org",
+      "description": "Description de votre association",
+      "descriptionPlaceholder": "En quelques mots, décrivez votre activité...",
+      "submit": "Demander l'inscription",
+      "success": "Merci ! Votre demande d'inscription a bien été enregistrée. Nous vous contacterons sous 48h pour la suite.",
+      "note": "L'inscription est gratuite. Nous vérifions chaque demande manuellement."
+    }
+  },
   "footer": {
     "brand": {
       "name": "Lien commun",

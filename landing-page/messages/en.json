@@ -148,6 +148,144 @@
       ]
     }
   },
+  "partners": {
+    "hero": {
+      "badge": "Partners & Investors",
+      "title": "Restoring donor trust through fund transparency",
+      "description": "The nonprofit sector faces a trust crisis. Lien commun responds with a simple, verifiable, and compliant traceability infrastructure."
+    },
+    "stats": [
+      { "number": "44%", "label": "of French people held back by lack of transparency" },
+      { "number": "53%", "label": "of associations consider their financial situation difficult" },
+      { "number": "1.5M", "label": "associations in France — a massive market" }
+    ],
+    "vision": {
+      "title": "Our vision",
+      "promote": {
+        "title": "Promoting transparency",
+        "text": "Inspiring donor confidence by making the use of every euro visible. Stimulating generosity to multiply the impact of associations."
+      },
+      "mission": {
+        "title": "Our mission",
+        "text": "Restoring donor trust through total fund transparency. Providing traceability tools for clear and verifiable management. Offering an intuitive donation platform and dedicated support services."
+      }
+    },
+    "architecture": {
+      "title": "Architecture & fund flow",
+      "description": "Every donation is tracked end-to-end. Blockchain technology serves as a proof ledger, but remains invisible to end users.",
+      "steps": [
+        { "icon": "money", "title": "1. Receiving the donation in euros", "text": "The donor gives in euros through the platform. Zero friction, zero crypto jargon." },
+        { "icon": "convert", "title": "2. Conversion to EURCV", "text": "Funds are converted to euro stablecoin (EURCV) via our institutional partner, ensuring compliance and auditability." },
+        { "icon": "lock", "title": "3. On-chain transfer to the association", "text": "EURCV tokens are transferred to the association's wallet. Every movement is recorded on the blockchain." },
+        { "icon": "chart", "title": "4. Allocation & expenses", "text": "The association distributes funds among its members. Every payment is tracked, with EURCV → EUR reconversion for bank transfers." },
+        { "icon": "receipt", "title": "5. Proofs & NFT tax receipt", "text": "At each step, a proof is recorded on-chain. The donor receives their tax receipt as an NFT, accessible at any time." }
+      ]
+    },
+    "infrastructure": {
+      "title": "Infrastructure & compliance",
+      "description": "We are seeking an institutional partner to manage compliance and ensure the traceability and proof of impact of every donation.",
+      "items": [
+        { "title": "Compliance", "text": "Association KYB, donor KYC, AML procedures, fraud alerts.", "tag": "Regulated" },
+        { "title": "Fund management", "text": "EUR reception, EURCV conversion, on-demand wallets, on-chain transfers, EUR reconversion.", "tag": "Automated" },
+        { "title": "Transparency", "text": "Wallet addresses as source of truth, open API, event indexing, NFT tax receipts.", "tag": "Verifiable" }
+      ]
+    },
+    "team": {
+      "title": "A team committed to social economy",
+      "members": [
+        { "initials": "JM", "role": "Chief Executive Officer", "name": "Julian Maïolino", "bio": "Management and development of nonprofit projects. 5+ years in France and internationally. Strategic vision and partnerships." },
+        { "initials": "CL", "role": "Chief Operations Officer", "name": "Colin Lalouette", "bio": "Expert in operational structuring and growth. 20+ years in startups and consulting. Steering, scalability and execution." },
+        { "initials": "CP", "role": "Chief Technology Officer", "name": "Clément Pignon", "bio": "Architect of Web2/3 digital trust systems. 20+ years of development. Regulated & critical environments." }
+      ]
+    },
+    "roadmap": {
+      "title": "Roadmap",
+      "steps": [
+        { "title": "Q1 2026 — Structure & partnerships", "text": "Legal incorporation, institutional partnership (compliance & blockchain infrastructure), first pilot associations identified." },
+        { "title": "Q2 2026 — Pilot launch", "text": "Onboarding pilot associations, first tracked donation flows, donor dashboard in beta." },
+        { "title": "Q3-Q4 2026 — Growth", "text": "Gradual opening to associations and donors, product iterations, acquisition campaigns." }
+      ]
+    },
+    "cta": {
+      "title": "Let's build nonprofit transparency together",
+      "description": "Investor, institutional or technology partner — let's discuss our shared vision."
+    },
+    "contact": {
+      "title": "Get in touch",
+      "name": "Full name",
+      "namePlaceholder": "Your name",
+      "email": "Professional email",
+      "emailPlaceholder": "you@company.com",
+      "org": "Organization",
+      "orgPlaceholder": "Your organization name",
+      "type": "Partnership type",
+      "typeOptions": [
+        { "value": "", "label": "Select..." },
+        { "value": "investisseur", "label": "Investor / Business Angel" },
+        { "value": "institutionnel", "label": "Institutional partner" },
+        { "value": "tech", "label": "Technology partner" },
+        { "value": "autre", "label": "Other" }
+      ],
+      "message": "Message (optional)",
+      "messagePlaceholder": "How would you like to contribute?",
+      "submit": "Send my request",
+      "note": "We respond within 48h. Your data is processed in compliance with GDPR.",
+      "success": "Thank you! Your request has been sent. We'll get back to you within 48h."
+    }
+  },
+  "associations": {
+    "hero": {
+      "badge": "Associations",
+      "title": "Offer transparency to your donors",
+      "description": "Join the first pilot associations of Lien commun. We support you in simplifying your management and strengthening the trust of your supporters."
+    },
+    "benefits": {
+      "title": "Why join Lien commun?",
+      "items": [
+        {
+          "title": "Attract more donors",
+          "text": "Transparency reassures. Donors prefer organizations that show how their funds are used."
+        },
+        {
+          "title": "Simplify your reporting",
+          "text": "Receipts and expense proofs are recorded automatically. Less paperwork, more fieldwork."
+        },
+        {
+          "title": "Zero technical skills needed",
+          "text": "You manage your association in euros, as usual. The technology is invisible — we handle everything."
+        }
+      ]
+    },
+    "search": {
+      "title": "Register your association",
+      "description": "Start by searching for your association in the official directory. This allows us to verify your organization exists and pre-fill your information.",
+      "placeholder": "Association name, SIREN, city...",
+      "button": "Search",
+      "loading": "Searching...",
+      "resultsCount": "{count} associations found — select yours",
+      "noResults": "No associations found. Check the name or SIREN.",
+      "active": "Active",
+      "closed": "Closed",
+      "city": "City",
+      "postalCode": "Postal code",
+      "siren": "SIREN",
+      "created": "Created",
+      "select": "Select"
+    },
+    "form": {
+      "selectedTitle": "Selected association",
+      "change": "Change",
+      "responsibleName": "Responsible person's name",
+      "responsibleNamePlaceholder": "First Last",
+      "email": "Contact email",
+      "emailPlaceholder": "contact@association.org",
+      "description": "Describe your association",
+      "descriptionPlaceholder": "In a few words, describe your activity...",
+      "submit": "Request registration",
+      "success": "Thank you! Your registration request has been recorded. We'll contact you within 48h for the next steps.",
+      "note": "Registration is free. We verify each request manually."
+    }
+  },
   "footer": {
     "brand": {
       "name": "Lien commun",
