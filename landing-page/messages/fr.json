@@ -1,0 +1,179 @@
+{
+  "metadata": {
+    "landing": {
+      "title": "Lien commun — La transparence sur l'usage des dons",
+      "description": "Plateforme de crypto-philanthropie qui restaure la confiance des donateurs grâce à la transparence sur l'utilisation des fonds."
+    },
+    "partners": {
+      "title": "Partenaires & Investisseurs — Lien commun",
+      "description": "Découvrez notre vision, notre équipe et comment devenir partenaire de Lien commun."
+    },
+    "associations": {
+      "title": "Associations — Lien commun",
+      "description": "Offrez la transparence à vos donateurs. Rejoignez Lien commun et renforcez la confiance."
+    },
+    "donors": {
+      "title": "Donateurs — Lien commun",
+      "description": "Donnez en toute confiance. Suivez chaque euro et recevez des preuves vérifiables."
+    }
+  },
+  "nav": {
+    "partners": "Partenaires",
+    "associations": "Associations",
+    "donors": "Donateurs"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Traçabilité vérifiable",
+      "title": "La transparence sur l'usage des dons",
+      "subtitle": "Chaque euro donné est tracé, vérifié et prouvé. Pour que la confiance ne soit plus une promesse.",
+      "cta": "Découvrir la plateforme",
+      "launch": "Lancement prévu T3 2025"
+    },
+    "journal": {
+      "title": "Journal des dépenses",
+      "rows": [
+        { "label": "Achat fournitures scolaires", "badge": "Vérifié", "amount": "450 €" },
+        { "label": "Location salle événement", "badge": "Vérifié", "amount": "1 200 €" },
+        { "label": "Campagne sensibilisation", "badge": "En cours", "amount": "800 €" }
+      ],
+      "total": "Total traçé",
+      "totalAmount": "2 450 €"
+    },
+    "constat": {
+      "title": "Un constat partagé",
+      "donors": {
+        "title": "Côté donateurs",
+        "text": "« Je ne sais pas comment mon argent est utilisé. » 6 donateurs sur 10 souhaitent plus de transparence sur l'utilisation de leurs dons."
+      },
+      "associations": {
+        "title": "Côté associations",
+        "text": "« Prouver notre bonne gestion prend un temps fou. » Les associations passent des centaines d'heures à produire des rapports pour rassurer leurs financeurs."
+      }
+    },
+    "features": {
+      "title": "Ce que Lien commun apporte",
+      "items": [
+        {
+          "title": "Transparence totale",
+          "text": "Chaque don est enregistré avec une preuve cryptographique infalsifiable. Les donateurs voient exactement où va leur argent.",
+          "tag": "Blockchain"
+        },
+        {
+          "title": "Preuves vérifiables",
+          "text": "Chaque dépense est accompagnée d'un justificatif horodaté et vérifié. Fini les rapports opaques.",
+          "tag": "Vérifiable"
+        },
+        {
+          "title": "Simplicité totale",
+          "text": "Pas besoin de comprendre la blockchain. Les donateurs donnent en euros, les associations dépensent en euros.",
+          "tag": "Accessible"
+        }
+      ]
+    },
+    "steps": {
+      "title": "Comment ça marche",
+      "items": [
+        {
+          "number": "1",
+          "title": "L'association s'inscrit",
+          "text": "Inscription gratuite en 5 minutes. Vérification automatique via le répertoire SIRENE."
+        },
+        {
+          "number": "2",
+          "title": "Le donateur donne en euros",
+          "text": "Don simple par carte ou virement. Conversion automatique et enregistrement on-chain."
+        },
+        {
+          "number": "3",
+          "title": "Chaque euro est traçé",
+          "text": "Dépenses enregistrées avec justificatifs. Reçu fiscal numérique (NFT) pour le donateur."
+        }
+      ]
+    },
+    "guarantee": {
+      "title": "Garantie traçabilité",
+      "text": "Notre technologie repose sur la blockchain Ethereum et les stablecoins régulés (EUR CoinVertible by SG-Forge). Chaque transaction est immuable, vérifiable publiquement, et conforme aux réglementations européennes."
+    },
+    "status": {
+      "title": "Où en sommes-nous",
+      "items": [
+        {
+          "title": "Plateforme",
+          "text": "Architecture technique validée. Smart contracts en développement. Interface donateur en design.",
+          "badge": "En développement",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Partenariats",
+          "text": "Partenariat stratégique avec SG-Forge (Société Générale) pour la gestion des stablecoins EUR CoinVertible.",
+          "badge": "En cours",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Lancement beta",
+          "text": "Programme pilote avec 5 associations partenaires prévu pour le T3 2025. Inscriptions ouvertes.",
+          "badge": "T3 2025",
+          "badgeType": "upcoming"
+        }
+      ]
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "items": [
+        {
+          "question": "Faut-il comprendre la blockchain pour utiliser Lien commun ?",
+          "answer": "Non, absolument pas. Lien commun est conçu pour être aussi simple qu'un virement bancaire. La blockchain fonctionne en arrière-plan, vous n'avez jamais besoin d'interagir avec elle directement."
+        },
+        {
+          "question": "Comment les dons sont-ils tracés ?",
+          "answer": "Chaque don est converti en stablecoin (EUR CoinVertible) et enregistré sur la blockchain Ethereum. Chaque dépense de l'association est également enregistrée avec un justificatif horodaté."
+        },
+        {
+          "question": "Est-ce que je reçois un reçu fiscal ?",
+          "answer": "Oui. Chaque don génère automatiquement un reçu fiscal numérique sous forme de NFT, que vous pouvez télécharger ou conserver dans votre espace donateur."
+        },
+        {
+          "question": "Quelles associations peuvent s'inscrire ?",
+          "answer": "Toute association loi 1901 enregistrée au répertoire SIRENE peut s'inscrire gratuitement. La vérification est automatique."
+        },
+        {
+          "question": "Combien ça coûte ?",
+          "answer": "L'inscription est gratuite pour les associations et les donateurs. Lien commun prélève une commission de 2,5% sur chaque don pour financer la plateforme et les frais blockchain."
+        },
+        {
+          "question": "Les données sont-elles sécurisées ?",
+          "answer": "Oui. Les données personnelles sont stockées de manière chiffrée et conforme au RGPD. Seules les preuves de transactions sont publiques sur la blockchain (sans données personnelles)."
+        }
+      ]
+    }
+  },
+  "footer": {
+    "brand": {
+      "name": "Lien commun",
+      "description": "La transparence sur l'usage des dons, rendue possible par la technologie blockchain."
+    },
+    "nav": {
+      "title": "Navigation",
+      "partners": "Partenaires",
+      "associations": "Associations",
+      "donors": "Donateurs"
+    },
+    "legal": {
+      "title": "Légal",
+      "text": "Lien commun est une plateforme en cours de développement. Les informations présentées sur ce site sont susceptibles d'évoluer."
+    },
+    "copyright": "© {year} Lien commun. Tous droits réservés."
+  },
+  "common": {
+    "learnMore": "En savoir plus",
+    "contact": "Nous contacter",
+    "search": "Rechercher",
+    "submit": "Envoyer",
+    "loading": "Chargement...",
+    "select": "Sélectionner",
+    "change": "Changer",
+    "back": "Retour",
+    "close": "Fermer"
+  }
+}

@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Luciole:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   DEFAULT CSS VARIABLES (lien-commun theme)
+   Overridden at runtime by ThemeProvider
+   ============================================ */
+:root {
+  /* Colors */
+  --color-primary: #1a4a5a;
+  --color-primary-dark: #0f3440;
+  --color-primary-light: #245a6c;
+  --color-secondary: #5a9ea6;
+  --color-secondary-light: #7dbac1;
+  --color-secondary-pale: #e8f4f6;
+  --color-accent: #b8964e;
+  --color-accent-light: #d4b876;
+  --color-background: #f8f6f2;
+  --color-background-alt: #f0ede8;
+  --color-text-dark: #1a2a30;
+  --color-text-body: #3a4a50;
+  --color-text-muted: #7a8a90;
+  --color-border: #e0ddd6;
+  --color-border-light: #ece9e3;
+  --color-success: #3a9e6e;
+  --color-error: #d9534f;
+
+  /* Typography */
+  --font-ui: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Luciole', Georgia, serif;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-text-body);
+  background: var(--color-background);
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-ui);
+  color: var(--color-text-dark);
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+h1 { font-size: clamp(2rem, 4vw, 3rem); }
+h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
+h3 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
+
+p {
+  max-width: 65ch;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-secondary);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.animate-in:nth-child(1) { animation-delay: 0s; }
+.animate-in:nth-child(2) { animation-delay: 0.1s; }
+.animate-in:nth-child(3) { animation-delay: 0.2s; }
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ============================================
+   FAQ details/summary
+   ============================================ */
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary {
+  list-style: none;
+}

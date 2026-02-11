@@ -1,0 +1,179 @@
+{
+  "metadata": {
+    "landing": {
+      "title": "Lien commun — Transparency on donation usage",
+      "description": "Crypto-philanthropy platform that restores donor trust through transparency on fund usage."
+    },
+    "partners": {
+      "title": "Partners & Investors — Lien commun",
+      "description": "Discover our vision, team, and how to become a Lien commun partner."
+    },
+    "associations": {
+      "title": "Associations — Lien commun",
+      "description": "Offer transparency to your donors. Join Lien commun and strengthen trust."
+    },
+    "donors": {
+      "title": "Donors — Lien commun",
+      "description": "Give with confidence. Track every euro and receive verifiable proof."
+    }
+  },
+  "nav": {
+    "partners": "Partners",
+    "associations": "Associations",
+    "donors": "Donors"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Verifiable traceability",
+      "title": "Transparency on donation usage",
+      "subtitle": "Every euro donated is tracked, verified and proven. So that trust is no longer just a promise.",
+      "cta": "Discover the platform",
+      "launch": "Launch planned Q3 2025"
+    },
+    "journal": {
+      "title": "Expense journal",
+      "rows": [
+        { "label": "School supplies purchase", "badge": "Verified", "amount": "€450" },
+        { "label": "Event room rental", "badge": "Verified", "amount": "€1,200" },
+        { "label": "Awareness campaign", "badge": "Pending", "amount": "€800" }
+      ],
+      "total": "Total tracked",
+      "totalAmount": "€2,450"
+    },
+    "constat": {
+      "title": "A shared observation",
+      "donors": {
+        "title": "Donor side",
+        "text": "\"I don't know how my money is being used.\" 6 out of 10 donors want more transparency on how their donations are used."
+      },
+      "associations": {
+        "title": "Association side",
+        "text": "\"Proving our good management takes forever.\" Associations spend hundreds of hours producing reports to reassure their funders."
+      }
+    },
+    "features": {
+      "title": "What Lien commun brings",
+      "items": [
+        {
+          "title": "Total transparency",
+          "text": "Every donation is recorded with unfalsifiable cryptographic proof. Donors see exactly where their money goes.",
+          "tag": "Blockchain"
+        },
+        {
+          "title": "Verifiable proof",
+          "text": "Every expense comes with a timestamped and verified receipt. No more opaque reports.",
+          "tag": "Verifiable"
+        },
+        {
+          "title": "Total simplicity",
+          "text": "No need to understand blockchain. Donors give in euros, associations spend in euros.",
+          "tag": "Accessible"
+        }
+      ]
+    },
+    "steps": {
+      "title": "How it works",
+      "items": [
+        {
+          "number": "1",
+          "title": "The association registers",
+          "text": "Free registration in 5 minutes. Automatic verification via the SIRENE directory."
+        },
+        {
+          "number": "2",
+          "title": "The donor gives in euros",
+          "text": "Simple donation by card or bank transfer. Automatic conversion and on-chain recording."
+        },
+        {
+          "number": "3",
+          "title": "Every euro is tracked",
+          "text": "Expenses recorded with receipts. Digital tax receipt (NFT) for the donor."
+        }
+      ]
+    },
+    "guarantee": {
+      "title": "Traceability guarantee",
+      "text": "Our technology relies on the Ethereum blockchain and regulated stablecoins (EUR CoinVertible by SG-Forge). Every transaction is immutable, publicly verifiable, and compliant with European regulations."
+    },
+    "status": {
+      "title": "Where are we now",
+      "items": [
+        {
+          "title": "Platform",
+          "text": "Technical architecture validated. Smart contracts in development. Donor interface in design.",
+          "badge": "In development",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Partnerships",
+          "text": "Strategic partnership with SG-Forge (Société Générale) for EUR CoinVertible stablecoin management.",
+          "badge": "In progress",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Beta launch",
+          "text": "Pilot program with 5 partner associations planned for Q3 2025. Registrations open.",
+          "badge": "Q3 2025",
+          "badgeType": "upcoming"
+        }
+      ]
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": [
+        {
+          "question": "Do I need to understand blockchain to use Lien commun?",
+          "answer": "No, absolutely not. Lien commun is designed to be as simple as a bank transfer. The blockchain works in the background, you never need to interact with it directly."
+        },
+        {
+          "question": "How are donations tracked?",
+          "answer": "Each donation is converted to stablecoin (EUR CoinVertible) and recorded on the Ethereum blockchain. Each association expense is also recorded with a timestamped receipt."
+        },
+        {
+          "question": "Do I receive a tax receipt?",
+          "answer": "Yes. Each donation automatically generates a digital tax receipt in the form of an NFT, which you can download or keep in your donor space."
+        },
+        {
+          "question": "Which associations can register?",
+          "answer": "Any association registered in the SIRENE directory can register for free. Verification is automatic."
+        },
+        {
+          "question": "How much does it cost?",
+          "answer": "Registration is free for associations and donors. Lien commun charges a 2.5% commission on each donation to fund the platform and blockchain fees."
+        },
+        {
+          "question": "Is the data secure?",
+          "answer": "Yes. Personal data is stored encrypted and GDPR compliant. Only transaction proofs are public on the blockchain (without personal data)."
+        }
+      ]
+    }
+  },
+  "footer": {
+    "brand": {
+      "name": "Lien commun",
+      "description": "Transparency on donation usage, made possible by blockchain technology."
+    },
+    "nav": {
+      "title": "Navigation",
+      "partners": "Partners",
+      "associations": "Associations",
+      "donors": "Donors"
+    },
+    "legal": {
+      "title": "Legal",
+      "text": "Lien commun is a platform under development. Information presented on this site is subject to change."
+    },
+    "copyright": "© {year} Lien commun. All rights reserved."
+  },
+  "common": {
+    "learnMore": "Learn more",
+    "contact": "Contact us",
+    "search": "Search",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "select": "Select",
+    "change": "Change",
+    "back": "Back",
+    "close": "Close"
+  }
+}
