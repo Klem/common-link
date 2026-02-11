@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl';
 import { PageHero } from '@/components/sections/PageHero';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Card } from '@/components/ui/Card';
+import { AssociationSearch } from '@/components/associations/AssociationSearch';
 
 const benefitIcons = [
   // Users icon
@@ -52,35 +53,14 @@ export default function AssociationsPage() {
         </div>
       </section>
 
-      {/* Search & Registration — placeholder for Prompt 7 */}
+      {/* Search & Registration */}
       <section className="py-24 bg-background-alt" id="inscription">
         <div className="max-w-container mx-auto px-8">
           <SectionTitle>{t('search.title')}</SectionTitle>
           <p className="text-center mx-auto text-[1.1rem] leading-[1.75] mb-12">
             {t('search.description')}
           </p>
-          <div className="max-w-[800px] mx-auto">
-            <div className="flex items-center bg-white border-2 border-border rounded-lg overflow-hidden transition-all duration-200 focus-within:border-secondary focus-within:shadow-[0_0_0_4px_var(--color-secondary-pale),var(--shadow-lg)]">
-              <span className="px-6 text-foreground-muted text-xl flex-shrink-0">
-                🔍
-              </span>
-              <input
-                type="text"
-                className="flex-1 border-none bg-transparent py-4 font-ui text-base text-foreground-dark outline-none placeholder:text-foreground-muted"
-                placeholder={t('search.placeholder')}
-                disabled
-              />
-              <button
-                className="bg-primary border-none px-7 py-4 text-white font-ui font-semibold text-[0.9rem] cursor-not-allowed opacity-50"
-                disabled
-              >
-                {t('search.button')}
-              </button>
-            </div>
-            <p className="text-center text-foreground-muted font-ui text-sm mt-6">
-              Moteur de recherche SIRENE — bientôt disponible
-            </p>
-          </div>
+          <AssociationSearch />
         </div>
       </section>
     </main>
