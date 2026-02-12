@@ -341,6 +341,95 @@
       "note": "L'inscription est gratuite. Nous vérifions chaque demande manuellement."
     }
   },
+  "donors": {
+    "hero": {
+      "badge": "Donateurs",
+      "title": "Donnez en toute confiance",
+      "description": "Suivez l'utilisation de chaque euro donné. Consultez en temps réel les dépenses des associations que vous soutenez, avec des preuves vérifiables."
+    },
+    "preview": {
+      "title": "Ce que vous verrez une fois inscrit",
+      "items": [
+        {
+          "title": "Suivi en temps réel",
+          "text": "Visualisez où va votre argent, étape par étape. Chaque dépense est liée à un projet concret."
+        },
+        {
+          "title": "Reçu fiscal numérique",
+          "text": "Recevez votre reçu fiscal instantanément dans votre espace. Plus besoin d'attendre des mois."
+        },
+        {
+          "title": "Historique vérifié",
+          "text": "Consultez l'ensemble de vos dons et leur impact. Des preuves sécurisées, accessibles à tout moment."
+        }
+      ]
+    },
+    "dashboard": {
+      "label": "Aperçu de votre tableau de bord",
+      "greeting": "Bonjour, Claire",
+      "subtitle": "3 associations soutenues",
+      "stats": [
+        { "value": "1 250 €", "label": "Donné en 2026" },
+        { "value": "100%", "label": "Traçabilité" },
+        { "value": "3", "label": "Reçus fiscaux" }
+      ],
+      "activityTitle": "Dernières activités",
+      "activities": [
+        { "badge": "Vérifié", "text": "Achat de fournitures scolaires", "amount": "85 €", "type": "verified" },
+        { "badge": "Vérifié", "text": "Location salle de répétition", "amount": "120 €", "type": "verified" },
+        { "badge": "En cours", "text": "Matériel de camping", "amount": "210 €", "type": "pending" }
+      ]
+    },
+    "signup": {
+      "title": "Créez votre compte",
+      "description": "Inscription en moins d'une minute. Explorez les associations et leurs projets dès maintenant.",
+      "cardTitle": "Commencer gratuitement",
+      "google": "Continuer avec Google",
+      "apple": "Continuer avec Apple",
+      "divider": "ou par email",
+      "firstName": "Prénom",
+      "firstNamePlaceholder": "Marie",
+      "email": "Email",
+      "emailPlaceholder": "marie@exemple.fr",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "8 caractères minimum",
+      "submit": "Créer mon compte",
+      "note": "Vos informations fiscales (nom complet, adresse) seront demandées uniquement au moment de votre premier don, pour générer votre reçu fiscal.",
+      "successTitle": "Bienvenue chez Lien commun !",
+      "successText": "Votre compte a été créé avec succès. Vous recevrez un email de confirmation sous quelques instants.",
+      "successLaunch": "Lancement prévu : T2 2026"
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "items": [
+        {
+          "question": "Mes dons sont-ils déductibles des impôts ?",
+          "answer": "Oui. Pour chaque don à une association éligible, vous recevez un reçu fiscal valide vous permettant de bénéficier de la réduction d'impôt prévue par la loi (66% du montant dans la limite de 20% du revenu imposable pour les particuliers)."
+        },
+        {
+          "question": "Comment suivre l'utilisation de mon don ?",
+          "answer": "Depuis votre tableau de bord, vous voyez en temps réel les dépenses liées aux projets que vous soutenez. Chaque dépense est accompagnée de preuves vérifiables : justificatifs, dates, montants."
+        },
+        {
+          "question": "Quand reçois-je mon reçu fiscal ?",
+          "answer": "Instantanément. Dès que votre don est confirmé, le reçu fiscal est disponible dans votre espace. Plus besoin d'attendre le courrier de l'association en fin d'année."
+        },
+        {
+          "question": "Puis-je donner à plusieurs associations ?",
+          "answer": "Bien sûr. Vous pouvez soutenir autant d'associations partenaires que vous le souhaitez. Chaque don est tracé individuellement et vous recevez un reçu fiscal par association."
+        },
+        {
+          "question": "Mes données sont-elles protégées ?",
+          "answer": "Absolument. Nous respectons le RGPD et ne partageons jamais vos données personnelles avec des tiers. Vos informations fiscales sont chiffrées et utilisées uniquement pour générer vos reçus."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Prêt à donner autrement ?",
+      "description": "Rejoignez les premiers donateurs qui veulent savoir exactement où va leur argent.",
+      "button": "Créer mon compte gratuitement"
+    }
+  },
   "footer": {
     "brand": {
       "name": "Lien commun",

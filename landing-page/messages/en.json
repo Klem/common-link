@@ -341,6 +341,95 @@
       "note": "Registration is free. We verify each request manually."
     }
   },
+  "donors": {
+    "hero": {
+      "badge": "Donors",
+      "title": "Give with confidence",
+      "description": "Track the use of every euro donated. Monitor in real time the expenses of the associations you support, with verifiable proof."
+    },
+    "preview": {
+      "title": "What you'll see once registered",
+      "items": [
+        {
+          "title": "Real-time tracking",
+          "text": "See where your money goes, step by step. Every expense is linked to a specific project."
+        },
+        {
+          "title": "Digital tax receipt",
+          "text": "Receive your tax receipt instantly in your account. No more waiting months."
+        },
+        {
+          "title": "Verified history",
+          "text": "View all your donations and their impact. Secure proof, accessible at any time."
+        }
+      ]
+    },
+    "dashboard": {
+      "label": "Preview of your dashboard",
+      "greeting": "Hello, Claire",
+      "subtitle": "3 associations supported",
+      "stats": [
+        { "value": "€1,250", "label": "Donated in 2026" },
+        { "value": "100%", "label": "Traceability" },
+        { "value": "3", "label": "Tax receipts" }
+      ],
+      "activityTitle": "Recent activity",
+      "activities": [
+        { "badge": "Verified", "text": "School supplies purchase", "amount": "€85", "type": "verified" },
+        { "badge": "Verified", "text": "Rehearsal room rental", "amount": "€120", "type": "verified" },
+        { "badge": "Pending", "text": "Camping equipment", "amount": "€210", "type": "pending" }
+      ]
+    },
+    "signup": {
+      "title": "Create your account",
+      "description": "Sign up in less than a minute. Explore associations and their projects right away.",
+      "cardTitle": "Get started for free",
+      "google": "Continue with Google",
+      "apple": "Continue with Apple",
+      "divider": "or by email",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Marie",
+      "email": "Email",
+      "emailPlaceholder": "marie@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "8 characters minimum",
+      "submit": "Create my account",
+      "note": "Your tax information (full name, address) will only be requested when you make your first donation, to generate your tax receipt.",
+      "successTitle": "Welcome to Lien commun!",
+      "successText": "Your account has been created successfully. You will receive a confirmation email shortly.",
+      "successLaunch": "Planned launch: Q2 2026"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": [
+        {
+          "question": "Are my donations tax-deductible?",
+          "answer": "Yes. For each donation to an eligible association, you receive a valid tax receipt allowing you to benefit from the tax reduction provided by law (66% of the amount, up to 20% of taxable income for individuals)."
+        },
+        {
+          "question": "How can I track my donation?",
+          "answer": "From your dashboard, you can see in real time the expenses related to the projects you support. Each expense comes with verifiable proof: receipts, dates, amounts."
+        },
+        {
+          "question": "When do I receive my tax receipt?",
+          "answer": "Instantly. As soon as your donation is confirmed, the tax receipt is available in your account. No more waiting for the association's mail at the end of the year."
+        },
+        {
+          "question": "Can I donate to multiple associations?",
+          "answer": "Of course. You can support as many partner associations as you wish. Each donation is tracked individually and you receive a tax receipt per association."
+        },
+        {
+          "question": "Is my data protected?",
+          "answer": "Absolutely. We comply with GDPR and never share your personal data with third parties. Your tax information is encrypted and used solely to generate your receipts."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Ready to give differently?",
+      "description": "Join the first donors who want to know exactly where their money goes.",
+      "button": "Create my free account"
+    }
+  },
   "footer": {
     "brand": {
       "name": "Lien commun",
