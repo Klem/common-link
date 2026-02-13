@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
@@ -38,22 +39,14 @@ export function Header() {
           className="flex items-center gap-2 no-underline text-primary font-ui font-bold text-[1.15rem] hover:text-primary"
           aria-label={t('home')}
         >
-          <svg
+          <Image
+            src="/logo.png"
+            alt=""
+            width={29}
+            height={36}
             className="flex-shrink-0"
-            viewBox="0 0 40 40"
-            width="36"
-            height="36"
             aria-hidden="true"
-          >
-            <path
-              d="M12 8C7.6 8 4 11.6 4 16s3.6 8 8 8h2v-4h-2c-2.2 0-4-1.8-4-4s1.8-4 4-4h6c2.2 0 4 1.8 4 4v1h4v-1c0-4.4-3.6-8-8-8h-6z"
-              fill="var(--color-primary)"
-            />
-            <path
-              d="M28 32c4.4 0 8-3.6 8-8s-3.6-8-8-8h-2v4h2c2.2 0 4 1.8 4 4s-1.8 4-4 4h-6c-2.2 0-4-1.8-4-4v-1h-4v1c0 4.4 3.6 8 8 8h6z"
-              fill="var(--color-secondary)"
-            />
-          </svg>
+          />
           <span>Lien commun</span>
         </Link>
 
