@@ -23,8 +23,8 @@ export const lienCommunTheme: Theme = {
     error: '#d9534f',
   },
   fonts: {
-    ui: 'Manrope',
-    body: 'Luciole',
+    ui: 'var(--font-manrope)',
+    body: 'var(--font-luciole)',
   },
   radius: {
     sm: '6px',

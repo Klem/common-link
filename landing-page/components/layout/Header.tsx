@@ -36,7 +36,7 @@ export function Header() {
         <Link
           href="/"
           className="flex items-center gap-2 no-underline text-primary font-ui font-bold text-[1.15rem] hover:text-primary"
-          aria-label="Lien commun — Accueil"
+          aria-label={t('home')}
         >
           <svg
             className="flex-shrink-0"
@@ -60,7 +60,7 @@ export function Header() {
         {/* Desktop nav */}
         <nav
           className="hidden md:flex items-center gap-6"
-          aria-label="Navigation principale"
+          aria-label={t('main')}
         >
           {navLinks.map((link) => (
             <Link
@@ -82,7 +82,7 @@ export function Header() {
         <button
           className="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-2"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-label={mobileOpen ? t('menuClose') : t('menuOpen')}
           aria-expanded={mobileOpen}
         >
           <span
@@ -110,7 +110,7 @@ export function Header() {
         className={`${
           mobileOpen ? 'flex' : 'hidden'
         } md:hidden flex-col px-8 py-4 pb-6 border-t border-border-light`}
-        aria-label="Navigation mobile"
+        aria-label={t('mobile')}
       >
         {navLinks.map((link) => (
           <Link

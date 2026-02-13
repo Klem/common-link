@@ -24,7 +24,12 @@
   "nav": {
     "partners": "Partenaires",
     "associations": "Associations",
-    "donors": "Donateurs"
+    "donors": "Donateurs",
+    "home": "Lien commun — Accueil",
+    "main": "Navigation principale",
+    "mobile": "Navigation mobile",
+    "menuClose": "Fermer le menu",
+    "menuOpen": "Ouvrir le menu"
   },
   "landing": {
     "hero": {
@@ -277,6 +282,7 @@
       "siren": "SIREN",
       "created": "Création",
       "select": "Sélectionner",
+      "dep": "Dép. {code}",
       "displayedInfo": "{displayed} sur {total} affichées",
       "displayedAll": "{displayed} affichées",
       "scrollMore": "Scroll pour plus",
@@ -449,7 +455,8 @@
       "title": "Légal",
       "text": "Lien commun est une plateforme en cours de développement. Les informations présentées sur ce site sont susceptibles d'évoluer."
     },
-    "copyright": "© {year} Lien commun. Tous droits réservés."
+    "copyright": "© {year} Lien commun. Tous droits réservés.",
+    "luciole": "Police <link>Luciole</link> par le Centre Technique Régional pour la Déficience Visuelle et typographies.fr — licence CC BY 4.0."
   },
   "common": {
     "learnMore": "En savoir plus",

@@ -53,8 +53,22 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="pt-6 text-[0.8rem] opacity-50">
+        <div className="pt-6 text-[0.8rem] opacity-50 space-y-1">
           <p>{t('copyright', { year: currentYear })}</p>
+          <p>
+            {t.rich('luciole', {
+              link: (chunks) => (
+                <a
+                  href="https://www.luciole-vision.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/50 underline hover:text-white/70 transition-colors"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
+          </p>
         </div>
       </div>
     </footer>

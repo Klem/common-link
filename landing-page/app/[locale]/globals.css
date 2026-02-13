@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Luciole:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -28,9 +26,9 @@
   --color-success: #3a9e6e;
   --color-error: #d9534f;
 
-  /* Typography */
-  --font-ui: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Luciole', Georgia, serif;
+  /* Typography — uses Next.js font variables injected on <html> */
+  --font-ui: var(--font-manrope), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: var(--font-luciole), Georgia, serif;
 
   /* Radius */
   --radius-sm: 6px;

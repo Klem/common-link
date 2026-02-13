@@ -16,6 +16,7 @@ export function RegistrationForm({
   onChangeAssociation,
 }: RegistrationFormProps) {
   const t = useTranslations('associations.form');
+  const ts = useTranslations('associations.search');
   const [submitted, setSubmitted] = useState(false);
 
   const name = association.nom_complet || association.nom_raison_sociale || '—';
@@ -51,7 +52,7 @@ export function RegistrationForm({
         <div className="flex-1">
           <div className="font-ui font-bold text-foreground-dark">{name}</div>
           <div className="font-ui text-[0.8rem] text-foreground-muted">
-            SIREN {association.siren} · {siege.libelle_commune || ''}{' '}
+            {ts('siren')} {association.siren} · {siege.libelle_commune || ''}{' '}
             {siege.code_postal || ''}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { AssociationResult } from '@/lib/api';
 
 interface AssociationCardProps {
@@ -10,6 +10,7 @@ interface AssociationCardProps {
 
 export function AssociationCard({ association, onSelect, onClick, animationDelay = 0 }: AssociationCardProps) {
   const t = useTranslations('associations.search');
+  const locale = useLocale();
 
   const name = association.nom_complet || association.nom_raison_sociale || 'Association';
   const initial = name[0].toUpperCase();
@@ -17,7 +18,7 @@ export function AssociationCard({ association, onSelect, onClick, animationDelay
   const ville = siege.libelle_commune || '—';
   const cp = siege.code_postal || '—';
   const dateCreation = association.date_creation
-    ? new Date(association.date_creation).toLocaleDateString('fr-FR', {
+    ? new Date(association.date_creation).toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
       })
@@ -82,7 +83,7 @@ export function AssociationCard({ association, onSelect, onClick, animationDelay
       {/* Footer */}
       <div className="mt-auto px-6 py-4 bg-background-alt border-t border-border-light flex justify-between items-center">
         <span className="font-ui text-[0.75rem] text-foreground-muted">
-          {siege.departement ? `Dép. ${siege.departement}` : ''}
+          {siege.departement ? t('dep', { code: siege.departement }) : ''}
         </span>
         <button
           onClick={(e) => {

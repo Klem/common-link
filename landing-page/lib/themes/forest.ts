@@ -23,8 +23,8 @@ export const forestTheme: Theme = {
     error: '#c44536',
   },
   fonts: {
-    ui: 'DM Sans',
-    body: 'Lora',
+    ui: 'var(--font-manrope)',
+    body: 'var(--font-luciole)',
   },
   radius: {
     sm: '6px',

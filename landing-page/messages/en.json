@@ -24,7 +24,12 @@
   "nav": {
     "partners": "Partners",
     "associations": "Associations",
-    "donors": "Donors"
+    "donors": "Donors",
+    "home": "Lien commun — Home",
+    "main": "Main navigation",
+    "mobile": "Mobile navigation",
+    "menuClose": "Close menu",
+    "menuOpen": "Open menu"
   },
   "landing": {
     "hero": {
@@ -277,6 +282,7 @@
       "siren": "SIREN",
       "created": "Created",
       "select": "Select",
+      "dep": "Dept. {code}",
       "displayedInfo": "{displayed} of {total} displayed",
       "displayedAll": "{displayed} displayed",
       "scrollMore": "Scroll for more",
@@ -449,7 +455,8 @@
       "title": "Legal",
       "text": "Lien commun is a platform under development. Information presented on this site is subject to change."
     },
-    "copyright": "© {year} Lien commun. All rights reserved."
+    "copyright": "© {year} Lien commun. All rights reserved.",
+    "luciole": "Typeface <link>Luciole</link> by the Centre Technique Régional pour la Déficience Visuelle and typographies.fr — CC BY 4.0 license."
   },
   "common": {
     "learnMore": "Learn more",

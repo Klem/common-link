@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { AssociationResult } from '@/lib/api';
 
 interface AssociationDetailModalProps {
@@ -44,6 +44,7 @@ function formatEffectif(code: string | undefined): string | null {
 export function AssociationDetailModal({ association, onClose }: AssociationDetailModalProps) {
   const t = useTranslations('associations.search.modal');
   const ts = useTranslations('associations.search');
+  const locale = useLocale();
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -70,7 +71,7 @@ export function AssociationDetailModal({ association, onClose }: AssociationDeta
   const name = association.nom_complet || association.nom_raison_sociale || 'Association';
   const address = formatAddress(siege);
   const dateCreation = association.date_creation
-    ? new Date(association.date_creation).toLocaleDateString('fr-FR', {
+    ? new Date(association.date_creation).toLocaleDateString(locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

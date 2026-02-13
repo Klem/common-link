@@ -119,7 +119,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                     {name}
                   </div>
                   <div className="text-[0.8rem] text-foreground-muted">
-                    {siege.code_postal || ''} {siege.libelle_commune || ''} · SIREN{' '}
+                    {siege.code_postal || ''} {siege.libelle_commune || ''} · {t('siren')}{' '}
                     {item.siren || '—'}
                   </div>
                 </div>

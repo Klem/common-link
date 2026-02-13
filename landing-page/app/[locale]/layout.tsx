@@ -1,4 +1,5 @@
 import { Manrope } from 'next/font/google';
+import localFont from 'next/font/local';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -13,6 +14,15 @@ const manrope = Manrope({
   display: 'swap',
 });
 
+const luciole = localFont({
+  src: [
+    { path: '../../public/fonts/Luciole-Regular.woff2', weight: '400', style: 'normal' },
+    { path: '../../public/fonts/Luciole-Bold.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-luciole',
+  display: 'swap',
+});
+
 export default async function LocaleLayout({
   children,
   params: { locale },
@@ -23,7 +33,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={manrope.variable}>
+    <html lang={locale} className={`${manrope.variable} ${luciole.variable}`}>
       <body>
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
