@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { PageHero } from '@/components/sections/PageHero';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Card } from '@/components/ui/Card';
@@ -24,6 +25,23 @@ const previewIcons = [
     <polyline points="12 6 12 12 16 14" />
   </svg>,
 ];
+
+export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+  const t = await getTranslations({ locale, namespace: 'metadata.donors' });
+  return {
+    title: t('title'),
+    description: t('description'),
+    keywords: t('keywords'),
+    openGraph: {
+      title: t('title'),
+      description: t('description'),
+      type: 'website',
+    },
+    alternates: {
+      languages: { fr: '/donateurs', en: '/en/donors' },
+    },
+  };
+}
 
 export default function DonateursPage() {
   const t = useTranslations('donors');

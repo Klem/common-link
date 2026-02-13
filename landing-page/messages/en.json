@@ -2,19 +2,23 @@
   "metadata": {
     "landing": {
       "title": "Lien commun — Transparency on donation usage",
-      "description": "Crypto-philanthropy platform that restores donor trust through transparency on fund usage."
+      "description": "Crypto-philanthropy platform that restores donor trust through transparency on fund usage.",
+      "keywords": "transparency, donations, associations, blockchain, traceability, philanthropy, trust, tax receipt"
     },
     "partners": {
       "title": "Partners & Investors — Lien commun",
-      "description": "Discover our vision, team, and how to become a Lien commun partner."
+      "description": "Discover our vision, team, and how to become a Lien commun partner.",
+      "keywords": "partners, investors, crypto-philanthropy, blockchain, SG Forge, fintech, social impact"
     },
     "associations": {
       "title": "Associations — Lien commun",
-      "description": "Offer transparency to your donors. Join Lien commun and strengthen trust."
+      "description": "Offer transparency to your donors. Join Lien commun and strengthen trust.",
+      "keywords": "associations, transparency, donations, registration, SIRENE, reporting, donation management"
     },
     "donors": {
       "title": "Donors — Lien commun",
-      "description": "Give with confidence. Track every euro and receive verifiable proof."
+      "description": "Give with confidence. Track every euro and receive verifiable proof.",
+      "keywords": "donors, donations, tracking, tax receipt, transparency, verifiable proof, philanthropy"
     }
   },
   "nav": {

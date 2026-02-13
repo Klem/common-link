@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { PageHero } from '@/components/sections/PageHero';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Card } from '@/components/ui/Card';
@@ -23,6 +24,23 @@ const benefitIcons = [
     <polyline points="20 6 9 17 4 12" />
   </svg>,
 ];
+
+export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+  const t = await getTranslations({ locale, namespace: 'metadata.associations' });
+  return {
+    title: t('title'),
+    description: t('description'),
+    keywords: t('keywords'),
+    openGraph: {
+      title: t('title'),
+      description: t('description'),
+      type: 'website',
+    },
+    alternates: {
+      languages: { fr: '/associations', en: '/en/associations' },
+    },
+  };
+}
 
 export default function AssociationsPage() {
   const t = useTranslations('associations');

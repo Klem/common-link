@@ -1,3 +1,2 @@
-import DonateursPage from '../donateurs/page';
-
-export default DonateursPage;
+export { generateMetadata } from '../donateurs/page';
+export { default } from '../donateurs/page';

@@ -2,19 +2,23 @@
   "metadata": {
     "landing": {
       "title": "Lien commun — La transparence sur l'usage des dons",
-      "description": "Plateforme de crypto-philanthropie qui restaure la confiance des donateurs grâce à la transparence sur l'utilisation des fonds."
+      "description": "Plateforme de crypto-philanthropie qui restaure la confiance des donateurs grâce à la transparence sur l'utilisation des fonds.",
+      "keywords": "transparence, dons, associations, blockchain, traçabilité, philanthropie, confiance, reçu fiscal"
     },
     "partners": {
       "title": "Partenaires & Investisseurs — Lien commun",
-      "description": "Découvrez notre vision, notre équipe et comment devenir partenaire de Lien commun."
+      "description": "Découvrez notre vision, notre équipe et comment devenir partenaire de Lien commun.",
+      "keywords": "partenaires, investisseurs, crypto-philanthropie, blockchain, SG Forge, fintech, impact social"
     },
     "associations": {
       "title": "Associations — Lien commun",
-      "description": "Offrez la transparence à vos donateurs. Rejoignez Lien commun et renforcez la confiance."
+      "description": "Offrez la transparence à vos donateurs. Rejoignez Lien commun et renforcez la confiance.",
+      "keywords": "associations, transparence, dons, inscription, SIRENE, reporting, gestion donations"
     },
     "donors": {
       "title": "Donateurs — Lien commun",
-      "description": "Donnez en toute confiance. Suivez chaque euro et recevez des preuves vérifiables."
+      "description": "Donnez en toute confiance. Suivez chaque euro et recevez des preuves vérifiables.",
+      "keywords": "donateurs, dons, suivi, reçu fiscal, transparence, preuves vérifiables, philanthropie"
     }
   },
   "nav": {
