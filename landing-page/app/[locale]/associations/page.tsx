@@ -25,7 +25,8 @@ const benefitIcons = [
   </svg>,
 ];
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'metadata.associations' });
   return {
     title: t('title'),
