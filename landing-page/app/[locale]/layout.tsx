@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { ThemeSwitcher } from '@/components/dev/ThemeSwitcher';
+import { Analytics } from '@vercel/analytics/next';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import './globals.css';
@@ -43,6 +44,7 @@ export default async function LocaleLayout({
             <Footer />
             <ThemeSwitcher />
           </ThemeProvider>
+          <Analytics />
         </NextIntlClientProvider>
       </body>
     </html>
