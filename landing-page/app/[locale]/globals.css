@@ -7,6 +7,10 @@
    Overridden at runtime by ThemeProvider
    ============================================ */
 :root {
+  /* Font variables injected by Next.js on <html> — declared here for IDE resolution */
+  --font-manrope: 'Manrope', sans-serif;
+  --font-luciole: 'Luciole', serif;
+
   /* Colors */
   --color-primary: #1a4a5a;
   --color-primary-dark: #0f3440;
