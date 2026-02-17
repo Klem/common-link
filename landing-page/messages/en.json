@@ -1,22 +1,22 @@
 {
   "metadata": {
     "landing": {
-      "title": "Lien commun — Transparency on donation usage",
+      "title": "Common Link — Transparency on donation usage",
       "description": "Crypto-philanthropy platform that restores donor trust through transparency on fund usage.",
       "keywords": "transparency, donations, associations, blockchain, traceability, philanthropy, trust, tax receipt"
     },
     "partners": {
-      "title": "Partners & Investors — Lien commun",
-      "description": "Discover our vision, team, and how to become a Lien commun partner.",
-      "keywords": "partners, investors, crypto-philanthropy, blockchain, SG Forge, fintech, social impact"
+      "title": "Partners & Investors — Common Link",
+      "description": "Discover our vision, team, and how to become a Common Link partner.",
+      "keywords": "partners, investors, crypto-philanthropy, blockchain, fintech, social impact"
     },
     "associations": {
-      "title": "Associations — Lien commun",
-      "description": "Offer transparency to your donors. Join Lien commun and strengthen trust.",
+      "title": "Associations — Common Link",
+      "description": "Offer transparency to your donors. Join Common Link and strengthen trust.",
       "keywords": "associations, transparency, donations, registration, SIRENE, reporting, donation management"
     },
     "donors": {
-      "title": "Donors — Lien commun",
+      "title": "Donors — Common Link",
       "description": "Give with confidence. Track every euro and receive verifiable proof.",
       "keywords": "donors, donations, tracking, tax receipt, transparency, verifiable proof, philanthropy"
     }
@@ -25,7 +25,7 @@
     "partners": "Partners",
     "associations": "Associations",
     "donors": "Donors",
-    "home": "Lien commun — Home",
+    "home": "Common Link — Home",
     "main": "Main navigation",
     "mobile": "Mobile navigation",
     "menuClose": "Close menu",
@@ -37,7 +37,7 @@
       "title": "Transparency on donation usage",
       "subtitle": "Every euro donated is tracked, verified and proven. So that trust is no longer just a promise.",
       "cta": "Discover the platform",
-      "launch": "Launch planned Q3 2025"
+      "launch": "Launch planned Q3 2026"
     },
     "journal": {
       "title": "Expense journal",
@@ -61,7 +61,7 @@
       }
     },
     "features": {
-      "title": "What Lien commun brings",
+      "title": "What Common Link brings",
       "items": [
         {
           "title": "Total transparency",
@@ -121,8 +121,8 @@
         },
         {
           "title": "Beta launch",
-          "text": "Pilot program with 5 partner associations planned for Q3 2025. Registrations open.",
-          "badge": "Q3 2025",
+          "text": "Pilot program with 5 partner associations planned for Q3 2026. Registrations open.",
+          "badge": "Q3 2026",
           "badgeType": "upcoming"
         }
       ]
@@ -131,8 +131,8 @@
       "title": "Frequently asked questions",
       "items": [
         {
-          "question": "Do I need to understand blockchain to use Lien commun?",
-          "answer": "No, absolutely not. Lien commun is designed to be as simple as a bank transfer. The blockchain works in the background, you never need to interact with it directly."
+          "question": "Do I need to understand blockchain to use Common Link?",
+          "answer": "No, absolutely not. Common Link is designed to be as simple as a bank transfer. The blockchain works in the background, you never need to interact with it directly."
         },
         {
           "question": "How are donations tracked?",
@@ -148,7 +148,7 @@
         },
         {
           "question": "How much does it cost?",
-          "answer": "Registration is free for associations and donors. Lien commun charges a 2.5% commission on each donation to fund the platform and blockchain fees."
+          "answer": "Registration is free for associations and donors. Common Link charges a 2.5% commission on each donation to fund the platform and blockchain fees."
         },
         {
           "question": "Is the data secure?",
@@ -161,7 +161,7 @@
     "hero": {
       "badge": "Partners & Investors",
       "title": "Restoring donor trust through fund transparency",
-      "description": "The nonprofit sector faces a trust crisis. Lien commun responds with a simple, verifiable, and compliant traceability infrastructure."
+      "description": "The nonprofit sector faces a trust crisis. Common Link responds with a simple, verifiable, and compliant traceability infrastructure."
     },
     "stats": [
       { "number": "44%", "label": "of French people held back by lack of transparency" },
@@ -246,10 +246,10 @@
     "hero": {
       "badge": "Associations",
       "title": "Offer transparency to your donors",
-      "description": "Join the first pilot associations of Lien commun. We support you in simplifying your management and strengthening the trust of your supporters."
+      "description": "Join the first pilot associations of Common Link. We support you in simplifying your management and strengthening the trust of your supporters."
     },
     "benefits": {
-      "title": "Why join Lien commun?",
+      "title": "Why join Common Link?",
       "items": [
         {
           "title": "Attract more donors",
@@ -346,9 +346,10 @@
       "emailPlaceholder": "contact@association.org",
       "description": "Describe your association",
       "descriptionPlaceholder": "In a few words, describe your activity...",
-      "submit": "Request registration",
-      "success": "Thank you! Your registration request has been recorded. We'll contact you within 48h for the next steps.",
-      "note": "Registration is free. We verify each request manually."
+      "consent": "I agree that Common Link may collect this information to notify me about the platform launch. I can unsubscribe at any time.",
+      "submit": "Join the waitlist",
+      "success": "Thank you! Your association is on the waitlist. We'll contact you as soon as the platform launches.",
+      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr."
     }
   },
   "donors": {
@@ -391,9 +392,9 @@
       ]
     },
     "signup": {
-      "title": "Create your account",
-      "description": "Sign up in less than a minute. Explore associations and their projects right away.",
-      "cardTitle": "Get started for free",
+      "title": "Join the waitlist",
+      "description": "Be among the first to know when we launch. Sign up to reserve your spot.",
+      "cardTitle": "Sign up for free",
       "google": "Continue with Google",
       "apple": "Continue with Apple",
       "divider": "or by email",
@@ -401,12 +402,11 @@
       "firstNamePlaceholder": "Marie",
       "email": "Email",
       "emailPlaceholder": "marie@example.com",
-      "password": "Password",
-      "passwordPlaceholder": "8 characters minimum",
-      "submit": "Create my account",
-      "note": "Your tax information (full name, address) will only be requested when you make your first donation, to generate your tax receipt.",
-      "successTitle": "Welcome to Lien commun!",
-      "successText": "Your account has been created successfully. You will receive a confirmation email shortly.",
+      "consent": "I agree that Common Link may collect my first name and email to notify me about the platform launch. I can unsubscribe at any time.",
+      "submit": "Join the waitlist",
+      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr.",
+      "successTitle": "You're on the list!",
+      "successText": "We'll let you know as soon as the platform is available. Keep an eye on your inbox.",
       "successLaunch": "Planned launch: Q2 2026"
     },
     "faq": {
@@ -437,12 +437,12 @@
     "cta": {
       "title": "Ready to give differently?",
       "description": "Join the first donors who want to know exactly where their money goes.",
-      "button": "Create my free account"
+      "button": "Join the waitlist"
     }
   },
   "footer": {
     "brand": {
-      "name": "Lien commun",
+      "name": "Common Link",
       "description": "Transparency on donation usage, made possible by blockchain technology."
     },
     "nav": {
@@ -453,9 +453,9 @@
     },
     "legal": {
       "title": "Legal",
-      "text": "Lien commun is a platform under development. Information presented on this site is subject to change."
+      "text": "Common Link is a platform under development. Information presented on this site is subject to change."
     },
-    "copyright": "© {year} Lien commun. All rights reserved.",
+    "copyright": "© {year} Common Link. All rights reserved.",
     "luciole": "Typeface <link>Luciole</link> by the Centre Technique Régional pour la Déficience Visuelle and typographies.fr — CC BY 4.0 license."
   },
   "common": {

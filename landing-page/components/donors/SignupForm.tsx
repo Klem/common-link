@@ -3,12 +3,30 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+async function registerToWaitlist(_data: { firstName: string; email: string; source: 'email' | 'google' | 'apple' }) {
+  // TODO: implement API call
+}
+
 export function SignupForm() {
   const t = useTranslations('donors.signup');
   const [submitted, setSubmitted] = useState(false);
+  const [consent, setConsent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    await registerToWaitlist({
+      firstName: data.get('firstName') as string,
+      email: data.get('email') as string,
+      source: 'email',
+    });
+    setSubmitted(true);
+  };
+
+  const handleOAuth = async (provider: 'google' | 'apple') => {
+    // TODO: OAuth flow then register to waitlist
+    await registerToWaitlist({ firstName: '', email: '', source: provider });
     setSubmitted(true);
   };
 
@@ -31,11 +49,13 @@ export function SignupForm() {
     <div className="max-w-[480px] mx-auto bg-white border border-border rounded-xl p-10 shadow-lg">
       <h3 className="text-center mb-8">{t('cardTitle')}</h3>
 
-      {/* OAuth buttons */}
+      {/* OAuth buttons
       <button
         type="button"
+        onClick={() => handleOAuth('google')}
         className="w-full flex items-center justify-center gap-3 font-ui text-[0.9rem] font-medium bg-white border-2 border-border px-5 py-3.5 rounded-md cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-sm mb-3"
       >
+
         <svg viewBox="0 0 24 24" width="20" height="20">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
           <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -47,6 +67,7 @@ export function SignupForm() {
 
       <button
         type="button"
+        onClick={() => handleOAuth('apple')}
         className="w-full flex items-center justify-center gap-3 font-ui text-[0.9rem] font-medium bg-white border-2 border-border px-5 py-3.5 rounded-md cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-sm mb-6"
       >
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -55,13 +76,14 @@ export function SignupForm() {
         {t('apple')}
       </button>
 
-      {/* Divider */}
+
+      {/* Divider
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 h-px bg-border" />
         <span className="font-ui text-[0.8rem] text-foreground-muted">{t('divider')}</span>
         <div className="flex-1 h-px bg-border" />
       </div>
-
+        */}
       {/* Email form */}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
@@ -70,43 +92,49 @@ export function SignupForm() {
           </label>
           <input
             type="text"
+            name="firstName"
             required
             placeholder={t('firstNamePlaceholder')}
             className="w-full font-ui text-[0.9rem] bg-white border-2 border-border rounded-md px-4 py-3 text-foreground-dark outline-none transition-colors focus:border-secondary placeholder:text-foreground-muted"
           />
         </div>
-        <div className="mb-4">
+        <div className="mb-5">
           <label className="block font-ui text-[0.85rem] font-medium text-foreground-dark mb-1.5">
             {t('email')}
           </label>
           <input
             type="email"
+            name="email"
             required
             placeholder={t('emailPlaceholder')}
             className="w-full font-ui text-[0.9rem] bg-white border-2 border-border rounded-md px-4 py-3 text-foreground-dark outline-none transition-colors focus:border-secondary placeholder:text-foreground-muted"
           />
         </div>
-        <div className="mb-6">
-          <label className="block font-ui text-[0.85rem] font-medium text-foreground-dark mb-1.5">
-            {t('password')}
-          </label>
+
+        {/* RGPD consent */}
+        <label className="flex items-start gap-3 mb-6 cursor-pointer">
           <input
-            type="password"
+            type="checkbox"
             required
-            minLength={8}
-            placeholder={t('passwordPlaceholder')}
-            className="w-full font-ui text-[0.9rem] bg-white border-2 border-border rounded-md px-4 py-3 text-foreground-dark outline-none transition-colors focus:border-secondary placeholder:text-foreground-muted"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 w-4 h-4 flex-shrink-0 accent-primary cursor-pointer"
           />
-        </div>
+          <span className="font-ui text-[0.8rem] text-foreground-muted leading-relaxed">
+            {t('consent')}
+          </span>
+        </label>
+
         <button
           type="submit"
-          className="w-full font-ui text-[0.95rem] font-semibold bg-primary text-white border-none px-6 py-4 rounded-md cursor-pointer transition-colors duration-200 hover:bg-primary-light flex items-center justify-center"
+          disabled={!consent}
+          className="w-full font-ui text-[0.95rem] font-semibold bg-primary text-white border-none px-6 py-4 rounded-md cursor-pointer transition-colors duration-200 hover:bg-primary-light flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t('submit')}
         </button>
       </form>
 
-      <p className="font-ui text-[0.78rem] text-foreground-muted text-center mt-6 leading-relaxed">
+      <p className="font-ui text-[0.75rem] text-foreground-muted text-center mt-6 leading-relaxed">
         {t('note')}
       </p>
     </div>

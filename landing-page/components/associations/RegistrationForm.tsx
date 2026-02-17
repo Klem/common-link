@@ -11,6 +11,16 @@ interface RegistrationFormProps {
   onChangeAssociation: () => void;
 }
 
+async function registerToWaitlist(_data: {
+  siren: string;
+  associationName: string;
+  contactName: string;
+  email: string;
+  description: string;
+}) {
+  // TODO: implement API call
+}
+
 export function RegistrationForm({
   association,
   onChangeAssociation,
@@ -18,13 +28,23 @@ export function RegistrationForm({
   const t = useTranslations('associations.form');
   const ts = useTranslations('associations.search');
   const [submitted, setSubmitted] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   const name = association.nom_complet || association.nom_raison_sociale || '—';
   const initial = name[0].toUpperCase();
   const siege = association.siege || {};
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    await registerToWaitlist({
+      siren: association.siren || '',
+      associationName: name,
+      contactName: data.get('contact-name') as string,
+      email: data.get('email') as string,
+      description: data.get('description') as string,
+    });
     setSubmitted(true);
   };
 
@@ -85,17 +105,33 @@ export function RegistrationForm({
           name="description"
           placeholder={t('descriptionPlaceholder')}
         />
+
+        {/* RGPD consent */}
+        <label className="flex items-start gap-3 mb-6 cursor-pointer">
+          <input
+            type="checkbox"
+            required
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 w-4 h-4 flex-shrink-0 accent-primary cursor-pointer"
+          />
+          <span className="font-ui text-[0.8rem] text-foreground-muted leading-relaxed">
+            {t('consent')}
+          </span>
+        </label>
+
         <Button
           type="submit"
           variant="accent"
           size="lg"
           className="w-full justify-center"
+          disabled={!consent}
         >
           {t('submit')}
         </Button>
       </form>
 
-      <p className="font-ui text-[0.78rem] text-foreground-muted text-center mt-6 leading-relaxed">
+      <p className="font-ui text-[0.75rem] text-foreground-muted text-center mt-6 leading-relaxed">
         {t('note')}
       </p>
     </div>
