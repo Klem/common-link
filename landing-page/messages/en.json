@@ -102,7 +102,7 @@
     },
     "guarantee": {
       "title": "Traceability guarantee",
-      "text": "Our technology relies on the Ethereum blockchain and regulated stablecoins (EUR CoinVertible by SG-Forge). Every transaction is immutable, publicly verifiable, and compliant with European regulations."
+      "text": "Our technology relies on the Ethereum blockchain and regulated stablecoins. Every transaction is immutable, publicly verifiable, and compliant with European regulations."
     },
     "status": {
       "title": "Where are we now",
@@ -115,7 +115,7 @@
         },
         {
           "title": "Partnerships",
-          "text": "Strategic partnership with SG-Forge (Société Générale) for EUR CoinVertible stablecoin management.",
+          "text": "Looking for partners for EURx management and compliance.",
           "badge": "In progress",
           "badgeType": "in-progress"
         },
