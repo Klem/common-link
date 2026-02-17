@@ -8,7 +8,7 @@
     "partners": {
       "title": "Partners & Investors — Common Link",
       "description": "Discover our vision, team, and how to become a Common Link partner.",
-      "keywords": "partners, investors, crypto-philanthropy, blockchain, SG Forge, fintech, social impact"
+      "keywords": "partners, investors, crypto-philanthropy, blockchain, fintech, social impact"
     },
     "associations": {
       "title": "Associations — Common Link",
@@ -35,7 +35,7 @@
     "hero": {
       "badge": "Verifiable traceability",
       "title": "Transparency on donation usage",
-      "subtitle": "Every euro donated is tracked, verified and proven. So that trust is no longer just a promise.",
+      "subtitle": "We make the link between impact and generosity visible",
       "cta": "Discover the platform",
       "launch": "Launch planned Q3 2026"
     },
@@ -346,9 +346,10 @@
       "emailPlaceholder": "contact@association.org",
       "description": "Describe your association",
       "descriptionPlaceholder": "In a few words, describe your activity...",
-      "submit": "Request registration",
-      "success": "Thank you! Your registration request has been recorded. We'll contact you within 48h for the next steps.",
-      "note": "Registration is free. We verify each request manually."
+      "consent": "I agree that Common Link may collect this information to notify me about the platform launch. I can unsubscribe at any time.",
+      "submit": "Join the waitlist",
+      "success": "Thank you! Your association is on the waitlist. We'll contact you as soon as the platform launches.",
+      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr."
     }
   },
   "donors": {
@@ -391,9 +392,9 @@
       ]
     },
     "signup": {
-      "title": "Create your account",
-      "description": "Sign up in less than a minute. Explore associations and their projects right away.",
-      "cardTitle": "Get started for free",
+      "title": "Join the waitlist",
+      "description": "Be among the first to know when we launch. Sign up to reserve your spot.",
+      "cardTitle": "Sign up for free",
       "google": "Continue with Google",
       "apple": "Continue with Apple",
       "divider": "or by email",
@@ -401,12 +402,11 @@
       "firstNamePlaceholder": "Marie",
       "email": "Email",
       "emailPlaceholder": "marie@example.com",
-      "password": "Password",
-      "passwordPlaceholder": "8 characters minimum",
-      "submit": "Create my account",
-      "note": "Your tax information (full name, address) will only be requested when you make your first donation, to generate your tax receipt.",
-      "successTitle": "Welcome to Common Link!",
-      "successText": "Your account has been created successfully. You will receive a confirmation email shortly.",
+      "consent": "I agree that Common Link may collect my first name and email to notify me about the platform launch. I can unsubscribe at any time.",
+      "submit": "Join the waitlist",
+      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr.",
+      "successTitle": "You're on the list!",
+      "successText": "We'll let you know as soon as the platform is available. Keep an eye on your inbox.",
       "successLaunch": "Planned launch: Q2 2026"
     },
     "faq": {
@@ -437,7 +437,7 @@
     "cta": {
       "title": "Ready to give differently?",
       "description": "Join the first donors who want to know exactly where their money goes.",
-      "button": "Create my free account"
+      "button": "Join the waitlist"
     }
   },
   "footer": {

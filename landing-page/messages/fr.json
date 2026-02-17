@@ -8,7 +8,7 @@
     "partners": {
       "title": "Partenaires & Investisseurs — Lien commun",
       "description": "Découvrez notre vision, notre équipe et comment devenir partenaire de Lien commun.",
-      "keywords": "partenaires, investisseurs, crypto-philanthropie, blockchain, SG Forge, fintech, impact social"
+      "keywords": "partenaires, investisseurs, crypto-philanthropie, blockchain, fintech, impact social"
     },
     "associations": {
       "title": "Associations — Lien commun",
@@ -35,7 +35,7 @@
     "hero": {
       "badge": "Traçabilité vérifiable",
       "title": "La transparence sur l'usage des dons",
-      "subtitle": "Chaque euro donné est tracé, vérifié et prouvé. Pour que la confiance ne soit plus une promesse.",
+      "subtitle": "Nous rendons visible le lien entre générosité et impact.",
       "cta": "Découvrir la plateforme",
       "launch": "Lancement prévu T3 2026"
     },
@@ -346,9 +346,10 @@
       "emailPlaceholder": "contact@association.org",
       "description": "Description de votre association",
       "descriptionPlaceholder": "En quelques mots, décrivez votre activité...",
-      "submit": "Demander l'inscription",
-      "success": "Merci ! Votre demande d'inscription a bien été enregistrée. Nous vous contacterons sous 48h pour la suite.",
-      "note": "L'inscription est gratuite. Nous vérifions chaque demande manuellement."
+      "consent": "J'accepte que Lien commun collecte ces informations pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
+      "submit": "Rejoindre la liste d'attente",
+      "success": "Merci ! Votre association est inscrite sur la liste d'attente. Nous vous contacterons dès le lancement de la plateforme.",
+      "note": "Vos données sont collectées uniquement pour vous informer du lancement. Elles ne seront ni partagées ni utilisées à d'autres fins. Vous pouvez exercer vos droits (accès, rectification, suppression) en nous contactant à contact@liencommun.fr."
     }
   },
   "donors": {
@@ -391,9 +392,9 @@
       ]
     },
     "signup": {
-      "title": "Créez votre compte",
-      "description": "Inscription en moins d'une minute. Explorez les associations et leurs projets dès maintenant.",
-      "cardTitle": "Commencer gratuitement",
+      "title": "Rejoignez la liste d'attente",
+      "description": "Soyez parmi les premiers informés du lancement. Inscrivez-vous pour réserver votre place.",
+      "cardTitle": "Inscrivez-vous gratuitement",
       "google": "Continuer avec Google",
       "apple": "Continuer avec Apple",
       "divider": "ou par email",
@@ -401,12 +402,11 @@
       "firstNamePlaceholder": "Marie",
       "email": "Email",
       "emailPlaceholder": "marie@exemple.fr",
-      "password": "Mot de passe",
-      "passwordPlaceholder": "8 caractères minimum",
-      "submit": "Créer mon compte",
-      "note": "Vos informations fiscales (nom complet, adresse) seront demandées uniquement au moment de votre premier don, pour générer votre reçu fiscal.",
-      "successTitle": "Bienvenue chez Lien commun !",
-      "successText": "Votre compte a été créé avec succès. Vous recevrez un email de confirmation sous quelques instants.",
+      "consent": "J'accepte que Lien commun collecte mon prénom et email pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
+      "submit": "Rejoindre la liste d'attente",
+      "note": "Vos données sont collectées uniquement pour vous informer du lancement. Elles ne seront ni partagées ni utilisées à d'autres fins. Vous pouvez exercer vos droits (accès, rectification, suppression) en nous contactant à contact@liencommun.fr.",
+      "successTitle": "Vous êtes sur la liste !",
+      "successText": "Nous vous préviendrons dès que la plateforme sera disponible. Surveillez votre boîte mail.",
       "successLaunch": "Lancement prévu : T2 2026"
     },
     "faq": {
@@ -437,7 +437,7 @@
     "cta": {
       "title": "Prêt à donner autrement ?",
       "description": "Rejoignez les premiers donateurs qui veulent savoir exactement où va leur argent.",
-      "button": "Créer mon compte gratuitement"
+      "button": "Rejoindre la liste d'attente"
     }
   },
   "footer": {
