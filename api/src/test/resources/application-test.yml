@@ -17,4 +17,4 @@ spring:
 
 logging:
   level:
-    com.commonlink: DEBUG
+    org.commonlink: DEBUG
