@@ -1,6 +1,11 @@
 spring:
   application:
     name: commonlink-api
+  security:
+    user:
+      name: admin
+      password: admin
+
 
   datasource:
     url: jdbc:postgresql://localhost:5432/commonlink
@@ -40,5 +45,5 @@ springdoc:
 
 logging:
   level:
-    com.commonlink: DEBUG
+    org.commonlink: DEBUG
     org.springframework.security: INFO
