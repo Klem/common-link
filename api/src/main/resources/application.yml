@@ -1,12 +1,6 @@
 spring:
   application:
     name: commonlink-api
-  security:
-    user:
-      name: admin
-      password: admin
-
-
   datasource:
     url: jdbc:postgresql://localhost:5432/commonlink
     username: commonlink
@@ -39,6 +33,7 @@ management:
 app:
   jwt:
     secret: commonlink-dev-secret-key-must-be-at-least-32-chars-long
+  frontend-url: http://localhost:3000
 
 springdoc:
   api-docs:
