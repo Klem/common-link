@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { EmailPasswordForm } from '../EmailPasswordForm';
 
 vi.mock('next-intl', () => ({
@@ -29,5 +29,33 @@ describe('EmailPasswordForm', () => {
     await waitFor(() => {
       expect(screen.getByText('errors.passwordTooShort')).toBeInTheDocument();
     });
+  });
+
+  it('shows validation error for invalid email', async () => {
+    render(<EmailPasswordForm onSubmit={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/login\.email\.label/i), {
+      target: { value: 'not-an-email' },
+    });
+    await waitFor(() => {
+      expect(screen.getByText('errors.emailInvalid')).toBeInTheDocument();
+    });
+  });
+
+  it('calls onSubmit with email and password when form is valid', async () => {
+    const onSubmit = vi.fn();
+    render(<EmailPasswordForm onSubmit={onSubmit} />);
+    fireEvent.change(screen.getByLabelText(/login\.email\.label/i), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText(/login\.password\.label/i), {
+      target: { value: 'password123' },
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /login\.submit/i })).not.toBeDisabled();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /login\.submit/i }));
+    });
+    expect(onSubmit).toHaveBeenCalledWith('test@example.com', 'password123');
   });
 });

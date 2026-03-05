@@ -32,4 +32,22 @@ describe('SetPasswordForm', () => {
       expect(screen.getByText('errors.passwordMismatch')).toBeInTheDocument();
     });
   });
+
+  it('calls onSubmit with the password when both fields match', async () => {
+    const onSubmit = vi.fn();
+    render(<SetPasswordForm onSubmit={onSubmit} onSkip={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/setPassword\.password\.label/i), {
+      target: { value: 'securepass1' },
+    });
+    fireEvent.change(screen.getByLabelText(/setPassword\.confirm\.label/i), {
+      target: { value: 'securepass1' },
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /setPassword\.submit/i })).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /setPassword\.submit/i }));
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith('securepass1');
+    });
+  });
 });

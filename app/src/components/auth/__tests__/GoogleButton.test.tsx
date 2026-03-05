@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { GoogleButton } from '../GoogleButton';
 
 vi.mock('@react-oauth/google', () => ({
@@ -25,5 +25,12 @@ describe('GoogleButton', () => {
   it('is disabled when loading', () => {
     render(<GoogleButton onSuccess={vi.fn()} loading />);
     expect(screen.getByRole('button', { name: /continuer avec google/i })).toBeDisabled();
+  });
+
+  it('calls onSuccess with idToken when clicked', () => {
+    const onSuccess = vi.fn();
+    render(<GoogleButton onSuccess={onSuccess} />);
+    fireEvent.click(screen.getByRole('button', { name: /continuer avec google/i }));
+    expect(onSuccess).toHaveBeenCalledWith('mock-token');
   });
 });

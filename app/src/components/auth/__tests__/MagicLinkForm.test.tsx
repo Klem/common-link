@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MagicLinkForm } from '../MagicLinkForm';
 
 vi.mock('next-intl', () => ({
@@ -24,5 +24,25 @@ describe('MagicLinkForm', () => {
     render(<MagicLinkForm onSubmit={vi.fn()} role="DONOR" />);
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test@example.com' } });
     expect(screen.getByRole('button')).not.toBeDisabled();
+  });
+
+  it('calls onSubmit with the entered email', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<MagicLinkForm onSubmit={onSubmit} role="DONOR" />);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test@example.com' } });
+    fireEvent.click(screen.getByRole('button'));
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith('test@example.com');
+    });
+  });
+
+  it('shows sent confirmation after successful submit', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<MagicLinkForm onSubmit={onSubmit} role="DONOR" />);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test@example.com' } });
+    fireEvent.click(screen.getByRole('button'));
+    await waitFor(() => {
+      expect(screen.getByText(/magicLink\.sent/)).toBeInTheDocument();
+    });
   });
 });
