@@ -35,19 +35,20 @@ management:
 
 app:
   jwt:
-    secret: commonlink-dev-secret-key-must-be-at-least-32-chars-long
+    secret: ${COMMON_LINK_SECRET:commonlink-dev-secret-key-must-be-at-least-32-chars-long}
   frontend-url: http://localhost:3000
   google:
-    client-id: YOUR_GOOGLE_CLIENT_ID
+    client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
     from: ${MAIL_FROM:noreply@commonlink.org}
 
 springdoc:
   api-docs:
     enabled: true
+    path: /api/docs/api.json
   swagger-ui:
     enabled: true
-    path: /swagger-ui.html
+    path: /api/docs/swagger-ui.html
 
 logging:
   level:

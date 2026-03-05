@@ -35,9 +35,7 @@ class SecurityConfig(
                 auth
                     .requestMatchers(
                         "/api/auth/**",
-                        "/api/docs/**",
-                        "/api/docs/json/**",
-                        "/api/public/**"
+                        "/api/docs/**"
                     ).permitAll()
                     .anyRequest().authenticated()
             }
