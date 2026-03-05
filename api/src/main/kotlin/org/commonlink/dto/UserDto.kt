@@ -7,7 +7,7 @@ import java.time.Instant
 import java.util.UUID
 
 data class UserDto(
-    val id: UUID,
+    val id: UUID?,
     val email: String,
     val role: UserRole,
     val provider: AuthProvider,
