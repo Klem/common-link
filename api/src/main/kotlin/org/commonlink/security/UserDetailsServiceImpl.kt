@@ -18,7 +18,7 @@ class UserDetailsServiceImpl(
         val user = userRepository.findById(UUID.fromString(userId))
             .orElseThrow { UsernameNotFoundException("User not found: $userId") }
         return User(
-            user.id.toString(),
+            user.id!!.toString(),
             user.passwordHash ?: "",
             listOf(SimpleGrantedAuthority("ROLE_${user.role.name}"))
         )

@@ -31,7 +31,7 @@ class JwtServiceTest {
         val token = jwtService.generateAccessToken(user)
         val claims = jwtService.validateToken(token)
 
-        assertEquals(user.id.toString(), claims.subject)
+        assertEquals(user.id!!.toString(), claims.subject)
         assertEquals(user.email, claims["email"])
         assertEquals(user.role.name, claims["role"])
         assertNotNull(claims.issuedAt)
@@ -60,7 +60,7 @@ class JwtServiceTest {
     fun `validateToken throws TokenExpiredException for expired token`() {
         val key = Keys.hmacShaKeyFor(secret.toByteArray(Charsets.UTF_8))
         val expiredToken = Jwts.builder()
-            .subject(user.id.toString())
+            .subject(user.id!!.toString())
             .claim("email", user.email)
             .claim("role", user.role.name)
             .issuedAt(Date(System.currentTimeMillis() - 60_000))
@@ -77,7 +77,7 @@ class JwtServiceTest {
     fun `validateToken throws InvalidTokenException for wrong signature`() {
         val wrongKey = Keys.hmacShaKeyFor("wrong-secret-key-must-be-at-least-32-chars!!".toByteArray())
         val badToken = Jwts.builder()
-            .subject(user.id.toString())
+            .subject(user.id!!.toString())
             .claim("email", user.email)
             .claim("role", user.role.name)
             .issuedAt(Date())

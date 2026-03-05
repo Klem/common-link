@@ -404,10 +404,10 @@ class AuthServiceTest {
 
     @Test
     fun `setPassword - happy path`() {
-        every { userRepository.findById(donorUser.id) } returns Optional.of(donorUser)
+        every { userRepository.findById(donorUser.id!!) } returns Optional.of(donorUser)
         every { passwordEncoder.encode("newpass123") } returns "newhash"
 
-        authService.setPassword(donorUser.id, "newpass123", "newpass123")
+        authService.setPassword(donorUser.id!!, "newpass123", "newpass123")
 
         assertEquals("newhash", donorUser.passwordHash)
         verify { userRepository.save(donorUser) }
@@ -416,7 +416,7 @@ class AuthServiceTest {
     @Test
     fun `setPassword - passwords mismatch throws AuthException`() {
         assertThrows<AuthException> {
-            authService.setPassword(donorUser.id, "newpass123", "different")
+            authService.setPassword(donorUser.id!!, "newpass123", "different")
         }
     }
 
@@ -485,11 +485,11 @@ class AuthServiceTest {
 
     @Test
     fun `logout - revokes all refresh tokens`() {
-        justRun { refreshTokenRepository.revokeAllByUserId(donorUser.id) }
+        justRun { refreshTokenRepository.revokeAllByUserId(donorUser.id!!) }
 
-        authService.logout(donorUser.id)
+        authService.logout(donorUser.id!!)
 
-        verify { refreshTokenRepository.revokeAllByUserId(donorUser.id) }
+        verify { refreshTokenRepository.revokeAllByUserId(donorUser.id!!) }
     }
 
     // -------------------------------------------------------------------------

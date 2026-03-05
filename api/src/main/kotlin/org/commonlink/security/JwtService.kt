@@ -28,7 +28,7 @@ class JwtService(
     fun generateAccessToken(user: User): String {
         val now = Date()
         return Jwts.builder()
-            .subject(user.id.toString())
+            .subject(user.id!!.toString())
             .claim("email", user.email)
             .claim("role", user.role.name)
             .issuedAt(now)
