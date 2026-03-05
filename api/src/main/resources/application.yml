@@ -5,9 +5,9 @@ spring:
   application:
     name: commonlink-api
   datasource:
-    url: jdbc:postgresql://localhost:5432/commonlink
-    username: commonlink
-    password: commonlink
+    url: ${COMMON_LINK_DB_URL:jdbc:postgresql://localhost:5432/commonlink}
+    username: ${COMMON_LINK_DB_USER:commonlink}
+    password: ${COMMON_LINK_DB_PASSWORD:commonlink}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
