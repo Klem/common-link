@@ -1,12 +1,8 @@
 import { create } from 'zustand';
 import Cookies from 'js-cookie';
+import type { UserDto } from '@/types/auth';
 
-export interface UserDto {
-  id: string;
-  email: string;
-  role: 'ASSOCIATION' | 'DONOR';
-  name?: string;
-}
+export type { UserDto };
 
 interface AuthState {
   accessToken: string | null;

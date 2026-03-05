@@ -1,16 +1,10 @@
-export default function HomePage() {
-  return (
-    <main
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-      }}
-    >
-      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem' }}>
-        CommonLink
-      </h1>
-    </main>
-  );
+import { redirect } from 'next/navigation';
+
+interface HomePageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function HomePage({ params }: HomePageProps) {
+  const { locale } = await params;
+  redirect(`/${locale}/login`);
 }
