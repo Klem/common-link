@@ -1,0 +1,7 @@
+minisite
+.claude
+.next
+.env.local
+node_modules
+tasks
+CLAUDE.md
