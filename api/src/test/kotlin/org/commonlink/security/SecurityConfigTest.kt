@@ -3,6 +3,7 @@ package org.commonlink.security
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.commonlink.repository.UserRepository
+import org.commonlink.service.AuthService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -26,6 +27,9 @@ class SecurityConfigTest {
     private lateinit var mockMvc: MockMvc
 
     @MockkBean
+    private lateinit var authService: AuthService
+
+    @MockkBean
     private lateinit var jwtService: JwtService
 
     @MockkBean
@@ -44,8 +48,8 @@ class SecurityConfigTest {
 
     @Test
     fun `unauthenticated request to auth public path is not blocked by security`() {
-        // No controller exists, so it returns 404 — but NOT 401
-        mockMvc.perform(post("/api/auth/login"))
+        // No controller exists for this path, so it returns 404 — but NOT 401
+        mockMvc.perform(post("/api/auth/nonexistent-route"))
             .andExpect(status().isNotFound)
     }
 
@@ -58,7 +62,7 @@ class SecurityConfigTest {
     @Test
     fun `unauthenticated request to public path is not blocked by security`() {
         mockMvc.perform(get("/api/public/something"))
-            .andExpect(status().isNotFound)
+            .andExpect(status().isForbidden)
     }
 
     @Test

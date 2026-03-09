@@ -52,13 +52,18 @@ dependencies {
     implementation("com.google.api-client:google-api-client:2.7.2")
 
     // Tests
+    // Tests
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test") // if needed
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test") // ← NEW & IMPORTANT
+
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.mockk:mockk:1.14.2")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:junit-jupiter")
+
 }
 
 dependencyManagement {
