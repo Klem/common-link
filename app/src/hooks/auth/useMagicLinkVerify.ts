@@ -1,0 +1,69 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+import { isAxiosError } from 'axios';
+import api from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
+import type { AuthResponseDto } from '@/types/auth';
+
+interface ProblemDetail {
+  code?: string;
+  [key: string]: unknown;
+}
+
+type VerifyStatus = 'idle' | 'verifying' | 'success' | 'error';
+
+export function useMagicLinkVerify(
+  token: string | null,
+  onSuccess?: () => void,
+) {
+  const router = useRouter();
+  const locale = useLocale();
+  const { setAuth } = useAuthStore();
+  const [status, setStatus] = useState<VerifyStatus>(token ? 'verifying' : 'idle');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
+
+    const verify = async () => {
+      setStatus('verifying');
+      try {
+        const { data } = await api.post<AuthResponseDto>('/api/auth/magic-link/verify', { token });
+        if (cancelled) return;
+        setAuth(data.accessToken, data.refreshToken, data.user);
+        setStatus('success');
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (isAxiosError(err)) {
+          const problemDetail = err.response?.data as ProblemDetail | undefined;
+          if (problemDetail?.code === 'TOKEN_EXPIRED') {
+            setError('auth.errors.tokenExpired');
+          } else if (problemDetail?.code === 'TOKEN_USED') {
+            setError('auth.errors.tokenUsed');
+          } else {
+            setError('auth.errors.genericError');
+          }
+        } else {
+          setError('auth.errors.genericError');
+        }
+        setStatus('error');
+      }
+    };
+
+    verify();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  return { status, error };
+}

@@ -1,0 +1,15 @@
+package org.commonlink.dto
+
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+
+data class LoginRequestDto(
+    @field:Email
+    @field:NotBlank
+    val email: String,
+
+    @field:NotBlank
+    @field:Size(min = 8)
+    val password: String
+)

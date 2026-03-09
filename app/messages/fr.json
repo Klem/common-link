@@ -1,0 +1,129 @@
+{
+  "common": {
+    "errors": {
+      "serverError": "Une erreur est survenue. Veuillez réessayer.",
+      "networkError": "Problème de connexion. Vérifiez votre réseau.",
+      "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
+      "rateLimitExceeded": "Trop de requêtes. Veuillez attendre {seconds} secondes.",
+      "conflict": "Cette ressource existe déjà."
+    },
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer"
+  },
+  "auth": {
+    "tabs": { "login": "Connexion", "signup": "Créer un compte" },
+    "roles": { "association": "Association", "donor": "Donateur" },
+    "hints": {
+      "association": "Accédez à votre espace de gestion de campagnes, budget et reporting.",
+      "donor": "Suivez vos dons, consultez votre impact et gérez vos badges NFT."
+    },
+    "login": {
+      "title": "Content de vous revoir",
+      "email": { "label": "Email", "placeholder": "vous@exemple.fr" },
+      "password": { "label": "Mot de passe", "placeholder": "••••••••" },
+      "forgotPassword": "Mot de passe oublié ?",
+      "submit": "Se connecter →",
+      "google": "Continuer avec Google",
+      "noAccount": "Pas encore de compte ?",
+      "createAccount": "Créer un compte",
+      "orMagicLink": "Ou connectez-vous par lien magique"
+    },
+    "signup": {
+      "donor": {
+        "title": "Rejoindre en tant que Donateur",
+        "google": "S'inscrire avec Google",
+        "magicLink": "S'inscrire par lien magique",
+        "alreadyAccount": "Déjà un compte ?",
+        "login": "Se connecter"
+      },
+      "association": {
+        "title": "Rejoindre en tant qu'Association",
+        "steps": { "search": "Recherche", "connect": "Connexion", "profile": "Profil" },
+        "search": {
+          "label": "Rechercher votre association",
+          "placeholder": "Nom ou SIREN…",
+          "results": "Résultats",
+          "noResults": "Aucun résultat",
+          "status": { "active": "Actif", "ceased": "Cessée" },
+          "select": "Sélectionner"
+        },
+        "connect": {
+          "title": "Choisissez votre méthode",
+          "google": "Continuer avec Google",
+          "magicLink": "Recevoir un lien magique"
+        },
+        "profile": {
+          "name": { "label": "Nom de l'association", "placeholder": "Pré-rempli" },
+          "siren": { "label": "SIREN", "placeholder": "Pré-rempli" },
+          "contact": { "label": "Nom du contact", "placeholder": "Votre nom complet" },
+          "description": { "label": "Description", "placeholder": "Décrivez votre mission (optionnel)" },
+          "submit": "Créer mon espace →"
+        }
+      }
+    },
+    "magicLink": {
+      "label": "Lien magique — sans mot de passe",
+      "emailPlaceholder": "vous@exemple.fr",
+      "sendButton": "Recevoir le lien",
+      "sending": "Envoi en cours…",
+      "sent": "Lien envoyé ! Vérifiez votre boîte — valable 15 min.",
+      "resend": "Renvoyer",
+      "notReceived": "Pas reçu ?",
+      "checkSpam": "Vérifiez vos spams."
+    },
+    "setPassword": {
+      "title": "Définir un mot de passe",
+      "subtitle": "Optionnel — permet la connexion email + mot de passe",
+      "password": { "label": "Mot de passe", "placeholder": "8 caractères minimum" },
+      "confirm": { "label": "Confirmer", "placeholder": "••••••••" },
+      "submit": "Enregistrer",
+      "skip": "Plus tard"
+    },
+    "errors": {
+      "invalidCredentials": "Email ou mot de passe invalide.",
+      "passwordNotSet": "Aucun mot de passe défini. Utilisez un lien magique ou Google pour vous connecter.",
+      "emailRequired": "L'email est requis.",
+      "emailInvalid": "Adresse email invalide.",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "genericError": "Une erreur est survenue. Veuillez réessayer.",
+      "tokenExpired": "Ce lien a expiré. Demandez-en un nouveau.",
+      "tokenUsed": "Ce lien a déjà été utilisé.",
+      "rateLimited": "Trop de tentatives. Réessayez dans 10 minutes.",
+      "accountExists": "Un compte existe déjà avec cet email.",
+      "noAccount": "Aucun compte trouvé. Inscrivez-vous d'abord."
+    },
+    "progress": {
+      "authenticating": "Authentification via {provider}…",
+      "verified": "Identité vérifiée",
+      "loadingProfile": "Chargement du profil…",
+      "redirecting": "Chargement de votre espace…",
+      "accountCreated": "Compte créé",
+      "assoLinked": "Association liée au répertoire",
+      "spaceConfigured": "Espace association configuré"
+    },
+    "divider": { "or": "ou" },
+    "assoSearch": {
+      "apiUnavailable": "Le répertoire est indisponible. Saisissez les informations manuellement.",
+      "manualEntry": "Saisie manuelle",
+      "manualSiren": "SIREN",
+      "manualNom": "Nom de l'association",
+      "manualVille": "Ville",
+      "manualCodePostal": "Code postal",
+      "confirm": "Confirmer",
+      "searchHint": "Recherchez votre association dans le répertoire officiel.",
+      "noResults": "Aucune association trouvée.",
+      "noResultsHint": "Vérifiez l'orthographe ou essayez votre SIREN."
+    },
+    "legal": "En continuant, vous acceptez nos {terms} et notre {privacy}.",
+    "terms": "CGU",
+    "privacy": "Politique de confidentialité",
+    "gdpr": "Données traitées conformément au RGPD."
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue"
+  }
+}

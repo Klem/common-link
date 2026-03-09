@@ -1,0 +1,9 @@
+minisite
+.claude
+.next
+.env.local
+tsconfig.tsbuildinfo
+test-results
+node_modules
+tasks
+CLAUDE.md

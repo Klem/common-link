@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap");
+@import "tailwindcss";
+@import "./tokens.css";
+
+@theme {
+  --color-bg:          var(--color-bg);
+  --color-bg-2:        var(--color-bg-2);
+  --color-bg-3:        var(--color-bg-3);
+  --color-border:      var(--color-border);
+  --color-green:       var(--color-green);
+  --color-green-dim:   var(--color-green-dim);
+  --color-yellow:      var(--color-yellow);
+  --color-cyan:        var(--color-cyan);
+  --color-red:         var(--color-red);
+  --color-text:        var(--color-text);
+  --color-text-2:      var(--color-text-2);
+  --color-muted:       var(--color-muted);
+
+  --font-display:      'Syne', sans-serif;
+  --font-body:         'DM Sans', sans-serif;
+
+  --radius-sm:         var(--radius-sm);
+  --radius-md:         var(--radius-md);
+  --radius-lg:         var(--radius-lg);
+  --radius-xl:         var(--radius-xl);
+  --radius-full:       var(--radius-full);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+@keyframes slideInToast {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDownFade {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUpStep {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spinAround {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes checkDraw {
+  from { stroke-dashoffset: 30; }
+  to   { stroke-dashoffset: 0; }
+}

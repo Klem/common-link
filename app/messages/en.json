@@ -1,0 +1,129 @@
+{
+  "common": {
+    "errors": {
+      "serverError": "An error occurred. Please try again.",
+      "networkError": "Connection problem. Check your network.",
+      "sessionExpired": "Your session has expired. Please log in again.",
+      "rateLimitExceeded": "Too many requests. Please wait {seconds} seconds.",
+      "conflict": "This resource already exists."
+    },
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "auth": {
+    "tabs": { "login": "Login", "signup": "Create an account" },
+    "roles": { "association": "Association", "donor": "Donor" },
+    "hints": {
+      "association": "Access your campaign management space, budget, and reporting.",
+      "donor": "Track your donations, view your impact, and manage your NFT badges."
+    },
+    "login": {
+      "title": "Welcome back",
+      "email": { "label": "Email", "placeholder": "you@example.com" },
+      "password": { "label": "Password", "placeholder": "••••••••" },
+      "forgotPassword": "Forgot password?",
+      "submit": "Log in →",
+      "google": "Continue with Google",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create an account",
+      "orMagicLink": "Or log in with a magic link"
+    },
+    "signup": {
+      "donor": {
+        "title": "Join as a Donor",
+        "google": "Sign up with Google",
+        "magicLink": "Sign up with a magic link",
+        "alreadyAccount": "Already have an account?",
+        "login": "Log in"
+      },
+      "association": {
+        "title": "Join as an Association",
+        "steps": { "search": "Search", "connect": "Connect", "profile": "Profile" },
+        "search": {
+          "label": "Search your association",
+          "placeholder": "Name or SIREN…",
+          "results": "Results",
+          "noResults": "No results",
+          "status": { "active": "Active", "ceased": "Ceased" },
+          "select": "Select"
+        },
+        "connect": {
+          "title": "Choose your method",
+          "google": "Continue with Google",
+          "magicLink": "Receive a magic link"
+        },
+        "profile": {
+          "name": { "label": "Association name", "placeholder": "Pre-filled" },
+          "siren": { "label": "SIREN", "placeholder": "Pre-filled" },
+          "contact": { "label": "Contact name", "placeholder": "Your full name" },
+          "description": { "label": "Description", "placeholder": "Describe your mission (optional)" },
+          "submit": "Create my space →"
+        }
+      }
+    },
+    "magicLink": {
+      "label": "Magic link — no password needed",
+      "emailPlaceholder": "you@example.com",
+      "sendButton": "Send the link",
+      "sending": "Sending…",
+      "sent": "Link sent! Check your inbox — valid for 15 min.",
+      "resend": "Resend",
+      "notReceived": "Didn't receive it?",
+      "checkSpam": "Check your spam folder."
+    },
+    "setPassword": {
+      "title": "Set a password",
+      "subtitle": "Optional — enables email + password login",
+      "password": { "label": "Password", "placeholder": "8 characters minimum" },
+      "confirm": { "label": "Confirm", "placeholder": "••••••••" },
+      "submit": "Save",
+      "skip": "Later"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid email or password.",
+      "passwordNotSet": "No password set. Use a magic link or Google to log in.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Invalid email address.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "passwordMismatch": "Passwords do not match.",
+      "genericError": "An error occurred. Please try again.",
+      "tokenExpired": "This link has expired. Request a new one.",
+      "tokenUsed": "This link has already been used.",
+      "rateLimited": "Too many attempts. Try again in 10 minutes.",
+      "accountExists": "An account already exists with this email.",
+      "noAccount": "No account found. Sign up first."
+    },
+    "progress": {
+      "authenticating": "Authenticating via {provider}…",
+      "verified": "Identity verified",
+      "loadingProfile": "Loading profile…",
+      "redirecting": "Loading your space…",
+      "accountCreated": "Account created",
+      "assoLinked": "Association linked to the directory",
+      "spaceConfigured": "Association space configured"
+    },
+    "divider": { "or": "or" },
+    "assoSearch": {
+      "apiUnavailable": "The directory is unavailable. Please enter information manually.",
+      "manualEntry": "Manual entry",
+      "manualSiren": "SIREN",
+      "manualNom": "Association name",
+      "manualVille": "City",
+      "manualCodePostal": "Postal code",
+      "confirm": "Confirm",
+      "searchHint": "Search your association in the official directory.",
+      "noResults": "No association found.",
+      "noResultsHint": "Check the spelling or try your SIREN."
+    },
+    "legal": "By continuing, you agree to our {terms} and {privacy}.",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "gdpr": "Data processed in accordance with GDPR."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome"
+  }
+}
