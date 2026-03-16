@@ -47,7 +47,7 @@ export function Header() {
             className="flex-shrink-0"
             aria-hidden="true"
           />
-          <span>Lien commun</span>
+          <span>CommonLink</span>
         </Link>
 
         {/* Desktop nav */}
