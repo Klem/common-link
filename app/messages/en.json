@@ -38,6 +38,14 @@
         "alreadyAccount": "Already have an account?",
         "login": "Log in"
       },
+      "emailPassword": {
+        "label": "Email & password",
+        "email": { "label": "Email", "placeholder": "you@example.com" },
+        "password": { "label": "Password", "placeholder": "8 characters minimum" },
+        "confirm": { "label": "Confirm password", "placeholder": "••••••••" },
+        "submit": "Create my account →",
+        "submitContinue": "Continue →"
+      },
       "association": {
         "title": "Join as an Association",
         "steps": { "search": "Search", "connect": "Connect", "profile": "Profile" },

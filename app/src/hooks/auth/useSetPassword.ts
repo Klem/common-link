@@ -23,7 +23,7 @@ export function useSetPassword() {
       await api.patch('/api/user/me/password', { password });
       router.push(getDashboardPath());
     } catch {
-      setError('auth.errors.genericError');
+      setError('errors.genericError');
     } finally {
       setLoading(false);
     }

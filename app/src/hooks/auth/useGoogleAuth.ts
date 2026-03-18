@@ -29,9 +29,9 @@ export function useGoogleAuth() {
       router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 401) {
-        setState({ loading: false, error: 'auth.errors.noAccount' });
+        setState({ loading: false, error: 'errors.noAccount' });
       } else {
-        setState({ loading: false, error: 'auth.errors.genericError' });
+        setState({ loading: false, error: 'errors.genericError' });
       }
       throw err;
     }
@@ -45,9 +45,9 @@ export function useGoogleAuth() {
       // Caller is responsible for next navigation (show setPassword or redirect)
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 409) {
-        setState({ loading: false, error: 'auth.errors.accountExists' });
+        setState({ loading: false, error: 'errors.accountExists' });
       } else {
-        setState({ loading: false, error: 'auth.errors.genericError' });
+        setState({ loading: false, error: 'errors.genericError' });
       }
       throw err;
     }

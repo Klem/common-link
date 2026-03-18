@@ -22,9 +22,9 @@ export function useMagicLink() {
       setState({ status: 'sent', error: null });
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 429) {
-        setState({ status: 'error', error: 'auth.errors.rateLimited' });
+        setState({ status: 'error', error: 'errors.rateLimited' });
       } else {
-        setState({ status: 'error', error: 'auth.errors.genericError' });
+        setState({ status: 'error', error: 'errors.genericError' });
       }
     }
   };

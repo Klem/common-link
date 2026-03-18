@@ -40,15 +40,15 @@ export function useEmailLogin() {
         const problemDetail = err.response?.data as ProblemDetail | undefined;
         if (err.response?.status === 401) {
           if (problemDetail?.code === 'PASSWORD_NOT_SET') {
-            setError('auth.errors.passwordNotSet');
+            setError('errors.passwordNotSet');
           } else {
-            setError('auth.errors.invalidCredentials');
+            setError('errors.invalidCredentials');
           }
         } else {
-          setError('auth.errors.genericError');
+          setError('errors.genericError');
         }
       } else {
-        setError('auth.errors.genericError');
+        setError('errors.genericError');
       }
     } finally {
       setLoading(false);
