@@ -36,7 +36,7 @@ management:
 app:
   jwt:
     secret: ${COMMON_LINK_SECRET:commonlink-dev-secret-key-must-be-at-least-32-chars-long}
-  frontend-url: http://localhost:3000
+  frontend-url: ${COMMON_LINK_FRONTEND_URL:http://localhost:3000}
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:

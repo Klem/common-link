@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 
 @Service
-@Profile("default")
+@Profile("local")
 class EmailServiceStub : EmailService {
 
     private val logger = LoggerFactory.getLogger(EmailServiceStub::class.java)

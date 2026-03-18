@@ -81,3 +81,16 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    val profile = project.findProperty("profile")?.toString() ?: "local"
+    val envFile = file(".env.$profile")
+    require(envFile.exists()) { "Missing env file: ${envFile.path}" }
+    envFile.readLines()
+        .filter { it.isNotBlank() && !it.startsWith("#") && it.contains("=") }
+        .forEach { line ->
+            val (key, value) = line.split("=", limit = 2)
+            environment(key.trim(), value.trim())
+        }
+    args("--spring.profiles.active=$profile")
+}

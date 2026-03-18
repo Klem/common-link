@@ -1,0 +1,6 @@
+.claude
+.idea
+CLAUDE.md
+prompts-claude-code-sprint*.md
+**/.env
+**/.env.*
