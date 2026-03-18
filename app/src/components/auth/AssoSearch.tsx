@@ -30,7 +30,8 @@ interface AssoSearchProps {
 
 type SearchState = 'idle' | 'loading' | 'results' | 'empty' | 'error';
 
-const API_BASE = 'https://api.annuaire-entreprises.data.gouv.fr/api/v3/search';
+const API_BASE = 'https://recherche-entreprises.api.gouv.fr';
+const NATURE_JURIDIQUE_ASSO = '9210,9220,9221,9222,9223,9224,9230,9240,9260,9300';
 
 function mapOrg(org: ApiOrganization): AssoResult {
   return {
@@ -63,7 +64,13 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
     setSearchState('loading');
     setDropdownOpen(false);
     try {
-      const url = `${API_BASE}?q=${encodeURIComponent(q)}&categorie_juridique=9220&etat=A&per_page=10`;
+      const params = new URLSearchParams({
+        q,
+        per_page: '10',
+        nature_juridique: NATURE_JURIDIQUE_ASSO,
+        etat_administratif: 'A',
+      });
+      const url = `${API_BASE}/search?${params}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('API error');
       const data = (await res.json()) as ApiSearchResponse;

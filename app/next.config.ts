@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               // Google OAuth frames + API
               "frame-src https://accounts.google.com/",
-              "connect-src 'self' http://localhost:8080 https://accounts.google.com/ https://api.annuaire-entreprises.data.gouv.fr",
+              "connect-src 'self' http://localhost:8080 https://accounts.google.com/ https://recherche-entreprises.api.gouv.fr",
               "img-src 'self' data: https:",
             ].join('; '),
           },
