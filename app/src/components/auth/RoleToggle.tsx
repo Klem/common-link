@@ -33,11 +33,11 @@ export function RoleToggle({ value, onChange }: RoleToggleProps) {
             }`}
           >
             <span
-              className="w-[6px] h-[6px] rounded-full flex-shrink-0 transition-all duration-[250ms]"
-              style={{
-                background: isActive ? 'var(--color-green)' : 'var(--color-muted)',
-                boxShadow: isActive ? '0 0 8px rgba(0,184,154,0.5)' : 'none',
-              }}
+              className={`w-[6px] h-[6px] rounded-full flex-shrink-0 transition-all duration-[250ms] ${
+                isActive
+                  ? 'bg-green shadow-[0_0_8px_var(--color-green-glow)]'
+                  : 'bg-muted shadow-none'
+              }`}
             />
             <span>{emoji}</span>
             <span>{t(labelKey)}</span>

@@ -47,14 +47,14 @@ export function useMagicLinkVerify(
         if (isAxiosError(err)) {
           const problemDetail = err.response?.data as ProblemDetail | undefined;
           if (problemDetail?.code === 'TOKEN_EXPIRED') {
-            setError('auth.errors.tokenExpired');
+            setError('errors.tokenExpired');
           } else if (problemDetail?.code === 'TOKEN_USED') {
-            setError('auth.errors.tokenUsed');
+            setError('errors.tokenUsed');
           } else {
-            setError('auth.errors.genericError');
+            setError('errors.genericError');
           }
         } else {
-          setError('auth.errors.genericError');
+          setError('errors.genericError');
         }
         setStatus('error');
       }

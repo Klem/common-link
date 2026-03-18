@@ -62,14 +62,12 @@ export function LoginProgressOverlay({ provider, steps: customSteps }: LoginProg
 
   return (
     <div
-      className="fixed inset-0 bg-bg z-[9999] flex flex-col items-center justify-center"
-      style={{ animation: 'fadeIn 0.3s ease' }}
+      className="fixed inset-0 bg-bg z-[9999] flex flex-col items-center justify-center animate-fade-in"
     >
       {/* Logo */}
       <div className="flex items-center gap-[10px] font-display text-[22px] font-extrabold text-green mb-10">
         <div
-          className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[18px]"
-          style={{ background: 'linear-gradient(135deg, var(--color-green-dim), var(--color-green))' }}
+          className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[18px] logo-icon-bg"
         >
           🌍
         </div>
@@ -82,13 +80,8 @@ export function LoginProgressOverlay({ provider, steps: customSteps }: LoginProg
           <div
             key={i}
             className={`flex items-center gap-3 px-4 py-3 bg-bg-2 border border-border rounded-[10px] text-[13.5px] text-text-2 transition-all duration-300 ${
-              step.status === 'pending' ? 'opacity-0 translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
+              step.status === 'pending' ? 'opacity-0 translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0 animate-slide-up-step'
             } ${step.status === 'done' ? 'border-green/35 bg-green/[.07]' : ''}`}
-            style={
-              step.status !== 'pending'
-                ? { animation: 'slideUpStep 0.35s cubic-bezier(0.22,1,0.36,1) both' }
-                : undefined
-            }
           >
             <span className="text-[16px]">
               {step.status === 'done' ? (
@@ -97,20 +90,13 @@ export function LoginProgressOverlay({ provider, steps: customSteps }: LoginProg
                     d="M5 13l4 4L19 7"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    style={{ animation: step.status === 'done' ? 'checkDraw 0.3s ease forwards' : 'none' }}
+                    className="animate-check-draw"
                     strokeDasharray="30"
-                    strokeDashoffset={step.status === 'done' ? 0 : 30}
+                    strokeDashoffset={0}
                   />
                 </svg>
               ) : (
-                <div
-                  className="w-4 h-4 rounded-full border-2"
-                  style={{
-                    borderColor: 'var(--color-green-dim)',
-                    borderTopColor: 'var(--color-green)',
-                    animation: 'spinAround 0.7s linear infinite',
-                  }}
-                />
+                <div className="w-4 h-4 rounded-full border-2 border-green-dim border-t-green animate-spin-around" />
               )}
             </span>
             <span>{step.label}</span>

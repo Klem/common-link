@@ -12,6 +12,7 @@ import {
   GoogleButton,
   Divider,
   EmailPasswordForm,
+  EmailRegisterForm,
   MagicLinkForm,
   AssoSearch,
   AssoProfileForm,
@@ -23,6 +24,7 @@ import type { AssoResult } from '@/components/auth';
 import { useGoogleAuth } from '@/hooks/auth/useGoogleAuth';
 import { useMagicLink } from '@/hooks/auth/useMagicLink';
 import { useEmailLogin } from '@/hooks/auth/useEmailLogin';
+import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import api from '@/lib/api';
@@ -60,6 +62,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const googleAuth = useGoogleAuth();
   const magicLink = useMagicLink();
   const emailLogin = useEmailLogin();
+  const emailRegister = useEmailRegister();
   const setPassword = useSetPassword();
 
   // Magic link token verification (triggered when ?token is present)
@@ -116,6 +119,31 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     }
   };
 
+  // ─── Email register ───────────────────────────────────────────────────────
+
+  const handleEmailRegisterDonor = async (email: string, password: string) => {
+    setOverlayProvider('email');
+    setShowOverlay(true);
+    try {
+      await emailRegister.register(email, password, 'DONOR');
+      router.push(`/${locale}/dashboard/donor`);
+    } catch {
+      setShowOverlay(false);
+    }
+  };
+
+  const handleEmailRegisterAsso = async (email: string, password: string) => {
+    setOverlayProvider('email');
+    setShowOverlay(true);
+    try {
+      await emailRegister.register(email, password, 'ASSOCIATION');
+      setShowOverlay(false);
+      setAssoStep(3);
+    } catch {
+      setShowOverlay(false);
+    }
+  };
+
   // ─── Email login ──────────────────────────────────────────────────────────
 
   const handleEmailSubmit = async (email: string, password: string) => {
@@ -158,8 +186,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
         <div className="w-full max-w-[400px]">
           <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-extrabold text-green mb-7">
             <div
-              className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px]"
-              style={{ background: 'linear-gradient(135deg, var(--color-green-dim), var(--color-green))' }}
+              className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px] logo-icon-bg"
             >
               🌍
             </div>
@@ -197,8 +224,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
         {/* Logo */}
         <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-extrabold text-green mb-7">
           <div
-            className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px]"
-            style={{ background: 'linear-gradient(135deg, var(--color-green-dim), var(--color-green))' }}
+            className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px] logo-icon-bg"
           >
             🌍
           </div>
@@ -273,6 +299,15 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 onSubmit={(email) => magicLink.sendLink(email, 'DONOR')}
                 role="DONOR"
               />
+
+              <Divider />
+
+              <EmailRegisterForm
+                onSubmit={handleEmailRegisterDonor}
+                loading={emailRegister.loading}
+                error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
+                submitLabel={t('signup.emailPassword.submit')}
+              />
             </>
           )}
 
@@ -322,6 +357,15 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                     role="ASSOCIATION"
                   />
 
+                  <Divider />
+
+                  <EmailRegisterForm
+                    onSubmit={handleEmailRegisterAsso}
+                    loading={emailRegister.loading}
+                    error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
+                    submitLabel={t('signup.emailPassword.submitContinue')}
+                  />
+
                   <button
                     type="button"
                     onClick={() => setAssoStep(1)}
@@ -346,8 +390,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
           {/* ── Error from magic link verify ─────────────────────────────── */}
           {verifyStatus === 'error' && verifyError && (
             <div
-              className="mt-4 px-3 py-[10px] rounded-[8px] text-[12.5px] text-red"
-              style={{ background: 'rgba(212,95,95,.08)', border: '1px solid rgba(212,95,95,.25)' }}
+              className="mt-4 px-3 py-[10px] rounded-[8px] text-[12.5px] text-red bg-red/[.08] border border-red/25"
             >
               {t(verifyError as Parameters<typeof t>[0])}
             </div>

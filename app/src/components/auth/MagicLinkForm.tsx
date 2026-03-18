@@ -43,11 +43,7 @@ export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
 
   return (
     <div
-      className="rounded-[11px] p-[16px_18px]"
-      style={{
-        background: 'rgba(0,184,154,.04)',
-        border: '1px solid rgba(0,184,154,.16)',
-      }}
+      className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16]"
     >
       <div
         className="flex items-center gap-[7px] text-[12px] font-bold text-green mb-3 uppercase tracking-[0.05em]"
@@ -57,12 +53,7 @@ export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
 
       {state === 'sent' ? (
         <div
-          className="text-center p-3 rounded-[8px] text-[12.5px] text-text-2"
-          style={{
-            background: 'rgba(0,184,154,.06)',
-            border: '1px solid rgba(0,184,154,.18)',
-            animation: 'slideDownFade 0.3s cubic-bezier(0.22,1,0.36,1)',
-          }}
+          className="text-center p-3 rounded-[8px] text-[12.5px] text-text-2 bg-green/[.06] border border-green/[.18] animate-slide-down-fade"
         >
           <strong className="text-green">✓ {t('magicLink.sent')}</strong>
           <span className="block text-[11px] text-muted mt-[5px]">

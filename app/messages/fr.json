@@ -38,6 +38,14 @@
         "alreadyAccount": "Déjà un compte ?",
         "login": "Se connecter"
       },
+      "emailPassword": {
+        "label": "Email & mot de passe",
+        "email": { "label": "Email", "placeholder": "vous@exemple.fr" },
+        "password": { "label": "Mot de passe", "placeholder": "8 caractères minimum" },
+        "confirm": { "label": "Confirmer le mot de passe", "placeholder": "••••••••" },
+        "submit": "Créer mon compte →",
+        "submitContinue": "Continuer →"
+      },
       "association": {
         "title": "Rejoindre en tant qu'Association",
         "steps": { "search": "Recherche", "connect": "Connexion", "profile": "Profil" },

@@ -36,11 +36,13 @@ class AuthController(
     @Operation(
         summary = "Register a new user",
         description = "Creates a new account with email/password. Role must be DONOR or ASSOCIATION. " +
-            "For ASSOCIATION role, associationProfile is required."
+                "For ASSOCIATION role, associationProfile is required."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Account created, tokens returned",
-            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]),
+        ApiResponse(
+            responseCode = "200", description = "Account created, tokens returned",
+            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
+        ),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(responseCode = "409", description = "Email already in use", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
@@ -54,8 +56,10 @@ class AuthController(
         description = "Creates a new account using a Google ID token. Role is required for new accounts."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Account created, tokens returned",
-            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]),
+        ApiResponse(
+            responseCode = "200", description = "Account created, tokens returned",
+            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
+        ),
         ApiResponse(responseCode = "400", description = "Missing or invalid Google token", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Google token verification failed", content = [Content()]),
         ApiResponse(responseCode = "409", description = "Account already exists", content = [Content()]),
@@ -70,11 +74,13 @@ class AuthController(
     @Operation(
         summary = "Login with Google",
         description = "Authenticates an existing user via Google ID token. " +
-            "If the Google account matches an existing email account, it merges them."
+                "If the Google account matches an existing email account, it merges them."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Authenticated, tokens returned",
-            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]),
+        ApiResponse(
+            responseCode = "200", description = "Authenticated, tokens returned",
+            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
+        ),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(responseCode = "401", description = "No account found or invalid token", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
@@ -86,12 +92,16 @@ class AuthController(
     @Operation(
         summary = "Request a magic link",
         description = "Sends a one-time login link to the given email. " +
-            "Role is required only for new accounts. Rate-limited to 3 requests per 10 minutes."
+                "Role is required only for new accounts. Rate-limited to 3 requests per 10 minutes."
     )
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "Magic link sent (or silently ignored if rate-limited)"),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
-        ApiResponse(responseCode = "401", description = "Role required but not provided for new account", content = [Content()]),
+        ApiResponse(
+            responseCode = "401",
+            description = "Role required but not provided for new account",
+            content = [Content()]
+        ),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()]),
         ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
@@ -104,11 +114,13 @@ class AuthController(
     @Operation(
         summary = "Verify a magic link token",
         description = "Exchanges a magic link token for access and refresh tokens. " +
-            "Creates the user account if it doesn't exist yet."
+                "Creates the user account if it doesn't exist yet."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Token valid, tokens returned",
-            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]),
+        ApiResponse(
+            responseCode = "200", description = "Token valid, tokens returned",
+            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
+        ),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Token invalid or already used", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Token expired", content = [Content()]),
@@ -123,10 +135,16 @@ class AuthController(
         description = "Authenticates a user with email and password credentials."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Authenticated, tokens returned",
-            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]),
+        ApiResponse(
+            responseCode = "200", description = "Authenticated, tokens returned",
+            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
+        ),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
-        ApiResponse(responseCode = "401", description = "Invalid credentials or no password set", content = [Content()]),
+        ApiResponse(
+            responseCode = "401",
+            description = "Invalid credentials or no password set",
+            content = [Content()]
+        ),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
     fun login(@Valid @RequestBody req: LoginRequestDto): ResponseEntity<AuthResponseDto> =
@@ -138,10 +156,16 @@ class AuthController(
         description = "Exchanges a valid refresh token for a new access token and a new refresh token (rotation)."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "New tokens returned",
-            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]),
+        ApiResponse(
+            responseCode = "200", description = "New tokens returned",
+            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
+        ),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
-        ApiResponse(responseCode = "401", description = "Refresh token invalid, expired, or revoked", content = [Content()]),
+        ApiResponse(
+            responseCode = "401",
+            description = "Refresh token invalid, expired, or revoked",
+            content = [Content()]
+        ),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
     fun refresh(@Valid @RequestBody req: RefreshTokenRequestDto): ResponseEntity<AuthResponseDto> =

@@ -6,6 +6,7 @@ export { AuthCard } from './AuthCard';
 export { CtxHint } from './CtxHint';
 export { Divider } from './Divider';
 export { EmailPasswordForm } from './EmailPasswordForm';
+export { EmailRegisterForm } from './EmailRegisterForm';
 export { GoogleButton } from './GoogleButton';
 export { LoginProgressOverlay } from './LoginProgressOverlay';
 export { MagicLinkForm } from './MagicLinkForm';

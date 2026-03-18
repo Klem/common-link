@@ -30,10 +30,9 @@ function ToastItem({ toast }: ToastItemProps) {
     <div
       role="alert"
       aria-live="polite"
-      className={`bg-bg-2 border ${borderClass} rounded-[11px] px-[17px] py-[13px] max-w-[290px] shadow-[0_8px_40px_rgba(0,0,0,.6)] transition-all duration-500 ${
+      className={`bg-bg-2 border ${borderClass} rounded-[11px] px-[17px] py-[13px] max-w-[290px] shadow-[0_8px_40px_rgba(0,0,0,.6)] transition-all duration-500 animate-slide-in-toast ${
         exiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
       }`}
-      style={{ animation: 'slideInToast 0.3s cubic-bezier(0.22,1,0.36,1) both' }}
     >
       <div className={`font-display text-[13.5px] font-bold ${textClass}`}>
         {t(toast.messageKey as Parameters<typeof t>[0])}

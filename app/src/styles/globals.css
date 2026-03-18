@@ -60,3 +60,43 @@ body {
   from { stroke-dashoffset: 30; }
   to   { stroke-dashoffset: 0; }
 }
+
+/* ── Animation utility classes ───────────────────────────────────────────── */
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+
+.animate-slide-in-toast {
+  animation: slideInToast 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slide-up-step {
+  animation: slideUpStep 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slide-down-fade {
+  animation: slideDownFade 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-spin-around {
+  animation: spinAround 0.7s linear infinite;
+}
+
+.animate-spin-around-slow {
+  animation: spinAround 0.8s linear infinite;
+}
+
+.animate-check-draw {
+  animation: checkDraw 0.3s ease forwards;
+}
+
+/* ── Decorative gradient utilities ───────────────────────────────────────── */
+
+.card-top-glow {
+  background: linear-gradient(90deg, transparent, var(--color-green-glow-dim), transparent);
+}
+
+.logo-icon-bg {
+  background: linear-gradient(135deg, var(--color-green-dim), var(--color-green));
+}
