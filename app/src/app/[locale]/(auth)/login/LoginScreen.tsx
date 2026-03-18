@@ -158,8 +158,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
         <div className="w-full max-w-[400px]">
           <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-extrabold text-green mb-7">
             <div
-              className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px]"
-              style={{ background: 'linear-gradient(135deg, var(--color-green-dim), var(--color-green))' }}
+              className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px] logo-icon-bg"
             >
               🌍
             </div>
@@ -197,8 +196,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
         {/* Logo */}
         <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-extrabold text-green mb-7">
           <div
-            className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px]"
-            style={{ background: 'linear-gradient(135deg, var(--color-green-dim), var(--color-green))' }}
+            className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px] logo-icon-bg"
           >
             🌍
           </div>
@@ -346,8 +344,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
           {/* ── Error from magic link verify ─────────────────────────────── */}
           {verifyStatus === 'error' && verifyError && (
             <div
-              className="mt-4 px-3 py-[10px] rounded-[8px] text-[12.5px] text-red"
-              style={{ background: 'rgba(212,95,95,.08)', border: '1px solid rgba(212,95,95,.25)' }}
+              className="mt-4 px-3 py-[10px] rounded-[8px] text-[12.5px] text-red bg-red/[.08] border border-red/25"
             >
               {t(verifyError as Parameters<typeof t>[0])}
             </div>

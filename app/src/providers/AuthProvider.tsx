@@ -16,17 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (!hydrated) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          background: 'var(--color-bg)',
-          color: 'var(--color-text-2)',
-          fontFamily: 'var(--font-body)',
-        }}
-      >
+      <div className="flex items-center justify-center h-screen bg-bg text-text-2 font-body">
         {t('loading')}
       </div>
     );

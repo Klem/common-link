@@ -130,11 +130,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
         />
         {searchState === 'loading' && (
           <div
-            className="absolute right-[13px] top-1/2 w-4 h-4 rounded-full border-2 border-green-dim border-t-green"
-            style={{
-              transform: 'translateY(-50%)',
-              animation: 'spinAround 0.8s linear infinite',
-            }}
+            className="absolute right-[13px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-green-dim border-t-green animate-spin-around-slow"
           />
         )}
 
@@ -149,8 +145,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
                 className="flex items-center gap-[11px] w-full px-[14px] py-[11px] text-left cursor-pointer transition-colors duration-150 border-b border-border/[.18] last:border-b-0 hover:bg-bg-3"
               >
                 <div
-                  className="w-[30px] h-[30px] rounded-[7px] flex items-center justify-center font-display font-bold text-[13px] text-green flex-shrink-0"
-                  style={{ background: 'rgba(0,184,154,.1)', border: '1px solid rgba(0,184,154,.2)' }}
+                  className="w-[30px] h-[30px] rounded-[7px] flex items-center justify-center font-display font-bold text-[13px] text-green flex-shrink-0 bg-green/10 border border-green/20"
                 >
                   {asso.nom[0]?.toUpperCase()}
                 </div>
@@ -180,8 +175,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
                 onClick={() => isActive && handleSelect(asso)}
               >
                 <div
-                  className="w-9 h-9 rounded-[9px] flex items-center justify-center font-display font-extrabold text-[15px] text-green flex-shrink-0"
-                  style={{ background: 'rgba(0,184,154,.1)', border: '1px solid rgba(0,184,154,.2)' }}
+                  className="w-9 h-9 rounded-[9px] flex items-center justify-center font-display font-extrabold text-[15px] text-green flex-shrink-0 bg-green/10 border border-green/20"
                 >
                   {asso.nom[0]?.toUpperCase()}
                 </div>
@@ -192,11 +186,8 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
                     <span>SIREN {asso.siren}</span>
                     <span
                       className={`text-[10px] font-bold px-[6px] py-[2px] rounded-[4px] ${
-                        isActive ? 'text-green' : 'text-red'
+                        isActive ? 'text-green bg-green/10' : 'text-red bg-red/10'
                       }`}
-                      style={{
-                        background: isActive ? 'rgba(0,184,154,.1)' : 'rgba(213,95,95,.1)',
-                      }}
                     >
                       {isActive
                         ? t('signup.association.search.status.active')
@@ -208,8 +199,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleSelect(asso); }}
-                    className="px-[11px] py-[5px] rounded-[6px] font-body text-[12px] font-semibold text-green flex-shrink-0 cursor-pointer transition-all duration-200 hover:opacity-80"
-                    style={{ background: 'rgba(0,184,154,.1)', border: '1px solid rgba(0,184,154,.25)' }}
+                    className="px-[11px] py-[5px] rounded-[6px] font-body text-[12px] font-semibold text-green flex-shrink-0 cursor-pointer transition-all duration-200 hover:opacity-80 bg-green/10 border border-green/25"
                   >
                     {t('signup.association.search.select')} →
                   </button>

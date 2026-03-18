@@ -8,11 +8,13 @@
   --color-border:     rgba(52, 72, 93, 0.45);
 
   /* Palette */
-  --color-green:      #00b89a;
-  --color-green-dim:  #00574e;
-  --color-yellow:     #c9a040;
-  --color-cyan:       #4f7e86;
-  --color-red:        #d45f5f;
+  --color-green:          #00b89a;
+  --color-green-dim:      #00574e;
+  --color-green-glow:     rgba(0, 184, 154, 0.5);
+  --color-green-glow-dim: rgba(0, 184, 154, 0.25);
+  --color-yellow:         #c9a040;
+  --color-cyan:           #4f7e86;
+  --color-red:            #d45f5f;
 
   /* Texte */
   --color-text:       #e8edf2;

@@ -39,7 +39,7 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
   const onFormSubmit = handleSubmit((data) => onSubmit(data));
 
   const preFilled =
-    'w-full bg-bg-3/60 border text-text-2 px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none cursor-default';
+    'w-full bg-green/[.04] border border-green/25 text-text-2 px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none cursor-default';
   const fieldClass =
     'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
   const labelClass =
@@ -49,8 +49,7 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
     <form onSubmit={onFormSubmit} noValidate className="flex flex-col gap-[11px]">
       {/* Pre-fill notice */}
       <div
-        className="flex items-center gap-[7px] px-3 py-2 rounded-[7px] text-[12px] text-text-2 mb-1"
-        style={{ background: 'rgba(0,184,154,.06)', border: '1px solid rgba(0,184,154,.15)' }}
+        className="flex items-center gap-[7px] px-3 py-2 rounded-[7px] text-[12px] text-text-2 mb-1 bg-green/[.06] border border-green/[.15]"
       >
         <span className="text-green text-[14px]">✓</span>
         Informations pré-remplies depuis le répertoire officiel — modifiables après inscription.
@@ -64,7 +63,6 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
             value={asso.nom}
             disabled
             className={preFilled}
-            style={{ borderColor: 'rgba(0,184,154,.25)', background: 'rgba(0,184,154,.04)' }}
           />
         </div>
         <div>
@@ -74,7 +72,6 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
             value={asso.siren}
             disabled
             className={preFilled}
-            style={{ borderColor: 'rgba(0,184,154,.25)', background: 'rgba(0,184,154,.04)' }}
           />
         </div>
       </div>
@@ -87,7 +84,6 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
             value={asso.ville}
             disabled
             className={preFilled}
-            style={{ borderColor: 'rgba(0,184,154,.25)', background: 'rgba(0,184,154,.04)' }}
           />
         </div>
         <div>
@@ -97,7 +93,6 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
             value={asso.codePostal}
             disabled
             className={preFilled}
-            style={{ borderColor: 'rgba(0,184,154,.25)', background: 'rgba(0,184,154,.04)' }}
           />
         </div>
       </div>
