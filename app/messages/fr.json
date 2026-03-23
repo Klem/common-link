@@ -146,6 +146,44 @@
     "roles": {
       "donor": "Donateur",
       "association": "Association"
+    },
+    "donor": {
+      "stats": {
+        "totalDonated": "Total donné",
+        "donationsCount": "Dons effectués",
+        "campaignsFollowed": "Campagnes suivies",
+        "impactScore": "Score d'impact"
+      },
+      "empty": {
+        "icon": "🌱",
+        "title": "Votre aventure philanthropique commence ici",
+        "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
+        "cta": "Explorer les campagnes"
+      }
+    },
+    "association": {
+      "stats": {
+        "fundsRaised": "Fonds collectés",
+        "uniqueDonors": "Donateurs uniques",
+        "activeCampaigns": "Campagnes actives",
+        "conversionRate": "Taux de conversion"
+      },
+      "empty": {
+        "icon": "🚀",
+        "title": "Lancez votre première campagne",
+        "subtitle": "Créez une campagne de collecte pour commencer à recevoir des dons et suivre votre impact.",
+        "cta": "Créer une campagne"
+      },
+      "profileCompletion": {
+        "title": "Complétez votre profil",
+        "subtitle": "Un profil complet inspire confiance aux donateurs.",
+        "fields": {
+          "name": "Nom de l'association",
+          "siren": "SIREN",
+          "description": "Description",
+          "contact": "Contact"
+        }
+      }
     }
   }
 }
