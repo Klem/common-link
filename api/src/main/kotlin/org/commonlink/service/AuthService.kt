@@ -147,7 +147,7 @@ class AuthService(
             )
         )
 
-        emailService.sendMagicLink(email, "$frontendUrl/auth/verify?token=$rawToken")
+        emailService.sendMagicLink(email, "$frontendUrl/auth/verify-token?token=$rawToken&role=${effectiveRole.name.lowercase()}")
     }
 
     @Transactional
@@ -159,6 +159,10 @@ class AuthService(
         if (token.expiresAt.isBefore(Instant.now())) {
             throw TokenExpiredException()
         }
+
+        // Mark token as used first to prevent concurrent verification
+        token.usedAt = Instant.now()
+        magicLinkTokenRepository.save(token)
 
         val user = userRepository.findByEmail(token.email).map { existing ->
             // Merge: just verify the email, no role/provider change
@@ -178,9 +182,6 @@ class AuthService(
             createProfile(newUser, token.role, null)
             newUser
         }
-
-        token.usedAt = Instant.now()
-        magicLinkTokenRepository.save(token)
 
         return issueTokens(user)
     }

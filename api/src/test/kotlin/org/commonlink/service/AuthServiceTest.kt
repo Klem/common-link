@@ -240,7 +240,7 @@ class AuthServiceTest {
 
         authService.sendMagicLink("new@example.com", UserRole.DONOR)
 
-        verify { emailService.sendMagicLink("new@example.com", "$frontendUrl/auth/verify?token=rawtoken123") }
+        verify { emailService.sendMagicLink("new@example.com", "$frontendUrl/auth/verify-token?token=rawtoken123&role=donor") }
     }
 
     @Test

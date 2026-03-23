@@ -26,15 +26,15 @@ class SmtpEmailServiceTest {
 
     @Test
     fun `sendMagicLink sends a mime message to the right recipient`() {
-        service.sendMagicLink("user@example.com", "http://localhost:3000/auth/verify?token=abc")
+        service.sendMagicLink("user@example.com", "http://localhost:3000/auth/verify-token?token=abc")
 
         verify(exactly = 1) { mailSender.send(mimeMessage) }
     }
 
     @Test
     fun `sendMagicLink calls send for each invocation`() {
-        service.sendMagicLink("a@test.com", "http://localhost:3000/auth/verify?token=1")
-        service.sendMagicLink("b@test.com", "http://localhost:3000/auth/verify?token=2")
+        service.sendMagicLink("a@test.com", "http://localhost:3000/auth/verify-token?token=1")
+        service.sendMagicLink("b@test.com", "http://localhost:3000/auth/verify-token?token=2")
 
         verify(exactly = 2) { mailSender.send(mimeMessage) }
     }
