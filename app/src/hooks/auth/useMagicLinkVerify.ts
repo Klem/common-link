@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { isAxiosError } from 'axios';
@@ -25,8 +25,11 @@ export function useMagicLinkVerify(
   const [status, setStatus] = useState<VerifyStatus>(token ? 'verifying' : 'idle');
   const [error, setError] = useState<string | null>(null);
 
+  const calledRef = useRef(false);
+
   useEffect(() => {
-    if (!token) return;
+    if (!token || calledRef.current) return;
+    calledRef.current = true;
 
     let cancelled = false;
 
