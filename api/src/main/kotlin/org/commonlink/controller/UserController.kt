@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.commonlink.dto.AssociationProfileUpsertDto
 import org.commonlink.dto.SetPasswordRequestDto
 import org.commonlink.service.AuthService
 import org.springframework.http.ResponseEntity
@@ -23,6 +24,25 @@ import java.util.UUID
 class UserController(
     private val authService: AuthService
 ) {
+
+    @PatchMapping("/me/association-profile")
+    @Operation(
+        summary = "Create or update association profile",
+        description = "Creates or updates the association profile for the authenticated ASSOCIATION user. " +
+            "Called at the end of the association signup flow (Step 3)."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Profile saved successfully"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT, or user is not an ASSOCIATION", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
+    )
+    fun upsertAssociationProfile(
+        @AuthenticationPrincipal principal: UserDetails,
+        @Valid @RequestBody req: AssociationProfileUpsertDto
+    ): ResponseEntity<Void> {
+        authService.upsertAssociationProfile(UUID.fromString(principal.username), req)
+        return ResponseEntity.noContent().build()
+    }
 
     @PatchMapping("/me/password")
     @Operation(

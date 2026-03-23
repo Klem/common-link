@@ -132,6 +132,20 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "welcome": "Bienvenue"
+    "welcome": "Bienvenue",
+    "greeting": "Bonjour, {name} 👋",
+    "nav": {
+      "overview": "Tableau de bord",
+      "profile": "Mon profil",
+      "donations": "Mes dons",
+      "campaigns": "Campagnes",
+      "donors": "Donateurs",
+      "settings": "Paramètres",
+      "associationProfile": "Profil association"
+    },
+    "roles": {
+      "donor": "Donateur",
+      "association": "Association"
+    }
   }
 }

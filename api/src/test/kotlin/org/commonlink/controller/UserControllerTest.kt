@@ -116,4 +116,57 @@ class UserControllerTest {
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.detail").value("Les mots de passe ne correspondent pas"))
     }
+
+    // -------------------------------------------------------------------------
+    // PATCH /api/user/me/association-profile
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `upsertAssociationProfile - 204 when authenticated and valid payload`() {
+        justRun { authService.upsertAssociationProfile(userId, any()) }
+
+        mockMvc.perform(
+            patch("/api/user/me/association-profile")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"nom":"MyAsso","siren":"123456789","ville":"Paris","codePostal":"75001","contact":"c@test.fr","description":"desc"}""")
+        )
+            .andExpect(status().isNoContent)
+
+        verify { authService.upsertAssociationProfile(userId, any()) }
+    }
+
+    @Test
+    fun `upsertAssociationProfile - 403 when not authenticated`() {
+        mockMvc.perform(
+            patch("/api/user/me/association-profile")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"nom":"MyAsso","siren":"123456789"}""")
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `upsertAssociationProfile - 422 when nom is blank`() {
+        mockMvc.perform(
+            patch("/api/user/me/association-profile")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"nom":"","siren":"123456789"}""")
+        )
+            .andExpect(status().isUnprocessableEntity)
+            .andExpect(jsonPath("$.errors").isArray)
+    }
+
+    @Test
+    fun `upsertAssociationProfile - 422 when siren is wrong length`() {
+        mockMvc.perform(
+            patch("/api/user/me/association-profile")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"nom":"MyAsso","siren":"12345"}""")
+        )
+            .andExpect(status().isUnprocessableEntity)
+            .andExpect(jsonPath("$.errors").isArray)
+    }
 }

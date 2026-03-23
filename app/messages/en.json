@@ -132,6 +132,20 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "greeting": "Hello, {name} 👋",
+    "nav": {
+      "overview": "Dashboard",
+      "profile": "My profile",
+      "donations": "My donations",
+      "campaigns": "Campaigns",
+      "donors": "Donors",
+      "settings": "Settings",
+      "associationProfile": "Association profile"
+    },
+    "roles": {
+      "donor": "Donor",
+      "association": "Association"
+    }
   }
 }

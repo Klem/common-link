@@ -27,6 +27,7 @@ import { useEmailLogin } from '@/hooks/auth/useEmailLogin';
 import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
+import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import type { AssoProfileData } from '@/components/auth';
 
@@ -68,7 +69,23 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   // Magic link token verification (triggered when ?token is present)
   const { status: verifyStatus, error: verifyError } = useMagicLinkVerify(
     magicLinkToken,
-    () => setPageState('setPassword'),
+    () => {
+      setShowOverlay(false);
+      const user = useAuthStore.getState().user;
+      if (user?.role === 'ASSOCIATION') {
+        const stored = sessionStorage.getItem('pendingAsso');
+        if (stored) {
+          try {
+            setSelectedAsso(JSON.parse(stored) as AssoResult);
+            sessionStorage.removeItem('pendingAsso');
+          } catch { /* ignore malformed data */ }
+        }
+        setActiveView('signup');
+        setAssoStep(3);
+      } else {
+        setPageState('setPassword');
+      }
+    },
   );
 
   const handleViewChange = (view: View) => {
@@ -152,6 +169,15 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     // On success emailLogin redirects; on error it sets emailLogin.error
   };
 
+  // ─── Magic link for association (persists selectedAsso before page redirect) ──
+
+  const handleMagicLinkAsso = (email: string) => {
+    if (selectedAsso) {
+      sessionStorage.setItem('pendingAsso', JSON.stringify(selectedAsso));
+    }
+    magicLink.sendLink(email, 'ASSOCIATION');
+  };
+
   // ─── Association profile submit ───────────────────────────────────────────
 
   const handleAssoProfileSubmit = async (data: AssoProfileData) => {
@@ -174,7 +200,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
   // ─── Render: magic link verification overlay ──────────────────────────────
 
-  if (showOverlay || verifyStatus === 'verifying') {
+  if ((showOverlay || verifyStatus === 'verifying') && verifyStatus !== 'error') {
     return <LoginProgressOverlay provider={overlayProvider} />;
   }
 
@@ -253,7 +279,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 </p>
               )}
 
-              <Divider />
+              {/*<Divider />*/}
 
               <EmailPasswordForm
                 onSubmit={handleEmailSubmit}
@@ -293,7 +319,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 </p>
               )}
 
-              <Divider />
+              {/*<Divider />*/}
 
               <MagicLinkForm
                 onSubmit={(email) => magicLink.sendLink(email, 'DONOR')}
@@ -338,11 +364,11 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 <div className="flex flex-col gap-4">
                   <p className="text-[13px] text-text-2">{t('signup.association.connect.title')}</p>
 
-                  <GoogleButton
-                    onSuccess={handleGoogleSignUpAsso}
-                    label={t('signup.association.connect.google')}
-                    loading={googleAuth.loading}
-                  />
+                  {/*<GoogleButton*/}
+                  {/*  onSuccess={handleGoogleSignUpAsso}*/}
+                  {/*  label={t('signup.association.connect.google')}*/}
+                  {/*  loading={googleAuth.loading}*/}
+                  {/*/>*/}
 
                   {googleAuth.error && (
                     <p className="text-[11.5px] text-red">
@@ -350,10 +376,10 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                     </p>
                   )}
 
-                  <Divider />
+                  {/*<Divider />*/}
 
                   <MagicLinkForm
-                    onSubmit={(email) => magicLink.sendLink(email, 'ASSOCIATION')}
+                    onSubmit={handleMagicLinkAsso}
                     role="ASSOCIATION"
                   />
 
