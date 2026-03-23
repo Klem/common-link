@@ -241,11 +241,11 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 {t('login.title')}
               </h2>
 
-              <GoogleButton
-                onSuccess={handleGoogleLogin}
-                label={t('login.google')}
-                loading={googleAuth.loading}
-              />
+              {/*<GoogleButton*/}
+              {/*  onSuccess={handleGoogleLogin}*/}
+              {/*  label={t('login.google')}*/}
+              {/*  loading={googleAuth.loading}*/}
+              {/*/>*/}
 
               {googleAuth.error && (
                 <p className="text-[11.5px] text-red mt-2">
@@ -281,11 +281,11 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 {t('signup.donor.title')}
               </h2>
 
-              <GoogleButton
-                onSuccess={handleGoogleSignUp}
-                label={t('signup.donor.google')}
-                loading={googleAuth.loading}
-              />
+              {/*<GoogleButton*/}
+              {/*  onSuccess={handleGoogleSignUp}*/}
+              {/*  label={t('signup.donor.google')}*/}
+              {/*  loading={googleAuth.loading}*/}
+              {/*/>*/}
 
               {googleAuth.error && (
                 <p className="text-[11.5px] text-red mt-2">
