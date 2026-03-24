@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import {
   AuthCard,
@@ -15,7 +15,6 @@ import {
   EmailRegisterForm,
   MagicLinkForm,
   AssoSearch,
-  AssoProfileForm,
   StepIndicator,
   LoginProgressOverlay,
   SetPasswordForm,
@@ -28,8 +27,6 @@ import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { useAuthStore } from '@/stores/authStore';
-import api from '@/lib/api';
-import type { AssoProfileData } from '@/components/auth';
 
 type View = 'login' | 'signup';
 type UserRole = 'ASSOCIATION' | 'DONOR';
@@ -46,8 +43,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const t = useTranslations('auth');
   const locale = useLocale();
   const router = useRouter();
-  const pathname = usePathname();
-
   const [activeView, setActiveView] = useState<View>(initialView);
   const [activeRole, setActiveRole] = useState<UserRole>(initialRole);
   const [pageState, setPageState] = useState<PageState>('auth');
@@ -55,9 +50,8 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const [overlayProvider, setOverlayProvider] = useState<OverlayProvider>(
     magicLinkToken ? 'magic' : 'google',
   );
-  const [assoStep, setAssoStep] = useState<1 | 2 | 3>(1);
+  const [assoStep, setAssoStep] = useState<1 | 2>(1);
   const [selectedAsso, setSelectedAsso] = useState<AssoResult | null>(null);
-  const [assoProfileLoading, setAssoProfileLoading] = useState(false);
 
   // Hooks
   const googleAuth = useGoogleAuth();
@@ -73,15 +67,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
       setShowOverlay(false);
       const user = useAuthStore.getState().user;
       if (user?.role === 'ASSOCIATION') {
-        const stored = sessionStorage.getItem('pendingAsso');
-        if (stored) {
-          try {
-            setSelectedAsso(JSON.parse(stored) as AssoResult);
-            sessionStorage.removeItem('pendingAsso');
-          } catch { /* ignore malformed data */ }
-        }
-        setActiveView('signup');
-        setAssoStep(3);
+        router.push(`/${locale}/dashboard/association`);
       } else {
         setPageState('setPassword');
       }
@@ -132,7 +118,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     try {
       await googleAuth.signUp(idToken, 'ASSOCIATION');
       setShowOverlay(false);
-      setAssoStep(3);
+      router.push(`/${locale}/dashboard/association`);
     } catch {
       setShowOverlay(false);
     }
@@ -148,14 +134,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     }
   };
 
-  const handleEmailRegisterAsso = async (email: string, password: string) => {
-    try {
-      await emailRegister.register(email, password, 'ASSOCIATION');
-    } catch {
-      // error set in hook
-    }
-  };
-
   // ─── Email login ──────────────────────────────────────────────────────────
 
   const handleEmailSubmit = async (email: string, password: string) => {
@@ -164,32 +142,23 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     // On success emailLogin redirects; on error it sets emailLogin.error
   };
 
-  // ─── Magic link for association (persists selectedAsso before page redirect) ──
+  // ─── Magic link for association ───────────────────────────────────────────
 
   const handleMagicLinkAsso = (email: string) => {
-    if (selectedAsso) {
-      sessionStorage.setItem('pendingAsso', JSON.stringify(selectedAsso));
-    }
-    magicLink.sendLink(email, 'ASSOCIATION');
+    magicLink.sendLink(email, 'ASSOCIATION', selectedAsso
+      ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
+      : undefined);
   };
 
-  // ─── Association profile submit ───────────────────────────────────────────
+  // ─── Email register for association ───────────────────────────────────────
 
-  const handleAssoProfileSubmit = async (data: AssoProfileData) => {
-    setAssoProfileLoading(true);
+  const handleEmailRegisterAsso = async (email: string, password: string) => {
     try {
-      await api.patch('/api/user/me/association-profile', {
-        ...data,
-        siren: selectedAsso?.siren,
-        nom: selectedAsso?.nom,
-        ville: selectedAsso?.ville,
-        codePostal: selectedAsso?.codePostal,
-      });
-      router.push(`/${locale}/dashboard/association`);
+      await emailRegister.register(email, password, 'ASSOCIATION', selectedAsso
+        ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
+        : undefined);
     } catch {
-      // error handled by toast interceptor
-    } finally {
-      setAssoProfileLoading(false);
+      // error set in hook
     }
   };
 
@@ -233,7 +202,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const assoStepLabels = [
     t('signup.association.steps.search'),
     t('signup.association.steps.connect'),
-    t('signup.association.steps.profile'),
   ];
 
   const isAssoSignup = activeView === 'signup' && activeRole === 'ASSOCIATION';
@@ -433,14 +401,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 </div>
               )}
 
-              {/* Step 3 — Profile */}
-              {assoStep === 3 && selectedAsso && (
-                <AssoProfileForm
-                  asso={selectedAsso}
-                  onSubmit={handleAssoProfileSubmit}
-                  loading={assoProfileLoading}
-                />
-              )}
             </>
           )}
 

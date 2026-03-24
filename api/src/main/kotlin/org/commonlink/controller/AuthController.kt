@@ -139,7 +139,7 @@ class AuthController(
         ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
     fun requestMagicLink(@Valid @RequestBody req: MagicLinkRequestDto): ResponseEntity<Void> {
-        authService.sendMagicLink(req.email, req.role)
+        authService.sendMagicLink(req.email, req.role, req.associationProfile)
         return ResponseEntity.noContent().build()
     }
 

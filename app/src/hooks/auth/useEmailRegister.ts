@@ -6,6 +6,13 @@ import api from '@/lib/api';
 
 type UserRole = 'ASSOCIATION' | 'DONOR';
 
+interface AssociationData {
+  name: string;
+  identifier: string;
+  city?: string;
+  postalCode?: string;
+}
+
 interface ProblemDetail {
   code?: string;
   [key: string]: unknown;
@@ -16,11 +23,16 @@ export function useEmailRegister() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
-  const register = async (email: string, password: string, role: UserRole): Promise<void> => {
+  const register = async (email: string, password: string, role: UserRole, associationData?: AssociationData): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
-      await api.post('/api/auth/register', { email, password, role });
+      await api.post('/api/auth/register', {
+        email,
+        password,
+        role,
+        ...(associationData && { associationProfile: associationData }),
+      });
       sessionStorage.setItem('cl-pending-email', email);
       setSent(true);
     } catch (err) {

@@ -28,6 +28,18 @@ class MagicLinkToken(
     @Column(name = "used_at")
     var usedAt: Instant? = null,
 
+    @Column(name = "assoc_name")
+    val assocName: String? = null,
+
+    @Column(name = "assoc_identifier", length = 36)
+    val assocIdentifier: String? = null,
+
+    @Column(name = "assoc_city")
+    val assocCity: String? = null,
+
+    @Column(name = "assoc_postal_code", length = 16)
+    val assocPostalCode: String? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now()
 )

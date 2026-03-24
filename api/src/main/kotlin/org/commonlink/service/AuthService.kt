@@ -164,7 +164,7 @@ class AuthService(
     }
 
     @Transactional
-    fun sendMagicLink(email: String, role: UserRole?) {
+    fun sendMagicLink(email: String, role: UserRole?, associationProfile: AssociationProfileRequestDto? = null) {
         val rateLimitWindow = Instant.now().minus(10, ChronoUnit.MINUTES)
         if (magicLinkTokenRepository.countByEmailAndCreatedAtAfter(email, rateLimitWindow) >= 3) {
             throw RateLimitException()
@@ -183,7 +183,11 @@ class AuthService(
                 email = email,
                 tokenHash = tokenHash,
                 role = effectiveRole,
-                expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES)
+                expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES),
+                assocName = associationProfile?.name,
+                assocIdentifier = associationProfile?.identifier,
+                assocCity = associationProfile?.city,
+                assocPostalCode = associationProfile?.postalCode
             )
         )
 
@@ -211,6 +215,14 @@ class AuthService(
             userRepository.save(existing)
         }.orElseGet {
             // New user: create account + profile
+            val assocReq = if (token.assocName != null && token.assocIdentifier != null) {
+                AssociationProfileRequestDto(
+                    name = token.assocName,
+                    identifier = token.assocIdentifier,
+                    city = token.assocCity,
+                    postalCode = token.assocPostalCode
+                )
+            } else null
             val newUser = userRepository.save(
                 User(
                     email = token.email,
@@ -219,7 +231,7 @@ class AuthService(
                     emailVerified = true
                 )
             )
-            createProfile(newUser, token.role, null)
+            createProfile(newUser, token.role, assocReq)
             newUser
         }
 
@@ -352,7 +364,7 @@ class AuthService(
                             identifier = assocReq.identifier,
                             city = assocReq.city,
                             postalCode = assocReq.postalCode,
-                            contactName = assocReq.contactName,
+                            contactName = user.email,
                             description = assocReq.description
                         )
                     )
