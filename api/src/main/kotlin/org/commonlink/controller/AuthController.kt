@@ -14,6 +14,8 @@ import org.commonlink.dto.MagicLinkRequestDto
 import org.commonlink.dto.MagicLinkVerifyDto
 import org.commonlink.dto.RefreshTokenRequestDto
 import org.commonlink.dto.RegisterRequestDto
+import org.commonlink.dto.ResendVerificationRequestDto
+import org.commonlink.dto.VerifyEmailRequestDto
 import org.commonlink.service.AuthService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -35,20 +37,51 @@ class AuthController(
     @PostMapping("/register")
     @Operation(
         summary = "Register a new user",
-        description = "Creates a new account with email/password. Role must be DONOR or ASSOCIATION. " +
-                "For ASSOCIATION role, associationProfile is required."
+        description = "Creates a new account with email/password and sends a verification email. " +
+                "Role must be DONOR or ASSOCIATION."
     )
     @ApiResponses(
-        ApiResponse(
-            responseCode = "200", description = "Account created, tokens returned",
-            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
-        ),
+        ApiResponse(responseCode = "204", description = "Account created, verification email sent"),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(responseCode = "409", description = "Email already in use", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
-    fun register(@Valid @RequestBody req: RegisterRequestDto): ResponseEntity<AuthResponseDto> =
-        ResponseEntity.ok(authService.register(req))
+    fun register(@Valid @RequestBody req: RegisterRequestDto): ResponseEntity<Void> {
+        authService.register(req)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/verify-email")
+    @Operation(
+        summary = "Verify email address",
+        description = "Exchanges a verification token (from the email link) for access and refresh tokens."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Email verified, tokens returned",
+            content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
+        ),
+        ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Token invalid, expired, or already used", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
+    )
+    fun verifyEmail(@Valid @RequestBody req: VerifyEmailRequestDto): ResponseEntity<AuthResponseDto> =
+        ResponseEntity.ok(authService.verifyEmail(req.token))
+
+    @PostMapping("/resend-verification")
+    @Operation(
+        summary = "Resend verification email",
+        description = "Sends a new verification email to the given address. Rate-limited to 3 per 10 minutes."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Verification email sent (or silently ignored if already verified)"),
+        ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
+        ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
+    )
+    fun resendVerification(@Valid @RequestBody req: ResendVerificationRequestDto): ResponseEntity<Void> {
+        authService.resendVerification(req.email)
+        return ResponseEntity.noContent().build()
+    }
 
     @PostMapping("/signup/google")
     @Operation(

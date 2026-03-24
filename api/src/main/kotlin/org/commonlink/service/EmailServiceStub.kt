@@ -10,6 +10,10 @@ class EmailServiceStub : EmailService {
 
     private val logger = LoggerFactory.getLogger(EmailServiceStub::class.java)
 
+    override fun sendEmailVerification(email: String, verificationUrl: String) {
+        logger.info("Email verification for $email: $verificationUrl")
+    }
+
     override fun sendMagicLink(email: String, link: String) {
         logger.info("Magic link for $email: $link")
     }

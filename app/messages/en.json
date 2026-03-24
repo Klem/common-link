@@ -44,7 +44,10 @@
         "password": { "label": "Password", "placeholder": "8 characters minimum" },
         "confirm": { "label": "Confirm password", "placeholder": "••••••••" },
         "submit": "Create my account →",
-        "submitContinue": "Continue →"
+        "submitContinue": "Continue →",
+        "sent": "Link sent! Check your inbox — valid for 24h.",
+        "notReceived": "Didn't receive it?",
+        "resend": "Resend"
       },
       "association": {
         "title": "Join as an Association",

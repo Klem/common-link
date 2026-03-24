@@ -9,6 +9,7 @@ import org.commonlink.dto.toDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.DonorProfile
+import org.commonlink.entity.EmailVerificationToken
 import org.commonlink.entity.MagicLinkToken
 import org.commonlink.entity.RefreshToken
 import org.commonlink.entity.User
@@ -21,6 +22,7 @@ import org.commonlink.exception.RateLimitException
 import org.commonlink.exception.TokenExpiredException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.EmailVerificationTokenRepository
 import org.commonlink.repository.MagicLinkTokenRepository
 import org.commonlink.repository.RefreshTokenRepository
 import org.commonlink.repository.UserRepository
@@ -41,6 +43,7 @@ class AuthService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val magicLinkTokenRepository: MagicLinkTokenRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
+    private val emailVerificationTokenRepository: EmailVerificationTokenRepository,
     private val jwtService: JwtService,
     private val tokenHashService: TokenHashService,
     private val passwordEncoder: PasswordEncoder,
@@ -50,7 +53,7 @@ class AuthService(
 ) {
 
     @Transactional
-    fun register(req: RegisterRequestDto): AuthResponseDto {
+    fun register(req: RegisterRequestDto) {
         if (userRepository.existsByEmail(req.email)) {
             throw ConflictException("Email already in use")
         }
@@ -64,7 +67,43 @@ class AuthService(
             )
         )
         createProfile(user, req.role, req.associationProfile)
+        sendVerificationEmail(user)
+    }
+
+    @Transactional
+    fun verifyEmail(rawToken: String): AuthResponseDto {
+        val hash = tokenHashService.hashToken(rawToken)
+        val token = emailVerificationTokenRepository.findByTokenHashAndUsedAtIsNull(hash)
+            .orElseThrow { InvalidTokenException() }
+
+        if (token.expiresAt.isBefore(Instant.now())) {
+            throw TokenExpiredException()
+        }
+
+        token.usedAt = Instant.now()
+        emailVerificationTokenRepository.save(token)
+
+        val user = token.user
+        user.emailVerified = true
+        user.updatedAt = Instant.now()
+        userRepository.save(user)
+
         return issueTokens(user)
+    }
+
+    @Transactional
+    fun resendVerification(email: String) {
+        val user = userRepository.findByEmail(email)
+            .orElseThrow { AuthException("Aucun compte trouvé pour cet email") }
+
+        if (user.emailVerified) return
+
+        val rateLimitWindow = Instant.now().minus(10, ChronoUnit.MINUTES)
+        if (emailVerificationTokenRepository.countByUserIdAndCreatedAtAfter(user.id!!, rateLimitWindow) >= 3) {
+            throw RateLimitException()
+        }
+
+        sendVerificationEmail(user)
     }
 
     @Transactional
@@ -269,6 +308,21 @@ class AuthService(
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private fun sendVerificationEmail(user: User) {
+        val rawToken = tokenHashService.generateOpaqueToken()
+        emailVerificationTokenRepository.save(
+            EmailVerificationToken(
+                user = user,
+                tokenHash = tokenHashService.hashToken(rawToken),
+                expiresAt = Instant.now().plus(24, ChronoUnit.HOURS)
+            )
+        )
+        emailService.sendEmailVerification(
+            user.email,
+            "$frontendUrl/auth/verify-email?token=$rawToken"
+        )
+    }
 
     private fun issueTokens(user: User): AuthResponseDto {
         val rawRefreshToken = tokenHashService.generateOpaqueToken()

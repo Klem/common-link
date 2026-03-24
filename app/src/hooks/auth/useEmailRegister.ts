@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
-import type { AuthResponseDto } from '@/types/auth';
 
 type UserRole = 'ASSOCIATION' | 'DONOR';
 
@@ -14,20 +12,17 @@ interface ProblemDetail {
 }
 
 export function useEmailRegister() {
-  const { setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
   const register = async (email: string, password: string, role: UserRole): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.post<AuthResponseDto>('/api/auth/register', {
-        email,
-        password,
-        role,
-      });
-      setAuth(data.accessToken, data.refreshToken, data.user);
+      await api.post('/api/auth/register', { email, password, role });
+      sessionStorage.setItem('cl-pending-email', email);
+      setSent(true);
     } catch (err) {
       if (isAxiosError(err)) {
         const problemDetail = err.response?.data as ProblemDetail | undefined;
@@ -45,5 +40,10 @@ export function useEmailRegister() {
     }
   };
 
-  return { register, loading, error };
+  const reset = () => {
+    setSent(false);
+    setError(null);
+  };
+
+  return { register, loading, error, sent, reset };
 }

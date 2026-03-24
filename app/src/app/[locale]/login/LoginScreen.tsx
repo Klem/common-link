@@ -93,11 +93,13 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     setAssoStep(1);
     setSelectedAsso(null);
     magicLink.reset();
+    emailRegister.reset();
   };
 
   const handleRoleChange = (role: UserRole) => {
     setActiveRole(role);
     magicLink.reset();
+    emailRegister.reset();
   };
 
   // ─── Google handlers ──────────────────────────────────────────────────────
@@ -139,25 +141,18 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   // ─── Email register ───────────────────────────────────────────────────────
 
   const handleEmailRegisterDonor = async (email: string, password: string) => {
-    setOverlayProvider('email');
-    setShowOverlay(true);
     try {
       await emailRegister.register(email, password, 'DONOR');
-      router.push(`/${locale}/dashboard/donor`);
     } catch {
-      setShowOverlay(false);
+      // error set in hook
     }
   };
 
   const handleEmailRegisterAsso = async (email: string, password: string) => {
-    setOverlayProvider('email');
-    setShowOverlay(true);
     try {
       await emailRegister.register(email, password, 'ASSOCIATION');
-      setShowOverlay(false);
-      setAssoStep(3);
     } catch {
-      setShowOverlay(false);
+      // error set in hook
     }
   };
 
@@ -328,12 +323,30 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
               <Divider />
 
-              <EmailRegisterForm
-                onSubmit={handleEmailRegisterDonor}
-                loading={emailRegister.loading}
-                error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
-                submitLabel={t('signup.emailPassword.submit')}
-              />
+              {emailRegister.sent ? (
+                <div className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16] text-center animate-slide-down-fade">
+                  <strong className="block text-green text-[12.5px]">
+                    ✓ {t('signup.emailPassword.sent')}
+                  </strong>
+                  <span className="block text-[11px] text-muted mt-[5px]">
+                    {t('signup.emailPassword.notReceived')}{' '}
+                    <button
+                      type="button"
+                      onClick={emailRegister.reset}
+                      className="text-cyan text-[11px] bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
+                    >
+                      {t('signup.emailPassword.resend')}
+                    </button>
+                  </span>
+                </div>
+              ) : (
+                <EmailRegisterForm
+                  onSubmit={handleEmailRegisterDonor}
+                  loading={emailRegister.loading}
+                  error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
+                  submitLabel={t('signup.emailPassword.submit')}
+                />
+              )}
             </>
           )}
 
@@ -385,12 +398,30 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
                   <Divider />
 
-                  <EmailRegisterForm
-                    onSubmit={handleEmailRegisterAsso}
-                    loading={emailRegister.loading}
-                    error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
-                    submitLabel={t('signup.emailPassword.submitContinue')}
-                  />
+                  {emailRegister.sent ? (
+                    <div className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16] text-center animate-slide-down-fade">
+                      <strong className="block text-green text-[12.5px]">
+                        ✓ {t('signup.emailPassword.sent')}
+                      </strong>
+                      <span className="block text-[11px] text-muted mt-[5px]">
+                        {t('signup.emailPassword.notReceived')}{' '}
+                        <button
+                          type="button"
+                          onClick={emailRegister.reset}
+                          className="text-cyan text-[11px] bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
+                        >
+                          {t('signup.emailPassword.resend')}
+                        </button>
+                      </span>
+                    </div>
+                  ) : (
+                    <EmailRegisterForm
+                      onSubmit={handleEmailRegisterAsso}
+                      loading={emailRegister.loading}
+                      error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
+                      submitLabel={t('signup.emailPassword.submitContinue')}
+                    />
+                  )}
 
                   <button
                     type="button"

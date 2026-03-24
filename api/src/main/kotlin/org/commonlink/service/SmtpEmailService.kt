@@ -13,6 +13,24 @@ class SmtpEmailService(
     @Value("\${app.mail.from}") private val from: String
 ) : EmailService {
 
+    override fun sendEmailVerification(email: String, verificationUrl: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(email)
+        helper.setSubject("Vérifiez votre adresse email CommonLink")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Cliquez sur le lien ci-dessous pour vérifier votre adresse email (valable 24 heures) :</p>
+            <p><a href="$verificationUrl">$verificationUrl</a></p>
+            <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendMagicLink(email: String, link: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
