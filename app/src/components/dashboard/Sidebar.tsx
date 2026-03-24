@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import type { UserDto } from '@/types/auth';
 import { ROUTES } from '@/lib/routes';
+import { useAuthStore } from '@/stores/authStore';
 
 interface NavItem {
   icon: string;
@@ -51,6 +52,7 @@ function isNavItemActive(href: string, currentPath: string): boolean {
 export function Sidebar({ user, currentPath }: SidebarProps) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
+  const logout = useAuthStore((s) => s.logout);
   const navItems = user.role === 'DONOR' ? DONOR_NAV : ASSOCIATION_NAV;
   const initials = getInitials(user.displayName, user.email);
 
@@ -101,7 +103,7 @@ export function Sidebar({ user, currentPath }: SidebarProps) {
       </div>
 
       {/* Bottom user section */}
-      <div className="px-[10px] pb-[20px] mt-auto">
+      <div className="px-[10px] pb-[20px] mt-auto flex flex-col gap-[6px]">
         <div className="flex items-center gap-[10px] px-[11px] py-[12px] rounded-[10px] bg-bg-3 border border-border">
           {/* Avatar */}
           <div className="w-[44px] h-[44px] rounded-full bg-gradient-to-br from-green to-cyan flex items-center justify-center font-display font-extrabold text-[17px] text-black flex-shrink-0">
@@ -124,6 +126,14 @@ export function Sidebar({ user, currentPath }: SidebarProps) {
             </span>
           </div>
         </div>
+
+        <button
+          onClick={logout}
+          className="flex items-center gap-[9px] px-[11px] py-[8px] rounded-[8px] text-[13px] text-text-2 hover:bg-red/10 hover:text-red transition-colors duration-150 w-full text-left"
+        >
+          <span className="text-[14px] w-[18px] text-center flex-shrink-0">↩</span>
+          {t('nav.logout')}
+        </button>
       </div>
     </nav>
   );

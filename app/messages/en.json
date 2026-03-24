@@ -144,7 +144,8 @@
       "campaigns": "Campaigns",
       "donors": "Donors",
       "settings": "Settings",
-      "associationProfile": "Association profile"
+      "associationProfile": "Association profile",
+      "logout": "Log out"
     },
     "roles": {
       "donor": "Donor",

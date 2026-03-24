@@ -144,7 +144,8 @@
       "campaigns": "Campagnes",
       "donors": "Donateurs",
       "settings": "Paramètres",
-      "associationProfile": "Profil association"
+      "associationProfile": "Profil association",
+      "logout": "Déconnexion"
     },
     "roles": {
       "donor": "Donateur",
