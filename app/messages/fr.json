@@ -209,6 +209,41 @@
           "description": "Description",
           "contact": "Contact"
         }
+      },
+      "profile": {
+        "title": "Profil de l'association",
+        "loading": "Chargement du profil…",
+        "name": "Nom de l'association",
+        "identifier": "SIREN",
+        "contactName": "Nom du contact",
+        "contactNamePlaceholder": "Votre nom complet",
+        "city": "Ville",
+        "postalCode": "Code postal",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrivez la mission de votre association",
+        "verified": "Vérifiée",
+        "pending": "En attente de vérification",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "success": "Profil mis à jour.",
+        "memberSince": "Membre depuis {date}",
+        "errors": {
+          "contactNameMin": "Le nom doit contenir au moins 2 caractères.",
+          "postalCodeFormat": "Le code postal doit contenir 5 chiffres."
+        },
+        "verification": {
+          "title": "Vérification",
+          "verified": "Votre association est vérifiée.",
+          "pendingText": "La vérification est effectuée par l'équipe CommonLink après examen de votre dossier."
+        },
+        "security": {
+          "title": "Sécurité",
+          "changePassword": "Définir un mot de passe",
+          "loginMethod": "Méthode de connexion",
+          "google": "Google",
+          "email": "Email & mot de passe",
+          "magicLink": "Lien magique"
+        }
       }
     }
   }
