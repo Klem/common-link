@@ -26,16 +26,50 @@ import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useAuthStore } from '@/stores/authStore';
 
+/** Active tab on the auth card — login or signup. */
 type View = 'login' | 'signup';
+
+/** User role selected on the signup screen. */
 type UserRole = 'ASSOCIATION' | 'DONOR';
+
+/** Which auth provider is being processed — used to customise the loading overlay. */
 type OverlayProvider = 'google' | 'magic' | 'email';
 
+/**
+ * Props for {@link LoginScreen}.
+ */
 interface LoginScreenProps {
+  /** Which tab is shown initially — derived from the page's search params or default. */
   initialView: View;
+  /** Which role toggle is active initially. */
   initialRole: UserRole;
+  /**
+   * Magic link token extracted from the `?token=` query parameter by the Server Component.
+   * When non-null, the screen immediately shows the loading overlay and starts verification.
+   */
   magicLinkToken: string | null;
 }
 
+/**
+ * Main authentication screen rendered at `/[locale]/login`.
+ *
+ * Handles all authentication flows in a single Client Component:
+ * - Email + password login
+ * - Magic link request (login & signup)
+ * - Magic link token verification (when `?token=` is present in the URL)
+ * - Google Sign-In / Sign-Up
+ * - Association two-step signup (search → auth method)
+ *
+ * Flow overview:
+ * 1. If `magicLinkToken` is provided, a loading overlay is shown immediately and
+ *    `useMagicLinkVerify` fires. On success the overlay calls `onSuccess` which
+ *    reads the freshly stored user role and redirects to the appropriate dashboard.
+ * 2. Otherwise, the auth card renders with tab (login/signup) and role toggle.
+ * 3. Association signup follows a two-step wizard: step 1 searches for the
+ *    organisation (SIREN lookup), step 2 presents the auth method options.
+ *
+ * @param props - See {@link LoginScreenProps}.
+ */
 export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginScreenProps) {
   const t = useTranslations('auth');
   const locale = useLocale();

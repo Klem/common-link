@@ -4,15 +4,55 @@ import type { UserDto } from '@/types/auth';
 
 export type { UserDto };
 
+/**
+ * Zustand state shape for global authentication state.
+ *
+ * Token storage strategy:
+ * - `accessToken` lives in memory only (short-lived, 15 min) — never persisted.
+ * - `refreshToken` is stored in the `cl-refresh` cookie (SameSite=Strict, 30 days)
+ *    so it survives page reloads without exposing it to localStorage XSS risks.
+ * - `auth-session` cookie carries `{ userId, role }` as a hint for the Next.js
+ *    middleware to protect dashboard routes without decoding the JWT server-side.
+ */
 interface AuthState {
+  /** JWT access token held in memory. Injected into every Axios request header. */
   accessToken: string | null;
+  /** Authenticated user data. Null when logged out or before hydration completes. */
   user: UserDto | null;
+  /** True once `setAuth` has been called with valid credentials. */
   isAuthenticated: boolean;
+  /**
+   * True while `hydrateFromStorage` is running on app mount.
+   * The `AuthProvider` blocks rendering until this is false to prevent
+   * unauthenticated flashes on protected routes.
+   */
   isLoading: boolean;
 
+  /**
+   * Stores tokens and user after a successful login or signup response.
+   * Persists `refreshToken` to the `cl-refresh` cookie and writes the
+   * `auth-session` cookie used by the Next.js middleware.
+   */
   setAuth: (accessToken: string, refreshToken: string, user: UserDto) => void;
+  /**
+   * Updates only the in-memory access token.
+   * Called by the Axios interceptor after a successful silent refresh,
+   * without touching the refresh cookie or user object.
+   */
   setAccessToken: (accessToken: string) => void;
+  /**
+   * Calls `POST /api/auth/logout`, clears all auth state and cookies,
+   * then performs a hard redirect to `/login`.
+   * Errors from the server call are intentionally swallowed — the client
+   * clears its state regardless.
+   */
   logout: () => Promise<void>;
+  /**
+   * Called once on app mount (inside `AuthProvider`).
+   * Reads the `cl-refresh` cookie; if present, attempts a silent token refresh
+   * to restore the session without requiring the user to log in again.
+   * On failure (revoked/expired token) the cookies are cleared silently.
+   */
   hydrateFromStorage: () => Promise<void>;
 }
 

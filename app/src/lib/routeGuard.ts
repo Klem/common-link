@@ -4,7 +4,16 @@ import { ROUTES } from './routes';
  * Pure function that determines whether a redirect is needed based on the
  * current path and the authenticated user's role.
  *
- * @returns The redirect path, or null if no redirect is needed.
+ * Rules:
+ * - Unauthenticated users (`role === null`) on protected paths are sent to login.
+ * - Authenticated users accessing a dashboard for the wrong role are cross-redirected
+ *   to their own dashboard (e.g. a DONOR visiting `/dashboard/association` is sent to
+ *   `/dashboard/donor`).
+ * - Authenticated users landing on the login page are bounced to their dashboard.
+ *
+ * @param path - The current pathname (locale-stripped, e.g. `/dashboard/donor`).
+ * @param role - The authenticated user's role, or `null` if unauthenticated.
+ * @returns The redirect path, or `null` if no redirect is needed.
  */
 export function getRedirectForRole(path: string, role: string | null): string | null {
   const isDonorPath = path === ROUTES.DONOR_DASHBOARD || path.startsWith(`${ROUTES.DONOR_DASHBOARD}/`);
