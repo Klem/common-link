@@ -3,7 +3,9 @@ package org.commonlink.security
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.commonlink.repository.UserRepository
+import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
+import org.commonlink.service.DonorService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -37,6 +39,12 @@ class SecurityConfigTest {
 
     @MockkBean
     private lateinit var userRepository: UserRepository
+
+    @MockkBean
+    private lateinit var associationService: AssociationService
+
+    @MockkBean
+    private lateinit var donorService: DonorService
 
     // --- Route authorization ---
 

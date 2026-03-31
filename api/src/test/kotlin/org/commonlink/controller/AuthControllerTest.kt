@@ -80,19 +80,15 @@ class AuthControllerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `register - 200 returns auth tokens and user`() {
-        every { authService.register(any()) } returns authResponse()
+    fun `register - 204 when valid payload`() {
+        justRun { authService.register(any()) }
 
         mockMvc.perform(
             post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"email":"test@example.com","password":"password123","role":"DONOR"}""")
         )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.accessToken").value("access.token.jwt"))
-            .andExpect(jsonPath("$.refreshToken").value("raw-refresh-token"))
-            .andExpect(jsonPath("$.user.email").value("test@example.com"))
-            .andExpect(jsonPath("$.user.role").value("DONOR"))
+            .andExpect(status().isNoContent)
     }
 
     @Test

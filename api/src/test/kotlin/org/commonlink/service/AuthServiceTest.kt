@@ -30,6 +30,7 @@ class AuthServiceTest {
     private val associationProfileRepository: AssociationProfileRepository = mockk()
     private val magicLinkTokenRepository: MagicLinkTokenRepository = mockk()
     private val refreshTokenRepository: RefreshTokenRepository = mockk()
+    private val emailVerificationTokenRepository: EmailVerificationTokenRepository = mockk()
     private val jwtService: JwtService = mockk()
     private val tokenHashService: TokenHashService = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
@@ -40,7 +41,7 @@ class AuthServiceTest {
 
     private val authService = AuthService(
         userRepository, donorProfileRepository, associationProfileRepository,
-        magicLinkTokenRepository, refreshTokenRepository, jwtService, tokenHashService,
+        magicLinkTokenRepository, refreshTokenRepository, emailVerificationTokenRepository, jwtService, tokenHashService,
         passwordEncoder, emailService, googleIdTokenVerifier, frontendUrl
     )
 
@@ -68,7 +69,9 @@ class AuthServiceTest {
         every { tokenHashService.hashToken(any()) } returns "hashedtoken"
         every { jwtService.generateAccessToken(any()) } returns "jwt.access.token"
         every { refreshTokenRepository.save(any()) } answers { firstArg() }
+        every { emailVerificationTokenRepository.save(any()) } answers { firstArg() }
         every { userRepository.save(any()) } answers { firstArg() }
+        justRun { emailService.sendEmailVerification(any(), any()) }
     }
 
     // -------------------------------------------------------------------------
@@ -86,11 +89,10 @@ class AuthServiceTest {
             password = "password123",
             role = UserRole.DONOR
         )
-        val result = authService.register(req)
+        authService.register(req)
 
-        assertEquals("jwt.access.token", result.accessToken)
-        assertEquals("rawtoken123", result.refreshToken)
         verify { donorProfileRepository.save(any()) }
+        verify { emailService.sendEmailVerification("donor@example.com", any()) }
     }
 
     @Test
@@ -105,9 +107,8 @@ class AuthServiceTest {
             role = UserRole.ASSOCIATION,
             associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "123456789")
         )
-        val result = authService.register(req)
+        authService.register(req)
 
-        assertEquals("jwt.access.token", result.accessToken)
         verify { associationProfileRepository.save(any()) }
     }
 
@@ -122,9 +123,8 @@ class AuthServiceTest {
             role = UserRole.ASSOCIATION
             // no associationProfile
         )
-        val result = authService.register(req)
+        authService.register(req)
 
-        assertEquals("jwt.access.token", result.accessToken)
         verify(exactly = 0) { associationProfileRepository.save(any()) }
     }
 
