@@ -93,6 +93,109 @@ test.describe('Dashboard smoke tests', () => {
     await expect(page.getByText('Fonds collectés')).toBeVisible();
   });
 
+  // ── Login-flow redirects to dashboard ─────────────────────────────────────
+
+  test('donor dashboard loads after login', async ({ page }) => {
+    await page.route(`${API_BASE}/api/auth/login`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: 'test-access-token',
+          refreshToken: 'test-refresh-token',
+          user: mockDonorUser,
+        }),
+      }),
+    );
+    await page.route(`${API_BASE}/api/auth/refresh`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: 'test-access-token',
+          refreshToken: 'test-refresh-token',
+          user: mockDonorUser,
+        }),
+      }),
+    );
+
+    await page.goto('/fr/login');
+    await page.fill('input[type="email"]', mockDonorUser.email);
+    await page.fill('input[type="password"]', 'password123');
+    await page.getByRole('button', { name: /se connecter/i }).click();
+
+    await expect(page).toHaveURL(/\/fr\/dashboard\/donor/, { timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Total donné')).toBeVisible();
+    await expect(page.getByText('Dons effectués')).toBeVisible();
+    await expect(page.getByText('Campagnes suivies')).toBeVisible();
+    await expect(page.getByText("Score d'impact")).toBeVisible();
+  });
+
+  test('association dashboard loads after login', async ({ page }) => {
+    await page.route(`${API_BASE}/api/auth/login`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: 'test-access-token',
+          refreshToken: 'test-refresh-token',
+          user: mockAssoUser,
+        }),
+      }),
+    );
+    await page.route(`${API_BASE}/api/auth/refresh`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: 'test-access-token',
+          refreshToken: 'test-refresh-token',
+          user: mockAssoUser,
+        }),
+      }),
+    );
+
+    await page.goto('/fr/login');
+    await page.fill('input[type="email"]', mockAssoUser.email);
+    await page.fill('input[type="password"]', 'password123');
+    await page.getByRole('button', { name: /se connecter/i }).click();
+
+    await expect(page).toHaveURL(/\/fr\/dashboard\/association/, { timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Fonds collectés')).toBeVisible();
+  });
+
+  // ── Profile page ───────────────────────────────────────────────────────────
+
+  test('donor profile page is accessible', async ({ page, context }) => {
+    await setAuthCookies(context, 'DONOR', mockDonorUser.id);
+
+    await page.route(`${API_BASE}/api/auth/refresh`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: 'test-access-token',
+          refreshToken: 'test-refresh-token',
+          user: mockDonorUser,
+        }),
+      }),
+    );
+    await page.route(`${API_BASE}/api/donor/me`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: mockDonorUser.id, displayName: 'Jean Dupont', anonymous: false }),
+      }),
+    );
+
+    await page.goto('/fr/dashboard/donor/profile');
+
+    await expect(page).toHaveURL(/\/fr\/dashboard\/donor\/profile/, { timeout: 5000 });
+    await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 10000 });
+  });
+
   // ── Role-based redirects ───────────────────────────────────────────────────
 
   test('DONOR accessing /dashboard/association is redirected to /dashboard/donor', async ({
