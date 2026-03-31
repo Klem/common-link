@@ -10,7 +10,8 @@
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "profileUpdated": "Profile updated."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -163,6 +164,27 @@
         "title": "Your philanthropic journey starts here",
         "subtitle": "Explore campaigns and make your first donation to see your impact.",
         "cta": "Explore campaigns"
+      },
+      "profile": {
+        "title": "My profile",
+        "loading": "Loading profile…",
+        "displayName": "Display name",
+        "displayNamePlaceholder": "Your public name",
+        "email": "Email",
+        "anonymous": "Anonymous donations by default",
+        "anonymousHint": "Your identity will be hidden on campaigns.",
+        "save": "Save",
+        "cancel": "Cancel",
+        "success": "Profile updated.",
+        "memberSince": "Member since {date}",
+        "security": {
+          "title": "Security",
+          "changePassword": "Set a password",
+          "loginMethod": "Login method",
+          "google": "Google",
+          "email": "Email & password",
+          "magicLink": "Magic link"
+        }
       }
     },
     "association": {

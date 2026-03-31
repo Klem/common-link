@@ -10,7 +10,8 @@
     "loading": "Chargement...",
     "save": "Enregistrer",
     "cancel": "Annuler",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "profileUpdated": "Profil mis à jour."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -163,6 +164,27 @@
         "title": "Votre aventure philanthropique commence ici",
         "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
         "cta": "Explorer les campagnes"
+      },
+      "profile": {
+        "title": "Mon profil",
+        "loading": "Chargement du profil…",
+        "displayName": "Nom d'affichage",
+        "displayNamePlaceholder": "Votre nom public",
+        "email": "Email",
+        "anonymous": "Don anonyme par défaut",
+        "anonymousHint": "Votre identité sera masquée sur les campagnes.",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "success": "Profil mis à jour.",
+        "memberSince": "Membre depuis {date}",
+        "security": {
+          "title": "Sécurité",
+          "changePassword": "Définir un mot de passe",
+          "loginMethod": "Méthode de connexion",
+          "google": "Google",
+          "email": "Email & mot de passe",
+          "magicLink": "Lien magique"
+        }
       }
     },
     "association": {
