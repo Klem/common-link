@@ -91,7 +91,8 @@
       "password": { "label": "Mot de passe", "placeholder": "8 caractères minimum" },
       "confirm": { "label": "Confirmer", "placeholder": "••••••••" },
       "submit": "Enregistrer",
-      "skip": "Plus tard"
+      "skip": "Plus tard",
+      "success": "Mot de passe défini."
     },
     "errors": {
       "invalidCredentials": "Email ou mot de passe invalide.",
@@ -129,6 +130,14 @@
       "noResults": "Aucune association trouvée.",
       "noResultsHint": "Vérifiez l'orthographe ou essayez votre SIREN."
     },
+    "verifyEmail": {
+      "verifying": "Vérification en cours…",
+      "success": "Email vérifié !",
+      "successSubtitle": "Vous allez être redirigé vers votre espace.",
+      "failed": "Lien invalide",
+      "failedSubtitle": "Ce lien est expiré ou a déjà été utilisé.",
+      "requestNew": "Demander un nouveau lien"
+    },
     "legal": "En continuant, vous acceptez nos {terms} et notre {privacy}.",
     "terms": "CGU",
     "privacy": "Politique de confidentialité",
@@ -151,6 +160,11 @@
     "roles": {
       "donor": "Donateur",
       "association": "Association"
+    },
+    "setPassword": {
+      "title": "Sécurisez votre compte",
+      "subtitle": "Définissez un mot de passe pour pouvoir aussi vous connecter par email.",
+      "success": "Mot de passe défini avec succès."
     },
     "donor": {
       "stats": {

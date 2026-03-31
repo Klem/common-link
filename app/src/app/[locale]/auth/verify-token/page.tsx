@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { VerifyTokenScreen } from './VerifyTokenScreen';
 
 interface VerifyTokenPageProps {
   params: Promise<{ locale: string }>;
@@ -7,12 +8,11 @@ interface VerifyTokenPageProps {
 
 export default async function VerifyTokenPage({ params, searchParams }: VerifyTokenPageProps) {
   const { locale } = await params;
-  const { token, role } = await searchParams;
+  const { token } = await searchParams;
 
-  const query = new URLSearchParams();
-  if (token) query.set('token', token);
-  if (role) query.set('role', role);
-  const qs = query.toString();
+  if (!token) {
+    redirect(`/${locale}/login`);
+  }
 
-  redirect(`/${locale}/login${qs ? `?${qs}` : ''}`);
+  return <VerifyTokenScreen token={token} />;
 }

@@ -91,7 +91,8 @@
       "password": { "label": "Password", "placeholder": "8 characters minimum" },
       "confirm": { "label": "Confirm", "placeholder": "••••••••" },
       "submit": "Save",
-      "skip": "Later"
+      "skip": "Later",
+      "success": "Password successfully defined"
     },
     "errors": {
       "invalidCredentials": "Invalid email or password.",
@@ -129,6 +130,14 @@
       "noResults": "No association found.",
       "noResultsHint": "Check the spelling or try your SIREN."
     },
+    "verifyEmail": {
+      "verifying": "Verifying…",
+      "success": "Email verified!",
+      "successSubtitle": "You will be redirected to your space.",
+      "failed": "Invalid link",
+      "failedSubtitle": "This link has expired or has already been used.",
+      "requestNew": "Request a new link"
+    },
     "legal": "By continuing, you agree to our {terms} and {privacy}.",
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
@@ -151,6 +160,11 @@
     "roles": {
       "donor": "Donor",
       "association": "Association"
+    },
+    "setPassword": {
+      "title": "Secure your account",
+      "subtitle": "Set a password to also be able to log in with your email.",
+      "success": "Password set successfully."
     },
     "donor": {
       "stats": {

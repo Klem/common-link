@@ -17,7 +17,6 @@ import {
   AssoSearch,
   StepIndicator,
   LoginProgressOverlay,
-  SetPasswordForm,
 } from '@/components/auth';
 import type { AssoResult } from '@/components/auth';
 import { useGoogleAuth } from '@/hooks/auth/useGoogleAuth';
@@ -25,12 +24,10 @@ import { useMagicLink } from '@/hooks/auth/useMagicLink';
 import { useEmailLogin } from '@/hooks/auth/useEmailLogin';
 import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
-import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { useAuthStore } from '@/stores/authStore';
 
 type View = 'login' | 'signup';
 type UserRole = 'ASSOCIATION' | 'DONOR';
-type PageState = 'auth' | 'setPassword';
 type OverlayProvider = 'google' | 'magic' | 'email';
 
 interface LoginScreenProps {
@@ -45,7 +42,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const router = useRouter();
   const [activeView, setActiveView] = useState<View>(initialView);
   const [activeRole, setActiveRole] = useState<UserRole>(initialRole);
-  const [pageState, setPageState] = useState<PageState>('auth');
   const [showOverlay, setShowOverlay] = useState(!!magicLinkToken);
   const [overlayProvider, setOverlayProvider] = useState<OverlayProvider>(
     magicLinkToken ? 'magic' : 'google',
@@ -58,7 +54,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const magicLink = useMagicLink();
   const emailLogin = useEmailLogin();
   const emailRegister = useEmailRegister();
-  const setPassword = useSetPassword();
 
   // Magic link token verification (triggered when ?token is present)
   const { status: verifyStatus, error: verifyError } = useMagicLinkVerify(
@@ -66,11 +61,8 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     () => {
       setShowOverlay(false);
       const user = useAuthStore.getState().user;
-      if (user?.role === 'ASSOCIATION') {
-        router.push(`/${locale}/dashboard/association`);
-      } else {
-        setPageState('setPassword');
-      }
+      const role = user?.role ?? 'DONOR';
+      router.push(`/${locale}/dashboard/${role.toLowerCase()}`);
     },
   );
 
@@ -106,7 +98,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     try {
       await googleAuth.signUp(idToken, activeRole);
       setShowOverlay(false);
-      setPageState('setPassword');
+      router.push(`/${locale}/dashboard/donor`);
     } catch {
       setShowOverlay(false);
     }
@@ -166,35 +158,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
   if ((showOverlay || verifyStatus === 'verifying') && verifyStatus !== 'error') {
     return <LoginProgressOverlay provider={overlayProvider} />;
-  }
-
-  // ─── Render: set password (after Google signup or magic link verify) ───────
-
-  if (pageState === 'setPassword') {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-        <div className="w-full max-w-[400px]">
-          <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-extrabold text-green mb-7">
-            <div
-              className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px] logo-icon-bg"
-            >
-              🌍
-            </div>
-            CommonLink
-          </div>
-          <AuthCard>
-            <h2 className="font-display text-[18px] font-bold text-text mb-1">
-              {t('setPassword.title')}
-            </h2>
-            <SetPasswordForm
-              onSubmit={setPassword.onSubmit}
-              onSkip={setPassword.onSkip}
-              loading={setPassword.loading}
-            />
-          </AuthCard>
-        </div>
-      </div>
-    );
   }
 
   // ─── Render: auth page ─────────────────────────────────────────────────────
