@@ -5,7 +5,9 @@ import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
+import org.commonlink.service.DonorService
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -27,6 +29,8 @@ class CommonLinkApplicationTests {
     @MockkBean lateinit var jwtService: JwtService
     @MockkBean lateinit var userDetailsService: UserDetailsServiceImpl
     @MockkBean lateinit var userRepository: UserRepository
+    @MockkBean lateinit var associationService: AssociationService
+    @MockkBean lateinit var donorService: DonorService
 
     @Test
     fun contextLoads() {

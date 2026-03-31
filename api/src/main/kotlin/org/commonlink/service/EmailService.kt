@@ -8,4 +8,5 @@ import org.springframework.stereotype.Service
 @Profile("!default")
 interface EmailService {
     fun sendMagicLink(email: String, link: String)
+    fun sendEmailVerification(email: String, verificationUrl: String)
 }

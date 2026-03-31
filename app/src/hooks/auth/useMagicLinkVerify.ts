@@ -31,13 +31,10 @@ export function useMagicLinkVerify(
     if (!token || calledRef.current) return;
     calledRef.current = true;
 
-    let cancelled = false;
-
     const verify = async () => {
       setStatus('verifying');
       try {
         const { data } = await api.post<AuthResponseDto>('/api/auth/magic-link/verify', { token });
-        if (cancelled) return;
         setAuth(data.accessToken, data.refreshToken, data.user);
         setStatus('success');
         if (onSuccess) {
@@ -46,7 +43,6 @@ export function useMagicLinkVerify(
           router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
         }
       } catch (err) {
-        if (cancelled) return;
         if (isAxiosError(err)) {
           const problemDetail = err.response?.data as ProblemDetail | undefined;
           if (problemDetail?.code === 'TOKEN_EXPIRED') {
@@ -64,7 +60,6 @@ export function useMagicLinkVerify(
     };
 
     verify();
-    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 

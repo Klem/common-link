@@ -10,13 +10,13 @@ describe('CtxHint', () => {
   it('renders association variant with green border', () => {
     const { container } = render(<CtxHint variant="association" />);
     const el = container.firstChild as HTMLElement;
-    expect(el.style.borderLeftColor).toBe('var(--color-green)');
+    expect(el.className).toContain('[border-left-color:var(--color-green)]');
   });
 
   it('renders donor variant with yellow border', () => {
     const { container } = render(<CtxHint variant="donor" />);
     const el = container.firstChild as HTMLElement;
-    expect(el.style.borderLeftColor).toBe('var(--color-yellow)');
+    expect(el.className).toContain('[border-left-color:var(--color-yellow)]');
   });
 
   it('displays the hint text', () => {

@@ -76,9 +76,8 @@ test.describe('Auth smoke tests', () => {
     await expect(page.getByText(/Lien envoyé/)).toBeVisible({ timeout: 5000 });
   });
 
-  test('email signup (donor) — fills form, submits, and redirects to dashboard', async ({
-    page,
-  }) => {
+  // Email signup now sends a verification link instead of logging in immediately
+  test('email signup (donor) — fills form and shows sent confirmation', async ({ page }) => {
     await page.route(`${API_BASE}/api/auth/register`, (route) =>
       route.fulfill({
         status: 200,
@@ -107,10 +106,13 @@ test.describe('Auth smoke tests', () => {
     // Click the register submit button
     await page.getByRole('button', { name: /créer mon compte/i }).click();
 
-    await expect(page).toHaveURL(/\/fr\/dashboard/, { timeout: 10000 });
+    // After registration, a confirmation is shown (not a dashboard redirect)
+    await expect(page.getByText(/Lien envoyé/)).toBeVisible({ timeout: 10000 });
   });
 
-  test('email signup (association) — fills form and reaches profile step', async ({ page }) => {
+  test('email signup (association) — selects association and shows sent confirmation', async ({
+    page,
+  }) => {
     // Mock association search API
     await page.route('https://recherche-entreprises.api.gouv.fr/**', (route) =>
       route.fulfill({
@@ -147,9 +149,10 @@ test.describe('Auth smoke tests', () => {
     // Select Association role
     await page.getByRole('button', { name: /association/i }).click();
 
-    // Step 1 — Search and select an association
-    await page.fill('input[type="search"], input[type="text"]', 'Association Test');
-    await page.getByRole('button', { name: /sélectionner/i }).click();
+    // Step 1 — Type in search, wait for dropdown, click result to advance to step 2
+    await page.fill('input[type="text"]', 'Association Test');
+    // Dropdown appears after debounce — click the association item in it
+    await page.getByRole('button', { name: /Association Test/i }).click();
 
     // Step 2 — Fill email+password register form
     const emailInput = page.locator('input[type="email"]').last();
@@ -161,18 +164,18 @@ test.describe('Auth smoke tests', () => {
 
     await page.getByRole('button', { name: /continuer/i }).click();
 
-    // Should now be on step 3 (profile form)
-    await expect(
-      page.getByRole('button', { name: /créer mon espace/i }),
-    ).toBeVisible({ timeout: 5000 });
+    // After registration, a confirmation is shown
+    await expect(page.getByText(/Lien envoyé/)).toBeVisible({ timeout: 5000 });
   });
 
-  test('Google button is present on login page', async ({ page }) => {
+  // Google Sign-In buttons are temporarily disabled in the UI
+  test.skip('Google button is present on login page', async ({ page }) => {
     await page.goto('/fr/login');
     await expect(page.getByRole('button', { name: /continuer avec google/i })).toBeVisible();
   });
 
-  test('Google button is present on signup page (donor role)', async ({ page }) => {
+  // Google Sign-In buttons are temporarily disabled in the UI
+  test.skip('Google button is present on signup page (donor role)', async ({ page }) => {
     await page.goto('/fr/login?view=signup');
     // Select Donor role to reveal the Google button
     await page.getByRole('button', { name: /donateur/i }).click();

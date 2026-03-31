@@ -7,6 +7,7 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.dto.AssociationProfileRequestDto
+import org.commonlink.dto.AssociationProfileUpsertDto
 import org.commonlink.dto.RegisterRequestDto
 import org.commonlink.entity.*
 import org.commonlink.exception.*
@@ -29,6 +30,7 @@ class AuthServiceTest {
     private val associationProfileRepository: AssociationProfileRepository = mockk()
     private val magicLinkTokenRepository: MagicLinkTokenRepository = mockk()
     private val refreshTokenRepository: RefreshTokenRepository = mockk()
+    private val emailVerificationTokenRepository: EmailVerificationTokenRepository = mockk()
     private val jwtService: JwtService = mockk()
     private val tokenHashService: TokenHashService = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
@@ -39,7 +41,7 @@ class AuthServiceTest {
 
     private val authService = AuthService(
         userRepository, donorProfileRepository, associationProfileRepository,
-        magicLinkTokenRepository, refreshTokenRepository, jwtService, tokenHashService,
+        magicLinkTokenRepository, refreshTokenRepository, emailVerificationTokenRepository, jwtService, tokenHashService,
         passwordEncoder, emailService, googleIdTokenVerifier, frontendUrl
     )
 
@@ -67,7 +69,9 @@ class AuthServiceTest {
         every { tokenHashService.hashToken(any()) } returns "hashedtoken"
         every { jwtService.generateAccessToken(any()) } returns "jwt.access.token"
         every { refreshTokenRepository.save(any()) } answers { firstArg() }
+        every { emailVerificationTokenRepository.save(any()) } answers { firstArg() }
         every { userRepository.save(any()) } answers { firstArg() }
+        justRun { emailService.sendEmailVerification(any(), any()) }
     }
 
     // -------------------------------------------------------------------------
@@ -85,11 +89,10 @@ class AuthServiceTest {
             password = "password123",
             role = UserRole.DONOR
         )
-        val result = authService.register(req)
+        authService.register(req)
 
-        assertEquals("jwt.access.token", result.accessToken)
-        assertEquals("rawtoken123", result.refreshToken)
         verify { donorProfileRepository.save(any()) }
+        verify { emailService.sendEmailVerification("donor@example.com", any()) }
     }
 
     @Test
@@ -104,10 +107,25 @@ class AuthServiceTest {
             role = UserRole.ASSOCIATION,
             associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "123456789")
         )
-        val result = authService.register(req)
+        authService.register(req)
 
-        assertEquals("jwt.access.token", result.accessToken)
         verify { associationProfileRepository.save(any()) }
+    }
+
+    @Test
+    fun `register ASSOCIATION without profile - user created, profile skipped`() {
+        every { userRepository.existsByEmail("asso@example.com") } returns false
+        every { passwordEncoder.encode("password123") } returns "hashed"
+
+        val req = RegisterRequestDto(
+            email = "asso@example.com",
+            password = "password123",
+            role = UserRole.ASSOCIATION
+            // no associationProfile
+        )
+        authService.register(req)
+
+        verify(exactly = 0) { associationProfileRepository.save(any()) }
     }
 
     @Test
@@ -490,6 +508,70 @@ class AuthServiceTest {
         authService.logout(donorUser.id!!)
 
         verify { refreshTokenRepository.revokeAllByUserId(donorUser.id!!) }
+    }
+
+    // -------------------------------------------------------------------------
+    // upsertAssociationProfile
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `upsertAssociationProfile - creates profile when none exists`() {
+        every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
+        every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.empty()
+        every { associationProfileRepository.save(any()) } answers { firstArg() }
+
+        val dto = AssociationProfileUpsertDto(
+            nom = "MyAsso",
+            siren = "123456789",
+            ville = "Paris",
+            codePostal = "75001",
+            contact = "contact@myasso.fr",
+            description = "Description"
+        )
+        authService.upsertAssociationProfile(assocUser.id!!, dto)
+
+        verify { associationProfileRepository.save(any()) }
+    }
+
+    @Test
+    fun `upsertAssociationProfile - updates existing profile`() {
+        val existingProfile = AssociationProfile(
+            user = assocUser,
+            name = "MyAsso",
+            identifier = "123456789",
+            city = "Lyon",
+            postalCode = "69001"
+        )
+        every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
+        every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.of(existingProfile)
+        every { associationProfileRepository.save(any()) } answers { firstArg() }
+
+        val dto = AssociationProfileUpsertDto(
+            nom = "MyAsso",
+            siren = "123456789",
+            ville = "Paris",
+            codePostal = "75001",
+            contact = "new@myasso.fr",
+            description = "Updated"
+        )
+        authService.upsertAssociationProfile(assocUser.id!!, dto)
+
+        assertEquals("Paris", existingProfile.city)
+        assertEquals("75001", existingProfile.postalCode)
+        assertEquals("new@myasso.fr", existingProfile.contactName)
+        verify { associationProfileRepository.save(existingProfile) }
+    }
+
+    @Test
+    fun `upsertAssociationProfile - non-ASSOCIATION user throws AuthException`() {
+        every { userRepository.findById(donorUser.id!!) } returns Optional.of(donorUser)
+
+        assertThrows<AuthException> {
+            authService.upsertAssociationProfile(
+                donorUser.id!!,
+                AssociationProfileUpsertDto(nom = "X", siren = "123456789")
+            )
+        }
     }
 
     // -------------------------------------------------------------------------

@@ -104,7 +104,7 @@ api.interceptors.response.use(
 
     // 409 — conflict
     if (status === 409) {
-      addToast('warning', 'common.errors.conflict');
+      addToast('warning', 'errors.conflict');
     }
 
     // 422 — validation errors (caller extracts field errors from response)
@@ -114,12 +114,12 @@ api.interceptors.response.use(
     if (status === 429) {
       const retryAfter = error.response?.headers['retry-after'];
       const seconds = retryAfter ? String(retryAfter) : '?';
-      addToast('warning', `common.errors.rateLimitExceeded:${seconds}`);
+      addToast('warning', `errors.rateLimitExceeded:${seconds}`);
     }
 
     // 500+ — server error
     if (status !== undefined && status >= 500) {
-      addToast('error', 'common.errors.serverError');
+      addToast('error', 'errors.serverError');
     }
 
     return Promise.reject(error);

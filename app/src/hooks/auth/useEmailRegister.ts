@@ -3,10 +3,15 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
-import type { AuthResponseDto } from '@/types/auth';
 
 type UserRole = 'ASSOCIATION' | 'DONOR';
+
+interface AssociationData {
+  name: string;
+  identifier: string;
+  city?: string;
+  postalCode?: string;
+}
 
 interface ProblemDetail {
   code?: string;
@@ -14,20 +19,22 @@ interface ProblemDetail {
 }
 
 export function useEmailRegister() {
-  const { setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
-  const register = async (email: string, password: string, role: UserRole): Promise<void> => {
+  const register = async (email: string, password: string, role: UserRole, associationData?: AssociationData): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.post<AuthResponseDto>('/api/auth/register', {
+      await api.post('/api/auth/register', {
         email,
         password,
         role,
+        ...(associationData && { associationProfile: associationData }),
       });
-      setAuth(data.accessToken, data.refreshToken, data.user);
+      sessionStorage.setItem('cl-pending-email', email);
+      setSent(true);
     } catch (err) {
       if (isAxiosError(err)) {
         const problemDetail = err.response?.data as ProblemDetail | undefined;
@@ -45,5 +52,10 @@ export function useEmailRegister() {
     }
   };
 
-  return { register, loading, error };
+  const reset = () => {
+    setSent(false);
+    setError(null);
+  };
+
+  return { register, loading, error, sent, reset };
 }

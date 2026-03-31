@@ -224,68 +224,68 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
         </div>
       )}
 
-      {/* API unavailable — manual entry fallback */}
+      {/* API unavailable error */}
       {apiUnavailable && (
-        <div>
-          <p className="text-[12px] text-red mb-3">{t('assoSearch.apiUnavailable')}</p>
-          {!showManual ? (
-            <button
-              type="button"
-              onClick={() => setShowManual(true)}
-              className="text-[12px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
-            >
-              {t('assoSearch.manualEntry')} →
-            </button>
-          ) : (
-            <div className="flex flex-col gap-[9px]">
-              <div>
-                <label className={labelClass}>{t('assoSearch.manualSiren')} *</label>
-                <input
-                  type="text"
-                  value={manualData.siren}
-                  onChange={(e) => setManualData((d) => ({ ...d, siren: e.target.value }))}
-                  className={fieldClass}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>{t('assoSearch.manualNom')} *</label>
-                <input
-                  type="text"
-                  value={manualData.nom}
-                  onChange={(e) => setManualData((d) => ({ ...d, nom: e.target.value }))}
-                  className={fieldClass}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-[9px]">
-                <div>
-                  <label className={labelClass}>{t('assoSearch.manualVille')}</label>
-                  <input
-                    type="text"
-                    value={manualData.ville}
-                    onChange={(e) => setManualData((d) => ({ ...d, ville: e.target.value }))}
-                    className={fieldClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>{t('assoSearch.manualCodePostal')}</label>
-                  <input
-                    type="text"
-                    value={manualData.codePostal}
-                    onChange={(e) => setManualData((d) => ({ ...d, codePostal: e.target.value }))}
-                    className={fieldClass}
-                  />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleManualConfirm}
-                disabled={!manualData.nom.trim() || !manualData.siren.trim()}
-                className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 hover:bg-[#00d4b0] disabled:opacity-[.38] disabled:cursor-not-allowed"
-              >
-                {t('assoSearch.confirm')}
-              </button>
+        <p className="text-[12px] text-red">{t('assoSearch.apiUnavailable')}</p>
+      )}
+
+      {/* Manual entry — always available */}
+      {!showManual ? (
+        <button
+          type="button"
+          onClick={() => setShowManual(true)}
+          className="text-[12px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline self-start"
+        >
+          {t('assoSearch.manualEntry')} →
+        </button>
+      ) : (
+        <div className="flex flex-col gap-[9px]">
+          <div>
+            <label className={labelClass}>{t('assoSearch.manualSiren')} *</label>
+            <input
+              type="text"
+              value={manualData.siren}
+              onChange={(e) => setManualData((d) => ({ ...d, siren: e.target.value }))}
+              className={fieldClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>{t('assoSearch.manualNom')} *</label>
+            <input
+              type="text"
+              value={manualData.nom}
+              onChange={(e) => setManualData((d) => ({ ...d, nom: e.target.value }))}
+              className={fieldClass}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-[9px]">
+            <div>
+              <label className={labelClass}>{t('assoSearch.manualVille')}</label>
+              <input
+                type="text"
+                value={manualData.ville}
+                onChange={(e) => setManualData((d) => ({ ...d, ville: e.target.value }))}
+                className={fieldClass}
+              />
             </div>
-          )}
+            <div>
+              <label className={labelClass}>{t('assoSearch.manualCodePostal')}</label>
+              <input
+                type="text"
+                value={manualData.codePostal}
+                onChange={(e) => setManualData((d) => ({ ...d, codePostal: e.target.value }))}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleManualConfirm}
+            disabled={!manualData.nom.trim() || !manualData.siren.trim()}
+            className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 hover:bg-[#00d4b0] disabled:opacity-[.38] disabled:cursor-not-allowed"
+          >
+            {t('assoSearch.confirm')}
+          </button>
         </div>
       )}
     </div>

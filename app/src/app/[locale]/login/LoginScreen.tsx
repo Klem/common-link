@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import {
   AuthCard,
@@ -15,10 +15,8 @@ import {
   EmailRegisterForm,
   MagicLinkForm,
   AssoSearch,
-  AssoProfileForm,
   StepIndicator,
   LoginProgressOverlay,
-  SetPasswordForm,
 } from '@/components/auth';
 import type { AssoResult } from '@/components/auth';
 import { useGoogleAuth } from '@/hooks/auth/useGoogleAuth';
@@ -26,13 +24,10 @@ import { useMagicLink } from '@/hooks/auth/useMagicLink';
 import { useEmailLogin } from '@/hooks/auth/useEmailLogin';
 import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
-import { useSetPassword } from '@/hooks/auth/useSetPassword';
-import api from '@/lib/api';
-import type { AssoProfileData } from '@/components/auth';
+import { useAuthStore } from '@/stores/authStore';
 
 type View = 'login' | 'signup';
 type UserRole = 'ASSOCIATION' | 'DONOR';
-type PageState = 'auth' | 'setPassword';
 type OverlayProvider = 'google' | 'magic' | 'email';
 
 interface LoginScreenProps {
@@ -45,30 +40,30 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const t = useTranslations('auth');
   const locale = useLocale();
   const router = useRouter();
-  const pathname = usePathname();
-
   const [activeView, setActiveView] = useState<View>(initialView);
   const [activeRole, setActiveRole] = useState<UserRole>(initialRole);
-  const [pageState, setPageState] = useState<PageState>('auth');
   const [showOverlay, setShowOverlay] = useState(!!magicLinkToken);
   const [overlayProvider, setOverlayProvider] = useState<OverlayProvider>(
     magicLinkToken ? 'magic' : 'google',
   );
-  const [assoStep, setAssoStep] = useState<1 | 2 | 3>(1);
+  const [assoStep, setAssoStep] = useState<1 | 2>(1);
   const [selectedAsso, setSelectedAsso] = useState<AssoResult | null>(null);
-  const [assoProfileLoading, setAssoProfileLoading] = useState(false);
 
   // Hooks
   const googleAuth = useGoogleAuth();
   const magicLink = useMagicLink();
   const emailLogin = useEmailLogin();
   const emailRegister = useEmailRegister();
-  const setPassword = useSetPassword();
 
   // Magic link token verification (triggered when ?token is present)
   const { status: verifyStatus, error: verifyError } = useMagicLinkVerify(
     magicLinkToken,
-    () => setPageState('setPassword'),
+    () => {
+      setShowOverlay(false);
+      const user = useAuthStore.getState().user;
+      const role = user?.role ?? 'DONOR';
+      router.push(`/${locale}/dashboard/${role.toLowerCase()}`);
+    },
   );
 
   const handleViewChange = (view: View) => {
@@ -76,11 +71,13 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     setAssoStep(1);
     setSelectedAsso(null);
     magicLink.reset();
+    emailRegister.reset();
   };
 
   const handleRoleChange = (role: UserRole) => {
     setActiveRole(role);
     magicLink.reset();
+    emailRegister.reset();
   };
 
   // ─── Google handlers ──────────────────────────────────────────────────────
@@ -101,7 +98,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     try {
       await googleAuth.signUp(idToken, activeRole);
       setShowOverlay(false);
-      setPageState('setPassword');
+      router.push(`/${locale}/dashboard/donor`);
     } catch {
       setShowOverlay(false);
     }
@@ -113,7 +110,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     try {
       await googleAuth.signUp(idToken, 'ASSOCIATION');
       setShowOverlay(false);
-      setAssoStep(3);
+      router.push(`/${locale}/dashboard/association`);
     } catch {
       setShowOverlay(false);
     }
@@ -122,25 +119,10 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   // ─── Email register ───────────────────────────────────────────────────────
 
   const handleEmailRegisterDonor = async (email: string, password: string) => {
-    setOverlayProvider('email');
-    setShowOverlay(true);
     try {
       await emailRegister.register(email, password, 'DONOR');
-      router.push(`/${locale}/dashboard/donor`);
     } catch {
-      setShowOverlay(false);
-    }
-  };
-
-  const handleEmailRegisterAsso = async (email: string, password: string) => {
-    setOverlayProvider('email');
-    setShowOverlay(true);
-    try {
-      await emailRegister.register(email, password, 'ASSOCIATION');
-      setShowOverlay(false);
-      setAssoStep(3);
-    } catch {
-      setShowOverlay(false);
+      // error set in hook
     }
   };
 
@@ -152,59 +134,30 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     // On success emailLogin redirects; on error it sets emailLogin.error
   };
 
-  // ─── Association profile submit ───────────────────────────────────────────
+  // ─── Magic link for association ───────────────────────────────────────────
 
-  const handleAssoProfileSubmit = async (data: AssoProfileData) => {
-    setAssoProfileLoading(true);
+  const handleMagicLinkAsso = (email: string) => {
+    magicLink.sendLink(email, 'ASSOCIATION', selectedAsso
+      ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
+      : undefined);
+  };
+
+  // ─── Email register for association ───────────────────────────────────────
+
+  const handleEmailRegisterAsso = async (email: string, password: string) => {
     try {
-      await api.patch('/api/user/me/association-profile', {
-        ...data,
-        siren: selectedAsso?.siren,
-        nom: selectedAsso?.nom,
-        ville: selectedAsso?.ville,
-        codePostal: selectedAsso?.codePostal,
-      });
-      router.push(`/${locale}/dashboard/association`);
+      await emailRegister.register(email, password, 'ASSOCIATION', selectedAsso
+        ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
+        : undefined);
     } catch {
-      // error handled by toast interceptor
-    } finally {
-      setAssoProfileLoading(false);
+      // error set in hook
     }
   };
 
   // ─── Render: magic link verification overlay ──────────────────────────────
 
-  if (showOverlay || verifyStatus === 'verifying') {
+  if ((showOverlay || verifyStatus === 'verifying') && verifyStatus !== 'error') {
     return <LoginProgressOverlay provider={overlayProvider} />;
-  }
-
-  // ─── Render: set password (after Google signup or magic link verify) ───────
-
-  if (pageState === 'setPassword') {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-        <div className="w-full max-w-[400px]">
-          <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-extrabold text-green mb-7">
-            <div
-              className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px] logo-icon-bg"
-            >
-              🌍
-            </div>
-            CommonLink
-          </div>
-          <AuthCard>
-            <h2 className="font-display text-[18px] font-bold text-text mb-1">
-              {t('setPassword.title')}
-            </h2>
-            <SetPasswordForm
-              onSubmit={setPassword.onSubmit}
-              onSkip={setPassword.onSkip}
-              loading={setPassword.loading}
-            />
-          </AuthCard>
-        </div>
-      </div>
-    );
   }
 
   // ─── Render: auth page ─────────────────────────────────────────────────────
@@ -212,7 +165,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const assoStepLabels = [
     t('signup.association.steps.search'),
     t('signup.association.steps.connect'),
-    t('signup.association.steps.profile'),
   ];
 
   const isAssoSignup = activeView === 'signup' && activeRole === 'ASSOCIATION';
@@ -241,11 +193,11 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 {t('login.title')}
               </h2>
 
-              <GoogleButton
-                onSuccess={handleGoogleLogin}
-                label={t('login.google')}
-                loading={googleAuth.loading}
-              />
+              {/*<GoogleButton*/}
+              {/*  onSuccess={handleGoogleLogin}*/}
+              {/*  label={t('login.google')}*/}
+              {/*  loading={googleAuth.loading}*/}
+              {/*/>*/}
 
               {googleAuth.error && (
                 <p className="text-[11.5px] text-red mt-2">
@@ -253,7 +205,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 </p>
               )}
 
-              <Divider />
+              {/*<Divider />*/}
 
               <EmailPasswordForm
                 onSubmit={handleEmailSubmit}
@@ -281,11 +233,11 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 {t('signup.donor.title')}
               </h2>
 
-              <GoogleButton
-                onSuccess={handleGoogleSignUp}
-                label={t('signup.donor.google')}
-                loading={googleAuth.loading}
-              />
+              {/*<GoogleButton*/}
+              {/*  onSuccess={handleGoogleSignUp}*/}
+              {/*  label={t('signup.donor.google')}*/}
+              {/*  loading={googleAuth.loading}*/}
+              {/*/>*/}
 
               {googleAuth.error && (
                 <p className="text-[11.5px] text-red mt-2">
@@ -293,7 +245,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 </p>
               )}
 
-              <Divider />
+              {/*<Divider />*/}
 
               <MagicLinkForm
                 onSubmit={(email) => magicLink.sendLink(email, 'DONOR')}
@@ -302,12 +254,30 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
               <Divider />
 
-              <EmailRegisterForm
-                onSubmit={handleEmailRegisterDonor}
-                loading={emailRegister.loading}
-                error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
-                submitLabel={t('signup.emailPassword.submit')}
-              />
+              {emailRegister.sent ? (
+                <div className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16] text-center animate-slide-down-fade">
+                  <strong className="block text-green text-[12.5px]">
+                    ✓ {t('signup.emailPassword.sent')}
+                  </strong>
+                  <span className="block text-[11px] text-muted mt-[5px]">
+                    {t('signup.emailPassword.notReceived')}{' '}
+                    <button
+                      type="button"
+                      onClick={emailRegister.reset}
+                      className="text-cyan text-[11px] bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
+                    >
+                      {t('signup.emailPassword.resend')}
+                    </button>
+                  </span>
+                </div>
+              ) : (
+                <EmailRegisterForm
+                  onSubmit={handleEmailRegisterDonor}
+                  loading={emailRegister.loading}
+                  error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
+                  submitLabel={t('signup.emailPassword.submit')}
+                />
+              )}
             </>
           )}
 
@@ -338,11 +308,11 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 <div className="flex flex-col gap-4">
                   <p className="text-[13px] text-text-2">{t('signup.association.connect.title')}</p>
 
-                  <GoogleButton
-                    onSuccess={handleGoogleSignUpAsso}
-                    label={t('signup.association.connect.google')}
-                    loading={googleAuth.loading}
-                  />
+                  {/*<GoogleButton*/}
+                  {/*  onSuccess={handleGoogleSignUpAsso}*/}
+                  {/*  label={t('signup.association.connect.google')}*/}
+                  {/*  loading={googleAuth.loading}*/}
+                  {/*/>*/}
 
                   {googleAuth.error && (
                     <p className="text-[11.5px] text-red">
@@ -350,21 +320,39 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                     </p>
                   )}
 
-                  <Divider />
+                  {/*<Divider />*/}
 
                   <MagicLinkForm
-                    onSubmit={(email) => magicLink.sendLink(email, 'ASSOCIATION')}
+                    onSubmit={handleMagicLinkAsso}
                     role="ASSOCIATION"
                   />
 
                   <Divider />
 
-                  <EmailRegisterForm
-                    onSubmit={handleEmailRegisterAsso}
-                    loading={emailRegister.loading}
-                    error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
-                    submitLabel={t('signup.emailPassword.submitContinue')}
-                  />
+                  {emailRegister.sent ? (
+                    <div className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16] text-center animate-slide-down-fade">
+                      <strong className="block text-green text-[12.5px]">
+                        ✓ {t('signup.emailPassword.sent')}
+                      </strong>
+                      <span className="block text-[11px] text-muted mt-[5px]">
+                        {t('signup.emailPassword.notReceived')}{' '}
+                        <button
+                          type="button"
+                          onClick={emailRegister.reset}
+                          className="text-cyan text-[11px] bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
+                        >
+                          {t('signup.emailPassword.resend')}
+                        </button>
+                      </span>
+                    </div>
+                  ) : (
+                    <EmailRegisterForm
+                      onSubmit={handleEmailRegisterAsso}
+                      loading={emailRegister.loading}
+                      error={emailRegister.error ? t(emailRegister.error as Parameters<typeof t>[0]) : undefined}
+                      submitLabel={t('signup.emailPassword.submitContinue')}
+                    />
+                  )}
 
                   <button
                     type="button"
@@ -376,14 +364,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                 </div>
               )}
 
-              {/* Step 3 — Profile */}
-              {assoStep === 3 && selectedAsso && (
-                <AssoProfileForm
-                  asso={selectedAsso}
-                  onSubmit={handleAssoProfileSubmit}
-                  loading={assoProfileLoading}
-                />
-              )}
             </>
           )}
 

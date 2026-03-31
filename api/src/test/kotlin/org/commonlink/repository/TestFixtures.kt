@@ -3,6 +3,7 @@ package org.commonlink.repository
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.DonorProfile
+import org.commonlink.entity.EmailVerificationToken
 import org.commonlink.entity.MagicLinkToken
 import org.commonlink.entity.RefreshToken
 import org.commonlink.entity.User
@@ -106,6 +107,18 @@ object TestFixtures {
         email = email,
         tokenHash = tokenHash,
         role = role,
+        expiresAt = expiresAt,
+        usedAt = usedAt,
+    )
+
+    fun emailVerificationToken(
+        user: User,
+        tokenHash: String = "emailtoken" + "0".repeat(54),  // 64 chars
+        expiresAt: Instant = Instant.now().plusSeconds(86400),  // 24h
+        usedAt: Instant? = null,
+    ) = EmailVerificationToken(
+        user = user,
+        tokenHash = tokenHash,
         expiresAt = expiresAt,
         usedAt = usedAt,
     )

@@ -10,7 +10,8 @@
     "loading": "Chargement...",
     "save": "Enregistrer",
     "cancel": "Annuler",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "profileUpdated": "Profil mis à jour."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -44,7 +45,10 @@
         "password": { "label": "Mot de passe", "placeholder": "8 caractères minimum" },
         "confirm": { "label": "Confirmer le mot de passe", "placeholder": "••••••••" },
         "submit": "Créer mon compte →",
-        "submitContinue": "Continuer →"
+        "submitContinue": "Continuer →",
+        "sent": "Lien envoyé ! Vérifiez votre boîte — valable 24h.",
+        "notReceived": "Pas reçu ?",
+        "resend": "Renvoyer"
       },
       "association": {
         "title": "Rejoindre en tant qu'Association",
@@ -87,7 +91,8 @@
       "password": { "label": "Mot de passe", "placeholder": "8 caractères minimum" },
       "confirm": { "label": "Confirmer", "placeholder": "••••••••" },
       "submit": "Enregistrer",
-      "skip": "Plus tard"
+      "skip": "Plus tard",
+      "success": "Mot de passe défini."
     },
     "errors": {
       "invalidCredentials": "Email ou mot de passe invalide.",
@@ -125,6 +130,14 @@
       "noResults": "Aucune association trouvée.",
       "noResultsHint": "Vérifiez l'orthographe ou essayez votre SIREN."
     },
+    "verifyEmail": {
+      "verifying": "Vérification en cours…",
+      "success": "Email vérifié !",
+      "successSubtitle": "Vous allez être redirigé vers votre espace.",
+      "failed": "Lien invalide",
+      "failedSubtitle": "Ce lien est expiré ou a déjà été utilisé.",
+      "requestNew": "Demander un nouveau lien"
+    },
     "legal": "En continuant, vous acceptez nos {terms} et notre {privacy}.",
     "terms": "CGU",
     "privacy": "Politique de confidentialité",
@@ -132,6 +145,120 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "welcome": "Bienvenue"
+    "welcome": "Bienvenue",
+    "greeting": "Bonjour, {name} 👋",
+    "nav": {
+      "overview": "Tableau de bord",
+      "profile": "Mon profil",
+      "donations": "Mes dons",
+      "campaigns": "Campagnes",
+      "donors": "Donateurs",
+      "settings": "Paramètres",
+      "associationProfile": "Profil association",
+      "logout": "Déconnexion"
+    },
+    "roles": {
+      "donor": "Donateur",
+      "association": "Association"
+    },
+    "setPassword": {
+      "title": "Sécurisez votre compte",
+      "subtitle": "Définissez un mot de passe pour pouvoir aussi vous connecter par email.",
+      "success": "Mot de passe défini avec succès."
+    },
+    "donor": {
+      "stats": {
+        "totalDonated": "Total donné",
+        "donationsCount": "Dons effectués",
+        "campaignsFollowed": "Campagnes suivies",
+        "impactScore": "Score d'impact"
+      },
+      "empty": {
+        "icon": "🌱",
+        "title": "Votre aventure philanthropique commence ici",
+        "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
+        "cta": "Explorer les campagnes"
+      },
+      "profile": {
+        "title": "Mon profil",
+        "loading": "Chargement du profil…",
+        "displayName": "Nom d'affichage",
+        "displayNamePlaceholder": "Votre nom public",
+        "email": "Email",
+        "anonymous": "Don anonyme par défaut",
+        "anonymousHint": "Votre identité sera masquée sur les campagnes.",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "success": "Profil mis à jour.",
+        "memberSince": "Membre depuis {date}",
+        "security": {
+          "title": "Sécurité",
+          "changePassword": "Définir un mot de passe",
+          "loginMethod": "Méthode de connexion",
+          "google": "Google",
+          "email": "Email & mot de passe",
+          "magicLink": "Lien magique"
+        }
+      }
+    },
+    "association": {
+      "stats": {
+        "fundsRaised": "Fonds collectés",
+        "uniqueDonors": "Donateurs uniques",
+        "activeCampaigns": "Campagnes actives",
+        "conversionRate": "Taux de conversion"
+      },
+      "empty": {
+        "icon": "🚀",
+        "title": "Lancez votre première campagne",
+        "subtitle": "Créez une campagne de collecte pour commencer à recevoir des dons et suivre votre impact.",
+        "cta": "Créer une campagne"
+      },
+      "profileCompletion": {
+        "title": "Complétez votre profil",
+        "subtitle": "Un profil complet inspire confiance aux donateurs.",
+        "fields": {
+          "name": "Nom de l'association",
+          "siren": "SIREN",
+          "description": "Description",
+          "contact": "Contact"
+        }
+      },
+      "profile": {
+        "title": "Profil de l'association",
+        "loading": "Chargement du profil…",
+        "name": "Nom de l'association",
+        "identifier": "SIREN",
+        "contactName": "Nom du contact",
+        "contactNamePlaceholder": "Votre nom complet",
+        "city": "Ville",
+        "postalCode": "Code postal",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrivez la mission de votre association",
+        "verified": "Vérifiée",
+        "pending": "En attente de vérification",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "success": "Profil mis à jour.",
+        "memberSince": "Membre depuis {date}",
+        "errors": {
+          "contactNameMin": "Le nom doit contenir au moins 2 caractères.",
+          "postalCodeFormat": "Le code postal doit contenir 5 chiffres."
+        },
+        "verification": {
+          "title": "Vérification",
+          "verified": "Votre association est vérifiée.",
+          "pendingText": "La vérification est effectuée par l'équipe CommonLink après examen de votre dossier."
+        },
+        "security": {
+          "title": "Sécurité",
+          "changePassword": "Définir un mot de passe",
+          "loginMethod": "Méthode de connexion",
+          "google": "Google",
+          "email": "Email & mot de passe",
+          "magicLink": "Lien magique"
+        }
+      }
+    }
   }
 }

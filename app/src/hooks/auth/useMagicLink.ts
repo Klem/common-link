@@ -7,6 +7,13 @@ import api from '@/lib/api';
 type MagicLinkStatus = 'idle' | 'sending' | 'sent' | 'error';
 type UserRole = 'ASSOCIATION' | 'DONOR';
 
+interface AssociationData {
+  name: string;
+  identifier: string;
+  city?: string;
+  postalCode?: string;
+}
+
 interface MagicLinkState {
   status: MagicLinkStatus;
   error: string | null;
@@ -15,10 +22,14 @@ interface MagicLinkState {
 export function useMagicLink() {
   const [state, setState] = useState<MagicLinkState>({ status: 'idle', error: null });
 
-  const sendLink = async (email: string, role?: UserRole): Promise<void> => {
+  const sendLink = async (email: string, role?: UserRole, associationData?: AssociationData): Promise<void> => {
     setState({ status: 'sending', error: null });
     try {
-      await api.post('/api/auth/magic-link/request', { email, ...(role && { role }) });
+      await api.post('/api/auth/magic-link/request', {
+        email,
+        ...(role && { role }),
+        ...(associationData && { associationProfile: associationData }),
+      });
       setState({ status: 'sent', error: null });
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 429) {
