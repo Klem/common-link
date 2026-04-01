@@ -1,8 +1,7 @@
 .claude
 .idea
+.stories
+.tasks
 CLAUDE.md
 prompts-claude-code-sprint*.md
 glossary.md
-.stories
-**/.env
-**/.env.*

@@ -5,3 +5,5 @@ out
 tasks
 gradlew.bat
 gradlew
+.env
+.env.*
