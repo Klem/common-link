@@ -131,6 +131,24 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * Handles [NotFoundException] for any resource not found (HTTP 404).
+     */
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFound(ex: NotFoundException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message ?: "Not found")
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem)
+    }
+
+    /**
+     * Handles [BadGatewayException] when an upstream dependency is unavailable (HTTP 502).
+     */
+    @ExceptionHandler(BadGatewayException::class)
+    fun handleBadGateway(ex: BadGatewayException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "Bad gateway")
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
+    }
+
+    /**
      * Catch-all handler for any unhandled [Exception] (HTTP 500).
      *
      * Logs the full stack trace at ERROR level but returns only a generic message to the

@@ -41,6 +41,9 @@ app:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
     from: ${MAIL_FROM:noreply@commonlink.org}
+  insee:
+    api-key: ${INSEE_API_KEY:default-key}
+    base-url: ${INSEE_API_KEY:https://api.insee.fr/api-sirene/3.11}
 
 springdoc:
   api-docs:
