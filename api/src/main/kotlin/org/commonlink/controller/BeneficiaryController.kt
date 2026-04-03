@@ -10,6 +10,7 @@ import jakarta.validation.Valid
 import org.commonlink.dto.AddIbanRequest
 import org.commonlink.dto.BeneficiaryDto
 import org.commonlink.dto.CreateBeneficiaryRequest
+import org.commonlink.dto.VopVerifyResponseDto
 import org.commonlink.service.BeneficiaryService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -167,4 +168,38 @@ class BeneficiaryController(
         beneficiaryService.deleteIban(UUID.fromString(principal.username), id, ibanId)
         return ResponseEntity.noContent().build()
     }
+
+    /**
+     * Triggers a VOP (Verification of Payee) check for a beneficiary IBAN.
+     *
+     * The IBAN must be in FORMAT_VALID status. The check is performed synchronously and the
+     * result is persisted immediately. In demo mode, a 500 ms simulated delay is applied.
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param beneficiaryId UUID of the beneficiary that owns the IBAN.
+     * @param ibanId UUID of the IBAN entry to verify.
+     * @return 200 with [VopVerifyResponseDto] containing the updated status and VOP outcome.
+     */
+    @PostMapping("/{beneficiaryId}/ibans/{ibanId}/verify-vop")
+    @Operation(
+        summary = "Verify IBAN via VOP",
+        description = "Runs a Verification of Payee check on the given IBAN. The IBAN must be in FORMAT_VALID status. Result is persisted and returned immediately."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "VOP check completed",
+            content = [Content(schema = Schema(implementation = VopVerifyResponseDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Beneficiary or IBAN not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "IBAN is not in FORMAT_VALID status", content = [Content()])
+    )
+    fun verifyIbanVop(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable beneficiaryId: UUID,
+        @PathVariable ibanId: UUID
+    ): ResponseEntity<VopVerifyResponseDto> =
+        ResponseEntity.ok(
+            beneficiaryService.verifyIbanVop(UUID.fromString(principal.username), beneficiaryId, ibanId)
+        )
 }

@@ -3,17 +3,22 @@ package org.commonlink.service
 import org.commonlink.dto.AddIbanRequest
 import org.commonlink.dto.BeneficiaryDto
 import org.commonlink.dto.CreateBeneficiaryRequest
+import org.commonlink.dto.VopVerifyResponseDto
 import org.commonlink.dto.toDto
 import org.commonlink.entity.Beneficiary
 import org.commonlink.entity.BeneficiaryIban
 import org.commonlink.entity.IbanVerificationStatus
+import org.commonlink.entity.VopResult
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.NotFoundException
+import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.BeneficiaryIbanRepository
 import org.commonlink.repository.BeneficiaryRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -27,7 +32,8 @@ import java.util.UUID
 class BeneficiaryService(
     private val beneficiaryRepository: BeneficiaryRepository,
     private val beneficiaryIbanRepository: BeneficiaryIbanRepository,
-    private val associationProfileRepository: AssociationProfileRepository
+    private val associationProfileRepository: AssociationProfileRepository,
+    private val vopService: VopService
 ) {
 
     /**
@@ -138,6 +144,71 @@ class BeneficiaryService(
         val ibanEntry = beneficiaryIbanRepository.findByIdAndBeneficiaryId(ibanId, beneficiaryId)
             .orElseThrow { UserNotFoundException("IBAN not found") }
         beneficiaryIbanRepository.delete(ibanEntry)
+    }
+
+    /**
+     * Verifies a beneficiary IBAN via VOP (Verification of Payee) and persists the result.
+     *
+     * The IBAN must be in [IbanVerificationStatus.FORMAT_VALID] status before VOP can be
+     * initiated — this is enforced server-side even though the frontend also guards the action,
+     * because API calls can be replayed independently of the UI.
+     *
+     * After the VOP call, the IBAN is updated with:
+     * - [BeneficiaryIban.vopResult], [BeneficiaryIban.vopSuggestedName], [BeneficiaryIban.vopRawResponse]
+     * - [BeneficiaryIban.verifiedAt] set to the current instant
+     * - [BeneficiaryIban.status] derived from the VOP outcome:
+     *   MATCH → VERIFIED, CLOSE_MATCH → CLOSE_MATCH, NO_MATCH → NO_MATCH, NOT_POSSIBLE → NOT_POSSIBLE
+     *
+     * @param userId UUID of the authenticated association user.
+     * @param beneficiaryId UUID of the beneficiary that owns the IBAN.
+     * @param ibanId UUID of the IBAN entry to verify.
+     * @return [VopVerifyResponseDto] with the updated status, VOP result, and a human-readable message.
+     * @throws UserNotFoundException if the association profile or beneficiary is not found.
+     * @throws NotFoundException if the IBAN entry is not found.
+     * @throws UnprocessableEntityException if the IBAN status is not [IbanVerificationStatus.FORMAT_VALID].
+     */
+    @Transactional
+    fun verifyIbanVop(userId: UUID, beneficiaryId: UUID, ibanId: UUID): VopVerifyResponseDto {
+        val associationId = resolveAssociationId(userId)
+        beneficiaryRepository.findByIdAndAssociationId(beneficiaryId, associationId)
+            .orElseThrow { UserNotFoundException("Beneficiary not found") }
+        val ibanEntry = beneficiaryIbanRepository.findByIdAndBeneficiaryId(ibanId, beneficiaryId)
+            .orElseThrow { NotFoundException("IBAN not found") }
+
+        if (ibanEntry.status != IbanVerificationStatus.FORMAT_VALID) {
+            throw UnprocessableEntityException("IBAN must have FORMAT_VALID status before VOP verification")
+        }
+
+        val beneficiary = ibanEntry.beneficiary
+        val result = vopService.verify(ibanEntry.iban, beneficiary.name)
+
+        ibanEntry.vopResult = result.result
+        ibanEntry.vopSuggestedName = result.suggestedName
+        ibanEntry.vopRawResponse = result.rawResponse
+        ibanEntry.verifiedAt = Instant.now()
+        ibanEntry.status = when (result.result) {
+            VopResult.MATCH -> IbanVerificationStatus.VERIFIED
+            VopResult.CLOSE_MATCH -> IbanVerificationStatus.CLOSE_MATCH
+            VopResult.NO_MATCH -> IbanVerificationStatus.NO_MATCH
+            VopResult.NOT_POSSIBLE -> IbanVerificationStatus.NOT_POSSIBLE
+        }
+        beneficiaryIbanRepository.save(ibanEntry)
+
+        val message = when (result.result) {
+            VopResult.MATCH -> "VOP verification successful: account holder name matches."
+            VopResult.CLOSE_MATCH -> "VOP close match — name differs slightly. Suggested: ${result.suggestedName}"
+            VopResult.NO_MATCH -> "VOP verification failed: account holder name does not match."
+            VopResult.NOT_POSSIBLE -> "VOP verification not possible: the bank does not support VOP for this IBAN."
+        }
+
+        return VopVerifyResponseDto(
+            ibanId = ibanEntry.id!!,
+            iban = ibanEntry.iban,
+            status = ibanEntry.status,
+            vopResult = ibanEntry.vopResult,
+            suggestedName = ibanEntry.vopSuggestedName,
+            message = message
+        )
     }
 
     /**

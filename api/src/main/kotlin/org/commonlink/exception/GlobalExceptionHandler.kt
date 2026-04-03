@@ -149,6 +149,15 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * Handles [UnprocessableEntityException], e.g. when VOP is attempted on an IBAN with invalid status (HTTP 422).
+     */
+    @ExceptionHandler(UnprocessableEntityException::class)
+    fun handleUnprocessableEntity(ex: UnprocessableEntityException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.message ?: "Unprocessable entity")
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem)
+    }
+
+    /**
      * Catch-all handler for any unhandled [Exception] (HTTP 500).
      *
      * Logs the full stack trace at ERROR level but returns only a generic message to the
