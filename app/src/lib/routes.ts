@@ -14,4 +14,5 @@ export const ROUTES = {
   DONOR_PROFILE: '/dashboard/donor/profile',
   ASSOCIATION_DASHBOARD: '/dashboard/association',
   ASSOCIATION_PROFILE: '/dashboard/association/profile',
+  ASSOCIATION_BENEFICIARIES: '/dashboard/association/beneficiaries',
 } as const;

@@ -11,7 +11,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "profileUpdated": "Profile updated."
+    "profileUpdated": "Profile updated.",
+    "beneficiaryCreated": "Beneficiary added successfully."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -152,6 +153,7 @@
       "profile": "My profile",
       "donations": "My donations",
       "campaigns": "Campaigns",
+      "beneficiaries": "Beneficiaries",
       "donors": "Donors",
       "settings": "Settings",
       "associationProfile": "Association profile",
@@ -160,6 +162,43 @@
     "roles": {
       "donor": "Donor",
       "association": "Association"
+    },
+    "beneficiaries": {
+      "pageTitle": "Beneficiaries",
+      "pageSubtitle": "Manage your association's beneficiaries",
+      "search": {
+        "title": "Search SIRET / SIREN",
+        "subtitle": "Enter an identifier. Type detection is automatic.",
+        "placeholder": "829844810 or 82984481000046",
+        "button": "Search",
+        "loading": "Querying INSEE Sirene…",
+        "detected": {
+          "siren": "SIREN detected — 9 digits ✓",
+          "siret": "SIRET detected — 14 digits ✓"
+        },
+        "hint": "{remaining} more digit(s) needed",
+        "errors": {
+          "400": "Incorrect SIREN/SIRET format.",
+          "404": "No establishment found for this identifier.",
+          "429": "Too many requests. Please try again in a few minutes.",
+          "502": "INSEE API temporarily unavailable.",
+          "network": "Unable to reach the API."
+        }
+      },
+      "result": {
+        "active": "Active",
+        "closed": "Closed",
+        "siege": "HQ",
+        "ess": "ESS",
+        "select": "Select",
+        "close": "Close",
+        "siren": "SIREN",
+        "created": "Created",
+        "naf": "NAF",
+        "employees": "Employees",
+        "address": "Address",
+        "beneficiaryCreated": "Beneficiary added successfully."
+      }
     },
     "setPassword": {
       "title": "Secure your account",

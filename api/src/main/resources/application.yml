@@ -43,7 +43,7 @@ app:
     from: ${MAIL_FROM:noreply@commonlink.org}
   insee:
     api-key: ${INSEE_API_KEY:default-key}
-    base-url: ${INSEE_API_KEY:https://api.insee.fr/api-sirene/3.11}
+    base-url: ${INSEE_BASE_URL:https://api.insee.fr/api-sirene/3.11}
   vop:
     demo-mode: true
     api-url: ${VOP_BASE_URL=https://thirdparty.qonto.com/v2/sepa/verify_payee}

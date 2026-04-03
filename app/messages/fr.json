@@ -11,7 +11,8 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
-    "profileUpdated": "Profil mis à jour."
+    "profileUpdated": "Profil mis à jour.",
+    "beneficiaryCreated": "Bénéficiaire ajouté avec succès."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -152,6 +153,7 @@
       "profile": "Mon profil",
       "donations": "Mes dons",
       "campaigns": "Campagnes",
+      "beneficiaries": "Bénéficiaires",
       "donors": "Donateurs",
       "settings": "Paramètres",
       "associationProfile": "Profil association",
@@ -160,6 +162,43 @@
     "roles": {
       "donor": "Donateur",
       "association": "Association"
+    },
+    "beneficiaries": {
+      "pageTitle": "Bénéficiaires",
+      "pageSubtitle": "Gérez les bénéficiaires de votre association",
+      "search": {
+        "title": "Recherche SIRET / SIREN",
+        "subtitle": "Saisissez un identifiant. La détection du type est automatique.",
+        "placeholder": "829844810 ou 82984481000046",
+        "button": "Rechercher",
+        "loading": "Interrogation INSEE Sirene…",
+        "detected": {
+          "siren": "SIREN détecté — 9 chiffres ✓",
+          "siret": "SIRET détecté — 14 chiffres ✓"
+        },
+        "hint": "encore {remaining} chiffre(s)",
+        "errors": {
+          "400": "Format SIREN/SIRET incorrect.",
+          "404": "Aucun établissement trouvé pour cet identifiant.",
+          "429": "Trop de requêtes. Réessayez dans quelques minutes.",
+          "502": "API INSEE temporairement indisponible.",
+          "network": "Impossible de joindre l'API."
+        }
+      },
+      "result": {
+        "active": "Actif",
+        "closed": "Fermé",
+        "siege": "Siège",
+        "ess": "ESS",
+        "select": "Sélectionner",
+        "close": "Fermer",
+        "siren": "SIREN",
+        "created": "Créé le",
+        "naf": "NAF",
+        "employees": "Effectif",
+        "address": "Adresse",
+        "beneficiaryCreated": "Bénéficiaire ajouté avec succès."
+      }
     },
     "setPassword": {
       "title": "Sécurisez votre compte",
