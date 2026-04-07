@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Topbar } from '@/components/dashboard';
 import { SirenSearchCard, SireneResultPanel } from '@/components/beneficiary';
@@ -37,10 +37,10 @@ export default function BeneficiariesPage() {
   const [showPanel, setShowPanel] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleResult = (result: SireneSearchResultDto) => {
+  const handleResult = useCallback((result: SireneSearchResultDto) => {
     setSireneResult(result);
     setShowPanel(true);
-  };
+  }, []);
 
   const handleClose = () => {
     setShowPanel(false);
