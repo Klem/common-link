@@ -3,8 +3,10 @@
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Topbar } from '@/components/dashboard';
-import { SirenSearchCard, SireneResultPanel } from '@/components/beneficiary';
+import { SirenSearchCard, SireneResultPanel, BeneficiaryList } from '@/components/beneficiary';
 import { createBeneficiary } from '@/lib/api/beneficiary';
+import { useBeneficiaries } from '@/hooks/beneficiary/useBeneficiaries';
+import { useVopVerify } from '@/hooks/beneficiary/useVopVerify';
 import { useToastStore } from '@/stores/toastStore';
 import type { SireneSearchResultDto, CreateBeneficiaryRequest } from '@/types/beneficiary';
 
@@ -27,11 +29,24 @@ function toCreateRequest(result: SireneSearchResultDto): CreateBeneficiaryReques
 
 /**
  * Beneficiary management page for associations.
- * Renders the SIREN/SIRET search card and the result confirmation panel.
+ *
+ * Assembles the SIREN/SIRET search card, the result confirmation overlay,
+ * and the beneficiary list with IBAN management and VOP verification.
  */
 export default function BeneficiariesPage() {
   const t = useTranslations('dashboard');
   const { addToast } = useToastStore();
+
+  const {
+    beneficiaries,
+    isLoading,
+    fetchBeneficiaries,
+    addBeneficiaryIban,
+    removeBeneficiaryIban,
+    removeBeneficiary,
+  } = useBeneficiaries();
+
+  const { verifyingIbanId, verify } = useVopVerify();
 
   const [sireneResult, setSireneResult] = useState<SireneSearchResultDto | null>(null);
   const [showPanel, setShowPanel] = useState(false);
@@ -54,11 +69,40 @@ export default function BeneficiariesPage() {
       addToast('success', 'beneficiaryCreated');
       setShowPanel(false);
       setSireneResult(null);
+      await fetchBeneficiaries();
     } catch {
       addToast('error', 'errors.serverError');
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleAddIban = async (beneficiaryId: string, iban: string) => {
+    try {
+      await addBeneficiaryIban(beneficiaryId, iban);
+    } catch {
+      addToast('error', 'errors.serverError');
+    }
+  };
+
+  const handleDeleteIban = async (beneficiaryId: string, ibanId: string) => {
+    try {
+      await removeBeneficiaryIban(beneficiaryId, ibanId);
+    } catch {
+      addToast('error', 'errors.serverError');
+    }
+  };
+
+  const handleDeleteBeneficiary = async (id: string) => {
+    try {
+      await removeBeneficiary(id);
+    } catch {
+      addToast('error', 'errors.serverError');
+    }
+  };
+
+  const handleVerifyVop = async (beneficiaryId: string, ibanId: string) => {
+    await verify(beneficiaryId, ibanId, fetchBeneficiaries);
   };
 
   return (
@@ -68,8 +112,18 @@ export default function BeneficiariesPage() {
         subtitle={t('beneficiaries.pageSubtitle')}
       />
 
-      <div className="p-[24px]">
+      <div className="p-[24px] flex flex-col gap-[20px]">
         <SirenSearchCard onResult={handleResult} />
+
+        <BeneficiaryList
+          beneficiaries={beneficiaries}
+          isLoading={isLoading}
+          onDeleteBeneficiary={handleDeleteBeneficiary}
+          onAddIban={handleAddIban}
+          onDeleteIban={handleDeleteIban}
+          onVerifyVop={handleVerifyVop}
+          verifyingIbanId={verifyingIbanId}
+        />
       </div>
 
       {showPanel && sireneResult && (

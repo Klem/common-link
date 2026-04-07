@@ -12,7 +12,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "profileUpdated": "Profile updated.",
-    "beneficiaryCreated": "Beneficiary added successfully."
+    "beneficiaryCreated": "Beneficiary added successfully.",
+    "vopVerified": "VOP verification completed."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -198,7 +199,45 @@
         "employees": "Employees",
         "address": "Address",
         "beneficiaryCreated": "Beneficiary added successfully."
-      }
+      },
+      "list": {
+        "title": "Selected beneficiaries",
+        "count": "{count} entry(ies)",
+        "empty": "No beneficiary selected.",
+        "emptyHint": "Search for a SIREN/SIRET and click Select.",
+        "delete": "Delete",
+        "alreadyAdded": "This beneficiary is already in your list.",
+        "deleteTitle": "Delete beneficiary",
+        "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
+      },
+      "status": {
+        "pending": "Pending",
+        "formatValid": "Format ✓",
+        "verified": "VOP Verified",
+        "closeMatch": "Approx.",
+        "noMatch": "Name ≠",
+        "notPossible": "N/A",
+        "invalid": "Invalid"
+      },
+      "iban": {
+        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        "verify": "Verify",
+        "verifyVop": "Verify VOP →",
+        "verified": "Verified",
+        "addIban": "Add an IBAN",
+        "inputPlaceholder": "Enter an IBAN",
+        "add": "Add",
+        "cancel": "Cancel",
+        "deleteTitle": "Delete IBAN",
+        "deleteMessage": "Are you sure you want to delete IBAN {iban}?",
+        "vop": {
+          "match": "VOP identity confirmed — the account holder matches the beneficiary.",
+          "closeMatch": "Close match — suggested name: {name}",
+          "noMatch": "No match — the account holder name does not match the beneficiary.",
+          "notPossible": "Verification not available for this IBAN (non-participating bank)."
+        }
+      },
+      "vop": {}
     },
     "setPassword": {
       "title": "Secure your account",

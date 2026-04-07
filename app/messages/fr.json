@@ -12,7 +12,8 @@
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "profileUpdated": "Profil mis à jour.",
-    "beneficiaryCreated": "Bénéficiaire ajouté avec succès."
+    "beneficiaryCreated": "Bénéficiaire ajouté avec succès.",
+    "vopVerified": "Vérification VOP terminée."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -198,7 +199,46 @@
         "employees": "Effectif",
         "address": "Adresse",
         "beneficiaryCreated": "Bénéficiaire ajouté avec succès."
-      }
+      },
+      "list": {
+        "title": "Bénéficiaires sélectionnés",
+        "count": "{count} entrée(s)",
+        "empty": "Aucun bénéficiaire sélectionné.",
+        "emptyHint": "Recherchez un SIREN/SIRET et cliquez sur Sélectionner.",
+        "delete": "Supprimer",
+        "alreadyAdded": "Ce bénéficiaire est déjà dans votre liste.",
+        "deleteTitle": "Supprimer le bénéficiaire",
+        "deleteMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible."
+      },
+      "status": {
+        "pending": "En attente",
+        "formatValid": "Format ✓",
+        "verified": "Vérifié VOP",
+        "closeMatch": "Approx.",
+        "noMatch": "Nom ≠",
+        "notPossible": "Non dispo.",
+        "invalid": "Invalide"
+      },
+      "iban": {
+        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        "verify": "Vérifier",
+        "verifyVop": "Vérifier VOP →",
+        "verified": "Vérifié",
+        "addIban": "Ajouter un IBAN",
+        "inputPlaceholder": "Saisissez un IBAN",
+        "add": "Ajouter",
+        "cancel": "Annuler",
+        "deleteTitle": "Supprimer l'IBAN",
+        "deleteMessage": "Êtes-vous sûr de vouloir supprimer l'IBAN {iban} ?",
+        "vop": {
+          "match": "Identité VOP confirmée — le titulaire du compte correspond au bénéficiaire.",
+          "closeMatch": "Correspondance approximative — nom suggéré : {name}",
+          "noMatch": "Aucune correspondance — le nom du titulaire ne correspond pas au bénéficiaire.",
+          "notPossible": "Vérification non disponible pour cet IBAN (banque non participante)."
+        }
+      },
+      "vop": {}
+
     },
     "setPassword": {
       "title": "Sécurisez votre compte",
