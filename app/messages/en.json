@@ -11,7 +11,9 @@
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "profileUpdated": "Profile updated."
+    "profileUpdated": "Profile updated.",
+    "beneficiaryCreated": "Beneficiary added successfully.",
+    "vopVerified": "VOP verification completed."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -152,6 +154,7 @@
       "profile": "My profile",
       "donations": "My donations",
       "campaigns": "Campaigns",
+      "beneficiaries": "Beneficiaries",
       "donors": "Donors",
       "settings": "Settings",
       "associationProfile": "Association profile",
@@ -160,6 +163,81 @@
     "roles": {
       "donor": "Donor",
       "association": "Association"
+    },
+    "beneficiaries": {
+      "pageTitle": "Beneficiaries",
+      "pageSubtitle": "Manage your association's beneficiaries",
+      "search": {
+        "title": "Search SIRET / SIREN",
+        "subtitle": "Enter an identifier. Type detection is automatic.",
+        "placeholder": "829844810 or 82984481000046",
+        "button": "Search",
+        "loading": "Querying INSEE Sirene…",
+        "detected": {
+          "siren": "SIREN detected — 9 digits ✓",
+          "siret": "SIRET detected — 14 digits ✓"
+        },
+        "hint": "{remaining} more digit(s) needed",
+        "errors": {
+          "400": "Incorrect SIREN/SIRET format.",
+          "404": "No establishment found for this identifier.",
+          "429": "Too many requests. Please try again in a few minutes.",
+          "502": "INSEE API temporarily unavailable.",
+          "network": "Unable to reach the API."
+        }
+      },
+      "result": {
+        "active": "Active",
+        "closed": "Closed",
+        "siege": "HQ",
+        "ess": "ESS",
+        "select": "Select",
+        "close": "Close",
+        "siren": "SIREN",
+        "created": "Created",
+        "naf": "NAF",
+        "employees": "Employees",
+        "address": "Address",
+        "beneficiaryCreated": "Beneficiary added successfully."
+      },
+      "list": {
+        "title": "Selected beneficiaries",
+        "count": "{count} entry(ies)",
+        "empty": "No beneficiary selected.",
+        "emptyHint": "Search for a SIREN/SIRET and click Select.",
+        "delete": "Delete",
+        "alreadyAdded": "This beneficiary is already in your list.",
+        "deleteTitle": "Delete beneficiary",
+        "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
+      },
+      "status": {
+        "pending": "Pending",
+        "formatValid": "Format ✓",
+        "verified": "VOP Verified",
+        "closeMatch": "Approx.",
+        "noMatch": "Name ≠",
+        "notPossible": "N/A",
+        "invalid": "Invalid"
+      },
+      "iban": {
+        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        "verify": "Verify",
+        "verifyVop": "Verify VOP →",
+        "verified": "Verified",
+        "addIban": "Add an IBAN",
+        "inputPlaceholder": "Enter an IBAN",
+        "add": "Add",
+        "cancel": "Cancel",
+        "deleteTitle": "Delete IBAN",
+        "deleteMessage": "Are you sure you want to delete IBAN {iban}?",
+        "vop": {
+          "match": "VOP identity confirmed — the account holder matches the beneficiary.",
+          "closeMatch": "Close match — suggested name: {name}",
+          "noMatch": "No match — the account holder name does not match the beneficiary.",
+          "notPossible": "Verification not available for this IBAN (non-participating bank)."
+        }
+      },
+      "vop": {}
     },
     "setPassword": {
       "title": "Secure your account",

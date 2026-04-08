@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.service.AssociationService
@@ -57,7 +58,7 @@ class AssociationController(
     )
     fun updateProfile(
         @AuthenticationPrincipal principal: UserDetails,
-        @RequestBody req: UpdateAssociationProfileRequest
+        @Valid @RequestBody req: UpdateAssociationProfileRequest
     ): ResponseEntity<AssociationProfileDto> =
         ResponseEntity.ok(associationService.updateProfile(UUID.fromString(principal.username), req))
 }

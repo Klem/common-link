@@ -22,6 +22,7 @@ const DONOR_NAV: NavItem[] = [
 const ASSOCIATION_NAV: NavItem[] = [
   { icon: '🏠', labelKey: 'nav.overview',          href: ROUTES.ASSOCIATION_DASHBOARD },
   { icon: '📊', labelKey: 'nav.associationProfile', href: ROUTES.ASSOCIATION_PROFILE },
+  { icon: '🏦', labelKey: 'nav.beneficiaries',      href: ROUTES.ASSOCIATION_BENEFICIARIES },
   { icon: '🎯', labelKey: 'nav.campaigns',          href: '#' },
   { icon: '👥', labelKey: 'nav.donors',             href: '#' },
   { icon: '⚙️', labelKey: 'nav.settings',           href: '#' },

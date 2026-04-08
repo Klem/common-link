@@ -13,6 +13,9 @@ data class AssociationProfileRequestDto(
 
     val city: String? = null,
     val postalCode: String? = null,
+
+    @field:Size(min = 2)
     val contactName: String? = null,
+
     val description: String? = null
 )

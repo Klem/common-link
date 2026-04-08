@@ -50,3 +50,15 @@ class RateLimitException(message: String = "Rate limit exceeded. Try again later
 class PasswordNotSetException(
     message: String = "No password defined, Use Magic Link or Google"
 ) : AppException(message, HttpStatus.UNAUTHORIZED)
+
+/** Thrown when a requested resource cannot be found (HTTP 404). */
+class NotFoundException(message: String) :
+    AppException(message, HttpStatus.NOT_FOUND)
+
+/** Thrown when an upstream dependency (e.g. an external API) is unavailable or returns an error (HTTP 502). */
+class BadGatewayException(message: String) :
+    AppException(message, HttpStatus.BAD_GATEWAY)
+
+/** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */
+class UnprocessableEntityException(message: String) :
+    AppException(message, HttpStatus.UNPROCESSABLE_ENTITY)

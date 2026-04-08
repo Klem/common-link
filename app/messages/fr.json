@@ -11,7 +11,9 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
-    "profileUpdated": "Profil mis à jour."
+    "profileUpdated": "Profil mis à jour.",
+    "beneficiaryCreated": "Bénéficiaire ajouté avec succès.",
+    "vopVerified": "Vérification VOP terminée."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -152,6 +154,7 @@
       "profile": "Mon profil",
       "donations": "Mes dons",
       "campaigns": "Campagnes",
+      "beneficiaries": "Bénéficiaires",
       "donors": "Donateurs",
       "settings": "Paramètres",
       "associationProfile": "Profil association",
@@ -160,6 +163,82 @@
     "roles": {
       "donor": "Donateur",
       "association": "Association"
+    },
+    "beneficiaries": {
+      "pageTitle": "Bénéficiaires",
+      "pageSubtitle": "Gérez les bénéficiaires de votre association",
+      "search": {
+        "title": "Recherche SIRET / SIREN",
+        "subtitle": "Saisissez un identifiant. La détection du type est automatique.",
+        "placeholder": "829844810 ou 82984481000046",
+        "button": "Rechercher",
+        "loading": "Interrogation INSEE Sirene…",
+        "detected": {
+          "siren": "SIREN détecté — 9 chiffres ✓",
+          "siret": "SIRET détecté — 14 chiffres ✓"
+        },
+        "hint": "encore {remaining} chiffre(s)",
+        "errors": {
+          "400": "Format SIREN/SIRET incorrect.",
+          "404": "Aucun établissement trouvé pour cet identifiant.",
+          "429": "Trop de requêtes. Réessayez dans quelques minutes.",
+          "502": "API INSEE temporairement indisponible.",
+          "network": "Impossible de joindre l'API."
+        }
+      },
+      "result": {
+        "active": "Actif",
+        "closed": "Fermé",
+        "siege": "Siège",
+        "ess": "ESS",
+        "select": "Sélectionner",
+        "close": "Fermer",
+        "siren": "SIREN",
+        "created": "Créé le",
+        "naf": "NAF",
+        "employees": "Effectif",
+        "address": "Adresse",
+        "beneficiaryCreated": "Bénéficiaire ajouté avec succès."
+      },
+      "list": {
+        "title": "Bénéficiaires sélectionnés",
+        "count": "{count} entrée(s)",
+        "empty": "Aucun bénéficiaire sélectionné.",
+        "emptyHint": "Recherchez un SIREN/SIRET et cliquez sur Sélectionner.",
+        "delete": "Supprimer",
+        "alreadyAdded": "Ce bénéficiaire est déjà dans votre liste.",
+        "deleteTitle": "Supprimer le bénéficiaire",
+        "deleteMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible."
+      },
+      "status": {
+        "pending": "En attente",
+        "formatValid": "Format ✓",
+        "verified": "Vérifié VOP",
+        "closeMatch": "Approx.",
+        "noMatch": "Nom ≠",
+        "notPossible": "Non dispo.",
+        "invalid": "Invalide"
+      },
+      "iban": {
+        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        "verify": "Vérifier",
+        "verifyVop": "Vérifier VOP →",
+        "verified": "Vérifié",
+        "addIban": "Ajouter un IBAN",
+        "inputPlaceholder": "Saisissez un IBAN",
+        "add": "Ajouter",
+        "cancel": "Annuler",
+        "deleteTitle": "Supprimer l'IBAN",
+        "deleteMessage": "Êtes-vous sûr de vouloir supprimer l'IBAN {iban} ?",
+        "vop": {
+          "match": "Identité VOP confirmée — le titulaire du compte correspond au bénéficiaire.",
+          "closeMatch": "Correspondance approximative — nom suggéré : {name}",
+          "noMatch": "Aucune correspondance — le nom du titulaire ne correspond pas au bénéficiaire.",
+          "notPossible": "Vérification non disponible pour cet IBAN (banque non participante)."
+        }
+      },
+      "vop": {}
+
     },
     "setPassword": {
       "title": "Sécurisez votre compte",
