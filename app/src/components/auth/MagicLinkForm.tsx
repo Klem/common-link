@@ -16,7 +16,7 @@ export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<MagicLinkState>('idle');
 
-  const isValidEmail = email.includes('@');
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async () => {
     if (!isValidEmail || state === 'sending') return;

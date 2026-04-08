@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.commonlink.dto.DonorProfileDto
 import org.commonlink.dto.UpdateDonorProfileRequest
 import org.commonlink.service.DonorService
@@ -57,7 +58,7 @@ class DonorController(
     )
     fun updateProfile(
         @AuthenticationPrincipal principal: UserDetails,
-        @RequestBody req: UpdateDonorProfileRequest
+        @Valid @RequestBody req: UpdateDonorProfileRequest
     ): ResponseEntity<DonorProfileDto> =
         ResponseEntity.ok(donorService.updateProfile(UUID.fromString(principal.username), req))
 }
