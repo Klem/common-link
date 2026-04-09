@@ -27,6 +27,7 @@ import java.util.UUID
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @TestPropertySource(properties = [
+    "spring.profiles.active=local",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000",
     "app.vop.demo-mode=true"

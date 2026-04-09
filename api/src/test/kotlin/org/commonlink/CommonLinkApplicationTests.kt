@@ -7,7 +7,10 @@ import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
+import org.commonlink.service.BeneficiaryService
+import org.commonlink.service.CampaignService
 import org.commonlink.service.DonorService
+import org.commonlink.service.SireneSearchService
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -31,6 +34,9 @@ class CommonLinkApplicationTests {
     @MockkBean lateinit var userRepository: UserRepository
     @MockkBean lateinit var associationService: AssociationService
     @MockkBean lateinit var donorService: DonorService
+    @MockkBean lateinit var beneficiaryService: BeneficiaryService
+    @MockkBean private lateinit var campaignService: CampaignService
+    @MockkBean private lateinit var sireneSearchService: SireneSearchService
 
     @Test
     fun contextLoads() {

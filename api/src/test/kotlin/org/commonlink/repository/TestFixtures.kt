@@ -2,12 +2,17 @@ package org.commonlink.repository
 
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
+import org.commonlink.entity.Campaign
+import org.commonlink.entity.CampaignMilestone
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.EmailVerificationToken
 import org.commonlink.entity.MagicLinkToken
+import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.RefreshToken
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -133,5 +138,54 @@ object TestFixtures {
         tokenHash = tokenHash,
         expiresAt = expiresAt,
         revoked = revoked,
+    )
+
+    // ── Campaigns ────────────────────────────────────────────────────────────
+
+    /**
+     * Returns an unpersisted [Campaign] entity for testing.
+     *
+     * @param association The association profile that owns the campaign.
+     * @param name Display name of the campaign.
+     * @param goal Total fundraising goal in euros.
+     * @param status Initial lifecycle status (defaults to DRAFT).
+     */
+    fun campaign(
+        association: AssociationProfile,
+        name: String = "Hiver Solidaire 2025",
+        goal: BigDecimal = BigDecimal("40000"),
+        status: CampaignStatus = CampaignStatus.DRAFT,
+    ) = Campaign(
+        association = association,
+        name = name,
+        emoji = "🌍",
+        description = "Campagne de soutien hivernal pour les familles en difficulté.",
+        goal = goal,
+        status = status,
+    )
+
+    /**
+     * Returns an unpersisted [CampaignMilestone] entity for testing.
+     *
+     * @param campaign The campaign this milestone belongs to.
+     * @param title Short title of the milestone.
+     * @param targetAmount Amount required to reach this milestone.
+     * @param sortOrder Display position (lower = first).
+     * @param status Initial milestone status (defaults to LOCKED).
+     */
+    fun milestone(
+        campaign: Campaign,
+        title: String = "Urgence Chauffage",
+        targetAmount: BigDecimal = BigDecimal("5000"),
+        sortOrder: Int = 0,
+        status: MilestoneStatus = MilestoneStatus.LOCKED,
+    ) = CampaignMilestone(
+        campaign = campaign,
+        emoji = "❄️",
+        title = title,
+        description = "Matériel de chauffage d'urgence pour 8 familles.",
+        targetAmount = targetAmount,
+        sortOrder = sortOrder,
+        status = status,
     )
 }

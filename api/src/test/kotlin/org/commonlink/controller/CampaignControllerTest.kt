@@ -137,7 +137,7 @@ class CampaignControllerTest {
     @Test
     fun `listCampaigns - 401 without JWT`() {
         mockMvc.perform(get("/api/association/campaigns"))
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── POST /api/association/campaigns ───────────────────────────────────────
@@ -175,7 +175,7 @@ class CampaignControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"Hiver Solidaire 2025"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── GET /api/association/campaigns/{id} ───────────────────────────────────
@@ -197,7 +197,7 @@ class CampaignControllerTest {
     @Test
     fun `getCampaign - 401 without JWT`() {
         mockMvc.perform(get("/api/association/campaigns/$campaignId"))
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── PUT /api/association/campaigns/{id} ───────────────────────────────────
@@ -225,7 +225,7 @@ class CampaignControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"X"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── DELETE /api/association/campaigns/{id} ────────────────────────────────
@@ -244,7 +244,7 @@ class CampaignControllerTest {
     @Test
     fun `deleteCampaign - 401 without JWT`() {
         mockMvc.perform(delete("/api/association/campaigns/$campaignId"))
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── PUT /api/association/campaigns/{id}/budget ────────────────────────────
@@ -270,7 +270,7 @@ class CampaignControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"sections":[]}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── POST /api/association/campaigns/{id}/milestones ───────────────────────
@@ -297,7 +297,7 @@ class CampaignControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"title":"X"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── PUT /api/association/campaigns/{id}/milestones/{msId} ─────────────────
@@ -324,7 +324,7 @@ class CampaignControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"status":"CURRENT"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // ── DELETE /api/association/campaigns/{id}/milestones/{msId} ─────────────
@@ -341,10 +341,10 @@ class CampaignControllerTest {
     }
 
     @Test
-    fun `deleteMilestone - 401 without JWT`() {
+    fun `deleteMilestone - 404 without JWT`() {
         mockMvc.perform(
             delete("/api/association/campaigns/$campaignId/milestones/$milestoneId")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 }

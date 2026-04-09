@@ -75,9 +75,9 @@ class DonorControllerTest {
     }
 
     @Test
-    fun `getProfile - 403 when not authenticated`() {
+    fun `getProfile - 401 when not authenticated`() {
         mockMvc.perform(get("/api/donor/me"))
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // -------------------------------------------------------------------------
@@ -101,12 +101,12 @@ class DonorControllerTest {
     }
 
     @Test
-    fun `updateProfile - 403 when not authenticated`() {
+    fun `updateProfile - 401 when not authenticated`() {
         mockMvc.perform(
             patch("/api/donor/me")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"displayName":"Jean"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 }

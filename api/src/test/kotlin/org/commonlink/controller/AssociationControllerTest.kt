@@ -79,9 +79,9 @@ class AssociationControllerTest {
     }
 
     @Test
-    fun `getProfile - 403 when not authenticated`() {
+    fun `getProfile - 401 when not authenticated`() {
         mockMvc.perform(get("/api/association/me"))
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     // -------------------------------------------------------------------------
@@ -106,12 +106,12 @@ class AssociationControllerTest {
     }
 
     @Test
-    fun `updateProfile - 403 when not authenticated`() {
+    fun `updateProfile - 401 when not authenticated`() {
         mockMvc.perform(
             patch("/api/association/me")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"city":"Lyon"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 }

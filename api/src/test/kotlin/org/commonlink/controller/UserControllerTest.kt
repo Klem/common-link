@@ -69,13 +69,13 @@ class UserControllerTest {
     }
 
     @Test
-    fun `setPassword - 403 when not authenticated`() {
+    fun `setPassword - 401 when not authenticated`() {
         mockMvc.perform(
             patch("/api/user/me/password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"password":"newpass123","confirmPassword":"newpass123"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     @Test
@@ -137,13 +137,13 @@ class UserControllerTest {
     }
 
     @Test
-    fun `upsertAssociationProfile - 403 when not authenticated`() {
+    fun `upsertAssociationProfile - 401 when not authenticated`() {
         mockMvc.perform(
             patch("/api/user/me/association-profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"nom":"MyAsso","siren":"123456789"}""")
         )
-            .andExpect(status().isForbidden)
+            .andExpect(status().isUnauthorized)
     }
 
     @Test
