@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
 import { Topbar, StatCard, EmptyStateCard } from '@/components/dashboard';
+import { ROUTES } from '@/lib/routes';
 
 const CHECKLIST_ITEMS = [
   { key: 'name', done: true },
@@ -50,7 +51,7 @@ export default function AssociationDashboardPage() {
           title={t('association.empty.title')}
           subtitle={t('association.empty.subtitle')}
           actionLabel={t('association.empty.cta')}
-          actionHref="/dashboard/campaigns/new"
+          actionHref={ROUTES.ASSOCIATION_CAMPAIGNS}
         />
 
         <div className="bg-bg-2 border border-border rounded-[14px] p-[24px]">

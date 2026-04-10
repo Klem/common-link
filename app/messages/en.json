@@ -244,6 +244,33 @@
       "subtitle": "Set a password to also be able to log in with your email.",
       "success": "Password set successfully."
     },
+    "campaigns": {
+      "pageTitle": "Campaigns",
+      "pageSubtitle": "Manage your association's fundraising campaigns",
+      "create": "Create a campaign",
+      "defaultName": "New campaign",
+      "stats": {
+        "total": "Campaigns",
+        "live": "Active",
+        "raised": "Total raised",
+        "goal": "Total goal"
+      },
+      "status": {
+        "draft": "Draft",
+        "live": "Live",
+        "ended": "Ended"
+      },
+      "milestones": "milestone(s)",
+      "empty": {
+        "icon": "🎯",
+        "title": "No campaigns",
+        "subtitle": "Create your first campaign to start collecting donations.",
+        "cta": "Create a campaign"
+      },
+      "delete": "Delete",
+      "deleteConfirm": "Delete this campaign? This action is irreversible.",
+      "loading": "Loading…"
+    },
     "donor": {
       "stats": {
         "totalDonated": "Total donated",

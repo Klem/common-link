@@ -245,6 +245,33 @@
       "subtitle": "Définissez un mot de passe pour pouvoir aussi vous connecter par email.",
       "success": "Mot de passe défini avec succès."
     },
+    "campaigns": {
+      "pageTitle": "Campagnes",
+      "pageSubtitle": "Gérez les campagnes de collecte de votre association",
+      "create": "Créer une campagne",
+      "defaultName": "Nouvelle campagne",
+      "stats": {
+        "total": "Campagnes",
+        "live": "En cours",
+        "raised": "Total collecté",
+        "goal": "Objectif total"
+      },
+      "status": {
+        "draft": "Brouillon",
+        "live": "Live",
+        "ended": "Clôturée"
+      },
+      "milestones": "milestone(s)",
+      "empty": {
+        "icon": "🎯",
+        "title": "Aucune campagne",
+        "subtitle": "Créez votre première campagne pour commencer à collecter des dons.",
+        "cta": "Créer une campagne"
+      },
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer cette campagne ? Cette action est irréversible.",
+      "loading": "Chargement…"
+    },
     "donor": {
       "stats": {
         "totalDonated": "Total donné",
