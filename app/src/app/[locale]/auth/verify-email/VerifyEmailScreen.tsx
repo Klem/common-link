@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/lib/routes';
 import type { AuthResponseDto } from '@/types/auth';
+import { UserRole } from '@/types/auth';
 
 type VerifyState = 'verifying' | 'success' | 'failed';
 
@@ -35,7 +36,7 @@ export function VerifyEmailScreen({ token }: VerifyEmailScreenProps) {
         sessionStorage.removeItem('cl-pending-email');
         setState('success');
         const dashboard =
-          data.user.role === 'ASSOCIATION'
+          data.user.role === UserRole.ASSOCIATION
             ? ROUTES.ASSOCIATION_DASHBOARD
             : ROUTES.DONOR_DASHBOARD;
         setTimeout(() => router.push(`/${locale}${dashboard}`), 1500);

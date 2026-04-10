@@ -7,6 +7,7 @@ import { CampaignCard } from '@/components/campaign';
 import { useCampaigns } from '@/hooks/campaign/useCampaigns';
 import { createCampaign } from '@/lib/api/campaign';
 import { ROUTES } from '@/lib/routes';
+import { CampaignStatus } from '@/types/campaign';
 
 /** Formats a number as a EUR currency string using French locale. */
 function formatEur(amount: number): string {
@@ -25,7 +26,7 @@ export default function CampaignsPage() {
   const t = useTranslations('dashboard');
   const { campaigns, isLoading, removeCampaign } = useCampaigns();
 
-  const liveCampaigns = campaigns.filter((c) => c.status === 'LIVE').length;
+  const liveCampaigns = campaigns.filter((c) => c.status === CampaignStatus.LIVE).length;
   const totalRaised = campaigns.reduce((sum, c) => sum + c.raised, 0);
   const totalGoal = campaigns.reduce((sum, c) => sum + c.goal, 0);
 

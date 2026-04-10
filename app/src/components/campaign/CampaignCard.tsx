@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { ROUTES } from '@/lib/routes';
-import type { CampaignSummaryDto, CampaignStatus } from '@/types/campaign';
+import type { CampaignSummaryDto } from '@/types/campaign';
+import { CampaignStatus } from '@/types/campaign';
 
 /** Props for {@link CampaignCard}. */
 interface CampaignCardProps {
@@ -21,12 +22,12 @@ function formatEur(amount: number): string {
 /** Returns Tailwind classes and label for a given campaign status pill. */
 function statusPill(status: CampaignStatus, t: (key: string) => string): { classes: string; label: string } {
   switch (status) {
-    case 'LIVE':
+    case CampaignStatus.LIVE:
       return {
         classes: 'bg-green/[12%] border border-green/25 text-green',
         label: `● ${t('campaigns.status.live')}`,
       };
-    case 'ENDED':
+    case CampaignStatus.ENDED:
       return {
         classes: 'bg-red/10 text-red',
         label: `✕ ${t('campaigns.status.ended')}`,

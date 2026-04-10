@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { VerifyEmailScreen } from '../VerifyEmailScreen';
 import type { AuthResponseDto } from '@/types/auth';
+import { UserRole, AuthProvider } from '@/types/auth';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -29,7 +30,7 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ setAuth: mockSetAuth }),
 }));
 
-function makeAuthResponse(role: 'DONOR' | 'ASSOCIATION' = 'DONOR'): AuthResponseDto {
+function makeAuthResponse(role: typeof UserRole[keyof typeof UserRole] = UserRole.DONOR): AuthResponseDto {
   return {
     accessToken: 'access.token',
     refreshToken: 'refresh.token',
@@ -37,7 +38,7 @@ function makeAuthResponse(role: 'DONOR' | 'ASSOCIATION' = 'DONOR'): AuthResponse
       id: 'user-1',
       email: 'user@example.com',
       role,
-      provider: 'EMAIL',
+      provider: AuthProvider.EMAIL,
       displayName: null,
       avatarUrl: null,
       emailVerified: true,
@@ -81,7 +82,7 @@ describe('VerifyEmailScreen', () => {
   });
 
   it('calls setAuth with the returned tokens and user', async () => {
-    const response = makeAuthResponse('DONOR');
+    const response = makeAuthResponse(UserRole.DONOR);
     mockPost.mockResolvedValue({ data: response });
     render(<VerifyEmailScreen token="good-token" />);
     await waitFor(() => {
@@ -105,7 +106,7 @@ describe('VerifyEmailScreen', () => {
 
   it('redirects to donor dashboard after success when role is DONOR', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    mockPost.mockResolvedValue({ data: makeAuthResponse('DONOR') });
+    mockPost.mockResolvedValue({ data: makeAuthResponse(UserRole.DONOR) });
     render(<VerifyEmailScreen token="good-token" />);
     await waitFor(() => expect(screen.getByText('success')).toBeInTheDocument());
 
@@ -116,7 +117,7 @@ describe('VerifyEmailScreen', () => {
 
   it('redirects to association dashboard after success when role is ASSOCIATION', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    mockPost.mockResolvedValue({ data: makeAuthResponse('ASSOCIATION') });
+    mockPost.mockResolvedValue({ data: makeAuthResponse(UserRole.ASSOCIATION) });
     render(<VerifyEmailScreen token="good-token" />);
     await waitFor(() => expect(screen.getByText('success')).toBeInTheDocument());
 

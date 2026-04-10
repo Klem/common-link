@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { BeneficiaryDto, BeneficiaryIbanDto, IbanVerificationStatus } from '@/types/beneficiary';
+import type { BeneficiaryDto, BeneficiaryIbanDto } from '@/types/beneficiary';
+import { IbanVerificationStatus } from '@/types/beneficiary';
 import { IbanRow } from './IbanRow';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -26,14 +27,14 @@ interface BeneficiaryRowProps {
  * Priority: INVALID > NO_MATCH > CLOSE_MATCH > NOT_POSSIBLE > VERIFIED (all) > FORMAT_VALID > PENDING
  */
 function computeAggregatedStatus(ibans: BeneficiaryIbanDto[]): IbanVerificationStatus {
-  if (ibans.length === 0) return 'PENDING';
-  if (ibans.some((i) => i.status === 'INVALID')) return 'INVALID';
-  if (ibans.some((i) => i.status === 'NO_MATCH')) return 'NO_MATCH';
-  if (ibans.some((i) => i.status === 'CLOSE_MATCH')) return 'CLOSE_MATCH';
-  if (ibans.some((i) => i.status === 'NOT_POSSIBLE')) return 'NOT_POSSIBLE';
-  if (ibans.every((i) => i.status === 'VERIFIED')) return 'VERIFIED';
-  if (ibans.some((i) => i.status === 'FORMAT_VALID')) return 'FORMAT_VALID';
-  return 'PENDING';
+  if (ibans.length === 0) return IbanVerificationStatus.PENDING;
+  if (ibans.some((i) => i.status === IbanVerificationStatus.INVALID)) return IbanVerificationStatus.INVALID;
+  if (ibans.some((i) => i.status === IbanVerificationStatus.NO_MATCH)) return IbanVerificationStatus.NO_MATCH;
+  if (ibans.some((i) => i.status === IbanVerificationStatus.CLOSE_MATCH)) return IbanVerificationStatus.CLOSE_MATCH;
+  if (ibans.some((i) => i.status === IbanVerificationStatus.NOT_POSSIBLE)) return IbanVerificationStatus.NOT_POSSIBLE;
+  if (ibans.every((i) => i.status === IbanVerificationStatus.VERIFIED)) return IbanVerificationStatus.VERIFIED;
+  if (ibans.some((i) => i.status === IbanVerificationStatus.FORMAT_VALID)) return IbanVerificationStatus.FORMAT_VALID;
+  return IbanVerificationStatus.PENDING;
 }
 
 /** Icon and color style for the aggregated status badge. */

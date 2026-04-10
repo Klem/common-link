@@ -25,12 +25,10 @@ import { useEmailLogin } from '@/hooks/auth/useEmailLogin';
 import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@/types/auth';
 
 /** Active tab on the auth card — login or signup. */
 type View = 'login' | 'signup';
-
-/** User role selected on the signup screen. */
-type UserRole = 'ASSOCIATION' | 'DONOR';
 
 /** Which auth provider is being processed — used to customise the loading overlay. */
 type OverlayProvider = 'google' | 'magic' | 'email';
@@ -95,7 +93,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     () => {
       setShowOverlay(false);
       const user = useAuthStore.getState().user;
-      const role = user?.role ?? 'DONOR';
+      const role = user?.role ?? UserRole.DONOR;
       router.push(`/${locale}/dashboard/${role.toLowerCase()}`);
     },
   );
@@ -142,7 +140,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     setOverlayProvider('google');
     setShowOverlay(true);
     try {
-      await googleAuth.signUp(idToken, 'ASSOCIATION');
+      await googleAuth.signUp(idToken, UserRole.ASSOCIATION);
       setShowOverlay(false);
       router.push(`/${locale}/dashboard/association`);
     } catch {
@@ -154,7 +152,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
   const handleEmailRegisterDonor = async (email: string, password: string) => {
     try {
-      await emailRegister.register(email, password, 'DONOR');
+      await emailRegister.register(email, password, UserRole.DONOR);
     } catch {
       // error set in hook
     }
@@ -171,7 +169,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   // ─── Magic link for association ───────────────────────────────────────────
 
   const handleMagicLinkAsso = (email: string) => {
-    magicLink.sendLink(email, 'ASSOCIATION', selectedAsso
+    magicLink.sendLink(email, UserRole.ASSOCIATION, selectedAsso
       ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
       : undefined);
   };
@@ -180,7 +178,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
   const handleEmailRegisterAsso = async (email: string, password: string) => {
     try {
-      await emailRegister.register(email, password, 'ASSOCIATION', selectedAsso
+      await emailRegister.register(email, password, UserRole.ASSOCIATION, selectedAsso
         ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
         : undefined);
     } catch {
@@ -201,8 +199,8 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
     t('signup.association.steps.connect'),
   ];
 
-  const isAssoSignup = activeView === 'signup' && activeRole === 'ASSOCIATION';
-  const isDonorSignup = activeView === 'signup' && activeRole === 'DONOR';
+  const isAssoSignup = activeView === 'signup' && activeRole === UserRole.ASSOCIATION;
+  const isDonorSignup = activeView === 'signup' && activeRole === UserRole.DONOR;
 
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4">
@@ -252,7 +250,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
               </p>
 
               <div className="mt-3">
-                <MagicLinkForm onSubmit={(email) => magicLink.sendLink(email)} role="DONOR" />
+                <MagicLinkForm onSubmit={(email) => magicLink.sendLink(email)} role={UserRole.DONOR} />
               </div>
             </>
           )}
@@ -282,8 +280,8 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
               {/*<Divider />*/}
 
               <MagicLinkForm
-                onSubmit={(email) => magicLink.sendLink(email, 'DONOR')}
-                role="DONOR"
+                onSubmit={(email) => magicLink.sendLink(email, UserRole.DONOR)}
+                role={UserRole.DONOR}
               />
 
               <Divider />
@@ -358,7 +356,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
                   <MagicLinkForm
                     onSubmit={handleMagicLinkAsso}
-                    role="ASSOCIATION"
+                    role={UserRole.ASSOCIATION}
                   />
 
                   <Divider />

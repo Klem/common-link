@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { BeneficiaryIbanDto, IbanVerificationStatus } from '@/types/beneficiary';
+import type { BeneficiaryIbanDto } from '@/types/beneficiary';
+import { IbanVerificationStatus } from '@/types/beneficiary';
 import { VopBanner } from './VopBanner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -22,13 +23,13 @@ interface IbanRowProps {
 /** Returns the border color class based on IBAN verification status. */
 function borderClass(status: IbanVerificationStatus): string {
   switch (status) {
-    case 'VERIFIED':
-    case 'FORMAT_VALID':
+    case IbanVerificationStatus.VERIFIED:
+    case IbanVerificationStatus.FORMAT_VALID:
       return 'border-green/40';
-    case 'CLOSE_MATCH':
+    case IbanVerificationStatus.CLOSE_MATCH:
       return 'border-yellow/40';
-    case 'INVALID':
-    case 'NO_MATCH':
+    case IbanVerificationStatus.INVALID:
+    case IbanVerificationStatus.NO_MATCH:
       return 'border-red/40';
     default:
       return 'border-border';
@@ -38,14 +39,14 @@ function borderClass(status: IbanVerificationStatus): string {
 /** Returns a small colored status indicator element. */
 function StatusDot({ status }: { status: IbanVerificationStatus }) {
   switch (status) {
-    case 'VERIFIED':
+    case IbanVerificationStatus.VERIFIED:
       return <span className="text-green text-[12px]">✓</span>;
-    case 'FORMAT_VALID':
+    case IbanVerificationStatus.FORMAT_VALID:
       return <span className="w-[8px] h-[8px] rounded-full bg-green inline-block flex-shrink-0" />;
-    case 'CLOSE_MATCH':
+    case IbanVerificationStatus.CLOSE_MATCH:
       return <span className="w-[8px] h-[8px] rounded-full bg-yellow inline-block flex-shrink-0" />;
-    case 'INVALID':
-    case 'NO_MATCH':
+    case IbanVerificationStatus.INVALID:
+    case IbanVerificationStatus.NO_MATCH:
       return <span className="w-[8px] h-[8px] rounded-full bg-red inline-block flex-shrink-0" />;
     default:
       return <span className="w-[8px] h-[8px] rounded-full bg-muted inline-block flex-shrink-0" />;
@@ -65,8 +66,8 @@ export function IbanRow({
   const t = useTranslations('dashboard');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const isReadonly = iban.status === 'VERIFIED';
-  const canDelete = iban.status !== 'VERIFIED';
+  const isReadonly = iban.status === IbanVerificationStatus.VERIFIED;
+  const canDelete = iban.status !== IbanVerificationStatus.VERIFIED;
 
   const renderActions = () => {
     if (isVerifyingVop) {
@@ -75,7 +76,7 @@ export function IbanRow({
       );
     }
     switch (iban.status) {
-      case 'PENDING':
+      case IbanVerificationStatus.PENDING:
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
@@ -84,7 +85,7 @@ export function IbanRow({
             {t('beneficiaries.iban.verify')}
           </button>
         );
-      case 'FORMAT_VALID':
+      case IbanVerificationStatus.FORMAT_VALID:
         return (
           <>
             <span className="text-[11px] text-green bg-green/10 border border-green/20 rounded-full px-2 py-[2px] cursor-default">
@@ -98,15 +99,15 @@ export function IbanRow({
             </button>
           </>
         );
-      case 'VERIFIED':
+      case IbanVerificationStatus.VERIFIED:
         return (
           <span className="text-[11px] text-green bg-green/10 border border-green/20 rounded-full px-2 py-[2px] cursor-default">
             ✓ {t('beneficiaries.iban.verified')}
           </span>
         );
-      case 'CLOSE_MATCH':
-      case 'NO_MATCH':
-      case 'NOT_POSSIBLE':
+      case IbanVerificationStatus.CLOSE_MATCH:
+      case IbanVerificationStatus.NO_MATCH:
+      case IbanVerificationStatus.NOT_POSSIBLE:
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
@@ -116,7 +117,7 @@ export function IbanRow({
             ⟳
           </button>
         );
-      case 'INVALID':
+      case IbanVerificationStatus.INVALID:
         return (
           <span className="text-[12px] text-red">Invalide</span>
         );

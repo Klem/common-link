@@ -4,12 +4,21 @@
  * - LIVE: published and accepting donations
  * - ENDED: closed, no longer accepting donations
  */
-export type CampaignStatus = 'DRAFT' | 'LIVE' | 'ENDED';
+export const CampaignStatus = {
+  DRAFT: 'DRAFT',
+  LIVE: 'LIVE',
+  ENDED: 'ENDED',
+} as const;
+export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus];
 
 /**
  * Side of the budget table — charges (expenses) or produits (income).
  */
-export type BudgetSide = 'EXPENSE' | 'REVENUE';
+export const BudgetSide = {
+  EXPENSE: 'EXPENSE',
+  REVENUE: 'REVENUE',
+} as const;
+export type BudgetSide = typeof BudgetSide[keyof typeof BudgetSide];
 
 /**
  * Possible statuses for a campaign milestone.
@@ -17,7 +26,12 @@ export type BudgetSide = 'EXPENSE' | 'REVENUE';
  * - CURRENT: the active milestone being worked towards
  * - REACHED: goal amount has been met
  */
-export type MilestoneStatus = 'LOCKED' | 'CURRENT' | 'REACHED';
+export const MilestoneStatus = {
+  LOCKED: 'LOCKED',
+  CURRENT: 'CURRENT',
+  REACHED: 'REACHED',
+} as const;
+export type MilestoneStatus = typeof MilestoneStatus[keyof typeof MilestoneStatus];
 
 /**
  * A single line item within a budget section.

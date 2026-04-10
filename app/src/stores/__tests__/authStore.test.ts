@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserDto } from '@/types/auth';
+import { UserRole, AuthProvider } from '@/types/auth';
 
 vi.mock('js-cookie', () => ({
   default: {
@@ -23,9 +24,9 @@ beforeAll(() => {
 const mockUser: UserDto = {
   id: 'user-1',
   email: 'test@example.com',
-  role: 'DONOR',
+  role: UserRole.DONOR,
   displayName: 'Test User',
-  provider: 'EMAIL',
+  provider: AuthProvider.EMAIL,
   emailVerified: true,
   createdAt: '2024-01-01T00:00:00Z',
 };
@@ -52,7 +53,7 @@ describe('authStore', () => {
       expect(Cookies.set).toHaveBeenCalledWith('cl-refresh', 'refresh-token', expect.any(Object));
       expect(Cookies.set).toHaveBeenCalledWith(
         'auth-session',
-        JSON.stringify({ userId: 'user-1', role: 'DONOR' }),
+        JSON.stringify({ userId: 'user-1', role: UserRole.DONOR }),
         expect.any(Object),
       );
     });

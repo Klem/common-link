@@ -8,19 +8,27 @@
  * - NOT_POSSIBLE: VOP check could not be performed (bank not reachable, etc.)
  * - INVALID: IBAN format is invalid
  */
-export type IbanVerificationStatus =
-  | 'PENDING'
-  | 'FORMAT_VALID'
-  | 'VERIFIED'
-  | 'CLOSE_MATCH'
-  | 'NO_MATCH'
-  | 'NOT_POSSIBLE'
-  | 'INVALID';
+export const IbanVerificationStatus = {
+  PENDING: 'PENDING',
+  FORMAT_VALID: 'FORMAT_VALID',
+  VERIFIED: 'VERIFIED',
+  CLOSE_MATCH: 'CLOSE_MATCH',
+  NO_MATCH: 'NO_MATCH',
+  NOT_POSSIBLE: 'NOT_POSSIBLE',
+  INVALID: 'INVALID',
+} as const;
+export type IbanVerificationStatus = typeof IbanVerificationStatus[keyof typeof IbanVerificationStatus];
 
 /**
  * Result codes returned by the Verification of Payee (VOP) service.
  */
-export type VopResult = 'MATCH' | 'CLOSE_MATCH' | 'NO_MATCH' | 'NOT_POSSIBLE';
+export const VopResult = {
+  MATCH: 'MATCH',
+  CLOSE_MATCH: 'CLOSE_MATCH',
+  NO_MATCH: 'NO_MATCH',
+  NOT_POSSIBLE: 'NOT_POSSIBLE',
+} as const;
+export type VopResult = typeof VopResult[keyof typeof VopResult];
 
 /**
  * A single IBAN attached to a beneficiary, including its VOP verification state.
