@@ -1,13 +1,18 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Topbar } from '@/components/dashboard';
-import { CampaignHero, CampaignTabs, CampaignInfoTab } from '@/components/campaign';
+import {
+  CampaignHero,
+  CampaignTabs,
+  CampaignInfoTab,
+  CampaignBudgetTab,
+  CampaignMilestonesTab,
+} from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
-import { useState } from 'react';
-import type { UpdateCampaignRequest } from '@/types/campaign';
+import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 /**
  * Campaign editor page.
@@ -25,7 +30,7 @@ export default function CampaignEditorPage() {
   const params = useParams();
   const campaignId = params.id as string;
 
-  const { campaign, isLoading, error, isSaving, updateCampaignInfo, setCampaign } =
+  const { campaign, isLoading, error, isSaving, updateCampaignInfo, setCampaign, fetchCampaign } =
     useCampaign(campaignId);
 
   const [activeTab, setActiveTab] = useState('info');
@@ -51,15 +56,21 @@ export default function CampaignEditorPage() {
   const handleNameChange = (name: string) => scheduleHeroSave({ name });
   const handleEmojiChange = (emoji: string) => scheduleHeroSave({ emoji });
 
+  /**
+   * Called after the budget is saved successfully.
+   * Updates the local campaign state with the returned DTO.
+   */
+  const handleBudgetSaved = useCallback((updated: CampaignDto) => {
+    setCampaign(updated);
+  }, [setCampaign]);
+
   /* Loading state */
   if (isLoading) {
     return (
       <div>
         <Topbar title={t('pageTitle')} subtitle={t('editor.loading')} />
         <div className="flex items-center justify-center p-[48px]">
-          <div
-            className="w-[32px] h-[32px] rounded-full border-2 border-[var(--color-green)]/30 border-t-[var(--color-green)] animate-spin"
-          />
+          <div className="w-[32px] h-[32px] rounded-full border-2 border-[var(--color-green)]/30 border-t-[var(--color-green)] animate-spin" />
         </div>
       </div>
     );
@@ -104,21 +115,17 @@ export default function CampaignEditorPage() {
         )}
 
         {activeTab === 'budget' && (
-          <div
-            className="rounded-[18px] border border-[var(--color-border)] p-[24px_28px] text-[var(--color-text-2)] text-[14px]"
-            style={{ background: 'var(--color-bg-2)' }}
-          >
-            Coming in Prompt 7
-          </div>
+          <CampaignBudgetTab
+            campaign={campaign}
+            onBudgetSaved={handleBudgetSaved}
+          />
         )}
 
         {activeTab === 'milestones' && (
-          <div
-            className="rounded-[18px] border border-[var(--color-border)] p-[24px_28px] text-[var(--color-text-2)] text-[14px]"
-            style={{ background: 'var(--color-bg-2)' }}
-          >
-            Coming in Prompt 7
-          </div>
+          <CampaignMilestonesTab
+            campaign={campaign}
+            onMilestonesChanged={fetchCampaign}
+          />
         )}
       </div>
     </div>

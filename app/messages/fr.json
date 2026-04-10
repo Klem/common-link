@@ -14,7 +14,11 @@
     "profileUpdated": "Profil mis à jour.",
     "beneficiaryCreated": "Bénéficiaire ajouté avec succès.",
     "vopVerified": "Vérification VOP terminée.",
-    "campaignUpdated": "Campagne mise à jour."
+    "campaignUpdated": "Campagne mise à jour.",
+    "budgetSaved": "Budget sauvegardé.",
+    "milestoneCreated": "Milestone ajouté.",
+    "milestoneSaved": "Milestone mis à jour.",
+    "milestoneDeleted": "Milestone supprimé."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -295,6 +299,35 @@
           "contract": { "label": "Smart Contract", "placeholder": "Adresse du contrat" },
           "save": "Enregistrer",
           "saved": "Campagne mise à jour."
+        },
+        "budget": {
+          "charges": "Charges (dépenses)",
+          "produits": "Produits (recettes)",
+          "balance": "Solde",
+          "equilibrium": "Équilibre",
+          "surplus": "Excédentaire",
+          "deficit": "Déficitaire",
+          "addItem": "Ajouter un poste",
+          "addSection": "Ajouter une catégorie",
+          "sectionCode": "Code (ex: 63)",
+          "sectionName": "Nom (ex: Impôts et taxes)",
+          "initTemplate": "Initialiser le modèle standard",
+          "initTemplateHint": "Pré-remplir avec le plan comptable associatif français (montants à 0).",
+          "save": "Sauvegarder le budget",
+          "labelPlaceholder": "Libellé",
+          "amountPlaceholder": "0"
+        },
+        "milestones": {
+          "title": "Milestones de la campagne",
+          "subtitle": "Chaque milestone est un palier de collecte avec un impact concret mesurable.",
+          "add": "Ajouter",
+          "namePlaceholder": "Nom du palier",
+          "descPlaceholder": "Description de l'impact concret de ce palier…",
+          "reached": "Atteinte",
+          "current": "En cours",
+          "locked": "Verrouillée",
+          "deleteConfirm": "Supprimer ce milestone ?",
+          "targetLabel": "Objectif €"
         }
       }
     },

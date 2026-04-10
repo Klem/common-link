@@ -14,7 +14,11 @@
     "profileUpdated": "Profile updated.",
     "beneficiaryCreated": "Beneficiary added successfully.",
     "vopVerified": "VOP verification completed.",
-    "campaignUpdated": "Campaign updated."
+    "campaignUpdated": "Campaign updated.",
+    "budgetSaved": "Budget saved.",
+    "milestoneCreated": "Milestone added.",
+    "milestoneSaved": "Milestone updated.",
+    "milestoneDeleted": "Milestone deleted."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -294,6 +298,35 @@
           "contract": { "label": "Smart Contract", "placeholder": "Contract address" },
           "save": "Save",
           "saved": "Campaign updated."
+        },
+        "budget": {
+          "charges": "Expenses",
+          "produits": "Revenue",
+          "balance": "Balance",
+          "equilibrium": "Balanced",
+          "surplus": "Surplus",
+          "deficit": "Deficit",
+          "addItem": "Add item",
+          "addSection": "Add category",
+          "sectionCode": "Code (e.g. 63)",
+          "sectionName": "Name (e.g. Taxes)",
+          "initTemplate": "Initialize standard template",
+          "initTemplateHint": "Pre-fill with the French association accounting template (amounts at 0).",
+          "save": "Save budget",
+          "labelPlaceholder": "Label",
+          "amountPlaceholder": "0"
+        },
+        "milestones": {
+          "title": "Campaign milestones",
+          "subtitle": "Each milestone is a fundraising threshold with a concrete measurable impact.",
+          "add": "Add",
+          "namePlaceholder": "Milestone name",
+          "descPlaceholder": "Description of the concrete impact of this milestone…",
+          "reached": "Reached",
+          "current": "In progress",
+          "locked": "Locked",
+          "deleteConfirm": "Delete this milestone?",
+          "targetLabel": "Target €"
         }
       }
     },
