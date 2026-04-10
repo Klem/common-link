@@ -13,7 +13,8 @@
     "confirm": "Confirm",
     "profileUpdated": "Profile updated.",
     "beneficiaryCreated": "Beneficiary added successfully.",
-    "vopVerified": "VOP verification completed."
+    "vopVerified": "VOP verification completed.",
+    "campaignUpdated": "Campaign updated."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -269,7 +270,32 @@
       },
       "delete": "Delete",
       "deleteConfirm": "Delete this campaign? This action is irreversible.",
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "editor": {
+        "loading": "Loading campaign…",
+        "notFound": "Campaign not found.",
+        "tabs": {
+          "info": "Info",
+          "budget": "Budget",
+          "milestones": "Milestones"
+        },
+        "hero": {
+          "collected": "Raised",
+          "goal": "Goal"
+        },
+        "info": {
+          "title": "General information",
+          "name": { "label": "Campaign name", "placeholder": "Your campaign name…" },
+          "goal": { "label": "Fundraising goal (€)", "placeholder": "0" },
+          "startDate": { "label": "Start date" },
+          "endDate": { "label": "End date" },
+          "description": { "label": "Campaign description", "placeholder": "Describe the objective, context and expected impact…" },
+          "status": { "label": "Status" },
+          "contract": { "label": "Smart Contract", "placeholder": "Contract address" },
+          "save": "Save",
+          "saved": "Campaign updated."
+        }
+      }
     },
     "donor": {
       "stats": {

@@ -13,7 +13,8 @@
     "confirm": "Confirmer",
     "profileUpdated": "Profil mis à jour.",
     "beneficiaryCreated": "Bénéficiaire ajouté avec succès.",
-    "vopVerified": "Vérification VOP terminée."
+    "vopVerified": "Vérification VOP terminée.",
+    "campaignUpdated": "Campagne mise à jour."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -270,7 +271,32 @@
       },
       "delete": "Supprimer",
       "deleteConfirm": "Supprimer cette campagne ? Cette action est irréversible.",
-      "loading": "Chargement…"
+      "loading": "Chargement…",
+      "editor": {
+        "loading": "Chargement de la campagne…",
+        "notFound": "Campagne introuvable.",
+        "tabs": {
+          "info": "Infos",
+          "budget": "Budget prév.",
+          "milestones": "Milestones"
+        },
+        "hero": {
+          "collected": "Collecté",
+          "goal": "Objectif"
+        },
+        "info": {
+          "title": "Informations générales",
+          "name": { "label": "Nom de la campagne", "placeholder": "Nom de votre campagne…" },
+          "goal": { "label": "Objectif de collecte (€)", "placeholder": "0" },
+          "startDate": { "label": "Date de début" },
+          "endDate": { "label": "Date de fin" },
+          "description": { "label": "Description de la campagne", "placeholder": "Décrivez l'objectif, le contexte et l'impact attendu…" },
+          "status": { "label": "Statut" },
+          "contract": { "label": "Smart Contract", "placeholder": "Adresse du contrat" },
+          "save": "Enregistrer",
+          "saved": "Campagne mise à jour."
+        }
+      }
     },
     "donor": {
       "stats": {
