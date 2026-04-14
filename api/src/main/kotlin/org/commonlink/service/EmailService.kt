@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
  * - `SmtpEmailService` (production) — active on the `default` profile, sends real emails via SMTP.
  */
 @Service
-@Profile("!default")
+@Profile("!local")
 interface EmailService {
     /**
      * Sends a magic-link authentication email to the given address.
