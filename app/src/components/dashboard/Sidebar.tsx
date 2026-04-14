@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import type { UserDto } from '@/types/auth';
+import { UserRole } from '@/types/auth';
 import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -23,7 +24,7 @@ const ASSOCIATION_NAV: NavItem[] = [
   { icon: '🏠', labelKey: 'nav.overview',          href: ROUTES.ASSOCIATION_DASHBOARD },
   { icon: '📊', labelKey: 'nav.associationProfile', href: ROUTES.ASSOCIATION_PROFILE },
   { icon: '🏦', labelKey: 'nav.beneficiaries',      href: ROUTES.ASSOCIATION_BENEFICIARIES },
-  { icon: '🎯', labelKey: 'nav.campaigns',          href: '#' },
+  { icon: '🎯', labelKey: 'nav.campaigns',          href: ROUTES.ASSOCIATION_CAMPAIGNS },
   { icon: '👥', labelKey: 'nav.donors',             href: '#' },
   { icon: '⚙️', labelKey: 'nav.settings',           href: '#' },
 ];
@@ -54,7 +55,7 @@ export function Sidebar({ user, currentPath }: SidebarProps) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const logout = useAuthStore((s) => s.logout);
-  const navItems = user.role === 'DONOR' ? DONOR_NAV : ASSOCIATION_NAV;
+  const navItems = user.role === UserRole.DONOR ? DONOR_NAV : ASSOCIATION_NAV;
   const initials = getInitials(user.displayName, user.email);
 
   return (
@@ -118,12 +119,12 @@ export function Sidebar({ user, currentPath }: SidebarProps) {
             </div>
             <span
               className={`inline-block mt-[3px] px-[9px] py-[2px] rounded-full text-[11px] font-semibold ${
-                user.role === 'DONOR'
+                user.role === UserRole.DONOR
                   ? 'bg-green/[12%] text-green'
                   : 'bg-yellow/[12%] text-yellow'
               }`}
             >
-              {user.role === 'DONOR' ? t('roles.donor') : t('roles.association')}
+              {user.role === UserRole.DONOR ? t('roles.donor') : t('roles.association')}
             </span>
           </div>
         </div>

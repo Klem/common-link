@@ -15,4 +15,5 @@ export const ROUTES = {
   ASSOCIATION_DASHBOARD: '/dashboard/association',
   ASSOCIATION_PROFILE: '/dashboard/association/profile',
   ASSOCIATION_BENEFICIARIES: '/dashboard/association/beneficiaries',
+  ASSOCIATION_CAMPAIGNS: '/dashboard/association/campaigns',
 } as const;

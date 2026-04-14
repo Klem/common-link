@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { RoleToggle } from '../RoleToggle';
+import { UserRole } from '@/types/auth';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -8,15 +9,15 @@ vi.mock('next-intl', () => ({
 
 describe('RoleToggle', () => {
   it('renders two role buttons', () => {
-    render(<RoleToggle value="ASSOCIATION" onChange={vi.fn()} />);
+    render(<RoleToggle value={UserRole.ASSOCIATION} onChange={vi.fn()} />);
     expect(screen.getAllByRole('button')).toHaveLength(2);
   });
 
   it('calls onChange with the selected role', () => {
     const onChange = vi.fn();
-    render(<RoleToggle value="ASSOCIATION" onChange={onChange} />);
+    render(<RoleToggle value={UserRole.ASSOCIATION} onChange={onChange} />);
     const buttons = screen.getAllByRole('button');
     fireEvent.click(buttons[1]); // DONOR button
-    expect(onChange).toHaveBeenCalledWith('DONOR');
+    expect(onChange).toHaveBeenCalledWith(UserRole.DONOR);
   });
 });

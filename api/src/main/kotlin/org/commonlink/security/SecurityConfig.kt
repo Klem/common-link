@@ -1,5 +1,6 @@
 package org.commonlink.security
 
+import jakarta.servlet.http.HttpServletResponse
 import org.commonlink.entity.UserRole
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -57,12 +58,26 @@ class SecurityConfig(
             .cors { it.configurationSource(corsConfigurationSource()) }
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(  "/api/auth/**","/api/docs/**").permitAll()
+                    .requestMatchers("/api/auth/**", "/api/docs/**").permitAll()
                     .requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
                     .requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+
+            // === This is the key addition for clean 401 vs 403 ===
+            .exceptionHandling { exceptions ->
+                exceptions
+                    // Missing / invalid / expired token → 401
+                    .authenticationEntryPoint { _, response, _ ->
+                        response.status = HttpServletResponse.SC_UNAUTHORIZED
+                    }
+                    // Authenticated but wrong role → 403
+                    .accessDeniedHandler { _, response, _ ->
+                        response.status = HttpServletResponse.SC_FORBIDDEN
+                    }
+            }
+
         return http.build()
     }
 

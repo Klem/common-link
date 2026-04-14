@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Sidebar } from '../Sidebar';
 import type { UserDto } from '@/types/auth';
+import { UserRole, AuthProvider } from '@/types/auth';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -27,10 +28,10 @@ vi.mock('@/stores/authStore', () => ({
 const donorUser: UserDto = {
   id: '1',
   email: 'donor@test.com',
-  role: 'DONOR',
+  role: UserRole.DONOR,
   displayName: 'Alice Dupont',
   avatarUrl: null,
-  provider: 'EMAIL',
+  provider: AuthProvider.EMAIL,
   emailVerified: true,
   createdAt: '2025-01-01T00:00:00Z',
 };
@@ -39,7 +40,7 @@ const associationUser: UserDto = {
   ...donorUser,
   id: '2',
   email: 'asso@test.com',
-  role: 'ASSOCIATION',
+  role: UserRole.ASSOCIATION,
   displayName: 'ONG Lumière',
 };
 

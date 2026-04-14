@@ -1,5 +1,5 @@
 import { useTranslations } from 'next-intl';
-import type { VopResult } from '@/types/beneficiary';
+import { VopResult } from '@/types/beneficiary';
 
 interface VopBannerProps {
   /** VOP result code determining the banner color and message. */
@@ -29,13 +29,13 @@ export function VopBanner({ vopResult, suggestedName }: VopBannerProps) {
 
   const getMessage = (): string => {
     switch (vopResult) {
-      case 'MATCH':
+      case VopResult.MATCH:
         return `✓ ${t('beneficiaries.iban.vop.match')}`;
-      case 'CLOSE_MATCH':
+      case VopResult.CLOSE_MATCH:
         return `≈ ${t('beneficiaries.iban.vop.closeMatch', { name: suggestedName ?? '' })}`;
-      case 'NO_MATCH':
+      case VopResult.NO_MATCH:
         return `✗ ${t('beneficiaries.iban.vop.noMatch')}`;
-      case 'NOT_POSSIBLE':
+      case VopResult.NOT_POSSIBLE:
         return `? ${t('beneficiaries.iban.vop.notPossible')}`;
     }
   };

@@ -8,6 +8,7 @@ import org.commonlink.dto.BeneficiaryIbanDto
 import org.commonlink.dto.VopVerifyResponseDto
 import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.VopResult
+import org.commonlink.exception.AppException
 import org.commonlink.exception.ConflictException
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
@@ -219,7 +220,7 @@ class BeneficiaryControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"iban":""}""")
         )
-            .andExpect(status().isBadRequest)
+            .andExpect(status().isUnprocessableContent)
     }
 
     @Test

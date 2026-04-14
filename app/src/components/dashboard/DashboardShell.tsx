@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
+import { AuthProvider } from '@/types/auth';
 import { ROUTES } from '@/lib/routes';
 import { Sidebar } from './Sidebar';
 import { SetPasswordModal } from './SetPasswordModal';
@@ -30,7 +31,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   useEffect(() => {
     if (!user) return;
-    if (user.provider !== 'MAGIC_LINK' && user.provider !== 'GOOGLE') return;
+    if (user.provider !== AuthProvider.MAGIC_LINK && user.provider !== AuthProvider.GOOGLE) return;
     const dismissedKey = `cl-password-modal-dismissed-${user.id}`;
     if (!localStorage.getItem(dismissedKey)) {
       setShowPasswordModal(true);

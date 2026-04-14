@@ -13,7 +13,12 @@
     "confirm": "Confirm",
     "profileUpdated": "Profile updated.",
     "beneficiaryCreated": "Beneficiary added successfully.",
-    "vopVerified": "VOP verification completed."
+    "vopVerified": "VOP verification completed.",
+    "campaignUpdated": "Campaign updated.",
+    "budgetSaved": "Budget saved.",
+    "milestoneCreated": "Milestone added.",
+    "milestoneSaved": "Milestone updated.",
+    "milestoneDeleted": "Milestone deleted."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -243,6 +248,87 @@
       "title": "Secure your account",
       "subtitle": "Set a password to also be able to log in with your email.",
       "success": "Password set successfully."
+    },
+    "campaigns": {
+      "pageTitle": "Campaigns",
+      "pageSubtitle": "Manage your association's fundraising campaigns",
+      "create": "Create a campaign",
+      "defaultName": "New campaign",
+      "stats": {
+        "total": "Campaigns",
+        "live": "Active",
+        "raised": "Total raised",
+        "goal": "Total goal"
+      },
+      "status": {
+        "draft": "Draft",
+        "live": "Live",
+        "ended": "Ended"
+      },
+      "milestones": "milestone(s)",
+      "empty": {
+        "icon": "🎯",
+        "title": "No campaigns",
+        "subtitle": "Create your first campaign to start collecting donations.",
+        "cta": "Create a campaign"
+      },
+      "delete": "Delete",
+      "deleteConfirm": "Delete this campaign? This action is irreversible.",
+      "loading": "Loading…",
+      "editor": {
+        "loading": "Loading campaign…",
+        "notFound": "Campaign not found.",
+        "tabs": {
+          "info": "Info",
+          "budget": "Budget",
+          "milestones": "Milestones"
+        },
+        "hero": {
+          "collected": "Raised",
+          "goal": "Goal"
+        },
+        "info": {
+          "title": "General information",
+          "name": { "label": "Campaign name", "placeholder": "Your campaign name…" },
+          "goal": { "label": "Fundraising goal (€)", "placeholder": "0" },
+          "startDate": { "label": "Start date" },
+          "endDate": { "label": "End date" },
+          "description": { "label": "Campaign description", "placeholder": "Describe the objective, context and expected impact…" },
+          "status": { "label": "Status" },
+          "contract": { "label": "Smart Contract", "placeholder": "Contract address" },
+          "save": "Save",
+          "saved": "Campaign updated."
+        },
+        "budget": {
+          "charges": "Expenses",
+          "produits": "Revenue",
+          "balance": "Balance",
+          "equilibrium": "Balanced",
+          "surplus": "Surplus",
+          "deficit": "Deficit",
+          "addItem": "Add item",
+          "addSection": "Add category",
+          "sectionCode": "Code (e.g. 63)",
+          "sectionName": "Name (e.g. Taxes)",
+          "initTemplate": "Initialize standard template",
+          "initTemplateHint": "Pre-fill with the French association accounting template (amounts at 0).",
+          "save": "Save budget",
+          "labelPlaceholder": "Label",
+          "amountPlaceholder": "0"
+        },
+        "milestones": {
+          "title": "Campaign milestones",
+          "subtitle": "Each milestone is a fundraising threshold with a concrete measurable impact.",
+          "add": "Add",
+          "namePlaceholder": "Milestone name",
+          "descPlaceholder": "Description of the concrete impact of this milestone…",
+          "reached": "Reached",
+          "current": "In progress",
+          "locked": "Locked",
+          "deleteConfirm": "Delete this milestone?",
+          "targetLabel": "Target €"
+        }
+      }
     },
     "donor": {
       "stats": {

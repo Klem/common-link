@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { VopBanner } from '../VopBanner';
+import { VopResult } from '@/types/beneficiary';
 
 vi.mock('next-intl', () => ({
   useTranslations:
@@ -13,7 +14,7 @@ describe('VopBanner', () => {
   // ── MATCH ──────────────────────────────────────────────────────────────────
 
   it('renders green banner for MATCH', () => {
-    const { container } = render(<VopBanner vopResult="MATCH" />);
+    const { container } = render(<VopBanner vopResult={VopResult.MATCH} />);
 
     const div = container.firstChild as HTMLElement;
     expect(div).toHaveClass('bg-green/8');
@@ -22,7 +23,7 @@ describe('VopBanner', () => {
   });
 
   it('renders check mark and translation key for MATCH', () => {
-    render(<VopBanner vopResult="MATCH" />);
+    render(<VopBanner vopResult={VopResult.MATCH} />);
 
     expect(screen.getByText(/beneficiaries\.iban\.vop\.match/)).toBeInTheDocument();
   });
@@ -31,7 +32,7 @@ describe('VopBanner', () => {
 
   it('renders yellow banner for CLOSE_MATCH', () => {
     const { container } = render(
-      <VopBanner vopResult="CLOSE_MATCH" suggestedName="Dupont Jean" />,
+      <VopBanner vopResult={VopResult.CLOSE_MATCH} suggestedName="Dupont Jean" />,
     );
 
     const div = container.firstChild as HTMLElement;
@@ -41,7 +42,7 @@ describe('VopBanner', () => {
   });
 
   it('includes suggested name in CLOSE_MATCH message', () => {
-    render(<VopBanner vopResult="CLOSE_MATCH" suggestedName="Dupont Jean" />);
+    render(<VopBanner vopResult={VopResult.CLOSE_MATCH} suggestedName="Dupont Jean" />);
 
     expect(
       screen.getByText(/beneficiaries\.iban\.vop\.closeMatch/),
@@ -54,7 +55,7 @@ describe('VopBanner', () => {
   // ── NO_MATCH ───────────────────────────────────────────────────────────────
 
   it('renders red banner for NO_MATCH', () => {
-    const { container } = render(<VopBanner vopResult="NO_MATCH" />);
+    const { container } = render(<VopBanner vopResult={VopResult.NO_MATCH} />);
 
     const div = container.firstChild as HTMLElement;
     expect(div).toHaveClass('bg-red/8');
@@ -63,7 +64,7 @@ describe('VopBanner', () => {
   });
 
   it('renders cross and translation key for NO_MATCH', () => {
-    render(<VopBanner vopResult="NO_MATCH" />);
+    render(<VopBanner vopResult={VopResult.NO_MATCH} />);
 
     expect(screen.getByText(/beneficiaries\.iban\.vop\.noMatch/)).toBeInTheDocument();
   });
@@ -71,7 +72,7 @@ describe('VopBanner', () => {
   // ── NOT_POSSIBLE ───────────────────────────────────────────────────────────
 
   it('renders muted banner for NOT_POSSIBLE', () => {
-    const { container } = render(<VopBanner vopResult="NOT_POSSIBLE" />);
+    const { container } = render(<VopBanner vopResult={VopResult.NOT_POSSIBLE} />);
 
     const div = container.firstChild as HTMLElement;
     expect(div).toHaveClass('bg-muted/8');
@@ -80,7 +81,7 @@ describe('VopBanner', () => {
   });
 
   it('renders question mark and translation key for NOT_POSSIBLE', () => {
-    render(<VopBanner vopResult="NOT_POSSIBLE" />);
+    render(<VopBanner vopResult={VopResult.NOT_POSSIBLE} />);
 
     expect(screen.getByText(/beneficiaries\.iban\.vop\.notPossible/)).toBeInTheDocument();
   });
@@ -88,7 +89,7 @@ describe('VopBanner', () => {
   // ── Shared structure ───────────────────────────────────────────────────────
 
   it('always renders with shared base classes', () => {
-    const { container } = render(<VopBanner vopResult="MATCH" />);
+    const { container } = render(<VopBanner vopResult={VopResult.MATCH} />);
 
     const div = container.firstChild as HTMLElement;
     expect(div).toHaveClass('rounded-[8px]');

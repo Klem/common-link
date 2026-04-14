@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { verifyIbanVop } from '@/lib/api/beneficiary';
+import { VopResult } from '@/types/beneficiary';
 import { useToastStore } from '@/stores/toastStore';
 
 /** Return type of {@link useVopVerify}. */
@@ -42,9 +43,9 @@ export function useVopVerify(): UseVopVerifyReturn {
       try {
         const result = await verifyIbanVop(beneficiaryId, ibanId);
         const toastType =
-          result.vopResult === 'MATCH'
+          result.vopResult === VopResult.MATCH
             ? 'success'
-            : result.vopResult === 'CLOSE_MATCH'
+            : result.vopResult === VopResult.CLOSE_MATCH
               ? 'warning'
               : 'error';
         addToast(toastType, 'vopVerified');

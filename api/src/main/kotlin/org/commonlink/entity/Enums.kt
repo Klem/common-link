@@ -67,3 +67,43 @@ enum class VopResult {
     /** The receiving bank does not support VOP for the given account. */
     NOT_POSSIBLE
 }
+
+/**
+ * Lifecycle status of a fundraising campaign.
+ *
+ * Drives visibility to donors and whether donations can be accepted.
+ */
+enum class CampaignStatus {
+    /** Campaign is being configured and is not yet visible to donors. */
+    DRAFT,
+    /** Campaign is published and actively accepting donations. */
+    LIVE,
+    /** Campaign collection period is over. */
+    ENDED
+}
+
+/**
+ * Which side of the budget prévisionnel a section belongs to.
+ *
+ * A complete budget has both EXPENSE (charges) and REVENUE (produits) sections.
+ */
+enum class BudgetSide {
+    /** Expense items (French: charges). */
+    EXPENSE,
+    /** Revenue/income items (French: produits). */
+    REVENUE
+}
+
+/**
+ * Progress status of a campaign milestone.
+ *
+ * Only one milestone can be CURRENT at a time; it becomes REACHED once the target amount is hit.
+ */
+enum class MilestoneStatus {
+    /** Target not yet reached and not the current active milestone. */
+    LOCKED,
+    /** The currently active milestone being worked towards. */
+    CURRENT,
+    /** Target amount has been reached. */
+    REACHED
+}

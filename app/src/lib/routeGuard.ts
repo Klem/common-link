@@ -1,4 +1,5 @@
 import { ROUTES } from './routes';
+import { UserRole } from '@/types/auth';
 
 /**
  * Pure function that determines whether a redirect is needed based on the
@@ -30,10 +31,10 @@ export function getRedirectForRole(path: string, role: string | null): string | 
   }
 
   // Wrong-role access — cross-redirect
-  if (isDonorPath && role !== 'DONOR') {
+  if (isDonorPath && role !== UserRole.DONOR) {
     return ROUTES.ASSOCIATION_DASHBOARD;
   }
-  if (isAssociationPath && role !== 'ASSOCIATION') {
+  if (isAssociationPath && role !== UserRole.ASSOCIATION) {
     return ROUTES.DONOR_DASHBOARD;
   }
 

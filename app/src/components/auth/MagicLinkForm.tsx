@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-
-type UserRole = 'ASSOCIATION' | 'DONOR';
+import { UserRole } from '@/types/auth';
 type MagicLinkState = 'idle' | 'sending' | 'sent' | 'error';
 
 interface MagicLinkFormProps {
@@ -37,7 +36,7 @@ export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
   const buttonLabel =
     state === 'sending'
       ? t('magicLink.sending')
-      : role === 'ASSOCIATION'
+      : role === UserRole.ASSOCIATION
         ? t('magicLink.sendButton')
         : t('signup.donor.magicLink');
 
