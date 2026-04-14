@@ -3,6 +3,7 @@ package org.commonlink.repository
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 
 /**
@@ -26,5 +27,6 @@ import org.springframework.transaction.annotation.Transactional
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ImportTestcontainers(TestcontainersConfig::class)
+@ActiveProfiles("test")
 @Transactional
 abstract class AbstractRepositoryTest

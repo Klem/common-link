@@ -2,5 +2,8 @@
   "build": {
     "type": "gradle",
     "goal": "bootJar -x test"
+  },
+  "deploy": {
+    "jarName": "${APP_FOLDER}/build/libs/api-*.jar"
   }
 }
