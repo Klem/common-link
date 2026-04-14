@@ -45,7 +45,7 @@ export default function AssociationDashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-[1fr_320px] gap-[13px]">
+      <div className="grid grid-cols-[1fr] gap-[13px]">
         <EmptyStateCard
           icon={t('association.empty.icon')}
           title={t('association.empty.title')}
@@ -54,26 +54,27 @@ export default function AssociationDashboardPage() {
           actionHref={ROUTES.ASSOCIATION_CAMPAIGNS}
         />
 
-        <div className="bg-bg-2 border border-border rounded-[14px] p-[24px]">
-          <p className="font-display font-bold text-[15px] text-text mb-[4px]">
-            {t('association.profileCompletion.title')}
-          </p>
-          <p className="text-[12px] text-text-2 mb-[20px]">
-            {t('association.profileCompletion.subtitle')}
-          </p>
-          <ul className="flex flex-col gap-[12px]">
-            {CHECKLIST_ITEMS.map((item) => (
-              <li key={item.key} className="flex items-center gap-[10px] text-[13px]">
-                <span className="text-[16px] leading-none flex-shrink-0">
-                  {item.done ? '✅' : '⬜'}
-                </span>
-                <span className={item.done ? 'text-text' : 'text-text-2'}>
-                  {t(`association.profileCompletion.fields.${item.key}`)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/*<div className="bg-bg-2 border border-border rounded-[14px] p-[24px]">*/}
+        {/*  <p className="font-display font-bold text-[15px] text-text mb-[4px]">*/}
+        {/*    {t('association.profileCompletion.title')}*/}
+        {/*  </p>*/}
+        {/*  <p className="text-[12px] text-text-2 mb-[20px]">*/}
+        {/*    {t('association.profileCompletion.subtitle')}*/}
+        {/*  </p>*/}
+        {/*  */}
+        {/*  <ul className="flex flex-col gap-[12px]">*/}
+        {/*    {CHECKLIST_ITEMS.map((item) => (*/}
+        {/*      <li key={item.key} className="flex items-center gap-[10px] text-[13px]">*/}
+        {/*        <span className="text-[16px] leading-none flex-shrink-0">*/}
+        {/*          {item.done ? '✅' : '⬜'}*/}
+        {/*        </span>*/}
+        {/*        <span className={item.done ? 'text-text' : 'text-text-2'}>*/}
+        {/*          {t(`association.profileCompletion.fields.${item.key}`)}*/}
+        {/*        </span>*/}
+        {/*      </li>*/}
+        {/*    ))}*/}
+        {/*  </ul>*/}
+        {/*</div>*/}
       </div>
     </div>
   );

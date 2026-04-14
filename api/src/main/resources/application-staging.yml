@@ -1,0 +1,64 @@
+# ──────────────────────────────────────────────────────────────
+# Staging profile — activated via SPRING_PROFILES_ACTIVE=staging
+# Reads Clever Cloud auto-injected POSTGRESQL_ADDON_* variables
+# ──────────────────────────────────────────────────────────────
+
+server:
+  port: 8080
+  address: 0.0.0.0   # Required: CC reverse proxy needs to reach the app
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRESQL_ADDON_HOST}:${POSTGRESQL_ADDON_PORT}/${POSTGRESQL_ADDON_DB}
+    username: ${POSTGRESQL_ADDON_USER}
+    password: ${POSTGRESQL_ADDON_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5   # CC dev plan has limited connections
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    show-sql: false
+  
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway
+  health:
+    mail:
+      enabled: false
+
+app:
+  jwt:
+    secret: ${COMMON_LINK_SECRET}
+  frontend-url: ${COMMON_LINK_FRONTEND_URL}
+  google:
+    client-id: ${YOUR_GOOGLE_CLIENT_ID:}
+  mail:
+    from: ${MAIL_FROM:noreply@commonlink.org}
+  insee:
+    api-key: ${INSEE_API_KEY:}
+    base-url: ${INSEE_BASE_URL:https://api.insee.fr/api-sirene/3.11}
+  vop:
+    demo-mode: true
+    api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}
+    api-token: ${VOP_API_TOKEN:}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api/docs/api.json
+  swagger-ui:
+    enabled: true
+    path: /api/docs/swagger-ui.html
+
+logging:
+  level:
+    org.commonlink: INFO
+    org.springframework.security: WARN
