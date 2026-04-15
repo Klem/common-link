@@ -4,6 +4,6 @@
     "goal": "bootJar -x test"
   },
   "deploy": {
-    "jarName": "${APP_FOLDER}/build/libs/api-*.jar"
+    "jarName": "build/libs/api-*.jar"
   }
 }
