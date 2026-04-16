@@ -34,14 +34,24 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
     show-sql: false
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
   health:
-    mail:
+    defaults:
       enabled: true
+    db:
+      enabled: true
+    mail:
+      enabled: false  # Don't tie app liveness to SMTP availability
 
 app:
   jwt:
