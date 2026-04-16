@@ -139,11 +139,11 @@ class BeneficiaryService(
     @Transactional
     fun deleteIban(userId: UUID, beneficiaryId: UUID, ibanId: UUID) {
         val associationId = resolveAssociationId(userId)
-        beneficiaryRepository.findByIdAndAssociationId(beneficiaryId, associationId)
+        val beneficiary = beneficiaryRepository.findByIdAndAssociationId(beneficiaryId, associationId)
             .orElseThrow { UserNotFoundException("Beneficiary not found") }
         val ibanEntry = beneficiaryIbanRepository.findByIdAndBeneficiaryId(ibanId, beneficiaryId)
             .orElseThrow { UserNotFoundException("IBAN not found") }
-        beneficiaryIbanRepository.delete(ibanEntry)
+        beneficiary.ibans.remove(ibanEntry)
     }
 
     /**

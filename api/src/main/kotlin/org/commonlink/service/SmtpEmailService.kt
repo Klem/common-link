@@ -1,7 +1,6 @@
 package org.commonlink.service
 
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Profile
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Service
 
 @Service
 @Profile("!local")
-@ConditionalOnBean(JavaMailSender::class)
 class SmtpEmailService(
     private val mailSender: JavaMailSender,
     @Value("\${app.mail.from}") private val from: String
