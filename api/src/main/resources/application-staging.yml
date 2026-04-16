@@ -69,5 +69,6 @@ springdoc:
 
 logging:
   level:
+    root: INFO
     org.commonlink: INFO
-    org.springframework.security: WARN
+    org.springframework: INFO
