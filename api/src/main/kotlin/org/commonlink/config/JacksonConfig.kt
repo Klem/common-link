@@ -8,5 +8,5 @@ import org.springframework.context.annotation.Configuration
 class JacksonConfig {
 
     @Bean
-    fun objectMapper(): ObjectMapper = ObjectMapper()
+    fun objectMapper(): ObjectMapper = ObjectMapper().findAndRegisterModules()
 }
