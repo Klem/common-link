@@ -15,6 +15,8 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5   # CC dev plan has limited connections
+      minimum-idle: 1
+
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT:587}
