@@ -1,6 +1,6 @@
 {
   "build": {
     "type": "gradle",
-    "goal": "bootJar -x test"
+    "goal": "bootJar -x test --no-daemon -quiet"
   }
 }
