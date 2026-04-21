@@ -15,6 +15,8 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5   # CC dev plan has limited connections
+      minimum-idle: 1
+
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT:587}
@@ -28,20 +30,31 @@ spring:
             enable: true
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
     show-sql: false
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
   health:
-    mail:
+    defaults:
       enabled: true
+    db:
+      enabled: true
+    mail:
+      enabled: false  # Don't tie app liveness to SMTP availability
 
 app:
   jwt:
@@ -69,5 +82,7 @@ springdoc:
 
 logging:
   level:
+    root: INFO
     org.commonlink: INFO
-    org.springframework.security: WARN
+    org.springframework: INFO
+    org.springframework.boot.actuate: DEBUG

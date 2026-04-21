@@ -58,7 +58,11 @@ class SecurityConfig(
             .cors { it.configurationSource(corsConfigurationSource()) }
             .authorizeHttpRequests { auth ->
                 auth
+                    .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                    .requestMatchers("/actuator/info").permitAll()
                     .requestMatchers("/api/auth/**", "/api/docs/**").permitAll()
+                    // Optional: protect other actuator endpoints
+//                    .requestMatchers("/actuator/**").hasRole("ADMIN")
                     .requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
                     .requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())
                     .anyRequest().authenticated()
