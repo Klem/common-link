@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service
  * configuring an SMTP server.
  */
 @Service
-@Profile("local")
+@Profile("local", "test")
 class EmailServiceStub : EmailService {
 
     private val logger = LoggerFactory.getLogger(EmailServiceStub::class.java)
