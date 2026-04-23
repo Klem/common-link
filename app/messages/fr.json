@@ -12,7 +12,7 @@
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "profileUpdated": "Profil mis à jour.",
-    "beneficiaryCreated": "Bénéficiaire ajouté avec succès.",
+    "payeeCreated": "Bénéficiaire ajouté avec succès.",
     "vopVerified": "Vérification VOP terminée.",
     "campaignUpdated": "Campagne mise à jour.",
     "budgetSaved": "Budget sauvegardé.",
@@ -159,7 +159,7 @@
       "profile": "Mon profil",
       "donations": "Mes dons",
       "campaigns": "Campagnes",
-      "beneficiaries": "Bénéficiaires",
+      "payees": "Bénéficiaires",
       "donors": "Donateurs",
       "settings": "Paramètres",
       "associationProfile": "Profil association",
@@ -169,7 +169,7 @@
       "donor": "Donateur",
       "association": "Association"
     },
-    "beneficiaries": {
+    "payees": {
       "pageTitle": "Bénéficiaires",
       "pageSubtitle": "Gérez les bénéficiaires de votre association",
       "search": {
