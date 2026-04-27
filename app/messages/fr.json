@@ -422,6 +422,17 @@
           "google": "Google",
           "email": "Email & mot de passe",
           "magicLink": "Lien magique"
+        },
+        "monerium": {
+          "title": "Portefeuille Monerium",
+          "badge": "Expérimental",
+          "description": "Connectez votre portefeuille Monerium pour recevoir et émettre des euros numériques directement sur la blockchain.",
+          "connect": "Connecter le portefeuille",
+          "cancel": "Annuler",
+          "waiting": "Authentification en cours… Complétez le formulaire dans la fenêtre qui vient de s'ouvrir.",
+          "connected": "Portefeuille connecté avec succès.",
+          "error": "La connexion au portefeuille a échoué. Veuillez réessayer.",
+          "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
         }
       }
     }
