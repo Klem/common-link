@@ -15,3 +15,10 @@ management:
   health:
     mail:
       enabled: true
+
+app:
+  monerium:
+    client-id: ${MONERIUM_CLIENT_ID}
+    client-secret: ${MONERIUM_CLIENT_SECRET}
+    base-url: ${MONERIUM_BASE_URL}
+    redirect-uri: ${MONERIUM_REDIRECT_URI}
