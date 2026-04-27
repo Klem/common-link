@@ -39,7 +39,7 @@ import jakarta.persistence.EntityManager
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @TestPropertySource(properties = [
-    "spring.profiles.active=local",
+    "spring.profiles.active=test",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000",
     "app.vop.demo-mode=true"
