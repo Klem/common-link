@@ -46,21 +46,21 @@ class VopService(
     private val restClient = RestClient.create()
 
     /**
-     * Verifies the given IBAN against the beneficiary name using VOP.
+     * Verifies the given IBAN against the payee name using VOP.
      *
      * Routes to [simulateVop] when [demoMode] is active, otherwise calls [callQontoApi].
      *
      * @param iban The IBAN to verify (normalised, no spaces).
-     * @param beneficiaryName The expected account holder name.
+     * @param payeeName The expected account holder name.
      * @return [VopVerificationResult] with the outcome and optional suggested name.
      */
-    fun verify(iban: String, beneficiaryName: String): VopVerificationResult {
+    fun verify(iban: String, payeeName: String): VopVerificationResult {
         return if (demoMode) {
             log.debug("VOP demo mode — simulating for IBAN ending '{}'", iban.lastOrNull())
-            simulateVop(iban, beneficiaryName)
+            simulateVop(iban, payeeName)
         } else {
             log.debug("VOP real mode — calling Qonto API for IBAN {}", iban)
-            callQontoApi(iban, beneficiaryName)
+            callQontoApi(iban, payeeName)
         }
     }
 
@@ -69,7 +69,7 @@ class VopService(
      *
      * Outcome mapping (last char of stripped IBAN):
      * - `0,2,4,6,8` → [VopResult.MATCH]
-     * - `1,3,5` → [VopResult.CLOSE_MATCH] — [suggestedName] = words of [beneficiaryName] reversed
+     * - `1,3,5` → [VopResult.CLOSE_MATCH] — [suggestedName] = words of [payeeName] reversed
      * - `7,9` → [VopResult.NO_MATCH]
      * - anything else (e.g. letter) → [VopResult.NOT_POSSIBLE]
      *
@@ -77,10 +77,10 @@ class VopService(
      * demo path; [callQontoApi] has no artificial delay.
      *
      * @param iban The IBAN to simulate against.
-     * @param beneficiaryName Beneficiary name used to produce the reversed close-match suggestion.
+     * @param payeeName Payee name used to produce the reversed close-match suggestion.
      * @return Simulated [VopVerificationResult].
      */
-    private fun simulateVop(iban: String, beneficiaryName: String): VopVerificationResult {
+    private fun simulateVop(iban: String, payeeName: String): VopVerificationResult {
         Thread.sleep(500)
         val stripped = iban.replace(Regex("[^A-Za-z0-9]"), "")
         val lastChar = stripped.lastOrNull()
@@ -92,7 +92,7 @@ class VopService(
                 rawResponse = """{"simulation":true,"match_result":"MATCH","last_char":"$lastChar"}"""
             )
             '1', '3', '5' -> {
-                val suggested = beneficiaryName.split(" ").reversed().joinToString(" ")
+                val suggested = payeeName.split(" ").reversed().joinToString(" ")
                 VopVerificationResult(
                     result = VopResult.CLOSE_MATCH,
                     suggestedName = suggested,
@@ -113,20 +113,20 @@ class VopService(
     }
 
     /**
-     * Calls the real Qonto SEPA VOP API to verify the IBAN against the beneficiary name.
+     * Calls the real Qonto SEPA VOP API to verify the IBAN against the payee name.
      *
      * Sends `POST {apiUrl}` with JSON body `{"iban": "...", "name": "..."}` and
      * `Authorization: Bearer {apiToken}`. Maps the `match_result` field of the response
      * to [VopResult]; any unrecognised value is treated as [VopResult.NOT_POSSIBLE].
      *
      * @param iban The IBAN to verify.
-     * @param beneficiaryName The expected account holder name.
+     * @param payeeName The expected account holder name.
      * @return [VopVerificationResult] parsed from the Qonto response.
      * @throws BadGatewayException if the API call fails or returns an error.
      */
     @Suppress("UNCHECKED_CAST")
-    private fun callQontoApi(iban: String, beneficiaryName: String): VopVerificationResult {
-        val requestBody = mapOf("iban" to iban, "name" to beneficiaryName)
+    private fun callQontoApi(iban: String, payeeName: String): VopVerificationResult {
+        val requestBody = mapOf("iban" to iban, "name" to payeeName)
         val rawResponse: String = try {
             restClient.post()
                 .uri(apiUrl)

@@ -7,7 +7,7 @@ import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
 
 @Service
-@Profile("!local")
+@Profile("staging", "prod")
 class SmtpEmailService(
     private val mailSender: JavaMailSender,
     @Value("\${app.mail.from}") private val from: String

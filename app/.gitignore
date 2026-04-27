@@ -7,3 +7,4 @@ test-results
 node_modules
 tasks
 CLAUDE.md
+.env.*

@@ -5,9 +5,9 @@ import org.commonlink.entity.VopResult
 import java.util.UUID
 
 /**
- * Response DTO returned after a VOP (Verification of Payee) check on a beneficiary IBAN.
+ * Response DTO returned after a VOP (Verification of Payee) check on a payee IBAN.
  *
- * @param ibanId UUID of the [org.commonlink.entity.BeneficiaryIban] entry that was verified.
+ * @param ibanId UUID of the [org.commonlink.entity.PayeeIban] entry that was verified.
  * @param iban The IBAN string that was checked (normalised, no spaces).
  * @param status Updated [IbanVerificationStatus] after the VOP check.
  * @param vopResult Raw VOP outcome from the bank; null only when [IbanVerificationStatus.NOT_POSSIBLE].

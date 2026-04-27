@@ -7,7 +7,7 @@ import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
-import org.commonlink.service.BeneficiaryService
+import org.commonlink.service.PayeeService
 import org.commonlink.service.CampaignService
 import org.commonlink.service.DonorService
 import org.commonlink.service.SireneSearchService
@@ -34,7 +34,7 @@ class CommonLinkApplicationTests {
     @MockkBean lateinit var userRepository: UserRepository
     @MockkBean lateinit var associationService: AssociationService
     @MockkBean lateinit var donorService: DonorService
-    @MockkBean lateinit var beneficiaryService: BeneficiaryService
+    @MockkBean lateinit var payeeService: PayeeService
     @MockkBean private lateinit var campaignService: CampaignService
     @MockkBean private lateinit var sireneSearchService: SireneSearchService
 

@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
 /**
- * Request body for adding an IBAN to a beneficiary.
+ * Request body for adding an IBAN to a payee.
  *
  * The backend performs format validation (mod-97 checksum) regardless of any frontend validation —
  * every click can be replayed as a direct API call.
