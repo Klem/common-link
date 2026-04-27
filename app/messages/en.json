@@ -430,6 +430,7 @@
           "cancel": "Cancel",
           "waiting": "Authentication in progress… Complete the form in the window that just opened.",
           "connected": "Wallet connected successfully.",
+          "connectedStatus": "Connected",
           "error": "Wallet connection failed. Please try again.",
           "errorFetch": "Failed to get authentication URL. Please try again."
         }

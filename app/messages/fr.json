@@ -431,6 +431,7 @@
           "cancel": "Annuler",
           "waiting": "Authentification en cours… Complétez le formulaire dans la fenêtre qui vient de s'ouvrir.",
           "connected": "Portefeuille connecté avec succès.",
+          "connectedStatus": "Connecté",
           "error": "La connexion au portefeuille a échoué. Veuillez réessayer.",
           "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
         }
