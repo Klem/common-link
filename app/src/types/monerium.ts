@@ -1,4 +1,14 @@
 /**
+ * Message types posted from the OAuth popup window to the opener via `window.postMessage`.
+ */
+export const MoneriumPopupMessage = {
+  CONNECTED: 'MONERIUM_CONNECTED',
+  ERROR: 'MONERIUM_ERROR',
+} as const;
+
+export type MoneriumPopupMessage = typeof MoneriumPopupMessage[keyof typeof MoneriumPopupMessage];
+
+/**
  * Response from `GET /api/monerium/auth-url`.
  * Contains the Monerium OAuth2 authorization URL to open in a popup.
  */

@@ -436,6 +436,20 @@
           "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
         }
       }
+    },
+    "moneriumPopup": {
+      "callback": {
+        "loading": "Chargement…",
+        "closing": "Finalisation du KYC… cette fenêtre va se fermer."
+      },
+      "success": {
+        "title": "KYC terminé",
+        "closing": "Fermeture de la fenêtre…"
+      },
+      "error": {
+        "title": "KYC échoué",
+        "retry": "Veuillez réessayer depuis la page de profil."
+      }
     }
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getMoneriumAuthUrl } from '@/lib/api/monerium';
+import { MoneriumPopupMessage } from '@/types/monerium';
 import { useToastStore } from '@/stores/toastStore';
 
 interface MoneriumOnboardModalProps {
@@ -47,13 +48,13 @@ export default function MoneriumOnboardModal({ isOpen, onClose, onConnected }: M
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
 
-      if (event.data?.type === 'MONERIUM_CONNECTED') {
+      if (event.data?.type === MoneriumPopupMessage.CONNECTED) {
         closePopup();
         setIsConnecting(false);
         onConnected();
         onClose();
         addToast('success', 'dashboard.profile.monerium.connected');
-      } else if (event.data?.type === 'MONERIUM_ERROR') {
+      } else if (event.data?.type === MoneriumPopupMessage.ERROR) {
         closePopup();
         setIsConnecting(false);
         addToast('error', 'dashboard.profile.monerium.error');

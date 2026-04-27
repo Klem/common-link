@@ -435,6 +435,20 @@
           "errorFetch": "Failed to get authentication URL. Please try again."
         }
       }
+    },
+    "moneriumPopup": {
+      "callback": {
+        "loading": "Loading…",
+        "closing": "Completing KYC… this window will close."
+      },
+      "success": {
+        "title": "KYC Complete",
+        "closing": "Closing window…"
+      },
+      "error": {
+        "title": "KYC Failed",
+        "retry": "Please try again from the profile page."
+      }
     }
   }
 }
