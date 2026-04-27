@@ -10,6 +10,7 @@ import org.commonlink.service.AuthService
 import org.commonlink.service.PayeeService
 import org.commonlink.service.CampaignService
 import org.commonlink.service.DonorService
+import org.commonlink.service.MoneriumService
 import org.commonlink.service.SireneSearchService
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -37,6 +38,7 @@ class CommonLinkApplicationTests {
     @MockkBean lateinit var payeeService: PayeeService
     @MockkBean private lateinit var campaignService: CampaignService
     @MockkBean private lateinit var sireneSearchService: SireneSearchService
+    @MockkBean private lateinit var moneriumService: MoneriumService
 
     @Test
     fun contextLoads() {

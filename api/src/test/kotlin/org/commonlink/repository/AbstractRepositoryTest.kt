@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional
  * (l'ApplicationContext est mis en cache par Spring Test).
  */
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
 @Transactional

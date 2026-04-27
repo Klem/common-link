@@ -19,7 +19,7 @@ interface MoneriumOnboardModalProps {
  * from the success popup page to update the connection state without a full page reload.
  */
 export default function MoneriumOnboardModal({ isOpen, onClose, onConnected }: MoneriumOnboardModalProps) {
-  const t = useTranslations('dashboard');
+  const t = useTranslations('dashboard.association');
   const { addToast } = useToastStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const popupRef = useRef<Window | null>(null);
@@ -36,7 +36,7 @@ export default function MoneriumOnboardModal({ isOpen, onClose, onConnected }: M
       const { authUrl } = await getMoneriumAuthUrl();
       popupRef.current = window.open(authUrl, 'monerium-popup', 'width=520,height=700,noopener=no');
     } catch {
-      addToast('error', 'dashboard.profile.monerium.errorFetch');
+      addToast('error', 'moneriumErrorFetch');
       setIsConnecting(false);
     }
   }, [addToast]);
@@ -53,11 +53,11 @@ export default function MoneriumOnboardModal({ isOpen, onClose, onConnected }: M
         setIsConnecting(false);
         onConnected();
         onClose();
-        addToast('success', 'dashboard.profile.monerium.connected');
+        addToast('success', 'moneriumConnected');
       } else if (event.data?.type === MoneriumPopupMessage.ERROR) {
         closePopup();
         setIsConnecting(false);
-        addToast('error', 'dashboard.profile.monerium.error');
+        addToast('error', 'moneriumError');
       }
     };
 

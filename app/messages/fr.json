@@ -18,7 +18,11 @@
     "budgetSaved": "Budget sauvegardé.",
     "milestoneCreated": "Milestone ajouté.",
     "milestoneSaved": "Milestone mis à jour.",
-    "milestoneDeleted": "Milestone supprimé."
+    "milestoneDeleted": "Milestone supprimé.",
+    "setPasswordUpdated": "Mot de passe défini avec succès.",
+    "moneriumConnected": "Portefeuille connecté avec succès.",
+    "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
+    "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },

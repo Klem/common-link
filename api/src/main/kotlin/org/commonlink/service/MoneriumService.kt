@@ -40,12 +40,12 @@ class MoneriumService(
     /**
      * Builds a Monerium authorization URL with PKCE (S256) and persists the OAuth state.
      *
-     * @param associationId UUID of the requesting association profile.
+     * @param userId UUID of the user requesting association profile.
      * @return Full Monerium OAuth2 authorization URL to redirect the popup to.
      */
-    fun buildAuthorizationUrl(associationId: UUID): String {
-        val association = associationRepo.findById(associationId)
-            .orElseThrow { IllegalArgumentException("Association not found: $associationId") }
+    fun buildAuthorizationUrl(userId: UUID): String {
+        val association = associationRepo.findByUserId(userId)
+            .orElseThrow { IllegalArgumentException("Association not found for user: $userId") }
 
         val codeVerifier = generateCodeVerifier()
         val codeChallenge = generateCodeChallenge(codeVerifier)
@@ -72,7 +72,7 @@ class MoneriumService(
             "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
         }
 
-        logger.info("Generated Monerium auth URL for association {}", associationId)
+        logger.info("Generated Monerium auth URL for association {}", association.id)
         return "${config.baseUrl}/auth?$params"
     }
 
@@ -116,11 +116,11 @@ class MoneriumService(
     /**
      * Returns true if the association already has a Monerium wallet connection.
      *
-     * @param associationId UUID of the association profile.
+     * @param userId UUID of the user's association profile.
      */
-    fun getConnectionStatus(associationId: UUID): Boolean {
-        val association = associationRepo.findById(associationId)
-            .orElseThrow { IllegalArgumentException("Association not found: $associationId") }
+    fun getConnectionStatus(userId: UUID): Boolean {
+        val association = associationRepo.findByUserId(userId)
+            .orElseThrow { IllegalArgumentException("Association not found for user: $userId") }
         return connectionRepo.findByAssociation(association) != null
     }
 

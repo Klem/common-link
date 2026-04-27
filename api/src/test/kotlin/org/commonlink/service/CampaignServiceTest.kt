@@ -24,6 +24,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -38,8 +39,8 @@ import jakarta.persistence.EntityManager
  */
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
+@ActiveProfiles("test")
 @TestPropertySource(properties = [
-    "spring.profiles.active=test",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000",
     "app.vop.demo-mode=true"

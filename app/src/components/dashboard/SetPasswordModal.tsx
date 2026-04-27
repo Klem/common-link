@@ -22,10 +22,10 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
     setLoading(true);
     try {
       await api.patch('/api/user/me/password', { password, confirmPassword: password });
-      addToast('success', 'dashboard.setPassword.success');
+      addToast('success', 'setPasswordUpdated');
       onClose();
     } catch {
-      addToast('error', 'common.errors.genericError');
+      addToast('error', 'errors.genericError');
     } finally {
       setLoading(false);
     }
