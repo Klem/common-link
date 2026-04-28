@@ -10,6 +10,7 @@ import org.commonlink.entity.MoneriumOAuthState
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.repository.MoneriumOAuthStateRepository
+import org.commonlink.repository.TestcontainersConfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -17,12 +18,18 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.http.ResponseEntity
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.web.client.RestTemplate
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
+@SpringBootTest
+@ImportTestcontainers(TestcontainersConfig::class)
+@ActiveProfiles("test")
 class MoneriumServiceTest {
 
     private val config = MoneriumConfig(
