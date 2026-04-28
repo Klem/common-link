@@ -17,4 +17,6 @@ data class MoneriumConfig(
     val baseUrl: String = "https://sandbox.monerium.app",
     /** Backend callback URL registered in the Monerium developer console. */
     val redirectUri: String = "",
+
+    val skipKyc: String = "true",
 )

@@ -2,7 +2,7 @@ CREATE TABLE monerium_connections
 (
     id               UUID        NOT NULL DEFAULT gen_random_uuid(),
     association_id   UUID        NOT NULL,
-    monerium_user_id VARCHAR(255) NOT NULL,
+    monerium_user_id VARCHAR(255),
     access_token     TEXT        NOT NULL,
     refresh_token    TEXT        NOT NULL,
     connected_at     TIMESTAMPTZ NOT NULL,

@@ -68,6 +68,8 @@ class MoneriumService(
             "state" to state,
             "code_challenge" to codeChallenge,
             "code_challenge_method" to "S256",
+            "skip_kyc" to config.skipKyc,
+            "email" to association.user.email
         ).entries.joinToString("&") { (k, v) ->
             "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
         }
@@ -153,9 +155,9 @@ class MoneriumService(
 
     /** Token response payload from POST {baseUrl}/auth/token. */
     data class TokenResponse(
-        @JsonProperty("access_token") val accessToken: String,
-        @JsonProperty("refresh_token") val refreshToken: String,
-        @JsonProperty("expires_in") val expiresIn: Int,
-        @JsonProperty("user_id") val userId: String,
+        @field:JsonProperty("access_token") val accessToken: String,
+        @field:JsonProperty("refresh_token") val refreshToken: String,
+        @field:JsonProperty("expires_in") val expiresIn: Int,
+        @field:JsonProperty("user_id") val userId: String?,
     )
 }

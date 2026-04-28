@@ -26,8 +26,8 @@ class MoneriumConnection(
     val association: AssociationProfile,
 
     /** Monerium user identifier returned in the token response. */
-    @Column(name = "monerium_user_id", nullable = false)
-    val moneriumUserId: String,
+    @Column(name = "monerium_user_id", nullable = true)
+    val moneriumUserId: String?,
 
     /** Short-lived bearer token for Monerium API calls. */
     @Column(name = "access_token", nullable = false, columnDefinition = "TEXT")

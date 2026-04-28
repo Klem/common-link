@@ -51,6 +51,7 @@ app:
     client-id: ${MONERIUM_CLIENT_ID:}
     base-url: ${MONERIUM_BASE_URL:https://api.monerium.dev}
     redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/monerium/callback}
+    skip-kyc: true
 
 springdoc:
   api-docs:
