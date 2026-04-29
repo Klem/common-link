@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
 @Transactional
 abstract class AbstractRepositoryTest

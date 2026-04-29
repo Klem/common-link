@@ -45,7 +45,7 @@ export function useAssociationProfile(): UseAssociationProfileReturn {
         if (!cancelled) setProfile(data);
       })
       .catch(() => {
-        if (!cancelled) setError('common.errors.serverError');
+        if (!cancelled) setError('errors.serverError');
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -63,7 +63,7 @@ export function useAssociationProfile(): UseAssociationProfileReturn {
       setIsSuccess(true);
       addToast('success', 'profileUpdated');
     } catch {
-      addToast('error', 'common.errors.serverError');
+      addToast('error', 'errors.serverError');
     }
   };
 

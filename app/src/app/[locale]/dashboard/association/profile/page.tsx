@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
 import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
+import { useMoneriumStatus } from '@/hooks/monerium/useMoneriumStatus';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
+import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -50,6 +52,14 @@ export default function AssociationProfilePage() {
   const user = useAuthStore((s) => s.user);
   const { profile, isLoading, updateProfile } = useAssociationProfile();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showMoneriumModal, setShowMoneriumModal] = useState(false);
+  const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
+  const { connected, pending, isLoading: moneriumLoading, refresh: refreshMonerium } = useMoneriumStatus();
+
+  const handlePopupClosed = useCallback(async () => {
+    setMoneriumInterrupted(true);
+    await refreshMonerium();
+  }, [refreshMonerium]);
   const { onSubmit: submitPassword, loading: passwordLoading } = useSetPassword();
 
   const {
@@ -297,6 +307,48 @@ export default function AssociationProfilePage() {
         )}
       </div>
 
+      {/* ── Monerium wallet card ─────────────────────────────────────────── */}
+      <div className="bg-bg-2 border border-dashed border-indigo-500/40 rounded-[14px] p-[22px] mb-[18px]">
+        <div className="flex items-center gap-[8px] mb-[10px]">
+          <h3 className="font-display font-bold text-[15px] text-text">
+            {t('association.profile.monerium.title')}
+          </h3>
+          <span className="bg-indigo-500/10 text-indigo-400 rounded-full px-[9px] py-[3px] text-[11px] font-semibold">
+            {t('association.profile.monerium.badge')}
+          </span>
+        </div>
+        <p className="text-[13px] text-text-2 mb-[14px]">
+          {t('association.profile.monerium.description')}
+        </p>
+        {moneriumLoading ? (
+          <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        ) : connected ? (
+          <span className="bg-green/12 text-green rounded-full px-[10px] py-[4px] text-[12px] font-semibold">
+            {t('association.profile.monerium.connectedStatus')}
+          </span>
+        ) : moneriumInterrupted ? (
+          <button
+            type="button"
+            onClick={() => { setMoneriumInterrupted(false); setShowMoneriumModal(true); }}
+            className="text-[13px] text-yellow font-semibold bg-yellow/10 px-[14px] py-[8px] rounded-[8px] hover:bg-yellow/20 transition-colors duration-150"
+          >
+            {t('association.profile.monerium.tryAgain')}
+          </button>
+        ) : pending ? (
+          <span className="bg-yellow/12 text-yellow rounded-full px-[10px] py-[4px] text-[12px] font-semibold">
+            {t('association.profile.monerium.pendingStatus')}
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowMoneriumModal(true)}
+            className="text-[13px] text-indigo-400 font-semibold bg-indigo-500/10 px-[14px] py-[8px] rounded-[8px] hover:bg-indigo-500/20 transition-colors duration-150"
+          >
+            {t('association.profile.monerium.connect')}
+          </button>
+        )}
+      </div>
+
       {/* ── SetPassword modal ────────────────────────────────────────────── */}
       {showPasswordModal && (
         <div
@@ -318,6 +370,14 @@ export default function AssociationProfilePage() {
           </div>
         </div>
       )}
+
+      {/* ── Monerium onboard modal ───────────────────────────────────────── */}
+      <MoneriumOnboardModal
+        isOpen={showMoneriumModal}
+        onClose={() => setShowMoneriumModal(false)}
+        onConnected={() => { setMoneriumInterrupted(false); refreshMonerium(); }}
+        onPopupClosed={handlePopupClosed}
+      />
     </div>
   );
 }

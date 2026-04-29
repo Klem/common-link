@@ -18,7 +18,11 @@
     "budgetSaved": "Budget sauvegardé.",
     "milestoneCreated": "Milestone ajouté.",
     "milestoneSaved": "Milestone mis à jour.",
-    "milestoneDeleted": "Milestone supprimé."
+    "milestoneDeleted": "Milestone supprimé.",
+    "setPasswordUpdated": "Mot de passe défini avec succès.",
+    "moneriumConnected": "Portefeuille connecté avec succès.",
+    "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
+    "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
   },
   "auth": {
     "tabs": { "login": "Connexion", "signup": "Créer un compte" },
@@ -422,7 +426,35 @@
           "google": "Google",
           "email": "Email & mot de passe",
           "magicLink": "Lien magique"
+        },
+        "monerium": {
+          "title": "Portefeuille Monerium",
+          "badge": "Expérimental",
+          "description": "Connectez votre portefeuille Monerium pour recevoir et émettre des euros numériques directement sur la blockchain.",
+          "connect": "Connecter le portefeuille",
+          "cancel": "Annuler",
+          "waiting": "Authentification en cours… Complétez le formulaire dans la fenêtre qui vient de s'ouvrir.",
+          "connected": "Portefeuille connecté avec succès.",
+          "connectedStatus": "Connecté",
+          "pendingStatus": "Autorisation en attente",
+          "tryAgain": "Réessayer",
+          "error": "La connexion au portefeuille a échoué. Veuillez réessayer.",
+          "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
         }
+      }
+    },
+    "moneriumPopup": {
+      "callback": {
+        "loading": "Chargement…",
+        "closing": "Finalisation du KYC… cette fenêtre va se fermer."
+      },
+      "success": {
+        "title": "KYC terminé",
+        "closing": "Fermeture de la fenêtre…"
+      },
+      "error": {
+        "title": "KYC échoué",
+        "retry": "Veuillez réessayer depuis la page de profil."
       }
     }
   }

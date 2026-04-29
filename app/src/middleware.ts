@@ -8,9 +8,17 @@ const intlMiddleware = createMiddleware(routing);
 
 const PROTECTED_PATHS = ['/dashboard', '/settings'];
 
+// These pages are loaded inside the OAuth popup which has no auth cookie.
+const AUTH_EXEMPT_PATHS = [
+  '/dashboard/monerium/success',
+  '/dashboard/monerium/error',
+  '/dashboard/monerium/callback',
+];
+
 function isProtectedPath(pathname: string): boolean {
   // Strip the locale prefix (e.g. /fr/dashboard → /dashboard)
   const withoutLocale = pathname.replace(/^\/[a-z]{2}(\/|$)/, '/');
+  if (AUTH_EXEMPT_PATHS.includes(withoutLocale)) return false;
   return PROTECTED_PATHS.some(
     (p) => withoutLocale === p || withoutLocale.startsWith(`${p}/`),
   );

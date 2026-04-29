@@ -18,7 +18,11 @@
     "budgetSaved": "Budget saved.",
     "milestoneCreated": "Milestone added.",
     "milestoneSaved": "Milestone updated.",
-    "milestoneDeleted": "Milestone deleted."
+    "milestoneDeleted": "Milestone deleted.",
+    "setPasswordUpdated": "Password set successfully.",
+    "moneriumConnected": "Wallet connected successfully.",
+    "moneriumError": "Wallet connection failed. Please try again.",
+    "moneriumErrorFetch": "Failed to get authentication URL. Please try again."
   },
   "auth": {
     "tabs": { "login": "Login", "signup": "Create an account" },
@@ -421,7 +425,35 @@
           "google": "Google",
           "email": "Email & password",
           "magicLink": "Magic link"
+        },
+        "monerium": {
+          "title": "Monerium Wallet",
+          "badge": "Experimental",
+          "description": "Connect your Monerium wallet to receive and issue digital euros directly on the blockchain.",
+          "connect": "Connect wallet",
+          "cancel": "Cancel",
+          "waiting": "Authentication in progress… Complete the form in the window that just opened.",
+          "connected": "Wallet connected successfully.",
+          "connectedStatus": "Connected",
+          "pendingStatus": "Authorization pending",
+          "tryAgain": "Try Again",
+          "error": "Wallet connection failed. Please try again.",
+          "errorFetch": "Failed to get authentication URL. Please try again."
         }
+      }
+    },
+    "moneriumPopup": {
+      "callback": {
+        "loading": "Loading…",
+        "closing": "Completing KYC… this window will close."
+      },
+      "success": {
+        "title": "KYC Complete",
+        "closing": "Closing window…"
+      },
+      "error": {
+        "title": "KYC Failed",
+        "retry": "Please try again from the profile page."
       }
     }
   }

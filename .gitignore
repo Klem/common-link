@@ -4,3 +4,4 @@
 .tasks
 *.md
 landing-page
+.http

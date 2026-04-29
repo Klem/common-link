@@ -62,6 +62,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.2")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("com.h2database:h2")
     testImplementation("org.testcontainers:junit-jupiter")
 
 }

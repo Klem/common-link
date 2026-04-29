@@ -43,7 +43,8 @@ class SecurityConfig(
      *
      * Route access rules:
      * - `/api/auth / **`, `/api/docs / **` — public (no token required).
-     * - `/api/association / **` — requires `ROLE_ASSOCIATION`.
+     * - `/api/monerium/callback` — public (called directly by Monerium after OAuth).
+     * - `/api/association / **`, `/api/monerium / **` — requires `ROLE_ASSOCIATION`.
      * - `/api/donor / **` — requires `ROLE_DONOR`.
      * - Everything else — requires any valid JWT (any role).
      *
@@ -61,9 +62,12 @@ class SecurityConfig(
                     .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     .requestMatchers("/actuator/info").permitAll()
                     .requestMatchers("/api/auth/**", "/api/docs/**").permitAll()
+                    // Monerium callback is public — Monerium calls it directly after OAuth
+                    .requestMatchers("/api/monerium/callback").permitAll()
                     // Optional: protect other actuator endpoints
 //                    .requestMatchers("/actuator/**").hasRole("ADMIN")
                     .requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
+                    .requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
                     .requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())
                     .anyRequest().authenticated()
             }
