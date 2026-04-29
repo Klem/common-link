@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { MoneriumPopupMessage } from '@/types/monerium';
 
 export default function MoneriumErrorPage() {
-  const t = useTranslations('moneriumPopup.error');
+  const t = useTranslations('dashboard.moneriumPopup.error');
 
   useEffect(() => {
     window.opener?.postMessage({ type: MoneriumPopupMessage.ERROR }, window.location.origin);

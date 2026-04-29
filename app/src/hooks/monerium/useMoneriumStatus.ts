@@ -7,13 +7,15 @@ import { getMoneriumStatus } from '@/lib/api/monerium';
 export interface UseMoneriumStatusReturn {
   /** True if the association has an active Monerium connection, false if not, null while loading. */
   connected: boolean | null;
+  /** True if an OAuth2 flow was started but not yet completed, null while loading. */
+  pending: boolean | null;
   /** True while the status fetch is in-flight. */
   isLoading: boolean;
   /** i18n error key if the fetch failed, or null. */
   error: string | null;
   /**
    * Re-fetches the connection status from the API.
-   * Call this after a successful OAuth2 callback to reflect the new connection state.
+   * Call this after the OAuth2 popup closes to reflect the latest state.
    */
   refresh: () => Promise<void>;
 }
@@ -28,6 +30,7 @@ export interface UseMoneriumStatusReturn {
  */
 export function useMoneriumStatus(): UseMoneriumStatusReturn {
   const [connected, setConnected] = useState<boolean | null>(null);
+  const [pending, setPending] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +40,7 @@ export function useMoneriumStatus(): UseMoneriumStatusReturn {
     try {
       const data = await getMoneriumStatus();
       setConnected(data.connected);
+      setPending(data.pending);
     } catch {
       setError('common.errors.serverError');
     } finally {
@@ -48,5 +52,5 @@ export function useMoneriumStatus(): UseMoneriumStatusReturn {
     fetchStatus();
   }, [fetchStatus]);
 
-  return { connected, isLoading, error, refresh: fetchStatus };
+  return { connected, pending, isLoading, error, refresh: fetchStatus };
 }

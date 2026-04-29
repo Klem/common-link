@@ -101,7 +101,7 @@ class MoneriumControllerTest {
                 .param("state", "state-uuid-456")
         )
             .andExpect(status().isFound)
-            .andExpect(header().string("Location", "http://localhost:3000/en/dashboard/monerium/success"))
+            .andExpect(header().string("Location", "http://localhost:3000/en/monerium/success"))
     }
 
     @Test
@@ -115,7 +115,7 @@ class MoneriumControllerTest {
                 .param("state", "bad-state")
         )
             .andExpect(status().isFound)
-            .andExpect(header().string("Location", "http://localhost:3000/en/dashboard/monerium/error"))
+            .andExpect(header().string("Location", "http://localhost:3000/en/monerium/error"))
     }
 
     @Test
@@ -141,14 +141,15 @@ class MoneriumControllerTest {
                 .param("state", "expired-state")
         )
             .andExpect(status().isFound)
-            .andExpect(header().string("Location", "http://localhost:3000/en/dashboard/monerium/error"))
+            .andExpect(header().string("Location", "http://localhost:3000/en/monerium/error"))
     }
 
     // ── GET /api/monerium/status ──────────────────────────────────────────────
 
     @Test
-    fun `getStatus - 200 with connected=true when wallet is linked`() {
-        every { moneriumService.getConnectionStatus(userId) } returns true
+    fun `getStatus - 200 with connected=true and pending=false when wallet is linked`() {
+        every { moneriumService.getConnectionStatus(userId) } returns
+            org.commonlink.dto.MoneriumStatusDto(connected = true, pending = false)
 
         mockMvc.perform(
             get("/api/monerium/status")
@@ -156,11 +157,13 @@ class MoneriumControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.connected").value(true))
+            .andExpect(jsonPath("$.pending").value(false))
     }
 
     @Test
-    fun `getStatus - 200 with connected=false when wallet is not yet linked`() {
-        every { moneriumService.getConnectionStatus(userId) } returns false
+    fun `getStatus - 200 with connected=false and pending=true when flow is in progress`() {
+        every { moneriumService.getConnectionStatus(userId) } returns
+            org.commonlink.dto.MoneriumStatusDto(connected = false, pending = true)
 
         mockMvc.perform(
             get("/api/monerium/status")
@@ -168,6 +171,21 @@ class MoneriumControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.connected").value(false))
+            .andExpect(jsonPath("$.pending").value(true))
+    }
+
+    @Test
+    fun `getStatus - 200 with connected=false and pending=false when wallet is not linked`() {
+        every { moneriumService.getConnectionStatus(userId) } returns
+            org.commonlink.dto.MoneriumStatusDto(connected = false, pending = false)
+
+        mockMvc.perform(
+            get("/api/monerium/status")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.connected").value(false))
+            .andExpect(jsonPath("$.pending").value(false))
     }
 
     @Test

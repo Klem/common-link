@@ -173,17 +173,32 @@ class MoneriumServiceTest {
     // ── getConnectionStatus ───────────────────────────────────────────────────
 
     @Test
-    fun `getConnectionStatus - returns true when connection exists`() {
+    fun `getConnectionStatus - returns connected=true and pending=false when connection exists`() {
         every { connectionRepo.findByAssociation(mockAssociation) } returns mockk(relaxed = true)
 
-        assertTrue(service.getConnectionStatus(userId))
+        val result = service.getConnectionStatus(userId)
+        assertTrue(result.connected)
+        assertFalse(result.pending)
     }
 
     @Test
-    fun `getConnectionStatus - returns false when no connection exists`() {
+    fun `getConnectionStatus - returns pending=true when OAuth state exists and no connection`() {
         every { connectionRepo.findByAssociation(mockAssociation) } returns null
+        every { stateRepo.existsByAssociationAndExpiresAtAfter(mockAssociation, any()) } returns true
 
-        assertFalse(service.getConnectionStatus(userId))
+        val result = service.getConnectionStatus(userId)
+        assertFalse(result.connected)
+        assertTrue(result.pending)
+    }
+
+    @Test
+    fun `getConnectionStatus - returns connected=false and pending=false when nothing exists`() {
+        every { connectionRepo.findByAssociation(mockAssociation) } returns null
+        every { stateRepo.existsByAssociationAndExpiresAtAfter(mockAssociation, any()) } returns false
+
+        val result = service.getConnectionStatus(userId)
+        assertFalse(result.connected)
+        assertFalse(result.pending)
     }
 
     @Test

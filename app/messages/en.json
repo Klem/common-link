@@ -435,6 +435,8 @@
           "waiting": "Authentication in progress… Complete the form in the window that just opened.",
           "connected": "Wallet connected successfully.",
           "connectedStatus": "Connected",
+          "pendingStatus": "Authorization pending",
+          "tryAgain": "Try Again",
           "error": "Wallet connection failed. Please try again.",
           "errorFetch": "Failed to get authentication URL. Please try again."
         }

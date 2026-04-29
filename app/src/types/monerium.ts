@@ -24,4 +24,6 @@ export interface MoneriumAuthUrlDto {
 export interface MoneriumStatusDto {
   /** True if the association has a valid Monerium OAuth2 connection. */
   connected: boolean;
+  /** True if an OAuth2 flow was started but the code exchange has not completed yet. */
+  pending: boolean;
 }

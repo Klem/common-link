@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { MoneriumPopupMessage } from '@/types/monerium';
 
 function CallbackContent() {
-  const t = useTranslations('moneriumPopup.callback');
+  const t = useTranslations('dashboard.moneriumPopup.callback');
   const searchParams = useSearchParams();
 
   useEffect(() => {

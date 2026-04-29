@@ -68,36 +68,50 @@ class MoneriumController(
     }
 
     /**
-     * OAuth2 callback endpoint called by Monerium after the user completes authorization.
+     * OAuth2 callback endpoint called by Monerium after the user completes or cancels authorization.
      *
-     * Exchanges the authorization code for tokens using the stored code_verifier (PKCE),
-     * persists the [org.commonlink.entity.MoneriumConnection], then redirects the popup
-     * browser window to the frontend success or error page.
+     * Handles three cases:
+     * - `error` present (e.g. `access_denied`): user denied authorization — redirects to error page.
+     * - `code` absent without `error`: malformed callback — redirects to error page.
+     * - `code` present: exchanges the authorization code via PKCE, persists the connection,
+     *   and redirects the popup to the frontend success page.
      *
      * This endpoint is public and must be whitelisted in [org.commonlink.security.SecurityConfig].
      *
-     * @param code Authorization code returned by Monerium.
+     * @param code Authorization code returned by Monerium (absent when user denies).
      * @param state State UUID echoed by Monerium; used to retrieve the PKCE code_verifier.
+     * @param error OAuth2 error code (e.g. `access_denied`) when the user cancels or denies.
      */
     @GetMapping("/callback")
     @Operation(
         summary = "Monerium OAuth2 callback",
-        description = "Public callback called by Monerium. Exchanges the authorization code and redirects the popup to the frontend success or error page."
+        description = "Public callback called by Monerium. Handles user denial (error param) and successful authorization (code param). Always redirects the popup to the frontend success or error page."
     )
     @ApiResponses(
         ApiResponse(responseCode = "302", description = "Redirects popup to frontend success or error page", content = [Content()])
     )
     fun handleCallback(
-        @RequestParam code: String,
+        @RequestParam(required = false) code: String?,
         @RequestParam state: String,
+        @RequestParam(required = false) error: String?,
     ): ResponseEntity<Void> {
-        val redirectUrl = try {
-            moneriumService.handleCallback(code, state)
-            logger.info("Monerium callback succeeded for state {}", state)
-            "$frontendUrl/en/dashboard/monerium/success"
-        } catch (e: Exception) {
-            logger.warn("Monerium callback failed for state {}: {}", state, e.message)
-            "$frontendUrl/en/dashboard/monerium/error"
+        val redirectUrl = when {
+            error != null -> {
+                logger.warn("Monerium OAuth2 authorization denied: error={}, state={}", error, state)
+                "$frontendUrl/en/monerium/error"
+            }
+            code == null -> {
+                logger.warn("Monerium callback received without code or error, state={}", state)
+                "$frontendUrl/en/monerium/error"
+            }
+            else -> try {
+                moneriumService.handleCallback(code, state)
+                logger.info("Monerium callback succeeded for state {}", state)
+                "$frontendUrl/en/monerium/success"
+            } catch (e: Exception) {
+                logger.warn("Monerium callback failed for state {}: {}", state, e.message)
+                "$frontendUrl/en/monerium/error"
+            }
         }
         return ResponseEntity.status(HttpStatus.FOUND)
             .location(URI.create(redirectUrl))
@@ -125,7 +139,7 @@ class MoneriumController(
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
     )
     fun getStatus(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<MoneriumStatusDto> {
-        val connected = moneriumService.getConnectionStatus(UUID.fromString(principal.username))
-        return ResponseEntity.ok(MoneriumStatusDto(connected = connected))
+        val status = moneriumService.getConnectionStatus(UUID.fromString(principal.username))
+        return ResponseEntity.ok(status)
     }
 }

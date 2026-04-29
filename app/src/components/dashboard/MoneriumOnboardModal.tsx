@@ -11,6 +11,8 @@ interface MoneriumOnboardModalProps {
   onClose: () => void;
   /** Called when the OAuth2 popup signals MONERIUM_CONNECTED — use to refresh connection status. */
   onConnected: () => void;
+  /** Called whenever the OAuth2 popup closes (success, error, or manual close) — use to refresh connection status. */
+  onPopupClosed?: () => void;
 }
 
 /**
@@ -18,7 +20,7 @@ interface MoneriumOnboardModalProps {
  * Opens a popup window for the OAuth consent screen and listens for a postMessage
  * from the success popup page to update the connection state without a full page reload.
  */
-export default function MoneriumOnboardModal({ isOpen, onClose, onConnected }: MoneriumOnboardModalProps) {
+export default function MoneriumOnboardModal({ isOpen, onClose, onConnected, onPopupClosed }: MoneriumOnboardModalProps) {
   const t = useTranslations('dashboard.association');
   const { addToast } = useToastStore();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -58,12 +60,29 @@ export default function MoneriumOnboardModal({ isOpen, onClose, onConnected }: M
         closePopup();
         setIsConnecting(false);
         addToast('error', 'moneriumError');
+        onClose();
+        onPopupClosed?.();
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [isOpen, onConnected, onClose, addToast, closePopup]);
+
+  /** Detects when the user manually closes the popup window and refreshes the status. */
+  useEffect(() => {
+    if (!isConnecting) return;
+    const poll = setInterval(() => {
+      if (popupRef.current?.closed) {
+        clearInterval(poll);
+        popupRef.current = null;
+        setIsConnecting(false);
+        onClose();
+        onPopupClosed?.();
+      }
+    }, 500);
+    return () => clearInterval(poll);
+  }, [isConnecting, onClose, onPopupClosed]);
 
   /** Clean up the popup when the modal is dismissed externally. */
   useEffect(() => {

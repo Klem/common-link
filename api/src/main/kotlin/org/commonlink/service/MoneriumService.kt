@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MoneriumConfig
+import org.commonlink.dto.MoneriumStatusDto
 import org.commonlink.entity.MoneriumConnection
 import org.commonlink.entity.MoneriumOAuthState
 import org.commonlink.repository.AssociationProfileRepository
@@ -116,14 +117,20 @@ class MoneriumService(
     }
 
     /**
-     * Returns true if the association already has a Monerium wallet connection.
+     * Returns the Monerium connection status for the association.
+     *
+     * [MoneriumStatusDto.connected] is true when a [MoneriumConnection] record exists.
+     * [MoneriumStatusDto.pending] is true when an OAuth flow was started but the code exchange
+     * has not completed yet (non-expired [MoneriumOAuthState] record exists).
      *
      * @param userId UUID of the user's association profile.
      */
-    fun getConnectionStatus(userId: UUID): Boolean {
+    fun getConnectionStatus(userId: UUID): MoneriumStatusDto {
         val association = associationRepo.findByUserId(userId)
             .orElseThrow { IllegalArgumentException("Association not found for user: $userId") }
-        return connectionRepo.findByAssociation(association) != null
+        val connected = connectionRepo.findByAssociation(association) != null
+        val pending = !connected && stateRepo.existsByAssociationAndExpiresAtAfter(association, Instant.now())
+        return MoneriumStatusDto(connected = connected, pending = pending)
     }
 
     private fun generateCodeVerifier(): String {
