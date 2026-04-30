@@ -23,20 +23,20 @@ function ToastItem({ toast }: ToastItemProps) {
     };
   }, [toast.id, removeToast]);
 
-  const borderClass = { success: 'border-green', error: 'border-red', warning: 'border-yellow' }[toast.type];
-  const textClass = { success: 'text-green', error: 'text-red', warning: 'text-yellow' }[toast.type];
+  const alertVariant = { success: 'alert-success', error: 'alert-error', warning: 'alert-warning', info: 'alert-info' }[toast.type] ?? 'alert-info';
+  const borderClass = { success: 'border-green', error: 'border-red', warning: 'border-yellow', info: 'border-border' }[toast.type] ?? 'border-border';
+  const icon = { success: '✅', error: '🚫', warning: '⚠️', info: '💡' }[toast.type] ?? '💡';
 
   return (
     <div
       role="alert"
       aria-live="polite"
-      className={`bg-bg-2 border ${borderClass} rounded-[11px] px-[17px] py-[13px] max-w-[290px] shadow-[0_8px_40px_rgba(0,0,0,.6)] transition-all duration-500 animate-slide-in-toast ${
+      className={`alert ${alertVariant} ${borderClass} toast-item animate-slide-in-toast ${
         exiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
       }`}
     >
-      <div className={`font-display text-[13.5px] font-bold ${textClass}`}>
-        {t(toast.messageKey as Parameters<typeof t>[0])}
-      </div>
+      <span className="alert-icon">{icon}</span>
+      <div>{t(toast.messageKey as Parameters<typeof t>[0])}</div>
     </div>
   );
 }
@@ -46,7 +46,7 @@ export function Toast() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 items-end">
+    <div className="toast-container">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} />
       ))}

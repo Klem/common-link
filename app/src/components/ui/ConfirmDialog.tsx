@@ -12,6 +12,10 @@ interface ConfirmDialogProps {
   message: string;
   /** Label for the confirm button (default: i18n "confirm"). */
   confirmLabel?: string;
+  /** Label for the cancel button (default: i18n "cancel"). */
+  cancelLabel?: string;
+  /** Visual variant: default = primary, danger = coral/red. */
+  variant?: 'default' | 'danger';
   /** Called when the user confirms the action. */
   onConfirm: () => void;
   /** Called when the user cancels or dismisses the dialog. */
@@ -29,6 +33,8 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
+  cancelLabel,
+  variant = 'danger',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -45,30 +51,31 @@ export function ConfirmDialog({
 
   if (!isOpen) return null;
 
+  const confirmBtnClass = variant === 'danger' ? 'btn btn-coral btn-sm' : 'btn btn-primary btn-sm';
+
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-[4px] z-50 flex items-center justify-center p-4"
+      className="modal-backdrop"
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="bg-bg-2 border border-border rounded-xl p-[24px] max-w-[420px] w-full"
+        className="modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display font-bold text-[16px] text-text mb-[8px]">{title}</h2>
-        <p className="text-[13px] text-text-2 mb-[20px]">{message}</p>
-        <div className="flex justify-end gap-[8px]">
-          <button
-            onClick={onCancel}
-            className="text-[13px] text-text-2 hover:text-text border border-border rounded-[8px] px-4 py-2 transition-colors"
-          >
-            {t('cancel')}
+        <div className="modal-header">
+          <h3>{title}</h3>
+          <button className="modal-close" onClick={onCancel} aria-label={t('cancel')}>×</button>
+        </div>
+        <div className="modal-body">
+          <p className="text-sm text-text-2">{message}</p>
+        </div>
+        <div className="modal-footer">
+          <button onClick={onCancel} className="btn btn-ghost btn-sm">
+            {cancelLabel ?? t('cancel')}
           </button>
-          <button
-            onClick={onConfirm}
-            className="text-[13px] text-white bg-red hover:opacity-90 rounded-[8px] px-4 py-2 transition-opacity font-semibold"
-          >
+          <button onClick={onConfirm} className={confirmBtnClass}>
             {confirmLabel ?? t('confirm')}
           </button>
         </div>

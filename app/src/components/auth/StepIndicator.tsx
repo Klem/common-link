@@ -9,38 +9,21 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
   return (
-    <div className="flex items-center mb-5">
+    <div className="step-indicator">
       {steps.map((label, i) => {
         const stepNum = i + 1;
         const isDone = stepNum < currentStep;
         const isActive = stepNum === currentStep;
+        const state = isDone ? 'done' : isActive ? 'active' : 'pending';
 
         return (
           <Fragment key={stepNum}>
-            <div
-              className={`flex items-center gap-[6px] text-[12px] transition-all duration-300 ${
-                isDone ? 'text-green' : isActive ? 'text-text' : 'text-muted'
-              }`}
-            >
-              <div
-                className={`w-[22px] h-[22px] rounded-full border-[1.5px] flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-all duration-300 ${
-                  isDone
-                    ? 'bg-green border-green text-black'
-                    : isActive
-                      ? 'border-green text-green shadow-[0_0_8px_rgba(0,184,154,.28)]'
-                      : 'border-muted text-muted'
-                }`}
-              >
-                {isDone ? '✓' : stepNum}
-              </div>
-              {label}
+            <div className={`step-item ${state}`}>
+              <div className="step-dot">{isDone ? '✓' : stepNum}</div>
+              <span className="sr-only sm:not-sr-only">{label}</span>
             </div>
             {i < steps.length - 1 && (
-              <div
-                className={`flex-1 h-px mx-[7px] transition-all duration-300 ${
-                  isDone ? 'bg-green' : 'bg-border'
-                }`}
-              />
+              <div className={`step-connector ${isDone ? 'done' : 'pending'}`} />
             )}
           </Fragment>
         );

@@ -18,7 +18,7 @@ export function RoleToggle({ value, onChange }: RoleToggleProps) {
   const t = useTranslations('auth');
 
   return (
-    <div className="grid grid-cols-2 bg-bg-3 rounded-[10px] p-[4px] gap-[4px] mb-5">
+    <div className="role-toggle">
       {ROLES.map(({ key, emoji, labelKey }) => {
         const isActive = value === key;
         return (
@@ -26,19 +26,9 @@ export function RoleToggle({ value, onChange }: RoleToggleProps) {
             key={key}
             type="button"
             onClick={() => onChange(key)}
-            className={`py-[10px] px-2 rounded-[8px] border-none font-body text-[13px] font-medium cursor-pointer transition-all duration-[250ms] flex items-center justify-center gap-[7px] ${
-              isActive
-                ? 'bg-bg-2 text-text shadow-[0_2px_12px_rgba(0,0,0,.3)]'
-                : 'bg-transparent text-text-2'
-            }`}
+            className={`role-option${isActive ? ' active' : ''}`}
           >
-            <span
-              className={`w-[6px] h-[6px] rounded-full flex-shrink-0 transition-all duration-[250ms] ${
-                isActive
-                  ? 'bg-green shadow-[0_0_8px_var(--color-green-glow)]'
-                  : 'bg-muted shadow-none'
-              }`}
-            />
+            <span className="role-dot" />
             <span>{emoji}</span>
             <span>{t(labelKey)}</span>
           </button>
