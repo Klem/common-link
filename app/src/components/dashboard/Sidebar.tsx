@@ -23,7 +23,7 @@ const DONOR_NAV: NavItem[] = [
 const ASSOCIATION_NAV: NavItem[] = [
   { icon: '🏠', labelKey: 'nav.overview',          href: ROUTES.ASSOCIATION_DASHBOARD },
   { icon: '📊', labelKey: 'nav.associationProfile', href: ROUTES.ASSOCIATION_PROFILE },
-  { icon: '🏦', labelKey: 'nav.payees',      href: ROUTES.ASSOCIATION_PAYEES },
+  { icon: '🏦', labelKey: 'nav.payees',             href: ROUTES.ASSOCIATION_PAYEES },
   { icon: '🎯', labelKey: 'nav.campaigns',          href: ROUTES.ASSOCIATION_CAMPAIGNS },
   { icon: '👥', labelKey: 'nav.donors',             href: '#' },
   { icon: '⚙️', labelKey: 'nav.settings',           href: '#' },
@@ -32,6 +32,8 @@ const ASSOCIATION_NAV: NavItem[] = [
 interface SidebarProps {
   user: UserDto;
   currentPath: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 function getInitials(displayName: string, email: string): string {
@@ -51,7 +53,7 @@ function isNavItemActive(href: string, currentPath: string): boolean {
   return currentPath === href;
 }
 
-export function Sidebar({ user, currentPath }: SidebarProps) {
+export function Sidebar({ user, currentPath, isOpen = false, onClose }: SidebarProps) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const logout = useAuthStore((s) => s.logout);
@@ -59,62 +61,66 @@ export function Sidebar({ user, currentPath }: SidebarProps) {
   const initials = getInitials(user.displayName, user.email);
 
   return (
-    <nav className="fixed left-0 top-0 h-screen w-[248px] bg-bg-2 border-r border-border flex flex-col overflow-y-auto z-40">
-      {/* Logo */}
-      <div className="px-[18px] pt-[24px] pb-[20px]">
-        <div className="flex items-center gap-2 font-display font-extrabold text-[17px]">
-          <span className="w-[7px] h-[7px] bg-green rounded-full shadow-[0_0_8px_var(--color-green)] flex-shrink-0" />
-          <span className="text-text">Common</span>
-          <span className="text-green -ml-1">Link</span>
+    <nav className={`app-sidebar${isOpen ? ' open' : ''}`}>
+      {/* Logo + close button (mobile) */}
+      <div className="app-sidebar-header">
+        <div className="flex items-center justify-between">
+          <div className="app-sidebar-logo">
+            <span className="w-[7px] h-[7px] bg-green rounded-full shadow-[0_0_8px_var(--color-green)] flex-shrink-0" />
+            <span>Common</span>
+            <span className="text-green -ml-1">Link</span>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer le menu"
+              className="lg:hidden w-[28px] h-[28px] flex items-center justify-center rounded-[6px] text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
       {/* Nav items */}
-      <div className="flex flex-col gap-[2px] px-[10px] flex-1">
+      <ul className="app-nav">
         {navItems.map((item) => {
           const active = isNavItemActive(item.href, currentPath);
-          const baseClass =
-            'flex items-center gap-[9px] px-[11px] py-[8px] rounded-[8px] text-[13px] transition-colors duration-150 w-full text-left';
-          const stateClass = active
-            ? 'bg-green/10 text-green'
-            : 'text-text-2 hover:bg-bg-3 hover:text-text';
 
           if (item.href === '#') {
             return (
-              <span
-                key={item.labelKey}
-                className={`${baseClass} ${stateClass} cursor-default opacity-50`}
-              >
-                <span className="text-[14px] w-[18px] text-center flex-shrink-0">{item.icon}</span>
-                {t(item.labelKey as Parameters<typeof t>[0])}
-              </span>
+              <li key={item.labelKey}>
+                <span className="app-nav-link disabled">
+                  <span className="app-nav-icon">{item.icon}</span>
+                  {t(item.labelKey as Parameters<typeof t>[0])}
+                </span>
+              </li>
             );
           }
 
           return (
-            <Link
-              key={item.labelKey}
-              href={`/${locale}${item.href}`}
-              className={`${baseClass} ${stateClass}`}
-            >
-              <span className="text-[14px] w-[18px] text-center flex-shrink-0">{item.icon}</span>
-              {t(item.labelKey as Parameters<typeof t>[0])}
-            </Link>
+            <li key={item.labelKey}>
+              <Link
+                href={`/${locale}${item.href}`}
+                className={`app-nav-link${active ? ' active bg-green/10 text-green' : ''}`}
+              >
+                <span className="app-nav-icon">{item.icon}</span>
+                {t(item.labelKey as Parameters<typeof t>[0])}
+              </Link>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      {/* Bottom user section */}
-      <div className="px-[10px] pb-[20px] mt-auto flex flex-col gap-[6px]">
-        <div className="flex items-center gap-[10px] px-[11px] py-[12px] rounded-[10px] bg-bg-3 border border-border">
-          {/* Avatar */}
+      {/* Bottom: user card + logout */}
+      <div className="app-sidebar-user">
+        <div className="app-sidebar-user-card">
           <div className="w-[44px] h-[44px] rounded-full bg-gradient-to-br from-green to-cyan flex items-center justify-center font-display font-extrabold text-[17px] text-black flex-shrink-0">
             {initials}
           </div>
-
-          {/* Name + role chip */}
           <div className="min-w-0 flex-1">
-            <div className="font-display font-bold text-[13.5px] text-text truncate">
+            <div className="font-display font-bold text-[13.5px] truncate">
               {user.displayName || user.email}
             </div>
             <span
@@ -131,9 +137,9 @@ export function Sidebar({ user, currentPath }: SidebarProps) {
 
         <button
           onClick={logout}
-          className="flex items-center gap-[9px] px-[11px] py-[8px] rounded-[8px] text-[13px] text-text-2 hover:bg-red/10 hover:text-red transition-colors duration-150 w-full text-left"
+          className="app-nav-link hover:bg-red/10 hover:text-red"
         >
-          <span className="text-[14px] w-[18px] text-center flex-shrink-0">↩</span>
+          <span className="app-nav-icon">↩</span>
           {t('nav.logout')}
         </button>
       </div>
