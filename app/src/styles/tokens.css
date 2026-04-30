@@ -1,36 +1,51 @@
 :root {
-  /* Arrière-plans */
-  --color-bg:         #07090c;
-  --color-bg-2:       #0e1a22;
-  --color-bg-3:       #132030;
+  /* Surfaces */
+  --color-bg:         #FDF8F0;
+  --color-bg-2:       #FFFFFF;
+  --color-bg-3:       #E6E4F4;
 
   /* Bordures */
-  --color-border:     rgba(52, 72, 93, 0.45);
+  --color-border:     #E6E4F4;
 
-  /* Palette */
-  --color-green:          #00b89a;
-  --color-green-dim:      #00574e;
-  --color-green-glow:     rgba(0, 184, 154, 0.5);
-  --color-green-glow-dim: rgba(0, 184, 154, 0.25);
-  --color-yellow:         #c9a040;
-  --color-cyan:           #4f7e86;
-  --color-red:            #d45f5f;
+  /* Palette — noms conservés pour compat Tailwind existant */
+  --color-green:          #4ECDC4;
+  --color-green-dim:      #2FB3AA;
+  --color-green-glow:     rgba(78,205,196,0.45);
+  --color-green-glow-dim: rgba(78,205,196,0.20);
+  --color-yellow:         #FFB347;
+  --color-cyan:           #32327D;
+  --color-red:            #E8453C;
 
   /* Texte */
-  --color-text:       #e8edf2;
-  --color-text-2:     #8fa3b8;
-  --color-muted:      #34485d;
+  --color-text:       #171744;
+  --color-text-2:     #62627D;
+  --color-muted:      #8B8BA8;
+
+  /* Nouveaux tokens DS */
+  --color-indigo:        #32327D;
+  --color-indigo-light:  #3D3D8F;
+  --color-coral:         #FF6B5B;
+  --color-amber:         #FFB347;
+  --color-success:       #34C759;
+  --color-error:         #E8453C;
 
   /* Typographie */
-  --font-display:     'Syne', sans-serif;
-  --font-body:        'DM Sans', sans-serif;
+  --font-display:     'Nunito Sans', sans-serif;
+  --font-body:        'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-italic:      'Lora', serif;
 
   /* Rayons */
-  --radius-sm:        6px;
-  --radius-md:        9px;
-  --radius-lg:        14px;
-  --radius-xl:        18px;
+  --radius-sm:        8px;
+  --radius-md:        12px;
+  --radius-lg:        16px;
+  --radius-xl:        24px;
   --radius-full:      9999px;
+
+  /* Ombres */
+  --shadow-sm: 0 1px 3px rgba(23,23,68,0.06);
+  --shadow-md: 0 4px 12px rgba(23,23,68,0.08);
+  --shadow-lg: 0 8px 30px rgba(23,23,68,0.10);
+  --shadow-xl: 0 12px 40px rgba(23,23,68,0.12);
 
   /* Transitions */
   --transition-fast:   0.15s ease;
@@ -38,7 +53,7 @@
   --transition-spring: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Espacements sémantiques */
-  --space-card-p: 28px;
-  --space-section: 24px;
-  --space-gap: 12px;
+  --space-card-p: 24px;
+  --space-section: 32px;
+  --space-gap: 16px;
 }

@@ -36,6 +36,12 @@ function applyTheme(theme: Theme) {
   root.style.setProperty('--color-text',          c.text);
   root.style.setProperty('--color-text-2',        c.textTwo);
   root.style.setProperty('--color-muted',         c.muted);
+  root.style.setProperty('--color-indigo',        c.indigo);
+  root.style.setProperty('--color-indigo-light',  c.indigoLight);
+  root.style.setProperty('--color-coral',         c.coral);
+  root.style.setProperty('--color-amber',         c.amber);
+  root.style.setProperty('--color-success',       c.success);
+  root.style.setProperty('--color-error',         c.error);
 }
 
 interface ThemeProviderProps {
