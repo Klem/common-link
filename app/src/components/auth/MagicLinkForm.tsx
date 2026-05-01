@@ -41,27 +41,17 @@ export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
         : t('signup.donor.magicLink');
 
   return (
-    <div
-      className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16]"
-    >
-      <div
-        className="flex items-center gap-[7px] text-[12px] font-bold text-green mb-3 uppercase tracking-[0.05em]"
-      >
+    <div className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16]">
+      <div className="flex items-center gap-[7px] text-[12px] font-bold text-green mb-3 uppercase tracking-[0.05em]">
         ✨ {t('magicLink.label')}
       </div>
 
       {state === 'sent' ? (
-        <div
-          className="text-center p-3 rounded-[8px] text-[12.5px] text-text-2 bg-green/[.06] border border-green/[.18] animate-slide-down-fade"
-        >
-          <strong className="text-green">✓ {t('magicLink.sent')}</strong>
-          <span className="block text-[11px] text-muted mt-[5px]">
+        <div className="alert alert-success text-center animate-slide-down-fade">
+          <strong>✓ {t('magicLink.sent')}</strong>
+          <span className="block text-xs mt-1">
             {t('magicLink.notReceived')}{' '}
-            <button
-              type="button"
-              onClick={handleResend}
-              className="text-cyan text-[11px] bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
-            >
+            <button type="button" onClick={handleResend} className="btn btn-ghost btn-sm">
               {t('magicLink.resend')}
             </button>
           </span>
@@ -74,16 +64,16 @@ export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('magicLink.emailPlaceholder')}
             autoComplete="email"
-            className="w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40"
+            className="form-input"
           />
           {state === 'error' && (
-            <p className="text-[11.5px] text-red">{t('errors.genericError')}</p>
+            <p className="form-error">{t('errors.genericError')}</p>
           )}
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!isValidEmail || state === 'sending'}
-            className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 tracking-[0.02em] hover:bg-[#00d4b0] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,184,154,.25)] disabled:opacity-[.38] disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+            className="btn btn-primary btn-md w-full"
           >
             ✉️ {buttonLabel}
           </button>

@@ -32,15 +32,10 @@ export function EmailPasswordForm({ onSubmit, loading = false, error }: EmailPas
 
   const onFormSubmit = handleSubmit(({ email, password }) => onSubmit(email, password));
 
-  const fieldClass =
-    'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
-  const labelClass =
-    'text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] block mb-[5px]';
-
   return (
-    <form onSubmit={onFormSubmit} noValidate className="flex flex-col gap-[9px]">
-      <div>
-        <label htmlFor="email" className={labelClass}>
+    <form onSubmit={onFormSubmit} noValidate className="flex flex-col">
+      <div className="form-group">
+        <label htmlFor="email" className="form-label">
           {t('login.email.label')}
         </label>
         <input
@@ -48,18 +43,18 @@ export function EmailPasswordForm({ onSubmit, loading = false, error }: EmailPas
           type="email"
           autoComplete="email"
           placeholder={t('login.email.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('email')}
         />
         {errors.email && (
-          <p className="text-[11.5px] text-red mt-1">
+          <p className="form-error">
             {t(errors.email.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="password" className={labelClass}>
+      <div className="form-group">
+        <label htmlFor="password" className="form-label">
           {t('login.password.label')}
         </label>
         <input
@@ -67,32 +62,32 @@ export function EmailPasswordForm({ onSubmit, loading = false, error }: EmailPas
           type="password"
           autoComplete="current-password"
           placeholder={t('login.password.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('password')}
         />
         {errors.password && (
-          <p className="text-[11.5px] text-red mt-1">
+          <p className="form-error">
             {t(errors.password.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>
 
-      <div className="text-right -mt-[2px] mb-[2px]">
+      <div className="text-right -mt-3 mb-3">
         <a
           href="#"
           onClick={(e) => e.preventDefault()}
-          className="text-[11.5px] text-muted no-underline transition-colors duration-200 hover:text-cyan"
+          className="text-green hover:text-green-dim text-sm font-medium no-underline transition-colors duration-200"
         >
           {t('login.forgotPassword')}
         </a>
       </div>
 
-      {error && <p className="text-[11.5px] text-red">{error}</p>}
+      {error && <p className="form-error mb-3">{error}</p>}
 
       <button
         type="submit"
         disabled={!isValid || loading}
-        className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 tracking-[0.02em] hover:bg-[#00d4b0] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,184,154,.25)] disabled:opacity-[.38] disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+        className="btn btn-primary btn-md w-full"
       >
         {loading ? '⏳' : t('login.submit')}
       </button>

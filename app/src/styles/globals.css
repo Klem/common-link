@@ -196,6 +196,20 @@ body {
   box-shadow: 0 4px 16px rgba(255,107,91,0.35);
 }
 
+.btn-google {
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+.btn-google:hover {
+  border-color: rgba(78,205,196,0.3) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
 .btn-indigo {
   background: var(--color-indigo);
   color: #fff;
@@ -344,6 +358,11 @@ body {
 }
 .form-input.success {
   border-color: var(--color-success);
+}
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--color-bg-3);
 }
 
 textarea.form-input {

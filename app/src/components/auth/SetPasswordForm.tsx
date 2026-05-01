@@ -37,19 +37,14 @@ export function SetPasswordForm({ onSubmit, onSkip, loading = false }: SetPasswo
 
   const onFormSubmit = handleSubmit(({ password }) => onSubmit(password));
 
-  const fieldClass =
-    'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
-  const labelClass =
-    'text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] block mb-[5px]';
-
   return (
-    <form onSubmit={onFormSubmit} noValidate className="flex flex-col gap-[9px]">
-      <p className="text-[12.5px] text-text-2 leading-[1.65] mb-1">
+    <form onSubmit={onFormSubmit} noValidate className="flex flex-col">
+      <p className="text-xs text-text-2 leading-relaxed mb-3">
         {t('setPassword.subtitle')}
       </p>
 
-      <div>
-        <label htmlFor="new-password" className={labelClass}>
+      <div className="form-group">
+        <label htmlFor="new-password" className="form-label">
           {t('setPassword.password.label')}
         </label>
         <input
@@ -57,18 +52,18 @@ export function SetPasswordForm({ onSubmit, onSkip, loading = false }: SetPasswo
           type="password"
           autoComplete="new-password"
           placeholder={t('setPassword.password.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('password')}
         />
         {errors.password && (
-          <p className="text-[11.5px] text-red mt-1">
+          <p className="form-error">
             {t(errors.password.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="confirm-password" className={labelClass}>
+      <div className="form-group">
+        <label htmlFor="confirm-password" className="form-label">
           {t('setPassword.confirm.label')}
         </label>
         <input
@@ -76,11 +71,11 @@ export function SetPasswordForm({ onSubmit, onSkip, loading = false }: SetPasswo
           type="password"
           autoComplete="new-password"
           placeholder={t('setPassword.confirm.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('confirm')}
         />
         {errors.confirm && (
-          <p className="text-[11.5px] text-red mt-1">
+          <p className="form-error">
             {t(errors.confirm.message as Parameters<typeof t>[0])}
           </p>
         )}
@@ -89,7 +84,7 @@ export function SetPasswordForm({ onSubmit, onSkip, loading = false }: SetPasswo
       <button
         type="submit"
         disabled={!isValid || loading}
-        className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 tracking-[0.02em] hover:bg-[#00d4b0] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,184,154,.25)] disabled:opacity-[.38] disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+        className="btn btn-primary btn-md w-full"
       >
         {loading ? '⏳' : t('setPassword.submit')}
       </button>
@@ -97,7 +92,7 @@ export function SetPasswordForm({ onSubmit, onSkip, loading = false }: SetPasswo
       <button
         type="button"
         onClick={onSkip}
-        className="text-center text-[11.5px] text-muted bg-transparent border-none cursor-pointer py-1 transition-colors duration-200 hover:text-cyan"
+        className="btn btn-ghost btn-md w-full mt-2"
       >
         {t('setPassword.skip')}
       </button>
