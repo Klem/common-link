@@ -341,6 +341,12 @@
         "campaignsFollowed": "Campaigns followed",
         "impactScore": "Impact score"
       },
+      "sections": {
+        "recentDonations": "My recent donations",
+        "nftBadges": "My NFT badges",
+        "followedCampaigns": "My followed campaigns",
+        "viewAll": "View all"
+      },
       "empty": {
         "icon": "🌱",
         "title": "Your philanthropic journey starts here",
@@ -355,6 +361,7 @@
         "email": "Email",
         "anonymous": "Anonymous donations by default",
         "anonymousHint": "Your identity will be hidden on campaigns.",
+        "changePhoto": "Change photo",
         "save": "Save",
         "cancel": "Cancel",
         "success": "Profile updated.",
@@ -381,6 +388,14 @@
         "title": "Launch your first campaign",
         "subtitle": "Create a fundraising campaign to start receiving donations and tracking your impact.",
         "cta": "Create a campaign"
+      },
+      "newCampaign": "New campaign",
+      "sections": {
+        "activeCampaigns": "Active campaigns",
+        "recentActivity": "Recent activity"
+      },
+      "recentActivity": {
+        "empty": "No recent activity yet"
       },
       "profileCompletion": {
         "title": "Complete your profile",

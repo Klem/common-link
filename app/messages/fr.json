@@ -342,6 +342,12 @@
         "campaignsFollowed": "Campagnes suivies",
         "impactScore": "Score d'impact"
       },
+      "sections": {
+        "recentDonations": "Mes dons récents",
+        "nftBadges": "Mes badges NFT",
+        "followedCampaigns": "Mes campagnes suivies",
+        "viewAll": "Voir tout"
+      },
       "empty": {
         "icon": "🌱",
         "title": "Votre aventure philanthropique commence ici",
@@ -356,6 +362,7 @@
         "email": "Email",
         "anonymous": "Don anonyme par défaut",
         "anonymousHint": "Votre identité sera masquée sur les campagnes.",
+        "changePhoto": "Changer la photo",
         "save": "Enregistrer",
         "cancel": "Annuler",
         "success": "Profil mis à jour.",
@@ -382,6 +389,14 @@
         "title": "Lancez votre première campagne",
         "subtitle": "Créez une campagne de collecte pour commencer à recevoir des dons et suivre votre impact.",
         "cta": "Créer une campagne"
+      },
+      "newCampaign": "Nouvelle campagne",
+      "sections": {
+        "activeCampaigns": "Mes campagnes actives",
+        "recentActivity": "Activité récente"
+      },
+      "recentActivity": {
+        "empty": "Aucune activité récente"
       },
       "profileCompletion": {
         "title": "Complétez votre profil",

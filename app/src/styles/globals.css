@@ -530,6 +530,17 @@ textarea.form-input {
   opacity: 0.35;
 }
 
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.activity-row:last-child {
+  border-bottom: none;
+}
+
 /* ── Modals ──────────────────────────────────────────────────────────────── */
 
 .modal {

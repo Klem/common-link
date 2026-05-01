@@ -97,60 +97,34 @@ export default function AssociationProfilePage() {
   const associationName = profile?.name ?? user.displayName ?? user.email;
   const initial = getInitial(associationName);
 
-  // ─── Shared classes ───────────────────────────────────────────────────────
-
-  const fieldClass =
-    'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
-  const fieldReadonlyClass =
-    'w-full bg-bg-3/50 border border-border text-text-2 px-3 py-[10px] rounded-[8px] font-body text-[13.5px] opacity-60 cursor-not-allowed';
-  const labelClass =
-    'text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] block mb-[5px]';
-  const cardClass = 'bg-bg-2 border border-border rounded-[14px] p-[22px] mb-[18px]';
-  const errorClass = 'text-[11.5px] text-red mt-[4px]';
-
   return (
     <div>
       <Topbar title={t('association.profile.title')} />
 
       {/* ── Profile header ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-[18px] mb-[28px]">
-        {/* Avatar */}
-        <div className="w-[64px] h-[64px] rounded-full bg-gradient-to-br from-green to-cyan flex items-center justify-center font-display font-extrabold text-[22px] text-black flex-shrink-0">
+      <div className="flex items-center gap-5 mb-8">
+        <div className="avatar avatar-lg bg-gradient-to-br from-green to-cyan text-black flex-shrink-0">
           {initial}
         </div>
 
         <div>
-          <h2 className="font-display font-bold text-[20px] text-text leading-tight">
-            {associationName}
-          </h2>
-          <p className="text-[13px] text-text-2 mt-[2px]">{user.email}</p>
+          <h2 className="font-display font-bold text-xl leading-tight">{associationName}</h2>
+          <p className="text-sm text-text-2 mt-0.5">{user.email}</p>
 
-          <div className="flex items-center gap-[8px] mt-[6px] flex-wrap">
-            {/* Role chip */}
-            <span className="bg-yellow/12 text-yellow rounded-full px-[9px] py-[3px] text-[11px] font-semibold">
-              {t('roles.association')}
-            </span>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <span className="badge badge-warning">{t('roles.association')}</span>
 
-            {/* Verified badge */}
             {profile?.verified ? (
-              <span className="bg-green/12 text-green rounded-full px-[9px] py-[3px] text-[11px] font-semibold">
-                {t('association.profile.verified')}
-              </span>
+              <span className="badge badge-active">{t('association.profile.verified')}</span>
             ) : (
-              <span className="bg-muted/30 text-text-2 rounded-full px-[9px] py-[3px] text-[11px] font-semibold">
-                {t('association.profile.pending')}
-              </span>
+              <span className="badge badge-neutral">{t('association.profile.pending')}</span>
             )}
 
-            {/* SIREN */}
             {profile?.identifier && (
-              <span className="font-mono text-[11px] text-text-2">
-                SIREN: {profile.identifier}
-              </span>
+              <span className="font-mono text-xs text-text-2">SIREN: {profile.identifier}</span>
             )}
 
-            {/* Member since */}
-            <span className="text-[11px] text-text-2">
+            <span className="text-xs text-text-2">
               {t('association.profile.memberSince', { date: formatDate(user.createdAt) })}
             </span>
           </div>
@@ -158,195 +132,191 @@ export default function AssociationProfilePage() {
       </div>
 
       {/* ── Profile form card ───────────────────────────────────────────── */}
-      <div className={cardClass}>
-        {isLoading ? (
-          <p className="text-[13px] text-text-2">{t('association.profile.loading')}</p>
-        ) : (
-          <form onSubmit={onSubmit} noValidate className="flex flex-col gap-[14px]">
-            {/* Name (read-only) */}
-            <div>
-              <label className={labelClass}>{t('association.profile.name')}</label>
-              <input
-                type="text"
-                value={profile?.name ?? ''}
-                disabled
-                className={fieldReadonlyClass}
-              />
-            </div>
+      <div className="card card-no-hover mb-4">
+        <div className="card-body">
+          {isLoading ? (
+            <p className="text-sm text-text-2">{t('association.profile.loading')}</p>
+          ) : (
+            <form onSubmit={onSubmit} noValidate>
+              <div className="form-group">
+                <label className="form-label">{t('association.profile.name')}</label>
+                <input
+                  type="text"
+                  value={profile?.name ?? ''}
+                  disabled
+                  className="form-input"
+                />
+              </div>
 
-            {/* SIREN (read-only) */}
-            <div>
-              <label className={labelClass}>{t('association.profile.identifier')}</label>
-              <input
-                type="text"
-                value={profile?.identifier ?? ''}
-                disabled
-                className={fieldReadonlyClass}
-              />
-            </div>
+              <div className="form-group">
+                <label className="form-label">{t('association.profile.identifier')}</label>
+                <input
+                  type="text"
+                  value={profile?.identifier ?? ''}
+                  disabled
+                  className="form-input"
+                />
+              </div>
 
-            {/* Contact name */}
-            <div>
-              <label htmlFor="contactName" className={labelClass}>
-                {t('association.profile.contactName')}
-              </label>
-              <input
-                id="contactName"
-                type="text"
-                placeholder={t('association.profile.contactNamePlaceholder')}
-                className={fieldClass}
-                {...register('contactName')}
-              />
-              {errors.contactName && (
-                <p className={errorClass}>{errors.contactName.message}</p>
-              )}
-            </div>
+              <div className="form-group">
+                <label htmlFor="contactName" className="form-label">
+                  {t('association.profile.contactName')}
+                </label>
+                <input
+                  id="contactName"
+                  type="text"
+                  placeholder={t('association.profile.contactNamePlaceholder')}
+                  className={`form-input${errors.contactName ? ' error' : ''}`}
+                  {...register('contactName')}
+                />
+                {errors.contactName && (
+                  <p className="form-error">{errors.contactName.message}</p>
+                )}
+              </div>
 
-            {/* City */}
-            <div>
-              <label htmlFor="city" className={labelClass}>
-                {t('association.profile.city')}
-              </label>
-              <input
-                id="city"
-                type="text"
-                className={fieldClass}
-                {...register('city')}
-              />
-            </div>
+              <div className="form-group">
+                <label htmlFor="city" className="form-label">
+                  {t('association.profile.city')}
+                </label>
+                <input
+                  id="city"
+                  type="text"
+                  className="form-input"
+                  {...register('city')}
+                />
+              </div>
 
-            {/* Postal code */}
-            <div>
-              <label htmlFor="postalCode" className={labelClass}>
-                {t('association.profile.postalCode')}
-              </label>
-              <input
-                id="postalCode"
-                type="text"
-                className={fieldClass}
-                {...register('postalCode')}
-              />
-              {errors.postalCode && (
-                <p className={errorClass}>{errors.postalCode.message}</p>
-              )}
-            </div>
+              <div className="form-group">
+                <label htmlFor="postalCode" className="form-label">
+                  {t('association.profile.postalCode')}
+                </label>
+                <input
+                  id="postalCode"
+                  type="text"
+                  className={`form-input${errors.postalCode ? ' error' : ''}`}
+                  {...register('postalCode')}
+                />
+                {errors.postalCode && (
+                  <p className="form-error">{errors.postalCode.message}</p>
+                )}
+              </div>
 
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className={labelClass}>
-                {t('association.profile.description')}
-              </label>
-              <textarea
-                id="description"
-                rows={4}
-                placeholder={t('association.profile.descriptionPlaceholder')}
-                className={`${fieldClass} resize-none`}
-                {...register('description')}
-              />
-            </div>
+              <div className="form-group">
+                <label htmlFor="description" className="form-label">
+                  {t('association.profile.description')}
+                </label>
+                <textarea
+                  id="description"
+                  placeholder={t('association.profile.descriptionPlaceholder')}
+                  className="form-input"
+                  {...register('description')}
+                />
+              </div>
 
-            {/* Actions */}
-            <div className="flex gap-[10px] pt-[4px]">
-              <button
-                type="submit"
-                disabled={!isDirty || isSubmitting}
-                className="py-[10px] px-[20px] bg-green text-black rounded-md font-display text-[13px] font-bold transition-all duration-200 hover:bg-[#00d4b0] disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {t('association.profile.save')}
-              </button>
-              <button
-                type="button"
-                onClick={() => reset()}
-                disabled={!isDirty}
-                className="py-[10px] px-[20px] bg-transparent border border-border text-text-2 rounded-md font-display text-[13px] font-bold transition-colors duration-150 hover:border-text-2 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {t('association.profile.cancel')}
-              </button>
-            </div>
-          </form>
-        )}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={!isDirty || isSubmitting}
+                  className="btn btn-primary btn-md"
+                >
+                  {t('association.profile.save')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => reset()}
+                  disabled={!isDirty}
+                  className="btn btn-ghost btn-md"
+                >
+                  {t('association.profile.cancel')}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* ── Security card ───────────────────────────────────────────────── */}
-      <div className={cardClass}>
-        <h3 className="font-display font-bold text-[15px] text-text mb-[14px]">
-          {t('association.profile.security.title')}
-        </h3>
+      <div className="card card-no-hover mb-4">
+        <div className="card-body">
+          <h3 className="font-display font-bold text-sm mb-4">
+            {t('association.profile.security.title')}
+          </h3>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] mb-[3px]">
-              {t('association.profile.security.loginMethod')}
-            </p>
-            <p className="text-[13.5px] text-text">
-              {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="form-label">{t('association.profile.security.loginMethod')}</p>
+              <p className="text-sm text-text">
+                {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPasswordModal(true)}
+              className="btn btn-secondary btn-sm"
+            >
+              {t('association.profile.security.changePassword')}
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowPasswordModal(true)}
-            className="text-[13px] text-green font-semibold bg-green/10 px-[14px] py-[8px] rounded-[8px] hover:bg-green/20 transition-colors duration-150"
-          >
-            {t('association.profile.security.changePassword')}
-          </button>
         </div>
       </div>
 
       {/* ── Verification info card ──────────────────────────────────────── */}
-      <div className={cardClass}>
-        <h3 className="font-display font-bold text-[15px] text-text mb-[10px]">
-          {t('association.profile.verification.title')}
-        </h3>
-        {profile?.verified ? (
-          <p className="text-[13px] text-green">{t('association.profile.verification.verified')}</p>
-        ) : (
-          <p className="text-[13px] text-text-2">
-            {t('association.profile.verification.pendingText')}
-          </p>
-        )}
+      <div className="card card-no-hover mb-4">
+        <div className="card-body">
+          <h3 className="font-display font-bold text-sm mb-2">
+            {t('association.profile.verification.title')}
+          </h3>
+          {profile?.verified ? (
+            <p className="text-sm text-green">{t('association.profile.verification.verified')}</p>
+          ) : (
+            <p className="text-sm text-text-2">
+              {t('association.profile.verification.pendingText')}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* ── Monerium wallet card ─────────────────────────────────────────── */}
-      <div className="bg-bg-2 border border-dashed border-indigo-500/40 rounded-[14px] p-[22px] mb-[18px]">
-        <div className="flex items-center gap-[8px] mb-[10px]">
-          <h3 className="font-display font-bold text-[15px] text-text">
-            {t('association.profile.monerium.title')}
-          </h3>
-          <span className="bg-indigo-500/10 text-indigo-400 rounded-full px-[9px] py-[3px] text-[11px] font-semibold">
-            {t('association.profile.monerium.badge')}
-          </span>
+      <div className="card card-no-hover mb-4 border-dashed border-indigo-500/40">
+        <div className="card-body">
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="font-display font-bold text-sm">
+              {t('association.profile.monerium.title')}
+            </h3>
+            <span className="badge badge-info">{t('association.profile.monerium.badge')}</span>
+          </div>
+          <p className="text-sm text-text-2 mb-4">
+            {t('association.profile.monerium.description')}
+          </p>
+          {moneriumLoading ? (
+            <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          ) : connected ? (
+            <span className="badge badge-active">
+              {t('association.profile.monerium.connectedStatus')}
+            </span>
+          ) : moneriumInterrupted ? (
+            <button
+              type="button"
+              onClick={() => { setMoneriumInterrupted(false); setShowMoneriumModal(true); }}
+              className="btn btn-ghost btn-sm text-yellow"
+            >
+              {t('association.profile.monerium.tryAgain')}
+            </button>
+          ) : pending ? (
+            <span className="badge badge-warning">
+              {t('association.profile.monerium.pendingStatus')}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowMoneriumModal(true)}
+              className="btn btn-indigo btn-sm"
+            >
+              {t('association.profile.monerium.connect')}
+            </button>
+          )}
         </div>
-        <p className="text-[13px] text-text-2 mb-[14px]">
-          {t('association.profile.monerium.description')}
-        </p>
-        {moneriumLoading ? (
-          <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-        ) : connected ? (
-          <span className="bg-green/12 text-green rounded-full px-[10px] py-[4px] text-[12px] font-semibold">
-            {t('association.profile.monerium.connectedStatus')}
-          </span>
-        ) : moneriumInterrupted ? (
-          <button
-            type="button"
-            onClick={() => { setMoneriumInterrupted(false); setShowMoneriumModal(true); }}
-            className="text-[13px] text-yellow font-semibold bg-yellow/10 px-[14px] py-[8px] rounded-[8px] hover:bg-yellow/20 transition-colors duration-150"
-          >
-            {t('association.profile.monerium.tryAgain')}
-          </button>
-        ) : pending ? (
-          <span className="bg-yellow/12 text-yellow rounded-full px-[10px] py-[4px] text-[12px] font-semibold">
-            {t('association.profile.monerium.pendingStatus')}
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowMoneriumModal(true)}
-            className="text-[13px] text-indigo-400 font-semibold bg-indigo-500/10 px-[14px] py-[8px] rounded-[8px] hover:bg-indigo-500/20 transition-colors duration-150"
-          >
-            {t('association.profile.monerium.connect')}
-          </button>
-        )}
       </div>
 
       {/* ── SetPassword modal ────────────────────────────────────────────── */}
@@ -356,10 +326,10 @@ export default function AssociationProfilePage() {
           onClick={() => setShowPasswordModal(false)}
         >
           <div
-            className="bg-bg-2 border border-border rounded-[18px] p-[28px] w-full max-w-[380px] mx-4"
+            className="bg-bg-2 border border-border rounded-[18px] p-7 w-full max-w-[380px] mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-display font-bold text-[17px] text-text mb-[16px]">
+            <h3 className="font-display font-bold text-lg mb-4">
               {t('association.profile.security.changePassword')}
             </h3>
             <SetPasswordForm
