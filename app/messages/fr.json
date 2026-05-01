@@ -176,6 +176,7 @@
     "payees": {
       "pageTitle": "Bénéficiaires",
       "pageSubtitle": "Gérez les bénéficiaires de votre association",
+      "addPayee": "Ajouter un bénéficiaire",
       "search": {
         "title": "Recherche SIRET / SIREN",
         "subtitle": "Saisissez un identifiant. La détection du type est automatique.",
@@ -234,6 +235,7 @@
         "verifyVop": "Vérifier VOP →",
         "verified": "Vérifié",
         "addIban": "Ajouter un IBAN",
+        "copy": "Copier l'IBAN",
         "inputPlaceholder": "Saisissez un IBAN",
         "add": "Ajouter",
         "cancel": "Annuler",

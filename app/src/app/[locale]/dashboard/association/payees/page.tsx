@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Topbar } from '@/components/dashboard';
 import { SirenSearchCard, SireneResultPanel, PayeeList } from '@/components/payee';
 import { createPayee } from '@/lib/api/payee';
 import { usePayees } from '@/hooks/payee/usePayees';
@@ -30,7 +29,7 @@ function toCreateRequest(result: SireneSearchResultDto): CreatePayeeRequest {
 /**
  * Payee management page for associations.
  *
- * Assembles the SIREN/SIRET search card, the result confirmation overlay,
+ * Assembles the SIREN/SIRET search card, the result confirmation panel,
  * and the payee list with IBAN management and VOP verification.
  */
 export default function PayeesPage() {
@@ -107,33 +106,46 @@ export default function PayeesPage() {
 
   return (
     <div>
-      <Topbar
-        title={t('payees.pageTitle')}
-        subtitle={t('payees.pageSubtitle')}
-      />
-
-      <div className="p-[24px] flex flex-col gap-[20px]">
-        <SirenSearchCard onResult={handleResult} />
-
-        <PayeeList
-          payees={payees}
-          isLoading={isLoading}
-          onDeletePayee={handleDeletePayee}
-          onAddIban={handleAddIban}
-          onDeleteIban={handleDeleteIban}
-          onVerifyVop={handleVerifyVop}
-          verifyingIbanId={verifyingIbanId}
-        />
+      {/* Page header */}
+      <div className="flex items-center justify-between p-6 border-b border-border">
+        <div>
+          <h1 className="font-display font-bold text-xl text-text">{t('payees.pageTitle')}</h1>
+          <p className="text-sm text-text-2 mt-1">{t('payees.pageSubtitle')}</p>
+        </div>
+        <button
+          className="btn btn-primary btn-md"
+          onClick={() => document.getElementById('siren-search-input')?.focus()}
+        >
+          {t('payees.addPayee')}
+        </button>
       </div>
 
-      {showPanel && sireneResult && (
-        <SireneResultPanel
-          result={sireneResult}
-          onSelect={handleSelect}
-          onClose={handleClose}
-          isLoading={isCreating}
-        />
-      )}
+      {/* Two-column layout: search/preview left, list right */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+        <div className="flex flex-col gap-4">
+          <SirenSearchCard onResult={handleResult} />
+          {showPanel && sireneResult && (
+            <SireneResultPanel
+              result={sireneResult}
+              onSelect={handleSelect}
+              onClose={handleClose}
+              isLoading={isCreating}
+            />
+          )}
+        </div>
+
+        <div>
+          <PayeeList
+            payees={payees}
+            isLoading={isLoading}
+            onDeletePayee={handleDeletePayee}
+            onAddIban={handleAddIban}
+            onDeleteIban={handleDeleteIban}
+            onVerifyVop={handleVerifyVop}
+            verifyingIbanId={verifyingIbanId}
+          />
+        </div>
+      </div>
     </div>
   );
 }

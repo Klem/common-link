@@ -176,6 +176,7 @@
     "payees": {
       "pageTitle": "Beneficiaries",
       "pageSubtitle": "Manage your association's beneficiaries",
+      "addPayee": "Add a beneficiary",
       "search": {
         "title": "Search SIRET / SIREN",
         "subtitle": "Enter an identifier. Type detection is automatic.",
@@ -234,6 +235,7 @@
         "verifyVop": "Verify VOP →",
         "verified": "Verified",
         "addIban": "Add an IBAN",
+        "copy": "Copy IBAN",
         "inputPlaceholder": "Enter an IBAN",
         "add": "Add",
         "cancel": "Cancel",

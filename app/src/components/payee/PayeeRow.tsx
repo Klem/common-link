@@ -37,48 +37,38 @@ function computeAggregatedStatus(ibans: PayeeIbanDto[]): IbanVerificationStatus 
   return IbanVerificationStatus.PENDING;
 }
 
-/** Icon and color style for the aggregated status badge. */
-function AggregatedStatusBadge({ status }: { status: IbanVerificationStatus }) {
-  const t = useTranslations('dashboard');
+const STATUS_BADGE: Record<IbanVerificationStatus, string> = {
+  [IbanVerificationStatus.VERIFIED]:     'badge badge-success',
+  [IbanVerificationStatus.FORMAT_VALID]: 'badge badge-success',
+  [IbanVerificationStatus.CLOSE_MATCH]:  'badge badge-warning',
+  [IbanVerificationStatus.NO_MATCH]:     'badge badge-error',
+  [IbanVerificationStatus.INVALID]:      'badge badge-error',
+  [IbanVerificationStatus.PENDING]:      'badge badge-neutral',
+  [IbanVerificationStatus.NOT_POSSIBLE]: 'badge badge-neutral',
+};
 
-  const config: Record<IbanVerificationStatus, { icon: string; ring: string; label: string }> = {
-    PENDING:      { icon: '⏳', ring: 'bg-muted/20 border-muted/40',    label: t('payees.status.pending') },
-    FORMAT_VALID: { icon: '✓',  ring: 'bg-green/12 border-green/30',    label: t('payees.status.formatValid') },
-    VERIFIED:     { icon: '✓',  ring: 'bg-green/20 border-green/50',    label: t('payees.status.verified') },
-    CLOSE_MATCH:  { icon: '≈',  ring: 'bg-yellow/12 border-yellow/30',  label: t('payees.status.closeMatch') },
-    NO_MATCH:     { icon: '✗',  ring: 'bg-red/12 border-red/30',        label: t('payees.status.noMatch') },
-    NOT_POSSIBLE: { icon: '?',  ring: 'bg-muted/20 border-muted/40',    label: t('payees.status.notPossible') },
-    INVALID:      { icon: '⚠',  ring: 'bg-red/12 border-red/30',        label: t('payees.status.invalid') },
-  };
+const STATUS_LABEL_KEY: Record<IbanVerificationStatus, string> = {
+  [IbanVerificationStatus.PENDING]:      'payees.status.pending',
+  [IbanVerificationStatus.FORMAT_VALID]: 'payees.status.formatValid',
+  [IbanVerificationStatus.VERIFIED]:     'payees.status.verified',
+  [IbanVerificationStatus.CLOSE_MATCH]:  'payees.status.closeMatch',
+  [IbanVerificationStatus.NO_MATCH]:     'payees.status.noMatch',
+  [IbanVerificationStatus.NOT_POSSIBLE]: 'payees.status.notPossible',
+  [IbanVerificationStatus.INVALID]:      'payees.status.invalid',
+};
 
-  const { icon, ring, label } = config[status];
-
-  const textColor: Record<IbanVerificationStatus, string> = {
-    PENDING: 'text-muted',
-    FORMAT_VALID: 'text-green',
-    VERIFIED: 'text-green',
-    CLOSE_MATCH: 'text-yellow',
-    NO_MATCH: 'text-red',
-    NOT_POSSIBLE: 'text-text-2',
-    INVALID: 'text-red',
-  };
-
-  return (
-    <div className="flex flex-col items-center gap-[4px]">
-      <div
-        className={`w-[34px] h-[34px] rounded-full border flex items-center justify-center text-[14px] ${ring} ${textColor[status]}`}
-      >
-        {icon}
-      </div>
-      <span className={`text-[9px] uppercase tracking-wider font-semibold ${textColor[status]}`}>
-        {label}
-      </span>
-    </div>
-  );
+/** Returns the first 1–2 uppercase initials from a name. */
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
 }
 
 /**
- * A single payee row displaying the aggregated status, name, info chips,
+ * A single payee row displaying the avatar, name, first IBAN, aggregated VOP badge,
  * IBAN list with actions, and an inline "Add IBAN" input.
  */
 export function PayeeRow({
@@ -95,6 +85,10 @@ export function PayeeRow({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const aggregatedStatus = computeAggregatedStatus(payee.ibans);
+  const firstIban = payee.ibans[0];
+  const truncatedIban = firstIban
+    ? firstIban.iban.replace(/\s/g, '').slice(0, 16) + '…'
+    : null;
 
   const handleAddIban = () => {
     const trimmed = ibanValue.trim();
@@ -110,28 +104,46 @@ export function PayeeRow({
   };
 
   return (
-    <div className="grid grid-cols-[52px_1fr_auto] gap-[12px] p-[16px]">
-      {/* Column 1 — Aggregated status */}
-      <div className="flex flex-col items-center pt-[2px]">
-        <AggregatedStatusBadge status={aggregatedStatus} />
-      </div>
-
-      {/* Column 2 — Details + IBANs */}
-      <div className="min-w-0">
-        <p className="font-display font-bold text-[15px] text-text leading-tight">
-          {payee.name}
-        </p>
-
-        {/* Info chips */}
-        <div className="flex flex-wrap gap-[6px] mt-[4px]">
-          <Chip value={payee.identifier1} />
-          {payee.identifier2 && <Chip value={payee.identifier2} />}
-          {payee.activityCode && <Chip value={payee.activityCode} />}
-          {payee.category && <Chip value={payee.category} />}
+    <div className="p-4">
+      {/* Header row: avatar + name/iban/badge + delete */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="avatar avatar-md avatar-indigo flex-shrink-0">
+          {getInitials(payee.name)}
         </div>
 
-        {/* IBAN list */}
-        <div className="mt-[8px]">
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-text text-sm leading-tight">{payee.name}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            {truncatedIban && (
+              <span className="text-text-2 font-mono text-xs">{truncatedIban}</span>
+            )}
+            <span className={STATUS_BADGE[aggregatedStatus]}>
+              {t(STATUS_LABEL_KEY[aggregatedStatus] as Parameters<typeof t>[0])}
+            </span>
+          </div>
+          {/* Info chips */}
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            <Chip value={payee.identifier1} />
+            {payee.identifier2 && <Chip value={payee.identifier2} />}
+            {payee.activityCode && <Chip value={payee.activityCode} />}
+            {payee.category && <Chip value={payee.category} />}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 sm:flex-shrink-0">
+          <button
+            onClick={() => setConfirmDeleteOpen(true)}
+            className="btn btn-icon-only btn-sm text-error hover:bg-error/10"
+            title={t('payees.list.delete')}
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      {/* IBAN list */}
+      {payee.ibans.length > 0 && (
+        <div className="mt-3">
           {payee.ibans.map((iban) => (
             <IbanRow
               key={iban.id}
@@ -143,10 +155,12 @@ export function PayeeRow({
             />
           ))}
         </div>
+      )}
 
-        {/* Inline IBAN input */}
+      {/* Inline IBAN input */}
+      <div className="mt-3">
         {showIbanInput ? (
-          <div className="flex items-center gap-[6px] mt-[8px]">
+          <div className="flex items-center gap-2">
             <input
               type="text"
               autoFocus
@@ -157,40 +171,23 @@ export function PayeeRow({
                 if (e.key === 'Escape') handleCancelIban();
               }}
               placeholder={t('payees.iban.inputPlaceholder')}
-              className="flex-1 bg-bg-3 border border-border rounded-[8px] px-3 py-[6px] font-mono text-[13px] text-text outline-none focus:border-cyan/40"
+              className="form-input flex-1 font-mono text-sm"
             />
-            <button
-              onClick={handleAddIban}
-              className="text-[12px] text-black bg-green rounded-[6px] px-3 py-[6px] hover:opacity-90 transition-opacity"
-            >
+            <button onClick={handleAddIban} className="btn btn-primary btn-sm">
               {t('payees.iban.add')}
             </button>
-            <button
-              onClick={handleCancelIban}
-              className="text-[12px] text-text-2 hover:text-text border border-border rounded-[6px] px-3 py-[6px] transition-colors"
-            >
+            <button onClick={handleCancelIban} className="btn btn-ghost btn-sm">
               {t('payees.iban.cancel')}
             </button>
           </div>
         ) : (
           <button
             onClick={() => setShowIbanInput(true)}
-            className="mt-[8px] w-full border border-dashed border-border rounded-[8px] px-3 py-[6px] text-[12px] text-muted hover:text-text-2 hover:border-border/70 transition-colors text-left"
+            className="w-full border border-dashed border-border rounded-lg px-3 py-1.5 text-xs text-text-2 hover:text-text hover:border-border/70 transition-colors text-left"
           >
             ＋ {t('payees.iban.addIban')}
           </button>
         )}
-      </div>
-
-      {/* Column 3 — Delete payee */}
-      <div className="flex flex-col items-end pt-[2px]">
-        <button
-          onClick={() => setConfirmDeleteOpen(true)}
-          className="text-[12px] text-red bg-red/8 hover:bg-red/15 rounded-[8px] px-3 py-2 transition-colors"
-          title={t('payees.list.delete')}
-        >
-          ✕
-        </button>
       </div>
 
       <ConfirmDialog
@@ -208,7 +205,7 @@ export function PayeeRow({
 /** Small info chip for identifiers and metadata. */
 function Chip({ value }: { value: string }) {
   return (
-    <span className="bg-bg-3 border border-border rounded-[6px] px-[8px] py-[2px] font-mono text-[11px] text-cyan">
+    <span className="badge badge-neutral font-mono text-xs">
       {value}
     </span>
   );
