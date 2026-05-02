@@ -101,24 +101,17 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
     <div>
       {/* ── Balance bar ── */}
       <div
-        className="flex items-center justify-between rounded-[14px] border border-[var(--color-border)] p-[14px_20px] mb-[20px] sticky top-[72px] z-50"
-        style={{ background: 'var(--color-bg-3)', backdropFilter: 'blur(12px)' }}
+        className="flex items-center justify-between rounded-[14px] border border-[var(--color-border)] p-[14px_20px] mb-[20px] sticky top-[72px] z-50 budget-header"
       >
         <div className="text-center">
           <div className="text-[12px] text-[var(--color-text-2)] mb-[2px]">📉 {t('editor.budget.charges')}</div>
-          <div
-            className="text-[18px] font-bold text-[var(--color-red)]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <div className="text-[18px] font-bold text-[var(--color-red)] font-display">
             {fmtEur(totalCharges)}
           </div>
         </div>
 
         <div className="text-center">
-          <div
-            className="text-[14px] font-bold text-[var(--color-text)] mb-[4px]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <div className="text-[14px] font-bold text-[var(--color-text)] mb-[4px] font-display">
             {fmtEur(balance)}
           </div>
           <span className={`text-[11px] font-semibold px-[8px] py-[2px] rounded-full ${pill.cls}`}>
@@ -128,10 +121,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
 
         <div className="text-center">
           <div className="text-[12px] text-[var(--color-text-2)] mb-[2px]">📈 {t('editor.budget.produits')}</div>
-          <div
-            className="text-[18px] font-bold text-[var(--color-green)]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <div className="text-[18px] font-bold text-[var(--color-green)] font-display">
             {fmtEur(totalProduits)}
           </div>
         </div>
@@ -294,8 +284,7 @@ function BudgetSection({
 
   return (
     <div
-      className="rounded-[9px] border border-[var(--color-border)]/35 mb-[8px] overflow-hidden"
-      style={{ background: 'var(--color-bg-3)' }}
+      className="rounded-[9px] border border-[var(--color-border)]/35 mb-[8px] overflow-hidden bg-bg-3"
     >
       {/* Section header */}
       <button
@@ -304,24 +293,17 @@ function BudgetSection({
         className="w-full flex items-center justify-between px-[12px] py-[9px] cursor-pointer hover:bg-[var(--color-bg)]/20 transition-colors"
       >
         <div className="flex items-center gap-[7px] text-[12.5px] font-semibold text-[var(--color-text)]">
-          <span
-            className="text-[10px] font-bold px-[6px] py-[2px] rounded-[4px]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <span className="text-[10px] font-bold px-[6px] py-[2px] rounded-[4px] font-display">
             {section.code}
           </span>
           {section.name}
         </div>
         <div className="flex items-center gap-[8px]">
-          <span
-            className="text-[12px] font-bold text-[var(--color-text-2)]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <span className="text-[12px] font-bold text-[var(--color-text-2)] font-display">
             {sectionTotal.toLocaleString('fr-FR')} €
           </span>
           <span
-            className="text-[10px] text-[var(--color-muted)] transition-transform duration-200"
-            style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+            className={`text-[10px] text-[var(--color-muted)] transition-transform duration-200 ${collapsed ? '-rotate-90' : 'rotate-0'}`}
           >
             ▾
           </span>
@@ -347,8 +329,7 @@ function BudgetSection({
                 value={item.amount || ''}
                 onChange={(e) => onUpdateAmount(sIdx, iIdx, parseFloat(e.target.value) || 0)}
                 placeholder={amountPlaceholder}
-                className="w-[100px] text-right text-[13px] text-[var(--color-text)] px-[10px] py-[6px] rounded-[6px] outline-none border-[1.5px] border-[var(--color-border)]/30 focus:border-[var(--color-green)]/45 transition-colors"
-                style={{ background: 'var(--color-bg)' }}
+                className="w-[100px] text-right text-[13px] text-[var(--color-text)] px-[10px] py-[6px] rounded-[6px] outline-none border-[1.5px] border-[var(--color-border)]/30 focus:border-[var(--color-green)]/45 transition-colors bg-bg"
               />
               <button
                 type="button"
@@ -424,8 +405,7 @@ function AddSectionButton({
 
   return (
     <div
-      className="mt-[4px] rounded-[9px] border border-[var(--color-border)] p-[10px] flex flex-col gap-[6px]"
-      style={{ background: 'var(--color-bg-3)' }}
+      className="mt-[4px] rounded-[9px] border border-[var(--color-border)] p-[10px] flex flex-col gap-[6px] bg-bg-3"
     >
       <div className="flex gap-[6px]">
         <input
