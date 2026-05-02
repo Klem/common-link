@@ -53,10 +53,7 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
       {/* Header */}
       <div className="flex items-start justify-between mb-[16px]">
         <div>
-          <div
-            className="text-[15px] font-bold text-[var(--color-text)]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <div className="text-[15px] font-bold text-[var(--color-text)] font-display">
             {t('editor.milestones.title')}
           </div>
           <div className="text-[12px] text-[var(--color-text-2)] mt-[2px]">
@@ -74,22 +71,27 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
       </div>
 
       {/* Milestone cards — each knows its allowed range */}
-      <div>
+      <div className="timeline">
         {sorted.map((milestone, idx) => {
           const minAmount = idx > 0 ? sorted[idx - 1].targetAmount : 0;
           const maxAmount = campaign.goal;
           return (
-            <MilestoneCard
+            <div
               key={milestone.id}
-              milestone={milestone}
-              campaignRaised={campaign.raised}
-              campaignId={campaign.id}
-              minAmount={minAmount}
-              maxAmount={maxAmount}
-              onUpdate={updateExistingMilestone}
-              onDelete={handleDelete}
-              t={t}
-            />
+              className={`timeline-item timeline-${milestone.status.toLowerCase()}`}
+            >
+              <div className={`timeline-dot ${dotClass(milestone.status)}`} />
+              <MilestoneCard
+                milestone={milestone}
+                campaignRaised={campaign.raised}
+                campaignId={campaign.id}
+                minAmount={minAmount}
+                maxAmount={maxAmount}
+                onUpdate={updateExistingMilestone}
+                onDelete={handleDelete}
+                t={t}
+              />
+            </div>
           );
         })}
       </div>
@@ -120,16 +122,16 @@ function statusClasses(status: MilestoneStatusType): string {
     case MilestoneStatus.CURRENT:
       return 'border-[var(--color-yellow)]/30';
     default:
-      return 'opacity-50';
+      return 'border-[var(--color-border)]';
   }
 }
 
-/** Returns the progress bar fill colour based on milestone status. */
-function barColor(status: MilestoneStatusType): string {
+/** Maps milestone status to timeline-dot modifier class. */
+function dotClass(status: MilestoneStatusType): string {
   switch (status) {
-    case MilestoneStatus.REACHED: return 'var(--color-green)';
-    case MilestoneStatus.CURRENT: return 'var(--color-yellow)';
-    default: return 'var(--color-muted)';
+    case MilestoneStatus.REACHED: return 'done';
+    case MilestoneStatus.CURRENT: return 'current';
+    default: return '';
   }
 }
 
@@ -222,7 +224,7 @@ function MilestoneCard({
 
   return (
     <div
-      className={`relative rounded-[9px] border p-[16px] mb-[10px] ${statusClasses(milestone.status)}`}
+      className={`relative rounded-[9px] border p-[16px] ${statusClasses(milestone.status)}`}
     >
       {/* Delete button */}
       <button
@@ -245,10 +247,7 @@ function MilestoneCard({
             {milestone.emoji || '🎯'}
           </button>
           {pickerOpen && (
-            <div
-              className="absolute top-[calc(100%+6px)] left-0 z-50 flex flex-wrap gap-[4px] w-[220px] rounded-xl border border-[var(--color-border)] p-[8px] shadow-lg"
-              style={{ background: 'var(--color-bg-2)' }}
-            >
+            <div className="absolute top-[calc(100%+6px)] left-0 z-50 flex flex-wrap gap-[4px] w-[220px] rounded-xl border border-[var(--color-border)] p-[8px] shadow-lg bg-[var(--color-bg-2)]">
               {EMOJIS.map((em) => (
                 <button
                   key={em}
@@ -269,8 +268,7 @@ function MilestoneCard({
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder={t('editor.milestones.namePlaceholder')}
-          className="flex-1 bg-transparent border-none outline-none text-[15px] font-bold text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-b border-[var(--color-border)]"
-          style={{ fontFamily: 'var(--font-display)' }}
+          className="flex-1 bg-transparent border-none outline-none text-[15px] font-bold text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-b border-[var(--color-border)] font-display"
         />
 
         {/* Target amount + validation */}
@@ -283,12 +281,11 @@ function MilestoneCard({
               max={maxAmount}
               value={targetAmount}
               onChange={(e) => handleTargetChange(e.target.value)}
-              className={`w-[110px] text-right text-[13px] font-semibold px-[8px] py-[5px] rounded-[6px] outline-none border-[1.5px] transition-colors
+              className={`w-[110px] text-right text-[13px] font-semibold px-[8px] py-[5px] rounded-[6px] outline-none border-[1.5px] transition-colors bg-[var(--color-bg)]
                 ${amountError
                   ? 'border-[var(--color-red)]/60 text-[var(--color-red)]'
                   : 'border-[var(--color-border)]/30 text-[var(--color-text)] focus:border-[var(--color-green)]/45'
                 }`}
-              style={{ background: 'var(--color-bg)' }}
               placeholder="0"
             />
           </div>
@@ -310,10 +307,10 @@ function MilestoneCard({
       />
 
       {/* Progress bar */}
-      <div className="mt-[10px] h-[5px] rounded-[3px] overflow-hidden" style={{ background: 'var(--color-bg)' }}>
+      <div className="progress-bar mt-[10px]">
         <div
-          className="h-full rounded-[3px] transition-all duration-500"
-          style={{ width: `${displayPct}%`, background: barColor(milestone.status) }}
+          className={`progress-fill progress-fill-${milestone.status.toLowerCase()}`}
+          style={{ width: `${displayPct}%` }}
         />
       </div>
 
