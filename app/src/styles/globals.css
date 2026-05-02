@@ -1327,3 +1327,53 @@ textarea.form-input {
   justify-content: center;
   padding: 16px;
 }
+
+/* -- Campaign DS -------------------------------------------------------- */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.section-marker {
+  display: inline-block;
+  width: 3px;
+  height: 13px;
+  background: var(--color-green);
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.tab-button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  background: transparent;
+  color: var(--color-text-2);
+}
+.tab-button.active {
+  background: var(--color-bg-2);
+  color: var(--color-text);
+  box-shadow: 0 2px 8px rgba(23,23,68,0.10);
+}
+
+.budget-header {
+  background: var(--color-bg-3);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.timeline-locked  { opacity: 0.45; }
+.timeline-current { opacity: 1; }
+.timeline-reached { opacity: 1; }
+
+.progress-fill-locked  { background: var(--color-muted); }
+.progress-fill-current { background: linear-gradient(90deg, var(--color-green), var(--color-green-dim)); }
+.progress-fill-reached { background: linear-gradient(90deg, var(--color-green), var(--color-cyan)); }

@@ -28,39 +28,24 @@ export function CampaignTabs({ activeTab, onTabChange, milestoneCount }: Campaig
   const t = useTranslations('dashboard.campaigns');
 
   const tabs: Tab[] = [
-    { id: 'info', icon: '⚙️', labelKey: 'editor.tabs.info' },
-    { id: 'budget', icon: '💶', labelKey: 'editor.tabs.budget' },
-    { id: 'milestones', icon: '🎯', labelKey: 'editor.tabs.milestones', count: milestoneCount },
+    { id: 'info', icon: '📋', labelKey: 'editor.tabs.info' },
+    { id: 'budget', icon: '💰', labelKey: 'editor.tabs.budget' },
+    { id: 'milestones', icon: '🏆', labelKey: 'editor.tabs.milestones', count: milestoneCount },
   ];
 
   return (
-    <div
-      className="flex gap-[4px] rounded-[14px] border border-[var(--color-border)] p-[4px] mb-[24px] overflow-x-auto"
-      style={{ background: 'var(--color-bg-2)' }}
-    >
+    <div className="flex gap-[4px] rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg-2)] p-[4px] mb-[24px] overflow-x-auto">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => onTabChange(tab.id)}
-          className={`
-            flex items-center gap-[6px] px-[18px] py-[10px] rounded-[9px] text-[13px] font-semibold
-            whitespace-nowrap cursor-pointer transition-all
-            ${
-              activeTab === tab.id
-                ? 'text-[var(--color-text)] shadow-md'
-                : 'text-[var(--color-text-2)] hover:text-[var(--color-text)] hover:bg-[var(--color-muted)]/20'
-            }
-          `}
-          style={activeTab === tab.id ? { background: 'var(--color-bg-3)' } : undefined}
+          className={`tab-button flex items-center gap-[6px] whitespace-nowrap${activeTab === tab.id ? ' active' : ''}`}
         >
           <span>{tab.icon}</span>
           <span>{t(tab.labelKey)}</span>
           {tab.count !== undefined && (
-            <span
-              className="text-[11px] font-bold px-[6px] py-[1px] rounded-full"
-              style={{ background: 'var(--color-bg)', color: 'var(--color-text-2)' }}
-            >
+            <span className="text-[11px] font-bold px-[6px] py-[1px] rounded-full bg-[var(--color-bg)] text-[var(--color-text-2)]">
               {tab.count}
             </span>
           )}

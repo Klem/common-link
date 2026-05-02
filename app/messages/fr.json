@@ -292,7 +292,8 @@
         },
         "hero": {
           "collected": "Collecté",
-          "goal": "Objectif"
+          "goal": "Objectif",
+          "progress": "Progression"
         },
         "info": {
           "title": "Informations générales",

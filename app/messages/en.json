@@ -291,7 +291,8 @@
         },
         "hero": {
           "collected": "Raised",
-          "goal": "Goal"
+          "goal": "Goal",
+          "progress": "Progress"
         },
         "info": {
           "title": "General information",
