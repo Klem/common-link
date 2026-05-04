@@ -19,7 +19,6 @@
     "milestoneCreated": "Milestone added.",
     "milestoneSaved": "Milestone updated.",
     "milestoneDeleted": "Milestone deleted.",
-    "setPasswordUpdated": "Password set successfully.",
     "moneriumConnected": "Wallet connected successfully.",
     "moneriumError": "Wallet connection failed. Please try again.",
     "moneriumErrorFetch": "Failed to get authentication URL. Please try again."
@@ -103,7 +102,8 @@
       "confirm": { "label": "Confirm", "placeholder": "••••••••" },
       "submit": "Save",
       "skip": "Later",
-      "success": "Password successfully defined"
+      "success": "Password successfully defined",
+      "setPasswordUpdated": "Password set successfully."
     },
     "errors": {
       "invalidCredentials": "Invalid email or password.",
