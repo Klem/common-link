@@ -12,10 +12,11 @@ export default function MoneriumSuccessPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="text-center">
-        <p className="text-2xl font-semibold text-green-600">{t('title')}</p>
-        <p className="mt-2 text-sm text-gray-500">{t('closing')}</p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="card card-no-hover text-center p-8">
+        <div className="text-4xl mb-4">✅</div>
+        <p className="font-display font-bold text-lg text-green">{t('title')}</p>
+        <p className="mt-2 text-sm text-text-2">{t('closing')}</p>
       </div>
     </div>
   );
