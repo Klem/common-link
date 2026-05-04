@@ -27,31 +27,12 @@ export interface Theme {
   colors: ThemeColors;
 }
 
-
-import { commonLink } from './commonLink';
-import { darkCoral } from './darkCoral';
-import { invertedIndigo } from './invertedIndigo';
-import { light } from './light';
-// import { midContrast } from './midContrast';
-import { softLightIndigo } from './softLightIndigo';
-import { warmLight } from './warmLight';
-
-export { commonLink } from './commonLink';
-export { darkCoral } from './darkCoral';
-export { invertedIndigo } from './invertedIndigo';
+export { defaultTheme } from './default';
 export { light } from './light';
-// export { midContrast } from './midContrast';
-export { softLightIndigo } from './softLightIndigo';
-export { warmLight } from './warmLight';
+export { darkTheme } from './dark';
 
-export const themes: Theme[] = [
-  commonLink,
-  darkCoral,
-  invertedIndigo,
-  light,
-  // midContrast,
-  softLightIndigo,
-  warmLight
-];
+import { defaultTheme } from './default';
+import { light } from './light';
+import { darkTheme } from './dark';
 
-export const defaultTheme = commonLink;
+export const themes: Theme[] = [defaultTheme, light, darkTheme];

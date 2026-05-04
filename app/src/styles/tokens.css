@@ -57,3 +57,36 @@
   --space-section: 32px;
   --space-gap: 16px;
 }
+
+/* ─── Default : CommonLink institutionnel (sidebar indigo) ─── */
+[data-theme="default"] {
+  --color-bg-2:       #32327D;
+  --color-bg-3:       #3D3D8F;
+  --color-cyan:       #4ECDC4;
+  --color-muted:      #62627D;
+}
+
+/* ─── Light : entièrement clair (sidebar blanche) ─── */
+/* Hérite des valeurs :root — aucune surcharge nécessaire */
+[data-theme="light"] {}
+
+/* ─── Dark : mode sombre ─── */
+[data-theme="dark"] {
+  --color-bg:              #171744;
+  --color-bg-2:            #32327D;
+  --color-bg-3:            #3D3D8F;
+  --color-border:          #3D3D8F;
+  --color-green-glow:      rgba(78,205,196,0.30);
+  --color-green-glow-dim:  rgba(78,205,196,0.15);
+  --color-cyan:            #4ECDC4;
+  --color-red:             #FF6B5B;
+  --color-text:            #FDF8F0;
+  --color-text-2:          #E6E4F4;
+  --color-muted:           #62627D;
+  --color-indigo:          #62627D;
+  --color-indigo-light:    #E6E4F4;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.45);
+  --shadow-xl: 0 12px 40px rgba(0,0,0,0.55);
+}
