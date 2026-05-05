@@ -12,7 +12,7 @@ interface SetPasswordModalProps {
 }
 
 export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
-  const t = useTranslations('dashboard');
+  const t = useTranslations('auth');
   const { addToast } = useToastStore();
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +22,7 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
     setLoading(true);
     try {
       await api.patch('/api/user/me/password', { password, confirmPassword: password });
-      addToast('success', 'setPasswordUpdated');
+      addToast('success', 'setPassword.setPasswordUpdated');
       onClose();
     } catch {
       addToast('error', 'errors.genericError');
@@ -36,19 +36,16 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-bg-2 border border-border rounded-[14px] p-[28px] max-w-[420px] w-full mx-4">
-        <h2 className="font-display text-[18px] font-bold text-text mb-[6px]">
-          {t('setPassword.title')}
-        </h2>
-        <p className="text-[12.5px] text-text-2 leading-[1.65] mb-[18px]">
-          {t('setPassword.subtitle')}
-        </p>
-        <SetPasswordForm
-          onSubmit={handleSubmit}
-          onSkip={handleSkip}
-          loading={loading}
-        />
+    <div className="modal-backdrop">
+      <div className="modal">
+        <div className="modal-header">
+          <h2 className="font-display font-bold text-text">{t('setPassword.title')}</h2>
+          <button className="modal-close" onClick={onClose} aria-label="close">×</button>
+        </div>
+        <div className="modal-body">
+          <p className="text-sm text-text-2 leading-relaxed mb-4">{t('setPassword.subtitle')}</p>
+          <SetPasswordForm onSubmit={handleSubmit} onSkip={handleSkip} loading={loading} />
+        </div>
       </div>
     </div>
   );

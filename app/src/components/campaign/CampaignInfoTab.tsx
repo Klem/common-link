@@ -75,17 +75,11 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
   };
 
   return (
-    <div
-      className="rounded-[18px] border border-[var(--color-border)] p-[24px_28px]"
-      style={{ background: 'var(--color-bg-2)' }}
-    >
+    <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg-2)] p-[24px_28px]">
       {/* Card title */}
       <div className="flex items-center gap-[8px] mb-[16px]">
-        <span className="inline-block w-[3px] h-[13px] rounded-[2px]" style={{ background: 'var(--color-green)' }} />
-        <span
-          className="text-[13px] font-bold text-[var(--color-text-2)] uppercase tracking-wider"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
+        <span className="section-marker" />
+        <span className="font-display text-[13px] font-bold text-[var(--color-text-2)] uppercase tracking-wider">
           {t('editor.info.title')}
         </span>
       </div>
@@ -157,9 +151,9 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             value={status}
             onChange={(e) => setStatus(e.target.value as CampaignStatus)}
           >
-            <option value={CampaignStatus.DRAFT}>⚙️ {t('status.draft')}</option>
-            <option value={CampaignStatus.LIVE}>● {t('status.live')}</option>
-            <option value={CampaignStatus.ENDED}>✕ {t('status.ended')}</option>
+            <option value={CampaignStatus.DRAFT}>📋 {t('status.draft')}</option>
+            <option value={CampaignStatus.LIVE}>🟢 {t('status.live')}</option>
+            <option value={CampaignStatus.ENDED}>🔴 {t('status.ended')}</option>
           </select>
         </div>
         <div>
@@ -184,7 +178,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             bg-[var(--color-green)] text-[var(--color-bg)] cursor-pointer
             hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {isSaving ? '…' : t('editor.info.save')}
+          {isSaving ? '⏳' : t('editor.info.save')}
         </button>
       </div>
     </div>

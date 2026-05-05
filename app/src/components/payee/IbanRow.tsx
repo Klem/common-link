@@ -20,42 +20,23 @@ interface IbanRowProps {
   onVerifyVop: (ibanId: string) => void;
 }
 
-/** Returns the border color class based on IBAN verification status. */
-function borderClass(status: IbanVerificationStatus): string {
+/** Maps IBAN verification status to a form-input modifier class. */
+function inputStatusClass(status: IbanVerificationStatus): string {
   switch (status) {
     case IbanVerificationStatus.VERIFIED:
     case IbanVerificationStatus.FORMAT_VALID:
-      return 'border-green/40';
-    case IbanVerificationStatus.CLOSE_MATCH:
-      return 'border-yellow/40';
+      return ' success';
     case IbanVerificationStatus.INVALID:
     case IbanVerificationStatus.NO_MATCH:
-      return 'border-red/40';
+      return ' error';
     default:
-      return 'border-border';
-  }
-}
-
-/** Returns a small colored status indicator element. */
-function StatusDot({ status }: { status: IbanVerificationStatus }) {
-  switch (status) {
-    case IbanVerificationStatus.VERIFIED:
-      return <span className="text-green text-[12px]">✓</span>;
-    case IbanVerificationStatus.FORMAT_VALID:
-      return <span className="w-[8px] h-[8px] rounded-full bg-green inline-block flex-shrink-0" />;
-    case IbanVerificationStatus.CLOSE_MATCH:
-      return <span className="w-[8px] h-[8px] rounded-full bg-yellow inline-block flex-shrink-0" />;
-    case IbanVerificationStatus.INVALID:
-    case IbanVerificationStatus.NO_MATCH:
-      return <span className="w-[8px] h-[8px] rounded-full bg-red inline-block flex-shrink-0" />;
-    default:
-      return <span className="w-[8px] h-[8px] rounded-full bg-muted inline-block flex-shrink-0" />;
+      return '';
   }
 }
 
 /**
  * Single IBAN row displaying the IBAN value, its verification status,
- * action buttons (verify / re-verify / delete), and an optional VOP banner.
+ * action buttons (copy / verify / delete), and an optional VOP banner.
  */
 export function IbanRow({
   iban,
@@ -66,13 +47,12 @@ export function IbanRow({
   const t = useTranslations('dashboard');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const isReadonly = iban.status === IbanVerificationStatus.VERIFIED;
   const canDelete = iban.status !== IbanVerificationStatus.VERIFIED;
 
   const renderActions = () => {
     if (isVerifyingVop) {
       return (
-        <span className="inline-block w-4 h-4 border-2 border-border border-t-green rounded-full animate-spin" />
+        <span className="inline-block w-5 h-5 border-2 border-border border-t-green rounded-full animate-spin-around flex-shrink-0" />
       );
     }
     switch (iban.status) {
@@ -80,28 +60,23 @@ export function IbanRow({
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
-            className="text-[12px] text-text-2 hover:text-text transition-colors px-2 py-1 border border-border rounded-[6px]"
+            className="btn btn-secondary btn-xs whitespace-nowrap"
           >
             {t('payees.iban.verify')}
           </button>
         );
       case IbanVerificationStatus.FORMAT_VALID:
         return (
-          <>
-            <span className="text-[11px] text-green bg-green/10 border border-green/20 rounded-full px-2 py-[2px] cursor-default">
-              ✓
-            </span>
-            <button
-              onClick={() => onVerifyVop(iban.id)}
-              className="text-[12px] text-black bg-green rounded-[6px] px-3 py-1 hover:opacity-90 transition-opacity whitespace-nowrap"
-            >
-              {t('payees.iban.verifyVop')}
-            </button>
-          </>
+          <button
+            onClick={() => onVerifyVop(iban.id)}
+            className="btn btn-primary btn-xs whitespace-nowrap"
+          >
+            {t('payees.iban.verifyVop')}
+          </button>
         );
       case IbanVerificationStatus.VERIFIED:
         return (
-          <span className="text-[11px] text-green bg-green/10 border border-green/20 rounded-full px-2 py-[2px] cursor-default">
+          <span className="badge badge-success text-xs">
             ✓ {t('payees.iban.verified')}
           </span>
         );
@@ -111,7 +86,7 @@ export function IbanRow({
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
-            className="text-[12px] text-text-2 hover:text-text transition-colors px-2 py-1 border border-border rounded-[6px]"
+            className="btn btn-icon-only btn-sm"
             title={t('payees.iban.verify')}
           >
             ⟳
@@ -119,7 +94,7 @@ export function IbanRow({
         );
       case IbanVerificationStatus.INVALID:
         return (
-          <span className="text-[12px] text-red">Invalide</span>
+          <span className="badge badge-error text-xs">{t('payees.status.invalid')}</span>
         );
       default:
         return null;
@@ -127,27 +102,34 @@ export function IbanRow({
   };
 
   return (
-    <div className="mt-[6px]">
-      <div className="flex items-center gap-[8px]">
+    <div className="mt-2">
+      <div className="flex items-center gap-2">
         <input
           type="text"
-          readOnly={isReadonly}
+          readOnly
           value={iban.iban}
           onChange={() => {}}
           placeholder={t('payees.iban.placeholder')}
-          className={`flex-1 bg-bg-3 border rounded-[8px] px-3 py-[6px] font-mono text-[13px] text-text outline-none ${borderClass(iban.status)} ${isReadonly ? 'opacity-75 cursor-default' : ''}`}
+          className={`form-input flex-1 font-mono text-sm cursor-default${inputStatusClass(iban.status)}`}
         />
 
-        <StatusDot status={iban.status} />
+        {/* Copy button */}
+        <button
+          onClick={() => navigator.clipboard.writeText(iban.iban)}
+          className="btn btn-icon-only btn-sm"
+          title={t('payees.iban.copy')}
+        >
+          📋
+        </button>
 
-        <div className="flex items-center gap-[4px]">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {renderActions()}
         </div>
 
         {canDelete && (
           <button
             onClick={() => setConfirmOpen(true)}
-            className="text-[12px] text-red bg-red/8 hover:bg-red/15 rounded-[6px] px-2 py-1 transition-colors flex-shrink-0"
+            className="btn btn-icon-only btn-sm text-error hover:bg-error/10 flex-shrink-0"
             title={t('payees.list.delete')}
           >
             ✕

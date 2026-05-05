@@ -20,7 +20,6 @@ export function GoogleButton({ onSuccess, label, loading = false }: GoogleButton
 
   return (
     <div className="relative">
-      {/* Hidden Google Login — triggered programmatically */}
       <div ref={containerRef} className="absolute opacity-0 pointer-events-none w-px h-px overflow-hidden">
         <GoogleLogin
           onSuccess={(credentialResponse) => {
@@ -30,18 +29,18 @@ export function GoogleButton({ onSuccess, label, loading = false }: GoogleButton
           }}
           onError={() => undefined}
           type="standard"
-          theme="filled_black"
+          theme="outline"
+          shape="pill"
           size="large"
         />
       </div>
 
-      {/* Custom-styled button matching the design system */}
       <button
         type="button"
         onClick={handleCustomClick}
         disabled={loading}
         aria-label={label ?? 'Continuer avec Google'}
-        className="flex items-center gap-[13px] w-full px-4 py-3 bg-bg-3 border border-border rounded-[10px] text-text font-body text-[13.5px] font-medium cursor-pointer transition-all duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-cyan/40 hover:bg-bg-3/90 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,0,0,.25)] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn btn-google w-full"
       >
         <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -52,7 +51,7 @@ export function GoogleButton({ onSuccess, label, loading = false }: GoogleButton
           </svg>
         </span>
         <span className="flex-1 text-left">{label ?? 'Continuer avec Google'}</span>
-        <span className="text-[14px] text-muted transition-all duration-[200ms] group-hover:text-green group-hover:translate-x-[3px]">→</span>
+        <span className="text-muted">→</span>
       </button>
     </div>
   );

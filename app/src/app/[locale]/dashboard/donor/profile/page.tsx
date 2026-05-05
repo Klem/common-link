@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
 import { useDonorProfile } from '@/hooks/dashboard/useDonorProfile';
-import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 
@@ -90,145 +89,135 @@ export default function DonorProfilePage() {
   const initials = getInitials(profile?.displayName ?? null, user.email);
   const displayedName = profile?.displayName || user.email;
 
-  // ─── Shared classes ───────────────────────────────────────────────────────
-
-  const fieldClass =
-    'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
-  const labelClass =
-    'text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] block mb-[5px]';
-  const cardClass = 'bg-bg-2 border border-border rounded-[14px] p-[22px] mb-[18px]';
-
   return (
     <div>
-      <Topbar title={t('donor.profile.title')} />
+      <div className="mb-8">
+        <h1 className="font-display font-black text-2xl md:text-3xl">{t('donor.profile.title')}</h1>
+      </div>
 
-      {/* ── Profile header ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-[18px] mb-[28px]">
-        {/* Avatar */}
-        <div className="w-[64px] h-[64px] rounded-full bg-gradient-to-br from-green to-cyan flex items-center justify-center font-display font-extrabold text-[22px] text-black flex-shrink-0">
-          {initials}
-        </div>
-
-        <div>
-          <h2 className="font-display font-bold text-[20px] text-text leading-tight">
-            {displayedName}
-          </h2>
-          <p className="text-[13px] text-text-2 mt-[2px]">{user.email}</p>
-          <div className="flex items-center gap-[8px] mt-[6px]">
-            <span className="bg-green/12 text-green rounded-full px-[9px] py-[3px] text-[11px] font-semibold">
-              {t('roles.donor')}
-            </span>
-            <span className="text-[11px] text-text-2">
-              {t('donor.profile.memberSince', { date: formatDate(user.createdAt) })}
-            </span>
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        {/* ── Left: Avatar card ─────────────────────────────────────────── */}
+        <div className="card card-no-hover p-6 flex flex-col items-center text-center gap-4 h-fit">
+          <div className="avatar avatar-lg avatar-teal font-display font-extrabold">
+            {initials}
           </div>
-        </div>
-      </div>
-
-      {/* ── Profile form card ───────────────────────────────────────────── */}
-      <div className={cardClass}>
-        {isLoading ? (
-          <p className="text-[13px] text-text-2">{t('donor.profile.loading')}</p>
-        ) : (
-          <form onSubmit={onSubmit} noValidate className="flex flex-col gap-[14px]">
-            {/* Display name */}
-            <div>
-              <label htmlFor="displayName" className={labelClass}>
-                {t('donor.profile.displayName')}
-              </label>
-              <input
-                id="displayName"
-                type="text"
-                placeholder={t('donor.profile.displayNamePlaceholder')}
-                className={fieldClass}
-                {...register('displayName')}
-              />
-            </div>
-
-            {/* Email (read-only) */}
-            <div>
-              <label htmlFor="email" className={labelClass}>
-                {t('donor.profile.email')}
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={user.email}
-                disabled
-                className={`${fieldClass} opacity-50 cursor-not-allowed`}
-              />
-            </div>
-
-            {/* Anonymous toggle */}
-            <div className="flex items-center justify-between py-[6px]">
-              <div>
-                <p className="text-[13px] text-text font-medium">{t('donor.profile.anonymous')}</p>
-                <p className="text-[11.5px] text-text-2 mt-[2px]">
-                  {t('donor.profile.anonymousHint')}
-                </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={anonymousValue}
-                onClick={() => setValue('anonymous', !anonymousValue, { shouldDirty: true })}
-                className={`relative w-[42px] h-[24px] rounded-full transition-colors duration-200 flex-shrink-0 ${
-                  anonymousValue ? 'bg-green' : 'bg-muted'
-                }`}
-              >
-                <span
-                  className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-text transition-all duration-200 ${
-                    anonymousValue ? 'left-[21px]' : 'left-[3px]'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-[10px] pt-[4px]">
-              <button
-                type="submit"
-                disabled={!isDirty || isSubmitting}
-                className="py-[10px] px-[20px] bg-green text-black rounded-md font-display text-[13px] font-bold transition-all duration-200 hover:bg-[#00d4b0] disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {t('donor.profile.save')}
-              </button>
-              <button
-                type="button"
-                onClick={() => reset()}
-                disabled={!isDirty}
-                className="py-[10px] px-[20px] bg-transparent border border-border text-text-2 rounded-md font-display text-[13px] font-bold transition-colors duration-150 hover:border-text-2 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {t('donor.profile.cancel')}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {/* ── Security card ───────────────────────────────────────────────── */}
-      <div className={cardClass}>
-        <h3 className="font-display font-bold text-[15px] text-text mb-[14px]">
-          {t('donor.profile.security.title')}
-        </h3>
-
-        <div className="flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] mb-[3px]">
-              {t('donor.profile.security.loginMethod')}
-            </p>
-            <p className="text-[13.5px] text-text">
-              {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
-            </p>
+            <p className="font-display font-bold text-lg text-text leading-tight">{displayedName}</p>
+            <p className="text-sm text-text-2 mt-1">{user.email}</p>
+            <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+              <span className="chip green">{t('roles.donor')}</span>
+              <span className="text-xs text-text-2">
+                {t('donor.profile.memberSince', { date: formatDate(user.createdAt) })}
+              </span>
+            </div>
+          </div>
+          <button type="button" className="btn btn-ghost btn-sm">
+            {t('donor.profile.changePhoto')}
+          </button>
+        </div>
+
+        {/* ── Right: Form + Security ────────────────────────────────────── */}
+        <div className="flex flex-col gap-6">
+          {/* Profile form card */}
+          <div className="card card-no-hover">
+            <div className="card-body">
+              {isLoading ? (
+                <p className="text-sm text-text-2">{t('donor.profile.loading')}</p>
+              ) : (
+                <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+                  <div className="form-group">
+                    <label htmlFor="displayName" className="form-label">
+                      {t('donor.profile.displayName')}
+                    </label>
+                    <input
+                      id="displayName"
+                      type="text"
+                      placeholder={t('donor.profile.displayNamePlaceholder')}
+                      className="form-input"
+                      {...register('displayName')}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="email" className="form-label">
+                      {t('donor.profile.email')}
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={user.email}
+                      disabled
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-1">
+                    <div>
+                      <p className="text-sm text-text font-medium">{t('donor.profile.anonymous')}</p>
+                      <p className="text-xs text-text-2 mt-0.5">{t('donor.profile.anonymousHint')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={anonymousValue}
+                      onClick={() => setValue('anonymous', !anonymousValue, { shouldDirty: true })}
+                      className={`relative w-[42px] h-[24px] rounded-full transition-colors duration-200 flex-shrink-0 ${
+                        anonymousValue ? 'bg-green' : 'bg-muted'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-text transition-all duration-200 ${
+                          anonymousValue ? 'left-[21px]' : 'left-[3px]'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      type="submit"
+                      disabled={!isDirty || isSubmitting}
+                      className="btn btn-primary btn-md disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {t('donor.profile.save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => reset()}
+                      disabled={!isDirty}
+                      className="btn btn-ghost btn-md disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {t('donor.profile.cancel')}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowPasswordModal(true)}
-            className="text-[13px] text-green font-semibold bg-green/10 px-[14px] py-[8px] rounded-[8px] hover:bg-green/20 transition-colors duration-150"
-          >
-            {t('donor.profile.security.changePassword')}
-          </button>
+          {/* Security card */}
+          <div className="card card-no-hover">
+            <div className="card-body">
+              <h3 className="font-display font-bold text-base text-text mb-4">
+                {t('donor.profile.security.title')}
+              </h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="form-label">{t('donor.profile.security.loginMethod')}</p>
+                  <p className="text-sm text-text">
+                    {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(true)}
+                  className="btn btn-ghost btn-sm"
+                >
+                  {t('donor.profile.security.changePassword')}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

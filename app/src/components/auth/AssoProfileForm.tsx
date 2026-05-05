@@ -38,94 +38,61 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
 
   const onFormSubmit = handleSubmit((data) => onSubmit(data));
 
-  const preFilled =
-    'w-full bg-green/[.04] border border-green/25 text-text-2 px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none cursor-default';
-  const fieldClass =
-    'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
-  const labelClass =
-    'text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] block mb-[5px]';
-
   return (
-    <form onSubmit={onFormSubmit} noValidate className="flex flex-col gap-[11px]">
-      {/* Pre-fill notice */}
-      <div
-        className="flex items-center gap-[7px] px-3 py-2 rounded-[7px] text-[12px] text-text-2 mb-1 bg-green/[.06] border border-green/[.15]"
-      >
+    <form onSubmit={onFormSubmit} noValidate className="flex flex-col">
+      <div className="flex items-center gap-[7px] px-3 py-2 rounded-[7px] text-[12px] text-text-2 mb-3 bg-green/[.06] border border-green/[.15]">
         <span className="text-green text-[14px]">✓</span>
         Informations pré-remplies depuis le répertoire officiel — modifiables après inscription.
       </div>
 
-      <div className="grid grid-cols-2 gap-[9px]">
-        <div>
-          <label className={labelClass}>{t('signup.association.profile.name.label')}</label>
-          <input
-            type="text"
-            value={asso.nom}
-            disabled
-            className={preFilled}
-          />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="form-group">
+          <label className="form-label">{t('signup.association.profile.name.label')}</label>
+          <input type="text" value={asso.nom} disabled className="form-input" />
         </div>
-        <div>
-          <label className={labelClass}>{t('signup.association.profile.siren.label')}</label>
-          <input
-            type="text"
-            value={asso.siren}
-            disabled
-            className={preFilled}
-          />
+        <div className="form-group">
+          <label className="form-label">{t('signup.association.profile.siren.label')}</label>
+          <input type="text" value={asso.siren} disabled className="form-input" />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-[9px]">
-        <div>
-          <label className={labelClass}>Ville</label>
-          <input
-            type="text"
-            value={asso.ville}
-            disabled
-            className={preFilled}
-          />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="form-group">
+          <label className="form-label">Ville</label>
+          <input type="text" value={asso.ville} disabled className="form-input" />
         </div>
-        <div>
-          <label className={labelClass}>Code postal</label>
-          <input
-            type="text"
-            value={asso.codePostal}
-            disabled
-            className={preFilled}
-          />
+        <div className="form-group">
+          <label className="form-label">Code postal</label>
+          <input type="text" value={asso.codePostal} disabled className="form-input" />
         </div>
       </div>
 
-      <div>
-        <label htmlFor="contact" className={labelClass}>
+      <div className="form-group">
+        <label htmlFor="contact" className="form-label">
           {t('signup.association.profile.contact.label')}{' '}
-          <span className="text-red normal-case tracking-normal">*</span>
+          <span className="required">*</span>
         </label>
         <input
           id="contact"
           type="text"
           placeholder={t('signup.association.profile.contact.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('contact')}
         />
         {errors.contact && (
-          <p className="text-[11.5px] text-red mt-1">{errors.contact.message}</p>
+          <p className="form-error">{errors.contact.message}</p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="description" className={labelClass}>
+      <div className="form-group">
+        <label htmlFor="description" className="form-label">
           {t('signup.association.profile.description.label')}{' '}
-          <span className="text-muted normal-case tracking-normal font-normal">
-            (optionnel)
-          </span>
+          <span className="text-text-2 font-normal normal-case tracking-normal">(optionnel)</span>
         </label>
-        <input
+        <textarea
           id="description"
-          type="text"
           placeholder={t('signup.association.profile.description.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('description')}
         />
       </div>
@@ -133,12 +100,12 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
       <button
         type="submit"
         disabled={!isValid || loading}
-        className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 tracking-[0.02em] hover:bg-[#00d4b0] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,184,154,.25)] disabled:opacity-[.38] disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+        className="btn btn-primary btn-md w-full"
       >
         {loading ? '⏳' : t('signup.association.profile.submit')}
       </button>
 
-      <p className="text-center text-[11.5px] text-muted">
+      <p className="text-center text-xs text-text-2 mt-3">
         Aucun engagement. Tout complétable après inscription.
       </p>
     </form>

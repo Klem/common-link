@@ -119,7 +119,7 @@ describe('MoneriumOnboardModal', () => {
     fireEvent.click(screen.getByText('profile.monerium.connect'));
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('error', 'dashboard.profile.monerium.errorFetch');
+      expect(mockAddToast).toHaveBeenCalledWith('error', 'moneriumErrorFetch');
       expect(screen.getByText('profile.monerium.connect')).toBeInTheDocument();
     });
   });
@@ -142,7 +142,7 @@ describe('MoneriumOnboardModal', () => {
 
     expect(onConnected).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(mockAddToast).toHaveBeenCalledWith('success', 'dashboard.profile.monerium.connected');
+    expect(mockAddToast).toHaveBeenCalledWith('success', 'moneriumConnected');
   });
 
   it('ERROR message shows error toast without calling onConnected', () => {
@@ -159,7 +159,7 @@ describe('MoneriumOnboardModal', () => {
     });
 
     expect(onConnected).not.toHaveBeenCalled();
-    expect(mockAddToast).toHaveBeenCalledWith('error', 'dashboard.profile.monerium.error');
+    expect(mockAddToast).toHaveBeenCalledWith('error', 'moneriumError');
   });
 
   it('ignores postMessage from a different origin', () => {

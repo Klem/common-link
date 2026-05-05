@@ -25,8 +25,11 @@ function CallbackContent() {
   }, [searchParams]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <p className="text-sm text-gray-500">{t('closing')}</p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="card card-no-hover text-center p-8">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm text-text-2">{t('closing')}</p>
+      </div>
     </div>
   );
 }
@@ -37,8 +40,10 @@ export default function MoneriumCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-white">
-          <p className="text-sm text-gray-500">{t('loading')}</p>
+        <div className="min-h-screen flex items-center justify-center px-4 py-12">
+          <div className="card card-no-hover text-center p-8">
+            <p className="text-sm text-text-2">{t('loading')}</p>
+          </div>
         </div>
       }
     >

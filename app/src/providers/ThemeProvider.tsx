@@ -20,22 +20,7 @@ export function useTheme() {
 }
 
 function applyTheme(theme: Theme) {
-  const root = document.documentElement;
-  const c = theme.colors;
-  root.style.setProperty('--color-bg',            c.bg);
-  root.style.setProperty('--color-bg-2',          c.bgTwo);
-  root.style.setProperty('--color-bg-3',          c.bgThree);
-  root.style.setProperty('--color-border',        c.border);
-  root.style.setProperty('--color-green',         c.green);
-  root.style.setProperty('--color-green-dim',     c.greenDim);
-  root.style.setProperty('--color-green-glow',    c.greenGlow);
-  root.style.setProperty('--color-green-glow-dim',c.greenGlowDim);
-  root.style.setProperty('--color-yellow',        c.yellow);
-  root.style.setProperty('--color-cyan',          c.cyan);
-  root.style.setProperty('--color-red',           c.red);
-  root.style.setProperty('--color-text',          c.text);
-  root.style.setProperty('--color-text-2',        c.textTwo);
-  root.style.setProperty('--color-muted',         c.muted);
+  document.documentElement.setAttribute('data-theme', theme.name);
 }
 
 interface ThemeProviderProps {

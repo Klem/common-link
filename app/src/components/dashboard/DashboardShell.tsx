@@ -8,6 +8,7 @@ import { AuthProvider } from '@/types/auth';
 import { ROUTES } from '@/lib/routes';
 import { Sidebar } from './Sidebar';
 import { SetPasswordModal } from './SetPasswordModal';
+import { SidebarToggleContext } from './SidebarContext';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -17,11 +18,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const { user, isAuthenticated, isLoading } = useAuthStore();
   const router = useRouter();
   const locale = useLocale();
-  // Strip the locale prefix so currentPath matches ROUTES constants (e.g. /dashboard/donor)
   const rawPathname = usePathname();
   const pathname = rawPathname.replace(new RegExp(`^/${locale}`), '') || '/';
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -38,6 +39,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
     }
   }, [user]);
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   const dismissModal = useCallback(() => {
     if (user) {
       localStorage.setItem(`cl-password-modal-dismissed-${user.id}`, '1');
@@ -45,17 +50,27 @@ export function DashboardShell({ children }: DashboardShellProps) {
     setShowPasswordModal(false);
   }, [user]);
 
+  const openSidebar = useCallback(() => setSidebarOpen(true), []);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
   if (isLoading || !user) {
     return null;
   }
 
   return (
-    <div className="flex min-h-screen bg-bg">
-      <Sidebar user={user} currentPath={pathname} />
-      <main className="ml-[248px] flex-1 px-[46px] py-[38px] min-h-screen">
-        {children}
-      </main>
-      <SetPasswordModal isOpen={showPasswordModal} onClose={dismissModal} />
-    </div>
+    <SidebarToggleContext.Provider value={openSidebar}>
+      <div className="app-shell">
+        <Sidebar user={user} currentPath={pathname} isOpen={sidebarOpen} onClose={closeSidebar} />
+        {sidebarOpen && (
+          <div className="app-sidebar-backdrop" onClick={closeSidebar} />
+        )}
+        <main className="app-main">
+          <div className="app-content">
+            {children}
+          </div>
+        </main>
+        <SetPasswordModal isOpen={showPasswordModal} onClose={dismissModal} />
+      </div>
+    </SidebarToggleContext.Provider>
   );
 }

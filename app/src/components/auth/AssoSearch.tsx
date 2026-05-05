@@ -115,9 +115,6 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
     onSelect({ ...manualData, etat: 'A' });
   };
 
-  const fieldClass =
-    'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
-  const labelClass = 'text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] block mb-[5px]';
 
   return (
     <div className="flex flex-col gap-3">
@@ -133,7 +130,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
           onChange={(e) => handleInput(e.target.value)}
           placeholder={t('signup.association.search.placeholder')}
           autoComplete="off"
-          className="w-full bg-bg-3 border-[1.5px] border-border text-text pl-[40px] pr-[44px] py-3 rounded-[10px] font-body text-[13.5px] outline-none transition-all duration-[250ms] placeholder:text-muted focus:border-green/40 focus:shadow-[0_0_0_3px_rgba(0,184,154,.07)]"
+          className="form-input pl-[40px] pr-[44px]"
         />
         {searchState === 'loading' && (
           <div
@@ -191,11 +188,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
                   <div className="text-[11px] text-muted flex flex-wrap gap-2">
                     <span>📍 {asso.ville} {asso.codePostal}</span>
                     <span>SIREN {asso.siren}</span>
-                    <span
-                      className={`text-[10px] font-bold px-[6px] py-[2px] rounded-[4px] ${
-                        isActive ? 'text-green bg-green/10' : 'text-red bg-red/10'
-                      }`}
-                    >
+                    <span className={`badge ${isActive ? 'badge-active' : 'badge-neutral'}`}>
                       {isActive
                         ? t('signup.association.search.status.active')
                         : t('signup.association.search.status.ceased')}
@@ -239,42 +232,42 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
           {t('assoSearch.manualEntry')} →
         </button>
       ) : (
-        <div className="flex flex-col gap-[9px]">
-          <div>
-            <label className={labelClass}>{t('assoSearch.manualSiren')} *</label>
+        <div className="flex flex-col gap-3">
+          <div className="form-group">
+            <label className="form-label">{t('assoSearch.manualSiren')} *</label>
             <input
               type="text"
               value={manualData.siren}
               onChange={(e) => setManualData((d) => ({ ...d, siren: e.target.value }))}
-              className={fieldClass}
+              className="form-input"
             />
           </div>
-          <div>
-            <label className={labelClass}>{t('assoSearch.manualNom')} *</label>
+          <div className="form-group">
+            <label className="form-label">{t('assoSearch.manualNom')} *</label>
             <input
               type="text"
               value={manualData.nom}
               onChange={(e) => setManualData((d) => ({ ...d, nom: e.target.value }))}
-              className={fieldClass}
+              className="form-input"
             />
           </div>
-          <div className="grid grid-cols-2 gap-[9px]">
-            <div>
-              <label className={labelClass}>{t('assoSearch.manualVille')}</label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="form-group">
+              <label className="form-label">{t('assoSearch.manualVille')}</label>
               <input
                 type="text"
                 value={manualData.ville}
                 onChange={(e) => setManualData((d) => ({ ...d, ville: e.target.value }))}
-                className={fieldClass}
+                className="form-input"
               />
             </div>
-            <div>
-              <label className={labelClass}>{t('assoSearch.manualCodePostal')}</label>
+            <div className="form-group">
+              <label className="form-label">{t('assoSearch.manualCodePostal')}</label>
               <input
                 type="text"
                 value={manualData.codePostal}
                 onChange={(e) => setManualData((d) => ({ ...d, codePostal: e.target.value }))}
-                className={fieldClass}
+                className="form-input"
               />
             </div>
           </div>
@@ -282,7 +275,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
             type="button"
             onClick={handleManualConfirm}
             disabled={!manualData.nom.trim() || !manualData.siren.trim()}
-            className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 hover:bg-[#00d4b0] disabled:opacity-[.38] disabled:cursor-not-allowed"
+            className="btn btn-primary btn-md w-full"
           >
             {t('assoSearch.confirm')}
           </button>

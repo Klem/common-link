@@ -19,7 +19,6 @@
     "milestoneCreated": "Milestone ajouté.",
     "milestoneSaved": "Milestone mis à jour.",
     "milestoneDeleted": "Milestone supprimé.",
-    "setPasswordUpdated": "Mot de passe défini avec succès.",
     "moneriumConnected": "Portefeuille connecté avec succès.",
     "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
     "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
@@ -103,7 +102,8 @@
       "confirm": { "label": "Confirmer", "placeholder": "••••••••" },
       "submit": "Enregistrer",
       "skip": "Plus tard",
-      "success": "Mot de passe défini."
+      "success": "Mot de passe défini.",
+      "setPasswordUpdated": "Mot de passe défini avec succès."
     },
     "errors": {
       "invalidCredentials": "Email ou mot de passe invalide.",
@@ -176,6 +176,7 @@
     "payees": {
       "pageTitle": "Bénéficiaires",
       "pageSubtitle": "Gérez les bénéficiaires de votre association",
+      "addPayee": "Ajouter un bénéficiaire",
       "search": {
         "title": "Recherche SIRET / SIREN",
         "subtitle": "Saisissez un identifiant. La détection du type est automatique.",
@@ -234,6 +235,7 @@
         "verifyVop": "Vérifier VOP →",
         "verified": "Vérifié",
         "addIban": "Ajouter un IBAN",
+        "copy": "Copier l'IBAN",
         "inputPlaceholder": "Saisissez un IBAN",
         "add": "Ajouter",
         "cancel": "Annuler",
@@ -290,7 +292,8 @@
         },
         "hero": {
           "collected": "Collecté",
-          "goal": "Objectif"
+          "goal": "Objectif",
+          "progress": "Progression"
         },
         "info": {
           "title": "Informations générales",
@@ -342,6 +345,12 @@
         "campaignsFollowed": "Campagnes suivies",
         "impactScore": "Score d'impact"
       },
+      "sections": {
+        "recentDonations": "Mes dons récents",
+        "nftBadges": "Mes badges NFT",
+        "followedCampaigns": "Mes campagnes suivies",
+        "viewAll": "Voir tout"
+      },
       "empty": {
         "icon": "🌱",
         "title": "Votre aventure philanthropique commence ici",
@@ -356,6 +365,7 @@
         "email": "Email",
         "anonymous": "Don anonyme par défaut",
         "anonymousHint": "Votre identité sera masquée sur les campagnes.",
+        "changePhoto": "Changer la photo",
         "save": "Enregistrer",
         "cancel": "Annuler",
         "success": "Profil mis à jour.",
@@ -382,6 +392,14 @@
         "title": "Lancez votre première campagne",
         "subtitle": "Créez une campagne de collecte pour commencer à recevoir des dons et suivre votre impact.",
         "cta": "Créer une campagne"
+      },
+      "newCampaign": "Nouvelle campagne",
+      "sections": {
+        "activeCampaigns": "Mes campagnes actives",
+        "recentActivity": "Activité récente"
+      },
+      "recentActivity": {
+        "empty": "Aucune activité récente"
       },
       "profileCompletion": {
         "title": "Complétez votre profil",

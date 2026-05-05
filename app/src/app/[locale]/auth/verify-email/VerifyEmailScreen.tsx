@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/lib/routes';
 import type { AuthResponseDto } from '@/types/auth';
 import { UserRole } from '@/types/auth';
+import { AuthCard } from '@/components/auth/AuthCard';
 
 type VerifyState = 'verifying' | 'success' | 'failed';
 
@@ -50,40 +51,50 @@ export function VerifyEmailScreen({ token }: VerifyEmailScreenProps) {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg px-4">
-      <div
-        className="w-full max-w-md rounded-xl border border-border bg-bg-2 text-center"
-        style={{ padding: 'var(--space-card-p)' }}
-      >
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <AuthCard className="max-w-[480px] w-full text-center">
         {state === 'verifying' && (
           <>
-            <div className="mb-6 text-5xl">⏳</div>
-            <p className="text-text-2">{t('verifying')}</p>
+            <div className="mb-6 flex justify-center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-teal)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" opacity="0.3" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <div className="flex items-center gap-2 justify-center text-text-2">
+              <span className="animate-spin-around w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+              <p>{t('verifying')}</p>
+            </div>
           </>
         )}
 
         {state === 'success' && (
           <>
-            <div className="mb-6 text-5xl">✅</div>
-            <h1 className="mb-3 font-display text-2xl font-semibold text-green">{t('success')}</h1>
-            <p className="text-text-2">{t('successSubtitle')}</p>
+            <div className="mb-6 flex justify-center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </div>
+            <h1 className="mb-3 font-display font-black text-2xl text-text">{t('success')}</h1>
+            <p className="text-text-2 text-base">{t('successSubtitle')}</p>
           </>
         )}
 
         {state === 'failed' && (
           <>
-            <div className="mb-6 text-5xl">❌</div>
-            <h1 className="mb-3 font-display text-2xl font-semibold text-red">{t('failed')}</h1>
-            <p className="mb-6 text-text-2">{t('failedSubtitle')}</p>
+            <div className="mb-6 alert alert-error">
+              <span>{t('failed')}</span>
+            </div>
+            <p className="mb-6 text-text-2 text-base">{t('failedSubtitle')}</p>
             <Link
               href={`/${locale}${ROUTES.CHECK_EMAIL}`}
-              className="inline-block rounded-md bg-green px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+              className="btn btn-primary btn-md w-full"
             >
               {t('requestNew')}
             </Link>
           </>
         )}
-      </div>
+      </AuthCard>
     </div>
   );
 }

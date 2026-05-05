@@ -19,7 +19,6 @@
     "milestoneCreated": "Milestone added.",
     "milestoneSaved": "Milestone updated.",
     "milestoneDeleted": "Milestone deleted.",
-    "setPasswordUpdated": "Password set successfully.",
     "moneriumConnected": "Wallet connected successfully.",
     "moneriumError": "Wallet connection failed. Please try again.",
     "moneriumErrorFetch": "Failed to get authentication URL. Please try again."
@@ -103,7 +102,8 @@
       "confirm": { "label": "Confirm", "placeholder": "••••••••" },
       "submit": "Save",
       "skip": "Later",
-      "success": "Password successfully defined"
+      "success": "Password successfully defined",
+      "setPasswordUpdated": "Password set successfully."
     },
     "errors": {
       "invalidCredentials": "Invalid email or password.",
@@ -176,6 +176,7 @@
     "payees": {
       "pageTitle": "Beneficiaries",
       "pageSubtitle": "Manage your association's beneficiaries",
+      "addPayee": "Add a beneficiary",
       "search": {
         "title": "Search SIRET / SIREN",
         "subtitle": "Enter an identifier. Type detection is automatic.",
@@ -234,6 +235,7 @@
         "verifyVop": "Verify VOP →",
         "verified": "Verified",
         "addIban": "Add an IBAN",
+        "copy": "Copy IBAN",
         "inputPlaceholder": "Enter an IBAN",
         "add": "Add",
         "cancel": "Cancel",
@@ -289,7 +291,8 @@
         },
         "hero": {
           "collected": "Raised",
-          "goal": "Goal"
+          "goal": "Goal",
+          "progress": "Progress"
         },
         "info": {
           "title": "General information",
@@ -341,6 +344,12 @@
         "campaignsFollowed": "Campaigns followed",
         "impactScore": "Impact score"
       },
+      "sections": {
+        "recentDonations": "My recent donations",
+        "nftBadges": "My NFT badges",
+        "followedCampaigns": "My followed campaigns",
+        "viewAll": "View all"
+      },
       "empty": {
         "icon": "🌱",
         "title": "Your philanthropic journey starts here",
@@ -355,6 +364,7 @@
         "email": "Email",
         "anonymous": "Anonymous donations by default",
         "anonymousHint": "Your identity will be hidden on campaigns.",
+        "changePhoto": "Change photo",
         "save": "Save",
         "cancel": "Cancel",
         "success": "Profile updated.",
@@ -381,6 +391,14 @@
         "title": "Launch your first campaign",
         "subtitle": "Create a fundraising campaign to start receiving donations and tracking your impact.",
         "cta": "Create a campaign"
+      },
+      "newCampaign": "New campaign",
+      "sections": {
+        "activeCampaigns": "Active campaigns",
+        "recentActivity": "Recent activity"
+      },
+      "recentActivity": {
+        "empty": "No recent activity yet"
       },
       "profileCompletion": {
         "title": "Complete your profile",

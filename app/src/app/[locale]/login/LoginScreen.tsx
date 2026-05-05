@@ -203,10 +203,10 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   const isDonorSignup = activeView === 'signup' && activeRole === UserRole.DONOR;
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-[400px]">
+    <div className="min-h-screen bg-bg flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-full sm:max-w-[480px] md:max-w-[560px]">
         {/* Logo */}
-        <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-extrabold text-green mb-7">
+        <div className="flex items-center gap-[10px] justify-center font-display text-[20px] font-black text-green mb-7">
           <div
             className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[16px] logo-icon-bg"
           >
@@ -287,16 +287,14 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
               <Divider />
 
               {emailRegister.sent ? (
-                <div className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16] text-center animate-slide-down-fade">
-                  <strong className="block text-green text-[12.5px]">
-                    ✓ {t('signup.emailPassword.sent')}
-                  </strong>
-                  <span className="block text-[11px] text-muted mt-[5px]">
+                <div className="alert alert-success text-center animate-slide-down-fade">
+                  <strong className="block">✓ {t('signup.emailPassword.sent')}</strong>
+                  <span className="block text-xs mt-1">
                     {t('signup.emailPassword.notReceived')}{' '}
                     <button
                       type="button"
                       onClick={emailRegister.reset}
-                      className="text-cyan text-[11px] bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
+                      className="btn btn-ghost btn-sm"
                     >
                       {t('signup.emailPassword.resend')}
                     </button>
@@ -389,7 +387,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                   <button
                     type="button"
                     onClick={() => setAssoStep(1)}
-                    className="text-[11.5px] text-muted bg-transparent border-none cursor-pointer py-1 transition-colors duration-200 hover:text-cyan text-left"
+                    className="btn btn-ghost btn-xs self-start"
                   >
                     ← {t('signup.association.steps.search')}
                   </button>
@@ -401,15 +399,13 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
 
           {/* ── Error from magic link verify ─────────────────────────────── */}
           {verifyStatus === 'error' && verifyError && (
-            <div
-              className="mt-4 px-3 py-[10px] rounded-[8px] text-[12.5px] text-red bg-red/[.08] border border-red/25"
-            >
+            <div className="alert alert-error mt-4">
               {t(verifyError as Parameters<typeof t>[0])}
             </div>
           )}
 
           {/* ── Legal footer ─────────────────────────────────────────────── */}
-          <p className="text-center text-[10.5px] text-muted mt-5 leading-relaxed">
+          <p className="text-center text-xs text-text-2 mt-5 leading-relaxed">
             {t('gdpr')}
           </p>
         </AuthCard>

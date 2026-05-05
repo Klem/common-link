@@ -6,6 +6,7 @@ import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/lib/routes';
 import { useRouter } from 'next/navigation';
+import { AuthCard } from '@/components/auth/AuthCard';
 
 interface VerifyTokenScreenProps {
   token: string;
@@ -23,36 +24,40 @@ export function VerifyTokenScreen({ token }: VerifyTokenScreenProps) {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg px-4">
-      <div
-        className="w-full max-w-md rounded-xl border border-border bg-bg-2 text-center"
-        style={{ padding: 'var(--space-card-p)' }}
-      >
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <AuthCard className="max-w-[480px] w-full text-center">
         {status !== 'error' && (
           <>
-            <div className="mb-6 text-5xl">⏳</div>
-            <p className="text-text-2">{t('verifyEmail.verifying')}</p>
+            <div className="mb-6 flex justify-center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-teal)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" opacity="0.3" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <div className="flex items-center gap-2 justify-center text-text-2">
+              <span className="animate-spin-around w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+              <p>{t('verifyEmail.verifying')}</p>
+            </div>
           </>
         )}
 
         {status === 'error' && error && (
           <>
-            <div className="mb-6 text-5xl">❌</div>
-            <h1 className="mb-3 font-display text-2xl font-semibold text-red">
+            <div className="mb-6 alert alert-error">
+              <span>{t(error as Parameters<typeof t>[0])}</span>
+            </div>
+            <h1 className="mb-3 font-display font-black text-2xl text-text">
               {t('verifyEmail.failed')}
             </h1>
-            <p className="mb-6 text-text-2">
-              {t(error as Parameters<typeof t>[0])}
-            </p>
             <Link
               href={`/${locale}${ROUTES.CHECK_EMAIL}`}
-              className="inline-block rounded-md bg-green px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+              className="btn btn-primary btn-md w-full mt-4"
             >
               {t('verifyEmail.requestNew')}
             </Link>
           </>
         )}
-      </div>
+      </AuthCard>
     </div>
   );
 }

@@ -61,29 +61,25 @@ export function LoginProgressOverlay({ provider, steps: customSteps }: LoginProg
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 bg-bg z-[9999] flex flex-col items-center justify-center animate-fade-in"
-    >
+    <div className="fixed inset-0 bg-bg z-[9999] flex flex-col items-center justify-center px-6 animate-fade-in">
       {/* Logo */}
       <div className="flex items-center gap-[10px] font-display text-[22px] font-extrabold text-green mb-10">
-        <div
-          className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[18px] logo-icon-bg"
-        >
+        <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[18px] logo-icon-bg">
           🌍
         </div>
         CommonLink
       </div>
 
       {/* Steps */}
-      <div className="flex flex-col gap-4 w-[300px]">
+      <div className="flex flex-col gap-3 w-full max-w-[320px]">
         {steps.map((step, i) => (
           <div
             key={i}
-            className={`flex items-center gap-3 px-4 py-3 bg-bg-2 border border-border rounded-[10px] text-[13.5px] text-text-2 transition-all duration-300 ${
+            className={`flex items-center gap-3 px-4 py-3 bg-bg-2 border border-border rounded-[var(--radius-lg)] font-body text-[13.5px] text-text-2 transition-all duration-300 ${
               step.status === 'pending' ? 'opacity-0 translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0 animate-slide-up-step'
             } ${step.status === 'done' ? 'border-green/35 bg-green/[.07]' : ''}`}
           >
-            <span className="text-[16px]">
+            <span className="flex-shrink-0">
               {step.status === 'done' ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2.5" aria-hidden="true">
                   <path
@@ -99,7 +95,7 @@ export function LoginProgressOverlay({ provider, steps: customSteps }: LoginProg
                 <div className="w-4 h-4 rounded-full border-2 border-green-dim border-t-green animate-spin-around" />
               )}
             </span>
-            <span>{step.label}</span>
+            <span className="font-display font-semibold">{step.label}</span>
           </div>
         ))}
       </div>

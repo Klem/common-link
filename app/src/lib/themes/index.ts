@@ -13,6 +13,12 @@ export interface ThemeColors {
   text: string;
   textTwo: string;
   muted: string;
+  indigo: string;
+  indigoLight: string;
+  coral: string;
+  amber: string;
+  success: string;
+  error: string;
 }
 
 export interface Theme {
@@ -21,10 +27,12 @@ export interface Theme {
   colors: ThemeColors;
 }
 
-export { dark } from './dark';
+export { defaultTheme } from './default';
+export { light } from './light';
+export { darkTheme } from './dark';
 
-import { dark } from './dark';
+import { defaultTheme } from './default';
+import { light } from './light';
+import { darkTheme } from './dark';
 
-export const themes: Theme[] = [dark];
-
-export const defaultTheme = dark;
+export const themes: Theme[] = [defaultTheme, light, darkTheme];

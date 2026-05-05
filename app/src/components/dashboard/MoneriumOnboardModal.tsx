@@ -95,44 +95,30 @@ export default function MoneriumOnboardModal({ isOpen, onClose, onConnected, onP
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="bg-bg-2 border border-border rounded-[14px] p-[28px] w-full max-w-[440px] mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <h2 className="text-[17px] font-semibold text-text">
-            {t('profile.monerium.title')}
-          </h2>
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-            {t('profile.monerium.badge')}
-          </span>
-        </div>
-
-        <p className="text-[14px] text-text-2 mb-6 leading-relaxed">
-          {t('profile.monerium.description')}
-        </p>
-
-        {isConnecting ? (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-[13px] text-text-2">{t('profile.monerium.waiting')}</p>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-text">{t('profile.monerium.title')}</h2>
+            <span className="badge badge-info">{t('profile.monerium.badge')}</span>
           </div>
-        ) : (
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-[10px] border border-border text-[14px] font-medium text-text-2 hover:bg-bg transition-colors"
-            >
+          <button className="modal-close" onClick={onClose} aria-label="close">×</button>
+        </div>
+        <div className="modal-body">
+          <p className="text-sm text-text-2 leading-relaxed mb-6">{t('profile.monerium.description')}</p>
+          {isConnecting && (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-text-2">{t('profile.monerium.waiting')}</p>
+            </div>
+          )}
+        </div>
+        {!isConnecting && (
+          <div className="modal-footer">
+            <button onClick={onClose} className="btn btn-ghost btn-md">
               {t('profile.monerium.cancel')}
             </button>
-            <button
-              onClick={handleConnect}
-              className="flex-1 py-2.5 rounded-[10px] bg-indigo-600 text-white text-[14px] font-medium hover:bg-indigo-700 transition-colors"
-            >
+            <button onClick={handleConnect} className="btn btn-primary btn-md">
               {t('profile.monerium.connect')}
             </button>
           </div>

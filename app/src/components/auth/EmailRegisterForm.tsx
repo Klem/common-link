@@ -44,15 +44,10 @@ export function EmailRegisterForm({
 
   const onFormSubmit = handleSubmit(({ email, password }) => onSubmit(email, password));
 
-  const fieldClass =
-    'w-full bg-bg-3 border border-border text-text px-3 py-[10px] rounded-[8px] font-body text-[13.5px] outline-none transition-[border-color] duration-200 placeholder:text-muted focus:border-green/40';
-  const labelClass =
-    'text-[11px] font-semibold text-text-2 uppercase tracking-[0.06em] block mb-[5px]';
-
   return (
-    <form onSubmit={onFormSubmit} noValidate className="flex flex-col gap-[9px]">
-      <div>
-        <label htmlFor="reg-email" className={labelClass}>
+    <form onSubmit={onFormSubmit} noValidate className="flex flex-col">
+      <div className="form-group">
+        <label htmlFor="reg-email" className="form-label">
           {t('signup.emailPassword.email.label')}
         </label>
         <input
@@ -60,18 +55,18 @@ export function EmailRegisterForm({
           type="email"
           autoComplete="email"
           placeholder={t('signup.emailPassword.email.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('email')}
         />
         {errors.email && (
-          <p className="text-[11.5px] text-red mt-1">
+          <p className="form-error">
             {t(errors.email.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="reg-password" className={labelClass}>
+      <div className="form-group">
+        <label htmlFor="reg-password" className="form-label">
           {t('signup.emailPassword.password.label')}
         </label>
         <input
@@ -79,18 +74,18 @@ export function EmailRegisterForm({
           type="password"
           autoComplete="new-password"
           placeholder={t('signup.emailPassword.password.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('password')}
         />
         {errors.password && (
-          <p className="text-[11.5px] text-red mt-1">
+          <p className="form-error">
             {t(errors.password.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="reg-confirm" className={labelClass}>
+      <div className="form-group">
+        <label htmlFor="reg-confirm" className="form-label">
           {t('signup.emailPassword.confirm.label')}
         </label>
         <input
@@ -98,22 +93,22 @@ export function EmailRegisterForm({
           type="password"
           autoComplete="new-password"
           placeholder={t('signup.emailPassword.confirm.placeholder')}
-          className={fieldClass}
+          className="form-input"
           {...register('confirm')}
         />
         {errors.confirm && (
-          <p className="text-[11.5px] text-red mt-1">
+          <p className="form-error">
             {t(errors.confirm.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>
 
-      {error && <p className="text-[11.5px] text-red">{error}</p>}
+      {error && <p className="form-error mb-3">{error}</p>}
 
       <button
         type="submit"
         disabled={!isValid || loading}
-        className="w-full py-[13px] bg-green text-black border-none rounded-md font-display text-[14px] font-bold cursor-pointer transition-all duration-200 tracking-[0.02em] hover:bg-[#00d4b0] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,184,154,.25)] disabled:opacity-[.38] disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+        className="btn btn-primary btn-md w-full"
       >
         {loading ? '⏳' : submitLabel}
       </button>

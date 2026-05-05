@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import type { PayeeDto } from '@/types/payee';
 import { PayeeRow } from './PayeeRow';
+import { EmptyStateCard } from '@/components/dashboard';
 
 interface PayeeListProps {
   /** Payees to display. */
@@ -37,41 +38,38 @@ export function PayeeList({
   const t = useTranslations('dashboard');
 
   return (
-    <div className="bg-bg-2 border border-border rounded-xl overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-[20px] border-b border-border">
-        <h2 className="font-display font-bold text-[16px] text-text">
+    <div className="card card-no-hover">
+      <div className="card-header-bar">
+        <h2 className="font-display font-bold text-base text-text">
           {t('payees.list.title')}
         </h2>
-        <span className="bg-green/12 text-green rounded-full px-[10px] py-[3px] text-[12px] font-bold">
+        <span className="badge badge-active">
           {t('payees.list.count', { count: payees.length })}
         </span>
       </div>
 
-      {/* Content */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-[40px]">
+        <div className="flex items-center justify-center py-10">
           <span className="inline-block w-6 h-6 border-2 border-border border-t-green rounded-full animate-spin" />
         </div>
       ) : payees.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-[40px] text-center px-[24px]">
-          <p className="text-muted text-[14px]">{t('payees.list.empty')}</p>
-          <p className="text-muted text-[12px] mt-[4px]">{t('payees.list.emptyHint')}</p>
-        </div>
+        <EmptyStateCard
+          icon="🏢"
+          title={t('payees.list.empty')}
+          subtitle={t('payees.list.emptyHint')}
+        />
       ) : (
-        <div>
-          {payees.map((payee, index) => (
-            <div key={payee.id}>
-              {index > 0 && <div className="border-t border-border" />}
-              <PayeeRow
-                payee={payee}
-                onDeletePayee={onDeletePayee}
-                onAddIban={onAddIban}
-                onDeleteIban={onDeleteIban}
-                onVerifyVop={onVerifyVop}
-                verifyingIbanId={verifyingIbanId}
-              />
-            </div>
+        <div className="divide-y divide-border">
+          {payees.map((payee) => (
+            <PayeeRow
+              key={payee.id}
+              payee={payee}
+              onDeletePayee={onDeletePayee}
+              onAddIban={onAddIban}
+              onDeleteIban={onDeleteIban}
+              onVerifyVop={onVerifyVop}
+              verifyingIbanId={verifyingIbanId}
+            />
           ))}
         </div>
       )}
