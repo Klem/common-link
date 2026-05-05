@@ -40,6 +40,8 @@ interface AuthState {
    * without touching the refresh cookie or user object.
    */
   setAccessToken: (accessToken: string) => void;
+  /** Updates the in-memory user object (e.g. after a profile or password change). */
+  setUser: (user: UserDto) => void;
   /**
    * Calls `POST /api/auth/logout`, clears all auth state and cookies,
    * then performs a hard redirect to `/login`.
@@ -81,6 +83,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setAccessToken: (accessToken) => {
     set({ accessToken });
+  },
+
+  setUser: (user) => {
+    set({ user });
   },
 
   logout: async () => {

@@ -12,7 +12,7 @@ interface SetPasswordModalProps {
 }
 
 export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
-  const t = useTranslations('auth');
+  const t = useTranslations('dashboard');
   const { addToast } = useToastStore();
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +22,7 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
     setLoading(true);
     try {
       await api.patch('/api/user/me/password', { password, confirmPassword: password });
-      addToast('success', 'setPassword.setPasswordUpdated');
+      addToast('success', 'setPasswordUpdated');
       onClose();
     } catch {
       addToast('error', 'errors.genericError');

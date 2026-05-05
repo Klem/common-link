@@ -406,6 +406,7 @@ class AuthService(
         val user = userRepository.findById(userId)
             .orElseThrow { AuthException("Utilisateur introuvable") }
         user.passwordHash = passwordEncoder.encode(password)
+        user.provider = AuthProvider.EMAIL
         user.updatedAt = Instant.now()
         userRepository.save(user)
     }

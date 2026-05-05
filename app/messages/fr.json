@@ -19,6 +19,7 @@
     "milestoneCreated": "Milestone ajouté.",
     "milestoneSaved": "Milestone mis à jour.",
     "milestoneDeleted": "Milestone supprimé.",
+    "setPasswordUpdated": "Mot de passe défini avec succès.",
     "moneriumConnected": "Portefeuille connecté avec succès.",
     "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
     "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
@@ -102,8 +103,7 @@
       "confirm": { "label": "Confirmer", "placeholder": "••••••••" },
       "submit": "Enregistrer",
       "skip": "Plus tard",
-      "success": "Mot de passe défini.",
-      "setPasswordUpdated": "Mot de passe défini avec succès."
+      "success": "Mot de passe défini."
     },
     "errors": {
       "invalidCredentials": "Email ou mot de passe invalide.",

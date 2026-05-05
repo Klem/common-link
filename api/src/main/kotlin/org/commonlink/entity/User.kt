@@ -36,7 +36,7 @@ class User(
     /** Records how the account was originally created (email, Google, or magic-link). */
     @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false, length = 20)
-    val provider: AuthProvider,
+    var provider: AuthProvider,
 
     /** BCrypt hash of the user's password. Null for accounts created via Google or magic-link only. */
     @Column(name = "password_hash")

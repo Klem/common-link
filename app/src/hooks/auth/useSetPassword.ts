@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { AuthProvider } from '@/types/auth';
 
 /**
  * Hook for the post-registration "set password" step.
@@ -23,7 +24,7 @@ import { useAuthStore } from '@/stores/authStore';
 export function useSetPassword() {
   const router = useRouter();
   const locale = useLocale();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +35,8 @@ export function useSetPassword() {
     setLoading(true);
     setError(null);
     try {
-      await api.patch('/api/user/me/password', { password });
+      await api.patch('/api/user/me/password', { password, confirmPassword: password });
+      if (user) setUser({ ...user, provider: AuthProvider.EMAIL });
       router.push(getDashboardPath());
     } catch {
       setError('errors.genericError');
