@@ -1,0 +1,49 @@
+
+cache/
+out/
+broadcast/
+artifacts/
+
+coverage/
+
+# Anvil
+anvil-state.json
+
+
+node_modules/
+
+# Optional if you use git submodules manually
+lib/
+
+
+.env
+.env.*
+!.env.example
+
+*.log
+logs/
+
+.DS_Store
+Thumbs.db
+
+
+# =========================================
+# Coverage
+# =========================================
+
+coverage.json
+lcov.info
+
+# =========================================
+# Temporary files
+# =========================================
+
+tmp/
+temp/
+
+# =========================================
+# Generated ABI / frontend exports
+# =========================================
+
+abi/
+frontend/abi/
