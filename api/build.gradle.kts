@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val web3jCodegen: Configuration by configurations.creating
+
 plugins {
     id("org.springframework.boot") version "4.0.1"
     id("io.spring.dependency-management") version "1.1.7"
@@ -51,6 +53,14 @@ dependencies {
     // Google ID token verification
     implementation("com.google.api-client:google-api-client:2.7.2")
 
+    // Web3j — on-chain registry interaction
+    implementation("org.web3j:core:4.12.2")
+    implementation("org.web3j:crypto:4.12.2")
+    implementation("org.web3j:utils:4.12.2")
+
+    // Web3j codegen — only used by generateRegistryWrapper task, not deployed
+    web3jCodegen("org.web3j:codegen:4.12.2")
+
     // Tests
     // Tests
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -81,6 +91,39 @@ tasks.withType<KotlinCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.register<JavaExec>("generateRegistryWrapper") {
+    group = "blockchain"
+    description = "Generate the Web3j wrapper for CommonLinkRegistry from the Foundry artefact."
+    mainClass.set("org.web3j.codegen.TruffleJsonFunctionWrapperGenerator")
+    classpath = web3jCodegen
+
+    val artefact = rootProject.file("../blockchain/out/CommonLinkRegistry.sol/CommonLinkRegistry.json")
+    val processedDir = layout.buildDirectory.dir("web3jInput").get().asFile
+    val processedFile = File(processedDir, "CommonLinkRegistry.json")
+    val outDir = layout.projectDirectory.dir("src/main/java")
+
+    // Preprocess at execution time: Foundry wraps bytecode as {object:"0x..."}, Truffle expects a plain string
+    doFirst {
+        processedDir.mkdirs()
+        @Suppress("UNCHECKED_CAST")
+        val json = groovy.json.JsonSlurper().parse(artefact) as Map<*, *>
+        val bytecodeStr = ((json["bytecode"] as? Map<*, *>)?.get("object") as? String) ?: ""
+        val processed = mapOf(
+            "contractName" to "CommonLinkRegistry",
+            "abi" to json["abi"],
+            "bytecode" to bytecodeStr,
+        )
+        processedFile.writeText(groovy.json.JsonOutput.toJson(processed))
+    }
+
+    args(
+        "--javaTypes",
+        "--outputDir", outDir.asFile.absolutePath,
+        "--package", "org.commonlink.onchain.generated",
+        processedFile.absolutePath,
+    )
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
