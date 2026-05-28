@@ -80,6 +80,10 @@ springdoc:
     enabled: true
     path: /api/docs/swagger-ui.html
 
+onchain:
+  worker:
+    enabled: false
+
 logging:
   level:
     root: INFO

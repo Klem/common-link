@@ -22,3 +22,17 @@ app:
     client-secret: ${MONERIUM_CLIENT_SECRET}
     base-url: ${MONERIUM_BASE_URL}
     redirect-uri: ${MONERIUM_REDIRECT_URI}
+
+onchain:
+  rpc-url: ${ONCHAIN_RPC_URL}
+  chain-id: ${ONCHAIN_CHAIN_ID}
+  registry-address: ${ONCHAIN_REGISTRY_ADDRESS}
+  recorder-pk: ${ONCHAIN_RECORDER_PK}
+  curator-pk: ${ONCHAIN_CURATOR_PK}
+  polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
+  receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
+  donor-address-secret: ${DONOR_ADDRESS_SECRET}
+  worker:
+    enabled: true
+    batch-size: 10
+    fixed-delay-ms: 5000
