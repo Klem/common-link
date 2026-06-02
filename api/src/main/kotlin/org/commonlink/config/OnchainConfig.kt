@@ -1,10 +1,8 @@
 package org.commonlink.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.context.annotation.Configuration
 
 @ConfigurationProperties(prefix = "onchain")
-@Configuration
 data class OnchainConfig(
     val rpcUrl: String,
     val chainId: Long,
