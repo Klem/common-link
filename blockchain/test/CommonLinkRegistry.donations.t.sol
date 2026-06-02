@@ -153,4 +153,38 @@ contract RecordDonationTest is CommonLinkBaseTest {
         _donate(DON_2, donor1, CAMP_1, 200);
         assertEq(registry.getCampaign(CAMP_1).raised, 300);
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // C1 — explicit overflow guard on c.raised
+    // ─────────────────────────────────────────────────────────────────────
+
+    /// @dev Saturates raised to type(uint96).max - 1 with one massive donation
+    ///      and then tries to push 2 cents on top. The unchecked addition would
+    ///      wrap to 0 without the explicit guard; the guard surfaces a
+    ///      domain-specific `RaisedOverflow` error instead.
+    function test_donation_revertsOnRaisedOverflow() public {
+        bytes32 campId = bytes32(uint256(7) << 128);
+
+        // Goal is uint96 so it can hold the saturating donation.
+        vm.prank(recorder);
+        registry.createCampaign(campId, asso1, type(uint96).max, 0, RECEIPT_HASH_1);
+        vm.prank(recorder);
+        registry.publishCampaign(campId);
+
+        uint96 nearMax = type(uint96).max - 1;
+        vm.prank(recorder);
+        registry.recordDonation(DON_1, donor1, campId, nearMax, RECEIPT_HASH_1, TX_REF_1);
+        assertEq(registry.getCampaign(campId).raised, nearMax);
+
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.RaisedOverflow.selector, campId, nearMax, uint96(2)
+            )
+        );
+        registry.recordDonation(DON_2, donor1, campId, 2, RECEIPT_HASH_1, TX_REF_1);
+
+        // State must be intact after the revert.
+        assertEq(registry.getCampaign(campId).raised, nearMax);
+    }
 }

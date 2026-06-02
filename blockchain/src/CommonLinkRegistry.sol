@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title  CommonLinkRegistry
@@ -23,7 +24,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
  *         All calls are signed by the CommonLink hot wallet backend; neither
  *         associations nor donors ever sign transactions directly.
  */
-contract CommonLinkRegistry is AccessControl, Pausable {
+contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     // ─────────────────────────────────────────────────────────────────────
     // Version
     // ─────────────────────────────────────────────────────────────────────
@@ -174,6 +175,7 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     error EmptyReceiptHash();
     error EmptyTxRef();
     error InvalidDonor();
+    error RaisedOverflow(bytes32 campaignId, uint96 raised, uint96 amount);
 
     // Status transitions
     error InvalidStatusTransition(CampaignStatus from, CampaignStatus to);
@@ -335,6 +337,13 @@ contract CommonLinkRegistry is AccessControl, Pausable {
         a.verified = false;
         a.revokedAt = uint32(block.timestamp);
 
+        // Free the reverse index so the same SIREN can be re-claimed by a new
+        // wallet (Safe migration). The history of the link is preserved in
+        // event logs (AssociationVerified / AssociationRevoked).
+        if (sirenHashToAssociation[a.sirenHash] == association) {
+            delete sirenHashToAssociation[a.sirenHash];
+        }
+
         emit AssociationRevoked(association, a.sirenHash, uint32(block.timestamp), msg.sender);
     }
 
@@ -352,9 +361,19 @@ contract CommonLinkRegistry is AccessControl, Pausable {
         require(a.verifiedAt != 0, AssociationNeverVerified(association));
         require(!a.verified, AssociationNotRevoked(association));
 
+        // Restore must not silently steal a SIREN that has been re-claimed by
+        // another wallet since the revocation. If the slot was freed (normal
+        // case), re-establish the reverse index here.
+        address existing = sirenHashToAssociation[a.sirenHash];
+        require(existing == address(0) || existing == association, SirenAlreadyRegistered(a.sirenHash, existing));
+
         a.verified = true;
         a.verifiedAt = uint32(block.timestamp);
         // a.revokedAt is intentionally retained for audit.
+
+        if (existing == address(0)) {
+            sirenHashToAssociation[a.sirenHash] = association;
+        }
 
         emit AssociationRestored(association, a.sirenHash, uint32(block.timestamp), msg.sender);
     }
@@ -425,11 +444,17 @@ contract CommonLinkRegistry is AccessControl, Pausable {
      * @notice Reverts a non-terminal campaign back to Draft state. Allowed only
      *         when no donations have been recorded yet (`raised == 0`). Permitted
      *         from Active or Paused. The association must still be verified.
-     * @dev    Curator-gated because reverting a published campaign is a moderation
-     *         decision even when triggered by the association's own request.
+     * @dev    Open to both RECORDER and CURATOR roles. An association acts on its
+     *         own campaigns through the backend hot wallet (RECORDER), while
+     *         curators retain the same capability for moderation. The
+     *         `raised == 0` guard makes it safe to expose to the association.
      * @param  campaignId Target campaign.
      */
-    function revertCampaignToDraft(bytes32 campaignId) external onlyRole(CURATOR_ROLE) requireCampaignExists(campaignId) {
+    function revertCampaignToDraft(bytes32 campaignId) external requireCampaignExists(campaignId) {
+        require(
+            hasRole(RECORDER_ROLE, msg.sender) || hasRole(CURATOR_ROLE, msg.sender),
+            UnauthorizedRole(RECORDER_ROLE, msg.sender)
+        );
         Campaign storage c = campaigns[campaignId];
         require(
             c.status == CampaignStatus.Active || c.status == CampaignStatus.Paused,
@@ -490,7 +515,7 @@ contract CommonLinkRegistry is AccessControl, Pausable {
      * @param  receiptHash IPFS hash of the Cerfa receipt PDF.
      * @param  txRef       Stripe/Monerium reference encoded as bytes32.
      */
-    function recordDonation(bytes32 donationId, address donor, bytes32 campaignId, uint96 amount, bytes32 receiptHash, bytes32 txRef) external whenNotPaused onlyRole(RECORDER_ROLE) requireCampaignExists(campaignId) {
+    function recordDonation(bytes32 donationId, address donor, bytes32 campaignId, uint96 amount, bytes32 receiptHash, bytes32 txRef) external whenNotPaused nonReentrant onlyRole(RECORDER_ROLE) requireCampaignExists(campaignId) {
         require(donationId != bytes32(0), EmptyDonationId());
         require(donations[donationId].donor == address(0), DonationAlreadyExists(donationId));
         require(donor != address(0), InvalidDonor());
@@ -523,8 +548,22 @@ contract CommonLinkRegistry is AccessControl, Pausable {
             txRef: txRef
         });
 
-        // 2. Update the campaign's raised total.
-        c.raised += amount;
+        // 2. Update the campaign's raised total. Explicit overflow guard with a
+        //    domain-specific error: the addition runs in `unchecked` so the wrap
+        //    is visible to our manual check, which then reverts with
+        //    `RaisedOverflow` instead of the generic `Panic(0x11)`.
+        //    Scoped in a block to release the temporaries before the emits
+        //    below — otherwise stack pressure pushes recordDonation over the
+        //    EVM's local-variable budget ("Stack too deep").
+        {
+            uint96 currentRaised = c.raised;
+            uint96 newRaised;
+            unchecked {
+                newRaised = currentRaised + amount;
+            }
+            require(newRaised >= currentRaised, RaisedOverflow(campaignId, currentRaised, amount));
+            c.raised = newRaised;
+        }
 
         // 3. Update donor statistics. The "first donation" booleans must be
         //    evaluated BEFORE any of the counters are bumped.

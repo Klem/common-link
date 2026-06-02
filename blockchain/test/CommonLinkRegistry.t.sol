@@ -501,27 +501,28 @@ contract RevertCampaignToDraftTest is CommonLinkBaseTest {
     function test_revertToDraft_revertsForNonCurator() public {
         _createActive(CAMP_1, asso1);
 
-        bytes32 role = registry.CURATOR_ROLE();
+        bytes32 role = registry.RECORDER_ROLE();
         vm.prank(attacker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, role
+                CommonLinkRegistry.UnauthorizedRole.selector, role, attacker
             )
         );
         registry.revertCampaignToDraft(CAMP_1);
     }
 
-    function test_revertToDraft_revertsForRecorder() public {
+    // E2 — recorder must now be allowed to revert a campaign to Draft on behalf
+    // of its association; the curator path remains valid (covered above).
+    function test_revertToDraft_allowedForRecorder() public {
         _createActive(CAMP_1, asso1);
 
-        bytes32 role = registry.CURATOR_ROLE();
         vm.prank(recorder);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, recorder, role
-            )
-        );
         registry.revertCampaignToDraft(CAMP_1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Draft)
+        );
     }
 }
 
@@ -1081,5 +1082,87 @@ contract CampaignLifecycleTest is CommonLinkBaseTest {
             )
         );
         registry.publishCampaign(CAMP_1);
+    }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Section 7 — association SIREN-slot lifecycle (audit E5)
+// ═════════════════════════════════════════════════════════════════════════
+
+/// @notice Covers the reverse-index hygiene introduced by audit point E5:
+///         `sirenHashToAssociation` must be freed on revocation so a Safe
+///         migration (SIREN moved to a new wallet) becomes possible, and must
+///         be re-established on restore unless another wallet has taken the
+///         slot in the meantime.
+contract AssociationSirenSlotTest is CommonLinkBaseTest {
+    function test_revoke_freesSirenSlot() public {
+        _verifyAsso1();
+        assertEq(registry.sirenHashToAssociation(SIREN_HASH_1), asso1);
+
+        _revokeAsso(asso1);
+
+        assertEq(
+            registry.sirenHashToAssociation(SIREN_HASH_1),
+            address(0),
+            "reverse index must be cleared on revoke so the SIREN can migrate"
+        );
+    }
+
+    function test_revoke_thenVerifyDifferentWalletWithSameSiren_succeeds() public {
+        _verifyAsso1();
+        _revokeAsso(asso1);
+
+        // The new Safe takes over the same SIREN. Without E5 this would revert
+        // with SirenAlreadyRegistered.
+        vm.prank(curator);
+        registry.verifyAssociation(asso2, SIREN_HASH_1);
+
+        assertEq(registry.sirenHashToAssociation(SIREN_HASH_1), asso2);
+        CommonLinkRegistry.Association memory a2 = registry.getAssociation(asso2);
+        assertTrue(a2.verified);
+        assertEq(a2.sirenHash, SIREN_HASH_1);
+
+        // The old wallet retains its history but is no longer verified.
+        CommonLinkRegistry.Association memory a1 = registry.getAssociation(asso1);
+        assertFalse(a1.verified);
+        assertGt(a1.revokedAt, 0);
+    }
+
+    function test_restore_reEstablishesSirenSlotWhenFree() public {
+        _verifyAsso1();
+        _revokeAsso(asso1);
+
+        vm.prank(curator);
+        registry.restoreAssociation(asso1);
+
+        assertEq(
+            registry.sirenHashToAssociation(SIREN_HASH_1),
+            asso1,
+            "restore must re-establish the reverse index when the slot is free"
+        );
+        assertTrue(registry.getAssociation(asso1).verified);
+    }
+
+    function test_restore_revertsIfSirenClaimedByAnother() public {
+        _verifyAsso1();
+        _revokeAsso(asso1);
+
+        // Migration: a different wallet claims the SIREN.
+        vm.prank(curator);
+        registry.verifyAssociation(asso2, SIREN_HASH_1);
+
+        // The original wallet can no longer be restored on the same SIREN —
+        // its restoration would silently overwrite the new holder.
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.SirenAlreadyRegistered.selector, SIREN_HASH_1, asso2
+            )
+        );
+        registry.restoreAssociation(asso1);
+
+        // Reverse index untouched.
+        assertEq(registry.sirenHashToAssociation(SIREN_HASH_1), asso2);
     }
 }
