@@ -2,220 +2,142 @@
 pragma solidity 0.8.30;
 
 import {Test} from "forge-std/Test.sol";
-import {CommonLinkRegistry} from "src/CommonLinkRegistry.sol";
+import {CommonLinkRegistry} from "../../src/CommonLinkRegistry.sol";
 
 /**
  * @title  CommonLinkBaseTest
- * @notice Shared fixture for all CommonLinkRegistry tests.
- *         Centralises actor setup, role grants, and the most common state
- *         transitions (verify asso, create campaign, record donation) so test
- *         files only need to focus on the behaviour they exercise.
+ * @notice Shared fixtures for the CommonLinkRegistry test suite.
  *
- *         All tests inherit this base. Each `test_*` function operates on a
- *         fresh state thanks to forge-std/Test's per-function isolation.
+ *         Provides:
+ *           - A freshly deployed registry with `admin`, `recorder`, `curator` roles wired.
+ *           - Two test associations + two test donors, pre-verified-or-not on demand.
+ *           - Helpers for creating campaigns in any starting state (Draft / Active /
+ *             Paused / Completed / Cancelled) so individual tests stay focused on the
+ *             behaviour under test rather than re-implementing setup.
+ *           - Identifier helpers mimicking the Postgres-UUID-as-bytes32 convention
+ *             (16 first bytes = value, 16 trailing bytes = zero), with a separate
+ *             namespace for donations (top bit set) so collisions between campaign
+ *             and donation IDs are structurally impossible across the test suite.
  */
-contract CommonLinkBaseTest is Test {
-    CommonLinkRegistry internal registry;
-
+abstract contract CommonLinkBaseTest is Test {
     // ─────────────────────────────────────────────────────────────────────
-    // Actors — labelled for readable traces
+    // Test actors
     // ─────────────────────────────────────────────────────────────────────
 
-    address internal admin    = makeAddr("admin");
-    address internal recorder = makeAddr("recorder");
-    address internal curator  = makeAddr("curator");
-    address internal stranger = makeAddr("stranger");
+    CommonLinkRegistry public registry;
 
-    address internal asso1 = makeAddr("asso1");
-    address internal asso2 = makeAddr("asso2");
-    address internal asso3 = makeAddr("asso3");
-
-    address internal donor1 = makeAddr("donor1");
-    address internal donor2 = makeAddr("donor2");
-    address internal donor3 = makeAddr("donor3");
+    address public admin    = makeAddr("admin");
+    address public recorder = makeAddr("recorder");
+    address public curator  = makeAddr("curator");
+    address public asso1    = makeAddr("asso1");
+    address public asso2    = makeAddr("asso2");
+    address public donor1   = makeAddr("donor1");
+    address public donor2   = makeAddr("donor2");
+    address public attacker = makeAddr("attacker");
 
     // ─────────────────────────────────────────────────────────────────────
-    // Test data
+    // Canonical fixture values
     // ─────────────────────────────────────────────────────────────────────
 
-    bytes32 internal constant SIREN_HASH_1 = keccak256("123456789");
-    bytes32 internal constant SIREN_HASH_2 = keccak256("987654321");
-    bytes32 internal constant SIREN_HASH_3 = keccak256("555555555");
+    bytes32 internal constant SIREN_HASH_1 = keccak256("775672594");
+    bytes32 internal constant SIREN_HASH_2 = keccak256("123456789");
 
-    bytes32 internal constant CAMPAIGN_ID_1 = bytes32(uint256(0xC1));
-    bytes32 internal constant CAMPAIGN_ID_2 = bytes32(uint256(0xC2));
-    bytes32 internal constant CAMPAIGN_ID_3 = bytes32(uint256(0xC3));
+    bytes32 internal constant BUDGET_V1 = keccak256("budget-v1");
+    bytes32 internal constant BUDGET_V2 = keccak256("budget-v2");
+    bytes32 internal constant BUDGET_V3 = keccak256("budget-v3");
 
-    bytes32 internal constant DONATION_ID_1 = bytes32(uint256(0xD1));
-    bytes32 internal constant DONATION_ID_2 = bytes32(uint256(0xD2));
-    bytes32 internal constant DONATION_ID_3 = bytes32(uint256(0xD3));
+    bytes32 internal constant RECEIPT_HASH_1 = keccak256("receipt-pdf-1");
+    bytes32 internal constant TX_REF_1 = bytes32("pi_3OqWxYZ12345678901234567");
 
-    bytes32 internal constant BUDGET_HASH    = keccak256("budget-v1");
-    bytes32 internal constant RECEIPT_HASH_1 = keccak256("cerfa-1");
-    bytes32 internal constant RECEIPT_HASH_2 = keccak256("cerfa-2");
-    bytes32 internal constant TX_REF_1       = bytes32("pi_test_111");
-    bytes32 internal constant TX_REF_2       = bytes32("pi_test_222");
-    bytes32 internal constant PROOF_HASH     = keccak256("milestone-proof-1");
-
-    // Pre-computed role hashes. We compute them here rather than calling
-    // `registry.XXX_ROLE()` inside `expectRevert` because that external call
-    // would consume any active `vm.prank` and skew the AC revert payload.
-    bytes32 internal constant RECORDER_ROLE      = keccak256("RECORDER_ROLE");
-    bytes32 internal constant CURATOR_ROLE       = keccak256("CURATOR_ROLE");
-    bytes32 internal constant DEFAULT_ADMIN_ROLE = bytes32(0);
-
-    // Fix a deterministic starting timestamp so date-window assertions are
-    // independent of the host environment.
-    uint32 internal constant T0 = 1_800_000_000; // 2027-01-15 ish
+    uint96 internal constant DEFAULT_GOAL = 1_000_000; // 10 000.00 EUR in cents
 
     // ─────────────────────────────────────────────────────────────────────
-    // setUp
+    // Setup
     // ─────────────────────────────────────────────────────────────────────
 
     function setUp() public virtual {
-        // Anchor block.timestamp so end-date checks are stable.
-        vm.warp(T0);
+        // Anchor block.timestamp at a stable, non-zero value so tests
+        // exercising `block.timestamp` are not at risk of `endDate == 0`
+        // colliding with the "not yet closed" sentinel.
+        vm.warp(1_800_000_000); // 2027-01-15
 
         registry = new CommonLinkRegistry(admin, recorder, curator);
-
-        vm.label(address(registry), "Registry");
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Helpers — verified associations
+    // Identifier helpers (UUID-shaped bytes32)
     // ─────────────────────────────────────────────────────────────────────
 
-    /// @dev Verifies `who` with `sirenHash` as curator. Reverts inside the
-    ///      registry on any pre-condition failure (helpful: failing helpers
-    ///      surface the contract's revert directly).
-    function _verify(address who, bytes32 sirenHash) internal {
+    /// @dev Mimics the IdEncoder convention: 16-byte payload, 16-byte zero tail.
+    function _campaignId(uint128 seed) internal pure returns (bytes32) {
+        return bytes32(uint256(seed) << 128);
+    }
+
+    /// @dev Donation namespace: top bit set so collisions with `_campaignId(seed)`
+    ///      are structurally impossible in tests.
+    function _donationId(uint128 seed) internal pure returns (bytes32) {
+        return bytes32((uint256(seed) | (uint256(1) << 127)) << 128);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Association helpers
+    // ─────────────────────────────────────────────────────────────────────
+
+    function _verifyAsso(address asso, bytes32 sirenHash) internal {
         vm.prank(curator);
-        registry.verifyAssociation(who, sirenHash);
+        registry.verifyAssociation(asso, sirenHash);
     }
 
-    function _revoke(address who) internal {
-        vm.prank(curator);
-        registry.revokeAssociation(who);
+    function _verifyAsso1() internal {
+        _verifyAsso(asso1, SIREN_HASH_1);
     }
 
-    function _restore(address who) internal {
+    function _revokeAsso(address asso) internal {
         vm.prank(curator);
-        registry.restoreAssociation(who);
+        registry.revokeAssociation(asso);
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Helpers — campaigns
+    // Campaign helpers — one per starting state
     // ─────────────────────────────────────────────────────────────────────
 
-    /// @dev Creates a default campaign owned by `assoAddr`. Window: [T0+1, T0+30d].
-    function _createDefaultCampaign(bytes32 campaignId, address assoAddr) internal {
-        _createCampaign(
-            campaignId,
-            assoAddr,
-            100_000_00,                  // 100 000 € in cents
-            T0 + 1,
-            T0 + 30 days,
-            3,                           // milestoneCount
-            BUDGET_HASH
-        );
-    }
-
-    function _createCampaign(
-        bytes32 campaignId,
-        address assoAddr,
-        uint96 goal,
-        uint32 startDate,
-        uint32 endDate,
-        uint8 milestoneCount,
-        bytes32 budgetHash
-    ) internal {
+    /// @dev Creates a Draft campaign for `asso` with default goal.
+    function _createDraft(bytes32 id, address asso) internal {
         vm.prank(recorder);
-        registry.createCampaign(
-            campaignId,
-            assoAddr,
-            goal,
-            startDate,
-            endDate,
-            milestoneCount,
-            budgetHash
-        );
+        registry.createCampaign(id, asso, DEFAULT_GOAL, 0, BUDGET_V1);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Helpers — donations
-    // ─────────────────────────────────────────────────────────────────────
-
-    /// @dev Records a donation with sensible defaults. Caller should ensure
-    ///      the campaign is in its active window via `vm.warp`.
-    function _recordDonation(
-        bytes32 donationId,
-        address donor,
-        bytes32 campaignId,
-        uint96 amount
-    ) internal {
+    /// @dev Creates a Draft then publishes it. Returns in Active state.
+    function _createActive(bytes32 id, address asso) internal {
+        _createDraft(id, asso);
         vm.prank(recorder);
-        registry.recordDonation(
-            donationId,
-            donor,
-            campaignId,
-            amount,
-            RECEIPT_HASH_1,
-            TX_REF_1
-        );
+        registry.publishCampaign(id);
     }
 
-    function _recordDonation(
-        bytes32 donationId,
-        address donor,
-        bytes32 campaignId,
-        uint96 amount,
-        bytes32 receiptHash,
-        bytes32 txRef
-    ) internal {
+    function _createPaused(bytes32 id, address asso) internal {
+        _createActive(id, asso);
+        vm.prank(curator);
+        registry.pauseCampaign(id);
+    }
+
+    function _createCompleted(bytes32 id, address asso) internal {
+        _createActive(id, asso);
+        vm.prank(curator);
+        registry.completeCampaign(id);
+    }
+
+    function _createCancelled(bytes32 id, address asso) internal {
+        _createActive(id, asso);
+        vm.prank(curator);
+        registry.cancelCampaign(id);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Donation helper
+    // ─────────────────────────────────────────────────────────────────────
+
+    function _donate(bytes32 donationId, address donor, bytes32 campaignId, uint96 amount) internal {
         vm.prank(recorder);
-        registry.recordDonation(
-            donationId,
-            donor,
-            campaignId,
-            amount,
-            receiptHash,
-            txRef
-        );
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Helpers — status transitions
-    // ─────────────────────────────────────────────────────────────────────
-
-    function _pauseCampaign(bytes32 campaignId) internal {
-        vm.prank(curator);
-        registry.pauseCampaign(campaignId);
-    }
-
-    function _unpauseCampaign(bytes32 campaignId) internal {
-        vm.prank(curator);
-        registry.unpauseCampaign(campaignId);
-    }
-
-    function _cancelCampaign(bytes32 campaignId) internal {
-        vm.prank(curator);
-        registry.cancelCampaign(campaignId);
-    }
-
-    function _completeCampaign(bytes32 campaignId) internal {
-        vm.prank(curator);
-        registry.completeCampaign(campaignId);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Helpers — convenience composite setup
-    // ─────────────────────────────────────────────────────────────────────
-
-    /// @dev "Ready to donate": asso verified, campaign created and within its
-    ///      active window. Used by ~all donation tests.
-    function _setupReadyToDonate() internal {
-        _verify(asso1, SIREN_HASH_1);
-        _createDefaultCampaign(CAMPAIGN_ID_1, asso1);
-        vm.warp(T0 + 1 days); // inside the [T0+1, T0+30d] window
+        registry.recordDonation(donationId, donor, campaignId, amount, RECEIPT_HASH_1, TX_REF_1);
     }
 }

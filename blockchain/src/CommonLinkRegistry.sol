@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.30;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -29,7 +29,7 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     // ─────────────────────────────────────────────────────────────────────
 
     /// @notice Semantic version of the registry, mirrors the spec version.
-    string public constant VERSION = "1.2.0-mvp";
+    string public constant VERSION = "1.3.0-mvp";
 
     // ─────────────────────────────────────────────────────────────────────
     // Roles
@@ -47,8 +47,14 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     // Types
     // ─────────────────────────────────────────────────────────────────────
 
-    /// @notice Possible campaign states. `Completed` and `Cancelled` are terminal.
+    /// @notice Possible campaign states.
+    /// @dev    `Draft` is the default value (0) — a campaign with `association == address(0)`
+    ///         is treated as non-existent via `requireCampaignExists`; once created on-chain
+    ///         a campaign starts in `Draft` and must be explicitly published.
+    ///         `Completed` and `Cancelled` are terminal: budgetHash freezes,
+    ///         `endDate` is set to `block.timestamp` at the transition.
     enum CampaignStatus {
+        Draft,
         Active,
         Paused,
         Completed,
@@ -71,15 +77,20 @@ contract CommonLinkRegistry is AccessControl, Pausable {
 
     /// @notice A fundraising campaign. The `campaignId` (UUID encoded as bytes32)
     ///         is the mapping key, not a struct field.
+    /// @dev    `startDate` is set to `block.timestamp` at `createCampaign`.
+    ///         `endDate` stays at 0 until a terminal transition (Completed/Cancelled),
+    ///         at which point it is set to `block.timestamp` of that transition.
+    ///         `budgetHash` may be updated via `updateCampaignBudget` while the
+    ///         campaign is non-terminal; it freezes on terminal transitions.
     struct Campaign {
         address association;
         uint96 goal; // EUR cents
         uint96 raised; // EUR cents
-        uint32 startDate;
-        uint32 endDate;
+        uint32 startDate; // block.timestamp of createCampaign
+        uint32 endDate;   // 0 until terminal; then block.timestamp of complete/cancel
         CampaignStatus status;
         uint8 milestoneCount;
-        bytes32 budgetHash; // keccak256 du JSON canonique JCS du budget
+        bytes32 budgetHash; // keccak256 du JSON canonique JCS du budget — mutable until terminal
     }
 
     /// @notice A recorded donation. The `donationId` (UUID encoded as bytes32)
@@ -145,17 +156,20 @@ contract CommonLinkRegistry is AccessControl, Pausable {
 
     // Campaign creation
     error CampaignAlreadyExists(bytes32 campaignId);
-    error InvalidDateRange(uint32 startDate, uint32 endDate);
     error InvalidGoal();
     error EmptyCampaignId();
     error EmptyBudgetHash();
+
+    // Campaign lifecycle (draft / publish / revert / budget update)
+    error CampaignHasDonations(bytes32 campaignId, uint96 raised);
+    error CampaignTerminal(bytes32 campaignId, CampaignStatus status);
+    error BudgetHashUnchanged();
 
     // Donation recording
     error DonationAlreadyExists(bytes32 donationId);
     error EmptyDonationId();
     error CampaignDoesNotExist(bytes32 campaignId);
     error CampaignNotActive(bytes32 campaignId, CampaignStatus actualStatus);
-    error CampaignNotInWindow(uint32 currentTime, uint32 startDate, uint32 endDate);
     error InvalidAmount();
     error EmptyReceiptHash();
     error EmptyTxRef();
@@ -163,7 +177,6 @@ contract CommonLinkRegistry is AccessControl, Pausable {
 
     // Status transitions
     error InvalidStatusTransition(CampaignStatus from, CampaignStatus to);
-    error CampaignAlreadyTerminal(bytes32 campaignId);
 
     // Milestones
     error InvalidMilestoneIndex(uint8 index, uint8 milestoneCount);
@@ -190,11 +203,24 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     ///         `revokedAt` from the prior revocation is preserved in storage.
     event AssociationRestored(address indexed association, bytes32 indexed sirenHash, uint32 restoredAt, address indexed by);
 
-    /// @notice Emitted when a new campaign is created.
-    event CampaignCreated(address indexed association, bytes32 indexed campaignId, uint96 goal, uint32 startDate, uint32 endDate, uint8 milestoneCount, bytes32 budgetHash, address indexed attestedBy);
+    /// @notice Emitted when a new campaign is created in Draft state.
+    /// @dev    `startDate` is `block.timestamp` of this transaction. `endDate` is
+    ///         not part of this event — it is set only on terminal transitions and
+    ///         can be reconstructed from `CampaignStatusChanged` events.
+    event CampaignCreated(address indexed association, bytes32 indexed campaignId, uint96 goal, uint32 startDate, uint8 milestoneCount, bytes32 budgetHash, address indexed attestedBy);
+
+    /// @notice Emitted when the budgetHash of a non-terminal campaign is updated.
+    ///         The old hash is provided so off-chain indexers can rebuild full history
+    ///         without scanning prior state.
+    event CampaignBudgetUpdated(bytes32 indexed campaignId, bytes32 oldBudgetHash, bytes32 newBudgetHash, address indexed by, uint32 timestamp);
 
     /// @notice Emitted on every campaign status transition.
     event CampaignStatusChanged(bytes32 indexed campaignId, CampaignStatus indexed oldStatus, CampaignStatus indexed newStatus, address by);
+
+    /// @notice Emitted when a campaign reaches a terminal state (Completed/Cancelled).
+    ///         Exposes the `endDate` (= `block.timestamp` of the transition) explicitly
+    ///         so indexers do not need to derive it from the block header.
+    event CampaignClosed(bytes32 indexed campaignId, CampaignStatus indexed finalStatus, uint32 endDate, address indexed by);
 
     /// @notice Emitted when a donation is recorded. The principal event for
     ///         Ponder indexing; `donor`, `campaignId`, and `association` are
@@ -212,7 +238,7 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     event MilestoneReached(bytes32 indexed campaignId, uint8 indexed milestoneIndex, bytes32 proofHash, uint32 timestamp);
 
     // ─────────────────────────────────────────────────────────────────────
-    // Events
+    // Modifiers
     // ─────────────────────────────────────────────────────────────────────
 
     /// @dev Reverts with CampaignDoesNotExist if the campaign has no association.
@@ -338,21 +364,21 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * @notice Records a new campaign. The association must currently be verified.
+     * @notice Records a new campaign in `Draft` state. The association must currently
+     *         be verified. The campaign is invisible to donors until published via
+     *         `publishCampaign`. `startDate` is set to `block.timestamp` of this call;
+     *         `endDate` stays at 0 until a terminal transition fixes it.
      * @param  campaignId     UUID encoded as bytes32 (see spec §2.5).
      * @param  association    Address of the association's Safe.
      * @param  goal           Fundraising goal in EUR cents.
-     * @param  startDate      Unix timestamp of campaign start (inclusive).
-     * @param  endDate        Unix timestamp of campaign end (inclusive).
-     * @param  milestoneCount Total number of planned milestones (may be 0).
-     * @param  budgetHash     keccak256 of the canonical (JCS) budget JSON.
+     * @param  milestoneCount Total number of planned milestones (may be 0). Immutable.
+     * @param  budgetHash     keccak256 of the canonical (JCS) budget JSON. Mutable
+     *                        until terminal via `updateCampaignBudget`.
      */
     function createCampaign(
         bytes32 campaignId,
         address association,
         uint96 goal,
-        uint32 startDate,
-        uint32 endDate,
         uint8 milestoneCount,
         bytes32 budgetHash
     ) external whenNotPaused onlyRole(RECORDER_ROLE) {
@@ -360,27 +386,93 @@ contract CommonLinkRegistry is AccessControl, Pausable {
         require(associations[association].verified, AssociationNotVerified(association));
         require(campaigns[campaignId].association == address(0), CampaignAlreadyExists(campaignId));
         require(goal != 0, InvalidGoal());
-        require(endDate > startDate, InvalidDateRange(startDate, endDate));
-
-        // block.timestamp manipulation by validators (~15s) is irrelevant here:
-        // campaigns last days or months, this is a sanity check, not a precision gate.
-        // forge-lint: disable-next-line(block-timestamp)
-        require(endDate > block.timestamp, InvalidDateRange(startDate, endDate));
-
         require(budgetHash != bytes32(0), EmptyBudgetHash());
+
+        // startDate is the on-chain creation time. ~15s validator drift on
+        // block.timestamp is acceptable: campaigns operate at day/month granularity.
+        // forge-lint: disable-next-line(block-timestamp)
+        uint32 startDate = uint32(block.timestamp);
 
         campaigns[campaignId] = Campaign({
             association: association,
             goal: goal,
             raised: 0,
             startDate: startDate,
-            endDate: endDate,
-            status: CampaignStatus.Active,
+            endDate: 0,
+            status: CampaignStatus.Draft,
             milestoneCount: milestoneCount,
             budgetHash: budgetHash
         });
 
-        emit CampaignCreated(association, campaignId, goal, startDate, endDate, milestoneCount, budgetHash, msg.sender);
+        emit CampaignCreated(association, campaignId, goal, startDate, milestoneCount, budgetHash, msg.sender);
+    }
+
+    /**
+     * @notice Publishes a Draft campaign, making it eligible to receive donations.
+     *         The association must still be verified at publish time (soft revoke
+     *         enforced again here).
+     * @param  campaignId Target campaign, must be in Draft state.
+     */
+    function publishCampaign(bytes32 campaignId) external whenNotPaused onlyRole(RECORDER_ROLE) requireCampaignExists(campaignId) {
+        Campaign storage c = campaigns[campaignId];
+        require(c.status == CampaignStatus.Draft, InvalidStatusTransition(c.status, CampaignStatus.Active));
+        require(associations[c.association].verified, AssociationNotVerified(c.association));
+
+        _changeStatus(campaignId, c, CampaignStatus.Active);
+    }
+
+    /**
+     * @notice Reverts a non-terminal campaign back to Draft state. Allowed only
+     *         when no donations have been recorded yet (`raised == 0`). Permitted
+     *         from Active or Paused. The association must still be verified.
+     * @dev    Curator-gated because reverting a published campaign is a moderation
+     *         decision even when triggered by the association's own request.
+     * @param  campaignId Target campaign.
+     */
+    function revertCampaignToDraft(bytes32 campaignId) external onlyRole(CURATOR_ROLE) requireCampaignExists(campaignId) {
+        Campaign storage c = campaigns[campaignId];
+        require(
+            c.status == CampaignStatus.Active || c.status == CampaignStatus.Paused,
+            InvalidStatusTransition(c.status, CampaignStatus.Draft)
+        );
+        require(c.raised == 0, CampaignHasDonations(campaignId, c.raised));
+        require(associations[c.association].verified, AssociationNotVerified(c.association));
+
+        _changeStatus(campaignId, c, CampaignStatus.Draft);
+    }
+
+    /**
+     * @notice Updates the budgetHash of a non-terminal campaign. The new hash
+     *         attests to a new version of the budget JSON stored off-chain.
+     *         No history is kept on-chain — the previous hash lives in event logs.
+     *         Refused if the campaign is terminal or if the association has been
+     *         revoked (a revoked association loses all write capabilities on its
+     *         campaigns, including budget edits).
+     * @param  campaignId    Target campaign.
+     * @param  newBudgetHash New keccak256 of the canonical budget JSON. Must be
+     *                       non-zero and distinct from the current hash.
+     */
+    function updateCampaignBudget(bytes32 campaignId, bytes32 newBudgetHash) external whenNotPaused onlyRole(RECORDER_ROLE) requireCampaignExists(campaignId) {
+        require(newBudgetHash != bytes32(0), EmptyBudgetHash());
+
+        Campaign storage c = campaigns[campaignId];
+
+        // Terminal campaigns freeze their budget definitively.
+        require(
+            c.status != CampaignStatus.Completed && c.status != CampaignStatus.Cancelled,
+            CampaignTerminal(campaignId, c.status)
+        );
+
+        // A revoked association has no remaining write rights on its campaigns.
+        require(associations[c.association].verified, AssociationNotVerified(c.association));
+
+        bytes32 oldHash = c.budgetHash;
+        require(oldHash != newBudgetHash, BudgetHashUnchanged());
+
+        c.budgetHash = newBudgetHash;
+
+        // forge-lint: disable-next-line(block-timestamp)
+        emit CampaignBudgetUpdated(campaignId, oldHash, newBudgetHash, msg.sender, uint32(block.timestamp));
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -410,13 +502,12 @@ contract CommonLinkRegistry is AccessControl, Pausable {
         // revoked, the donation is refused.
         require(associations[c.association].verified, AssociationNotVerified(c.association));
 
+        // The Active status alone qualifies eligibility. There is no longer a
+        // pre-declared date window: `startDate` is the on-chain creation time
+        // (so `block.timestamp >= c.startDate` is structurally always true) and
+        // `endDate` only materialises on the terminal transition, by which point
+        // `status != Active` would already cause this require to revert.
         require(c.status == CampaignStatus.Active, CampaignNotActive(campaignId, c.status));
-
-        // Same reasoning as in createCampaign: campaigns operate at day/month
-        // granularity; ~15s validator drift on block.timestamp cannot cause
-        // economic or legal harm. We accept it explicitly.
-        // forge-lint: disable-next-line(block-timestamp)
-        require(block.timestamp >= c.startDate && block.timestamp <= c.endDate, CampaignNotInWindow(uint32(block.timestamp), c.startDate, c.endDate));
 
         require(amount != 0, InvalidAmount());
         require(receiptHash != bytes32(0), EmptyReceiptHash());
@@ -469,6 +560,8 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     // ─────────────────────────────────────────────────────────────────────
 
     /// @notice Pauses an Active campaign. Reverts on any other source state.
+    ///         Drafts cannot be paused (they receive nothing); use `revertCampaignToDraft`
+    ///         from Active if the campaign needs to be retracted.
     function pauseCampaign(bytes32 campaignId) external onlyRole(CURATOR_ROLE) requireCampaignExists(campaignId) {
         Campaign storage c = campaigns[campaignId];
         require(c.status == CampaignStatus.Active, InvalidStatusTransition(c.status, CampaignStatus.Paused));
@@ -477,27 +570,42 @@ contract CommonLinkRegistry is AccessControl, Pausable {
     }
 
     /// @notice Resumes a Paused campaign. Reverts on any other source state.
+    ///         Re-checks the association's verification: a revocation during the
+    ///         paused window must not be quietly bypassed by an unpause.
     function unpauseCampaign(bytes32 campaignId) external onlyRole(CURATOR_ROLE) requireCampaignExists(campaignId) {
         Campaign storage c = campaigns[campaignId];
         require(c.status == CampaignStatus.Paused, InvalidStatusTransition(c.status, CampaignStatus.Active));
+        require(associations[c.association].verified, AssociationNotVerified(c.association));
 
         _changeStatus(campaignId, c, CampaignStatus.Active);
     }
 
-    /// @notice Cancels a campaign (terminal). Allowed from Active or Paused.
-    function cancelCampaign(bytes32 campaignId) external onlyRole(CURATOR_ROLE) requireCampaignExists(campaignId)  {
+    /// @notice Cancels a campaign (terminal). Allowed from Draft, Active, or Paused.
+    ///         Sets `endDate = block.timestamp` and freezes the budgetHash.
+    function cancelCampaign(bytes32 campaignId) external onlyRole(CURATOR_ROLE) requireCampaignExists(campaignId) {
         Campaign storage c = campaigns[campaignId];
-        require(c.status != CampaignStatus.Cancelled && c.status != CampaignStatus.Completed, CampaignAlreadyTerminal(campaignId));
+        require(
+            c.status == CampaignStatus.Draft
+            || c.status == CampaignStatus.Active
+            || c.status == CampaignStatus.Paused,
+            InvalidStatusTransition(c.status, CampaignStatus.Cancelled)
+        );
 
-        _changeStatus(campaignId, c, CampaignStatus.Cancelled);
+        _closeCampaign(campaignId, c, CampaignStatus.Cancelled);
     }
 
-    /// @notice Completes a campaign (terminal). Allowed from Active or Paused.
+    /// @notice Completes a campaign (terminal). Allowed from Active or Paused only.
+    ///         A Draft cannot be completed: it has never been published, completing
+    ///         it would be semantic noise. Sets `endDate = block.timestamp` and
+    ///         freezes the budgetHash.
     function completeCampaign(bytes32 campaignId) external onlyRole(CURATOR_ROLE) requireCampaignExists(campaignId) {
         Campaign storage c = campaigns[campaignId];
-        require(c.status != CampaignStatus.Cancelled && c.status != CampaignStatus.Completed, CampaignAlreadyTerminal(campaignId));
+        require(
+            c.status == CampaignStatus.Active || c.status == CampaignStatus.Paused,
+            InvalidStatusTransition(c.status, CampaignStatus.Completed)
+        );
 
-        _changeStatus(campaignId, c, CampaignStatus.Completed);
+        _closeCampaign(campaignId, c, CampaignStatus.Completed);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -573,5 +681,18 @@ contract CommonLinkRegistry is AccessControl, Pausable {
         CampaignStatus oldStatus = c.status;
         c.status = newStatus;
         emit CampaignStatusChanged(campaignId, oldStatus, newStatus, msg.sender);
+    }
+
+    /// @dev Terminal transition helper: sets endDate, changes status, and emits
+    ///      both the generic status-changed and the dedicated CampaignClosed events.
+    ///      Must only be called with newStatus in {Completed, Cancelled}.
+    function _closeCampaign(bytes32 campaignId, Campaign storage c, CampaignStatus terminalStatus) internal {
+        // forge-lint: disable-next-line(block-timestamp)
+        uint32 closedAt = uint32(block.timestamp);
+        c.endDate = closedAt;
+
+        _changeStatus(campaignId, c, terminalStatus);
+
+        emit CampaignClosed(campaignId, terminalStatus, closedAt, msg.sender);
     }
 }

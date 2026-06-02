@@ -2,192 +2,254 @@
 pragma solidity 0.8.30;
 
 import {Test} from "forge-std/Test.sol";
-import {CommonLinkRegistry} from "src/CommonLinkRegistry.sol";
+import {CommonLinkRegistry} from "../../src/CommonLinkRegistry.sol";
 
 /**
  * @title  CommonLinkHandler
- * @notice Bounded handler for Foundry invariant testing.
- *         Routes randomised fuzz calls through realistic happy-path entry points
- *         and tracks ghost state we can cross-check against the registry.
+ * @notice Foundry invariant handler for the CommonLinkRegistry campaign lifecycle.
+ *         Wraps the registry's external functions with bounded random inputs and
+ *         maintains ghost state about every campaign ever created, so invariants
+ *         can be checked against the full history of actions.
  *
- *         Why a handler? Without it, Foundry would call every external function
- *         with random arguments, which produces almost-only-reverts and proves
- *         very little. A handler shapes the fuzzing toward meaningful sequences
- *         (verify → create → donate → maybe pause) and records ghost variables.
+ *         `vm.expectRevert` is NOT used inside handler actions. Instead the actions
+ *         pre-filter inputs so that calls succeed when the spec says they should,
+ *         and let other calls revert without failing the run. Two ghost flags
+ *         (`ghost_invalidRevertHappened`, `ghost_invalidBudgetUpdateHappened`) catch
+ *         the case where a write succeeds despite spec saying it should revert —
+ *         that's a guard the contract would be missing.
+ *
+ *         Requires `foundry.toml` to set `fail_on_revert = false` under [invariant].
  */
 contract CommonLinkHandler is Test {
     CommonLinkRegistry public registry;
 
-    // Actors (set once in constructor)
-    address public immutable curator;
     address public immutable recorder;
+    address public immutable curator;
 
-    // Bounded sets so the search space stays tractable
+    // ─ Actors ─
     address[] public assos;
-    bytes32[] public campaignIds;
     address[] public donors;
 
-    // Ghost state
-    /// @dev Sum of all successful donation amounts across the run.
-    uint256 public ghost_totalDonated;
-    /// @dev donor => running sum of successful donation amounts.
-    mapping(address => uint256) public ghost_donorTotal;
-    /// @dev campaignId => running sum of successful donation amounts.
-    mapping(bytes32 => uint256) public ghost_campaignRaised;
-    /// @dev donor => donationCount.
-    mapping(address => uint256) public ghost_donorDonationCount;
+    // ─ Tracked campaigns ─
+    bytes32[] public campaignIds;
+    mapping(bytes32 => bool) public seen;
 
-    // Donation id counter so each call produces a unique id
-    uint256 internal _donationCounter;
+    // ─ Ghost state ─
 
-    // Campaign window — kept generous so warps within don't escape it
-    uint32 internal startDate;
-    uint32 internal endDate;
+    /// @dev Mirror of every state transition we've successfully driven.
+    mapping(bytes32 => CommonLinkRegistry.CampaignStatus) public ghost_currentStatus;
+    mapping(bytes32 => uint32) public ghost_endDateOnClose;
+    mapping(bytes32 => uint32) public ghost_startDate;
+    mapping(bytes32 => uint32) public ghost_createBlockTimestamp;
 
-    constructor(
-        CommonLinkRegistry _registry,
-        address _curator,
-        address _recorder
-    ) {
-        registry  = _registry;
-        curator   = _curator;
-        recorder  = _recorder;
+    /// @dev Did `revertCampaignToDraft` ever succeed despite spec violation?
+    bool public ghost_invalidRevertHappened;
 
-        // 3 assos, 3 campaigns, 4 donors — modest but exercises uniqueCampaigns.
-        for (uint160 i = 1; i <= 3; ++i) {
-            address asso = address(uint160(0xA550_0000 + i));
-            assos.push(asso);
+    /// @dev Did `updateCampaignBudget` ever succeed despite spec violation?
+    bool public ghost_invalidBudgetUpdateHappened;
+
+    uint256 private _seed;
+
+    constructor(CommonLinkRegistry _registry, address _recorder, address _curator) {
+        registry = _registry;
+        recorder = _recorder;
+        curator = _curator;
+
+        // Three pre-verified assos and three donors.
+        for (uint256 i = 0; i < 3; i++) {
+            address a = makeAddr(string.concat("asso", vm.toString(i + 100)));
+            assos.push(a);
+            vm.prank(curator);
+            registry.verifyAssociation(a, keccak256(abi.encodePacked("siren", i)));
         }
-        campaignIds.push(bytes32(uint256(0xCA00_0001)));
-        campaignIds.push(bytes32(uint256(0xCA00_0002)));
-        campaignIds.push(bytes32(uint256(0xCA00_0003)));
-        for (uint160 i = 1; i <= 4; ++i) {
-            address donor = address(uint160(0xD0000 + i));
-            donors.push(donor);
+        for (uint256 i = 0; i < 3; i++) {
+            donors.push(makeAddr(string.concat("donor", vm.toString(i + 100))));
         }
-
-        // Verify all assos upfront so the random flow can immediately donate.
-        vm.startPrank(_curator);
-        for (uint256 i; i < assos.length; ++i) {
-            registry.verifyAssociation(assos[i], keccak256(abi.encode("siren", i)));
-        }
-        vm.stopPrank();
-
-        // Window big enough to last through fuzz time-warps. We pin
-        // startDate just ahead of the current timestamp so block.timestamp
-        // starts inside [start, end].
-        startDate = uint32(block.timestamp);
-        endDate   = uint32(block.timestamp + 365 days);
-
-        // Create one campaign per asso.
-        vm.startPrank(_recorder);
-        for (uint256 i; i < campaignIds.length; ++i) {
-            registry.createCampaign(
-                campaignIds[i],
-                assos[i],
-                10_000_000_00,                       // 10M € goal
-                startDate,
-                endDate,
-                3,
-                keccak256(abi.encode("budget", i))
-            );
-        }
-        vm.stopPrank();
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Random actions — all bounded, all from the recorder/curator
+    // Action surface
     // ─────────────────────────────────────────────────────────────────────
 
-    /// @notice The bread and butter: record a donation that's expected to succeed.
-    ///         Bounded so we don't drown in reverts.
-    function donate(
-        uint256 donorIdx,
-        uint256 campaignIdx,
-        uint96 amount
-    ) external {
-        donorIdx     = bound(donorIdx, 0, donors.length - 1);
-        campaignIdx  = bound(campaignIdx, 0, campaignIds.length - 1);
-        // Cap amounts so totals never overflow the ghost uint256.
-        amount       = uint96(bound(uint256(amount), 1, 1_000_000_00));
+    function createCampaign(uint256 assoIdx, uint96 goal) external {
+        address asso = assos[assoIdx % assos.length];
+        if (!_isVerified(asso)) return;
+        if (goal == 0) return;
 
-        address donor       = donors[donorIdx];
-        bytes32 campaignId  = campaignIds[campaignIdx];
-
-        // Read the campaign state first so we skip when it isn't Active.
-        CommonLinkRegistry.Campaign memory c = registry.getCampaign(campaignId);
-        if (c.status != CommonLinkRegistry.CampaignStatus.Active) return;
-
-        // Skip if the campaign's association has been revoked.
-        if (!registry.getAssociation(c.association).verified) return;
-
-        // Skip if we're outside the donation window (a warp() may have moved us).
-        if (block.timestamp < c.startDate || block.timestamp > c.endDate) return;
-
-        // Unique donation id
-        bytes32 donationId = bytes32(uint256(0xDD00_0000) + ++_donationCounter);
+        bytes32 id = bytes32(uint256(++_seed) << 128);
+        if (seen[id]) return;
 
         vm.prank(recorder);
-        try registry.recordDonation(
-            donationId,
-            donor,
-            campaignId,
-            amount,
-            keccak256(abi.encode("receipt", _donationCounter)),
-            bytes32(_donationCounter) // txRef — non-zero, unique per call
-        ) {
-            // Update ghost only on success
-            ghost_totalDonated                  += amount;
-            ghost_donorTotal[donor]             += amount;
-            ghost_campaignRaised[campaignId]    += amount;
-            ghost_donorDonationCount[donor]     += 1;
-        } catch {
-            // Any unexpected revert is silently ignored; we want the
-            // invariants to surface inconsistencies, not the call itself.
-        }
+        try registry.createCampaign(id, asso, goal, 0, keccak256(abi.encodePacked("budget", _seed))) {
+            campaignIds.push(id);
+            seen[id] = true;
+            ghost_currentStatus[id] = CommonLinkRegistry.CampaignStatus.Draft;
+            ghost_startDate[id] = uint32(block.timestamp);
+            ghost_createBlockTimestamp[id] = uint32(block.timestamp);
+        } catch {}
     }
 
-    /// @notice Occasionally pause/unpause a campaign to exercise the soft path.
-    function togglePauseCampaign(uint256 campaignIdx) external {
-        campaignIdx = bound(campaignIdx, 0, campaignIds.length - 1);
-        bytes32 campaignId = campaignIds[campaignIdx];
+    function publishCampaign(uint256 idx) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
 
-        CommonLinkRegistry.Campaign memory c = registry.getCampaign(campaignId);
+        if (ghost_currentStatus[id] != CommonLinkRegistry.CampaignStatus.Draft) return;
+
+        address asso = registry.getCampaign(id).association;
+        if (!_isVerified(asso)) return;
+
+        vm.prank(recorder);
+        try registry.publishCampaign(id) {
+            ghost_currentStatus[id] = CommonLinkRegistry.CampaignStatus.Active;
+        } catch {}
+    }
+
+    function revertCampaignToDraft(uint256 idx) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
+
+        CommonLinkRegistry.CampaignStatus s = ghost_currentStatus[id];
+        if (s != CommonLinkRegistry.CampaignStatus.Active && s != CommonLinkRegistry.CampaignStatus.Paused) return;
+
+        uint96 raised = registry.getCampaign(id).raised;
+        address asso = registry.getCampaign(id).association;
+
         vm.prank(curator);
-        if (c.status == CommonLinkRegistry.CampaignStatus.Active) {
-            try registry.pauseCampaign(campaignId) {} catch {}
-        } else if (c.status == CommonLinkRegistry.CampaignStatus.Paused) {
-            try registry.unpauseCampaign(campaignId) {} catch {}
-        }
+        try registry.revertCampaignToDraft(id) {
+            ghost_currentStatus[id] = CommonLinkRegistry.CampaignStatus.Draft;
+            // If this succeeded then raised must have been 0 and the asso verified.
+            if (raised != 0) ghost_invalidRevertHappened = true;
+            if (!_isVerified(asso)) ghost_invalidRevertHappened = true;
+        } catch {}
     }
 
-    /// @notice Occasionally revoke/restore an association.
-    function toggleAssociation(uint256 assoIdx) external {
-        assoIdx = bound(assoIdx, 0, assos.length - 1);
-        address asso = assos[assoIdx];
+    function updateCampaignBudget(uint256 idx, uint256 hashSeed) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
 
-        CommonLinkRegistry.Association memory a = registry.getAssociation(asso);
+        CommonLinkRegistry.CampaignStatus statusBefore = ghost_currentStatus[id];
+        bytes32 oldHash = registry.getCampaign(id).budgetHash;
+        bytes32 newHash = keccak256(abi.encodePacked("update", hashSeed));
+        if (newHash == oldHash) return;
+        if (newHash == bytes32(0)) return;
+
+        address asso = registry.getCampaign(id).association;
+        bool assoVerified = _isVerified(asso);
+
+        vm.prank(recorder);
+        try registry.updateCampaignBudget(id, newHash) {
+            bool terminal = statusBefore == CommonLinkRegistry.CampaignStatus.Completed
+                || statusBefore == CommonLinkRegistry.CampaignStatus.Cancelled;
+            if (terminal || !assoVerified) ghost_invalidBudgetUpdateHappened = true;
+        } catch {}
+    }
+
+    function pauseCampaign(uint256 idx) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
+        if (ghost_currentStatus[id] != CommonLinkRegistry.CampaignStatus.Active) return;
+
         vm.prank(curator);
-        if (a.verified) {
-            try registry.revokeAssociation(asso) {} catch {}
-        } else if (a.verifiedAt != 0) {
-            try registry.restoreAssociation(asso) {} catch {}
-        }
+        try registry.pauseCampaign(id) {
+            ghost_currentStatus[id] = CommonLinkRegistry.CampaignStatus.Paused;
+        } catch {}
     }
 
-    /// @notice Time-warp within the donation window. Keeps the test useful.
-    function warpForward(uint32 by) external {
-        by = uint32(bound(uint256(by), 0, 7 days));
-        uint256 next = block.timestamp + by;
-        if (next > endDate) next = endDate;
-        vm.warp(next);
+    function unpauseCampaign(uint256 idx) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
+        if (ghost_currentStatus[id] != CommonLinkRegistry.CampaignStatus.Paused) return;
+
+        address asso = registry.getCampaign(id).association;
+        if (!_isVerified(asso)) return;
+
+        vm.prank(curator);
+        try registry.unpauseCampaign(id) {
+            ghost_currentStatus[id] = CommonLinkRegistry.CampaignStatus.Active;
+        } catch {}
+    }
+
+    function completeCampaign(uint256 idx) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
+        CommonLinkRegistry.CampaignStatus s = ghost_currentStatus[id];
+        if (s != CommonLinkRegistry.CampaignStatus.Active && s != CommonLinkRegistry.CampaignStatus.Paused) return;
+
+        vm.prank(curator);
+        try registry.completeCampaign(id) {
+            ghost_currentStatus[id] = CommonLinkRegistry.CampaignStatus.Completed;
+            ghost_endDateOnClose[id] = uint32(block.timestamp);
+        } catch {}
+    }
+
+    function cancelCampaign(uint256 idx) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
+        CommonLinkRegistry.CampaignStatus s = ghost_currentStatus[id];
+        if (
+            s != CommonLinkRegistry.CampaignStatus.Draft
+            && s != CommonLinkRegistry.CampaignStatus.Active
+            && s != CommonLinkRegistry.CampaignStatus.Paused
+        ) return;
+
+        vm.prank(curator);
+        try registry.cancelCampaign(id) {
+            ghost_currentStatus[id] = CommonLinkRegistry.CampaignStatus.Cancelled;
+            ghost_endDateOnClose[id] = uint32(block.timestamp);
+        } catch {}
+    }
+
+    function recordDonation(uint256 idx, uint256 donorIdx, uint96 amount) external {
+        if (campaignIds.length == 0) return;
+        bytes32 id = campaignIds[idx % campaignIds.length];
+        if (ghost_currentStatus[id] != CommonLinkRegistry.CampaignStatus.Active) return;
+        if (amount == 0) return;
+
+        uint96 currentRaised = registry.getCampaign(id).raised;
+        unchecked {
+            if (uint256(currentRaised) + uint256(amount) > type(uint96).max) return;
+        }
+
+        address asso = registry.getCampaign(id).association;
+        if (!_isVerified(asso)) return;
+
+        address donor = donors[donorIdx % donors.length];
+        bytes32 donId = bytes32((uint256(++_seed) | (uint256(1) << 127)) << 128);
+
+        vm.prank(recorder);
+        try registry.recordDonation(donId, donor, id, amount, keccak256("receipt"), bytes32("tx-ref")) {} catch {}
+    }
+
+    function revokeAsso(uint256 idx) external {
+        address a = assos[idx % assos.length];
+        if (!_isVerified(a)) return;
+
+        vm.prank(curator);
+        try registry.revokeAssociation(a) {} catch {}
+    }
+
+    function restoreAsso(uint256 idx) external {
+        address a = assos[idx % assos.length];
+        if (_isVerified(a)) return;
+
+        vm.prank(curator);
+        try registry.restoreAssociation(a) {} catch {}
+    }
+
+    /// @dev Advances time to expose state-transition timestamps to invariants.
+    function warpForward(uint16 seconds_) external {
+        vm.warp(block.timestamp + uint256(seconds_) + 1);
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Read-only views for invariant assertions
+    // Helpers
     // ─────────────────────────────────────────────────────────────────────
 
-    function assosLength()       external view returns (uint256) { return assos.length; }
-    function campaignIdsLength() external view returns (uint256) { return campaignIds.length; }
-    function donorsLength()      external view returns (uint256) { return donors.length; }
+    function _isVerified(address asso) internal view returns (bool) {
+        return registry.getAssociation(asso).verified;
+    }
+
+    function campaignCount() external view returns (uint256) {
+        return campaignIds.length;
+    }
 }

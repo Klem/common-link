@@ -1,571 +1,1085 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {Test} from "forge-std/Test.sol";
+import {CommonLinkBaseTest} from "./helpers/CommonLinkBaseTest.sol";
+import {CommonLinkRegistry} from "../src/CommonLinkRegistry.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
-import {CommonLinkRegistry} from "src/CommonLinkRegistry.sol";
-import {CommonLinkBaseTest} from "./helpers/CommonLinkBaseTest.sol";
-
 /**
- * @title  CommonLinkRegistryTest
- * @notice Full unit-test suite for CommonLinkRegistry v1.2.0-mvp.
- *         Spec source of truth: commonlink-registry-spec-v1.2.md
+ * @title  CommonLinkRegistry test suite — campaign lifecycle
+ * @notice Covers every external function involved in the campaign lifecycle:
+ *           - createCampaign (initial state: Draft)
+ *           - publishCampaign (Draft → Active)
+ *           - revertCampaignToDraft (Active/Paused → Draft, raised == 0)
+ *           - updateCampaignBudget (mutable until terminal)
+ *           - pauseCampaign / unpauseCampaign
+ *           - cancelCampaign / completeCampaign (terminal, stamp endDate)
  *
- *         Sections, in order:
- *           1. Constructor & roles
- *           2. verifyAssociation
- *           3. revokeAssociation
- *           4. restoreAssociation
- *           5. Association lifecycle composite scenarios
- *           6. createCampaign
- *           7. recordDonation
- *           8. Campaign status transitions
- *           9. markMilestoneReached
- *          10. Global pause / unpause
- *          11. View helpers
- *          12. Fuzz checks (single-function)
+ *         One contract per logical sub-system. Foundry picks them all up
+ *         automatically; this layout keeps each section focused on a single
+ *         responsibility while staying in one file.
  *
- *         Invariants live in CommonLinkRegistry.invariant.t.sol.
+ *         Donation-specific behaviour lives in `CommonLinkRegistry.donations.t.sol`.
+ *         Invariants live in `CommonLinkRegistry.invariant.t.sol`.
  */
-contract CommonLinkRegistryTest is CommonLinkBaseTest {
 
-    // We re-declare events here so we can use `vm.expectEmit` with literal
-    // event signatures. Keep in sync with the contract.
-    event AssociationVerified(
-        address indexed association,
-        bytes32 indexed sirenHash,
-        uint32 verifiedAt,
-        address indexed by
-    );
-    event AssociationRevoked(
-        address indexed association,
-        bytes32 indexed sirenHash,
-        uint32 revokedAt,
-        address indexed by
-    );
-    event AssociationRestored(
-        address indexed association,
-        bytes32 indexed sirenHash,
-        uint32 restoredAt,
-        address indexed by
-    );
-    event CampaignCreated(
-        address indexed association,
-        bytes32 indexed campaignId,
-        uint96 goal,
-        uint32 startDate,
-        uint32 endDate,
-        uint8 milestoneCount,
-        bytes32 budgetHash,
-        address indexed attestedBy
-    );
-    event CampaignStatusChanged(
-        bytes32 indexed campaignId,
-        CommonLinkRegistry.CampaignStatus indexed oldStatus,
-        CommonLinkRegistry.CampaignStatus indexed newStatus,
-        address by
-    );
-    event DonationRecorded(
-        address indexed donor,
-        bytes32 indexed campaignId,
-        address indexed association,
-        bytes32 donationId,
-        uint96 amount,
-        bytes32 receiptHash,
-        bytes32 txRef
-    );
-    event DonorFirstDonation(address indexed donor, uint32 timestamp);
-    event DonorJoinedCampaign(address indexed donor, bytes32 indexed campaignId);
-    event MilestoneReached(
-        bytes32 indexed campaignId,
-        uint8 indexed milestoneIndex,
-        bytes32 proofHash,
-        uint32 timestamp
-    );
 
-    // ═════════════════════════════════════════════════════════════════════
-    // 1. Constructor & roles
-    // ═════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════
+// Section 1 — createCampaign
+// ═════════════════════════════════════════════════════════════════════════
 
-    function test_Constructor_GrantsAllRoles() public view {
-        assertTrue(registry.hasRole(registry.DEFAULT_ADMIN_ROLE(), admin), "admin role");
-        assertTrue(registry.hasRole(registry.RECORDER_ROLE(), recorder),    "recorder role");
-        assertTrue(registry.hasRole(registry.CURATOR_ROLE(), curator),      "curator role");
+contract CreateCampaignTest is CommonLinkBaseTest {
+    bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);
+
+    function setUp() public override {
+        super.setUp();
+        _verifyAsso1();
     }
 
-    function test_Constructor_Version() public view {
-        assertEq(registry.VERSION(), "1.2.0-mvp");
-    }
+    function test_create_storesCampaignWithDraftStatus() public {
+        uint32 expectedStart = uint32(block.timestamp);
 
-    function test_Constructor_AllowsZeroRecorder() public {
-        CommonLinkRegistry r = new CommonLinkRegistry(admin, address(0), curator);
-        assertFalse(r.hasRole(r.RECORDER_ROLE(), address(0)));
-    }
+        vm.prank(recorder);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 3, BUDGET_V1);
 
-    function test_Constructor_AllowsZeroCurator() public {
-        CommonLinkRegistry r = new CommonLinkRegistry(admin, recorder, address(0));
-        assertFalse(r.hasRole(r.CURATOR_ROLE(), address(0)));
-    }
-
-    /// @dev In MVP, recorder and curator may share a wallet (spec §11).
-    function test_Constructor_AllowsSameWalletForRecorderAndCurator() public {
-        address hotWallet = makeAddr("hotWallet");
-        CommonLinkRegistry r = new CommonLinkRegistry(admin, hotWallet, hotWallet);
-        assertTrue(r.hasRole(r.RECORDER_ROLE(), hotWallet));
-        assertTrue(r.hasRole(r.CURATOR_ROLE(), hotWallet));
-    }
-
-    function test_RevertWhen_ConstructorAdminIsZero() public {
-        vm.expectRevert(CommonLinkRegistry.InvalidAdmin.selector);
-        new CommonLinkRegistry(address(0), recorder, curator);
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 2. verifyAssociation
-    // ═════════════════════════════════════════════════════════════════════
-
-    function test_VerifyAssociation_HappyPath() public {
-        vm.expectEmit(true, true, true, true);
-        emit AssociationVerified(asso1, SIREN_HASH_1, T0, curator);
-
-        _verify(asso1, SIREN_HASH_1);
-
-        CommonLinkRegistry.Association memory a = registry.getAssociation(asso1);
-        assertTrue(a.verified,                "verified flag");
-        assertEq(a.sirenHash, SIREN_HASH_1,   "sirenHash");
-        assertEq(a.verifiedAt, uint32(T0),    "verifiedAt");
-        assertEq(a.revokedAt, 0,              "revokedAt untouched on first verify");
-
-        // Reverse index populated
-        assertEq(registry.sirenHashToAssociation(SIREN_HASH_1), asso1);
-    }
-
-    function test_RevertWhen_VerifyAssociationWithZeroAddress() public {
-        vm.prank(curator);
-        vm.expectRevert(CommonLinkRegistry.InvalidAssociation.selector);
-        registry.verifyAssociation(address(0), SIREN_HASH_1);
-    }
-
-    function test_RevertWhen_VerifyAssociationWithEmptySirenHash() public {
-        vm.prank(curator);
-        vm.expectRevert(CommonLinkRegistry.EmptySirenHash.selector);
-        registry.verifyAssociation(asso1, bytes32(0));
-    }
-
-    function test_RevertWhen_VerifyAssociationTwice() public {
-        _verify(asso1, SIREN_HASH_1);
-
-        vm.prank(curator);
-        vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.AssociationAlreadyVerified.selector, asso1)
-        );
-        registry.verifyAssociation(asso1, SIREN_HASH_1);
-    }
-
-    function test_RevertWhen_VerifyAssociationWithSirenClaimedByAnotherAddress() public {
-        _verify(asso1, SIREN_HASH_1);
-
-        vm.prank(curator);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                CommonLinkRegistry.SirenAlreadyRegistered.selector,
-                SIREN_HASH_1,
-                asso1
-            )
-        );
-        registry.verifyAssociation(asso2, SIREN_HASH_1);
-    }
-
-    /// @dev After a revoke, you must use restoreAssociation — not re-verify
-    ///      with a different sirenHash. Guards against SIREN swap on a wallet
-    ///      that already had history.
-    function test_RevertWhen_VerifyRevokedAssociationWithDifferentSiren() public {
-        _verify(asso1, SIREN_HASH_1);
-        _revoke(asso1);
-
-        vm.prank(curator);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                CommonLinkRegistry.SirenAlreadyRegistered.selector,
-                SIREN_HASH_1,
-                asso1
-            )
-        );
-        registry.verifyAssociation(asso1, SIREN_HASH_2);
-    }
-
-    function test_RevertWhen_VerifyAssociationCalledByNonCurator() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                stranger,
-                CURATOR_ROLE
-            )
-        );
-        vm.prank(stranger);
-        registry.verifyAssociation(asso1, SIREN_HASH_1);
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 3. revokeAssociation
-    // ═════════════════════════════════════════════════════════════════════
-
-    function test_RevokeAssociation_HappyPath() public {
-        _verify(asso1, SIREN_HASH_1);
-
-        // Move forward so we can distinguish revokedAt from verifiedAt.
-        vm.warp(T0 + 1 hours);
-
-        vm.expectEmit(true, true, true, true);
-        emit AssociationRevoked(asso1, SIREN_HASH_1, uint32(T0 + 1 hours), curator);
-
-        _revoke(asso1);
-
-        CommonLinkRegistry.Association memory a = registry.getAssociation(asso1);
-        assertFalse(a.verified,                       "verified=false after revoke");
-        assertEq(a.sirenHash, SIREN_HASH_1,           "sirenHash preserved");
-        assertEq(a.verifiedAt, uint32(T0),            "verifiedAt preserved");
-        assertEq(a.revokedAt, uint32(T0 + 1 hours),   "revokedAt set");
-
-        // Reverse index is NOT cleared — spec keeps SIREN occupancy.
-        assertEq(registry.sirenHashToAssociation(SIREN_HASH_1), asso1);
-    }
-
-    function test_RevertWhen_RevokeAssociationWithZeroAddress() public {
-        vm.prank(curator);
-        vm.expectRevert(CommonLinkRegistry.InvalidAssociation.selector);
-        registry.revokeAssociation(address(0));
-    }
-
-    function test_RevertWhen_RevokeAssociationNeverVerified() public {
-        vm.prank(curator);
-        vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.AssociationNeverVerified.selector, asso1)
-        );
-        registry.revokeAssociation(asso1);
-    }
-
-    function test_RevertWhen_RevokeAssociationAlreadyRevoked() public {
-        _verify(asso1, SIREN_HASH_1);
-        _revoke(asso1);
-
-        vm.prank(curator);
-        vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1)
-        );
-        registry.revokeAssociation(asso1);
-    }
-
-    function test_RevertWhen_RevokeAssociationCalledByNonCurator() public {
-        _verify(asso1, SIREN_HASH_1);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                stranger,
-                CURATOR_ROLE
-            )
-        );
-        vm.prank(stranger);
-        registry.revokeAssociation(asso1);
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 4. restoreAssociation
-    // ═════════════════════════════════════════════════════════════════════
-
-    function test_RestoreAssociation_HappyPath() public {
-        _verify(asso1, SIREN_HASH_1);
-        vm.warp(T0 + 1 hours);
-        _revoke(asso1);
-
-        // Move further so verifiedAt (restoredAt) ≠ revokedAt
-        vm.warp(T0 + 2 hours);
-
-        vm.expectEmit(true, true, true, true);
-        emit AssociationRestored(asso1, SIREN_HASH_1, uint32(T0 + 2 hours), curator);
-
-        _restore(asso1);
-
-        CommonLinkRegistry.Association memory a = registry.getAssociation(asso1);
-        assertTrue(a.verified,                          "verified=true after restore");
-        assertEq(a.sirenHash, SIREN_HASH_1,             "sirenHash preserved");
-        assertEq(a.verifiedAt, uint32(T0 + 2 hours),    "verifiedAt = restore time");
-        // CRITICAL invariant: revokedAt is preserved for audit (spec §3.2)
-        assertEq(a.revokedAt, uint32(T0 + 1 hours),     "revokedAt PRESERVED");
-    }
-
-    function test_RevertWhen_RestoreAssociationWithZeroAddress() public {
-        vm.prank(curator);
-        vm.expectRevert(CommonLinkRegistry.InvalidAssociation.selector);
-        registry.restoreAssociation(address(0));
-    }
-
-    function test_RevertWhen_RestoreAssociationNeverVerified() public {
-        vm.prank(curator);
-        vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.AssociationNeverVerified.selector, asso1)
-        );
-        registry.restoreAssociation(asso1);
-    }
-
-    function test_RevertWhen_RestoreAssociationCurrentlyVerified() public {
-        _verify(asso1, SIREN_HASH_1);
-
-        vm.prank(curator);
-        vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.AssociationNotRevoked.selector, asso1)
-        );
-        registry.restoreAssociation(asso1);
-    }
-
-    function test_RevertWhen_RestoreAssociationCalledByNonCurator() public {
-        _verify(asso1, SIREN_HASH_1);
-        _revoke(asso1);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                stranger,
-                CURATOR_ROLE
-            )
-        );
-        vm.prank(stranger);
-        registry.restoreAssociation(asso1);
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 5. Association lifecycle composite scenarios
-    // ═════════════════════════════════════════════════════════════════════
-
-    /// @dev verify → revoke → restore → revoke: state transitions are stable
-    ///      and the audit trail is consistent throughout.
-    function test_AssociationLifecycle_VerifyRevokeRestoreRevoke() public {
-        // Step 1 — verify at T0
-        _verify(asso1, SIREN_HASH_1);
-
-        // Step 2 — revoke at T0+1h
-        vm.warp(T0 + 1 hours);
-        _revoke(asso1);
-        CommonLinkRegistry.Association memory s2 = registry.getAssociation(asso1);
-        assertFalse(s2.verified);
-        assertEq(s2.revokedAt, uint32(T0 + 1 hours));
-
-        // Step 3 — restore at T0+2h
-        vm.warp(T0 + 2 hours);
-        _restore(asso1);
-        CommonLinkRegistry.Association memory s3 = registry.getAssociation(asso1);
-        assertTrue(s3.verified);
-        assertEq(s3.verifiedAt, uint32(T0 + 2 hours), "verifiedAt = restore");
-        assertEq(s3.revokedAt, uint32(T0 + 1 hours),  "revokedAt preserved across restore");
-
-        // Step 4 — revoke again at T0+3h
-        vm.warp(T0 + 3 hours);
-        _revoke(asso1);
-        CommonLinkRegistry.Association memory s4 = registry.getAssociation(asso1);
-        assertFalse(s4.verified);
-        assertEq(s4.revokedAt, uint32(T0 + 3 hours),  "revokedAt updated on re-revoke");
-        assertEq(s4.sirenHash, SIREN_HASH_1,          "sirenHash never changes");
-    }
-
-    function test_AssociationLifecycle_SirenHashImmutableAcrossCycle() public {
-        _verify(asso1, SIREN_HASH_1);
-        _revoke(asso1);
-        _restore(asso1);
-        assertEq(registry.getAssociation(asso1).sirenHash, SIREN_HASH_1);
-        assertEq(registry.sirenHashToAssociation(SIREN_HASH_1), asso1);
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 6. createCampaign
-    // ═════════════════════════════════════════════════════════════════════
-
-    function test_CreateCampaign_HappyPath() public {
-        _verify(asso1, SIREN_HASH_1);
-
-        uint96  goal       = 50_000_00;
-        uint32  startDate  = T0 + 1;
-        uint32  endDate    = T0 + 30 days;
-        uint8   msCount    = 4;
-
-        vm.expectEmit(true, true, true, true);
-        emit CampaignCreated(
-            asso1, CAMPAIGN_ID_1, goal, startDate, endDate, msCount, BUDGET_HASH, recorder
-        );
-
-        _createCampaign(CAMPAIGN_ID_1, asso1, goal, startDate, endDate, msCount, BUDGET_HASH);
-
-        CommonLinkRegistry.Campaign memory c = registry.getCampaign(CAMPAIGN_ID_1);
+        CommonLinkRegistry.Campaign memory c = registry.getCampaign(CAMP_1);
         assertEq(c.association, asso1);
-        assertEq(c.goal, goal);
+        assertEq(c.goal, DEFAULT_GOAL);
         assertEq(c.raised, 0);
-        assertEq(c.startDate, startDate);
-        assertEq(c.endDate, endDate);
-        assertEq(uint8(c.status), uint8(CommonLinkRegistry.CampaignStatus.Active));
-        assertEq(c.milestoneCount, msCount);
-        assertEq(c.budgetHash, BUDGET_HASH);
+        assertEq(c.startDate, expectedStart);
+        assertEq(c.endDate, 0, "endDate must be 0 until terminal transition");
+        assertEq(uint8(c.status), uint8(CommonLinkRegistry.CampaignStatus.Draft));
+        assertEq(c.milestoneCount, 3);
+        assertEq(c.budgetHash, BUDGET_V1);
     }
 
-    /// @dev Spec §7.2: milestoneCount may be 0.
-    function test_CreateCampaign_ZeroMilestonesAllowed() public {
-        _verify(asso1, SIREN_HASH_1);
-        _createCampaign(CAMPAIGN_ID_1, asso1, 1, T0 + 1, T0 + 1 days, 0, BUDGET_HASH);
-        assertEq(registry.getCampaign(CAMPAIGN_ID_1).milestoneCount, 0);
-    }
+    function test_create_emitsCampaignCreatedEvent() public {
+        uint32 expectedStart = uint32(block.timestamp);
 
-    function test_RevertWhen_CreateCampaignWithEmptyId() public {
-        _verify(asso1, SIREN_HASH_1);
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignCreated(
+            asso1, CAMP_1, DEFAULT_GOAL, expectedStart, 3, BUDGET_V1, recorder
+        );
 
         vm.prank(recorder);
-        vm.expectRevert(CommonLinkRegistry.EmptyCampaignId.selector);
-        registry.createCampaign(bytes32(0), asso1, 1, T0 + 1, T0 + 1 days, 0, BUDGET_HASH);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 3, BUDGET_V1);
     }
 
-    function test_RevertWhen_CreateCampaignWithUnverifiedAssociation() public {
+    function test_create_withZeroMilestoneCount() public {
         vm.prank(recorder);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, BUDGET_V1);
+        assertEq(registry.getCampaign(CAMP_1).milestoneCount, 0);
+    }
+
+    function test_create_withMaxMilestoneCount() public {
+        vm.prank(recorder);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, type(uint8).max, BUDGET_V1);
+        assertEq(registry.getCampaign(CAMP_1).milestoneCount, type(uint8).max);
+    }
+
+    function test_create_startDateIsBlockTimestamp() public {
+        uint32 t = 1_900_000_000;
+        vm.warp(t);
+
+        vm.prank(recorder);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, BUDGET_V1);
+
+        assertEq(registry.getCampaign(CAMP_1).startDate, t);
+    }
+
+    function test_create_revertsIfEmptyCampaignId() public {
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.EmptyCampaignId.selector));
+        registry.createCampaign(bytes32(0), asso1, DEFAULT_GOAL, 0, BUDGET_V1);
+    }
+
+    function test_create_revertsIfAssoNotVerified() public {
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso2));
+        registry.createCampaign(CAMP_1, asso2, DEFAULT_GOAL, 0, BUDGET_V1);
+    }
+
+    function test_create_revertsIfAssoRevoked() public {
+        _revokeAsso(asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1));
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, BUDGET_V1);
+    }
+
+    function test_create_revertsIfCampaignAlreadyExists() public {
+        _createDraft(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.CampaignAlreadyExists.selector, CAMP_1));
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, BUDGET_V1);
+    }
+
+    function test_create_revertsIfGoalIsZero() public {
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.InvalidGoal.selector));
+        registry.createCampaign(CAMP_1, asso1, 0, 0, BUDGET_V1);
+    }
+
+    function test_create_revertsIfEmptyBudgetHash() public {
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.EmptyBudgetHash.selector));
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, bytes32(0));
+    }
+
+    function test_create_revertsForNonRecorder() public {
+        bytes32 role = registry.RECORDER_ROLE();
+        vm.prank(attacker);
         vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, role
+            )
         );
-        registry.createCampaign(CAMPAIGN_ID_1, asso1, 1, T0 + 1, T0 + 1 days, 0, BUDGET_HASH);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, BUDGET_V1);
     }
 
-    function test_RevertWhen_CreateCampaignWithRevokedAssociation() public {
-        _verify(asso1, SIREN_HASH_1);
-        _revoke(asso1);
+    function test_create_revertsWhenPaused() public {
+        vm.prank(admin);
+        registry.pause();
 
         vm.prank(recorder);
-        vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1)
-        );
-        registry.createCampaign(CAMPAIGN_ID_1, asso1, 1, T0 + 1, T0 + 1 days, 0, BUDGET_HASH);
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, BUDGET_V1);
+    }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Section 2 — publishCampaign
+// ═════════════════════════════════════════════════════════════════════════
+
+contract PublishCampaignTest is CommonLinkBaseTest {
+    bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);
+
+    function setUp() public override {
+        super.setUp();
+        _verifyAsso1();
+        _createDraft(CAMP_1, asso1);
     }
 
-    function test_RevertWhen_CreateCampaignDuplicateId() public {
-        _verify(asso1, SIREN_HASH_1);
-        _createDefaultCampaign(CAMPAIGN_ID_1, asso1);
+    function test_publish_movesDraftToActive() public {
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Active)
+        );
+    }
+
+    function test_publish_preservesAllOtherFields() public {
+        CommonLinkRegistry.Campaign memory before = registry.getCampaign(CAMP_1);
 
         vm.prank(recorder);
-        vm.expectRevert(
-            abi.encodeWithSelector(CommonLinkRegistry.CampaignAlreadyExists.selector, CAMPAIGN_ID_1)
-        );
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, T0 + 1, T0 + 1 days, 0, BUDGET_HASH
-        );
+        registry.publishCampaign(CAMP_1);
+
+        CommonLinkRegistry.Campaign memory after_ = registry.getCampaign(CAMP_1);
+        assertEq(after_.association, before.association);
+        assertEq(after_.goal, before.goal);
+        assertEq(after_.raised, 0);
+        assertEq(after_.startDate, before.startDate);
+        assertEq(after_.endDate, 0);
+        assertEq(after_.milestoneCount, before.milestoneCount);
+        assertEq(after_.budgetHash, before.budgetHash);
     }
 
-    function test_RevertWhen_CreateCampaignWithZeroGoal() public {
-        _verify(asso1, SIREN_HASH_1);
+    function test_publish_emitsStatusChangedEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignStatusChanged(
+            CAMP_1,
+            CommonLinkRegistry.CampaignStatus.Draft,
+            CommonLinkRegistry.CampaignStatus.Active,
+            recorder
+        );
 
         vm.prank(recorder);
-        vm.expectRevert(CommonLinkRegistry.InvalidGoal.selector);
-        registry.createCampaign(CAMPAIGN_ID_1, asso1, 0, T0 + 1, T0 + 1 days, 0, BUDGET_HASH);
+        registry.publishCampaign(CAMP_1);
     }
 
-    function test_RevertWhen_CreateCampaignWithEndBeforeStart() public {
-        _verify(asso1, SIREN_HASH_1);
+    function test_publish_revertsIfAlreadyActive() public {
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
 
         vm.prank(recorder);
         vm.expectRevert(
             abi.encodeWithSelector(
-                CommonLinkRegistry.InvalidDateRange.selector,
-                uint32(T0 + 100),
-                uint32(T0 + 50)
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Active,
+                CommonLinkRegistry.CampaignStatus.Active
             )
         );
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, T0 + 100, T0 + 50, 0, BUDGET_HASH
-        );
+        registry.publishCampaign(CAMP_1);
     }
 
-    function test_RevertWhen_CreateCampaignWithEndEqualsStart() public {
-        _verify(asso1, SIREN_HASH_1);
+    function test_publish_revertsIfPaused() public {
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+        vm.prank(curator);
+        registry.pauseCampaign(CAMP_1);
 
         vm.prank(recorder);
         vm.expectRevert(
             abi.encodeWithSelector(
-                CommonLinkRegistry.InvalidDateRange.selector,
-                uint32(T0 + 100),
-                uint32(T0 + 100)
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Paused,
+                CommonLinkRegistry.CampaignStatus.Active
             )
         );
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, T0 + 100, T0 + 100, 0, BUDGET_HASH
-        );
+        registry.publishCampaign(CAMP_1);
     }
 
-    function test_RevertWhen_CreateCampaignWithEndInThePast() public {
-        _verify(asso1, SIREN_HASH_1);
-
-        // Past window relative to T0
-        uint32 startDate = T0 - 1000;
-        uint32 endDate   = T0 - 500;
+    function test_publish_revertsIfCompleted() public {
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+        vm.prank(curator);
+        registry.completeCampaign(CAMP_1);
 
         vm.prank(recorder);
         vm.expectRevert(
             abi.encodeWithSelector(
-                CommonLinkRegistry.InvalidDateRange.selector, startDate, endDate
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Completed,
+                CommonLinkRegistry.CampaignStatus.Active
             )
         );
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, startDate, endDate, 0, BUDGET_HASH
-        );
+        registry.publishCampaign(CAMP_1);
     }
 
-    /// @dev endDate == block.timestamp must also revert per spec (`endDate > block.timestamp`).
-    function test_RevertWhen_CreateCampaignWithEndEqualsNow() public {
-        _verify(asso1, SIREN_HASH_1);
+    function test_publish_revertsIfCancelled() public {
+        vm.prank(curator);
+        registry.cancelCampaign(CAMP_1);
 
         vm.prank(recorder);
         vm.expectRevert(
             abi.encodeWithSelector(
-                CommonLinkRegistry.InvalidDateRange.selector,
-                uint32(T0 - 100),
-                uint32(T0)
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Cancelled,
+                CommonLinkRegistry.CampaignStatus.Active
             )
         );
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, T0 - 100, T0, 0, BUDGET_HASH
-        );
+        registry.publishCampaign(CAMP_1);
     }
 
-    function test_RevertWhen_CreateCampaignWithEmptyBudgetHash() public {
-        _verify(asso1, SIREN_HASH_1);
+    function test_publish_revertsIfAssoRevokedBetweenCreateAndPublish() public {
+        _revokeAsso(asso1);
 
         vm.prank(recorder);
-        vm.expectRevert(CommonLinkRegistry.EmptyBudgetHash.selector);
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, T0 + 1, T0 + 1 days, 0, bytes32(0)
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1));
+        registry.publishCampaign(CAMP_1);
+    }
+
+    function test_publish_succeedsAfterAssoRestored() public {
+        _revokeAsso(asso1);
+        vm.prank(curator);
+        registry.restoreAssociation(asso1);
+
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Active)
         );
     }
 
-    function test_RevertWhen_CreateCampaignCalledByNonRecorder() public {
-        _verify(asso1, SIREN_HASH_1);
+    function test_publish_revertsIfCampaignDoesNotExist() public {
+        bytes32 unknown = bytes32(uint256(99) << 128);
 
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.CampaignDoesNotExist.selector, unknown));
+        registry.publishCampaign(unknown);
+    }
+
+    function test_publish_revertsForNonRecorder() public {
+        bytes32 role = registry.RECORDER_ROLE();
+        vm.prank(attacker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                stranger,
-                RECORDER_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, role
             )
         );
-        vm.prank(stranger);
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, T0 + 1, T0 + 1 days, 0, BUDGET_HASH
+        registry.publishCampaign(CAMP_1);
+    }
+
+    function test_publish_revertsForCurator() public {
+        bytes32 role = registry.RECORDER_ROLE();
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, curator, role
+            )
+        );
+        registry.publishCampaign(CAMP_1);
+    }
+
+    function test_publish_revertsWhenGloballyPaused() public {
+        vm.prank(admin);
+        registry.pause();
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        registry.publishCampaign(CAMP_1);
+    }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Section 3 — revertCampaignToDraft
+// ═════════════════════════════════════════════════════════════════════════
+
+contract RevertCampaignToDraftTest is CommonLinkBaseTest {
+    bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);
+    bytes32 internal constant DON_1 = bytes32(((uint256(1) | (uint256(1) << 127)) << 128));
+
+    function setUp() public override {
+        super.setUp();
+        _verifyAsso1();
+    }
+
+    function test_revertToDraft_fromActive() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.prank(curator);
+        registry.revertCampaignToDraft(CAMP_1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Draft)
         );
     }
 
-    function test_RevertWhen_CreateCampaignWhilePaused() public {
-        _verify(asso1, SIREN_HASH_1);
+    function test_revertToDraft_fromPaused() public {
+        _createPaused(CAMP_1, asso1);
+
+        vm.prank(curator);
+        registry.revertCampaignToDraft(CAMP_1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Draft)
+        );
+    }
+
+    function test_revertToDraft_preservesStartDate() public {
+        _createActive(CAMP_1, asso1);
+        uint32 originalStart = registry.getCampaign(CAMP_1).startDate;
+
+        vm.warp(block.timestamp + 30 days);
+
+        vm.prank(curator);
+        registry.revertCampaignToDraft(CAMP_1);
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+
+        assertEq(
+            registry.getCampaign(CAMP_1).startDate,
+            originalStart,
+            "startDate must be immutable across Draft/Active cycles"
+        );
+    }
+
+    function test_revertToDraft_emitsStatusChangedEvent() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignStatusChanged(
+            CAMP_1,
+            CommonLinkRegistry.CampaignStatus.Active,
+            CommonLinkRegistry.CampaignStatus.Draft,
+            curator
+        );
+
+        vm.prank(curator);
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_worksUnderGlobalPause() public {
+        _createActive(CAMP_1, asso1);
 
         vm.prank(admin);
         registry.pause();
 
-        vm.expectRevert(Pausable.EnforcedPause.selector);
-        vm.prank(recorder);
-        registry.createCampaign(
-            CAMPAIGN_ID_1, asso1, 1, T0 + 1, T0 + 1 days, 0, BUDGET_HASH
+        // Curation tools must remain available during a global incident.
+        vm.prank(curator);
+        registry.revertCampaignToDraft(CAMP_1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Draft)
         );
+    }
+
+    function test_revertToDraft_revertsIfRaisedGreaterThanZero() public {
+        _createActive(CAMP_1, asso1);
+        _donate(DON_1, donor1, CAMP_1, 1000);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(CommonLinkRegistry.CampaignHasDonations.selector, CAMP_1, uint96(1000))
+        );
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_revertsIfRaisedGreaterThanZeroOnPaused() public {
+        _createActive(CAMP_1, asso1);
+        _donate(DON_1, donor1, CAMP_1, 500);
+        vm.prank(curator);
+        registry.pauseCampaign(CAMP_1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(CommonLinkRegistry.CampaignHasDonations.selector, CAMP_1, uint96(500))
+        );
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_revertsIfAlreadyDraft() public {
+        _createDraft(CAMP_1, asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Draft,
+                CommonLinkRegistry.CampaignStatus.Draft
+            )
+        );
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_revertsIfCompleted() public {
+        _createCompleted(CAMP_1, asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Completed,
+                CommonLinkRegistry.CampaignStatus.Draft
+            )
+        );
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_revertsIfCancelled() public {
+        _createCancelled(CAMP_1, asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Cancelled,
+                CommonLinkRegistry.CampaignStatus.Draft
+            )
+        );
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_revertsIfAssoRevoked() public {
+        _createActive(CAMP_1, asso1);
+        _revokeAsso(asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1));
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_revertsIfCampaignDoesNotExist() public {
+        bytes32 unknown = bytes32(uint256(99) << 128);
+
+        vm.prank(curator);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.CampaignDoesNotExist.selector, unknown));
+        registry.revertCampaignToDraft(unknown);
+    }
+
+    function test_revertToDraft_revertsForNonCurator() public {
+        _createActive(CAMP_1, asso1);
+
+        bytes32 role = registry.CURATOR_ROLE();
+        vm.prank(attacker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, role
+            )
+        );
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+
+    function test_revertToDraft_revertsForRecorder() public {
+        _createActive(CAMP_1, asso1);
+
+        bytes32 role = registry.CURATOR_ROLE();
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, recorder, role
+            )
+        );
+        registry.revertCampaignToDraft(CAMP_1);
+    }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Section 4 — updateCampaignBudget
+// ═════════════════════════════════════════════════════════════════════════
+
+contract UpdateCampaignBudgetTest is CommonLinkBaseTest {
+    bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);
+
+    function setUp() public override {
+        super.setUp();
+        _verifyAsso1();
+    }
+
+    function test_update_inDraft() public {
+        _createDraft(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+
+        assertEq(registry.getCampaign(CAMP_1).budgetHash, BUDGET_V2);
+    }
+
+    function test_update_inActive() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+
+        assertEq(registry.getCampaign(CAMP_1).budgetHash, BUDGET_V2);
+    }
+
+    function test_update_inPaused() public {
+        _createPaused(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+
+        assertEq(registry.getCampaign(CAMP_1).budgetHash, BUDGET_V2);
+    }
+
+    function test_update_multipleTimes() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V3);
+
+        assertEq(registry.getCampaign(CAMP_1).budgetHash, BUDGET_V3);
+    }
+
+    function test_update_emitsBudgetUpdatedEvent() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignBudgetUpdated(
+            CAMP_1, BUDGET_V1, BUDGET_V2, recorder, uint32(block.timestamp)
+        );
+
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_preservesAllOtherFields() public {
+        _createActive(CAMP_1, asso1);
+        CommonLinkRegistry.Campaign memory before = registry.getCampaign(CAMP_1);
+
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+
+        CommonLinkRegistry.Campaign memory after_ = registry.getCampaign(CAMP_1);
+        assertEq(after_.association, before.association);
+        assertEq(after_.goal, before.goal);
+        assertEq(after_.raised, before.raised);
+        assertEq(after_.startDate, before.startDate);
+        assertEq(after_.endDate, before.endDate);
+        assertEq(uint8(after_.status), uint8(before.status));
+        assertEq(after_.milestoneCount, before.milestoneCount);
+    }
+
+    function test_update_revertsWhenCompleted() public {
+        _createCompleted(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.CampaignTerminal.selector, CAMP_1, CommonLinkRegistry.CampaignStatus.Completed
+            )
+        );
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_revertsWhenCancelled() public {
+        _createCancelled(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.CampaignTerminal.selector, CAMP_1, CommonLinkRegistry.CampaignStatus.Cancelled
+            )
+        );
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_revertsWhenCancelledFromDraft() public {
+        _createDraft(CAMP_1, asso1);
+        vm.prank(curator);
+        registry.cancelCampaign(CAMP_1);
+
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.CampaignTerminal.selector, CAMP_1, CommonLinkRegistry.CampaignStatus.Cancelled
+            )
+        );
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_revertsWhenAssoRevoked() public {
+        _createActive(CAMP_1, asso1);
+        _revokeAsso(asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1));
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_revertsForDraftWhenAssoRevoked() public {
+        _createDraft(CAMP_1, asso1);
+        _revokeAsso(asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1));
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_succeedsAfterAssoRestored() public {
+        _createActive(CAMP_1, asso1);
+        _revokeAsso(asso1);
+        vm.prank(curator);
+        registry.restoreAssociation(asso1);
+
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+
+        assertEq(registry.getCampaign(CAMP_1).budgetHash, BUDGET_V2);
+    }
+
+    function test_update_revertsOnEmptyBudgetHash() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.EmptyBudgetHash.selector));
+        registry.updateCampaignBudget(CAMP_1, bytes32(0));
+    }
+
+    function test_update_revertsOnUnchangedHash() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.BudgetHashUnchanged.selector));
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V1);
+    }
+
+    function test_update_revertsIfCampaignDoesNotExist() public {
+        bytes32 unknown = bytes32(uint256(99) << 128);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.CampaignDoesNotExist.selector, unknown));
+        registry.updateCampaignBudget(unknown, BUDGET_V2);
+    }
+
+    function test_update_revertsForNonRecorder() public {
+        _createActive(CAMP_1, asso1);
+
+        bytes32 role = registry.RECORDER_ROLE();
+        vm.prank(attacker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, role
+            )
+        );
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_revertsForCurator() public {
+        _createActive(CAMP_1, asso1);
+
+        bytes32 role = registry.RECORDER_ROLE();
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, curator, role
+            )
+        );
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+
+    function test_update_revertsWhenGloballyPaused() public {
+        _createActive(CAMP_1, asso1);
+        vm.prank(admin);
+        registry.pause();
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+    }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Section 5 — status transitions (pause / cancel / complete / unpause)
+// ═════════════════════════════════════════════════════════════════════════
+
+contract StatusTransitionsTest is CommonLinkBaseTest {
+    bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);
+
+    function setUp() public override {
+        super.setUp();
+        _verifyAsso1();
+    }
+
+    function test_cancel_fromDraft() public {
+        _createDraft(CAMP_1, asso1);
+
+        vm.prank(curator);
+        registry.cancelCampaign(CAMP_1);
+
+        CommonLinkRegistry.Campaign memory c = registry.getCampaign(CAMP_1);
+        assertEq(uint8(c.status), uint8(CommonLinkRegistry.CampaignStatus.Cancelled));
+        assertEq(c.endDate, uint32(block.timestamp));
+    }
+
+    function test_cancel_fromDraft_emitsBothEvents() public {
+        _createDraft(CAMP_1, asso1);
+
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignStatusChanged(
+            CAMP_1,
+            CommonLinkRegistry.CampaignStatus.Draft,
+            CommonLinkRegistry.CampaignStatus.Cancelled,
+            curator
+        );
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignClosed(
+            CAMP_1, CommonLinkRegistry.CampaignStatus.Cancelled, uint32(block.timestamp), curator
+        );
+
+        vm.prank(curator);
+        registry.cancelCampaign(CAMP_1);
+    }
+
+    function test_complete_revertsFromDraft() public {
+        _createDraft(CAMP_1, asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Draft,
+                CommonLinkRegistry.CampaignStatus.Completed
+            )
+        );
+        registry.completeCampaign(CAMP_1);
+    }
+
+    function test_complete_setsEndDate() public {
+        _createActive(CAMP_1, asso1);
+        uint32 originalStart = registry.getCampaign(CAMP_1).startDate;
+
+        vm.warp(block.timestamp + 60 days);
+        uint32 closeTime = uint32(block.timestamp);
+
+        vm.prank(curator);
+        registry.completeCampaign(CAMP_1);
+
+        CommonLinkRegistry.Campaign memory c = registry.getCampaign(CAMP_1);
+        assertEq(c.startDate, originalStart, "startDate must remain immutable");
+        assertEq(c.endDate, closeTime);
+        assertGt(c.endDate, c.startDate);
+    }
+
+    function test_cancel_setsEndDate() public {
+        _createActive(CAMP_1, asso1);
+        vm.warp(block.timestamp + 10 days);
+        uint32 closeTime = uint32(block.timestamp);
+
+        vm.prank(curator);
+        registry.cancelCampaign(CAMP_1);
+
+        assertEq(registry.getCampaign(CAMP_1).endDate, closeTime);
+    }
+
+    function test_complete_emitsCampaignClosedEvent() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignClosed(
+            CAMP_1, CommonLinkRegistry.CampaignStatus.Completed, uint32(block.timestamp), curator
+        );
+
+        vm.prank(curator);
+        registry.completeCampaign(CAMP_1);
+    }
+
+    function test_cancel_emitsCampaignClosedEvent() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.expectEmit(true, true, true, true);
+        emit CommonLinkRegistry.CampaignClosed(
+            CAMP_1, CommonLinkRegistry.CampaignStatus.Cancelled, uint32(block.timestamp), curator
+        );
+
+        vm.prank(curator);
+        registry.cancelCampaign(CAMP_1);
+    }
+
+    function test_nonTerminalTransitions_doNotSetEndDate() public {
+        _createActive(CAMP_1, asso1);
+
+        vm.prank(curator);
+        registry.pauseCampaign(CAMP_1);
+        assertEq(registry.getCampaign(CAMP_1).endDate, 0);
+
+        vm.prank(curator);
+        registry.unpauseCampaign(CAMP_1);
+        assertEq(registry.getCampaign(CAMP_1).endDate, 0);
+    }
+
+    function test_unpause_revertsIfAssoRevokedDuringPause() public {
+        _createPaused(CAMP_1, asso1);
+
+        _revokeAsso(asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1));
+        registry.unpauseCampaign(CAMP_1);
+    }
+
+    function test_unpause_succeedsIfAssoRestoredDuringPause() public {
+        _createPaused(CAMP_1, asso1);
+
+        _revokeAsso(asso1);
+        vm.prank(curator);
+        registry.restoreAssociation(asso1);
+
+        vm.prank(curator);
+        registry.unpauseCampaign(CAMP_1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Active)
+        );
+    }
+
+    function test_pause_revertsFromDraft() public {
+        _createDraft(CAMP_1, asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Draft,
+                CommonLinkRegistry.CampaignStatus.Paused
+            )
+        );
+        registry.pauseCampaign(CAMP_1);
+    }
+
+    function test_cancel_revertsFromCompleted() public {
+        _createCompleted(CAMP_1, asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Completed,
+                CommonLinkRegistry.CampaignStatus.Cancelled
+            )
+        );
+        registry.cancelCampaign(CAMP_1);
+    }
+
+    function test_complete_revertsFromCancelled() public {
+        _createCancelled(CAMP_1, asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Cancelled,
+                CommonLinkRegistry.CampaignStatus.Completed
+            )
+        );
+        registry.completeCampaign(CAMP_1);
+    }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Section 6 — end-to-end lifecycle scenarios
+// ═════════════════════════════════════════════════════════════════════════
+
+contract CampaignLifecycleTest is CommonLinkBaseTest {
+    bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);
+    bytes32 internal constant DON_1 = bytes32(((uint256(1) | (uint256(1) << 127)) << 128));
+    bytes32 internal constant DON_2 = bytes32(((uint256(2) | (uint256(1) << 127)) << 128));
+    bytes32 internal constant DON_3 = bytes32(((uint256(3) | (uint256(1) << 127)) << 128));
+
+    function setUp() public override {
+        super.setUp();
+        _verifyAsso1();
+    }
+
+    function test_lifecycle_fullHappyPath() public {
+        // 1. Create in Draft.
+        uint32 createdAt = uint32(block.timestamp);
+        vm.prank(recorder);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 2, BUDGET_V1);
+
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Draft)
+        );
+
+        // 2. Edit the budget while still in Draft.
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+        assertEq(registry.getCampaign(CAMP_1).budgetHash, BUDGET_V2);
+
+        // 3. Publish.
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Active)
+        );
+
+        // 4. Two donations from different donors.
+        vm.warp(block.timestamp + 3 days);
+        _donate(DON_1, donor1, CAMP_1, 1000);
+        _donate(DON_2, donor2, CAMP_1, 500);
+        assertEq(registry.getCampaign(CAMP_1).raised, 1500);
+
+        // 5. Update budget mid-campaign.
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V3);
+
+        // 6. Donation can still happen on the new budget.
+        _donate(DON_3, donor1, CAMP_1, 250);
+        assertEq(registry.getCampaign(CAMP_1).raised, 1750);
+
+        // 7. Complete the campaign. endDate stamped, budgetHash frozen.
+        vm.warp(block.timestamp + 30 days);
+        uint32 closedAt = uint32(block.timestamp);
+        vm.prank(curator);
+        registry.completeCampaign(CAMP_1);
+
+        CommonLinkRegistry.Campaign memory final_ = registry.getCampaign(CAMP_1);
+        assertEq(uint8(final_.status), uint8(CommonLinkRegistry.CampaignStatus.Completed));
+        assertEq(final_.startDate, createdAt);
+        assertEq(final_.endDate, closedAt);
+        assertEq(final_.budgetHash, BUDGET_V3);
+        assertEq(final_.raised, 1750);
+
+        // 8. Post-close: every write is rejected.
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.CampaignTerminal.selector, CAMP_1, CommonLinkRegistry.CampaignStatus.Completed
+            )
+        );
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V1);
+
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.CampaignNotActive.selector, CAMP_1, CommonLinkRegistry.CampaignStatus.Completed
+            )
+        );
+        registry.recordDonation(
+            bytes32(uint256(99) << 128), donor1, CAMP_1, 100, RECEIPT_HASH_1, TX_REF_1
+        );
+    }
+
+    function test_lifecycle_revertAndRepublishPreservesIdentity() public {
+        vm.prank(recorder);
+        registry.createCampaign(CAMP_1, asso1, DEFAULT_GOAL, 0, BUDGET_V1);
+        uint32 originalStart = registry.getCampaign(CAMP_1).startDate;
+
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+
+        vm.warp(block.timestamp + 7 days);
+        vm.prank(curator);
+        registry.revertCampaignToDraft(CAMP_1);
+
+        vm.warp(block.timestamp + 14 days);
+        vm.prank(recorder);
+        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+
+        CommonLinkRegistry.Campaign memory c = registry.getCampaign(CAMP_1);
+        assertEq(c.startDate, originalStart, "startDate must be the original createCampaign timestamp");
+        assertEq(c.budgetHash, BUDGET_V2);
+        assertEq(uint8(c.status), uint8(CommonLinkRegistry.CampaignStatus.Active));
+
+        _donate(DON_1, donor1, CAMP_1, 300);
+        assertEq(registry.getCampaign(CAMP_1).raised, 300);
+    }
+
+    function test_lifecycle_revokeDuringPauseBlocksResume() public {
+        _createActive(CAMP_1, asso1);
+        _donate(DON_1, donor1, CAMP_1, 100);
+
+        vm.prank(curator);
+        registry.pauseCampaign(CAMP_1);
+
+        _revokeAsso(asso1);
+
+        vm.prank(curator);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.AssociationNotVerified.selector, asso1));
+        registry.unpauseCampaign(CAMP_1);
+
+        // Cancel remains available — curators must always be able to wind down.
+        vm.prank(curator);
+        registry.cancelCampaign(CAMP_1);
+        assertEq(
+            uint8(registry.getCampaign(CAMP_1).status),
+            uint8(CommonLinkRegistry.CampaignStatus.Cancelled)
+        );
+        assertGt(registry.getCampaign(CAMP_1).endDate, 0);
+    }
+
+    function test_lifecycle_publishRetryAfterCreate() public {
+        // Simulates the backend creating successfully but losing track of
+        // whether the publish landed. A retry of publishCampaign must succeed
+        // exactly once and surface InvalidStatusTransition on the next retry,
+        // letting the backend detect the prior success.
+        _createDraft(CAMP_1, asso1);
+
+        vm.prank(recorder);
+        registry.publishCampaign(CAMP_1);
+
+        vm.prank(recorder);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CommonLinkRegistry.InvalidStatusTransition.selector,
+                CommonLinkRegistry.CampaignStatus.Active,
+                CommonLinkRegistry.CampaignStatus.Active
+            )
+        );
+        registry.publishCampaign(CAMP_1);
     }
 }
