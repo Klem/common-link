@@ -6,11 +6,13 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.config.MoneriumConfig
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.MoneriumConnection
+import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.MoneriumOAuthState
+import org.commonlink.exception.MoneriumReauthRequiredException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.repository.MoneriumOAuthStateRepository
-import org.commonlink.repository.TestcontainersConfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -18,18 +20,19 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.testcontainers.context.ImportTestcontainers
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.test.context.ActiveProfiles
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestTemplate
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
-@SpringBootTest
-@ImportTestcontainers(TestcontainersConfig::class)
-@ActiveProfiles("test")
+/**
+ * Plain mockk-based unit test — no Spring context. The class only exercises
+ * MoneriumService with fully-mocked collaborators, so @SpringBootTest would
+ * just load the full app context (including unrelated Web3j beans) for no gain.
+ */
 class MoneriumServiceTest {
 
     private val config = MoneriumConfig(
@@ -208,6 +211,121 @@ class MoneriumServiceTest {
 
         assertThrows<IllegalArgumentException> {
             service.getConnectionStatus(unknownId)
+        }
+    }
+
+    // ── getValidAccessToken / forceRefreshAccessToken ─────────────────────────
+
+    private val associationId = UUID.fromString("00000000-0000-0000-0000-000000000aaa")
+
+    private fun connectionFixture(
+        accessToken: String = "access-old",
+        refreshToken: String = "refresh-old",
+        expiresIn: Long = 3600,
+        state: MoneriumConnectionState = MoneriumConnectionState.ACTIVE,
+    ) = MoneriumConnection(
+        association = mockAssociation,
+        moneriumUserId = "monerium-user",
+        accessToken = accessToken,
+        refreshToken = refreshToken,
+        expiresAt = Instant.now().plusSeconds(expiresIn),
+        state = state,
+    )
+
+    @Test
+    fun `getValidAccessToken - returns cached token when expiry is well beyond safety margin`() {
+        val conn = connectionFixture(expiresIn = 3600)
+        every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns conn
+
+        val token = service.getValidAccessToken(associationId)
+
+        assertEquals("access-old", token)
+        verify(exactly = 0) {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        }
+    }
+
+    @Test
+    fun `getValidAccessToken - refreshes when token within safety margin and persists rotated pair`() {
+        val conn = connectionFixture(expiresIn = 10) // < 30s margin
+        every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns conn
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(
+            MoneriumService.TokenResponse(
+                accessToken = "access-new",
+                refreshToken = "refresh-new",
+                expiresIn = 3600,
+                userId = null,
+            )
+        )
+        every { connectionRepo.save(any()) } answers { firstArg() }
+
+        val token = service.getValidAccessToken(associationId)
+
+        assertEquals("access-new", token)
+        verify {
+            connectionRepo.save(match { c: MoneriumConnection ->
+                c.accessToken == "access-new" && c.refreshToken == "refresh-new"
+            })
+        }
+    }
+
+    @Test
+    fun `getValidAccessToken - throws reauth required when connection is BROKEN`() {
+        val conn = connectionFixture(state = MoneriumConnectionState.BROKEN)
+        every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns conn
+
+        assertThrows<MoneriumReauthRequiredException> {
+            service.getValidAccessToken(associationId)
+        }
+    }
+
+    @Test
+    fun `getValidAccessToken - throws reauth required when no connection exists`() {
+        every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns null
+
+        assertThrows<MoneriumReauthRequiredException> {
+            service.getValidAccessToken(associationId)
+        }
+    }
+
+    @Test
+    fun `forceRefreshAccessToken - refreshes regardless of stored expiry`() {
+        val conn = connectionFixture(expiresIn = 3600) // would be cached by getValidAccessToken
+        every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns conn
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(
+            MoneriumService.TokenResponse(
+                accessToken = "access-forced",
+                refreshToken = "refresh-forced",
+                expiresIn = 3600,
+                userId = null,
+            )
+        )
+        every { connectionRepo.save(any()) } answers { firstArg() }
+
+        val token = service.forceRefreshAccessToken(associationId)
+
+        assertEquals("access-forced", token)
+    }
+
+    @Test
+    fun `refreshTokens - flags connection BROKEN and throws on invalid_grant`() {
+        val conn = connectionFixture(expiresIn = 10)
+        every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns conn
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } throws HttpClientErrorException(HttpStatus.BAD_REQUEST, "invalid_grant")
+        every { connectionRepo.save(any()) } answers { firstArg() }
+
+        assertThrows<MoneriumReauthRequiredException> {
+            service.getValidAccessToken(associationId)
+        }
+
+        verify {
+            connectionRepo.save(match { c: MoneriumConnection -> c.state == MoneriumConnectionState.BROKEN })
         }
     }
 }

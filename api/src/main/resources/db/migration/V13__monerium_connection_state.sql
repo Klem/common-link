@@ -1,0 +1,2 @@
+ALTER TABLE monerium_connections
+    ADD COLUMN state VARCHAR(16) NOT NULL DEFAULT 'ACTIVE';

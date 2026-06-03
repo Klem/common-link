@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MoneriumConfig
 import org.commonlink.dto.MoneriumStatusDto
 import org.commonlink.entity.MoneriumConnection
+import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.MoneriumOAuthState
+import org.commonlink.exception.MoneriumReauthRequiredException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.repository.MoneriumOAuthStateRepository
@@ -13,7 +15,9 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.LinkedMultiValueMap
+import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import java.net.URLEncoder
 import java.security.MessageDigest
@@ -133,6 +137,94 @@ class MoneriumService(
         return MoneriumStatusDto(connected = connected, pending = pending)
     }
 
+    /**
+     * Returns a Monerium access token that is guaranteed valid for at least
+     * [REFRESH_SAFETY_MARGIN_SECONDS] seconds (proactive refresh).
+     *
+     * Use [forceRefreshAccessToken] when Monerium has rejected a structurally-fresh token
+     * (Monerium-side revocation), as proactive refresh would return the same stale value.
+     *
+     * The refresh flow runs inside a pessimistic-locked transaction so that two concurrent
+     * callers don't both refresh and invalidate each other's resulting refresh token.
+     *
+     * @throws MoneriumReauthRequiredException if the connection is BROKEN or the refresh call
+     * itself returns `invalid_grant` (in which case the connection is flipped to BROKEN here).
+     */
+    @Transactional
+    fun getValidAccessToken(associationId: UUID): String =
+        withLockedConnection(associationId) { connection ->
+            val safeUntil = Instant.now().plusSeconds(REFRESH_SAFETY_MARGIN_SECONDS)
+            if (connection.expiresAt.isAfter(safeUntil)) connection.accessToken
+            else refreshTokens(connection).accessToken
+        }
+
+    /**
+     * Forces a refresh regardless of the stored expiry, returning the new access token.
+     *
+     * Called after Monerium 401s a structurally-fresh token (server-side revocation), where
+     * [getValidAccessToken] would otherwise short-circuit and return the dead value.
+     */
+    @Transactional
+    fun forceRefreshAccessToken(associationId: UUID): String =
+        withLockedConnection(associationId) { connection ->
+            refreshTokens(connection).accessToken
+        }
+
+    private inline fun <T> withLockedConnection(
+        associationId: UUID,
+        block: (MoneriumConnection) -> T,
+    ): T {
+        val connection = connectionRepo.findByAssociationIdForUpdate(associationId)
+            ?: throw MoneriumReauthRequiredException("No Monerium connection for association $associationId")
+        if (connection.state == MoneriumConnectionState.BROKEN) {
+            throw MoneriumReauthRequiredException()
+        }
+        return block(connection)
+    }
+
+    /**
+     * POSTs `grant_type=refresh_token` to Monerium and persists the new access/refresh pair.
+     *
+     * Monerium rotates the refresh token on each call; failing to persist the new value
+     * silently breaks the connection on the next refresh. On `invalid_grant` the connection
+     * is flagged BROKEN and [MoneriumReauthRequiredException] is thrown so the frontend can
+     * re-trigger the PKCE flow.
+     *
+     * Must be called within a transaction that already holds the pessimistic lock on the
+     * connection row (see [MoneriumConnectionRepository.findByAssociationIdForUpdate]).
+     */
+    private fun refreshTokens(connection: MoneriumConnection): MoneriumConnection {
+        val headers = HttpHeaders().apply { contentType = MediaType.APPLICATION_FORM_URLENCODED }
+        val body = LinkedMultiValueMap<String, String>().apply {
+            add("grant_type", "refresh_token")
+            add("client_id", config.clientId)
+            add("refresh_token", connection.refreshToken)
+        }
+
+        val tokenResponse = try {
+            restTemplate.postForEntity(
+                "${config.baseUrl}/auth/token",
+                HttpEntity(body, headers),
+                TokenResponse::class.java,
+            ).body ?: throw IllegalStateException("Empty refresh response from Monerium")
+        } catch (ex: HttpStatusCodeException) {
+            logger.warn(
+                "Monerium refresh rejected for association {}: status={} body={}",
+                connection.association.id, ex.statusCode, ex.responseBodyAsString,
+            )
+            connection.state = MoneriumConnectionState.BROKEN
+            connectionRepo.save(connection)
+            throw MoneriumReauthRequiredException()
+        }
+
+        connection.accessToken = tokenResponse.accessToken
+        connection.refreshToken = tokenResponse.refreshToken
+        connection.expiresAt = Instant.now().plusSeconds(tokenResponse.expiresIn.toLong())
+        val saved = connectionRepo.save(connection)
+        logger.info("Refreshed Monerium tokens for association {}", connection.association.id)
+        return saved
+    }
+
     private fun generateCodeVerifier(): String {
         val bytes = ByteArray(32).also { SecureRandom().nextBytes(it) }
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
@@ -167,4 +259,9 @@ class MoneriumService(
         @field:JsonProperty("expires_in") val expiresIn: Int,
         @field:JsonProperty("user_id") val userId: String?,
     )
+
+    companion object {
+        /** Refresh proactively when the access token has under 30 s of life left. */
+        const val REFRESH_SAFETY_MARGIN_SECONDS = 30L
+    }
 }

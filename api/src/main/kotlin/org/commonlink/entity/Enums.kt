@@ -95,6 +95,20 @@ enum class BudgetSide {
 }
 
 /**
+ * Operational state of a Monerium connection.
+ *
+ * BROKEN means the stored refresh token has been rejected by Monerium (rotated, revoked, or
+ * expired) and no automated recovery is possible; the frontend must re-trigger the PKCE flow.
+ * Stored as a string column so future states (e.g. SUSPENDED) can be added without a migration.
+ */
+enum class MoneriumConnectionState {
+    /** Connection is healthy; access token can be refreshed silently. */
+    ACTIVE,
+    /** Refresh token was rejected by Monerium; the association must reconnect via PKCE. */
+    BROKEN,
+}
+
+/**
  * Progress status of a campaign milestone.
  *
  * Only one milestone can be CURRENT at a time; it becomes REACHED once the target amount is hit.

@@ -44,4 +44,13 @@ class MoneriumConnection(
     /** Timestamp at which the current access token expires. */
     @Column(name = "expires_at", nullable = false)
     var expiresAt: Instant,
+
+    /**
+     * Operational state — ACTIVE while the refresh token works, BROKEN once Monerium has
+     * rejected a refresh attempt. A BROKEN connection requires user-driven re-authentication
+     * (see [org.commonlink.exception.MoneriumReauthRequiredException]).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "state", nullable = false, length = 16)
+    var state: MoneriumConnectionState = MoneriumConnectionState.ACTIVE,
 )
