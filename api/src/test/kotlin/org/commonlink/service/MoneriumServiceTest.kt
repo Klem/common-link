@@ -5,10 +5,14 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.config.MoneriumConfig
+import org.commonlink.dto.monerium.MoneriumAuthContextDto
+import org.commonlink.dto.monerium.MoneriumProfileDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MoneriumConnection
 import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.MoneriumOAuthState
+import org.commonlink.entity.MoneriumProfileKind
+import org.commonlink.exception.ConflictException
 import org.commonlink.exception.MoneriumReauthRequiredException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
@@ -20,6 +24,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.HttpClientErrorException
@@ -65,9 +71,12 @@ class MoneriumServiceTest {
         userId = "monerium-user-789",
     )
 
+    private val mockAssociationId = UUID.fromString("00000000-0000-0000-0000-0000000000a1")
+
     @BeforeEach
     fun setupCommonMocks() {
         every { associationRepo.findByUserId(userId) } returns Optional.of(mockAssociation)
+        every { mockAssociation.id } returns mockAssociationId
     }
 
     // ── buildAuthorizationUrl ─────────────────────────────────────────────────
@@ -85,6 +94,8 @@ class MoneriumServiceTest {
         assertTrue(url.contains("code_challenge_method=S256"))
         assertTrue(url.contains("code_challenge="))
         assertTrue(url.contains("state="))
+        assertTrue(url.contains("prompt=login"))
+        assertTrue(url.contains("auth_mode=login"))
     }
 
     @Test
@@ -114,12 +125,32 @@ class MoneriumServiceTest {
 
     // ── handleCallback ────────────────────────────────────────────────────────
 
+    /**
+     * Default stubs: /auth/context returns one corporate profile, no `defaultProfile` set,
+     * so selection falls through to the corporate-kind fallback. Pass `defaultProfile`
+     * explicitly to exercise the default-profile branch.
+     */
+    private fun stubProfilesEndpoint(
+        profiles: List<MoneriumProfileDto> = listOf(
+            MoneriumProfileDto(id = "profile-corp-1", kind = MoneriumProfileKind.CORPORATE, name = "Acme Asso", state = "approved")
+        ),
+        defaultProfile: String? = null,
+    ) {
+        every {
+            restTemplate.exchange(
+                any<String>(), eq(HttpMethod.GET), any<HttpEntity<*>>(), eq(MoneriumAuthContextDto::class.java),
+            )
+        } returns ResponseEntity.ok(MoneriumAuthContextDto(defaultProfile = defaultProfile, profiles = profiles))
+    }
+
     @Test
-    fun `handleCallback - exchanges code, saves connection, deletes state`() {
+    fun `handleCallback - exchanges code, saves connection, deletes state, captures profile`() {
         every { stateRepo.findById("test-state-uuid") } returns Optional.of(sampleState)
         every {
             restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
         } returns ResponseEntity.ok(sampleTokenResponse)
+        stubProfilesEndpoint()
+        every { connectionRepo.findByMoneriumProfileId("profile-corp-1") } returns null
         every { connectionRepo.save(any()) } answers { firstArg() }
         justRun { stateRepo.delete(sampleState) }
 
@@ -129,7 +160,8 @@ class MoneriumServiceTest {
         verify { connectionRepo.save(any()) }
         assertEquals("access-token-123", result.accessToken)
         assertEquals("refresh-token-456", result.refreshToken)
-        assertEquals("monerium-user-789", result.moneriumUserId)
+        assertEquals("profile-corp-1", result.moneriumProfileId)
+        assertEquals("Acme Asso", result.moneriumProfileName)
         assertNotNull(result.expiresAt)
     }
 
@@ -173,6 +205,117 @@ class MoneriumServiceTest {
         }
     }
 
+    @Test
+    fun `handleCallback - picks corporate profile when both personal and corporate are returned`() {
+        every { stateRepo.findById("test-state-uuid") } returns Optional.of(sampleState)
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(sampleTokenResponse)
+        stubProfilesEndpoint(
+            profiles = listOf(
+                MoneriumProfileDto(id = "p-personal", kind = MoneriumProfileKind.PERSONAL, name = "Personal", state = "approved"),
+                MoneriumProfileDto(id = "p-corp", kind = MoneriumProfileKind.CORPORATE, name = "Acme Asso", state = "approved"),
+            )
+        )
+        every { connectionRepo.findByMoneriumProfileId("p-corp") } returns null
+        every { connectionRepo.save(any()) } answers { firstArg() }
+        justRun { stateRepo.delete(sampleState) }
+
+        val result = service.handleCallback("code", "test-state-uuid")
+
+        assertEquals("p-corp", result.moneriumProfileId)
+        assertEquals("Acme Asso", result.moneriumProfileName)
+    }
+
+    @Test
+    fun `handleCallback - persists null profile when profiles list is empty (brand-new Monerium account)`() {
+        every { stateRepo.findById("test-state-uuid") } returns Optional.of(sampleState)
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(sampleTokenResponse)
+        stubProfilesEndpoint(profiles = emptyList())
+        every { connectionRepo.save(any()) } answers { firstArg() }
+        justRun { stateRepo.delete(sampleState) }
+
+        val result = service.handleCallback("code", "test-state-uuid")
+
+        assertEquals(null, result.moneriumProfileId)
+        assertEquals(null, result.moneriumProfileName)
+        // No profile id means we can't apply the rebind guard — verified by absence.
+        verify(exactly = 0) { connectionRepo.findByMoneriumProfileId(any()) }
+    }
+
+    @Test
+    fun `handleCallback - tolerates profiles fetch failure and persists null profile`() {
+        every { stateRepo.findById("test-state-uuid") } returns Optional.of(sampleState)
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(sampleTokenResponse)
+        every {
+            restTemplate.exchange(
+                any<String>(), eq(HttpMethod.GET), any<HttpEntity<*>>(), eq(MoneriumAuthContextDto::class.java),
+            )
+        } throws HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR)
+        every { connectionRepo.save(any()) } answers { firstArg() }
+        justRun { stateRepo.delete(sampleState) }
+
+        val result = service.handleCallback("code", "test-state-uuid")
+
+        // Onboarding completes — null profile is acceptable, recoverable later.
+        assertEquals(null, result.moneriumProfileId)
+        assertEquals("access-token-123", result.accessToken)
+    }
+
+    @Test
+    fun `handleCallback - rejects when another association already holds this monerium profile`() {
+        val otherAssociation: AssociationProfile = mockk(relaxed = true)
+        every { otherAssociation.id } returns UUID.fromString("00000000-0000-0000-0000-0000000000b2")
+        val existingConnection = MoneriumConnection(
+            association = otherAssociation,
+            moneriumProfileId = "profile-corp-1",
+            accessToken = "x", refreshToken = "y",
+            expiresAt = Instant.now().plusSeconds(3600),
+        )
+        every { stateRepo.findById("test-state-uuid") } returns Optional.of(sampleState)
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(sampleTokenResponse)
+        stubProfilesEndpoint()
+        every { connectionRepo.findByMoneriumProfileId("profile-corp-1") } returns existingConnection
+        justRun { stateRepo.delete(sampleState) }
+
+        assertThrows<ConflictException> {
+            service.handleCallback("code", "test-state-uuid")
+        }
+
+        // Pending state is cleaned up so the user can retry with the correct account.
+        verify { stateRepo.delete(sampleState) }
+        verify(exactly = 0) { connectionRepo.save(any()) }
+    }
+
+    @Test
+    fun `handleCallback - allows rebinding the same association to the same monerium profile`() {
+        // Idempotency: if a user reconnects the SAME Monerium account, that's not a conflict.
+        val existingConnection = MoneriumConnection(
+            association = mockAssociation,
+            moneriumProfileId = "profile-corp-1",
+            accessToken = "x", refreshToken = "y",
+            expiresAt = Instant.now().plusSeconds(3600),
+        )
+        every { stateRepo.findById("test-state-uuid") } returns Optional.of(sampleState)
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(sampleTokenResponse)
+        stubProfilesEndpoint()
+        every { connectionRepo.findByMoneriumProfileId("profile-corp-1") } returns existingConnection
+        every { connectionRepo.save(any()) } answers { firstArg() }
+        justRun { stateRepo.delete(sampleState) }
+
+        val result = service.handleCallback("code", "test-state-uuid")
+
+        assertEquals("profile-corp-1", result.moneriumProfileId)
+    }
+
     // ── getConnectionStatus ───────────────────────────────────────────────────
 
     @Test
@@ -182,6 +325,19 @@ class MoneriumServiceTest {
         val result = service.getConnectionStatus(userId)
         assertTrue(result.connected)
         assertFalse(result.pending)
+    }
+
+    @Test
+    fun `getConnectionStatus - exposes profileId and profileName so the frontend can render Connected as X`() {
+        val connection = connectionFixture().apply {
+            moneriumProfileName = "Acme Asso"
+        }
+        every { connectionRepo.findByAssociation(mockAssociation) } returns connection
+
+        val result = service.getConnectionStatus(userId)
+
+        assertEquals("profile-corp-1", result.profileId)
+        assertEquals("Acme Asso", result.profileName)
     }
 
     @Test
@@ -225,7 +381,7 @@ class MoneriumServiceTest {
         state: MoneriumConnectionState = MoneriumConnectionState.ACTIVE,
     ) = MoneriumConnection(
         association = mockAssociation,
-        moneriumUserId = "monerium-user",
+        moneriumProfileId = "profile-corp-1",
         accessToken = accessToken,
         refreshToken = refreshToken,
         expiresAt = Instant.now().plusSeconds(expiresIn),

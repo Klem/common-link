@@ -10,6 +10,7 @@ import org.commonlink.dto.monerium.MoneriumIbanDto
 import org.commonlink.dto.monerium.MoneriumProfileDto
 import org.commonlink.dto.monerium.MoneriumProfileListDto
 import org.commonlink.dto.monerium.RequestIbanRequest
+import org.commonlink.entity.MoneriumProfileKind
 import org.commonlink.exception.MoneriumReauthRequiredException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -49,7 +50,7 @@ class MoneriumApiClientTest {
             )
         } returns ResponseEntity.ok(
             MoneriumProfileListDto(
-                profiles = listOf(MoneriumProfileDto(id = "p1", kind = "corporate", name = "Asso", state = "approved"))
+                profiles = listOf(MoneriumProfileDto(id = "p1", kind = MoneriumProfileKind.CORPORATE, name = "Asso", state = "approved"))
             )
         )
 
@@ -72,7 +73,7 @@ class MoneriumApiClientTest {
                 any<HttpEntity<*>>(),
                 eq(MoneriumProfileDto::class.java),
             )
-        } returns ResponseEntity.ok(MoneriumProfileDto(id = "profile-xyz", kind = "corporate", name = null, state = null))
+        } returns ResponseEntity.ok(MoneriumProfileDto(id = "profile-xyz", kind = MoneriumProfileKind.CORPORATE, name = null, state = null))
 
         val result = client.getProfile(associationId, "profile-xyz")
 

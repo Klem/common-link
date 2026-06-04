@@ -3,9 +3,13 @@ package org.commonlink.service
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MoneriumConfig
 import org.commonlink.dto.MoneriumStatusDto
+import org.commonlink.dto.monerium.MoneriumAuthContextDto
+import org.commonlink.dto.monerium.MoneriumProfileDto
 import org.commonlink.entity.MoneriumConnection
 import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.MoneriumOAuthState
+import org.commonlink.entity.MoneriumProfileKind
+import org.commonlink.exception.ConflictException
 import org.commonlink.exception.MoneriumReauthRequiredException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
@@ -13,6 +17,7 @@ import org.commonlink.repository.MoneriumOAuthStateRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -65,6 +70,11 @@ class MoneriumService(
             )
         )
 
+        // No `email` param on purpose: Monerium pre-fills the login form with whatever we
+        // send, which makes the popup look like it's stuck on the previous user's account.
+        // Letting the field start empty forces the user to type the credentials they want.
+        // Monerium also publishes no logout endpoint, so this is the only knob we have to
+        // discourage account-reuse on shared browsers.
         val params = mapOf(
             "client_id" to config.clientId,
             "redirect_uri" to config.redirectUri,
@@ -74,7 +84,14 @@ class MoneriumService(
             "code_challenge" to codeChallenge,
             "code_challenge_method" to "S256",
             "skip_kyc" to config.skipKyc,
-            "email" to association.user.email
+            // Standard OIDC param to force re-authentication; Monerium does NOT document
+            // honouring it today, but sending it costs nothing and we get the fix for free
+            // if/when they add support. Real defence against wrong-account binding is the
+            // post-callback profile capture + UI "Connected as: X" confirmation.
+            "prompt" to "login",
+            // Force the popup to show the login screen first for unauthenticated users
+            // (rather than the start screen). This IS honoured by Monerium today.
+            "auth_mode" to "login",
         ).entries.joinToString("&") { (k, v) ->
             "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
         }
@@ -106,9 +123,33 @@ class MoneriumService(
 
         val tokenResponse = exchangeCode(code, oauthState.codeVerifier)
 
+        // Best-effort capture of the Monerium profile so future API calls don't have to
+        // re-discover it. Failure here must not block onboarding — the user may legitimately
+        // have no profile yet (KYB not started).
+        val profile = fetchPreferredProfile(tokenResponse.accessToken)
+
+        // If we got a profile id, reject the bind when another association already owns it.
+        // Catches "I previously linked Monerium account X to association A; now I'm trying
+        // to link X to association B". The guard does NOT fire when the profile fetch
+        // failed or returned no profiles — accepting that gap is a deliberate trade of the
+        // single-column design (the alternative would be to also persist tokenResponse.userId
+        // for guarding purposes only).
+        profile?.id?.let { profileId ->
+            val existing = connectionRepo.findByMoneriumProfileId(profileId)
+            if (existing != null && existing.association.id != oauthState.association.id) {
+                logger.warn(
+                    "Refusing to bind Monerium profile {} to association {} — already linked to {}",
+                    profileId, oauthState.association.id, existing.association.id,
+                )
+                stateRepo.delete(oauthState)
+                throw ConflictException("This Monerium account is already linked to another association")
+            }
+        }
+
         val connection = MoneriumConnection(
             association = oauthState.association,
-            moneriumUserId = tokenResponse.userId,
+            moneriumProfileId = profile?.id,
+            moneriumProfileName = profile?.name,
             accessToken = tokenResponse.accessToken,
             refreshToken = tokenResponse.refreshToken,
             expiresAt = Instant.now().plusSeconds(tokenResponse.expiresIn.toLong()),
@@ -116,8 +157,47 @@ class MoneriumService(
 
         stateRepo.delete(oauthState)
         val saved = connectionRepo.save(connection)
-        logger.info("Monerium connection saved for association {}", oauthState.association.id)
+        logger.info(
+            "Monerium connection saved for association {} (profile={})",
+            oauthState.association.id, profile?.id,
+        )
         return saved
+    }
+
+    /**
+     * Calls `GET /auth/context` with the freshly minted access token to find the profile
+     * we should pin to this connection. `/auth/context` is reachable with just the `openid`
+     * scope we request at consent time — `GET /profiles` would require the extra `profiles`
+     * scope (and 403s without it).
+     *
+     * Prefers `defaultProfile` from the context; otherwise picks the first corporate profile
+     * (expected case for associations); finally falls back to the first profile of any kind.
+     *
+     * Returns null on empty list or any HTTP failure — callers must treat null as "no
+     * profile captured yet, will re-discover later" rather than as an error.
+     */
+    private fun fetchPreferredProfile(accessToken: String): MoneriumProfileDto? {
+        return try {
+            val headers = HttpHeaders().apply {
+                setBearerAuth(accessToken)
+                accept = listOf(MediaType.parseMediaType("application/vnd.monerium.api-v2+json"))
+            }
+            val response = restTemplate.exchange(
+                "${config.baseUrl}/auth/context",
+                HttpMethod.GET,
+                HttpEntity<Void>(headers),
+                MoneriumAuthContextDto::class.java,
+            )
+            val body = response.body ?: return null
+            val profiles = body.profiles
+            val defaultProfile = body.defaultProfile?.let { id -> profiles.firstOrNull { it.id == id } }
+            defaultProfile
+                ?: profiles.firstOrNull { it.kind == MoneriumProfileKind.CORPORATE }
+                ?: profiles.firstOrNull()
+        } catch (ex: Exception) {
+            logger.warn("Failed to fetch Monerium auth context during callback: {}", ex.message)
+            null
+        }
     }
 
     /**
@@ -132,9 +212,15 @@ class MoneriumService(
     fun getConnectionStatus(userId: UUID): MoneriumStatusDto {
         val association = associationRepo.findByUserId(userId)
             .orElseThrow { IllegalArgumentException("Association not found for user: $userId") }
-        val connected = connectionRepo.findByAssociation(association) != null
+        val connection = connectionRepo.findByAssociation(association)
+        val connected = connection != null
         val pending = !connected && stateRepo.existsByAssociationAndExpiresAtAfter(association, Instant.now())
-        return MoneriumStatusDto(connected = connected, pending = pending)
+        return MoneriumStatusDto(
+            connected = connected,
+            pending = pending,
+            profileId = connection?.moneriumProfileId,
+            profileName = connection?.moneriumProfileName,
+        )
     }
 
     /**

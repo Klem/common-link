@@ -27,4 +27,13 @@ interface MoneriumConnectionRepository : JpaRepository<MoneriumConnection, UUID>
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM MoneriumConnection c WHERE c.association.id = :associationId")
     fun findByAssociationIdForUpdate(associationId: UUID): MoneriumConnection?
+
+    /**
+     * Returns the connection that already binds the given Monerium profile id, or null.
+     *
+     * Used at callback time to reject "this Monerium account is already linked to another
+     * association" — the failure mode where someone reconnects the wrong account because
+     * the OAuth popup was prefilled with a different Monerium session.
+     */
+    fun findByMoneriumProfileId(moneriumProfileId: String): MoneriumConnection?
 }

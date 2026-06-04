@@ -1,5 +1,7 @@
 package org.commonlink.entity
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 /**
  * Defines the two types of users on the platform.
  *
@@ -106,6 +108,26 @@ enum class MoneriumConnectionState {
     ACTIVE,
     /** Refresh token was rejected by Monerium; the association must reconnect via PKCE. */
     BROKEN,
+}
+
+/**
+ * Type of Monerium profile. Matches the `kind` field returned by Monerium API v2 — Monerium
+ * uses lowercase strings on the wire ("personal", "corporate"), so each constant is annotated
+ * with [com.fasterxml.jackson.annotation.JsonProperty] to map the casing without hand-rolling
+ * a serializer. CommonLink associations are always [CORPORATE].
+ */
+enum class MoneriumProfileKind {
+    @JsonProperty("personal")
+    PERSONAL,
+
+    @JsonProperty("corporate")
+    CORPORATE,
+
+    @JsonProperty("unknown")
+    UNKNOWN,
+
+    @JsonProperty("")
+    EMPTY,
 }
 
 /**

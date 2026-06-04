@@ -25,9 +25,23 @@ class MoneriumConnection(
     @JoinColumn(name = "association_id", nullable = false, unique = true)
     val association: AssociationProfile,
 
-    /** Monerium user identifier returned in the token response. */
-    @Column(name = "monerium_user_id", nullable = true)
-    val moneriumUserId: String?,
+    /**
+     * Monerium profile id (KYB record). Captured at callback time by querying `/profiles`
+     * with the new access token; null if the user has no profile yet (brand-new Monerium
+     * account with KYB not started). Pinning this here removes the need to re-discover the
+     * right profile on every API call when the user happens to own multiple profiles.
+     */
+    @Column(name = "monerium_profile_id", nullable = true)
+    var moneriumProfileId: String? = null,
+
+    /**
+     * Display name of the linked Monerium profile. Exposed in [org.commonlink.dto.MoneriumStatusDto]
+     * so the frontend can render a "Connected as: X" line with a "not me — reconnect" affordance,
+     * which is the only mitigation we have for browser-autofill connecting the wrong account
+     * (Monerium doesn't honour `prompt=login`).
+     */
+    @Column(name = "monerium_profile_name", nullable = true)
+    var moneriumProfileName: String? = null,
 
     /** Short-lived bearer token for Monerium API calls. */
     @Column(name = "access_token", nullable = false, columnDefinition = "TEXT")
