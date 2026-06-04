@@ -17,6 +17,11 @@ data class MoneriumAddressDto(
     val chains: List<String>? = null,
 )
 
+/** Envelope for `GET /addresses` response. */
+data class MoneriumAddressListDto(
+    @field:JsonProperty("addresses") val addresses: List<MoneriumAddressDto> = emptyList(),
+)
+
 /**
  * Request body sent to Monerium `POST /addresses` to link a wallet.
  *

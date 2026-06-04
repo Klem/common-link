@@ -2,7 +2,9 @@ package org.commonlink.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MoneriumConfig
+import org.commonlink.config.OnchainConfig
 import org.commonlink.dto.MoneriumStatusDto
+import org.commonlink.dto.monerium.MoneriumAddressListDto
 import org.commonlink.dto.monerium.MoneriumAuthContextDto
 import org.commonlink.dto.monerium.MoneriumProfileDto
 import org.commonlink.entity.MoneriumConnection
@@ -40,6 +42,7 @@ import java.util.UUID
 @Service
 class MoneriumService(
     private val config: MoneriumConfig,
+    private val onchainConfig: OnchainConfig,
     private val stateRepo: MoneriumOAuthStateRepository,
     private val connectionRepo: MoneriumConnectionRepository,
     private val associationRepo: AssociationProfileRepository,
@@ -146,10 +149,13 @@ class MoneriumService(
             }
         }
 
+        val walletAddress = profile?.id?.let { fetchPreferredAddress(tokenResponse.accessToken, it) }
+
         val connection = MoneriumConnection(
             association = oauthState.association,
             moneriumProfileId = profile?.id,
             moneriumProfileName = profile?.name,
+            walletAddress = walletAddress,
             accessToken = tokenResponse.accessToken,
             refreshToken = tokenResponse.refreshToken,
             expiresAt = Instant.now().plusSeconds(tokenResponse.expiresIn.toLong()),
@@ -180,7 +186,7 @@ class MoneriumService(
         return try {
             val headers = HttpHeaders().apply {
                 setBearerAuth(accessToken)
-                accept = listOf(MediaType.parseMediaType("application/vnd.monerium.api-v2+json"))
+                accept = listOf(MediaType.parseMediaType(MoneriumApiClient.API_ACCEPT))
             }
             val response = restTemplate.exchange(
                 "${config.baseUrl}/auth/context",
@@ -198,6 +204,33 @@ class MoneriumService(
             logger.warn("Failed to fetch Monerium auth context during callback: {}", ex.message)
             null
         }
+    }
+
+    /**
+     * Fetches the on-chain wallet address for the given profile from `GET /addresses`.
+     *
+     * Selects the address matching [OnchainConfig.moneriumChain]; falls back to the first
+     * address of any chain. Returns null on empty list or any HTTP failure — callers must
+     * treat null as "no wallet yet" and not block onboarding.
+     */
+    private fun fetchPreferredAddress(accessToken: String, profileId: String): String? = try {
+        val headers = HttpHeaders().apply {
+            setBearerAuth(accessToken)
+            accept = listOf(MediaType.parseMediaType(MoneriumApiClient.API_ACCEPT))
+        }
+        val response = restTemplate.exchange(
+            "${config.baseUrl}/addresses?profile=$profileId",
+            HttpMethod.GET,
+            HttpEntity<Void>(headers),
+            MoneriumAddressListDto::class.java,
+        )
+        val targetChain = onchainConfig.moneriumChain
+        val addresses = response.body?.addresses.orEmpty()
+        addresses.firstOrNull { it.chain == targetChain || it.chains?.contains(targetChain) == true }?.address
+            ?: addresses.firstOrNull()?.address
+    } catch (ex: Exception) {
+        logger.warn("Failed to fetch Monerium addresses during callback: {}", ex.message)
+        null
     }
 
     /**

@@ -67,4 +67,14 @@ class MoneriumConnection(
     @Enumerated(EnumType.STRING)
     @Column(name = "state", nullable = false, length = 16)
     var state: MoneriumConnectionState = MoneriumConnectionState.ACTIVE,
+
+    /**
+     * On-chain wallet address (42-char hex with 0x prefix) fetched from
+     * `GET /addresses?profile={profileId}` at OAuth callback time.
+     * Null when Monerium KYB is incomplete and no address has been linked yet.
+     * Required before a [org.commonlink.entity.OnchainJobAction.VERIFY_ASSOCIATION] job
+     * can be enqueued.
+     */
+    @Column(name = "wallet_address", length = 42)
+    var walletAddress: String? = null,
 )
