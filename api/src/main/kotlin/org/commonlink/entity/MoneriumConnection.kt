@@ -77,4 +77,12 @@ class MoneriumConnection(
      */
     @Column(name = "wallet_address", length = 42)
     var walletAddress: String? = null,
+
+    /**
+     * Chain on which [walletAddress] lives, as reported by Monerium at OAuth callback
+     * time. Persisted so downstream on-chain dispatch uses the link-time chain as the
+     * source of truth rather than re-deriving it.
+     */
+    @Column(name = "wallet_chain", length = 32)
+    var walletChain: String? = null,
 )

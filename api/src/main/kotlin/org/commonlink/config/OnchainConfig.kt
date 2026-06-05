@@ -13,8 +13,6 @@ data class OnchainConfig(
     val receiptTimeoutMs: Long,
     val donorAddressSecret: String,
     val worker: WorkerConfig,
-    /** Chain name used to select the correct Monerium wallet address (e.g. "gnosis", "polygon"). */
-    val moneriumChain: String,
 ) {
     data class WorkerConfig(
         val enabled: Boolean,

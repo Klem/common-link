@@ -2,7 +2,6 @@ package org.commonlink.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MoneriumConfig
-import org.commonlink.config.OnchainConfig
 import org.commonlink.dto.MoneriumStatusDto
 import org.commonlink.dto.monerium.MoneriumAddressListDto
 import org.commonlink.dto.monerium.MoneriumAuthContextDto
@@ -42,7 +41,6 @@ import java.util.UUID
 @Service
 class MoneriumService(
     private val config: MoneriumConfig,
-    private val onchainConfig: OnchainConfig,
     private val stateRepo: MoneriumOAuthStateRepository,
     private val connectionRepo: MoneriumConnectionRepository,
     private val associationRepo: AssociationProfileRepository,
@@ -73,11 +71,6 @@ class MoneriumService(
             )
         )
 
-        // No `email` param on purpose: Monerium pre-fills the login form with whatever we
-        // send, which makes the popup look like it's stuck on the previous user's account.
-        // Letting the field start empty forces the user to type the credentials they want.
-        // Monerium also publishes no logout endpoint, so this is the only knob we have to
-        // discourage account-reuse on shared browsers.
         val params = mapOf(
             "client_id" to config.clientId,
             "redirect_uri" to config.redirectUri,
@@ -89,12 +82,14 @@ class MoneriumService(
             "skip_kyc" to config.skipKyc,
             // Standard OIDC param to force re-authentication; Monerium does NOT document
             // honouring it today, but sending it costs nothing and we get the fix for free
-            // if/when they add support. Real defence against wrong-account binding is the
-            // post-callback profile capture + UI "Connected as: X" confirmation.
+            // if/when they add support.
             "prompt" to "login",
             // Force the popup to show the login screen first for unauthenticated users
             // (rather than the start screen). This IS honoured by Monerium today.
             "auth_mode" to "login",
+            // Pre-fill the login / KYC form with the association's email. Single-account
+            // model per association makes the wrong-account-binding risk a non-issue.
+            "email" to association.user.email,
         ).entries.joinToString("&") { (k, v) ->
             "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
         }
@@ -149,13 +144,14 @@ class MoneriumService(
             }
         }
 
-        val walletAddress = profile?.id?.let { fetchPreferredAddress(tokenResponse.accessToken, it) }
+        val walletBinding = profile?.id?.let { fetchPreferredAddress(tokenResponse.accessToken, it) }
 
         val connection = MoneriumConnection(
             association = oauthState.association,
             moneriumProfileId = profile?.id,
             moneriumProfileName = profile?.name,
-            walletAddress = walletAddress,
+            walletAddress = walletBinding?.address,
+            walletChain = walletBinding?.chain,
             accessToken = tokenResponse.accessToken,
             refreshToken = tokenResponse.refreshToken,
             expiresAt = Instant.now().plusSeconds(tokenResponse.expiresIn.toLong()),
@@ -209,11 +205,11 @@ class MoneriumService(
     /**
      * Fetches the on-chain wallet address for the given profile from `GET /addresses`.
      *
-     * Selects the address matching [OnchainConfig.moneriumChain]; falls back to the first
-     * address of any chain. Returns null on empty list or any HTTP failure — callers must
-     * treat null as "no wallet yet" and not block onboarding.
+     * Takes the first address Monerium returns and persists its reported chain alongside
+     * the address. Returns null on empty list or any HTTP failure; callers treat it as
+     * "no wallet yet, retry later" and do not block onboarding.
      */
-    private fun fetchPreferredAddress(accessToken: String, profileId: String): String? = try {
+    private fun fetchPreferredAddress(accessToken: String, profileId: String): WalletBinding? = try {
         val headers = HttpHeaders().apply {
             setBearerAuth(accessToken)
             accept = listOf(MediaType.parseMediaType(MoneriumApiClient.API_ACCEPT))
@@ -224,14 +220,16 @@ class MoneriumService(
             HttpEntity<Void>(headers),
             MoneriumAddressListDto::class.java,
         )
-        val targetChain = onchainConfig.moneriumChain
-        val addresses = response.body?.addresses.orEmpty()
-        addresses.firstOrNull { it.chain == targetChain || it.chains?.contains(targetChain) == true }?.address
-            ?: addresses.firstOrNull()?.address
+        val first = response.body?.addresses.orEmpty().firstOrNull()
+        val chain = first?.chain ?: first?.chains?.firstOrNull()
+        first?.let { WalletBinding(address = it.address, chain = chain) }
     } catch (ex: Exception) {
         logger.warn("Failed to fetch Monerium addresses during callback: {}", ex.message)
         null
     }
+
+    /** Address + chain pair captured at OAuth callback time. */
+    private data class WalletBinding(val address: String, val chain: String?)
 
     /**
      * Returns the Monerium connection status for the association.

@@ -5,7 +5,6 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.config.MoneriumConfig
-import org.commonlink.config.OnchainConfig
 import org.commonlink.dto.monerium.MoneriumAddressDto
 import org.commonlink.dto.monerium.MoneriumAddressListDto
 import org.commonlink.dto.monerium.MoneriumAuthContextDto
@@ -50,13 +49,12 @@ class MoneriumServiceTest {
         redirectUri = "http://localhost:8080/api/monerium/callback",
     )
 
-    private val onchainConfig: OnchainConfig = mockk(relaxed = true)
     private val stateRepo: MoneriumOAuthStateRepository = mockk()
     private val connectionRepo: MoneriumConnectionRepository = mockk()
     private val associationRepo: AssociationProfileRepository = mockk()
     private val restTemplate: RestTemplate = mockk()
 
-    private val service = MoneriumService(config, onchainConfig, stateRepo, connectionRepo, associationRepo, restTemplate)
+    private val service = MoneriumService(config, stateRepo, connectionRepo, associationRepo, restTemplate)
 
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val mockAssociation: AssociationProfile = mockk(relaxed = true)
@@ -81,10 +79,12 @@ class MoneriumServiceTest {
     fun setupCommonMocks() {
         every { associationRepo.findByUserId(userId) } returns Optional.of(mockAssociation)
         every { mockAssociation.id } returns mockAssociationId
-        every { onchainConfig.moneriumChain } returns "gnosis"
     }
 
-    private fun stubAddressesEndpoint(address: String? = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef") {
+    private fun stubAddressesEndpoint(
+        address: String? = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+        chain: String = "gnosis",
+    ) {
         every {
             restTemplate.exchange(
                 any<String>(), eq(HttpMethod.GET), any<HttpEntity<*>>(), eq(MoneriumAddressListDto::class.java),
@@ -92,7 +92,7 @@ class MoneriumServiceTest {
         } returns ResponseEntity.ok(
             MoneriumAddressListDto(
                 addresses = if (address == null) emptyList()
-                else listOf(MoneriumAddressDto(id = null, profile = null, address = address, chain = "gnosis")),
+                else listOf(MoneriumAddressDto(id = null, profile = null, address = address, chain = chain)),
             )
         )
     }
@@ -182,7 +182,27 @@ class MoneriumServiceTest {
         assertEquals("profile-corp-1", result.moneriumProfileId)
         assertEquals("Acme Asso", result.moneriumProfileName)
         assertEquals("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", result.walletAddress)
+        assertEquals("gnosis", result.walletChain)
         assertNotNull(result.expiresAt)
+    }
+
+    @Test
+    fun `handleCallback - skips wallet capture when profile has no addresses`() {
+        every { stateRepo.findById("test-state-uuid") } returns Optional.of(sampleState)
+        every {
+            restTemplate.postForEntity(any<String>(), any(), eq(MoneriumService.TokenResponse::class.java))
+        } returns ResponseEntity.ok(sampleTokenResponse)
+        stubProfilesEndpoint()
+        stubAddressesEndpoint(address = null)
+        every { connectionRepo.findByMoneriumProfileId("profile-corp-1") } returns null
+        every { connectionRepo.save(any()) } answers { firstArg() }
+        justRun { stateRepo.delete(sampleState) }
+
+        val result = service.handleCallback("auth-code-abc", "test-state-uuid")
+
+        assertEquals(null, result.walletAddress)
+        assertEquals(null, result.walletChain)
+        assertEquals("profile-corp-1", result.moneriumProfileId)
     }
 
     @Test

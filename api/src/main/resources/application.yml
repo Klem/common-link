@@ -74,7 +74,6 @@ onchain:
     enabled: true
     batch-size: 10
     fixed-delay-ms: 5000
-  monerium-chain: ${ONCHAIN_MONERIUM_CHAIN:gnosis}
 
 logging:
   level:
