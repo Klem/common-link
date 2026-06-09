@@ -30,5 +30,9 @@ class DonorProfile(
 
     /** When `true`, the donor's name is hidden on all public donation listings. */
     @Column(name = "anonymous", nullable = false)
-    var anonymous: Boolean = false
+    var anonymous: Boolean = false,
+
+    /** Deterministic 20-byte EVM address derived from the donor's UUID via HMAC-SHA256. Null until first donation. */
+    @Column(name = "wallet_address", length = 42)
+    var walletAddress: String? = null,
 )
