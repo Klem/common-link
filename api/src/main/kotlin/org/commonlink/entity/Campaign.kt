@@ -66,6 +66,10 @@ class Campaign(
     @Column(name = "contract_address", length = 255)
     var contractAddress: String? = null,
 
+    /** keccak256 hex (0x + 64 chars) of the canonical budget JSON. Set at publish and updated on budget edits. */
+    @Column(name = "budget_hash", length = 66)
+    var budgetHash: String? = null,
+
     /** Timestamp of record creation; immutable after insert. */
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),

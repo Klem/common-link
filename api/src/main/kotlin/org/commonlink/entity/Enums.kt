@@ -80,7 +80,13 @@ enum class CampaignStatus {
     DRAFT,
     /** Campaign is published and actively accepting donations. */
     LIVE,
-    /** Campaign collection period is over. */
+    /** Campaign is temporarily suspended by the association. */
+    PAUSED,
+    /** Campaign was cancelled before completion. */
+    CANCELLED,
+    /** Campaign reached its goal and has been completed. */
+    COMPLETED,
+    /** Campaign collection period is over (legacy terminal state). */
     ENDED
 }
 

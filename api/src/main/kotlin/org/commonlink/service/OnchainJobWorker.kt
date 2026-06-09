@@ -36,7 +36,7 @@ class OnchainJobWorker(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Scheduled(fixedDelayString = "\${onchain.worker.fixed-delay-ms}")
+    @Scheduled(fixedDelayString = "\${onchain.worker.fixed-delay-ms}00")
     fun tick() {
         val batch = pickBatch()
         if (batch.isEmpty()) return

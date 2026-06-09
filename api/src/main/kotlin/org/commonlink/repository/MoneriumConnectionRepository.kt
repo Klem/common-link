@@ -6,6 +6,7 @@ import org.commonlink.entity.MoneriumConnection
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.util.UUID
 
 interface MoneriumConnectionRepository : JpaRepository<MoneriumConnection, UUID> {
@@ -36,4 +37,13 @@ interface MoneriumConnectionRepository : JpaRepository<MoneriumConnection, UUID>
      * the OAuth popup was prefilled with a different Monerium session.
      */
     fun findByMoneriumProfileId(moneriumProfileId: String): MoneriumConnection?
+
+    /**
+     * Returns the Monerium connection for the given association id, or null.
+     *
+     * Convenience overload for callers that have only the association UUID (avoids loading
+     * the full [AssociationProfile] entity just to call [findByAssociation]).
+     */
+    @Query("SELECT c FROM MoneriumConnection c WHERE c.association.id = :associationId")
+    fun findByAssociationId(associationId: UUID): MoneriumConnection?
 }
