@@ -98,6 +98,7 @@ class CampaignControllerTest {
         startDate = null,
         endDate = null,
         contractAddress = null,
+        budgetHash = null,
         budgetSections = listOf(sampleSection),
         milestones = listOf(sampleMilestone),
         createdAt = Instant.now(),
