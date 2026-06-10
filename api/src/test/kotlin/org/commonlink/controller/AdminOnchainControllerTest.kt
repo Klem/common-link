@@ -150,6 +150,18 @@ class AdminOnchainControllerTest {
     }
 
     @Test
+    fun `campaign revert_to_draft - 422 when not in REVERT_REQUESTED state`() {
+        every { campaignService.existsById(campaignId) } returns true
+        every { campaignService.adminTransition(campaignId, any()) } throws
+            org.commonlink.exception.UnprocessableEntityException("Campaign must be in REVERT_REQUESTED state")
+
+        mockMvc.perform(
+            post("/api/admin/onchain/campaigns/$campaignId/revert_to_draft")
+                .with(user("curator").roles("CURATOR"))
+        ).andExpect(status().`is`(422))
+    }
+
+    @Test
     fun `campaign revert_to_draft - 422 when raised gt 0`() {
         every { campaignService.existsById(campaignId) } returns true
         every { campaignService.adminTransition(campaignId, any()) } throws
@@ -162,10 +174,11 @@ class AdminOnchainControllerTest {
     }
 
     @Test
-    fun `campaign revert_to_draft - 202 when raised is 0`() {
+    fun `campaign revert_to_draft - 202 uses idempotent correlation key`() {
         every { campaignService.existsById(campaignId) } returns true
         justRun { campaignService.adminTransition(campaignId, any()) }
-        every { outbox.enqueue(any(), any(), null) } returns pendingJob(OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT)
+        every { outbox.enqueue(any(), any(), "REVERT_CAMPAIGN_TO_DRAFT:$campaignId") } returns
+            pendingJob(OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT)
 
         mockMvc.perform(
             post("/api/admin/onchain/campaigns/$campaignId/revert_to_draft")

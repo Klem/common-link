@@ -78,8 +78,15 @@ class CampaignService(
     fun adminTransition(id: UUID, target: CampaignStatus) {
         val campaign = campaignRepository.findById(id)
             .orElseThrow { NotFoundException("Campaign not found: $id") }
-        if (target == CampaignStatus.DRAFT && campaign.raised > BigDecimal.ZERO) {
-            throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
+        if (target == CampaignStatus.DRAFT) {
+            if (campaign.status != CampaignStatus.REVERT_REQUESTED) {
+                throw UnprocessableEntityException("Campaign must be in REVERT_REQUESTED state to revert to draft (current: ${campaign.status})")
+            }
+            if (campaign.raised > BigDecimal.ZERO) {
+                throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
+            }
+        } else {
+            validateStatusTransition(campaign.status, target)
         }
         campaign.status = target
         campaignRepository.save(campaign)
@@ -177,7 +184,7 @@ class CampaignService(
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
                 preparePublish(campaign, associationId)
             }
-            if (req.status == CampaignStatus.DRAFT && campaign.raised > BigDecimal.ZERO) {
+            if (req.status == CampaignStatus.REVERT_REQUESTED && campaign.raised > BigDecimal.ZERO) {
                 throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
             }
             campaign.status = req.status
@@ -477,15 +484,17 @@ class CampaignService(
      */
     private fun validateStatusTransition(current: CampaignStatus, next: CampaignStatus) {
         val allowed = when (current) {
-            CampaignStatus.DRAFT     -> next == CampaignStatus.LIVE || next == CampaignStatus.ENDED
-            CampaignStatus.LIVE      -> next == CampaignStatus.PAUSED || next == CampaignStatus.CANCELLED ||
-                                        next == CampaignStatus.COMPLETED || next == CampaignStatus.ENDED ||
-                                        next == CampaignStatus.DRAFT
-            CampaignStatus.PAUSED    -> next == CampaignStatus.LIVE || next == CampaignStatus.CANCELLED ||
-                                        next == CampaignStatus.COMPLETED || next == CampaignStatus.DRAFT
-            CampaignStatus.ENDED     -> false
-            CampaignStatus.CANCELLED -> false
-            CampaignStatus.COMPLETED -> false
+            CampaignStatus.DRAFT            -> next == CampaignStatus.LIVE || next == CampaignStatus.ENDED
+            CampaignStatus.LIVE             -> next == CampaignStatus.PAUSED || next == CampaignStatus.CANCELLED ||
+                                               next == CampaignStatus.COMPLETED || next == CampaignStatus.ENDED ||
+                                               next == CampaignStatus.REVERT_REQUESTED
+            CampaignStatus.PAUSED           -> next == CampaignStatus.LIVE || next == CampaignStatus.CANCELLED ||
+                                               next == CampaignStatus.COMPLETED ||
+                                               next == CampaignStatus.REVERT_REQUESTED
+            CampaignStatus.REVERT_REQUESTED -> false  // terminal for association; only CURATOR can move it
+            CampaignStatus.ENDED            -> false
+            CampaignStatus.CANCELLED        -> false
+            CampaignStatus.COMPLETED        -> false
         }
         if (!allowed) {
             throw UnprocessableEntityException("Invalid status transition from $current to $next")
@@ -546,6 +555,8 @@ class CampaignService(
                 outbox.enqueue(OnchainJobAction.CANCEL_CAMPAIGN, CampaignIdPayload(id), null)
             to == CampaignStatus.COMPLETED || to == CampaignStatus.ENDED ->
                 outbox.enqueue(OnchainJobAction.COMPLETE_CAMPAIGN, CampaignIdPayload(id), null)
+            to == CampaignStatus.REVERT_REQUESTED ->
+                outbox.enqueue(OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT, CampaignIdPayload(id), "REVERT_CAMPAIGN_TO_DRAFT:$id")
         }
     }
 }

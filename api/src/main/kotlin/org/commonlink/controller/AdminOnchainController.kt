@@ -93,7 +93,11 @@ class AdminOnchainController(
             CampaignAdminAction.REVERT_TO_DRAFT -> OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT
         }
         campaignService.adminTransition(id, target)
-        val job = outbox.enqueue(onchainAction, CampaignIdPayload(id), correlationKey = null)
+        // For REVERT_TO_DRAFT the association already enqueued the job; use the same correlation key
+        // to return the existing job rather than creating a duplicate.
+        val correlationKey = if (parsedAction == CampaignAdminAction.REVERT_TO_DRAFT)
+            "REVERT_CAMPAIGN_TO_DRAFT:$id" else null
+        val job = outbox.enqueue(onchainAction, CampaignIdPayload(id), correlationKey = correlationKey)
         return ResponseEntity.accepted().body(JobEnqueuedResponse(job.id, job.status.name))
     }
 

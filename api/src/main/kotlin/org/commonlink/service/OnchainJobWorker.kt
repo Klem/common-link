@@ -2,11 +2,13 @@ package org.commonlink.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.config.OnchainConfig
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.onchain.OnchainCodec
 import org.commonlink.onchain.OnchainRegistryClient
+import org.commonlink.repository.CampaignRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
@@ -30,6 +32,7 @@ import java.util.UUID
 @ConditionalOnProperty(prefix = "onchain.worker", name = ["enabled"], havingValue = "true")
 class OnchainJobWorker(
     private val repo: org.commonlink.repository.OnchainJobRepository,
+    private val campaignRepository: CampaignRepository,
     private val client: OnchainRegistryClient,
     private val objectMapper: ObjectMapper,
     private val cfg: OnchainConfig,
@@ -61,6 +64,7 @@ class OnchainJobWorker(
             job.txHash = receipt.transactionHash
             job.blockNumber = receipt.blockNumber.toLong()
             job.status = OnchainJobStatus.DONE
+            onSuccess(job)
         } catch (ex: Exception) {
             logger.error("Onchain job {} ({}) failed on attempt {}", job.id, job.action, job.attempts, ex)
             job.lastError = ex.message?.take(2000)
@@ -68,6 +72,20 @@ class OnchainJobWorker(
         } finally {
             job.updatedAt = Instant.now()
             repo.save(job)
+        }
+    }
+
+    private fun onSuccess(job: OnchainJob) {
+        when (job.action) {
+            OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT -> {
+                val campaignId = objectMapper.readValue(job.payloadJson, CampaignIdPayload::class.java).campaignId
+                campaignRepository.findById(campaignId).ifPresent { campaign ->
+                    campaign.status = CampaignStatus.DRAFT
+                    campaignRepository.save(campaign)
+                    logger.info("Campaign reverted to DRAFT after on-chain confirmation: campaignId={}", campaignId)
+                }
+            }
+            else -> Unit
         }
     }
 

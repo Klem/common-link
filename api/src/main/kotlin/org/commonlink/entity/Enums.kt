@@ -84,6 +84,8 @@ enum class CampaignStatus {
     LIVE,
     /** Campaign is temporarily suspended by the association. */
     PAUSED,
+    /** Association requested revert to draft; awaiting CURATOR on-chain execution. */
+    REVERT_REQUESTED,
     /** Campaign was cancelled before completion. */
     CANCELLED,
     /** Campaign reached its goal and has been completed. */
