@@ -85,6 +85,19 @@ class CampaignServiceTest {
         otherUserId = otherUser.id!!
     }
 
+    /** Links an ACTIVE Monerium wallet to the association, satisfying the publish-time gate. */
+    private fun linkMonerium(ownerId: UUID) {
+        val assoc = associationProfileRepository.findByUserId(ownerId).get()
+        moneriumConnectionRepository.save(MoneriumConnection(
+            association  = assoc,
+            walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+            accessToken  = "tok",
+            refreshToken = "ref",
+            expiresAt    = java.time.Instant.now().plusSeconds(3600),
+            state        = MoneriumConnectionState.ACTIVE,
+        ))
+    }
+
     // ── listCampaigns ─────────────────────────────────────────────────────────
 
     @Test
@@ -158,9 +171,10 @@ class CampaignServiceTest {
 
     @Test
     fun `updateCampaign - updates name and status`() {
+        linkMonerium(userId)
         val created = campaignService.createCampaign(
             userId,
-            CreateCampaignRequest(name = "Old Name")
+            CreateCampaignRequest(name = "Old Name", goal = BigDecimal("10000"))
         )
 
         val result = campaignService.updateCampaign(
@@ -176,7 +190,8 @@ class CampaignServiceTest {
     @Test
     fun `updateCampaign - invalid status transition LIVE to DRAFT throws 422`() {
         // LIVE → DRAFT is invalid (only LIVE → ENDED is allowed)
-        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign"))
+        linkMonerium(userId)
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign", goal = BigDecimal("10000")))
         campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
         assertThrows<UnprocessableEntityException> {
@@ -416,15 +431,7 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - valid campaign enqueues CREATE then PUBLISH, republish is no-op`() {
-        val assoc = associationProfileRepository.findByUserId(userId).get()
-        moneriumConnectionRepository.save(MoneriumConnection(
-            association  = assoc,
-            walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-            accessToken  = "tok",
-            refreshToken = "ref",
-            expiresAt    = java.time.Instant.now().plusSeconds(3600),
-            state        = MoneriumConnectionState.ACTIVE,
-        ))
+        linkMonerium(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("5000"))
         )
@@ -449,15 +456,7 @@ class CampaignServiceTest {
 
     @Test
     fun `saveBudget - LIVE campaign with changed budget enqueues UPDATE_CAMPAIGN_BUDGET, identical budget enqueues nothing`() {
-        val assoc = associationProfileRepository.findByUserId(userId).get()
-        moneriumConnectionRepository.save(MoneriumConnection(
-            association  = assoc,
-            walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-            accessToken  = "tok",
-            refreshToken = "ref",
-            expiresAt    = java.time.Instant.now().plusSeconds(3600),
-            state        = MoneriumConnectionState.ACTIVE,
-        ))
+        linkMonerium(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Budget test", goal = BigDecimal("5000"))
         )

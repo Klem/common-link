@@ -30,8 +30,7 @@ class OnchainJob(
     val id: UUID = UUID.randomUUID(),
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "action", nullable = false, columnDefinition = "onchain_job_action")
+    @Column(name = "action", nullable = false)
     val action: OnchainJobAction,
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -39,8 +38,7 @@ class OnchainJob(
     val payloadJson: String,
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "status", nullable = false, columnDefinition = "onchain_job_status")
+    @Column(name = "status", nullable = false)
     var status: OnchainJobStatus = OnchainJobStatus.PENDING,
 
     @Column(name = "attempts", nullable = false)
