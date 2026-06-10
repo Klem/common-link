@@ -255,6 +255,16 @@ class MoneriumService(
     }
 
     /**
+     * Returns the linked Monerium wallet address for an association, or `null` if the
+     * association has no Monerium connection (or the connection has no wallet bound yet).
+     *
+     * @param associationId UUID of the association profile.
+     * @return Wallet address (hex), or `null` when unavailable.
+     */
+    fun getWalletAddress(associationId: UUID): String? =
+        connectionRepo.findByAssociationId(associationId)?.walletAddress
+
+    /**
      * Returns a Monerium access token that is guaranteed valid for at least
      * [REFRESH_SAFETY_MARGIN_SECONDS] seconds (proactive refresh).
      *

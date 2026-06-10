@@ -6,7 +6,6 @@ import io.mockk.justRun
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
-import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
@@ -14,6 +13,7 @@ import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationService
 import org.commonlink.service.CampaignService
+import org.commonlink.service.MoneriumService
 import org.commonlink.service.OnchainOutboxService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,7 +41,7 @@ class AdminOnchainControllerTest {
     @MockkBean private lateinit var associationService: AssociationService
     @MockkBean private lateinit var campaignService: CampaignService
     @MockkBean private lateinit var outbox: OnchainOutboxService
-    @MockkBean private lateinit var moneriumConnectionRepo: MoneriumConnectionRepository
+    @MockkBean private lateinit var moneriumService: MoneriumService
     @MockkBean private lateinit var jwtService: JwtService
     @MockkBean private lateinit var userDetailsService: UserDetailsServiceImpl
     @MockkBean private lateinit var userRepository: UserRepository
@@ -95,7 +95,7 @@ class AdminOnchainControllerTest {
     @Test
     fun `association verify - 422 when no Monerium wallet`() {
         every { associationService.existsById(assocId) } returns true
-        every { moneriumConnectionRepo.findByAssociationId(assocId) } returns null
+        every { moneriumService.getWalletAddress(assocId) } returns null
 
         mockMvc.perform(
             post("/api/admin/onchain/associations/$assocId/verify")
@@ -106,11 +106,7 @@ class AdminOnchainControllerTest {
     @Test
     fun `association verify - 202 happy path`() {
         every { associationService.existsById(assocId) } returns true
-        every { moneriumConnectionRepo.findByAssociationId(assocId)?.walletAddress } returns null
-        // Build a mock connection with a walletAddress
-        val mockConn = io.mockk.mockk<org.commonlink.entity.MoneriumConnection>()
-        every { mockConn.walletAddress } returns "0xDeAdBeEf00000000000000000000000000000001"
-        every { moneriumConnectionRepo.findByAssociationId(assocId) } returns mockConn
+        every { moneriumService.getWalletAddress(assocId) } returns "0xDeAdBeEf00000000000000000000000000000001"
         every { associationService.getIdentifier(assocId) } returns "123456789"
         every { outbox.enqueue(any(), any(), any()) } returns pendingJob(OnchainJobAction.VERIFY_ASSOCIATION)
 

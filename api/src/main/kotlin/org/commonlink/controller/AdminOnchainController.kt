@@ -7,8 +7,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.exception.UnprocessableEntityException
-import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.service.AssociationService
+import org.commonlink.service.MoneriumService
 import org.commonlink.service.CampaignService
 import org.commonlink.service.CampaignIdPayload
 import org.commonlink.service.OnchainOutboxService
@@ -34,7 +34,7 @@ class AdminOnchainController(
     private val associationService: AssociationService,
     private val campaignService: CampaignService,
     private val outbox: OnchainOutboxService,
-    private val moneriumConnectionRepo: MoneriumConnectionRepository,
+    private val moneriumService: MoneriumService,
 ) {
 
     @PostMapping("/associations/{id}/{action}")
@@ -51,7 +51,7 @@ class AdminOnchainController(
         val parsedAction = runCatching { AssociationAdminAction.valueOf(action.uppercase()) }
             .getOrElse { return ResponseEntity.badRequest().build() }
         if (!associationService.existsById(id)) return ResponseEntity.notFound().build()
-        val wallet = moneriumConnectionRepo.findByAssociationId(id)?.walletAddress
+        val wallet = moneriumService.getWalletAddress(id)
             ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build()
 
         val job = when (parsedAction) {
