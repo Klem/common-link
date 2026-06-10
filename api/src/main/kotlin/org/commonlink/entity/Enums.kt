@@ -1,5 +1,7 @@
 package org.commonlink.entity
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 /**
  * Defines the two types of users on the platform.
  *
@@ -10,7 +12,9 @@ enum class UserRole {
     /** A philanthropist who browses campaigns and makes donations. */
     DONOR,
     /** A non-profit organisation that creates and manages fundraising campaigns. */
-    ASSOCIATION
+    ASSOCIATION,
+    /** A platform curator who can perform on-chain moderation actions (verify, pause, etc.). */
+    CURATOR,
 }
 
 /**
@@ -78,7 +82,15 @@ enum class CampaignStatus {
     DRAFT,
     /** Campaign is published and actively accepting donations. */
     LIVE,
-    /** Campaign collection period is over. */
+    /** Campaign is temporarily suspended by the association. */
+    PAUSED,
+    /** Association requested revert to draft; awaiting CURATOR on-chain execution. */
+    REVERT_REQUESTED,
+    /** Campaign was cancelled before completion. */
+    CANCELLED,
+    /** Campaign reached its goal and has been completed. */
+    COMPLETED,
+    /** Campaign collection period is over (legacy terminal state). */
     ENDED
 }
 
@@ -92,6 +104,40 @@ enum class BudgetSide {
     EXPENSE,
     /** Revenue/income items (French: produits). */
     REVENUE
+}
+
+/**
+ * Operational state of a Monerium connection.
+ *
+ * BROKEN means the stored refresh token has been rejected by Monerium (rotated, revoked, or
+ * expired) and no automated recovery is possible; the frontend must re-trigger the PKCE flow.
+ * Stored as a string column so future states (e.g. SUSPENDED) can be added without a migration.
+ */
+enum class MoneriumConnectionState {
+    /** Connection is healthy; access token can be refreshed silently. */
+    ACTIVE,
+    /** Refresh token was rejected by Monerium; the association must reconnect via PKCE. */
+    BROKEN,
+}
+
+/**
+ * Type of Monerium profile. Matches the `kind` field returned by Monerium API v2 — Monerium
+ * uses lowercase strings on the wire ("personal", "corporate"), so each constant is annotated
+ * with [com.fasterxml.jackson.annotation.JsonProperty] to map the casing without hand-rolling
+ * a serializer. CommonLink associations are always [CORPORATE].
+ */
+enum class MoneriumProfileKind {
+    @JsonProperty("personal")
+    PERSONAL,
+
+    @JsonProperty("corporate")
+    CORPORATE,
+
+    @JsonProperty("unknown")
+    UNKNOWN,
+
+    @JsonProperty("")
+    EMPTY,
 }
 
 /**

@@ -118,6 +118,18 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * Handles [MoneriumReauthRequiredException] with a `code: MONERIUM_REAUTH_REQUIRED`
+     * property (HTTP 409). The frontend uses this code to surface a "Reconnect Monerium"
+     * CTA and re-trigger the PKCE flow.
+     */
+    @ExceptionHandler(MoneriumReauthRequiredException::class)
+    fun handleMoneriumReauth(ex: MoneriumReauthRequiredException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Monerium reauthentication required")
+        problem.setProperty("code", "MONERIUM_REAUTH_REQUIRED")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [RateLimitException] (HTTP 429).
      *
      * Includes a `Retry-After: 600` header (10 minutes) as guidance for clients and proxies.

@@ -574,6 +574,7 @@ class AuthService(
                     )
                 }
             }
+            UserRole.CURATOR -> { /* curator accounts have no associated profile */ }
         }
     }
 

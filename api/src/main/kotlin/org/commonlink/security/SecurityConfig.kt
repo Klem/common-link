@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -32,6 +33,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val userDetailsService: UserDetailsServiceImpl,
@@ -66,6 +68,7 @@ class SecurityConfig(
                     .requestMatchers("/api/monerium/callback").permitAll()
                     // Optional: protect other actuator endpoints
 //                    .requestMatchers("/actuator/**").hasRole("ADMIN")
+                    .requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                     .requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
                     .requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
                     .requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())

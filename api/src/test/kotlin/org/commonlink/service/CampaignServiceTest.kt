@@ -11,9 +11,14 @@ import org.commonlink.dto.UpdateMilestoneRequest
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.entity.MoneriumConnection
+import org.commonlink.entity.MoneriumConnectionState
+import org.commonlink.entity.OnchainJobAction
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.MoneriumConnectionRepository
+import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
@@ -56,6 +61,12 @@ class CampaignServiceTest {
 
     @Autowired
     private lateinit var associationProfileRepository: AssociationProfileRepository
+
+    @Autowired
+    private lateinit var moneriumConnectionRepository: MoneriumConnectionRepository
+
+    @Autowired
+    private lateinit var onchainJobRepository: OnchainJobRepository
 
     @Autowired
     private lateinit var entityManager: EntityManager
@@ -387,5 +398,110 @@ class CampaignServiceTest {
         assertThrows<NotFoundException> {
             campaignService.deleteCampaign(userId, otherCampaign.id)
         }
+    }
+
+    // ── on-chain publish ──────────────────────────────────────────────────────
+
+    @Test
+    fun `publish - no Monerium wallet returns 422 and enqueues no job`() {
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("10000"))
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    @Test
+    fun `publish - valid campaign enqueues CREATE then PUBLISH, republish is no-op`() {
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        moneriumConnectionRepository.save(MoneriumConnection(
+            association  = assoc,
+            walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+            accessToken  = "tok",
+            refreshToken = "ref",
+            expiresAt    = java.time.Instant.now().plusSeconds(3600),
+            state        = MoneriumConnectionState.ACTIVE,
+        ))
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("5000"))
+        )
+
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+
+        val jobs = onchainJobRepository.findAll()
+        val actions = jobs.map { it.action }
+        assertEquals(1, actions.count { it == OnchainJobAction.CREATE_CAMPAIGN })
+        assertEquals(1, actions.count { it == OnchainJobAction.PUBLISH_CAMPAIGN })
+        // CREATE must have been inserted before PUBLISH
+        val createJob  = jobs.first { it.action == OnchainJobAction.CREATE_CAMPAIGN }
+        val publishJob = jobs.first { it.action == OnchainJobAction.PUBLISH_CAMPAIGN }
+        assertFalse(createJob.createdAt.isAfter(publishJob.createdAt))
+
+        // Republish is a no-op — correlation key guard prevents a second CREATE/PUBLISH
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertEquals(2, onchainJobRepository.findAll().size)
+    }
+
+    @Test
+    fun `saveBudget - LIVE campaign with changed budget enqueues UPDATE_CAMPAIGN_BUDGET, identical budget enqueues nothing`() {
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        moneriumConnectionRepository.save(MoneriumConnection(
+            association  = assoc,
+            walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+            accessToken  = "tok",
+            refreshToken = "ref",
+            expiresAt    = java.time.Instant.now().plusSeconds(3600),
+            state        = MoneriumConnectionState.ACTIVE,
+        ))
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Budget test", goal = BigDecimal("5000"))
+        )
+        val budgetReq = SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("500"), 0)))
+        ))
+        campaignService.saveBudget(userId, campaign.id, budgetReq)
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        val jobsAfterPublish = onchainJobRepository.findAll().size
+
+        // Edit with different amount — should enqueue UPDATE_CAMPAIGN_BUDGET
+        val changedBudget = SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("999"), 0)))
+        ))
+        campaignService.saveBudget(userId, campaign.id, changedBudget)
+        val jobsAfterChange = onchainJobRepository.findAll()
+        assertEquals(1, jobsAfterChange.count { it.action == OnchainJobAction.UPDATE_CAMPAIGN_BUDGET })
+
+        // Edit with same content — hash unchanged, no new job
+        campaignService.saveBudget(userId, campaign.id, changedBudget)
+        val jobsAfterSameEdit = onchainJobRepository.findAll()
+        assertEquals(1, jobsAfterSameEdit.count { it.action == OnchainJobAction.UPDATE_CAMPAIGN_BUDGET })
+    }
+
+    @Test
+    fun `saveBudget - DRAFT campaign updates budgetHash off-chain but enqueues no job`() {
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Draft budget test", goal = BigDecimal("5000"))
+        )
+        val budgetReq = SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Fournitures", BigDecimal("200"), 0)))
+        ))
+
+        campaignService.saveBudget(userId, campaign.id, budgetReq)
+
+        // No on-chain job for DRAFT campaigns
+        assertEquals(0, onchainJobRepository.findAll().size)
+        // But budgetHash is set in DB
+        entityManager.flush()
+        entityManager.clear()
+        val updated = campaignService.getCampaign(userId, campaign.id)
+        assertNotNull(updated.budgetHash)
     }
 }

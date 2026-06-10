@@ -11,6 +11,7 @@ import org.commonlink.dto.CampaignDto
 import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.CreateCampaignRequest
 import org.commonlink.dto.CreateMilestoneRequest
+import org.commonlink.dto.MarkMilestoneReachedRequest
 import org.commonlink.dto.MilestoneDto
 import org.commonlink.dto.ReorderMilestonesRequest
 import org.commonlink.dto.SaveBudgetRequest
@@ -325,4 +326,24 @@ class CampaignController(
         @Valid @RequestBody req: ReorderMilestonesRequest
     ): ResponseEntity<List<MilestoneDto>> =
         ResponseEntity.ok(campaignService.reorderMilestones(UUID.fromString(principal.username), id, req))
+
+    @PostMapping("/{id}/milestones/{msId}/reach")
+    @Operation(
+        summary = "Mark milestone reached",
+        description = "Sets the milestone status to REACHED and enqueues the on-chain proof registration."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Milestone marked as reached",
+            content = [Content(schema = Schema(implementation = MilestoneDto::class))]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign or milestone not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Milestone already reached", content = [Content()])
+    )
+    fun markMilestoneReached(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+        @PathVariable msId: UUID,
+        @Valid @RequestBody req: MarkMilestoneReachedRequest
+    ): ResponseEntity<MilestoneDto> =
+        ResponseEntity.ok(campaignService.markMilestoneReached(UUID.fromString(principal.username), id, msId, req.proofUrl))
 }

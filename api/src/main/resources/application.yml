@@ -52,6 +52,11 @@ app:
     base-url: ${MONERIUM_BASE_URL:https://api.monerium.dev}
     redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/monerium/callback}
     skip-kyc: true
+  # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
+  # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
+  curator:
+    email: ${APP_CURATOR_EMAIL:}
+    password: ${APP_CURATOR_PASSWORD:}
 
 springdoc:
   api-docs:
@@ -60,6 +65,20 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /api/docs/swagger-ui.html
+
+onchain:
+  rpc-url: ${ONCHAIN_RPC_URL:http://172.30.10.204:8545}
+  chain-id: ${ONCHAIN_CHAIN_ID:31337}
+  registry-address: ${ONCHAIN_REGISTRY_ADDRESS}
+  recorder-pk: ${ONCHAIN_RECORDER_PK}
+  curator-pk: ${ONCHAIN_CURATOR_PK}
+  polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
+  receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
+  donor-address-secret: ${DONOR_ADDRESS_SECRET}
+  worker:
+    enabled: true
+    batch-size: 10
+    fixed-delay-ms: 5000
 
 logging:
   level:
