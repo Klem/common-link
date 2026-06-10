@@ -25,6 +25,8 @@ class OnchainOutboxService(
      * @param payload an object Jackson can serialize; will be persisted as JSONB
      * @param correlationKey opaque key uniquely identifying the source business event; `null` disables idempotency
      */
+    fun find(id: java.util.UUID): OnchainJob? = repo.findById(id).orElse(null)
+
     @Transactional
     fun enqueue(action: OnchainJobAction, payload: Any, correlationKey: String? = null): OnchainJob {
         correlationKey?.let { key ->

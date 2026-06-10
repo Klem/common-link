@@ -57,6 +57,35 @@ class CampaignService(
 
     private val logger = LoggerFactory.getLogger(CampaignService::class.java)
 
+    /** Returns true if a campaign with the given id exists (admin use — no association scoping). */
+    fun existsById(id: UUID): Boolean = campaignRepository.existsById(id)
+
+    /**
+     * Applies an admin-initiated off-chain status transition and saves the campaign.
+     *
+     * Used by [org.commonlink.controller.AdminOnchainController] — not scoped to any association.
+     * The caller is responsible for enqueueing the corresponding on-chain job afterwards.
+     *
+     * REVERT_TO_DRAFT is only allowed when [Campaign.raised] is zero, mirroring the
+     * contract's `CampaignHasDonations` revert guard.
+     *
+     * @param id UUID of the campaign.
+     * @param target The target [CampaignStatus].
+     * @throws org.commonlink.exception.NotFoundException if the campaign does not exist.
+     * @throws UnprocessableEntityException if the transition is invalid or REVERT_TO_DRAFT on funded campaign.
+     */
+    @Transactional
+    fun adminTransition(id: UUID, target: CampaignStatus) {
+        val campaign = campaignRepository.findById(id)
+            .orElseThrow { NotFoundException("Campaign not found: $id") }
+        if (target == CampaignStatus.DRAFT && campaign.raised > BigDecimal.ZERO) {
+            throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
+        }
+        campaign.status = target
+        campaignRepository.save(campaign)
+        logger.info("Admin transition: campaignId={}, newStatus={}", id, target)
+    }
+
     /**
      * Returns all campaigns for the authenticated association, sorted by creation date descending.
      *
@@ -147,6 +176,9 @@ class CampaignService(
             validateStatusTransition(campaign.status, req.status)
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
                 preparePublish(campaign, associationId)
+            }
+            if (req.status == CampaignStatus.DRAFT && campaign.raised > BigDecimal.ZERO) {
+                throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
             }
             campaign.status = req.status
         }
@@ -447,9 +479,10 @@ class CampaignService(
         val allowed = when (current) {
             CampaignStatus.DRAFT     -> next == CampaignStatus.LIVE || next == CampaignStatus.ENDED
             CampaignStatus.LIVE      -> next == CampaignStatus.PAUSED || next == CampaignStatus.CANCELLED ||
-                                        next == CampaignStatus.COMPLETED || next == CampaignStatus.ENDED
+                                        next == CampaignStatus.COMPLETED || next == CampaignStatus.ENDED ||
+                                        next == CampaignStatus.DRAFT
             CampaignStatus.PAUSED    -> next == CampaignStatus.LIVE || next == CampaignStatus.CANCELLED ||
-                                        next == CampaignStatus.COMPLETED
+                                        next == CampaignStatus.COMPLETED || next == CampaignStatus.DRAFT
             CampaignStatus.ENDED     -> false
             CampaignStatus.CANCELLED -> false
             CampaignStatus.COMPLETED -> false

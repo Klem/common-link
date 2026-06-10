@@ -12,7 +12,9 @@ enum class UserRole {
     /** A philanthropist who browses campaigns and makes donations. */
     DONOR,
     /** A non-profit organisation that creates and manages fundraising campaigns. */
-    ASSOCIATION
+    ASSOCIATION,
+    /** A platform curator who can perform on-chain moderation actions (verify, pause, etc.). */
+    CURATOR,
 }
 
 /**

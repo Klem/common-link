@@ -4,6 +4,7 @@ import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.dto.toDto
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.onchain.OnchainCodec
 import org.commonlink.repository.AssociationProfileRepository
@@ -28,6 +29,19 @@ class AssociationService(
     private val outbox: OnchainOutboxService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
+
+    /** Returns true if an association profile with the given id exists. */
+    fun existsById(id: UUID): Boolean = associationProfileRepository.existsById(id)
+
+    /**
+     * Returns the SIREN/RNA identifier for the association profile with the given id.
+     *
+     * @throws org.commonlink.exception.NotFoundException if the profile does not exist.
+     */
+    fun getIdentifier(id: UUID): String =
+        associationProfileRepository.findById(id)
+            .orElseThrow { NotFoundException("Association not found: $id") }
+            .identifier
 
     /**
      * Retrieves the association profile for the given user.
