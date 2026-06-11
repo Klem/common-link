@@ -4,6 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
+import jakarta.servlet.http.Cookie
 import org.commonlink.dto.AuthResponseDto
 import org.commonlink.dto.UserDto
 import org.commonlink.entity.AuthProvider
@@ -20,10 +21,12 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AuthService
+import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.context.TestPropertySource
@@ -39,7 +42,8 @@ import java.util.UUID
 @Import(SecurityConfig::class, JwtAuthenticationFilter::class)
 @TestPropertySource(properties = [
     "app.frontend-url=http://localhost:3000",
-    "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!"
+    "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
+    "app.cookies.secure=false"
 ])
 class AuthControllerTest {
 
@@ -151,6 +155,9 @@ class AuthControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.accessToken").value("access.token.jwt"))
+            .andExpect(jsonPath("$.refreshToken").doesNotExist())
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("cl-refresh=")))
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
     }
 
     @Test
@@ -191,6 +198,9 @@ class AuthControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.accessToken").value("access.token.jwt"))
+            .andExpect(jsonPath("$.refreshToken").doesNotExist())
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("cl-refresh=")))
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
     }
 
     @Test
@@ -250,6 +260,9 @@ class AuthControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.accessToken").value("access.token.jwt"))
+            .andExpect(jsonPath("$.refreshToken").doesNotExist())
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("cl-refresh=")))
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
     }
 
     @Test
@@ -293,6 +306,9 @@ class AuthControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.accessToken").value("access.token.jwt"))
+            .andExpect(jsonPath("$.refreshToken").doesNotExist())
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("cl-refresh=")))
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
     }
 
     @Test
@@ -326,17 +342,24 @@ class AuthControllerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `refresh - 200 happy path`() {
+    fun `refresh - 200 reads from cookie and rotates cookie`() {
         every { authService.refreshAccessToken("raw-refresh-token") } returns authResponse()
 
         mockMvc.perform(
             post("/api/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refreshToken":"raw-refresh-token"}""")
+                .cookie(Cookie("cl-refresh", "raw-refresh-token"))
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.accessToken").value("access.token.jwt"))
-            .andExpect(jsonPath("$.refreshToken").value("raw-refresh-token"))
+            .andExpect(jsonPath("$.refreshToken").doesNotExist())
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("cl-refresh=")))
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
+    }
+
+    @Test
+    fun `refresh - 401 when cl-refresh cookie is absent`() {
+        mockMvc.perform(post("/api/auth/refresh"))
+            .andExpect(status().isUnauthorized)
     }
 
     @Test
@@ -345,8 +368,7 @@ class AuthControllerTest {
 
         mockMvc.perform(
             post("/api/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refreshToken":"bad-token"}""")
+                .cookie(Cookie("cl-refresh", "bad-token"))
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.detail").value("Refresh token invalide"))
@@ -358,8 +380,7 @@ class AuthControllerTest {
 
         mockMvc.perform(
             post("/api/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refreshToken":"expired-token"}""")
+                .cookie(Cookie("cl-refresh", "expired-token"))
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.code").value("TOKEN_EXPIRED"))
@@ -370,11 +391,13 @@ class AuthControllerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `logout - 204 when authenticated`() {
+    fun `logout - 204 and clears cl-refresh cookie`() {
         justRun { authService.logout(userId) }
 
         mockMvc.perform(post("/api/auth/logout").with(user(userId.toString()).roles("DONOR")))
             .andExpect(status().isNoContent)
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("cl-refresh=")))
+            .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")))
 
         verify { authService.logout(userId) }
     }

@@ -54,7 +54,7 @@ export function useEmailLogin() {
     setError(null);
     try {
       const { data } = await api.post<AuthResponseDto>('/api/auth/login', { email, password });
-      setAuth(data.accessToken, data.refreshToken, data.user);
+      setAuth(data.accessToken, data.user);
       router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
     } catch (err) {
       if (isAxiosError(err)) {

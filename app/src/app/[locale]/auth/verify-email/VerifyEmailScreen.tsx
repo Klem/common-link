@@ -33,7 +33,7 @@ export function VerifyEmailScreen({ token }: VerifyEmailScreenProps) {
 
     api.post<AuthResponseDto>('/api/auth/verify-email', { token })
       .then(({ data }) => {
-        setAuth(data.accessToken, data.refreshToken, data.user);
+        setAuth(data.accessToken, data.user);
         sessionStorage.removeItem('cl-pending-email');
         setState('success');
         const dashboard =

@@ -88,7 +88,6 @@ describe('VerifyEmailScreen', () => {
     await waitFor(() => {
       expect(mockSetAuth).toHaveBeenCalledWith(
         response.accessToken,
-        response.refreshToken,
         response.user,
       );
     });

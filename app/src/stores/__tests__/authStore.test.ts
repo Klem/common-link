@@ -39,18 +39,17 @@ beforeEach(() => {
     isLoading: true,
   });
   vi.clearAllMocks();
-  (Cookies.get as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
 });
 
 describe('authStore', () => {
   describe('setAuth()', () => {
-    it('stores accessToken in memory and refreshToken in cl-refresh cookie', () => {
-      useAuthStore.getState().setAuth('access-token', 'refresh-token', mockUser);
+    it('stores accessToken in memory and writes auth-session cookie', () => {
+      useAuthStore.getState().setAuth('access-token', mockUser);
 
       expect(useAuthStore.getState().accessToken).toBe('access-token');
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
       expect(useAuthStore.getState().user).toEqual(mockUser);
-      expect(Cookies.set).toHaveBeenCalledWith('cl-refresh', 'refresh-token', expect.any(Object));
+      expect(Cookies.set).not.toHaveBeenCalledWith('cl-refresh', expect.anything(), expect.anything());
       expect(Cookies.set).toHaveBeenCalledWith(
         'auth-session',
         JSON.stringify({ userId: 'user-1', role: UserRole.DONOR }),
@@ -70,13 +69,17 @@ describe('authStore', () => {
   });
 
   describe('logout()', () => {
-    it('clears the store and removes cl-refresh and auth-session cookies', async () => {
+    it('clears the store, removes auth-session cookie, and sends credentials', async () => {
       useAuthStore.setState({ accessToken: 'token', user: mockUser, isAuthenticated: true });
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true });
 
       await useAuthStore.getState().logout();
 
-      expect(Cookies.remove).toHaveBeenCalledWith('cl-refresh');
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/auth/logout'),
+        expect.objectContaining({ credentials: 'include' }),
+      );
+      expect(Cookies.remove).not.toHaveBeenCalledWith('cl-refresh');
       expect(Cookies.remove).toHaveBeenCalledWith('auth-session');
       expect(useAuthStore.getState().accessToken).toBeNull();
       expect(useAuthStore.getState().user).toBeNull();
@@ -85,28 +88,32 @@ describe('authStore', () => {
   });
 
   describe('hydrateFromStorage()', () => {
-    it('reads cl-refresh cookie and restores the session', async () => {
-      (Cookies.get as ReturnType<typeof vi.fn>).mockReturnValue('stored-refresh-token');
+    it('always attempts refresh with credentials and restores session on success', async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: async () => ({
           accessToken: 'new-access',
-          refreshToken: 'new-refresh',
           user: mockUser,
         }),
       });
 
       await useAuthStore.getState().hydrateFromStorage();
 
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/auth/refresh'),
+        expect.objectContaining({ credentials: 'include' }),
+      );
       expect(useAuthStore.getState().accessToken).toBe('new-access');
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
       expect(useAuthStore.getState().isLoading).toBe(false);
     });
 
-    it('performs silent logout when cl-refresh cookie is absent', async () => {
+    it('clears session silently when refresh returns 401', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: false });
+
       await useAuthStore.getState().hydrateFromStorage();
 
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalled();
       expect(useAuthStore.getState().accessToken).toBeNull();
       expect(useAuthStore.getState().isLoading).toBe(false);
     });

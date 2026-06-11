@@ -60,7 +60,7 @@ export function useMagicLinkVerify(
       setStatus('verifying');
       try {
         const { data } = await api.post<AuthResponseDto>('/api/auth/magic-link/verify', { token });
-        setAuth(data.accessToken, data.refreshToken, data.user);
+        setAuth(data.accessToken, data.user);
         setStatus('success');
         if (onSuccess) {
           onSuccess();
