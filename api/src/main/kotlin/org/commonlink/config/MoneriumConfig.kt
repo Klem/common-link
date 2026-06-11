@@ -19,4 +19,11 @@ data class MoneriumConfig(
     val redirectUri: String = "",
 
     val skipKyc: String = "true",
+
+    /**
+     * Base64-encoded 32-byte AES-256 key for encrypting OAuth tokens at rest.
+     * Required — no default. Set via MONERIUM_TOKEN_ENC_KEY env var.
+     * Generate: openssl rand -base64 32
+     */
+    val tokenEncKey: String = "",
 )

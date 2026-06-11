@@ -1,6 +1,7 @@
 package org.commonlink.entity
 
 import jakarta.persistence.*
+import org.commonlink.security.MoneriumTokenConverter
 import java.time.Instant
 import java.util.UUID
 
@@ -43,11 +44,13 @@ class MoneriumConnection(
     @Column(name = "monerium_profile_name", nullable = true)
     var moneriumProfileName: String? = null,
 
-    /** Short-lived bearer token for Monerium API calls. */
+    /** Short-lived bearer token for Monerium API calls. Encrypted at rest via AES-256-GCM. */
+    @Convert(converter = MoneriumTokenConverter::class)
     @Column(name = "access_token", nullable = false, columnDefinition = "TEXT")
     var accessToken: String,
 
-    /** Long-lived token used to obtain a new access token without re-authentication. */
+    /** Long-lived token used to obtain a new access token without re-authentication. Encrypted at rest via AES-256-GCM. */
+    @Convert(converter = MoneriumTokenConverter::class)
     @Column(name = "refresh_token", nullable = false, columnDefinition = "TEXT")
     var refreshToken: String,
 

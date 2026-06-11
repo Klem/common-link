@@ -52,6 +52,7 @@ app:
     base-url: ${MONERIUM_BASE_URL:https://api.monerium.dev}
     redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/monerium/callback}
     skip-kyc: true
+    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:
