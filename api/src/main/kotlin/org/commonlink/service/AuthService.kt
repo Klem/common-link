@@ -231,7 +231,7 @@ class AuthService(
             if (changed) { existing.updatedAt = Instant.now(); userRepository.save(existing) } else existing
         }.orElseGet {
             // Path 2: no Google account found by sub — try to merge with an existing email account.
-            // Merge: account exists by email
+            // Auto-merge is safe: email ownership is Google-verified (enforced by verifyGoogleToken above).
             userRepository.findByEmail(email).map { existing ->
                 existing.googleSub = sub
                 existing.emailVerified = true
@@ -594,6 +594,9 @@ class AuthService(
         } catch (e: Exception) {
             throw AuthException("Token Google invalide")
         } ?: throw AuthException("Token Google invalide")
+        if (googleToken.payload.emailVerified != true) {
+            throw AuthException("Email Google non vérifié")
+        }
         return googleToken.payload
     }
 }

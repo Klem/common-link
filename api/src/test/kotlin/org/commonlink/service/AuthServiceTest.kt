@@ -247,6 +247,48 @@ class AuthServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // email_verified guard (Prompt 1 — security sprint)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `signUpWithGoogle - unverified email throws AuthException`() {
+        val payload = buildGooglePayload(sub = "google-sub-unverified", email = "unverified@google.com", emailVerified = false)
+        every { googleIdTokenVerifier.verify("unverified-token") } returns buildGoogleToken(payload)
+
+        assertThrows<AuthException> {
+            authService.signUpWithGoogle("unverified-token", UserRole.DONOR)
+        }
+
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `loginWithGoogle - unverified email throws AuthException and does not mutate User`() {
+        val payload = buildGooglePayload(sub = "google-sub-unverified", email = "unverified@google.com", emailVerified = false)
+        every { googleIdTokenVerifier.verify("unverified-token") } returns buildGoogleToken(payload)
+
+        assertThrows<AuthException> {
+            authService.loginWithGoogle("unverified-token")
+        }
+
+        verify(exactly = 0) { userRepository.findByGoogleSub(any()) }
+        verify(exactly = 0) { userRepository.findByEmail(any()) }
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `loginWithGoogle - null emailVerified throws AuthException`() {
+        val payload = buildGooglePayload(sub = "google-sub-null", email = "nullverified@google.com", emailVerified = null)
+        every { googleIdTokenVerifier.verify("null-verified-token") } returns buildGoogleToken(payload)
+
+        assertThrows<AuthException> {
+            authService.loginWithGoogle("null-verified-token")
+        }
+
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    // -------------------------------------------------------------------------
     // sendMagicLink
     // -------------------------------------------------------------------------
 
@@ -582,13 +624,15 @@ class AuthServiceTest {
         sub: String,
         email: String,
         name: String? = null,
-        picture: String? = null
+        picture: String? = null,
+        emailVerified: Boolean? = true
     ): GoogleIdToken.Payload {
         val payload = GoogleIdToken.Payload()
         payload.subject = sub
         payload["email"] = email
         if (name != null) payload["name"] = name
         if (picture != null) payload["picture"] = picture
+        payload.emailVerified = emailVerified
         return payload
     }
 
