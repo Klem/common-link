@@ -34,7 +34,7 @@ management:
 
 app:
   jwt:
-    secret: ${COMMON_LINK_SECRET:commonlink-dev-secret-key-must-be-at-least-32-chars-long}
+    secret: ${COMMON_LINK_SECRET}
   frontend-url: ${COMMON_LINK_FRONTEND_URL:http://localhost:3000}
   cookies:
     secure: ${APP_COOKIES_SECURE:true}

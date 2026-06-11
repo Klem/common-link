@@ -17,6 +17,8 @@ management:
       enabled: true
 
 app:
+  jwt:
+    secret: ${COMMON_LINK_SECRET}
   monerium:
     client-id: ${MONERIUM_CLIENT_ID}
     client-secret: ${MONERIUM_CLIENT_SECRET}

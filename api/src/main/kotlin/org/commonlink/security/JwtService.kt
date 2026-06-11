@@ -26,6 +26,22 @@ import javax.crypto.SecretKey
 class JwtService(
     @Value("\${app.jwt.secret}") private val secret: String
 ) {
+    companion object {
+        private const val KNOWN_INSECURE_DEFAULT = "commonlink-dev-secret-key-must-be-at-least-32-chars-long"
+    }
+
+    init {
+        require(secret.isNotBlank()) {
+            "app.jwt.secret must not be blank — set the COMMON_LINK_SECRET environment variable"
+        }
+        require(secret.toByteArray(Charsets.UTF_8).size >= 32) {
+            "app.jwt.secret is too short (${secret.toByteArray(Charsets.UTF_8).size} bytes); minimum 32 bytes required for HS256"
+        }
+        require(secret != KNOWN_INSECURE_DEFAULT) {
+            "app.jwt.secret is the committed dev default and is publicly known — set a unique COMMON_LINK_SECRET"
+        }
+    }
+
     // Signing key is derived from the configured secret and initialised lazily on first use.
     private val signingKey: SecretKey by lazy {
         Keys.hmacShaKeyFor(secret.toByteArray(Charsets.UTF_8))
