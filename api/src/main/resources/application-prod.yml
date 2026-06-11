@@ -19,11 +19,15 @@ management:
 app:
   jwt:
     secret: ${COMMON_LINK_SECRET}
+  vop:
+    demo-mode: false
+    api-token: ${VOP_API_TOKEN}
   monerium:
     client-id: ${MONERIUM_CLIENT_ID}
     client-secret: ${MONERIUM_CLIENT_SECRET}
     base-url: ${MONERIUM_BASE_URL}
     redirect-uri: ${MONERIUM_REDIRECT_URI}
+    skip-kyc: false
 
 onchain:
   rpc-url: ${ONCHAIN_RPC_URL}

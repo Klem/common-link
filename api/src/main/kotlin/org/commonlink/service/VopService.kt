@@ -37,13 +37,21 @@ data class VopVerificationResult(
  */
 @Service
 class VopService(
-    @Value("\${app.vop.demo-mode:true}") private val demoMode: Boolean,
+    @Value("\${app.vop.demo-mode:false}") private val demoMode: Boolean,
     @Value("\${app.vop.api-url:https://thirdparty.qonto.com/v2/sepa/verify_payee}") private val apiUrl: String,
     @Value("\${app.vop.api-token:}") private val apiToken: String,
     private val objectMapper: ObjectMapper
 ) {
     private val log = LoggerFactory.getLogger(VopService::class.java)
     private val restClient = RestClient.create()
+
+    init {
+        if (!demoMode) {
+            require(apiToken.isNotBlank()) {
+                "app.vop.api-token is required when demo-mode is false — set the VOP_API_TOKEN env var"
+            }
+        }
+    }
 
     /**
      * Verifies the given IBAN against the payee name using VOP.

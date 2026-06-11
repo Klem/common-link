@@ -18,7 +18,7 @@ data class MoneriumConfig(
     /** Backend callback URL registered in the Monerium developer console. */
     val redirectUri: String = "",
 
-    val skipKyc: String = "true",
+    val skipKyc: String = "false",
 
     /**
      * Base64-encoded 32-byte AES-256 key for encrypting OAuth tokens at rest.

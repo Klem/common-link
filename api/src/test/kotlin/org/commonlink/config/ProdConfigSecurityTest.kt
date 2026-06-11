@@ -1,4 +1,4 @@
-package org.commonlink.config
+﻿package org.commonlink.config
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Disabled
@@ -28,13 +28,11 @@ class ProdConfigSecurityTest {
 
     private fun prop(key: String): Any? = effectiveProps[key]
 
-    @Disabled("security-sprint prompt 2: vop demo-mode hardening pending")
     @Test
     fun `vop demo-mode is false in prod`() {
         assertEquals(false, prop("app.vop.demo-mode"))
     }
 
-    @Disabled("security-sprint prompt 2: monerium skip-kyc hardening pending")
     @Test
     fun `monerium skip-kyc is false in prod`() {
         assertEquals(false, prop("app.monerium.skip-kyc"))
