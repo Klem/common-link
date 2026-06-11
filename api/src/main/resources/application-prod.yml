@@ -1,4 +1,8 @@
 spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT:587}
@@ -28,6 +32,16 @@ app:
     base-url: ${MONERIUM_BASE_URL}
     redirect-uri: ${MONERIUM_REDIRECT_URI}
     skip-kyc: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    org.commonlink: INFO
 
 onchain:
   rpc-url: ${ONCHAIN_RPC_URL}
