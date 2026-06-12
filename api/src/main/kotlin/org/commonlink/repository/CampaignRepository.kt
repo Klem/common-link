@@ -16,15 +16,18 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
     fun findAllByAssociationId(associationId: UUID): List<Campaign>
 
     /**
-     * Returns all campaigns for the given association, eagerly fetching milestones.
+     * Returns all campaigns for the given association ordered by creation date descending,
+     * eagerly fetching milestones.
      *
+     * The `ORDER BY created_at DESC` is pushed to the DB and served by
+     * `idx_campaigns_association_created (association_id, created_at DESC)` — no in-memory sort.
      * Used in list views that need [org.commonlink.entity.CampaignMilestone] count without
      * triggering lazy-loading outside a transaction.
      *
      * @param associationId the UUID of the [org.commonlink.entity.AssociationProfile]
      */
     @EntityGraph(attributePaths = ["milestones"])
-    fun findAllWithMilestonesByAssociationId(associationId: UUID): List<Campaign>
+    fun findAllWithMilestonesByAssociationIdOrderByCreatedAtDesc(associationId: UUID): List<Campaign>
 
     /**
      * Finds a campaign by its own ID and the owning association's ID.

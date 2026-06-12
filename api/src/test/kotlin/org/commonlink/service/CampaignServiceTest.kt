@@ -112,6 +112,28 @@ class CampaignServiceTest {
         assertTrue(result.isEmpty())
     }
 
+    @Test
+    fun `listCampaigns - returns campaigns in descending creation-date order`() {
+        val older = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Older Campaign"))
+        val newer = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Newer Campaign"))
+
+        // Force distinct created_at so order is deterministic regardless of execution speed
+        val tOld = java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(60))
+        val tNew = java.sql.Timestamp.from(java.time.Instant.now())
+        entityManager.createNativeQuery("UPDATE campaigns SET created_at = :ts WHERE id = :id")
+            .setParameter("ts", tOld).setParameter("id", older.id).executeUpdate()
+        entityManager.createNativeQuery("UPDATE campaigns SET created_at = :ts WHERE id = :id")
+            .setParameter("ts", tNew).setParameter("id", newer.id).executeUpdate()
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = campaignService.listCampaigns(userId)
+
+        assertEquals(2, result.size)
+        assertEquals("Newer Campaign", result[0].name)
+        assertEquals("Older Campaign", result[1].name)
+    }
+
     // ── createCampaign ────────────────────────────────────────────────────────
 
     @Test
