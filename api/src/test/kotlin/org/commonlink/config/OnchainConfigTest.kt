@@ -1,5 +1,6 @@
 package org.commonlink.config
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -39,5 +40,12 @@ class OnchainConfigTest {
         assertTrue(s.contains("recorderPk=***"))
         assertTrue(s.contains("curatorPk=***"))
         assertTrue(s.contains("donorAddressSecret=***"))
+    }
+
+    @Test
+    fun `fixedDelayMs is read as-is without extra digits`() {
+        // Regression guard: annotation previously appended "00", turning 5000 ms into 500000 ms (8m20s)
+        assertEquals(5000L, cfg.worker.fixedDelayMs)
+        assertTrue(cfg.worker.fixedDelayMs < 10_000L, "fixedDelayMs must stay below 10s; was ${cfg.worker.fixedDelayMs}")
     }
 }
