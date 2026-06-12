@@ -22,6 +22,7 @@ import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
+import org.hibernate.SessionFactory
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.util.UUID
 import jakarta.persistence.EntityManager
+import jakarta.persistence.EntityManagerFactory
 
 /**
  * Integration tests for [CampaignService] using a real PostgreSQL container via Testcontainers.
@@ -70,6 +72,9 @@ class CampaignServiceTest {
 
     @Autowired
     private lateinit var entityManager: EntityManager
+
+    @Autowired
+    private lateinit var entityManagerFactory: EntityManagerFactory
 
     private lateinit var userId: UUID
     private lateinit var otherUserId: UUID
@@ -165,6 +170,45 @@ class CampaignServiceTest {
         assertEquals(1, result.budgetSections.size)
         assertEquals(1, result.milestones.size)
         assertEquals(1, result.budgetSections[0].items.size)
+    }
+
+    @Test
+    fun `getCampaign - loads detail in bounded queries with no N+1 on section items`() {
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "N+1 Test", goal = BigDecimal("30000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(
+            sections = (1..3).map { s ->
+                SaveBudgetSectionRequest(
+                    side = BudgetSide.EXPENSE, code = "SEC$s", name = "Section $s", sortOrder = s - 1,
+                    items = listOf(
+                        SaveBudgetItemRequest(label = "Item ${s}A", amount = BigDecimal("100"), sortOrder = 0),
+                        SaveBudgetItemRequest(label = "Item ${s}B", amount = BigDecimal("200"), sortOrder = 1),
+                    )
+                )
+            }
+        ))
+        repeat(2) { i ->
+            campaignService.addMilestone(userId, campaign.id, CreateMilestoneRequest(title = "M$i", sortOrder = i))
+        }
+
+        entityManager.flush()
+        entityManager.clear()
+
+        val sf = entityManagerFactory.unwrap(SessionFactory::class.java)
+        sf.statistics.isStatisticsEnabled = true
+        sf.statistics.clear()
+
+        val result = campaignService.getCampaign(userId, campaign.id)
+
+        val stmtCount = sf.statistics.prepareStatementCount
+        assertTrue(stmtCount <= 5, "Expected ≤5 SQL statements (no N+1), got $stmtCount")
+        assertEquals(3, result.budgetSections.size)
+        assertEquals(2, result.milestones.size)
+        result.budgetSections.forEach { assertEquals(2, it.items.size) }
+        // sections and milestones are in sortOrder order
+        assertEquals(listOf(0, 1, 2), result.budgetSections.map { it.sortOrder })
+        assertEquals(listOf(0, 1), result.milestones.map { it.sortOrder })
     }
 
     // ── updateCampaign ────────────────────────────────────────────────────────

@@ -83,16 +83,23 @@ class Campaign(
      *
      * Managed via cascade: adding or removing sections persists automatically.
      * Orphaned [CampaignBudgetSection] records are deleted when removed from the collection.
+     * @OrderBy ensures stable sort on lazy load so callers don't have to sort in memory.
      */
     @OneToMany(mappedBy = "campaign", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
     val budgetSections: MutableList<CampaignBudgetSection> = mutableListOf()
 
     /**
-     * Ordered list of milestones tracking progress towards the campaign goal.
+     * Set of milestones tracking progress towards the campaign goal.
+     *
+     * Stored as a Set (not List) so this collection can be JOIN FETCHed via @EntityGraph
+     * alongside the budgetSections bag without triggering Hibernate's MultipleBagFetchException.
+     * DTO mapping sorts by sortOrder explicitly — Set iteration order is not relied upon.
      *
      * Managed via cascade: adding or removing milestones persists automatically.
      * Orphaned [CampaignMilestone] records are deleted when removed from the collection.
      */
     @OneToMany(mappedBy = "campaign", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val milestones: MutableList<CampaignMilestone> = mutableListOf()
+    @OrderBy("sortOrder ASC")
+    val milestones: MutableSet<CampaignMilestone> = mutableSetOf()
 }

@@ -39,18 +39,16 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
     /**
      * Finds a campaign by its id and association id, suitable for detail views.
      *
-     * Collections ([org.commonlink.entity.CampaignBudgetSection], their items, and
-     * [org.commonlink.entity.CampaignMilestone]) are lazy — they will be initialized on
-     * access within an open Hibernate session. Callers must be inside a `@Transactional`
-     * scope (e.g. [org.commonlink.service.CampaignService.getCampaign] is annotated
-     * `@Transactional(readOnly = true)`) before calling [Campaign.toDto].
-     *
-     * Note: Hibernate 6 raises [org.hibernate.loader.MultipleBagFetchException] when
-     * attempting to JOIN FETCH more than one bag (List) collection simultaneously, which is
-     * why this method intentionally avoids any `@EntityGraph` annotation.
+     * Loading strategy (3 bounded queries, no N+1):
+     * 1. Main SELECT JOIN FETCHes [org.commonlink.entity.CampaignMilestone] (milestones is a Set —
+     *    no MultipleBagFetchException).
+     * 2. [org.commonlink.entity.CampaignBudgetSection] initialises lazily (1 query).
+     * 3. [org.commonlink.entity.CampaignBudgetSection.items] loads via @BatchSize(20) —
+     *    all sections' items in one IN (...) query instead of N per-section queries.
      *
      * @param id the UUID of the [Campaign]
      * @param associationId the UUID of the [org.commonlink.entity.AssociationProfile]
      */
+    @EntityGraph(attributePaths = ["milestones"])
     fun findWithDetailsByIdAndAssociationId(id: UUID, associationId: UUID): Optional<Campaign>
 }
