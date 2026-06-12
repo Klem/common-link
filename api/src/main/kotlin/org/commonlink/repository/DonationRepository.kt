@@ -4,4 +4,6 @@ import org.commonlink.entity.Donation
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
-interface DonationRepository : JpaRepository<Donation, UUID>
+interface DonationRepository : JpaRepository<Donation, UUID> {
+    fun findByProviderRef(providerRef: String): Donation?
+}
