@@ -2,13 +2,16 @@ package org.commonlink.exception
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.justRun
 import org.commonlink.controller.AuthController
+import org.commonlink.security.AuthRateLimiter
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AuthService
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -47,6 +50,14 @@ class GlobalExceptionHandlerTest {
 
     @MockkBean
     private lateinit var userRepository: UserRepository
+
+    @MockkBean
+    private lateinit var authRateLimiter: AuthRateLimiter
+
+    @BeforeEach
+    fun setupRateLimiter() {
+        justRun { authRateLimiter.check(any(), any(), any()) }
+    }
 
     private val loginEndpoint = post("/api/auth/login")
         .contentType(MediaType.APPLICATION_JSON)
@@ -172,13 +183,26 @@ class GlobalExceptionHandlerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `IllegalArgumentException returns 400 ProblemDetail`() {
-        every { authService.loginWithEmail(any(), any()) } throws IllegalArgumentException("Bad argument")
+    fun `IllegalArgumentException returns 400 with generic message and no internal detail`() {
+        every { authService.loginWithEmail(any(), any()) } throws IllegalArgumentException("Invalid UUID string: garbage-internal-detail")
 
         mockMvc.perform(loginEndpoint)
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.status").value(400))
-            .andExpect(jsonPath("$.detail").value("Bad argument"))
+            .andExpect(jsonPath("$.detail").value("Bad Request"))
+            // Internal parse message must NOT leak to the client
+            .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("UUID"))))
+    }
+
+    @Test
+    fun `JWT with non-UUID subject yields 401 not 500`() {
+        every { jwtService.extractUserId(any()) } throws IllegalArgumentException("Invalid UUID string: garbage")
+
+        mockMvc.perform(
+            post("/api/auth/logout")
+                .header("Authorization", "Bearer garbage-non-uuid-token")
+        )
+            .andExpect(status().isUnauthorized)
     }
 
     // -------------------------------------------------------------------------
