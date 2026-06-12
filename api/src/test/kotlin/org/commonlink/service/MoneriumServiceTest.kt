@@ -362,7 +362,7 @@ class MoneriumServiceTest {
 
     @Test
     fun `getConnectionStatus - returns connected=true and pending=false when connection exists`() {
-        every { connectionRepo.findByAssociation(mockAssociation) } returns mockk(relaxed = true)
+        every { connectionRepo.findByAssociationId(mockAssociationId) } returns mockk(relaxed = true)
 
         val result = service.getConnectionStatus(userId)
         assertTrue(result.connected)
@@ -374,7 +374,7 @@ class MoneriumServiceTest {
         val connection = connectionFixture().apply {
             moneriumProfileName = "Acme Asso"
         }
-        every { connectionRepo.findByAssociation(mockAssociation) } returns connection
+        every { connectionRepo.findByAssociationId(mockAssociationId) } returns connection
 
         val result = service.getConnectionStatus(userId)
 
@@ -384,8 +384,8 @@ class MoneriumServiceTest {
 
     @Test
     fun `getConnectionStatus - returns pending=true when OAuth state exists and no connection`() {
-        every { connectionRepo.findByAssociation(mockAssociation) } returns null
-        every { stateRepo.existsByAssociationAndExpiresAtAfter(mockAssociation, any()) } returns true
+        every { connectionRepo.findByAssociationId(mockAssociationId) } returns null
+        every { stateRepo.existsByAssociationIdAndExpiresAtAfter(mockAssociationId, any()) } returns true
 
         val result = service.getConnectionStatus(userId)
         assertFalse(result.connected)
@@ -394,8 +394,8 @@ class MoneriumServiceTest {
 
     @Test
     fun `getConnectionStatus - returns connected=false and pending=false when nothing exists`() {
-        every { connectionRepo.findByAssociation(mockAssociation) } returns null
-        every { stateRepo.existsByAssociationAndExpiresAtAfter(mockAssociation, any()) } returns false
+        every { connectionRepo.findByAssociationId(mockAssociationId) } returns null
+        every { stateRepo.existsByAssociationIdAndExpiresAtAfter(mockAssociationId, any()) } returns false
 
         val result = service.getConnectionStatus(userId)
         assertFalse(result.connected)

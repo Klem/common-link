@@ -243,9 +243,10 @@ class MoneriumService(
     fun getConnectionStatus(userId: UUID): MoneriumStatusDto {
         val association = associationRepo.findByUserId(userId)
             .orElseThrow { IllegalArgumentException("Association not found for user: $userId") }
-        val connection = connectionRepo.findByAssociation(association)
+        val associationId = association.id!!
+        val connection = connectionRepo.findByAssociationId(associationId)
         val connected = connection != null
-        val pending = !connected && stateRepo.existsByAssociationAndExpiresAtAfter(association, Instant.now())
+        val pending = !connected && stateRepo.existsByAssociationIdAndExpiresAtAfter(associationId, Instant.now())
         return MoneriumStatusDto(
             connected = connected,
             pending = pending,

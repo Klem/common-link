@@ -43,7 +43,7 @@ class AssociationServiceTest {
 
     private fun stubConnection(address: String?) {
         every { mockConnection.walletAddress } returns address
-        every { connectionRepo.findByAssociation(mockAssociation) } returns if (address != null) mockConnection else null
+        every { connectionRepo.findByAssociationId(associationId) } returns if (address != null) mockConnection else null
     }
 
     private fun stubOutbox() {
