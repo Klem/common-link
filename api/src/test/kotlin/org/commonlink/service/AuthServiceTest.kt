@@ -325,13 +325,12 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `sendMagicLink - null role and no existing user throws AuthException`() {
+    fun `sendMagicLink - null role and no existing user - silently returns without throwing`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("nobody@example.com", any()) } returns 0
         every { userRepository.findByEmail("nobody@example.com") } returns Optional.empty()
 
-        assertThrows<AuthException> {
-            authService.sendMagicLink("nobody@example.com", null)
-        }
+        // No exception — silent no-op prevents email enumeration
+        authService.sendMagicLink("nobody@example.com", null)
     }
 
     // -------------------------------------------------------------------------
@@ -456,6 +455,27 @@ class AuthServiceTest {
         assertThrows<AuthException> {
             authService.loginWithEmail("donor@example.com", "wrongpass")
         }
+    }
+
+    @Test
+    fun `loginWithEmail - unverified email throws AuthException`() {
+        val unverifiedUser = User(
+            id = donorUser.id, email = "donor@example.com", role = UserRole.DONOR,
+            provider = AuthProvider.EMAIL, passwordHash = "hashed", emailVerified = false
+        )
+        every { userRepository.findByEmail("donor@example.com") } returns Optional.of(unverifiedUser)
+
+        assertThrows<AuthException> {
+            authService.loginWithEmail("donor@example.com", "password123")
+        }
+    }
+
+    @Test
+    fun `resendVerification - no account found - silently returns without throwing`() {
+        every { userRepository.findByEmail("nobody@example.com") } returns Optional.empty()
+
+        // No exception — silent no-op prevents email enumeration
+        authService.resendVerification("nobody@example.com")
     }
 
     // -------------------------------------------------------------------------

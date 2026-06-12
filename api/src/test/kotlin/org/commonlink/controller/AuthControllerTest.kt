@@ -16,12 +16,14 @@ import org.commonlink.exception.PasswordNotSetException
 import org.commonlink.exception.RateLimitException
 import org.commonlink.exception.TokenExpiredException
 import org.commonlink.repository.UserRepository
+import org.commonlink.security.AuthRateLimiter
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AuthService
 import org.hamcrest.Matchers.containsString
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -61,6 +63,14 @@ class AuthControllerTest {
 
     @MockkBean
     private lateinit var userRepository: UserRepository
+
+    @MockkBean
+    private lateinit var authRateLimiter: AuthRateLimiter
+
+    @BeforeEach
+    fun setupRateLimiter() {
+        justRun { authRateLimiter.check(any(), any(), any()) }
+    }
 
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
 
@@ -406,5 +416,60 @@ class AuthControllerTest {
     fun `logout - 401 when not authenticated`() {
         mockMvc.perform(post("/api/auth/logout"))
             .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // Rate limiting — 429 with Retry-After
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `login - 429 with Retry-After when rate limited by email`() {
+        every { authRateLimiter.check(any(), any(), any()) } throws RateLimitException()
+
+        mockMvc.perform(
+            post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"test@example.com","password":"password123"}""")
+        )
+            .andExpect(status().isTooManyRequests)
+            .andExpect(header().string("Retry-After", "600"))
+    }
+
+    @Test
+    fun `refresh - 429 with Retry-After when rate limited by IP`() {
+        every { authRateLimiter.check(any(), any(), any()) } throws RateLimitException()
+
+        mockMvc.perform(
+            post("/api/auth/refresh")
+                .cookie(jakarta.servlet.http.Cookie("cl-refresh", "some-token"))
+        )
+            .andExpect(status().isTooManyRequests)
+            .andExpect(header().string("Retry-After", "600"))
+    }
+
+    @Test
+    fun `loginWithGoogle - 429 with Retry-After when rate limited by IP`() {
+        every { authRateLimiter.check(any(), any(), any()) } throws RateLimitException()
+
+        mockMvc.perform(
+            post("/api/auth/login/google")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"idToken":"valid-token"}""")
+        )
+            .andExpect(status().isTooManyRequests)
+            .andExpect(header().string("Retry-After", "600"))
+    }
+
+    @Test
+    fun `signUpWithGoogle - 429 with Retry-After when rate limited by IP`() {
+        every { authRateLimiter.check(any(), any(), any()) } throws RateLimitException()
+
+        mockMvc.perform(
+            post("/api/auth/signup/google")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"idToken":"valid-token","role":"DONOR"}""")
+        )
+            .andExpect(status().isTooManyRequests)
+            .andExpect(header().string("Retry-After", "600"))
     }
 }

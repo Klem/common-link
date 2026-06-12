@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.commonlink.dto.AuthResponseDto
 import org.commonlink.dto.GoogleAuthRequestDto
@@ -15,6 +16,7 @@ import org.commonlink.dto.MagicLinkVerifyDto
 import org.commonlink.dto.RegisterRequestDto
 import org.commonlink.dto.ResendVerificationRequestDto
 import org.commonlink.dto.VerifyEmailRequestDto
+import org.commonlink.security.AuthRateLimiter
 import org.commonlink.service.AuthService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
@@ -36,8 +38,13 @@ import java.util.UUID
 @Tag(name = "Auth", description = "Authentication and registration endpoints")
 class AuthController(
     private val authService: AuthService,
+    private val authRateLimiter: AuthRateLimiter,
     @Value("\${app.cookies.secure:true}") private val cookiesSecure: Boolean
 ) {
+
+    private fun HttpServletRequest.clientIp(): String =
+        getHeader("X-Forwarded-For")?.split(",")?.first()?.trim() ?: remoteAddr
+
 
     private fun buildRefreshCookie(token: String): ResponseCookie =
         ResponseCookie.from("cl-refresh", token)
@@ -129,7 +136,8 @@ class AuthController(
         ApiResponse(responseCode = "409", description = "Account already exists", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
-    fun signUpWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto): ResponseEntity<AuthResponseDto> {
+    fun signUpWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto, request: HttpServletRequest): ResponseEntity<AuthResponseDto> {
+        authRateLimiter.check("google:ip:${request.clientIp()}", maxAttempts = 10, windowMinutes = 10)
         requireNotNull(req.role) { "role is required for Google sign-up" }
         return authResponse(authService.signUpWithGoogle(req.idToken, req.role))
     }
@@ -149,8 +157,10 @@ class AuthController(
         ApiResponse(responseCode = "401", description = "No account found or invalid token", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
-    fun loginWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto): ResponseEntity<AuthResponseDto> =
-        authResponse(authService.loginWithGoogle(req.idToken))
+    fun loginWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto, request: HttpServletRequest): ResponseEntity<AuthResponseDto> {
+        authRateLimiter.check("google:ip:${request.clientIp()}", maxAttempts = 10, windowMinutes = 10)
+        return authResponse(authService.loginWithGoogle(req.idToken))
+    }
 
     @PostMapping("/magic-link/request")
     @Operation(
@@ -211,8 +221,11 @@ class AuthController(
         ),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
-    fun login(@Valid @RequestBody req: LoginRequestDto): ResponseEntity<AuthResponseDto> =
-        authResponse(authService.loginWithEmail(req.email, req.password))
+    fun login(@Valid @RequestBody req: LoginRequestDto, request: HttpServletRequest): ResponseEntity<AuthResponseDto> {
+        authRateLimiter.check("login:email:${req.email}", maxAttempts = 5, windowMinutes = 10)
+        authRateLimiter.check("login:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
+        return authResponse(authService.loginWithEmail(req.email, req.password))
+    }
 
     @PostMapping("/refresh")
     @Operation(
@@ -231,9 +244,11 @@ class AuthController(
         )
     )
     fun refresh(
-        @CookieValue(name = "cl-refresh", required = false) refreshToken: String?
+        @CookieValue(name = "cl-refresh", required = false) refreshToken: String?,
+        request: HttpServletRequest
     ): ResponseEntity<AuthResponseDto> {
         if (refreshToken == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        authRateLimiter.check("refresh:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
         return authResponse(authService.refreshAccessToken(refreshToken))
     }
 
