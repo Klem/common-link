@@ -12,7 +12,6 @@ import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
