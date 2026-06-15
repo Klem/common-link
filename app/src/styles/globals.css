@@ -3,6 +3,22 @@
 @import "./tokens.css";
 
 @theme {
+  /* DS tokens — utilisés par le nouveau code Sprint 11+ */
+  --bright-teal:       var(--bright-teal);
+  --teal-dark:         var(--teal-dark);
+  --deep-indigo:       var(--deep-indigo);
+  --deep-indigo-light: var(--deep-indigo-light);
+  --ink-navy:          var(--ink-navy);
+  --slate-lavender:    var(--slate-lavender);
+  --mist-lavender:     var(--mist-lavender);
+  --soft-cream:        var(--soft-cream);
+  --soft-amber:        var(--soft-amber);
+  --warm-coral:        var(--warm-coral);
+  --success-green:     var(--success-green);
+  --error-red:         var(--error-red);
+  --white:             var(--white);
+
+  /* Compat aliases — maintenus pour les 57 usages TSX existants */
   --color-bg:           var(--color-bg);
   --color-bg-2:         var(--color-bg-2);
   --color-bg-3:         var(--color-bg-3);

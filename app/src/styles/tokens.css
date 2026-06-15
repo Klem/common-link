@@ -1,33 +1,43 @@
 :root {
-  /* Surfaces */
-  --color-bg:         #FDF8F0;
-  --color-bg-2:       #FFFFFF;
-  --color-bg-3:       #E6E4F4;
+  /* ── Design-system tokens (source of truth) ────────────────────────────── */
+  --bright-teal:       #4ECDC4;
+  --teal-dark:         #2FB3AA;
+  --deep-indigo:       #32327D;
+  --deep-indigo-light: #3D3D8F;
+  --ink-navy:          #171744;
+  --slate-lavender:    #62627D;
+  --mist-lavender:     #E6E4F4;
+  --soft-cream:        #FDF8F0;
+  --soft-amber:        #FFB347;
+  --warm-coral:        #FF6B5B;
+  --success-green:     #34C759;
+  --error-red:         #E8453C;
+  --white:             #FFFFFF;
 
-  /* Bordures */
-  --color-border:     #E6E4F4;
+  /* ── Compat aliases (→ DS tokens, for existing Tailwind utilities) ───── */
+  --color-bg:         var(--soft-cream);
+  --color-bg-2:       var(--white);
+  --color-bg-3:       var(--mist-lavender);
+  --color-border:     var(--mist-lavender);
 
-  /* Palette — noms conservés pour compat Tailwind existant */
-  --color-green:          #4ECDC4;
-  --color-green-dim:      #2FB3AA;
+  --color-green:          var(--bright-teal);
+  --color-green-dim:      var(--teal-dark);
   --color-green-glow:     rgba(78,205,196,0.45);
   --color-green-glow-dim: rgba(78,205,196,0.20);
-  --color-yellow:         #FFB347;
-  --color-cyan:           #32327D;
-  --color-red:            #E8453C;
+  --color-yellow:         var(--soft-amber);
+  --color-cyan:           var(--deep-indigo);
+  --color-red:            var(--error-red);
 
-  /* Texte */
-  --color-text:       #171744;
-  --color-text-2:     #62627D;
+  --color-text:       var(--ink-navy);
+  --color-text-2:     var(--slate-lavender);
   --color-muted:      #8B8BA8;
 
-  /* Nouveaux tokens DS */
-  --color-indigo:        #32327D;
-  --color-indigo-light:  #3D3D8F;
-  --color-coral:         #FF6B5B;
-  --color-amber:         #FFB347;
-  --color-success:       #34C759;
-  --color-error:         #E8453C;
+  --color-indigo:        var(--deep-indigo);
+  --color-indigo-light:  var(--deep-indigo-light);
+  --color-coral:         var(--warm-coral);
+  --color-amber:         var(--soft-amber);
+  --color-success:       var(--success-green);
+  --color-error:         var(--error-red);
 
   /* Typographie */
   --font-display:     'Nunito Sans', sans-serif;
