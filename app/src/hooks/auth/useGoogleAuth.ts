@@ -50,7 +50,7 @@ export function useGoogleAuth() {
     setState({ loading: true, error: null });
     try {
       const { data } = await api.post<AuthResponseDto>('/api/auth/login/google', { idToken });
-      setAuth(data.accessToken, data.refreshToken, data.user);
+      setAuth(data.accessToken, data.user);
       router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 401) {
@@ -66,7 +66,7 @@ export function useGoogleAuth() {
     setState({ loading: true, error: null });
     try {
       const { data } = await api.post<AuthResponseDto>('/api/auth/signup/google', { idToken, role });
-      setAuth(data.accessToken, data.refreshToken, data.user);
+      setAuth(data.accessToken, data.user);
       // Caller is responsible for next navigation (show setPassword or redirect)
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 409) {

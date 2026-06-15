@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.entity.VopResult
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 /**
  * Unit tests for [VopService] demo mode simulation.
@@ -105,5 +106,24 @@ class VopServiceTest {
         assertNull(result.suggestedName)
         assertNotNull(result.rawResponse)
         assertTrue(result.rawResponse!!.contains("NOT_POSSIBLE"))
+    }
+
+    // ── Startup validation ────────────────────────────────────────────────────
+
+    @Test
+    fun `real mode with blank api-token throws at construction`() {
+        assertThrows<IllegalArgumentException> {
+            VopService(demoMode = false, apiUrl = "https://example.com", apiToken = "", objectMapper = ObjectMapper())
+        }
+    }
+
+    @Test
+    fun `real mode with non-blank api-token constructs without error`() {
+        VopService(demoMode = false, apiUrl = "https://example.com", apiToken = "secret", objectMapper = ObjectMapper())
+    }
+
+    @Test
+    fun `demo mode with blank api-token constructs without error`() {
+        VopService(demoMode = true, apiUrl = "https://example.com", apiToken = "", objectMapper = ObjectMapper())
     }
 }

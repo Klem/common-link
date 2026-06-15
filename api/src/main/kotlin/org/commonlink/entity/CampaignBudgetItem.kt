@@ -1,6 +1,8 @@
 package org.commonlink.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -22,6 +24,7 @@ class CampaignBudgetItem(
     /** The budget section this item belongs to. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "section_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val section: CampaignBudgetSection,
 
     /** Description of this budget line (e.g. "Impression flyers", "Subvention mairie"). */

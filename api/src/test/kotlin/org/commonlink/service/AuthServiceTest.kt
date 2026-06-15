@@ -247,6 +247,48 @@ class AuthServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // email_verified guard (Prompt 1 — security sprint)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `signUpWithGoogle - unverified email throws AuthException`() {
+        val payload = buildGooglePayload(sub = "google-sub-unverified", email = "unverified@google.com", emailVerified = false)
+        every { googleIdTokenVerifier.verify("unverified-token") } returns buildGoogleToken(payload)
+
+        assertThrows<AuthException> {
+            authService.signUpWithGoogle("unverified-token", UserRole.DONOR)
+        }
+
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `loginWithGoogle - unverified email throws AuthException and does not mutate User`() {
+        val payload = buildGooglePayload(sub = "google-sub-unverified", email = "unverified@google.com", emailVerified = false)
+        every { googleIdTokenVerifier.verify("unverified-token") } returns buildGoogleToken(payload)
+
+        assertThrows<AuthException> {
+            authService.loginWithGoogle("unverified-token")
+        }
+
+        verify(exactly = 0) { userRepository.findByGoogleSub(any()) }
+        verify(exactly = 0) { userRepository.findByEmail(any()) }
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `loginWithGoogle - null emailVerified throws AuthException`() {
+        val payload = buildGooglePayload(sub = "google-sub-null", email = "nullverified@google.com", emailVerified = null)
+        every { googleIdTokenVerifier.verify("null-verified-token") } returns buildGoogleToken(payload)
+
+        assertThrows<AuthException> {
+            authService.loginWithGoogle("null-verified-token")
+        }
+
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    // -------------------------------------------------------------------------
     // sendMagicLink
     // -------------------------------------------------------------------------
 
@@ -283,13 +325,12 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `sendMagicLink - null role and no existing user throws AuthException`() {
+    fun `sendMagicLink - null role and no existing user - silently returns without throwing`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("nobody@example.com", any()) } returns 0
         every { userRepository.findByEmail("nobody@example.com") } returns Optional.empty()
 
-        assertThrows<AuthException> {
-            authService.sendMagicLink("nobody@example.com", null)
-        }
+        // No exception — silent no-op prevents email enumeration
+        authService.sendMagicLink("nobody@example.com", null)
     }
 
     // -------------------------------------------------------------------------
@@ -414,6 +455,27 @@ class AuthServiceTest {
         assertThrows<AuthException> {
             authService.loginWithEmail("donor@example.com", "wrongpass")
         }
+    }
+
+    @Test
+    fun `loginWithEmail - unverified email throws AuthException`() {
+        val unverifiedUser = User(
+            id = donorUser.id, email = "donor@example.com", role = UserRole.DONOR,
+            provider = AuthProvider.EMAIL, passwordHash = "hashed", emailVerified = false
+        )
+        every { userRepository.findByEmail("donor@example.com") } returns Optional.of(unverifiedUser)
+
+        assertThrows<AuthException> {
+            authService.loginWithEmail("donor@example.com", "password123")
+        }
+    }
+
+    @Test
+    fun `resendVerification - no account found - silently returns without throwing`() {
+        every { userRepository.findByEmail("nobody@example.com") } returns Optional.empty()
+
+        // No exception — silent no-op prevents email enumeration
+        authService.resendVerification("nobody@example.com")
     }
 
     // -------------------------------------------------------------------------
@@ -582,13 +644,15 @@ class AuthServiceTest {
         sub: String,
         email: String,
         name: String? = null,
-        picture: String? = null
+        picture: String? = null,
+        emailVerified: Boolean? = true
     ): GoogleIdToken.Payload {
         val payload = GoogleIdToken.Payload()
         payload.subject = sub
         payload["email"] = email
         if (name != null) payload["name"] = name
         if (picture != null) payload["picture"] = picture
+        payload.emailVerified = emailVerified
         return payload
     }
 

@@ -6,33 +6,71 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.commonlink.dto.AuthResponseDto
 import org.commonlink.dto.GoogleAuthRequestDto
 import org.commonlink.dto.LoginRequestDto
 import org.commonlink.dto.MagicLinkRequestDto
 import org.commonlink.dto.MagicLinkVerifyDto
-import org.commonlink.dto.RefreshTokenRequestDto
 import org.commonlink.dto.RegisterRequestDto
 import org.commonlink.dto.ResendVerificationRequestDto
 import org.commonlink.dto.VerifyEmailRequestDto
+import org.commonlink.security.AuthRateLimiter
 import org.commonlink.service.AuthService
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.time.Duration
 import java.util.UUID
 
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Auth", description = "Authentication and registration endpoints")
 class AuthController(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val authRateLimiter: AuthRateLimiter,
+    @Value("\${app.cookies.secure:true}") private val cookiesSecure: Boolean
 ) {
+
+    private fun HttpServletRequest.clientIp(): String =
+        getHeader("X-Forwarded-For")?.split(",")?.first()?.trim() ?: remoteAddr
+
+
+    private fun buildRefreshCookie(token: String): ResponseCookie =
+        ResponseCookie.from("cl-refresh", token)
+            .httpOnly(true)
+            .secure(cookiesSecure)
+            .sameSite("Strict")
+            .path("/api/auth")
+            .maxAge(Duration.ofDays(30))
+            .build()
+
+    private fun buildClearRefreshCookie(): ResponseCookie =
+        ResponseCookie.from("cl-refresh", "")
+            .httpOnly(true)
+            .secure(cookiesSecure)
+            .sameSite("Strict")
+            .path("/api/auth")
+            .maxAge(Duration.ZERO)
+            .build()
+
+    /** Moves the refresh token to an HttpOnly cookie and strips it from the JSON body. */
+    private fun authResponse(dto: AuthResponseDto): ResponseEntity<AuthResponseDto> {
+        val token = requireNotNull(dto.refreshToken)
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(token).toString())
+            .body(dto.copy(refreshToken = null))
+    }
 
     @PostMapping("/register")
     @Operation(
@@ -66,7 +104,7 @@ class AuthController(
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
     fun verifyEmail(@Valid @RequestBody req: VerifyEmailRequestDto): ResponseEntity<AuthResponseDto> =
-        ResponseEntity.ok(authService.verifyEmail(req.token))
+        authResponse(authService.verifyEmail(req.token))
 
     @PostMapping("/resend-verification")
     @Operation(
@@ -98,9 +136,10 @@ class AuthController(
         ApiResponse(responseCode = "409", description = "Account already exists", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
-    fun signUpWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto): ResponseEntity<AuthResponseDto> {
+    fun signUpWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto, request: HttpServletRequest): ResponseEntity<AuthResponseDto> {
+        authRateLimiter.check("google:ip:${request.clientIp()}", maxAttempts = 10, windowMinutes = 10)
         requireNotNull(req.role) { "role is required for Google sign-up" }
-        return ResponseEntity.ok(authService.signUpWithGoogle(req.idToken, req.role))
+        return authResponse(authService.signUpWithGoogle(req.idToken, req.role))
     }
 
     @PostMapping("/login/google")
@@ -118,8 +157,10 @@ class AuthController(
         ApiResponse(responseCode = "401", description = "No account found or invalid token", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
-    fun loginWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto): ResponseEntity<AuthResponseDto> =
-        ResponseEntity.ok(authService.loginWithGoogle(req.idToken))
+    fun loginWithGoogle(@Valid @RequestBody req: GoogleAuthRequestDto, request: HttpServletRequest): ResponseEntity<AuthResponseDto> {
+        authRateLimiter.check("google:ip:${request.clientIp()}", maxAttempts = 10, windowMinutes = 10)
+        return authResponse(authService.loginWithGoogle(req.idToken))
+    }
 
     @PostMapping("/magic-link/request")
     @Operation(
@@ -160,7 +201,7 @@ class AuthController(
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
     fun verifyMagicLink(@Valid @RequestBody req: MagicLinkVerifyDto): ResponseEntity<AuthResponseDto> =
-        ResponseEntity.ok(authService.verifyMagicLink(req.token))
+        authResponse(authService.verifyMagicLink(req.token))
 
     @PostMapping("/login")
     @Operation(
@@ -180,34 +221,41 @@ class AuthController(
         ),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
-    fun login(@Valid @RequestBody req: LoginRequestDto): ResponseEntity<AuthResponseDto> =
-        ResponseEntity.ok(authService.loginWithEmail(req.email, req.password))
+    fun login(@Valid @RequestBody req: LoginRequestDto, request: HttpServletRequest): ResponseEntity<AuthResponseDto> {
+        authRateLimiter.check("login:email:${req.email}", maxAttempts = 5, windowMinutes = 10)
+        authRateLimiter.check("login:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
+        return authResponse(authService.loginWithEmail(req.email, req.password))
+    }
 
     @PostMapping("/refresh")
     @Operation(
         summary = "Refresh access token",
-        description = "Exchanges a valid refresh token for a new access token and a new refresh token (rotation)."
+        description = "Reads the cl-refresh HttpOnly cookie, issues a new access token, and rotates the refresh token cookie."
     )
     @ApiResponses(
         ApiResponse(
-            responseCode = "200", description = "New tokens returned",
+            responseCode = "200", description = "New access token returned",
             content = [Content(schema = Schema(implementation = AuthResponseDto::class))]
         ),
-        ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(
             responseCode = "401",
-            description = "Refresh token invalid, expired, or revoked",
+            description = "Refresh cookie missing, invalid, expired, or revoked",
             content = [Content()]
-        ),
-        ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
+        )
     )
-    fun refresh(@Valid @RequestBody req: RefreshTokenRequestDto): ResponseEntity<AuthResponseDto> =
-        ResponseEntity.ok(authService.refreshAccessToken(req.refreshToken))
+    fun refresh(
+        @CookieValue(name = "cl-refresh", required = false) refreshToken: String?,
+        request: HttpServletRequest
+    ): ResponseEntity<AuthResponseDto> {
+        if (refreshToken == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        authRateLimiter.check("refresh:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
+        return authResponse(authService.refreshAccessToken(refreshToken))
+    }
 
     @PostMapping("/logout")
     @Operation(
         summary = "Logout",
-        description = "Revokes all refresh tokens for the authenticated user. Requires a valid JWT."
+        description = "Revokes all refresh tokens for the authenticated user and clears the cl-refresh cookie. Requires a valid JWT."
     )
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "Logged out successfully"),
@@ -216,6 +264,8 @@ class AuthController(
     fun logout(@AuthenticationPrincipal principal: UserDetails?): ResponseEntity<Void> {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         authService.logout(UUID.fromString(principal.username))
-        return ResponseEntity.noContent().build()
+        return ResponseEntity.noContent()
+            .header(HttpHeaders.SET_COOKIE, buildClearRefreshCookie().toString())
+            .build()
     }
 }

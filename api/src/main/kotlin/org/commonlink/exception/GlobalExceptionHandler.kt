@@ -48,11 +48,15 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
-     * Handles [IllegalArgumentException], typically thrown for malformed UUIDs or enum values (HTTP 400).
+     * Handles [IllegalArgumentException] (malformed UUIDs, invalid enum values, etc.) (HTTP 400).
+     *
+     * The raw exception message is logged server-side but never sent to the client to avoid
+     * leaking internal details such as UUID parse error messages.
      */
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(ex: IllegalArgumentException): ResponseEntity<ProblemDetail> {
-        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")
+        appLogger.warn("Bad request — illegal argument: {}", ex.message)
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Bad Request")
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem)
     }
 

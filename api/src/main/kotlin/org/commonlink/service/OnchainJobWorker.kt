@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import org.web3j.protocol.core.methods.response.TransactionReceipt
 import org.web3j.utils.Numeric
 import java.math.BigInteger
@@ -27,10 +26,17 @@ import java.util.UUID
  * Each tick locks up to `onchain.worker.batch-size` `PENDING` jobs (`FOR UPDATE SKIP LOCKED`),
  * dispatches them to [OnchainRegistryClient], and persists the resulting tx hash/status.
  * On failure, jobs are re-queued until the 5th attempt, after which they become `FAILED`.
+ *
+ * Transaction boundary: [OnchainJobClaimer.claimBatch] runs in its own committed transaction
+ * (external bean call, AOP proxy applies). The RUNNING state is flushed to the DB *before*
+ * [process] dispatches any on-chain transaction. A crash mid-dispatch leaves jobs in RUNNING
+ * (recoverable by a future operator action) rather than silently re-PENDING, which would
+ * allow two concurrent workers to double-dispatch the same job.
  */
 @Service
 @ConditionalOnProperty(prefix = "onchain.worker", name = ["enabled"], havingValue = "true")
 class OnchainJobWorker(
+    private val claimer: OnchainJobClaimer,
     private val repo: org.commonlink.repository.OnchainJobRepository,
     private val campaignRepository: CampaignRepository,
     private val client: OnchainRegistryClient,
@@ -39,23 +45,11 @@ class OnchainJobWorker(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Scheduled(fixedDelayString = "\${onchain.worker.fixed-delay-ms}00")
+    @Scheduled(fixedDelayString = "\${onchain.worker.fixed-delay-ms}")
     fun tick() {
-        val batch = pickBatch()
+        val batch = claimer.claimBatch(cfg.worker.batchSize)
         if (batch.isEmpty()) return
         batch.forEach(::process)
-    }
-
-    @Transactional
-    protected fun pickBatch(): List<OnchainJob> {
-        val locked = repo.lockBatch(cfg.worker.batchSize)
-        val now = Instant.now()
-        locked.forEach {
-            it.status = OnchainJobStatus.RUNNING
-            it.updatedAt = now
-            it.attempts += 1
-        }
-        return locked
     }
 
     private fun process(job: OnchainJob) {

@@ -37,7 +37,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val userDetailsService: UserDetailsServiceImpl,
-    @Value("\${app.frontend-url}") private val frontendUrl: String
+    @Value("\${app.frontend-url}") private val frontendUrl: String,
+    @Value("\${springdoc.api-docs.enabled:true}") private val docsEnabled: Boolean
 ) {
 
     /**
@@ -60,19 +61,17 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .cors { it.configurationSource(corsConfigurationSource()) }
             .authorizeHttpRequests { auth ->
-                auth
-                    .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                    .requestMatchers("/actuator/info").permitAll()
-                    .requestMatchers("/api/auth/**", "/api/docs/**").permitAll()
-                    // Monerium callback is public — Monerium calls it directly after OAuth
-                    .requestMatchers("/api/monerium/callback").permitAll()
-                    // Optional: protect other actuator endpoints
-//                    .requestMatchers("/actuator/**").hasRole("ADMIN")
-                    .requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
-                    .requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
-                    .requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
-                    .requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())
-                    .anyRequest().authenticated()
+                auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                auth.requestMatchers("/actuator/info").permitAll()
+                auth.requestMatchers("/api/auth/**").permitAll()
+                if (docsEnabled) auth.requestMatchers("/api/docs/**").permitAll()
+                // Monerium callback is public — Monerium calls it directly after OAuth
+                auth.requestMatchers("/api/monerium/callback").permitAll()
+                auth.requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
+                auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
+                auth.requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
+                auth.requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())
+                auth.anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 

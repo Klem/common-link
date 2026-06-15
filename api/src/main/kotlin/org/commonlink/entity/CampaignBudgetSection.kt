@@ -1,6 +1,7 @@
 package org.commonlink.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import java.time.Instant
 import java.util.UUID
 
@@ -52,7 +53,9 @@ class CampaignBudgetSection(
      *
      * Managed via cascade: adding or removing items persists automatically.
      * Orphaned [CampaignBudgetItem] records are deleted when removed from the collection.
+     * @BatchSize batches lazy loads across all sections into one IN (...) query instead of N.
      */
     @OneToMany(mappedBy = "section", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @BatchSize(size = 20)
     val items: MutableList<CampaignBudgetItem> = mutableListOf()
 }

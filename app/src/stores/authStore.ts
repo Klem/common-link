@@ -9,10 +9,11 @@ export type { UserDto };
  *
  * Token storage strategy:
  * - `accessToken` lives in memory only (short-lived, 15 min) — never persisted.
- * - `refreshToken` is stored in the `cl-refresh` cookie (SameSite=Strict, 30 days)
- *    so it survives page reloads without exposing it to localStorage XSS risks.
+ * - The refresh token is stored in the `cl-refresh` HttpOnly cookie set by the
+ *   backend — not readable from JS, protected from XSS. Sent automatically via
+ *   `credentials: 'include'` on every refresh request.
  * - `auth-session` cookie carries `{ userId, role }` as a hint for the Next.js
- *    middleware to protect dashboard routes without decoding the JWT server-side.
+ *   middleware to protect dashboard routes without decoding the JWT server-side.
  */
 interface AuthState {
   /** JWT access token held in memory. Injected into every Axios request header. */
@@ -30,10 +31,11 @@ interface AuthState {
 
   /**
    * Stores tokens and user after a successful login or signup response.
-   * Persists `refreshToken` to the `cl-refresh` cookie and writes the
-   * `auth-session` cookie used by the Next.js middleware.
+   * Writes the `auth-session` cookie used by the Next.js middleware.
+   * The refresh token is managed exclusively by the backend via the HttpOnly
+   * `cl-refresh` cookie — not passed here.
    */
-  setAuth: (accessToken: string, refreshToken: string, user: UserDto) => void;
+  setAuth: (accessToken: string, user: UserDto) => void;
   /**
    * Updates only the in-memory access token.
    * Called by the Axios interceptor after a successful silent refresh,
@@ -43,17 +45,17 @@ interface AuthState {
   /** Updates the in-memory user object (e.g. after a profile or password change). */
   setUser: (user: UserDto) => void;
   /**
-   * Calls `POST /api/auth/logout`, clears all auth state and cookies,
-   * then performs a hard redirect to `/login`.
-   * Errors from the server call are intentionally swallowed — the client
-   * clears its state regardless.
+   * Calls `POST /api/auth/logout`, clears all auth state and the auth-session
+   * cookie, then performs a hard redirect to `/login`. The backend clears the
+   * HttpOnly cl-refresh cookie. Errors from the server call are intentionally
+   * swallowed — the client clears its state regardless.
    */
   logout: () => Promise<void>;
   /**
    * Called once on app mount (inside `AuthProvider`).
-   * Reads the `cl-refresh` cookie; if present, attempts a silent token refresh
-   * to restore the session without requiring the user to log in again.
-   * On failure (revoked/expired token) the cookies are cleared silently.
+   * Attempts a silent token refresh — the HttpOnly cl-refresh cookie is sent
+   * automatically via `credentials: 'include'`. On 401, treats the session as
+   * expired and clears client state silently.
    */
   hydrateFromStorage: () => Promise<void>;
 }
@@ -67,12 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  setAuth: (accessToken, refreshToken, user) => {
-    Cookies.set('cl-refresh', refreshToken, {
-      expires: 30,
-      sameSite: 'strict',
-      secure: IS_PROD,
-    });
+  setAuth: (accessToken, user) => {
     Cookies.set('auth-session', JSON.stringify({ userId: user.id, role: user.role }), {
       expires: 30,
       sameSite: 'strict',
@@ -96,12 +93,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await fetch(`${SEARCH_ASSOCIATION_URL}/api/auth/logout`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}` },
+          credentials: 'include',
         });
       }
     } catch {
       // Ignore logout errors — clean up client-side regardless
     } finally {
-      Cookies.remove('cl-refresh');
       Cookies.remove('auth-session');
       set({ accessToken: null, user: null, isAuthenticated: false });
       window.location.href = '/login';
@@ -109,18 +106,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   hydrateFromStorage: async () => {
-    const refreshToken = Cookies.get('cl-refresh');
-    if (!refreshToken) {
-      set({ isLoading: false });
-      return;
-    }
-
     try {
-
       const response = await fetch(`${SEARCH_ASSOCIATION_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -129,13 +119,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const data = (await response.json()) as {
         accessToken: string;
-        refreshToken: string;
         user: UserDto;
       };
-      get().setAuth(data.accessToken, data.refreshToken, data.user);
+      get().setAuth(data.accessToken, data.user);
     } catch {
       // Silent logout — token expired or revoked
-      Cookies.remove('cl-refresh');
       Cookies.remove('auth-session');
       set({ accessToken: null, user: null, isAuthenticated: false });
     } finally {

@@ -144,8 +144,8 @@ class AuthService(
      */
     @Transactional
     fun resendVerification(email: String) {
-        val user = userRepository.findByEmail(email)
-            .orElseThrow { AuthException("Aucun compte trouvé pour cet email") }
+        // Silently return when no account found — prevents email enumeration.
+        val user = userRepository.findByEmail(email).orElse(null) ?: return
 
         // No-op if the email is already verified.
         if (user.emailVerified) return
@@ -231,7 +231,7 @@ class AuthService(
             if (changed) { existing.updatedAt = Instant.now(); userRepository.save(existing) } else existing
         }.orElseGet {
             // Path 2: no Google account found by sub — try to merge with an existing email account.
-            // Merge: account exists by email
+            // Auto-merge is safe: email ownership is Google-verified (enforced by verifyGoogleToken above).
             userRepository.findByEmail(email).map { existing ->
                 existing.googleSub = sub
                 existing.emailVerified = true
@@ -272,10 +272,9 @@ class AuthService(
 
         // If role is not supplied, the caller expects an existing account (login flow).
         // Look up the existing user's role; fail if no account is found.
+        // When no role is supplied (login flow) and no account exists, return silently — prevents email enumeration.
         val effectiveRole: UserRole = role
-            ?: userRepository.findByEmail(email).map { it.role }.orElseThrow {
-                AuthException("Rôle requis pour créer un compte via Magic Link")
-            }
+            ?: (userRepository.findByEmail(email).map { it.role }.orElse(null) ?: return)
 
         val rawToken = tokenHashService.generateOpaqueToken()
         val tokenHash = tokenHashService.hashToken(rawToken)
@@ -378,6 +377,9 @@ class AuthService(
 
         // Accounts created via Google or magic link have no password hash.
         // Return a specific error code so the frontend can guide the user.
+        if (!user.emailVerified) {
+            throw AuthException("Email non vérifié. Consultez votre boîte mail.")
+        }
         if (user.passwordHash == null) {
             throw PasswordNotSetException()
         }
@@ -594,6 +596,9 @@ class AuthService(
         } catch (e: Exception) {
             throw AuthException("Token Google invalide")
         } ?: throw AuthException("Token Google invalide")
+        if (googleToken.payload.emailVerified != true) {
+            throw AuthException("Email Google non vérifié")
+        }
         return googleToken.payload
     }
 }

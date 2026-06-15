@@ -1,9 +1,9 @@
 package org.commonlink.repository
 
-import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MoneriumOAuthState
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.Instant
+import java.util.UUID
 
 interface MoneriumOAuthStateRepository : JpaRepository<MoneriumOAuthState, String> {
 
@@ -21,8 +21,8 @@ interface MoneriumOAuthStateRepository : JpaRepository<MoneriumOAuthState, Strin
      * Returns true if the given association has at least one non-expired OAuth state record,
      * indicating that an authorization flow was initiated but not yet completed.
      *
-     * @param association the association whose pending states are checked
+     * @param associationId UUID of the association whose pending states are checked
      * @param threshold records must expire after this instant to be considered active
      */
-    fun existsByAssociationAndExpiresAtAfter(association: AssociationProfile, threshold: Instant): Boolean
+    fun existsByAssociationIdAndExpiresAtAfter(associationId: UUID, threshold: Instant): Boolean
 }

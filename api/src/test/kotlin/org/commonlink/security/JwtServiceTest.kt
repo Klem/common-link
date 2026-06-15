@@ -96,4 +96,21 @@ class JwtServiceTest {
             jwtService.validateToken("not.a.valid.jwt.token")
         }
     }
+
+    @Test
+    fun `startup validation rejects blank secret`() {
+        assertThrows<IllegalArgumentException> { JwtService("") }
+    }
+
+    @Test
+    fun `startup validation rejects secret shorter than 32 bytes`() {
+        assertThrows<IllegalArgumentException> { JwtService("too-short") }
+    }
+
+    @Test
+    fun `startup validation rejects known insecure dev default`() {
+        assertThrows<IllegalArgumentException> {
+            JwtService("commonlink-dev-secret-key-must-be-at-least-32-chars-long")
+        }
+    }
 }

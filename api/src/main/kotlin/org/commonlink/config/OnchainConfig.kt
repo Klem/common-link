@@ -19,4 +19,9 @@ data class OnchainConfig(
         val batchSize: Int,
         val fixedDelayMs: Long,
     )
+
+    override fun toString(): String =
+        "OnchainConfig(rpcUrl=$rpcUrl, chainId=$chainId, registryAddress=$registryAddress, " +
+        "recorderPk=***, curatorPk=***, pollingIntervalMs=$pollingIntervalMs, " +
+        "receiptTimeoutMs=$receiptTimeoutMs, donorAddressSecret=***, worker=$worker)"
 }

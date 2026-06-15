@@ -12,7 +12,6 @@ import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -43,7 +42,7 @@ class AssociationServiceTest {
 
     private fun stubConnection(address: String?) {
         every { mockConnection.walletAddress } returns address
-        every { connectionRepo.findByAssociation(mockAssociation) } returns if (address != null) mockConnection else null
+        every { connectionRepo.findByAssociationId(associationId) } returns if (address != null) mockConnection else null
     }
 
     private fun stubOutbox() {

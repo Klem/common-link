@@ -102,8 +102,7 @@ class CampaignService(
      */
     fun listCampaigns(userId: UUID): List<CampaignSummaryDto> {
         val associationId = resolveAssociationId(userId)
-        return campaignRepository.findAllWithMilestonesByAssociationId(associationId)
-            .sortedByDescending { it.createdAt }
+        return campaignRepository.findAllWithMilestonesByAssociationIdOrderByCreatedAtDesc(associationId)
             .map { it.toSummaryDto() }
     }
 

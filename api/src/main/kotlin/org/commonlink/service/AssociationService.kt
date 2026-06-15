@@ -93,7 +93,7 @@ class AssociationService(
         association.verified = true
         associationProfileRepository.save(association)
 
-        val walletAddress = connectionRepo.findByAssociation(association)?.walletAddress
+        val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
         if (walletAddress == null) {
             logger.warn(
                 "Association {} verified but has no linked wallet — on-chain VERIFY_ASSOCIATION skipped",
@@ -126,7 +126,7 @@ class AssociationService(
         association.verified = false
         associationProfileRepository.save(association)
 
-        val walletAddress = connectionRepo.findByAssociation(association)?.walletAddress
+        val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
         if (walletAddress == null) {
             logger.warn(
                 "Association {} revoked but has no linked wallet — on-chain REVOKE_ASSOCIATION skipped",
@@ -156,7 +156,7 @@ class AssociationService(
         association.verified = true
         associationProfileRepository.save(association)
 
-        val walletAddress = connectionRepo.findByAssociation(association)?.walletAddress
+        val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
         if (walletAddress == null) {
             logger.warn(
                 "Association {} restored but has no linked wallet — on-chain RESTORE_ASSOCIATION skipped",

@@ -3,7 +3,6 @@ package org.commonlink.security
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.commonlink.exception.AppException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
@@ -58,9 +57,9 @@ class JwtAuthenticationFilter(
                 authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
                 SecurityContextHolder.getContext().authentication = authentication
             }
-        } catch (e: AppException) {
-            // Token is expired or invalid — clear any partial context and let the chain continue.
-            // The downstream security rules will reject the unauthenticated request.
+        } catch (e: Exception) {
+            // Any error during token processing (expired, invalid signature, non-UUID sub, etc.) —
+            // clear context and continue unauthenticated. Never propagate as 500.
             SecurityContextHolder.clearContext()
         }
 
