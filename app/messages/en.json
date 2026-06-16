@@ -1,293 +1,357 @@
 {
-  "common": {
-    "errors": {
-      "serverError": "An error occurred. Please try again.",
-      "networkError": "Connection problem. Check your network.",
-      "sessionExpired": "Your session has expired. Please log in again.",
-      "rateLimitExceeded": "Too many requests. Please wait {seconds} seconds.",
-      "conflict": "This resource already exists."
-    },
-    "loading": "Loading...",
-    "save": "Save",
-    "cancel": "Cancel",
-    "confirm": "Confirm",
-    "profileUpdated": "Profile updated.",
-    "payeeCreated": "Beneficiary added successfully.",
-    "vopVerified": "VOP verification completed.",
-    "campaignUpdated": "Campaign updated.",
-    "budgetSaved": "Budget saved.",
-    "milestoneCreated": "Milestone added.",
-    "milestoneSaved": "Milestone updated.",
-    "milestoneDeleted": "Milestone deleted.",
-    "setPasswordUpdated": "Password set successfully.",
-    "moneriumConnected": "Wallet connected successfully.",
-    "moneriumError": "Wallet connection failed. Please try again.",
-    "moneriumErrorFetch": "Failed to get authentication URL. Please try again."
-  },
   "auth": {
-    "tabs": { "login": "Login", "signup": "Create an account" },
-    "roles": { "association": "Association", "donor": "Donor" },
+    "assoSearch": {
+      "apiUnavailable": "The directory is unavailable. Please enter information manually.",
+      "confirm": "Confirm",
+      "manualCodePostal": "Postal code",
+      "manualEntry": "Manual entry",
+      "manualNom": "Association name",
+      "manualSiren": "SIREN",
+      "manualVille": "City",
+      "noResults": "No association found.",
+      "noResultsHint": "Check the spelling or try your SIREN.",
+      "searchHint": "Search your association in the official directory."
+    },
+    "divider": {
+      "or": "or"
+    },
+    "errors": {
+      "accountExists": "An account already exists with this email.",
+      "emailInvalid": "Invalid email address.",
+      "emailRequired": "Email is required.",
+      "genericError": "An error occurred. Please try again.",
+      "invalidCredentials": "Invalid email or password.",
+      "noAccount": "No account found. Sign up first.",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordNotSet": "No password set. Use a magic link or Google to log in.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "rateLimited": "Too many attempts. Try again in 10 minutes.",
+      "tokenExpired": "This link has expired. Request a new one.",
+      "tokenUsed": "This link has already been used."
+    },
+    "gdpr": "Data processed in accordance with GDPR.",
     "hints": {
       "association": "Access your campaign management space, budget, and reporting.",
       "donor": "Track your donations, view your impact, and manage your NFT badges."
     },
+    "legal": "By continuing, you agree to our {terms} and {privacy}.",
     "login": {
-      "title": "Welcome back",
-      "email": { "label": "Email", "placeholder": "you@example.com" },
-      "password": { "label": "Password", "placeholder": "••••••••" },
+      "createAccount": "Create an account",
+      "email": {
+        "label": "Email",
+        "placeholder": "you@example.com"
+      },
       "forgotPassword": "Forgot password?",
-      "submit": "Log in →",
       "google": "Continue with Google",
       "noAccount": "Don't have an account?",
-      "createAccount": "Create an account",
-      "orMagicLink": "Or log in with a magic link"
-    },
-    "signup": {
-      "donor": {
-        "title": "Join as a Donor",
-        "google": "Sign up with Google",
-        "magicLink": "Sign up with a magic link",
-        "alreadyAccount": "Already have an account?",
-        "login": "Log in"
+      "orMagicLink": "Or log in with a magic link",
+      "password": {
+        "label": "Password",
+        "placeholder": "••••••••"
       },
-      "emailPassword": {
-        "label": "Email & password",
-        "email": { "label": "Email", "placeholder": "you@example.com" },
-        "password": { "label": "Password", "placeholder": "8 characters minimum" },
-        "confirm": { "label": "Confirm password", "placeholder": "••••••••" },
-        "submit": "Create my account →",
-        "submitContinue": "Continue →",
-        "sent": "Link sent! Check your inbox — valid for 24h.",
-        "notReceived": "Didn't receive it?",
-        "resend": "Resend"
-      },
-      "association": {
-        "title": "Join as an Association",
-        "steps": { "search": "Search", "connect": "Connect", "profile": "Profile" },
-        "search": {
-          "label": "Search your association",
-          "placeholder": "Name or SIREN…",
-          "results": "Results",
-          "noResults": "No results",
-          "status": { "active": "Active", "ceased": "Ceased" },
-          "select": "Select"
-        },
-        "connect": {
-          "title": "Choose your method",
-          "google": "Continue with Google",
-          "magicLink": "Receive a magic link"
-        },
-        "profile": {
-          "name": { "label": "Association name", "placeholder": "Pre-filled" },
-          "siren": { "label": "SIREN", "placeholder": "Pre-filled" },
-          "contact": { "label": "Contact name", "placeholder": "Your full name" },
-          "description": { "label": "Description", "placeholder": "Describe your mission (optional)" },
-          "submit": "Create my space →"
-        }
-      }
+      "submit": "Log in →",
+      "title": "Welcome back"
     },
     "magicLink": {
-      "label": "Magic link — no password needed",
+      "checkSpam": "Check your spam folder.",
       "emailPlaceholder": "you@example.com",
+      "label": "Magic link — no password needed",
+      "notReceived": "Didn't receive it?",
+      "resend": "Resend",
       "sendButton": "Send the link",
       "sending": "Sending…",
-      "sent": "Link sent! Check your inbox — valid for 15 min.",
-      "resend": "Resend",
-      "notReceived": "Didn't receive it?",
-      "checkSpam": "Check your spam folder."
+      "sent": "Link sent! Check your inbox — valid for 15 min."
     },
-    "setPassword": {
-      "title": "Set a password",
-      "subtitle": "Optional — enables email + password login",
-      "password": { "label": "Password", "placeholder": "8 characters minimum" },
-      "confirm": { "label": "Confirm", "placeholder": "••••••••" },
-      "submit": "Save",
-      "skip": "Later",
-      "success": "Password successfully defined"
-    },
-    "errors": {
-      "invalidCredentials": "Invalid email or password.",
-      "passwordNotSet": "No password set. Use a magic link or Google to log in.",
-      "emailRequired": "Email is required.",
-      "emailInvalid": "Invalid email address.",
-      "passwordTooShort": "Password must be at least 8 characters.",
-      "passwordMismatch": "Passwords do not match.",
-      "genericError": "An error occurred. Please try again.",
-      "tokenExpired": "This link has expired. Request a new one.",
-      "tokenUsed": "This link has already been used.",
-      "rateLimited": "Too many attempts. Try again in 10 minutes.",
-      "accountExists": "An account already exists with this email.",
-      "noAccount": "No account found. Sign up first."
-    },
+    "privacy": "Privacy Policy",
     "progress": {
-      "authenticating": "Authenticating via {provider}…",
-      "verified": "Identity verified",
-      "loadingProfile": "Loading profile…",
-      "redirecting": "Loading your space…",
       "accountCreated": "Account created",
       "assoLinked": "Association linked to the directory",
-      "spaceConfigured": "Association space configured"
-    },
-    "divider": { "or": "or" },
-    "assoSearch": {
-      "apiUnavailable": "The directory is unavailable. Please enter information manually.",
-      "manualEntry": "Manual entry",
-      "manualSiren": "SIREN",
-      "manualNom": "Association name",
-      "manualVille": "City",
-      "manualCodePostal": "Postal code",
-      "confirm": "Confirm",
-      "searchHint": "Search your association in the official directory.",
-      "noResults": "No association found.",
-      "noResultsHint": "Check the spelling or try your SIREN."
-    },
-    "verifyEmail": {
-      "verifying": "Verifying…",
-      "success": "Email verified!",
-      "successSubtitle": "You will be redirected to your space.",
-      "failed": "Invalid link",
-      "failedSubtitle": "This link has expired or has already been used.",
-      "requestNew": "Request a new link"
-    },
-    "legal": "By continuing, you agree to our {terms} and {privacy}.",
-    "terms": "Terms of Service",
-    "privacy": "Privacy Policy",
-    "gdpr": "Data processed in accordance with GDPR."
-  },
-  "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Welcome",
-    "greeting": "Hello, {name} 👋",
-    "nav": {
-      "overview": "Dashboard",
-      "profile": "My profile",
-      "donations": "My donations",
-      "campaigns": "Campaigns",
-      "payees": "Beneficiaries",
-      "donors": "Donors",
-      "settings": "Settings",
-      "associationProfile": "Association profile",
-      "logout": "Log out"
+      "authenticating": "Authenticating via {provider}…",
+      "loadingProfile": "Loading profile…",
+      "redirecting": "Loading your space…",
+      "spaceConfigured": "Association space configured",
+      "verified": "Identity verified"
     },
     "roles": {
-      "donor": "Donor",
-      "association": "Association"
-    },
-    "payees": {
-      "pageTitle": "Beneficiaries",
-      "pageSubtitle": "Manage your association's beneficiaries",
-      "addPayee": "Add a beneficiary",
-      "search": {
-        "title": "Search SIRET / SIREN",
-        "subtitle": "Enter an identifier. Type detection is automatic.",
-        "placeholder": "829844810 or 82984481000046",
-        "button": "Search",
-        "loading": "Querying INSEE Sirene…",
-        "detected": {
-          "siren": "SIREN detected — 9 digits ✓",
-          "siret": "SIRET detected — 14 digits ✓"
-        },
-        "hint": "{remaining} more digit(s) needed",
-        "errors": {
-          "400": "Incorrect SIREN/SIRET format.",
-          "404": "No establishment found for this identifier.",
-          "429": "Too many requests. Please try again in a few minutes.",
-          "502": "INSEE API temporarily unavailable.",
-          "network": "Unable to reach the API."
-        }
-      },
-      "result": {
-        "active": "Active",
-        "closed": "Closed",
-        "siege": "HQ",
-        "ess": "ESS",
-        "select": "Select",
-        "close": "Close",
-        "siren": "SIREN",
-        "created": "Created",
-        "naf": "NAF",
-        "employees": "Employees",
-        "address": "Address",
-        "beneficiaryCreated": "Beneficiary added successfully."
-      },
-      "list": {
-        "title": "Selected beneficiaries",
-        "count": "{count} entry(ies)",
-        "empty": "No beneficiary selected.",
-        "emptyHint": "Search for a SIREN/SIRET and click Select.",
-        "delete": "Delete",
-        "alreadyAdded": "This beneficiary is already in your list.",
-        "deleteTitle": "Delete beneficiary",
-        "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
-      },
-      "status": {
-        "pending": "Pending",
-        "formatValid": "Format ✓",
-        "verified": "VOP Verified",
-        "closeMatch": "Approx.",
-        "noMatch": "Name ≠",
-        "notPossible": "N/A",
-        "invalid": "Invalid"
-      },
-      "iban": {
-        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
-        "verify": "Verify",
-        "verifyVop": "Verify VOP →",
-        "verified": "Verified",
-        "addIban": "Add an IBAN",
-        "copy": "Copy IBAN",
-        "inputPlaceholder": "Enter an IBAN",
-        "add": "Add",
-        "cancel": "Cancel",
-        "deleteTitle": "Delete IBAN",
-        "deleteMessage": "Are you sure you want to delete IBAN {iban}?",
-        "vop": {
-          "match": "VOP identity confirmed — the account holder matches the beneficiary.",
-          "closeMatch": "Close match — suggested name: {name}",
-          "noMatch": "No match — the account holder name does not match the beneficiary.",
-          "notPossible": "Verification not available for this IBAN (non-participating bank)."
-        }
-      },
-      "vop": {}
+      "association": "Association",
+      "donor": "Donor"
     },
     "setPassword": {
-      "title": "Secure your account",
-      "subtitle": "Set a password to also be able to log in with your email.",
-      "success": "Password set successfully."
+      "confirm": {
+        "label": "Confirm",
+        "placeholder": "••••••••"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "8 characters minimum"
+      },
+      "skip": "Later",
+      "submit": "Save",
+      "subtitle": "Optional — enables email + password login",
+      "success": "Password successfully defined",
+      "title": "Set a password"
+    },
+    "signup": {
+      "association": {
+        "connect": {
+          "google": "Continue with Google",
+          "magicLink": "Receive a magic link",
+          "title": "Choose your method"
+        },
+        "profile": {
+          "contact": {
+            "label": "Contact name",
+            "placeholder": "Your full name"
+          },
+          "description": {
+            "label": "Description",
+            "placeholder": "Describe your mission (optional)"
+          },
+          "name": {
+            "label": "Association name",
+            "placeholder": "Pre-filled"
+          },
+          "siren": {
+            "label": "SIREN",
+            "placeholder": "Pre-filled"
+          },
+          "submit": "Create my space →"
+        },
+        "search": {
+          "label": "Search your association",
+          "noResults": "No results",
+          "placeholder": "Name or SIREN…",
+          "results": "Results",
+          "select": "Select",
+          "status": {
+            "active": "Active",
+            "ceased": "Ceased"
+          }
+        },
+        "steps": {
+          "connect": "Connect",
+          "profile": "Profile",
+          "search": "Search"
+        },
+        "title": "Join as an Association"
+      },
+      "donor": {
+        "alreadyAccount": "Already have an account?",
+        "google": "Sign up with Google",
+        "login": "Log in",
+        "magicLink": "Sign up with a magic link",
+        "title": "Join as a Donor"
+      },
+      "emailPassword": {
+        "confirm": {
+          "label": "Confirm password",
+          "placeholder": "••••••••"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "you@example.com"
+        },
+        "label": "Email & password",
+        "notReceived": "Didn't receive it?",
+        "password": {
+          "label": "Password",
+          "placeholder": "8 characters minimum"
+        },
+        "resend": "Resend",
+        "sent": "Link sent! Check your inbox — valid for 24h.",
+        "submit": "Create my account →",
+        "submitContinue": "Continue →"
+      }
+    },
+    "tabs": {
+      "login": "Login",
+      "signup": "Create an account"
+    },
+    "terms": "Terms of Service",
+    "verifyEmail": {
+      "failed": "Invalid link",
+      "failedSubtitle": "This link has expired or has already been used.",
+      "requestNew": "Request a new link",
+      "success": "Email verified!",
+      "successSubtitle": "You will be redirected to your space.",
+      "verifying": "Verifying…"
+    }
+  },
+  "common": {
+    "budgetSaved": "Budget saved.",
+    "campaignUpdated": "Campaign updated.",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "errors": {
+      "conflict": "This resource already exists.",
+      "networkError": "Connection problem. Check your network.",
+      "rateLimitExceeded": "Too many requests. Please wait {seconds} seconds.",
+      "serverError": "An error occurred. Please try again.",
+      "sessionExpired": "Your session has expired. Please log in again."
+    },
+    "loading": "Loading...",
+    "milestoneCreated": "Milestone added.",
+    "milestoneDeleted": "Milestone deleted.",
+    "milestoneSaved": "Milestone updated.",
+    "moneriumConnected": "Wallet connected successfully.",
+    "moneriumError": "Wallet connection failed. Please try again.",
+    "moneriumErrorFetch": "Failed to get authentication URL. Please try again.",
+    "payeeCreated": "Beneficiary added successfully.",
+    "profileUpdated": "Profile updated.",
+    "save": "Save",
+    "setPasswordUpdated": "Password set successfully.",
+    "vopVerified": "VOP verification completed."
+  },
+  "dashboard": {
+    "association": {
+      "empty": {
+        "cta": "Create a campaign",
+        "icon": "🚀",
+        "subtitle": "Create a fundraising campaign to start receiving donations and tracking your impact.",
+        "title": "Launch your first campaign"
+      },
+      "home": {
+        "accCard": {
+          "checks": {
+            "bank": {
+              "cta": "Connect my account →",
+              "desc": "To receive donations in euros via our Monerium partner",
+              "eta": "2-3 days",
+              "title": "Dedicated bank account (IBAN)"
+            },
+            "kyc": {
+              "cta": "Verify →",
+              "desc": "Submit your documents to publish publicly",
+              "eta": "24-48h",
+              "title": "Association verification"
+            }
+          },
+          "dismiss": "Hide",
+          "sub": {
+            "bankOnly": "Your association is verified! Complete the bank account connection to receive donations.",
+            "notVerified": "While your association is being validated, you can create and publish campaigns in private mode (direct link only)."
+          },
+          "title": "⚙️ Complete your CommonLink account"
+        },
+        "activity": {
+          "empty": "No recent activity",
+          "title": "Recent activity"
+        },
+        "chart": {
+          "title": "Donations — last 6 months"
+        },
+        "error": "Unable to load dashboard data.",
+        "greeting": "Hello, {name} 👋",
+        "newCampaign": "+ New campaign",
+        "sidebar": {
+          "accPartial": "Account {done}/{total}",
+          "accPending": "To configure",
+          "accVerified": "Account verified"
+        },
+        "stats": {
+          "activeCampaigns": "Active campaigns",
+          "avgProgress": "Average progress (fundraising goal)",
+          "nextMilestone": "Next milestone",
+          "totalRaised": "Total raised (active campaigns)"
+        },
+        "subtitle": "Summary of your activity and the impact of your campaigns."
+      },
+      "newCampaign": "New campaign",
+      "profile": {
+        "cancel": "Cancel",
+        "city": "City",
+        "contactName": "Contact name",
+        "contactNamePlaceholder": "Your full name",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe your association's mission",
+        "errors": {
+          "contactNameMin": "Name must be at least 2 characters.",
+          "postalCodeFormat": "Postal code must be 5 digits."
+        },
+        "identifier": "SIREN",
+        "loading": "Loading profile…",
+        "memberSince": "Member since {date}",
+        "monerium": {
+          "badge": "Experimental",
+          "cancel": "Cancel",
+          "connect": "Connect wallet",
+          "connected": "Wallet connected successfully.",
+          "connectedStatus": "Connected",
+          "description": "Connect your Monerium wallet to receive and issue digital euros directly on the blockchain.",
+          "error": "Wallet connection failed. Please try again.",
+          "errorFetch": "Failed to get authentication URL. Please try again.",
+          "pendingStatus": "Authorization pending",
+          "title": "Monerium Wallet",
+          "tryAgain": "Try Again",
+          "waiting": "Authentication in progress… Complete the form in the window that just opened."
+        },
+        "name": "Association name",
+        "pending": "Pending verification",
+        "postalCode": "Postal code",
+        "save": "Save",
+        "security": {
+          "changePassword": "Set a password",
+          "email": "Email & password",
+          "google": "Google",
+          "loginMethod": "Login method",
+          "magicLink": "Magic link",
+          "title": "Security"
+        },
+        "success": "Profile updated.",
+        "title": "Association profile",
+        "verification": {
+          "pendingText": "Verification is carried out by the CommonLink team after reviewing your file.",
+          "title": "Verification",
+          "verified": "Your association is verified."
+        },
+        "verified": "Verified"
+      },
+      "profileCompletion": {
+        "fields": {
+          "contact": "Contact",
+          "description": "Description",
+          "name": "Association name",
+          "siren": "SIREN"
+        },
+        "subtitle": "A complete profile builds trust with donors.",
+        "title": "Complete your profile"
+      },
+      "recentActivity": {
+        "empty": "No recent activity yet"
+      },
+      "sections": {
+        "activeCampaigns": "Active campaigns",
+        "recentActivity": "Recent activity"
+      },
+      "stats": {
+        "activeCampaigns": "Active campaigns",
+        "conversionRate": "Conversion rate",
+        "fundsRaised": "Funds raised",
+        "uniqueDonors": "Unique donors"
+      }
     },
     "campaigns": {
-      "pageTitle": "Campaigns",
-      "pageSubtitle": "Manage your association's fundraising campaigns",
       "create": "Create a campaign",
       "defaultName": "New campaign",
-      "stats": {
-        "total": "Campaigns",
-        "live": "Active",
-        "raised": "Total raised",
-        "goal": "Total goal"
-      },
-      "status": {
-        "draft": "Draft",
-        "live": "Live",
-        "ended": "Ended"
-      },
-      "milestones": "milestone(s)",
-      "empty": {
-        "icon": "🎯",
-        "title": "No campaigns",
-        "subtitle": "Create your first campaign to start collecting donations.",
-        "cta": "Create a campaign"
-      },
       "delete": "Delete",
       "deleteConfirm": "Delete this campaign? This action is irreversible.",
-      "loading": "Loading…",
       "editor": {
-        "loading": "Loading campaign…",
-        "notFound": "Campaign not found.",
-        "tabs": {
-          "info": "Info",
-          "budget": "Budget",
-          "milestones": "Milestones"
+        "budget": {
+          "addItem": "Add item",
+          "addSection": "Add category",
+          "amountPlaceholder": "0",
+          "balance": "Balance",
+          "charges": "Expenses",
+          "deficit": "Deficit",
+          "equilibrium": "Balanced",
+          "initTemplate": "Initialize standard template",
+          "initTemplateHint": "Pre-fill with the French association accounting template (amounts at 0).",
+          "labelPlaceholder": "Label",
+          "produits": "Revenue",
+          "save": "Save budget",
+          "sectionCode": "Code (e.g. 63)",
+          "sectionName": "Name (e.g. Taxes)",
+          "surplus": "Surplus"
         },
         "hero": {
           "collected": "Raised",
@@ -295,184 +359,232 @@
           "progress": "Progress"
         },
         "info": {
-          "title": "General information",
-          "name": { "label": "Campaign name", "placeholder": "Your campaign name…" },
-          "goal": { "label": "Fundraising goal (€)", "placeholder": "0" },
-          "startDate": { "label": "Start date" },
-          "endDate": { "label": "End date" },
-          "description": { "label": "Campaign description", "placeholder": "Describe the objective, context and expected impact…" },
-          "status": { "label": "Status" },
-          "contract": { "label": "Smart Contract", "placeholder": "Contract address" },
+          "contract": {
+            "label": "Smart Contract",
+            "placeholder": "Contract address"
+          },
+          "description": {
+            "label": "Campaign description",
+            "placeholder": "Describe the objective, context and expected impact…"
+          },
+          "endDate": {
+            "label": "End date"
+          },
+          "goal": {
+            "label": "Fundraising goal (€)",
+            "placeholder": "0"
+          },
+          "name": {
+            "label": "Campaign name",
+            "placeholder": "Your campaign name…"
+          },
           "save": "Save",
-          "saved": "Campaign updated."
+          "saved": "Campaign updated.",
+          "startDate": {
+            "label": "Start date"
+          },
+          "status": {
+            "label": "Status"
+          },
+          "title": "General information"
         },
-        "budget": {
-          "charges": "Expenses",
-          "produits": "Revenue",
-          "balance": "Balance",
-          "equilibrium": "Balanced",
-          "surplus": "Surplus",
-          "deficit": "Deficit",
-          "addItem": "Add item",
-          "addSection": "Add category",
-          "sectionCode": "Code (e.g. 63)",
-          "sectionName": "Name (e.g. Taxes)",
-          "initTemplate": "Initialize standard template",
-          "initTemplateHint": "Pre-fill with the French association accounting template (amounts at 0).",
-          "save": "Save budget",
-          "labelPlaceholder": "Label",
-          "amountPlaceholder": "0"
-        },
+        "loading": "Loading campaign…",
         "milestones": {
-          "title": "Campaign milestones",
-          "subtitle": "Each milestone is a fundraising threshold with a concrete measurable impact.",
           "add": "Add",
-          "namePlaceholder": "Milestone name",
-          "descPlaceholder": "Description of the concrete impact of this milestone…",
-          "reached": "Reached",
           "current": "In progress",
-          "locked": "Locked",
           "deleteConfirm": "Delete this milestone?",
-          "targetLabel": "Target €"
+          "descPlaceholder": "Description of the concrete impact of this milestone…",
+          "locked": "Locked",
+          "namePlaceholder": "Milestone name",
+          "reached": "Reached",
+          "subtitle": "Each milestone is a fundraising threshold with a concrete measurable impact.",
+          "targetLabel": "Target €",
+          "title": "Campaign milestones"
+        },
+        "notFound": "Campaign not found.",
+        "tabs": {
+          "budget": "Budget",
+          "info": "Info",
+          "milestones": "Milestones"
         }
+      },
+      "empty": {
+        "cta": "Create a campaign",
+        "icon": "🎯",
+        "subtitle": "Create your first campaign to start collecting donations.",
+        "title": "No campaigns"
+      },
+      "loading": "Loading…",
+      "milestones": "milestone(s)",
+      "pageSubtitle": "Manage your association's fundraising campaigns",
+      "pageTitle": "Campaigns",
+      "stats": {
+        "goal": "Total goal",
+        "live": "Active",
+        "raised": "Total raised",
+        "total": "Campaigns"
+      },
+      "status": {
+        "draft": "Draft",
+        "ended": "Ended",
+        "live": "Live"
       }
     },
     "donor": {
-      "stats": {
-        "totalDonated": "Total donated",
-        "donationsCount": "Donations made",
-        "campaignsFollowed": "Campaigns followed",
-        "impactScore": "Impact score"
-      },
-      "sections": {
-        "recentDonations": "My recent donations",
-        "nftBadges": "My NFT badges",
-        "followedCampaigns": "My followed campaigns",
-        "viewAll": "View all"
-      },
       "empty": {
+        "cta": "Explore campaigns",
         "icon": "🌱",
-        "title": "Your philanthropic journey starts here",
         "subtitle": "Explore campaigns and make your first donation to see your impact.",
-        "cta": "Explore campaigns"
+        "title": "Your philanthropic journey starts here"
       },
       "profile": {
-        "title": "My profile",
-        "loading": "Loading profile…",
+        "anonymous": "Anonymous donations by default",
+        "anonymousHint": "Your identity will be hidden on campaigns.",
+        "cancel": "Cancel",
+        "changePhoto": "Change photo",
         "displayName": "Display name",
         "displayNamePlaceholder": "Your public name",
         "email": "Email",
-        "anonymous": "Anonymous donations by default",
-        "anonymousHint": "Your identity will be hidden on campaigns.",
-        "changePhoto": "Change photo",
-        "save": "Save",
-        "cancel": "Cancel",
-        "success": "Profile updated.",
-        "memberSince": "Member since {date}",
-        "security": {
-          "title": "Security",
-          "changePassword": "Set a password",
-          "loginMethod": "Login method",
-          "google": "Google",
-          "email": "Email & password",
-          "magicLink": "Magic link"
-        }
-      }
-    },
-    "association": {
-      "stats": {
-        "fundsRaised": "Funds raised",
-        "uniqueDonors": "Unique donors",
-        "activeCampaigns": "Active campaigns",
-        "conversionRate": "Conversion rate"
-      },
-      "empty": {
-        "icon": "🚀",
-        "title": "Launch your first campaign",
-        "subtitle": "Create a fundraising campaign to start receiving donations and tracking your impact.",
-        "cta": "Create a campaign"
-      },
-      "newCampaign": "New campaign",
-      "sections": {
-        "activeCampaigns": "Active campaigns",
-        "recentActivity": "Recent activity"
-      },
-      "recentActivity": {
-        "empty": "No recent activity yet"
-      },
-      "profileCompletion": {
-        "title": "Complete your profile",
-        "subtitle": "A complete profile builds trust with donors.",
-        "fields": {
-          "name": "Association name",
-          "siren": "SIREN",
-          "description": "Description",
-          "contact": "Contact"
-        }
-      },
-      "profile": {
-        "title": "Association profile",
         "loading": "Loading profile…",
-        "name": "Association name",
-        "identifier": "SIREN",
-        "contactName": "Contact name",
-        "contactNamePlaceholder": "Your full name",
-        "city": "City",
-        "postalCode": "Postal code",
-        "description": "Description",
-        "descriptionPlaceholder": "Describe your association's mission",
-        "verified": "Verified",
-        "pending": "Pending verification",
-        "save": "Save",
-        "cancel": "Cancel",
-        "success": "Profile updated.",
         "memberSince": "Member since {date}",
-        "errors": {
-          "contactNameMin": "Name must be at least 2 characters.",
-          "postalCodeFormat": "Postal code must be 5 digits."
-        },
-        "verification": {
-          "title": "Verification",
-          "verified": "Your association is verified.",
-          "pendingText": "Verification is carried out by the CommonLink team after reviewing your file."
-        },
+        "save": "Save",
         "security": {
-          "title": "Security",
           "changePassword": "Set a password",
-          "loginMethod": "Login method",
-          "google": "Google",
           "email": "Email & password",
-          "magicLink": "Magic link"
+          "google": "Google",
+          "loginMethod": "Login method",
+          "magicLink": "Magic link",
+          "title": "Security"
         },
-        "monerium": {
-          "title": "Monerium Wallet",
-          "badge": "Experimental",
-          "description": "Connect your Monerium wallet to receive and issue digital euros directly on the blockchain.",
-          "connect": "Connect wallet",
-          "cancel": "Cancel",
-          "waiting": "Authentication in progress… Complete the form in the window that just opened.",
-          "connected": "Wallet connected successfully.",
-          "connectedStatus": "Connected",
-          "pendingStatus": "Authorization pending",
-          "tryAgain": "Try Again",
-          "error": "Wallet connection failed. Please try again.",
-          "errorFetch": "Failed to get authentication URL. Please try again."
-        }
+        "success": "Profile updated.",
+        "title": "My profile"
+      },
+      "sections": {
+        "followedCampaigns": "My followed campaigns",
+        "nftBadges": "My NFT badges",
+        "recentDonations": "My recent donations",
+        "viewAll": "View all"
+      },
+      "stats": {
+        "campaignsFollowed": "Campaigns followed",
+        "donationsCount": "Donations made",
+        "impactScore": "Impact score",
+        "totalDonated": "Total donated"
       }
     },
+    "greeting": "Hello, {name} 👋",
     "moneriumPopup": {
       "callback": {
-        "loading": "Loading…",
-        "closing": "Completing KYC… this window will close."
-      },
-      "success": {
-        "title": "KYC Complete",
-        "closing": "Closing window…"
+        "closing": "Completing KYC… this window will close.",
+        "loading": "Loading…"
       },
       "error": {
-        "title": "KYC Failed",
-        "retry": "Please try again from the profile page."
+        "retry": "Please try again from the profile page.",
+        "title": "KYC Failed"
+      },
+      "success": {
+        "closing": "Closing window…",
+        "title": "KYC Complete"
       }
-    }
+    },
+    "nav": {
+      "associationProfile": "Association profile",
+      "campaigns": "Campaigns",
+      "donations": "My donations",
+      "donors": "Donors",
+      "logout": "Log out",
+      "overview": "Dashboard",
+      "payees": "Beneficiaries",
+      "profile": "My profile",
+      "settings": "Settings"
+    },
+    "payees": {
+      "addPayee": "Add a beneficiary",
+      "iban": {
+        "add": "Add",
+        "addIban": "Add an IBAN",
+        "cancel": "Cancel",
+        "copy": "Copy IBAN",
+        "deleteMessage": "Are you sure you want to delete IBAN {iban}?",
+        "deleteTitle": "Delete IBAN",
+        "inputPlaceholder": "Enter an IBAN",
+        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        "verified": "Verified",
+        "verify": "Verify",
+        "verifyVop": "Verify VOP →",
+        "vop": {
+          "closeMatch": "Close match — suggested name: {name}",
+          "match": "VOP identity confirmed — the account holder matches the beneficiary.",
+          "noMatch": "No match — the account holder name does not match the beneficiary.",
+          "notPossible": "Verification not available for this IBAN (non-participating bank)."
+        }
+      },
+      "list": {
+        "alreadyAdded": "This beneficiary is already in your list.",
+        "count": "{count} entry(ies)",
+        "delete": "Delete",
+        "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+        "deleteTitle": "Delete beneficiary",
+        "empty": "No beneficiary selected.",
+        "emptyHint": "Search for a SIREN/SIRET and click Select.",
+        "title": "Selected beneficiaries"
+      },
+      "pageSubtitle": "Manage your association's beneficiaries",
+      "pageTitle": "Beneficiaries",
+      "result": {
+        "active": "Active",
+        "address": "Address",
+        "beneficiaryCreated": "Beneficiary added successfully.",
+        "close": "Close",
+        "closed": "Closed",
+        "created": "Created",
+        "employees": "Employees",
+        "ess": "ESS",
+        "naf": "NAF",
+        "select": "Select",
+        "siege": "HQ",
+        "siren": "SIREN"
+      },
+      "search": {
+        "button": "Search",
+        "detected": {
+          "siren": "SIREN detected — 9 digits ✓",
+          "siret": "SIRET detected — 14 digits ✓"
+        },
+        "errors": {
+          "400": "Incorrect SIREN/SIRET format.",
+          "404": "No establishment found for this identifier.",
+          "429": "Too many requests. Please try again in a few minutes.",
+          "502": "INSEE API temporarily unavailable.",
+          "network": "Unable to reach the API."
+        },
+        "hint": "{remaining} more digit(s) needed",
+        "loading": "Querying INSEE Sirene…",
+        "placeholder": "829844810 or 82984481000046",
+        "subtitle": "Enter an identifier. Type detection is automatic.",
+        "title": "Search SIRET / SIREN"
+      },
+      "status": {
+        "closeMatch": "Approx.",
+        "formatValid": "Format ✓",
+        "invalid": "Invalid",
+        "noMatch": "Name ≠",
+        "notPossible": "N/A",
+        "pending": "Pending",
+        "verified": "VOP Verified"
+      },
+      "vop": {}
+    },
+    "roles": {
+      "association": "Association",
+      "donor": "Donor"
+    },
+    "setPassword": {
+      "subtitle": "Set a password to also be able to log in with your email.",
+      "success": "Password set successfully.",
+      "title": "Secure your account"
+    },
+    "title": "Dashboard",
+    "welcome": "Welcome"
   }
 }

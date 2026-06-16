@@ -1393,3 +1393,132 @@ textarea.form-input {
 .progress-fill-locked  { background: var(--color-muted); }
 .progress-fill-current { background: linear-gradient(90deg, var(--color-green), var(--color-green-dim)); }
 .progress-fill-reached { background: linear-gradient(90deg, var(--color-green), var(--color-cyan)); }
+
+/* ── Dashboard home layout ───────────────────────────────────────────────── */
+
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+.page-head h1 { font-size: 28px; color: var(--ink-navy); }
+.page-head p  { font-size: 15px; color: var(--slate-lavender); margin-top: 4px; }
+
+.home-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 28px; }
+@media (max-width: 1200px) { .home-stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .home-stats { grid-template-columns: 1fr; } }
+
+.stat-card-sublabel { font-size: 11px; color: var(--slate-lavender); margin-top: 2px; }
+
+.g2 { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 28px; }
+@media (max-width: 900px) { .g2 { grid-template-columns: 1fr; } }
+
+/* ── Account completion card ─────────────────────────────────────────────── */
+
+.acc-card {
+  background: linear-gradient(135deg, var(--white) 0%, rgba(78, 205, 196, 0.04) 100%);
+  border: 1px solid rgba(78, 205, 196, 0.18);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.acc-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(78, 205, 196, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.acc-card.partial {
+  background: linear-gradient(135deg, var(--white) 0%, rgba(255, 179, 71, 0.05) 100%);
+  border-color: rgba(255, 179, 71, 0.25);
+}
+.acc-card.partial::before { background: radial-gradient(circle, rgba(255, 179, 71, 0.1) 0%, transparent 70%); }
+
+.acc-card-head  { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; position: relative; }
+.acc-card-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--ink-navy); display: flex; align-items: center; gap: 8px; }
+.acc-card-sub   { font-size: 13px; color: var(--slate-lavender); margin-top: 2px; line-height: 1.5; }
+.acc-card-close {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7); border: none; cursor: pointer;
+  font-size: 14px; color: var(--slate-lavender);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.2s;
+}
+.acc-card-close:hover { background: var(--white); color: var(--ink-navy); }
+
+.acc-checks { display: flex; flex-direction: column; gap: 10px; position: relative; }
+.acc-check {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(230, 228, 244, 0.6);
+  transition: all 0.2s;
+}
+.acc-check.done    { background: rgba(78, 205, 196, 0.06); border-color: rgba(78, 205, 196, 0.2); }
+.acc-check.pending { background: rgba(255, 179, 71, 0.06); border-color: rgba(255, 179, 71, 0.22); }
+
+.acc-check-ic {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0; font-weight: 700;
+}
+.acc-check.done    .acc-check-ic { background: #4ECDC4; color: var(--white); }
+.acc-check.pending .acc-check-ic { background: var(--soft-amber); color: var(--white); }
+.acc-check.todo    .acc-check-ic { background: var(--mist-lavender); color: var(--slate-lavender); }
+
+.acc-check-body  { flex: 1; min-width: 0; }
+.acc-check-title { font-size: 13.5px; font-weight: 700; color: var(--ink-navy); }
+.acc-check.done .acc-check-title { color: var(--teal-dark); }
+.acc-check-desc  { font-size: 11.5px; color: var(--slate-lavender); margin-top: 1px; }
+.acc-check-cta {
+  font-size: 12px; font-weight: 700; color: var(--bright-teal);
+  background: none; border: none; cursor: pointer;
+  padding: 6px 10px; border-radius: var(--radius-sm);
+  font-family: var(--font-display); transition: all 0.2s; flex-shrink: 0;
+}
+.acc-check-cta:hover { background: rgba(78, 205, 196, 0.1); }
+.acc-check-eta { font-size: 11px; color: var(--slate-lavender); font-style: italic; flex-shrink: 0; }
+
+/* ── Sidebar account-status pill ─────────────────────────────────────────── */
+
+@keyframes accPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(255, 179, 71, 0); }
+}
+
+.acc-mini {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 4px; padding: 2px 8px;
+  border-radius: 50px; font-size: 10px; font-weight: 700;
+  font-family: var(--font-display); letter-spacing: 0.02em;
+  cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+  background: none;
+}
+.acc-mini.ok      { background: rgba(78, 205, 196, 0.16); color: #3fb5ac; border-color: rgba(78, 205, 196, 0.3); }
+.acc-mini.ok:hover { background: rgba(78, 205, 196, 0.24); }
+.acc-mini.partial { background: rgba(255, 179, 71, 0.18); color: #d39024; border-color: rgba(255, 179, 71, 0.35); animation: accPulse 2.4s ease-in-out infinite; }
+.acc-mini.partial:hover { background: rgba(255, 179, 71, 0.26); }
+.acc-mini.blocked { background: rgba(255, 107, 91, 0.16); color: var(--warm-coral); border-color: rgba(255, 107, 91, 0.3); }
+
+.acc-mini-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.acc-mini.ok      .acc-mini-dot { background: #3fb5ac; }
+.acc-mini.partial .acc-mini-dot { background: var(--soft-amber); }
+.acc-mini.blocked .acc-mini-dot { background: var(--warm-coral); }
+
+/* ── Recent activity feed ────────────────────────────────────────────────── */
+
+.act { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(230, 228, 244, 0.5); }
+.act:last-child { border-bottom: none; }
+.act-ic {
+  width: 36px; height: 36px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.act-ic.g { background: rgba(78, 205, 196, 0.12); }
+.act-ic.a { background: rgba(255, 179, 71, 0.12); }
+.act-ic.i { background: rgba(50, 50, 125, 0.08); }
+.act-txt  { font-size: 14px; line-height: 1.5; }
+.act-txt strong { font-weight: 700; }
+.act-time { font-size: 12px; color: var(--slate-lavender); margin-top: 2px; }

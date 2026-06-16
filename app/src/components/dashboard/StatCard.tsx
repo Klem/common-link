@@ -11,9 +11,11 @@ interface StatCardProps {
   value: string | number;
   trend?: TrendProps;
   variant?: 'teal' | 'coral' | 'amber' | 'indigo';
+  /** Optional secondary label shown below the main label (e.g. milestone name). */
+  subLabel?: string;
 }
 
-export function StatCard({ icon, label, value, trend, variant = 'teal' }: StatCardProps) {
+export function StatCard({ icon, label, value, trend, variant = 'teal', subLabel }: StatCardProps) {
   return (
     <div className="stat-card">
       <div className="stat-card-header">
@@ -26,6 +28,7 @@ export function StatCard({ icon, label, value, trend, variant = 'teal' }: StatCa
           {trend.value}
         </span>
       )}
+      {subLabel && <p className="stat-card-sublabel">{subLabel}</p>}
     </div>
   );
 }

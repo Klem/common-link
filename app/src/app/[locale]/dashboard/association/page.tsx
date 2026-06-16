@@ -1,65 +1,118 @@
 'use client';
 
-import Link from 'next/link';
-import { useTranslations } from 'next-intl';
-import { useAuthStore } from '@/stores/authStore';
-import { StatCard, EmptyStateCard } from '@/components/dashboard';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
+import { useMoneriumStatus } from '@/hooks/monerium/useMoneriumStatus';
+import { useAssociationDashboard } from '@/hooks/dashboard/useAssociationDashboard';
+import { useAccStatusStore } from '@/stores/accStatusStore';
+import { StatCard } from '@/components/dashboard/StatCard';
+import { AccountCompletionCard } from '@/components/dashboard/AccountCompletionCard';
+import { DonationsBarChart } from '@/components/dashboard/DonationsBarChart';
+import { RecentActivityList } from '@/components/dashboard/RecentActivityList';
 import { ROUTES } from '@/lib/routes';
 
-export default function AssociationDashboardPage() {
-  const t = useTranslations('dashboard');
-  const user = useAuthStore((s) => s.user);
+function formatEUR(amount: number): string {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(amount);
+}
 
-  const subtitle = user?.displayName?.trim() || user?.email || '';
+export default function AssociationDashboardPage() {
+  const t = useTranslations('dashboard.association.home');
+  const locale = useLocale();
+  const router = useRouter();
+
+  const { profile } = useAssociationProfile();
+  const { connected } = useMoneriumStatus();
+  const { stats, isLoading, error } = useAssociationDashboard();
+  const setAccStatus = useAccStatusStore((s) => s.setAccStatus);
+
+  const verified = profile?.verified ?? false;
+  const bankConnected = connected === true;
+
+  useEffect(() => {
+    if (profile !== null && connected !== null) {
+      const done = (verified ? 1 : 0) + (bankConnected ? 1 : 0);
+      setAccStatus(done, 2);
+    }
+  }, [profile, connected, verified, bankConnected, setAccStatus]);
+
+  const greeting = profile ? t('greeting', { name: profile.name }) : t('greeting', { name: '…' });
+
+  const EMPTY_STATS = {
+    totalRaisedActive: 0,
+    activeCampaignCount: 0,
+    nextMilestone: null,
+    avgProgress: 0,
+    donations6Months: Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - (5 - i));
+      return { month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, amount: 0 };
+    }),
+    recentActivity: [],
+  };
+
+  const displayStats = stats ?? (isLoading ? EMPTY_STATS : EMPTY_STATS);
 
   return (
     <div>
-      {/* Page header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <AccountCompletionCard verified={verified} bankConnected={bankConnected} />
+
+      <div className="page-head">
         <div>
-          <h1 className="font-display font-black text-2xl md:text-3xl">{t('title')}</h1>
-          {subtitle && <p className="text-text-2 mt-1">{subtitle}</p>}
+          <h1>{greeting}</h1>
+          <p>{t('subtitle')}</p>
         </div>
-        <Link href={ROUTES.ASSOCIATION_CAMPAIGNS} className="btn btn-primary btn-md self-start md:self-auto">
-          + {t('association.newCampaign')}
-        </Link>
+        <button
+          className="btn btn-primary"
+          onClick={() => router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}`)}
+        >
+          {t('newCampaign')}
+        </button>
       </div>
 
-      {/* KPI grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <StatCard icon="💶" label={t('association.stats.fundsRaised')} value="0 €" />
-        <StatCard icon="👥" label={t('association.stats.uniqueDonors')} value={0} />
-        <StatCard icon="📣" label={t('association.stats.activeCampaigns')} value={0} />
-        <StatCard icon="📊" label={t('association.stats.conversionRate')} value="—" />
-      </div>
-
-      {/* Active campaigns */}
-      <div className="card card-no-hover mb-6">
-        <div className="card-header-bar">
-          <span className="font-display font-bold text-sm">{t('association.sections.activeCampaigns')}</span>
-          <Link href={ROUTES.ASSOCIATION_CAMPAIGNS} className="btn btn-ghost btn-xs">
-            + {t('association.newCampaign')}
-          </Link>
+      {error && (
+        <div className="alert alert-error" style={{ marginBottom: '24px' }}>
+          {t('error')}
         </div>
-        <div className="card-body">
-          <EmptyStateCard
-            icon={t('association.empty.icon')}
-            title={t('association.empty.title')}
-            subtitle={t('association.empty.subtitle')}
-            actionLabel={t('association.empty.cta')}
-            actionHref={ROUTES.ASSOCIATION_CAMPAIGNS}
+      )}
+
+      <div className="home-stats">
+        <StatCard
+          icon="💰"
+          label={t('stats.totalRaised')}
+          value={isLoading ? '—' : formatEUR(displayStats.totalRaisedActive)}
+          variant="teal"
+        />
+        <div
+          style={{ cursor: 'pointer' }}
+          onClick={() => router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}`)}
+        >
+          <StatCard
+            icon="📢"
+            label={t('stats.activeCampaigns')}
+            value={isLoading ? '—' : displayStats.activeCampaignCount}
+            variant="coral"
           />
         </div>
+        <StatCard
+          icon="🎯"
+          label={t('stats.nextMilestone')}
+          value={isLoading ? '—' : displayStats.nextMilestone ? formatEUR(displayStats.nextMilestone.remainingAmount) : '—'}
+          subLabel={displayStats.nextMilestone?.label}
+          variant="amber"
+        />
+        <StatCard
+          icon="📊"
+          label={t('stats.avgProgress')}
+          value={isLoading ? '—' : `${Math.round(displayStats.avgProgress * 100)} %`}
+          variant="indigo"
+        />
       </div>
 
-      {/* Recent activity */}
-      <div className="card card-no-hover">
-        <div className="card-header-bar">
-          <span className="font-display font-bold text-sm">{t('association.sections.recentActivity')}</span>
-        </div>
-        <div className="card-body">
-          <p className="text-sm text-text-2">{t('association.recentActivity.empty')}</p>
-        </div>
+      <div className="g2">
+        <DonationsBarChart data={displayStats.donations6Months} />
+        <RecentActivityList items={displayStats.recentActivity} />
       </div>
     </div>
   );

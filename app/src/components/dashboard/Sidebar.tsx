@@ -6,6 +6,7 @@ import type { UserDto } from '@/types/auth';
 import { UserRole } from '@/types/auth';
 import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useAccStatusStore } from '@/stores/accStatusStore';
 
 interface NavItem {
   icon: string;
@@ -57,8 +58,17 @@ export function Sidebar({ user, currentPath, isOpen = false, onClose }: SidebarP
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const logout = useAuthStore((s) => s.logout);
+  const { done, total } = useAccStatusStore();
   const navItems = user.role === UserRole.DONOR ? DONOR_NAV : ASSOCIATION_NAV;
   const initials = getInitials(user.displayName, user.email);
+
+  const accPillClass = done === total ? 'ok' : done >= 1 ? 'partial' : 'blocked';
+  const accPillLabel =
+    done === total
+      ? t('association.home.sidebar.accVerified' as Parameters<typeof t>[0])
+      : done >= 1
+        ? t('association.home.sidebar.accPartial' as Parameters<typeof t>[0], { done, total })
+        : t('association.home.sidebar.accPending' as Parameters<typeof t>[0]);
 
   return (
     <nav className={`app-sidebar${isOpen ? ' open' : ''}`}>
@@ -132,6 +142,16 @@ export function Sidebar({ user, currentPath, isOpen = false, onClose }: SidebarP
             >
               {user.role === UserRole.DONOR ? t('roles.donor') : t('roles.association')}
             </span>
+            {user.role === UserRole.ASSOCIATION && (
+              <button
+                className={`acc-mini ${accPillClass}`}
+                onClick={() => {}}
+                title={accPillLabel}
+              >
+                <span className="acc-mini-dot" />
+                <span>{accPillLabel}</span>
+              </button>
+            )}
           </div>
         </div>
 

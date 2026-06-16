@@ -79,7 +79,7 @@ onchain:
   receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
   donor-address-secret: ${DONOR_ADDRESS_SECRET}
   worker:
-    enabled: true
+    enabled: false
     batch-size: 10
     fixed-delay-ms: 5000
 
