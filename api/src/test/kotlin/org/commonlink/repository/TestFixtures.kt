@@ -8,8 +8,14 @@ import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Donation
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.EmailVerificationToken
+import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.MagicLinkToken
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.entity.Payee
+import org.commonlink.entity.PayeeIban
+import org.commonlink.entity.Payout
+import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.RefreshToken
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
@@ -213,5 +219,47 @@ object TestFixtures {
         amount = amount,
         providerRef = providerRef,
         confirmedAt = confirmedAt,
+    )
+
+    // ── Payees ───────────────────────────────────────────────────────────────
+
+    fun payee(
+        association: AssociationProfile,
+        name: String = "École Kaolack SARL",
+        identifier1: String = "123456789",
+    ) = Payee(
+        association = association,
+        name = name,
+        identifier1 = identifier1,
+    )
+
+    fun payeeIban(
+        payee: Payee,
+        iban: String = "FR7630006000011234567890189",
+        status: IbanVerificationStatus = IbanVerificationStatus.VERIFIED,
+    ) = PayeeIban(
+        payee = payee,
+        iban = iban,
+        status = status,
+    )
+
+    fun payout(
+        campaign: Campaign,
+        payee: Payee,
+        payeeIban: PayeeIban,
+        amount: BigDecimal = BigDecimal("500.00"),
+        kind: PayoutKind = PayoutKind.EXPENSE,
+        typeCode: String = "60-mat",
+        label: String = "Achat matériel pédagogique — facture FAC-001",
+        status: PayoutStatus = PayoutStatus.PENDING,
+    ) = Payout(
+        campaign = campaign,
+        payee = payee,
+        payeeIban = payeeIban,
+        amount = amount,
+        kind = kind,
+        typeCode = typeCode,
+        label = label,
+        status = status,
     )
 }

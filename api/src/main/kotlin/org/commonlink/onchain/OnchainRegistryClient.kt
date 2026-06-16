@@ -82,6 +82,15 @@ class OnchainRegistryClient(
     fun markMilestoneReached(campaignId: ByteArray, index: BigInteger, proofHash: ByteArray): TransactionReceipt =
         recorderContract.markMilestoneReached(campaignId, index, proofHash).send()
 
+    /**
+     * Records a confirmed payout on-chain.
+     *
+     * TODO: wire to recorderContract.recordPayout() once the Solidity function is deployed.
+     * Parameters match the expected contract ABI: payoutId (bytes32), campaignId (bytes32), amountCents (uint256).
+     */
+    fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger): TransactionReceipt =
+        throw NotImplementedError("recordPayout: Solidity function not yet deployed — update recorderContract binding and remove this stub")
+
     // ───── Reads (no signer needed) ─────────────────────────────────
     fun getAssociation(address: String): CommonLinkRegistry.Association = viewContract.getAssociation(address).send()
     fun getCampaign(id: ByteArray): CommonLinkRegistry.Campaign = viewContract.getCampaign(id).send()

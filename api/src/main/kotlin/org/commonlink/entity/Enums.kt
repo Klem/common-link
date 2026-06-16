@@ -153,3 +153,9 @@ enum class MilestoneStatus {
     /** Target amount has been reached. */
     REACHED
 }
+
+/** High-level categorisation of a [org.commonlink.entity.Payout]: personnel vs operational expense. */
+enum class PayoutKind { REMUNERATION, EXPENSE }
+
+/** Lifecycle status of a [org.commonlink.entity.Payout]. */
+enum class PayoutStatus { PENDING, CONFIRMED, FAILED }

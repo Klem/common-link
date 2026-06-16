@@ -88,4 +88,16 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         @Param("associationId") associationId: UUID,
         pageable: Pageable,
     ): List<Donation>
+
+    /**
+     * Sum of confirmed donation amounts for a single campaign.
+     * Returns null when no confirmed donations exist; callers should treat null as zero.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(d.amount), 0)
+        FROM Donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 }

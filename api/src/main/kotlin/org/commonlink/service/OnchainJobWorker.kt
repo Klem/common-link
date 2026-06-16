@@ -127,6 +127,14 @@ class OnchainJobWorker(
                     OnchainCodec.stringToBytes32(p.txRef),
                 )
             }
+            OnchainJobAction.RECORD_PAYOUT -> {
+                val p = objectMapper.readValue(job.payloadJson, RecordPayoutPayload::class.java)
+                client.recordPayout(
+                    OnchainCodec.uuidToBytes32(p.payoutId),
+                    OnchainCodec.uuidToBytes32(p.campaignId),
+                    p.amountCents,
+                )
+            }
             OnchainJobAction.MARK_MILESTONE_REACHED -> {
                 val p = objectMapper.readValue(job.payloadJson, MilestonePayload::class.java)
                 client.markMilestoneReached(
@@ -170,4 +178,5 @@ data class RecordDonationPayload(
     val receiptHashHex: String,
     val txRef: String,
 )
+data class RecordPayoutPayload(val payoutId: UUID, val campaignId: UUID, val amountCents: BigInteger)
 data class MilestonePayload(val campaignId: UUID, val index: Int, val proofHashHex: String)
