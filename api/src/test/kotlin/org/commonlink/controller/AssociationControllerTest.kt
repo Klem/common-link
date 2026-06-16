@@ -2,12 +2,17 @@ package org.commonlink.controller
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import org.commonlink.dto.ActivityItemDto
+import org.commonlink.dto.ActivityType
 import org.commonlink.dto.AssociationProfileDto
+import org.commonlink.dto.DashboardStatsDto
+import org.commonlink.dto.MonthlyPointDto
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,6 +26,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 @WebMvcTest(AssociationController::class)
@@ -36,6 +43,9 @@ class AssociationControllerTest {
 
     @MockkBean
     private lateinit var associationService: AssociationService
+
+    @MockkBean
+    private lateinit var dashboardService: AssociationDashboardService
 
     @MockkBean
     private lateinit var jwtService: JwtService
@@ -112,6 +122,48 @@ class AssociationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"city":"Lyon"}""")
         )
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/association/dashboard
+    // -------------------------------------------------------------------------
+
+    private val sampleDashboard = DashboardStatsDto(
+        totalRaisedActive = BigDecimal("1500.00"),
+        activeCampaignCount = 2,
+        nextMilestone = null,
+        avgProgress = BigDecimal("0.3750"),
+        donations6Months = listOf(
+            MonthlyPointDto("2026-01", BigDecimal("500.00")),
+            MonthlyPointDto("2026-02", BigDecimal("1000.00")),
+        ),
+        recentActivity = listOf(
+            ActivityItemDto(ActivityType.DONATION, "Alice D.", BigDecimal("50.00"), Instant.now()),
+        ),
+    )
+
+    @Test
+    fun `getDashboard - 200 returns stats shape when authenticated`() {
+        every { dashboardService.getDashboard(userId) } returns sampleDashboard
+
+        mockMvc.perform(
+            get("/api/association/dashboard")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalRaisedActive").value(1500.00))
+            .andExpect(jsonPath("$.activeCampaignCount").value(2))
+            .andExpect(jsonPath("$.avgProgress").isNumber)
+            .andExpect(jsonPath("$.donations6Months").isArray)
+            .andExpect(jsonPath("$.donations6Months[0].month").value("2026-01"))
+            .andExpect(jsonPath("$.recentActivity").isArray)
+            .andExpect(jsonPath("$.recentActivity[0].type").value("DONATION"))
+    }
+
+    @Test
+    fun `getDashboard - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/association/dashboard"))
             .andExpect(status().isUnauthorized)
     }
 }

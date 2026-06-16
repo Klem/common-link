@@ -2,9 +2,11 @@ package org.commonlink
 
 import com.ninjasquad.springmockk.MockkBean
 import org.commonlink.repository.UserRepository
+import org.commonlink.security.AuthRateLimiter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
 import org.commonlink.service.PayeeService
@@ -41,6 +43,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var sireneSearchService: SireneSearchService
     @MockkBean private lateinit var moneriumService: MoneriumService
     @MockkBean private lateinit var onchainOutboxService: OnchainOutboxService
+    @MockkBean private lateinit var dashboardService: AssociationDashboardService
+    @MockkBean private lateinit var authRateLimiter: AuthRateLimiter
 
     @Test
     fun contextLoads() {

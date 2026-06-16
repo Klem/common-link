@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.AssociationProfileDto
+import org.commonlink.dto.DashboardStatsDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
+import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -24,7 +26,8 @@ import java.util.UUID
 @RequestMapping("/api/association")
 @Tag(name = "Association", description = "Association profile endpoints")
 class AssociationController(
-    private val associationService: AssociationService
+    private val associationService: AssociationService,
+    private val dashboardService: AssociationDashboardService,
 ) {
 
     @GetMapping("/me")
@@ -61,4 +64,20 @@ class AssociationController(
         @Valid @RequestBody req: UpdateAssociationProfileRequest
     ): ResponseEntity<AssociationProfileDto> =
         ResponseEntity.ok(associationService.updateProfile(UUID.fromString(principal.username), req))
+
+    @GetMapping("/dashboard")
+    @Operation(
+        summary = "Get association dashboard statistics",
+        description = "Returns aggregate stats for the home screen: total raised on LIVE campaigns, active campaign count, next milestone, 6-month chart, and recent donation activity."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Dashboard statistics returned",
+            content = [Content(schema = Schema(implementation = DashboardStatsDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+    )
+    fun getDashboard(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<DashboardStatsDto> =
+        ResponseEntity.ok(dashboardService.getDashboard(UUID.fromString(principal.username)))
 }

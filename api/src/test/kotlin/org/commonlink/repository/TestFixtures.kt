@@ -5,6 +5,7 @@ import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.Donation
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.EmailVerificationToken
 import org.commonlink.entity.MagicLinkToken
@@ -14,6 +15,7 @@ import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import java.math.BigDecimal
 import java.time.Instant
+import java.util.UUID
 
 /**
  * Factories de données de test pour les entités du domaine.
@@ -187,5 +189,29 @@ object TestFixtures {
         targetAmount = targetAmount,
         sortOrder = sortOrder,
         status = status,
+    )
+
+    /**
+     * Returns an unpersisted [Donation] entity for testing.
+     *
+     * The [providerRef] defaults to a random UUID-based string to avoid UNIQUE constraint violations.
+     *
+     * @param donor The donor profile making the donation.
+     * @param campaign The campaign receiving the donation.
+     * @param amount Donation amount in euros.
+     * @param confirmedAt When the payment was confirmed; null means unconfirmed.
+     */
+    fun donation(
+        donor: DonorProfile,
+        campaign: Campaign,
+        amount: BigDecimal = BigDecimal("50.00"),
+        providerRef: String = "test:${UUID.randomUUID()}",
+        confirmedAt: Instant? = Instant.now(),
+    ) = Donation(
+        donor = donor,
+        campaign = campaign,
+        amount = amount,
+        providerRef = providerRef,
+        confirmedAt = confirmedAt,
     )
 }
