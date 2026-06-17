@@ -405,7 +405,8 @@
         "tabs": {
           "budget": "Budget",
           "info": "Info",
-          "milestones": "Milestones"
+          "milestones": "Milestones",
+          "payments": "Payments"
         }
       },
       "empty": {
@@ -418,6 +419,70 @@
       "milestones": "milestone(s)",
       "pageSubtitle": "Manage your association's fundraising campaigns",
       "pageTitle": "Campaigns",
+      "payments": {
+        "form": {
+          "customCodePlaceholder": "Free code…",
+          "addPayee": "+ Add",
+          "amount": "Amount (€)",
+          "label": "Justification",
+          "labelPlaceholder": "Object of payment, invoice ref…",
+          "method": "🏦 SEPA Transfer",
+          "methodSub": "1–2 business days",
+          "payee": "Recipient",
+          "payeePlaceholder": "— Select —",
+          "submit": "Issue payment →",
+          "title": "Issue a payment",
+          "typeCode": "Expense type",
+          "typeCodePlaceholder": "— Type —"
+        },
+        "breakdown": {
+          "title": "📊 Breakdown"
+        },
+        "confirm": {
+          "message": "Issue {amount} to {payee}?",
+          "submit": "Issue payment",
+          "title": "Confirm payment"
+        },
+        "history": {
+          "empty": "No payments issued.",
+          "title": "📋 Payment history"
+        },
+        "ibanSelect": "IBAN",
+        "noIban": "No IBAN registered for this recipient.",
+        "stats": {
+          "availableBalance": "Available balance",
+          "confirmed": "Confirmed",
+          "paid": "Already paid",
+          "pending": "Pending",
+          "transactions": "Transactions"
+        },
+        "status": {
+          "CONFIRMED": "Confirmed",
+          "FAILED": "Failed",
+          "PENDING": "Pending"
+        },
+        "toast": {
+          "error": "Payment failed. Please try again.",
+          "success": "Payment issued!"
+        },
+        "typeCodes": {
+          "60-mat": "60 · Materials / supplies",
+          "60-svc": "60 · Services",
+          "61-ent": "61 · Maintenance",
+          "61-loc": "61 · Rental",
+          "62-pub": "62 · Communication",
+          "62-tra": "62 · Transport",
+          "64-rem": "64 · Remuneration",
+          "64-soc": "64 · Social charges",
+          "65-ges": "65 · Management fees",
+          "custom": "Other (specify)"
+        },
+        "typeGroups": {
+          "operational": "Operational costs",
+          "other": "Other",
+          "personnel": "Personnel"
+        }
+      },
       "stats": {
         "goal": "Total goal",
         "live": "Active",

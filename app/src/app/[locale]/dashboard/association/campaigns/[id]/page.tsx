@@ -10,8 +10,10 @@ import {
   CampaignInfoTab,
   CampaignBudgetTab,
   CampaignMilestonesTab,
+  CampaignPaymentsTab,
 } from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
+import { usePayments } from '@/hooks/campaign/usePayments';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 /**
@@ -32,6 +34,7 @@ export default function CampaignEditorPage() {
 
   const { campaign, isLoading, error, isSaving, updateCampaignInfo, setCampaign, fetchCampaign } =
     useCampaign(campaignId);
+  const { summary: paymentSummary } = usePayments(campaignId);
 
   const [activeTab, setActiveTab] = useState('info');
 
@@ -103,6 +106,7 @@ export default function CampaignEditorPage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           milestoneCount={campaign.milestones.length}
+          paymentCount={paymentSummary?.txTotal ? Number(paymentSummary.txTotal) : undefined}
         />
 
         {/* Tab content */}
@@ -126,6 +130,10 @@ export default function CampaignEditorPage() {
             campaign={campaign}
             onMilestonesChanged={fetchCampaign}
           />
+        )}
+
+        {activeTab === 'payments' && (
+          <CampaignPaymentsTab campaign={campaign} />
         )}
       </div>
     </div>

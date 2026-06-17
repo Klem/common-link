@@ -16,21 +16,24 @@ interface CampaignTabsProps {
   onTabChange: (tab: string) => void;
   /** Number of milestones to display on the milestones tab badge. */
   milestoneCount?: number;
+  /** Total number of payouts to display on the payments tab badge. */
+  paymentCount?: number;
 }
 
 /**
  * Tab bar for the campaign editor.
  *
- * Renders 3 tabs for Sprint 4.1: Infos, Budget prév., Milestones.
+ * Renders tabs for Infos, Budget prév., Milestones, and Paiements.
  * Active tab is highlighted with a background and shadow.
  */
-export function CampaignTabs({ activeTab, onTabChange, milestoneCount }: CampaignTabsProps) {
+export function CampaignTabs({ activeTab, onTabChange, milestoneCount, paymentCount }: CampaignTabsProps) {
   const t = useTranslations('dashboard.campaigns');
 
   const tabs: Tab[] = [
     { id: 'info', icon: '📋', labelKey: 'editor.tabs.info' },
     { id: 'budget', icon: '💰', labelKey: 'editor.tabs.budget' },
     { id: 'milestones', icon: '🏆', labelKey: 'editor.tabs.milestones', count: milestoneCount },
+    { id: 'payments', icon: '📤', labelKey: 'editor.tabs.payments', count: paymentCount },
   ];
 
   return (

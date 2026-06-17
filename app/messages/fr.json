@@ -405,7 +405,8 @@
         "tabs": {
           "budget": "Budget prév.",
           "info": "Infos",
-          "milestones": "Milestones"
+          "milestones": "Milestones",
+          "payments": "Paiements"
         }
       },
       "empty": {
@@ -418,6 +419,70 @@
       "milestones": "milestone(s)",
       "pageSubtitle": "Gérez les campagnes de collecte de votre association",
       "pageTitle": "Campagnes",
+      "payments": {
+        "form": {
+          "customCodePlaceholder": "Code libre…",
+          "addPayee": "+ Ajouter",
+          "amount": "Montant (€)",
+          "label": "Justificatif",
+          "labelPlaceholder": "Objet du paiement, n° facture…",
+          "method": "🏦 Virement SEPA",
+          "methodSub": "1–2 jours ouvrés",
+          "payee": "Bénéficiaire",
+          "payeePlaceholder": "— Sélectionner —",
+          "submit": "Émettre le paiement →",
+          "title": "Émettre un paiement",
+          "typeCode": "Type de dépense",
+          "typeCodePlaceholder": "— Type —"
+        },
+        "breakdown": {
+          "title": "📊 Répartition"
+        },
+        "confirm": {
+          "message": "Émettre {amount} à {payee} ?",
+          "submit": "Émettre",
+          "title": "Confirmer le paiement"
+        },
+        "history": {
+          "empty": "Aucun paiement émis.",
+          "title": "📋 Historique paiements"
+        },
+        "ibanSelect": "IBAN",
+        "noIban": "Aucun IBAN enregistré pour ce bénéficiaire.",
+        "stats": {
+          "availableBalance": "Solde disponible",
+          "confirmed": "Confirmées",
+          "paid": "Déjà versé",
+          "pending": "En attente",
+          "transactions": "Transactions"
+        },
+        "status": {
+          "CONFIRMED": "Confirmé",
+          "FAILED": "Échoué",
+          "PENDING": "En attente"
+        },
+        "toast": {
+          "error": "Échec du paiement. Veuillez réessayer.",
+          "success": "Paiement émis !"
+        },
+        "typeCodes": {
+          "60-mat": "60 · Matières / fournitures",
+          "60-svc": "60 · Prestations de services",
+          "61-ent": "61 · Entretien / réparations",
+          "61-loc": "61 · Location",
+          "62-pub": "62 · Communication",
+          "62-tra": "62 · Transports",
+          "64-rem": "64 · Rémunérations",
+          "64-soc": "64 · Charges sociales",
+          "65-ges": "65 · Frais de gestion",
+          "custom": "Autre (préciser)"
+        },
+        "typeGroups": {
+          "operational": "Charges opérationnelles",
+          "other": "Autres",
+          "personnel": "Personnel"
+        }
+      },
       "stats": {
         "goal": "Objectif total",
         "live": "En cours",
