@@ -11,9 +11,11 @@ import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
 import org.commonlink.service.PayeeService
 import org.commonlink.service.CampaignService
+import org.commonlink.service.DonorAggregateService
 import org.commonlink.service.DonorService
 import org.commonlink.service.MoneriumService
 import org.commonlink.service.OnchainOutboxService
+import org.commonlink.service.PayoutService
 import org.commonlink.service.SireneSearchService
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -45,6 +47,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var onchainOutboxService: OnchainOutboxService
     @MockkBean private lateinit var dashboardService: AssociationDashboardService
     @MockkBean private lateinit var authRateLimiter: AuthRateLimiter
+    @MockkBean private lateinit var donorAggregateService: DonorAggregateService
+    @MockkBean private lateinit var payoutService: PayoutService
 
     @Test
     fun contextLoads() {

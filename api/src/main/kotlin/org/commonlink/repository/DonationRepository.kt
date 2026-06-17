@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.commonlink.entity.Donation
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -100,4 +101,100 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
           AND d.confirmedAt IS NOT NULL
     """)
     fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
+
+    // ── Per-campaign donor aggregates (Step 6) ─────────────────────────────
+
+    /**
+     * Aggregate view returned by per-campaign donor queries.
+     * [getDisplayName] may be null if the donor has not set a display name.
+     * [getAnonymous] must be checked by the service before exposing [getDisplayName].
+     */
+    interface DonorAggregateRow {
+        fun getDonorId(): UUID
+        fun getDisplayName(): String?
+        fun getAnonymous(): Boolean
+        fun getTotalAmount(): BigDecimal
+        fun getTxCount(): Long
+        fun getLastDonationAt(): Instant?
+    }
+
+    /**
+     * Donor aggregates (sum / count / last date) for all confirmed donations on [campaignId].
+     * Grouped and sorted by DB — no in-memory sort.
+     */
+    @Query(
+        value = """
+            SELECT d.donor.id         AS donorId,
+                   d.donor.displayName AS displayName,
+                   d.donor.anonymous   AS anonymous,
+                   SUM(d.amount)       AS totalAmount,
+                   COUNT(d)            AS txCount,
+                   MAX(d.confirmedAt)  AS lastDonationAt
+            FROM Donation d
+            WHERE d.campaign.id = :campaignId
+              AND d.confirmedAt IS NOT NULL
+            GROUP BY d.donor.id, d.donor.displayName, d.donor.anonymous
+        """,
+        countQuery = """
+            SELECT COUNT(DISTINCT d.donor.id)
+            FROM Donation d
+            WHERE d.campaign.id = :campaignId
+              AND d.confirmedAt IS NOT NULL
+        """,
+    )
+    fun findDonorAggregatesByCampaignId(
+        @Param("campaignId") campaignId: UUID,
+        pageable: Pageable,
+    ): Page<DonorAggregateRow>
+
+    /**
+     * Like [findDonorAggregatesByCampaignId] but restricted to non-anonymous donors whose
+     * display name contains [name] (case-insensitive).
+     * Anonymous donors are excluded from search results regardless of their stored display name.
+     */
+    @Query(
+        value = """
+            SELECT d.donor.id         AS donorId,
+                   d.donor.displayName AS displayName,
+                   d.donor.anonymous   AS anonymous,
+                   SUM(d.amount)       AS totalAmount,
+                   COUNT(d)            AS txCount,
+                   MAX(d.confirmedAt)  AS lastDonationAt
+            FROM Donation d
+            WHERE d.campaign.id = :campaignId
+              AND d.confirmedAt IS NOT NULL
+              AND d.donor.anonymous = false
+              AND LOWER(d.donor.displayName) LIKE LOWER(CONCAT('%', :name, '%'))
+            GROUP BY d.donor.id, d.donor.displayName, d.donor.anonymous
+        """,
+        countQuery = """
+            SELECT COUNT(DISTINCT d.donor.id)
+            FROM Donation d
+            WHERE d.campaign.id = :campaignId
+              AND d.confirmedAt IS NOT NULL
+              AND d.donor.anonymous = false
+              AND LOWER(d.donor.displayName) LIKE LOWER(CONCAT('%', :name, '%'))
+        """,
+    )
+    fun findDonorAggregatesByCampaignIdAndSearch(
+        @Param("campaignId") campaignId: UUID,
+        @Param("name") name: String,
+        pageable: Pageable,
+    ): Page<DonorAggregateRow>
+
+    /**
+     * Confirmed donations for a specific donor on a campaign, newest first.
+     * Use [pageable] to control page size and offset.
+     */
+    @Query("""
+        SELECT d FROM Donation d
+        WHERE d.donor.id = :donorId
+          AND d.campaign.id = :campaignId
+        ORDER BY d.confirmedAt DESC
+    """)
+    fun findByDonorIdAndCampaignId(
+        @Param("donorId") donorId: UUID,
+        @Param("campaignId") campaignId: UUID,
+        pageable: Pageable,
+    ): Page<Donation>
 }
