@@ -406,7 +406,8 @@
           "budget": "Budget prév.",
           "info": "Infos",
           "milestones": "Milestones",
-          "payments": "Paiements"
+          "payments": "Paiements",
+          "donors": "Donateurs"
         }
       },
       "empty": {
@@ -481,6 +482,50 @@
           "operational": "Charges opérationnelles",
           "other": "Autres",
           "personnel": "Personnel"
+        }
+      },
+      "donors": {
+        "detail": {
+          "close": "Fermer",
+          "lastDonation": "Dernier don",
+          "noTx": "Aucune transaction.",
+          "title": "Détail donateur",
+          "total": "Total",
+          "transactions": "Transactions",
+          "txCount": "Dons"
+        },
+        "empty": "Aucun donateur pour cette campagne.",
+        "error": "Erreur lors du chargement des donateurs.",
+        "loading": "Chargement…",
+        "showing": "{count} donateur(s)",
+        "sort": {
+          "amount": "Montant ↓",
+          "date": "Date récente",
+          "name": "Nom A→Z"
+        },
+        "search": {
+          "placeholder": "Rechercher un donateur…"
+        },
+        "stats": {
+          "avg": "Don moyen",
+          "raised": "Total collecté",
+          "top": "Top donateur",
+          "total": "Donateurs"
+        },
+        "table": {
+          "amount": "Montant",
+          "donor": "Donateur",
+          "lastDonation": "Dernier don",
+          "transactions": "Dons",
+          "view": "Voir"
+        },
+        "tx": {
+          "close": "Fermer",
+          "date": "Date",
+          "onChain": "On-chain",
+          "pending": "En attente",
+          "ref": "Référence",
+          "title": "Détail don"
         }
       },
       "stats": {

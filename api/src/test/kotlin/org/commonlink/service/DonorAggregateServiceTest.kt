@@ -12,6 +12,7 @@ import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.NotFoundException
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonationRepository.DonorAggregateRow
@@ -30,11 +31,13 @@ private fun <T> T.setId(id: UUID): T = also {
 
 class DonorAggregateServiceTest {
 
-    private val donationRepository = mockk<DonationRepository>()
-    private val campaignRepository = mockk<CampaignRepository>()
-    private val service = DonorAggregateService(donationRepository, campaignRepository)
+    private val donationRepository            = mockk<DonationRepository>()
+    private val campaignRepository            = mockk<CampaignRepository>()
+    private val associationProfileRepository  = mockk<AssociationProfileRepository>()
+    private val service = DonorAggregateService(donationRepository, campaignRepository, associationProfileRepository)
 
-    private val assocId      = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private val userId       = UUID.fromString("00000000-0000-0000-0000-000000000000")  // JWT subject
+    private val assocId      = UUID.fromString("00000000-0000-0000-0000-000000000001")  // AssociationProfile.id
     private val campaignId   = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val donorId      = UUID.fromString("00000000-0000-0000-0000-000000000003")
     private val donationId   = UUID.fromString("00000000-0000-0000-0000-000000000004")
@@ -65,11 +68,12 @@ class DonorAggregateServiceTest {
 
     @Test
     fun `listDonors returns mapped page`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { donationRepository.findDonorAggregatesByCampaignId(campaignId, any()) } returns
             PageImpl(listOf(makeRow()))
 
-        val result = service.listDonors(campaignId, assocId, null, "amount", 0, 20)
+        val result = service.listDonors(campaignId, userId, null, "amount", 0, 20)
 
         assertThat(result.content).hasSize(1)
         assertThat(result.content[0].displayName).isEqualTo("Marie D.")
@@ -78,22 +82,24 @@ class DonorAggregateServiceTest {
 
     @Test
     fun `listDonors masks anonymous donor name`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { donationRepository.findDonorAggregatesByCampaignId(campaignId, any()) } returns
             PageImpl(listOf(makeRow(anon = true, name = "Real Name")))
 
-        val result = service.listDonors(campaignId, assocId, null, "amount", 0, 20)
+        val result = service.listDonors(campaignId, userId, null, "amount", 0, 20)
 
         assertThat(result.content[0].displayName).isEqualTo("Anonyme")
     }
 
     @Test
     fun `listDonors with search delegates to search repo method`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { donationRepository.findDonorAggregatesByCampaignIdAndSearch(campaignId, "Marie", any<Pageable>()) } returns
             PageImpl(listOf(makeRow()))
 
-        val result = service.listDonors(campaignId, assocId, "Marie", "amount", 0, 20)
+        val result = service.listDonors(campaignId, userId, "Marie", "amount", 0, 20)
 
         assertThat(result.content).hasSize(1)
     }
@@ -102,29 +108,32 @@ class DonorAggregateServiceTest {
     fun `listDonors throws NotFoundException when campaign belongs to another association`() {
         val foreignAssoc    = AssociationProfile(user = assocUser, name = "Other", identifier = "999").setId(otherAssocId)
         val foreignCampaign = Campaign(association = foreignAssoc, name = "C", emoji = "🌍", description = "d", goal = BigDecimal("1000"), status = CampaignStatus.LIVE).setId(campaignId)
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(foreignCampaign)
 
         assertThrows<NotFoundException> {
-            service.listDonors(campaignId, assocId, null, null, 0, 20)
+            service.listDonors(campaignId, userId, null, null, 0, 20)
         }
     }
 
     @Test
     fun `listDonors throws NotFoundException when campaign does not exist`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.empty()
 
         assertThrows<NotFoundException> {
-            service.listDonors(campaignId, assocId, null, null, 0, 20)
+            service.listDonors(campaignId, userId, null, null, 0, 20)
         }
     }
 
     @Test
     fun `listDonorDonations returns mapped page`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { donationRepository.findByDonorIdAndCampaignId(donorId, campaignId, any()) } returns
             PageImpl(listOf(makeDonation()))
 
-        val result = service.listDonorDonations(campaignId, donorId, assocId, 0, 20)
+        val result = service.listDonorDonations(campaignId, donorId, userId, 0, 20)
 
         assertThat(result.content).hasSize(1)
         assertThat(result.content[0].amount).isEqualByComparingTo("75.00")
@@ -134,10 +143,11 @@ class DonorAggregateServiceTest {
     @Test
     fun `getDonation returns dto`() {
         val donation = makeDonation()
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { donationRepository.findById(donationId) } returns Optional.of(donation)
 
-        val result = service.getDonation(campaignId, donationId, assocId)
+        val result = service.getDonation(campaignId, donationId, userId)
 
         assertThat(result.id).isEqualTo(donationId)
         assertThat(result.providerRef).isEqualTo("monerium:abc")
@@ -145,11 +155,12 @@ class DonorAggregateServiceTest {
 
     @Test
     fun `getDonation throws NotFoundException when donation not found`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { donationRepository.findById(donationId) } returns Optional.empty()
 
         assertThrows<NotFoundException> {
-            service.getDonation(campaignId, donationId, assocId)
+            service.getDonation(campaignId, donationId, userId)
         }
     }
 
@@ -159,11 +170,12 @@ class DonorAggregateServiceTest {
         val otherCampaign   = Campaign(association = assoc, name = "Other", emoji = "🌍", description = "d", goal = BigDecimal("1000"), status = CampaignStatus.LIVE).setId(otherCampaignId)
         val donation        = makeDonation(targetCampaign = otherCampaign)
 
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { donationRepository.findById(donationId) } returns Optional.of(donation)
 
         assertThrows<NotFoundException> {
-            service.getDonation(campaignId, donationId, assocId)
+            service.getDonation(campaignId, donationId, userId)
         }
     }
 }

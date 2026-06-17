@@ -20,6 +20,7 @@ import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.PayeeIbanRepository
@@ -35,18 +36,21 @@ import java.util.UUID
 
 class PayoutServiceTest {
 
-    private val payoutRepository   = mockk<PayoutRepository>()
-    private val campaignRepository = mockk<CampaignRepository>()
-    private val payeeRepository    = mockk<PayeeRepository>()
-    private val payeeIbanRepository = mockk<PayeeIbanRepository>()
-    private val donationRepository = mockk<DonationRepository>()
-    private val confirmer          = mockk<PayoutConfirmer>()
+    private val payoutRepository              = mockk<PayoutRepository>()
+    private val campaignRepository            = mockk<CampaignRepository>()
+    private val associationProfileRepository  = mockk<AssociationProfileRepository>()
+    private val payeeRepository               = mockk<PayeeRepository>()
+    private val payeeIbanRepository           = mockk<PayeeIbanRepository>()
+    private val donationRepository            = mockk<DonationRepository>()
+    private val confirmer                     = mockk<PayoutConfirmer>()
 
     private val service = PayoutService(
-        payoutRepository, campaignRepository, payeeRepository, payeeIbanRepository, donationRepository, confirmer
+        payoutRepository, campaignRepository, associationProfileRepository,
+        payeeRepository, payeeIbanRepository, donationRepository, confirmer
     )
 
-    private val assocId   = UUID.randomUUID()
+    private val userId     = UUID.randomUUID()   // JWT subject (User.id)
+    private val assocId    = UUID.randomUUID()   // AssociationProfile.id
     private val campaignId = UUID.randomUUID()
     private val payeeId   = UUID.randomUUID()
     private val ibanId    = UUID.randomUUID()
@@ -70,13 +74,14 @@ class PayoutServiceTest {
 
     @Test
     fun `create - happy path returns PayoutDto`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
         every { payoutRepository.save(any()) } returnsArgument 0
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
-        val result = service.create(campaignId, request, assocId)
+        val result = service.create(campaignId, request, userId)
 
         assertThat(result.amount).isEqualByComparingTo("500")
         assertThat(result.status).isEqualTo(PayoutStatus.PENDING)
@@ -84,11 +89,15 @@ class PayoutServiceTest {
 
     @Test
     fun `create - wrong association returns NotFoundException`() {
-        val otherAssocId = UUID.randomUUID()
+        val wrongUserId  = UUID.randomUUID()
+        val wrongAssocId = UUID.randomUUID()
+        val wrongAssoc   = AssociationProfile(user = assocUser, name = "Other", identifier = "999999999")
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, wrongAssocId) }
+        every { associationProfileRepository.findByUserId(wrongUserId) } returns Optional.of(wrongAssoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Motif test create wrong")
-        assertThrows<NotFoundException> { service.create(campaignId, request, otherAssocId) }
+        assertThrows<NotFoundException> { service.create(campaignId, request, wrongUserId) }
     }
 
     @Test
@@ -98,12 +107,13 @@ class PayoutServiceTest {
         val ibanFromOtherPayee = PayeeIban(payee = otherPayee, iban = "DE89370400440532013000")
             .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
 
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(ibanFromOtherPayee)
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Motif test iban mismatch")
-        assertThrows<NotFoundException> { service.create(campaignId, request, assocId) }
+        assertThrows<NotFoundException> { service.create(campaignId, request, userId) }
     }
 
     @Test
@@ -111,10 +121,11 @@ class PayoutServiceTest {
         val confirmedPayout = Payout(campaign = campaign, payee = payee, payeeIban = payeeIban,
             amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel", status = PayoutStatus.CONFIRMED)
 
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
         every { confirmer.confirmAndEnqueue(pendingPayout) } returns confirmedPayout
 
-        val result = service.confirm(campaignId, payoutId, assocId)
+        val result = service.confirm(campaignId, payoutId, userId)
 
         assertThat(result.status).isEqualTo(PayoutStatus.CONFIRMED)
         verify { confirmer.confirmAndEnqueue(pendingPayout) }
@@ -125,20 +136,23 @@ class PayoutServiceTest {
         val alreadyConfirmed = Payout(campaign = campaign, payee = payee, payeeIban = payeeIban,
             amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Done", status = PayoutStatus.CONFIRMED)
 
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns alreadyConfirmed
 
-        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, assocId) }
+        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
     }
 
     @Test
     fun `confirm - not found throws NotFoundException`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns null
 
-        assertThrows<NotFoundException> { service.confirm(campaignId, payoutId, assocId) }
+        assertThrows<NotFoundException> { service.confirm(campaignId, payoutId, userId) }
     }
 
     @Test
     fun `getSummary - returns correct aggregates`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("1000")
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING) } returns BigDecimal("200")
@@ -146,7 +160,7 @@ class PayoutServiceTest {
         every { payoutRepository.countByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns 3L
         every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("5000")
 
-        val summary = service.getSummary(campaignId, assocId)
+        val summary = service.getSummary(campaignId, userId)
 
         assertThat(summary.confirmedAmount).isEqualByComparingTo("1000")
         assertThat(summary.pendingAmount).isEqualByComparingTo("200")

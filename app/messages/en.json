@@ -406,7 +406,8 @@
           "budget": "Budget",
           "info": "Info",
           "milestones": "Milestones",
-          "payments": "Payments"
+          "payments": "Payments",
+          "donors": "Donors"
         }
       },
       "empty": {
@@ -481,6 +482,50 @@
           "operational": "Operational costs",
           "other": "Other",
           "personnel": "Personnel"
+        }
+      },
+      "donors": {
+        "detail": {
+          "close": "Close",
+          "lastDonation": "Last donation",
+          "noTx": "No transactions.",
+          "title": "Donor detail",
+          "total": "Total",
+          "transactions": "Transactions",
+          "txCount": "Donations"
+        },
+        "empty": "No donors for this campaign.",
+        "error": "Error loading donors.",
+        "loading": "Loading…",
+        "showing": "{count} donor(s)",
+        "sort": {
+          "amount": "Amount ↓",
+          "date": "Recent date",
+          "name": "Name A→Z"
+        },
+        "search": {
+          "placeholder": "Search a donor…"
+        },
+        "stats": {
+          "avg": "Avg donation",
+          "raised": "Total raised",
+          "top": "Top donor",
+          "total": "Donors"
+        },
+        "table": {
+          "amount": "Amount",
+          "donor": "Donor",
+          "lastDonation": "Last donation",
+          "transactions": "Donations",
+          "view": "View"
+        },
+        "tx": {
+          "close": "Close",
+          "date": "Date",
+          "onChain": "On-chain",
+          "pending": "Pending",
+          "ref": "Reference",
+          "title": "Donation detail"
         }
       },
       "stats": {

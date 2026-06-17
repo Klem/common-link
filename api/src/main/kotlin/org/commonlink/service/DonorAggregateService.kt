@@ -4,6 +4,8 @@ import org.commonlink.dto.CampaignDonorDto
 import org.commonlink.dto.DonationDto
 import org.commonlink.dto.toDto
 import org.commonlink.exception.NotFoundException
+import org.commonlink.exception.UserNotFoundException
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.slf4j.LoggerFactory
@@ -26,6 +28,7 @@ private const val ANONYMOUS_LABEL = "Anonyme"
 class DonorAggregateService(
     private val donationRepository: DonationRepository,
     private val campaignRepository: CampaignRepository,
+    private val associationProfileRepository: AssociationProfileRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -39,12 +42,13 @@ class DonorAggregateService(
      */
     fun listDonors(
         campaignId: UUID,
-        associationId: UUID,
+        userId: UUID,
         search: String?,
         sort: String?,
         page: Int,
         size: Int,
     ): Page<CampaignDonorDto> {
+        val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
 
         val sortOrder = when (sort) {
@@ -78,10 +82,11 @@ class DonorAggregateService(
     fun listDonorDonations(
         campaignId: UUID,
         donorId: UUID,
-        associationId: UUID,
+        userId: UUID,
         page: Int,
         size: Int,
     ): Page<DonationDto> {
+        val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
         val pageable = PageRequest.of(page, size)
         return donationRepository.findByDonorIdAndCampaignId(donorId, campaignId, pageable).map { it.toDto() }
@@ -92,7 +97,8 @@ class DonorAggregateService(
      *
      * @throws NotFoundException if [donationId] does not exist or does not belong to [campaignId] / [associationId].
      */
-    fun getDonation(campaignId: UUID, donationId: UUID, associationId: UUID): DonationDto {
+    fun getDonation(campaignId: UUID, donationId: UUID, userId: UUID): DonationDto {
+        val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
         val donation = donationRepository.findById(donationId)
             .orElseThrow { NotFoundException("Donation not found: $donationId") }
@@ -106,4 +112,9 @@ class DonorAggregateService(
         if (campaign.association.id != associationId) throw NotFoundException("Campaign not found: $campaignId")
         log.debug("Ownership verified: campaign {} → association {}", campaignId, associationId)
     }
+
+    private fun resolveAssociationId(userId: UUID): UUID =
+        associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+            .id!!
 }

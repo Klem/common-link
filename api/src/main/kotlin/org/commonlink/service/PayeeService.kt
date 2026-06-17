@@ -77,7 +77,7 @@ class PayeeService(
             category = req.category,
             city = req.city,
             postalCode = req.postalCode,
-            active = req.active
+            active = req.active!!
         )
         return payeeRepository.save(payee).toDto()
     }

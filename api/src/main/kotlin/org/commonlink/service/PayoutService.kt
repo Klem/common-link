@@ -8,6 +8,8 @@ import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
+import org.commonlink.exception.UserNotFoundException
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.PayeeIbanRepository
@@ -33,6 +35,7 @@ import java.util.UUID
 class PayoutService(
     private val payoutRepository: PayoutRepository,
     private val campaignRepository: CampaignRepository,
+    private val associationProfileRepository: AssociationProfileRepository,
     private val payeeRepository: PayeeRepository,
     private val payeeIbanRepository: PayeeIbanRepository,
     private val donationRepository: DonationRepository,
@@ -46,7 +49,8 @@ class PayoutService(
      * @throws NotFoundException if campaign, payee, or IBAN do not belong to [associationId].
      * @throws IllegalArgumentException if the IBAN does not belong to the requested payee.
      */
-    fun create(campaignId: UUID, request: CreatePayoutRequest, associationId: UUID): PayoutDto {
+    fun create(campaignId: UUID, request: CreatePayoutRequest, userId: UUID): PayoutDto {
+        val associationId = resolveAssociationId(userId)
         val campaign = campaignRepository.findById(campaignId)
             .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
         if (campaign.association.id != associationId) throw NotFoundException("Campaign not found: $campaignId")
@@ -79,7 +83,8 @@ class PayoutService(
      * @throws NotFoundException if payout or campaign cannot be found for [associationId].
      * @throws ConflictException if the payout is not in PENDING status.
      */
-    fun confirm(campaignId: UUID, payoutId: UUID, associationId: UUID): PayoutDto {
+    fun confirm(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
+        val associationId = resolveAssociationId(userId)
         val payout = payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(
             campaignId, payoutId, associationId
         ) ?: throw NotFoundException("Payout not found: $payoutId")
@@ -96,7 +101,8 @@ class PayoutService(
      *
      * @throws NotFoundException if campaign does not belong to [associationId].
      */
-    fun list(campaignId: UUID, associationId: UUID, pageable: Pageable): Page<PayoutDto> {
+    fun list(campaignId: UUID, userId: UUID, pageable: Pageable): Page<PayoutDto> {
+        val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
         return payoutRepository.findByCampaignIdOrderByCreatedAtDesc(campaignId, pageable).map { it.toDto() }
     }
@@ -106,16 +112,19 @@ class PayoutService(
      *
      * @throws NotFoundException if payout cannot be found for [campaignId] / [associationId].
      */
-    fun get(campaignId: UUID, payoutId: UUID, associationId: UUID): PayoutDto =
-        (payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, associationId)
+    fun get(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
+        val associationId = resolveAssociationId(userId)
+        return (payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, associationId)
             ?: throw NotFoundException("Payout not found: $payoutId")).toDto()
+    }
 
     /**
      * Returns aggregated KPIs for the Payments tab.
      *
      * @throws NotFoundException if campaign does not belong to [associationId].
      */
-    fun getSummary(campaignId: UUID, associationId: UUID): PayoutSummaryDto {
+    fun getSummary(campaignId: UUID, userId: UUID): PayoutSummaryDto {
+        val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
 
         val confirmedAmount = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
@@ -141,4 +150,9 @@ class PayoutService(
             .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
         if (campaign.association.id != associationId) throw NotFoundException("Campaign not found: $campaignId")
     }
+
+    private fun resolveAssociationId(userId: UUID): UUID =
+        associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+            .id!!
 }

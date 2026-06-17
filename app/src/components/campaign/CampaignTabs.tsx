@@ -18,15 +18,17 @@ interface CampaignTabsProps {
   milestoneCount?: number;
   /** Total number of payouts to display on the payments tab badge. */
   paymentCount?: number;
+  /** Total number of donors to display on the donors tab badge. */
+  donorCount?: number;
 }
 
 /**
  * Tab bar for the campaign editor.
  *
- * Renders tabs for Infos, Budget prév., Milestones, and Paiements.
+ * Renders tabs for Infos, Budget prév., Milestones, Paiements, and Donateurs.
  * Active tab is highlighted with a background and shadow.
  */
-export function CampaignTabs({ activeTab, onTabChange, milestoneCount, paymentCount }: CampaignTabsProps) {
+export function CampaignTabs({ activeTab, onTabChange, milestoneCount, paymentCount, donorCount }: CampaignTabsProps) {
   const t = useTranslations('dashboard.campaigns');
 
   const tabs: Tab[] = [
@@ -34,6 +36,7 @@ export function CampaignTabs({ activeTab, onTabChange, milestoneCount, paymentCo
     { id: 'budget', icon: '💰', labelKey: 'editor.tabs.budget' },
     { id: 'milestones', icon: '🏆', labelKey: 'editor.tabs.milestones', count: milestoneCount },
     { id: 'payments', icon: '📤', labelKey: 'editor.tabs.payments', count: paymentCount },
+    { id: 'donors', icon: '👥', labelKey: 'editor.tabs.donors', count: donorCount },
   ];
 
   return (

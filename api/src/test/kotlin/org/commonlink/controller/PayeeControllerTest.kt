@@ -155,7 +155,7 @@ class PayeeControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"","identifier1":"775671356"}""")
         )
-            .andExpect(status().isBadRequest)
+            .andExpect(status().isUnprocessableContent)
     }
 
     @Test
@@ -166,7 +166,7 @@ class PayeeControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"Valid Name","identifier1":"12345"}""")
         )
-            .andExpect(status().isBadRequest)
+            .andExpect(status().isUnprocessableContent)
     }
 
     @Test

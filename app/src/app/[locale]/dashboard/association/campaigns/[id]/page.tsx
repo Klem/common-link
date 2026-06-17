@@ -11,9 +11,11 @@ import {
   CampaignBudgetTab,
   CampaignMilestonesTab,
   CampaignPaymentsTab,
+  CampaignDonorsTab,
 } from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
 import { usePayments } from '@/hooks/campaign/usePayments';
+import { useCampaignDonors } from '@/hooks/campaign/useCampaignDonors';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 /**
@@ -35,6 +37,7 @@ export default function CampaignEditorPage() {
   const { campaign, isLoading, error, isSaving, updateCampaignInfo, setCampaign, fetchCampaign } =
     useCampaign(campaignId);
   const { summary: paymentSummary } = usePayments(campaignId);
+  const { donorsPage } = useCampaignDonors(campaignId);
 
   const [activeTab, setActiveTab] = useState('info');
 
@@ -107,6 +110,7 @@ export default function CampaignEditorPage() {
           onTabChange={setActiveTab}
           milestoneCount={campaign.milestones.length}
           paymentCount={paymentSummary?.txTotal ? Number(paymentSummary.txTotal) : undefined}
+          donorCount={donorsPage?.totalElements}
         />
 
         {/* Tab content */}
@@ -134,6 +138,10 @@ export default function CampaignEditorPage() {
 
         {activeTab === 'payments' && (
           <CampaignPaymentsTab campaign={campaign} />
+        )}
+
+        {activeTab === 'donors' && (
+          <CampaignDonorsTab campaign={campaign} />
         )}
       </div>
     </div>

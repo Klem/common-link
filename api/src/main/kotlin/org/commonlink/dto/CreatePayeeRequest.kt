@@ -42,5 +42,5 @@ data class CreatePayeeRequest(
     @field:Size(max = 10)
     val postalCode: String? = null,
 
-    val active: Boolean = true
+    val active: Boolean? = true
 )
