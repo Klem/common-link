@@ -335,6 +335,50 @@
       "defaultName": "Nouvelle campagne",
       "delete": "Supprimer",
       "deleteConfirm": "Supprimer cette campagne ? Cette action est irréversible.",
+      "donors": {
+        "detail": {
+          "close": "Fermer",
+          "lastDonation": "Dernier don",
+          "noTx": "Aucune transaction.",
+          "title": "Détail donateur",
+          "total": "Total",
+          "transactions": "Transactions",
+          "txCount": "Dons"
+        },
+        "empty": "Aucun donateur pour cette campagne.",
+        "error": "Erreur lors du chargement des donateurs.",
+        "loading": "Chargement…",
+        "search": {
+          "placeholder": "Rechercher un donateur…"
+        },
+        "showing": "{count} donateur(s)",
+        "sort": {
+          "amount": "Montant ↓",
+          "date": "Date récente",
+          "name": "Nom A→Z"
+        },
+        "stats": {
+          "avg": "Don moyen",
+          "raised": "Total collecté",
+          "top": "Top donateur",
+          "total": "Donateurs"
+        },
+        "table": {
+          "amount": "Montant",
+          "donor": "Donateur",
+          "lastDonation": "Dernier don",
+          "transactions": "Dons",
+          "view": "Voir"
+        },
+        "tx": {
+          "close": "Fermer",
+          "date": "Date",
+          "onChain": "On-chain",
+          "pending": "En attente",
+          "ref": "Référence",
+          "title": "Détail don"
+        }
+      },
       "editor": {
         "budget": {
           "addItem": "Ajouter un poste",
@@ -404,10 +448,11 @@
         "notFound": "Campagne introuvable.",
         "tabs": {
           "budget": "Budget prév.",
+          "donors": "Donateurs",
           "info": "Infos",
           "milestones": "Milestones",
           "payments": "Paiements",
-          "donors": "Donateurs"
+          "reporting": "Suivi budgétaire"
         }
       },
       "empty": {
@@ -421,10 +466,18 @@
       "pageSubtitle": "Gérez les campagnes de collecte de votre association",
       "pageTitle": "Campagnes",
       "payments": {
+        "breakdown": {
+          "title": "📊 Répartition"
+        },
+        "confirm": {
+          "message": "Émettre {amount} à {payee} ?",
+          "submit": "Émettre",
+          "title": "Confirmer le paiement"
+        },
         "form": {
-          "customCodePlaceholder": "Code libre…",
           "addPayee": "+ Ajouter",
           "amount": "Montant (€)",
+          "customCodePlaceholder": "Code libre…",
           "label": "Justificatif",
           "labelPlaceholder": "Objet du paiement, n° facture…",
           "method": "🏦 Virement SEPA",
@@ -435,14 +488,6 @@
           "title": "Émettre un paiement",
           "typeCode": "Type de dépense",
           "typeCodePlaceholder": "— Type —"
-        },
-        "breakdown": {
-          "title": "📊 Répartition"
-        },
-        "confirm": {
-          "message": "Émettre {amount} à {payee} ?",
-          "submit": "Émettre",
-          "title": "Confirmer le paiement"
         },
         "history": {
           "empty": "Aucun paiement émis.",
@@ -482,50 +527,6 @@
           "operational": "Charges opérationnelles",
           "other": "Autres",
           "personnel": "Personnel"
-        }
-      },
-      "donors": {
-        "detail": {
-          "close": "Fermer",
-          "lastDonation": "Dernier don",
-          "noTx": "Aucune transaction.",
-          "title": "Détail donateur",
-          "total": "Total",
-          "transactions": "Transactions",
-          "txCount": "Dons"
-        },
-        "empty": "Aucun donateur pour cette campagne.",
-        "error": "Erreur lors du chargement des donateurs.",
-        "loading": "Chargement…",
-        "showing": "{count} donateur(s)",
-        "sort": {
-          "amount": "Montant ↓",
-          "date": "Date récente",
-          "name": "Nom A→Z"
-        },
-        "search": {
-          "placeholder": "Rechercher un donateur…"
-        },
-        "stats": {
-          "avg": "Don moyen",
-          "raised": "Total collecté",
-          "top": "Top donateur",
-          "total": "Donateurs"
-        },
-        "table": {
-          "amount": "Montant",
-          "donor": "Donateur",
-          "lastDonation": "Dernier don",
-          "transactions": "Dons",
-          "view": "Voir"
-        },
-        "tx": {
-          "close": "Fermer",
-          "date": "Date",
-          "onChain": "On-chain",
-          "pending": "En attente",
-          "ref": "Référence",
-          "title": "Détail don"
         }
       },
       "stats": {
@@ -606,6 +607,7 @@
       "overview": "Tableau de bord",
       "payees": "Bénéficiaires",
       "profile": "Mon profil",
+      "reporting": "Mon reporting",
       "settings": "Paramètres"
     },
     "payees": {
@@ -684,6 +686,30 @@
         "verified": "Vérifié VOP"
       },
       "vop": {}
+    },
+    "reporting": {
+      "page": {
+        "openCampaign": "Ouvrir une campagne →",
+        "selectCampaign": "Sélectionnez une campagne et consultez son onglet 📊 Suivi budgétaire pour le reporting prévisionnel vs réalisé.",
+        "subtitle": "Vue globale de l'impact de vos campagnes."
+      },
+      "tab": {
+        "chargesDonutTitle": "📉 Répartition des charges réalisées",
+        "chargesTitle": "📉 Charges — écarts",
+        "colActual": "Réalisé",
+        "colPlanned": "Prévu",
+        "colVariance": "Écart",
+        "donutEmpty": "Aucune donnée",
+        "empty": "Aucune donnée de reporting disponible.",
+        "error": "Impossible de charger le reporting.",
+        "loadError": "Impossible de charger les données de reporting.",
+        "produitsDonutTitle": "📈 Répartition des produits réalisés",
+        "produitsTitle": "📈 Produits — écarts",
+        "statsChargesActual": "Charges réalisées",
+        "statsChargesPlanned": "Charges prévues",
+        "statsProduitsActual": "Produits réalisés",
+        "statsProduitsPlanned": "Produits prévus"
+      }
     },
     "roles": {
       "association": "Association",

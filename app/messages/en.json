@@ -335,6 +335,50 @@
       "defaultName": "New campaign",
       "delete": "Delete",
       "deleteConfirm": "Delete this campaign? This action is irreversible.",
+      "donors": {
+        "detail": {
+          "close": "Close",
+          "lastDonation": "Last donation",
+          "noTx": "No transactions.",
+          "title": "Donor detail",
+          "total": "Total",
+          "transactions": "Transactions",
+          "txCount": "Donations"
+        },
+        "empty": "No donors for this campaign.",
+        "error": "Error loading donors.",
+        "loading": "Loading…",
+        "search": {
+          "placeholder": "Search a donor…"
+        },
+        "showing": "{count} donor(s)",
+        "sort": {
+          "amount": "Amount ↓",
+          "date": "Recent date",
+          "name": "Name A→Z"
+        },
+        "stats": {
+          "avg": "Avg donation",
+          "raised": "Total raised",
+          "top": "Top donor",
+          "total": "Donors"
+        },
+        "table": {
+          "amount": "Amount",
+          "donor": "Donor",
+          "lastDonation": "Last donation",
+          "transactions": "Donations",
+          "view": "View"
+        },
+        "tx": {
+          "close": "Close",
+          "date": "Date",
+          "onChain": "On-chain",
+          "pending": "Pending",
+          "ref": "Reference",
+          "title": "Donation detail"
+        }
+      },
       "editor": {
         "budget": {
           "addItem": "Add item",
@@ -404,10 +448,11 @@
         "notFound": "Campaign not found.",
         "tabs": {
           "budget": "Budget",
+          "donors": "Donors",
           "info": "Info",
           "milestones": "Milestones",
           "payments": "Payments",
-          "donors": "Donors"
+          "reporting": "Budget tracking"
         }
       },
       "empty": {
@@ -421,10 +466,18 @@
       "pageSubtitle": "Manage your association's fundraising campaigns",
       "pageTitle": "Campaigns",
       "payments": {
+        "breakdown": {
+          "title": "📊 Breakdown"
+        },
+        "confirm": {
+          "message": "Issue {amount} to {payee}?",
+          "submit": "Issue payment",
+          "title": "Confirm payment"
+        },
         "form": {
-          "customCodePlaceholder": "Free code…",
           "addPayee": "+ Add",
           "amount": "Amount (€)",
+          "customCodePlaceholder": "Free code…",
           "label": "Justification",
           "labelPlaceholder": "Object of payment, invoice ref…",
           "method": "🏦 SEPA Transfer",
@@ -435,14 +488,6 @@
           "title": "Issue a payment",
           "typeCode": "Expense type",
           "typeCodePlaceholder": "— Type —"
-        },
-        "breakdown": {
-          "title": "📊 Breakdown"
-        },
-        "confirm": {
-          "message": "Issue {amount} to {payee}?",
-          "submit": "Issue payment",
-          "title": "Confirm payment"
         },
         "history": {
           "empty": "No payments issued.",
@@ -482,50 +527,6 @@
           "operational": "Operational costs",
           "other": "Other",
           "personnel": "Personnel"
-        }
-      },
-      "donors": {
-        "detail": {
-          "close": "Close",
-          "lastDonation": "Last donation",
-          "noTx": "No transactions.",
-          "title": "Donor detail",
-          "total": "Total",
-          "transactions": "Transactions",
-          "txCount": "Donations"
-        },
-        "empty": "No donors for this campaign.",
-        "error": "Error loading donors.",
-        "loading": "Loading…",
-        "showing": "{count} donor(s)",
-        "sort": {
-          "amount": "Amount ↓",
-          "date": "Recent date",
-          "name": "Name A→Z"
-        },
-        "search": {
-          "placeholder": "Search a donor…"
-        },
-        "stats": {
-          "avg": "Avg donation",
-          "raised": "Total raised",
-          "top": "Top donor",
-          "total": "Donors"
-        },
-        "table": {
-          "amount": "Amount",
-          "donor": "Donor",
-          "lastDonation": "Last donation",
-          "transactions": "Donations",
-          "view": "View"
-        },
-        "tx": {
-          "close": "Close",
-          "date": "Date",
-          "onChain": "On-chain",
-          "pending": "Pending",
-          "ref": "Reference",
-          "title": "Donation detail"
         }
       },
       "stats": {
@@ -606,6 +607,7 @@
       "overview": "Dashboard",
       "payees": "Beneficiaries",
       "profile": "My profile",
+      "reporting": "Reporting",
       "settings": "Settings"
     },
     "payees": {
@@ -684,6 +686,30 @@
         "verified": "VOP Verified"
       },
       "vop": {}
+    },
+    "reporting": {
+      "page": {
+        "openCampaign": "Open a campaign →",
+        "selectCampaign": "Select a campaign and open its 📊 Budget Tracking tab to see the planned vs actual report.",
+        "subtitle": "Global impact overview for your campaigns."
+      },
+      "tab": {
+        "chargesDonutTitle": "📉 Actual expense breakdown",
+        "chargesTitle": "📉 Expenses — variances",
+        "colActual": "Actual",
+        "colPlanned": "Planned",
+        "colVariance": "Variance",
+        "donutEmpty": "No data",
+        "empty": "No reporting data available.",
+        "error": "Failed to load reporting.",
+        "loadError": "Failed to load reporting data.",
+        "produitsDonutTitle": "📈 Actual revenue breakdown",
+        "produitsTitle": "📈 Revenues — variances",
+        "statsChargesActual": "Actual expenses",
+        "statsChargesPlanned": "Planned expenses",
+        "statsProduitsActual": "Actual revenues",
+        "statsProduitsPlanned": "Planned revenues"
+      }
     },
     "roles": {
       "association": "Association",

@@ -26,6 +26,7 @@ const ASSOCIATION_NAV: NavItem[] = [
   { icon: '📊', labelKey: 'nav.associationProfile', href: ROUTES.ASSOCIATION_PROFILE },
   { icon: '🏦', labelKey: 'nav.payees',             href: ROUTES.ASSOCIATION_PAYEES },
   { icon: '🎯', labelKey: 'nav.campaigns',          href: ROUTES.ASSOCIATION_CAMPAIGNS },
+  { icon: '📊', labelKey: 'nav.reporting',          href: ROUTES.ASSOCIATION_REPORTING },
   { icon: '👥', labelKey: 'nav.donors',             href: '#' },
   { icon: '⚙️', labelKey: 'nav.settings',           href: '#' },
 ];

@@ -37,6 +37,7 @@ export function CampaignTabs({ activeTab, onTabChange, milestoneCount, paymentCo
     { id: 'milestones', icon: '🏆', labelKey: 'editor.tabs.milestones', count: milestoneCount },
     { id: 'payments', icon: '📤', labelKey: 'editor.tabs.payments', count: paymentCount },
     { id: 'donors', icon: '👥', labelKey: 'editor.tabs.donors', count: donorCount },
+    { id: 'reporting', icon: '📊', labelKey: 'editor.tabs.reporting' },
   ];
 
   return (

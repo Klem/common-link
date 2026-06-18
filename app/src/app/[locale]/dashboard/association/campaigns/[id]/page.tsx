@@ -12,6 +12,7 @@ import {
   CampaignMilestonesTab,
   CampaignPaymentsTab,
   CampaignDonorsTab,
+  CampaignReportingTab,
 } from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
 import { usePayments } from '@/hooks/campaign/usePayments';
@@ -142,6 +143,10 @@ export default function CampaignEditorPage() {
 
         {activeTab === 'donors' && (
           <CampaignDonorsTab campaign={campaign} />
+        )}
+
+        {activeTab === 'reporting' && (
+          <CampaignReportingTab campaign={campaign} />
         )}
       </div>
     </div>
