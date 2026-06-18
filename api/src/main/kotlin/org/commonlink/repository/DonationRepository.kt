@@ -102,6 +102,21 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     """)
     fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 
+    /**
+     * Returns confirmed donation amounts grouped by [Donation.typeCode] for budget variance reporting.
+     * Each element is [typeCode, sum].
+     */
+    @Query("""
+        SELECT d.typeCode, COALESCE(SUM(d.amount), 0)
+        FROM Donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+        GROUP BY d.typeCode
+    """)
+    fun sumConfirmedAmountsByCampaignIdGroupedByTypeCode(
+        @Param("campaignId") campaignId: UUID,
+    ): List<Array<Any>>
+
     // ── Per-campaign donor aggregates (Step 6) ─────────────────────────────
 
     /**

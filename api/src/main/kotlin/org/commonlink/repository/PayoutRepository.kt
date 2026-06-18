@@ -40,4 +40,19 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
         @Param("campaignId") campaignId: UUID,
         @Param("status") status: PayoutStatus,
     ): BigDecimal?
+
+    /**
+     * Returns confirmed payout amounts grouped by [Payout.typeCode] for budget variance reporting.
+     * Each element is [typeCode, sum].
+     */
+    @Query("""
+        SELECT p.typeCode, COALESCE(SUM(p.amount), 0)
+        FROM Payout p
+        WHERE p.campaign.id = :campaignId
+          AND p.status = org.commonlink.entity.PayoutStatus.CONFIRMED
+        GROUP BY p.typeCode
+    """)
+    fun sumConfirmedAmountsByCampaignIdGroupedByTypeCode(
+        @Param("campaignId") campaignId: UUID,
+    ): List<Array<Any>>
 }

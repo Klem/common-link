@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.commonlink.entity.CampaignBudgetSection
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -9,6 +10,14 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 interface CampaignBudgetSectionRepository : JpaRepository<CampaignBudgetSection, UUID> {
+
+    /**
+     * Returns all budget sections for [campaignId] with their items eagerly loaded in a single query.
+     * The [EntityGraph] prevents N+1 when iterating over section items for budget variance calculation.
+     */
+    @EntityGraph(attributePaths = ["items"])
+    @Query("SELECT s FROM CampaignBudgetSection s WHERE s.campaign.id = :campaignId ORDER BY s.sortOrder ASC")
+    fun findAllWithItemsByCampaignId(@Param("campaignId") campaignId: UUID): List<CampaignBudgetSection>
 
     /**
      * Deletes all budget sections belonging to the given campaign in a single bulk statement.

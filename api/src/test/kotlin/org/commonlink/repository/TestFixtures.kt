@@ -206,6 +206,7 @@ object TestFixtures {
      * @param campaign The campaign receiving the donation.
      * @param amount Donation amount in euros.
      * @param confirmedAt When the payment was confirmed; null means unconfirmed.
+     * @param typeCode Plan comptable prefix for budget variance reporting (default "74").
      */
     fun donation(
         donor: DonorProfile,
@@ -213,12 +214,14 @@ object TestFixtures {
         amount: BigDecimal = BigDecimal("50.00"),
         providerRef: String = "test:${UUID.randomUUID()}",
         confirmedAt: Instant? = Instant.now(),
+        typeCode: String = "74",
     ) = Donation(
         donor = donor,
         campaign = campaign,
         amount = amount,
         providerRef = providerRef,
         confirmedAt = confirmedAt,
+        typeCode = typeCode,
     )
 
     // ── Payees ───────────────────────────────────────────────────────────────

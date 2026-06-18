@@ -1,0 +1,1 @@
+ALTER TABLE donations DROP COLUMN IF EXISTS type_code;
