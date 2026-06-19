@@ -77,24 +77,20 @@ export default function AssociationDashboardPage() {
         </div>
       )}
 
-      <div className="home-stats">
+      <div className="stats">
         <StatCard
           icon="💰"
           label={t('stats.totalRaised')}
           value={isLoading ? '—' : formatEUR(displayStats.totalRaisedActive)}
           variant="teal"
         />
-        <div
-          style={{ cursor: 'pointer' }}
+        <StatCard
+          icon="📢"
+          label={<>{t('stats.activeCampaigns')} <span className="st-see">→ voir</span></>}
+          value={isLoading ? '—' : displayStats.activeCampaignCount}
+          variant="coral"
           onClick={() => router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}`)}
-        >
-          <StatCard
-            icon="📢"
-            label={t('stats.activeCampaigns')}
-            value={isLoading ? '—' : displayStats.activeCampaignCount}
-            variant="coral"
-          />
-        </div>
+        />
         <StatCard
           icon="🎯"
           label={t('stats.nextMilestone')}

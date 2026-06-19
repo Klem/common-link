@@ -224,7 +224,8 @@
               "desc": "Submit your documents to publish publicly",
               "eta": "24-48h",
               "title": "Association verification"
-            }
+            },
+            "validated": "✓ Validated"
           },
           "dismiss": "Hide",
           "sub": {

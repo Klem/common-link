@@ -1663,6 +1663,12 @@ textarea.form-input {
 .st-val { font-family: 'Nunito Sans'; font-weight: 900; font-size: 28px; color: var(--ink-navy); margin-bottom: 2px; }
 .st-lbl { font-size: 13px; color: var(--slate-lavender); font-weight: 500; }
 .st-sub { font-size: 11px; color: var(--slate-lavender); margin-top: 2px; }
+.st-see { font-size: 11px; color: var(--bright-teal); }
+.bar-chart-wrap { height: 200px; display: flex; align-items: flex-end; gap: 14px; padding: 0 8px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bar-fill { width: 100%; background: var(--bright-teal); border-radius: 6px 6px 0 0; }
+.bar-lbl { font-size: 11px; color: var(--slate-lavender); }
+.empty-text { font-size: 13px; color: var(--slate-lavender); text-align: center; padding: 24px 0; }
 
 .cm-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 12px; margin-bottom: 20px; }
 .cm-stat { background: var(--white); border: 1px solid var(--mist-lavender); border-radius: var(--radius-md); padding: 14px 16px; text-align: center; box-shadow: var(--shadow-sm); }

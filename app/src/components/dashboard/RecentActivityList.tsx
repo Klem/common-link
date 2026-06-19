@@ -42,9 +42,7 @@ export function RecentActivityList({ items }: RecentActivityListProps) {
           <h3>{t('title')}</h3>
         </div>
         <div className="card-b">
-          <p style={{ fontSize: '13px', color: 'var(--slate-lavender)', textAlign: 'center', padding: '24px 0' }}>
-            {t('empty')}
-          </p>
+          <p className="empty-text">{t('empty')}</p>
         </div>
       </div>
     );

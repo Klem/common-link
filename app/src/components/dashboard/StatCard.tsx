@@ -1,34 +1,23 @@
 'use client';
 
-interface TrendProps {
-  value: string;
-  direction: 'up' | 'down' | 'neutral';
-}
-
 interface StatCardProps {
   icon: string;
-  label: string;
+  label: React.ReactNode;
   value: string | number;
-  trend?: TrendProps;
   variant?: 'teal' | 'coral' | 'amber' | 'indigo';
-  /** Optional secondary label shown below the main label (e.g. milestone name). */
   subLabel?: string;
+  onClick?: () => void;
 }
 
-export function StatCard({ icon, label, value, trend, variant = 'teal', subLabel }: StatCardProps) {
+export function StatCard({ icon, label, value, variant = 'teal', subLabel, onClick }: StatCardProps) {
   return (
-    <div className="stat-card">
-      <div className="stat-card-header">
-        <span className="stat-card-label">{label}</span>
-        <span className={`stat-card-icon ${variant}`}>{icon}</span>
+    <div className="st" onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+      <div className="st-top">
+        <div className={`st-icon ${variant}`}>{icon}</div>
       </div>
-      <p className="stat-card-value">{value}</p>
-      {trend && (
-        <span className={`stat-card-trend${trend.direction !== 'neutral' ? ` ${trend.direction}` : ''}`}>
-          {trend.value}
-        </span>
-      )}
-      {subLabel && <p className="stat-card-sublabel">{subLabel}</p>}
+      <div className="st-val">{value}</div>
+      <div className="st-lbl">{label}</div>
+      {subLabel && <div className="st-sub">{subLabel}</div>}
     </div>
   );
 }

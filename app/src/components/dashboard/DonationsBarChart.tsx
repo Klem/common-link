@@ -29,34 +29,17 @@ export function DonationsBarChart({ data }: DonationsBarChartProps) {
         <h3>{t('title')}</h3>
       </div>
       <div className="card-b">
-        <div
-          style={{
-            height: '200px',
-            display: 'flex',
-            alignItems: 'flex-end',
-            gap: '14px',
-            padding: '0 8px',
-          }}
-        >
+        <div className="bar-chart-wrap">
           {data.map((point) => {
             const heightPct = Math.max((point.amount / maxAmount) * 100, 1);
             return (
-              <div
-                key={point.month}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
-              >
+              <div key={point.month} className="bar-col">
                 <div
-                  style={{
-                    width: '100%',
-                    height: `${heightPct}%`,
-                    background: 'var(--bright-teal)',
-                    borderRadius: '6px 6px 0 0',
-                  }}
+                  className="bar-fill"
+                  style={{ height: `${heightPct}%` }}
                   title={`${point.amount} €`}
                 />
-                <span style={{ fontSize: '11px', color: 'var(--slate-lavender)' }}>
-                  {formatMonthLabel(point.month, locale)}
-                </span>
+                <span className="bar-lbl">{formatMonthLabel(point.month, locale)}</span>
               </div>
             );
           })}

@@ -224,7 +224,8 @@
               "desc": "Soumettez vos justificatifs pour publier publiquement",
               "eta": "24-48h",
               "title": "Vérification de l'association"
-            }
+            },
+            "validated": "✓ Validée"
           },
           "dismiss": "Masquer",
           "sub": {

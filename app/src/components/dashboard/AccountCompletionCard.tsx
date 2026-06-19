@@ -89,7 +89,7 @@ export function AccountCompletionCard({ verified, bankConnected }: AccountComple
                 <div className="acc-check-desc">{t(`checks.${check.key}.desc`)}</div>
               </div>
               {state === 'done' && (
-                <span className="acc-check-eta">✓ Validée</span>
+                <span className="acc-check-eta">{t('checks.validated')}</span>
               )}
               {state === 'pending' && (
                 <button className="acc-check-cta" onClick={() => handleCta(check.key)}>
