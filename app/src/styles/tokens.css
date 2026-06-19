@@ -61,6 +61,7 @@
   --transition-fast:   0.15s ease;
   --transition-base:   0.25s cubic-bezier(0.22, 1, 0.36, 1);
   --transition-spring: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  --tb:                0.25s cubic-bezier(.22,1,.36,1);
 
   /* Espacements sémantiques */
   --space-card-p: 24px;
