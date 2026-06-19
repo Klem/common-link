@@ -50,22 +50,21 @@ describe('CampaignCard', () => {
     expect(screen.getByText('🌍')).toBeInTheDocument();
   });
 
-  it('renders DRAFT status pill label', () => {
+  it('renders DRAFT badge label', () => {
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
-    // t() mock returns the key, so status pill shows 'campaigns.status.draft'
-    expect(screen.getByText(/campaigns\.status\.draft/)).toBeInTheDocument();
+    expect(screen.getByText(/campaigns\.badge\.draft/)).toBeInTheDocument();
   });
 
-  it('renders LIVE status pill label', () => {
+  it('renders LIVE badge label', () => {
     const liveCampaign = { ...baseCampaign, status: 'LIVE' as const };
     render(<CampaignCard campaign={liveCampaign} onDelete={onDelete} />);
-    expect(screen.getByText(/campaigns\.status\.live/)).toBeInTheDocument();
+    expect(screen.getByText(/campaigns\.badge\.live/)).toBeInTheDocument();
   });
 
-  it('renders ENDED status pill label', () => {
+  it('renders ENDED badge label', () => {
     const endedCampaign = { ...baseCampaign, status: 'ENDED' as const };
     render(<CampaignCard campaign={endedCampaign} onDelete={onDelete} />);
-    expect(screen.getByText(/campaigns\.status\.ended/)).toBeInTheDocument();
+    expect(screen.getByText(/campaigns\.badge\.ended/)).toBeInTheDocument();
   });
 
   it('renders progress bar with correct width (25%)', () => {
@@ -75,11 +74,10 @@ describe('CampaignCard', () => {
     expect(progressBar).toBeInTheDocument();
   });
 
-  it('renders progress bar at 0% when goal is 0', () => {
+  it('shows draftNoBudget text when draft and goal is 0', () => {
     const nGoalCampaign = { ...baseCampaign, goal: 0, raised: 0 };
-    const { container } = render(<CampaignCard campaign={nGoalCampaign} onDelete={onDelete} />);
-    const progressBar = container.querySelector('[style*="width: 0%"]');
-    expect(progressBar).toBeInTheDocument();
+    render(<CampaignCard campaign={nGoalCampaign} onDelete={onDelete} />);
+    expect(screen.getByText(/campaigns\.draftNoBudget/)).toBeInTheDocument();
   });
 
   it('caps progress bar at 100% when raised > goal', () => {
@@ -89,15 +87,32 @@ describe('CampaignCard', () => {
     expect(progressBar).toBeInTheDocument();
   });
 
+  // ── Action buttons ─────────────────────────────────────────────────────────
+
+  it('DRAFT card shows Continuer button', () => {
+    render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
+    expect(screen.getByText(/campaigns\.actionContinue/)).toBeInTheDocument();
+  });
+
+  it('LIVE card shows Gérer and Partager buttons', () => {
+    const liveCampaign = { ...baseCampaign, status: 'LIVE' as const };
+    render(<CampaignCard campaign={liveCampaign} onDelete={onDelete} />);
+    expect(screen.getByText(/campaigns\.actionManage/)).toBeInTheDocument();
+    expect(screen.getByText(/campaigns\.actionShare/)).toBeInTheDocument();
+  });
+
+  it('ENDED card shows Voir le rapport button', () => {
+    const endedCampaign = { ...baseCampaign, status: 'ENDED' as const };
+    render(<CampaignCard campaign={endedCampaign} onDelete={onDelete} />);
+    expect(screen.getByText(/campaigns\.actionReport/)).toBeInTheDocument();
+  });
+
   // ── Navigation ────────────────────────────────────────────────────────────
 
   it('clicking the card navigates to the campaign editor', () => {
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
-    // The card div has role="button" and its accessible name includes the campaign name
     fireEvent.click(screen.getByRole('button', { name: /Hiver Solidaire 2025/ }));
-    expect(mockPush).toHaveBeenCalledWith(
-      expect.stringContaining(baseCampaign.id),
-    );
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining(baseCampaign.id));
   });
 
   it('pressing Enter on the card navigates', () => {
@@ -111,28 +126,22 @@ describe('CampaignCard', () => {
 
   it('delete button calls onDelete with campaign id after confirm', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('campaigns.delete'));
-
     expect(onDelete).toHaveBeenCalledWith('campaign-uuid-1');
   });
 
   it('delete button does not call onDelete when confirm is cancelled', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('campaigns.delete'));
-
     expect(onDelete).not.toHaveBeenCalled();
   });
 
   it('delete button click does not trigger card navigation', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('campaigns.delete'));
-
     expect(mockPush).not.toHaveBeenCalled();
   });
 });

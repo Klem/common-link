@@ -332,6 +332,15 @@
       }
     },
     "campaigns": {
+      "actionContinue": "Continuer",
+      "actionManage": "Gérer",
+      "actionReport": "Voir le rapport",
+      "actionShare": "Partager",
+      "badge": {
+        "draft": "⚙️ Brouillon",
+        "ended": "✓ Terminée",
+        "live": "● Active"
+      },
       "create": "Créer une campagne",
       "defaultName": "Nouvelle campagne",
       "delete": "Supprimer",
@@ -380,6 +389,7 @@
           "title": "Détail don"
         }
       },
+      "draftNoBudget": "Brouillon — budget non défini",
       "editor": {
         "budget": {
           "addItem": "Ajouter un poste",
@@ -462,6 +472,10 @@
         "subtitle": "Créez votre première campagne pour commencer à collecter des dons.",
         "title": "Aucune campagne"
       },
+      "filterAll": "Toutes",
+      "filterDraft": "Brouillons",
+      "filterEnded": "Terminées",
+      "filterLive": "Actives",
       "loading": "Chargement…",
       "milestones": "milestone(s)",
       "pageSubtitle": "Gérez les campagnes de collecte de votre association",

@@ -6,43 +6,41 @@ import { ROUTES } from '@/lib/routes';
 import type { CampaignSummaryDto } from '@/types/campaign';
 import { CampaignStatus } from '@/types/campaign';
 
-/** Props for {@link CampaignCard}. */
 interface CampaignCardProps {
-  /** Campaign summary data to display. */
   campaign: CampaignSummaryDto;
-  /** Callback invoked when the delete button is clicked. */
   onDelete: (id: string) => void;
 }
 
-/** Formats a number as a EUR currency string using French locale. */
 function formatEur(amount: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }
 
-const STATUS_BADGE: Record<CampaignStatus, string> = {
+const STATUS_BADGE_CLASS: Record<CampaignStatus, string> = {
   [CampaignStatus.LIVE]:  'badge badge-active',
-  [CampaignStatus.ENDED]: 'badge badge-error',
-  [CampaignStatus.DRAFT]: 'badge badge-neutral',
+  [CampaignStatus.ENDED]: 'badge badge-ended',
+  [CampaignStatus.DRAFT]: 'badge badge-draft',
 };
 
-const STATUS_I18N: Record<CampaignStatus, string> = {
-  [CampaignStatus.LIVE]:  'campaigns.status.live',
-  [CampaignStatus.ENDED]: 'campaigns.status.ended',
-  [CampaignStatus.DRAFT]: 'campaigns.status.draft',
+const STATUS_BADGE_I18N: Record<CampaignStatus, string> = {
+  [CampaignStatus.LIVE]:  'campaigns.badge.live',
+  [CampaignStatus.ENDED]: 'campaigns.badge.ended',
+  [CampaignStatus.DRAFT]: 'campaigns.badge.draft',
 };
 
-/**
- * Card displaying a campaign summary in the association campaign list.
- *
- * Clicking anywhere on the card navigates to the campaign editor.
- * The delete button (top-right) triggers the onDelete callback without navigation.
- */
 export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('dashboard');
 
-  const progress = campaign.goal > 0 ? Math.min((campaign.raised / campaign.goal) * 100, 100) : 0;
+  const pct = campaign.goal > 0
+    ? Math.round((campaign.raised / campaign.goal) * 100)
+    : 0;
+  const overfund = pct > 100;
+  const isDraft = campaign.status === CampaignStatus.DRAFT;
+  const isEnded = campaign.status === CampaignStatus.ENDED;
+  const showNoBudget = isDraft && campaign.goal === 0;
+
+  const barColor = isEnded || overfund ? 'var(--soft-amber)' : undefined;
 
   const handleCardClick = () => {
     router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}/${campaign.id}`);
@@ -61,47 +59,82 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
       tabIndex={0}
       onClick={handleCardClick}
       onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
-      className="card relative cursor-pointer"
+      className="camp-card"
     >
-      <div className="card-body">
-        {/* Delete button */}
-        <button
-          onClick={handleDelete}
-          aria-label={t('campaigns.delete')}
-          className="absolute top-[14px] right-[14px] w-[24px] h-[24px] rounded-md bg-red/8 text-red text-[12px] flex items-center justify-center hover:bg-red/20 transition"
-        >
-          🗑
-        </button>
-
-        {/* Top row: emoji + name + status pill */}
-        <div className="flex items-center gap-[10px] pr-[32px]">
-          <span className="text-[28px] leading-none flex-shrink-0">{campaign.emoji}</span>
-          <span className="font-display font-bold text-[16px] text-text truncate flex-1">
-            {campaign.name}
-          </span>
-          <span className={`flex-shrink-0 ${STATUS_BADGE[campaign.status]}`}>
-            {t(STATUS_I18N[campaign.status])}
+      {/* Image / placeholder */}
+      <div className="camp-card-img">
+        <span className="camp-card-img-emoji">{campaign.emoji}</span>
+        <div className="camp-card-badge-row">
+          <span className={STATUS_BADGE_CLASS[campaign.status]}>
+            {t(STATUS_BADGE_I18N[campaign.status])}
           </span>
         </div>
+      </div>
 
-        {/* Description */}
+      <div className="camp-card-body">
+        <h3>{campaign.name}</h3>
+
         {campaign.description && (
-          <p className="text-[12.5px] text-text-2 line-clamp-2 mt-[8px]">{campaign.description}</p>
+          <p className="camp-card-desc">{campaign.description}</p>
         )}
 
-        {/* Progress bar */}
-        <div className="progress-bar mt-[12px]">
-          <div className="progress-fill teal" style={{ width: `${progress}%` }} />
+        {/* Progress */}
+        {showNoBudget ? (
+          <p style={{ fontSize: '12px', color: 'var(--slate-lavender)', marginBottom: '12px' }}>
+            {t('campaigns.draftNoBudget')}
+          </p>
+        ) : (
+          <div className="camp-card-progress">
+            <div className="pbar" style={{ marginBottom: '6px' }}>
+              <div
+                className="pfill"
+                style={{ width: `${Math.min(pct, 100)}%`, ...(barColor ? { background: barColor } : {}) }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <strong>{formatEur(campaign.raised)} / {campaign.goal > 0 ? formatEur(campaign.goal) : '—'}</strong>
+              <span style={{ color: overfund ? 'var(--soft-amber)' : 'var(--slate-lavender)', fontWeight: overfund ? 700 : 400 }}>
+                {pct}%{overfund ? ' 🎉' : ''}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="camp-card-stats">
+          <span>🎯 {campaign.milestoneCount} {t('campaigns.milestones')}</span>
         </div>
 
-        {/* Bottom row: raised / goal + milestones */}
-        <div className="flex justify-between text-[12px] text-text-2 mt-[8px]">
-          <span>
-            {formatEur(campaign.raised)} / {formatEur(campaign.goal)}
-          </span>
-          <span>
-            {campaign.milestoneCount} {t('campaigns.milestones')}
-          </span>
+        {/* Actions */}
+        <div className="camp-card-actions">
+          {isDraft && (
+            <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
+              {t('campaigns.actionContinue')}
+            </button>
+          )}
+          {isEnded && (
+            <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
+              {t('campaigns.actionReport')}
+            </button>
+          )}
+          {campaign.status === CampaignStatus.LIVE && (
+            <>
+              <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
+                {t('campaigns.actionManage')}
+              </button>
+              <button className="btn btn-sm btn-secondary" onClick={(e) => e.stopPropagation()}>
+                {t('campaigns.actionShare')}
+              </button>
+            </>
+          )}
+          <button
+            className="btn btn-sm btn-ghost"
+            onClick={handleDelete}
+            aria-label={t('campaigns.delete')}
+            title={t('campaigns.delete')}
+          >
+            🗑
+          </button>
         </div>
       </div>
     </div>

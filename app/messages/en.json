@@ -332,6 +332,15 @@
       }
     },
     "campaigns": {
+      "actionContinue": "Continue",
+      "actionManage": "Manage",
+      "actionReport": "View report",
+      "actionShare": "Share",
+      "badge": {
+        "draft": "⚙️ Draft",
+        "ended": "✓ Ended",
+        "live": "● Active"
+      },
       "create": "Create a campaign",
       "defaultName": "New campaign",
       "delete": "Delete",
@@ -380,6 +389,7 @@
           "title": "Donation detail"
         }
       },
+      "draftNoBudget": "Draft — budget undefined",
       "editor": {
         "budget": {
           "addItem": "Add item",
@@ -462,6 +472,10 @@
         "subtitle": "Create your first campaign to start collecting donations.",
         "title": "No campaigns"
       },
+      "filterAll": "All",
+      "filterDraft": "Drafts",
+      "filterEnded": "Ended",
+      "filterLive": "Active",
       "loading": "Loading…",
       "milestones": "milestone(s)",
       "pageSubtitle": "Manage your association's fundraising campaigns",
