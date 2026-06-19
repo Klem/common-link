@@ -5,9 +5,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { GoogleOAuthProvider } from '@/providers/GoogleOAuthProvider';
-import { ThemeProvider } from '@/providers/ThemeProvider';
 import { Toast } from '@/components/ui';
-import { ThemeSwitcher } from '@/components/dev/ThemeSwitcher';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -33,15 +31,12 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <html lang={locale}>
       <body>
         <NextIntlClientProvider messages={messages}>
-          <ThemeProvider>
-            <GoogleOAuthProvider>
-              <AuthProvider>
-                {children}
-                <Toast />
-                <ThemeSwitcher />
-              </AuthProvider>
-            </GoogleOAuthProvider>
-          </ThemeProvider>
+          <GoogleOAuthProvider>
+            <AuthProvider>
+              {children}
+              <Toast />
+            </AuthProvider>
+          </GoogleOAuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>
