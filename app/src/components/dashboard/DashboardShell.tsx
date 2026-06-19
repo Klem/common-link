@@ -62,13 +62,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
       <div className="app-shell">
         <Sidebar user={user} currentPath={pathname} isOpen={sidebarOpen} onClose={closeSidebar} />
         {sidebarOpen && (
-          <div className="app-sidebar-backdrop" onClick={closeSidebar} />
+          <div className="sb-ov" onClick={closeSidebar} />
         )}
-        <main className="app-main">
-          <div className="app-content">
-            {children}
-          </div>
-        </main>
+        <div className="main-area">
+          {children}
+        </div>
         <SetPasswordModal isOpen={showPasswordModal} onClose={dismissModal} />
       </div>
     </SidebarToggleContext.Provider>

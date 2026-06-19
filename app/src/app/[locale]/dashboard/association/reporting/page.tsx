@@ -16,10 +16,7 @@ export default function ReportingPage() {
 
   return (
     <div>
-      <Topbar
-        title={t('nav.reporting')}
-        subtitle={t('reporting.page.subtitle')}
-      />
+      <Topbar title={t('nav.reporting')} />
       <div className="p-[24px]">
         <div className="card card-no-hover">
           <div className="card-b">

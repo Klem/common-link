@@ -603,7 +603,13 @@
       "campaigns": "Campagnes",
       "donations": "Mes dons",
       "donors": "Donateurs",
+      "group": {
+        "gestion": "Gestion",
+        "principal": "Principal",
+        "settings": "Paramètres"
+      },
       "logout": "Déconnexion",
+      "orgType": "Association loi 1901",
       "overview": "Tableau de bord",
       "payees": "Bénéficiaires",
       "profile": "Mon profil",

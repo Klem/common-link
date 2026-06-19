@@ -75,7 +75,7 @@ export default function CampaignEditorPage() {
   if (isLoading) {
     return (
       <div>
-        <Topbar title={t('pageTitle')} subtitle={t('editor.loading')} />
+        <Topbar title={t('pageTitle')} />
         <div className="flex items-center justify-center p-[48px]">
           <div className="w-[32px] h-[32px] rounded-full border-2 border-[var(--color-green)]/30 border-t-[var(--color-green)] animate-spin" />
         </div>
@@ -87,7 +87,7 @@ export default function CampaignEditorPage() {
   if (error || !campaign) {
     return (
       <div>
-        <Topbar title={t('pageTitle')} subtitle="" />
+        <Topbar title={t('pageTitle')} />
         <div className="p-[48px] text-center text-[var(--color-text-2)]">
           {t('editor.notFound')}
         </div>
@@ -97,7 +97,7 @@ export default function CampaignEditorPage() {
 
   return (
     <div>
-      <Topbar title={campaign.name} subtitle={t('pageSubtitle')} />
+      <Topbar title={campaign.name} parent={t('campaigns.pageTitle')} />
 
       <div className="p-[24px]">
         <CampaignHero

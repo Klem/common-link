@@ -37,10 +37,7 @@ export default function CampaignsPage() {
 
   return (
     <div>
-      <Topbar
-        title={t('campaigns.pageTitle')}
-        subtitle={t('campaigns.pageSubtitle')}
-      />
+      <Topbar title={t('campaigns.pageTitle')} />
 
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-[13px] mb-[26px]">

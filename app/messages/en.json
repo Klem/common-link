@@ -603,7 +603,13 @@
       "campaigns": "Campaigns",
       "donations": "My donations",
       "donors": "Donors",
+      "group": {
+        "gestion": "Management",
+        "principal": "Main",
+        "settings": "Settings"
+      },
       "logout": "Log out",
+      "orgType": "Non-profit (loi 1901)",
       "overview": "Dashboard",
       "payees": "Beneficiaries",
       "profile": "My profile",
