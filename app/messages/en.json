@@ -408,6 +408,16 @@
           "sectionName": "Name (e.g. Taxes)",
           "surplus": "Surplus"
         },
+        "completion": {
+          "budget": "Budget",
+          "dates": "Dates",
+          "description": "Description",
+          "goal": "Goal",
+          "impact": "Impact goals",
+          "milestones": "Milestones",
+          "name": "Name",
+          "reason": "Why now"
+        },
         "hero": {
           "collected": "Raised",
           "goal": "Goal",
@@ -553,7 +563,8 @@
       "status": {
         "draft": "Draft",
         "ended": "Ended",
-        "live": "Live"
+        "live": "Live",
+        "private": "Private"
       }
     },
     "donor": {

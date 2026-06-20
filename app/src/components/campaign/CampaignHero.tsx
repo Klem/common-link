@@ -9,21 +9,15 @@ const EMOJIS = [
   '🌺','🏄','🌿🍃','🏔','🎯','🦋','🦄🌈','🎵','🎤','🌸🌼','🏇','🌞','🎠','🌻','🌈','🎡🎢','🦅',
 ];
 
-/** Maps a campaign status to its display label key and badge class. */
-function statusBadge(status: CampaignStatus): { labelKey: string; cls: string } {
+function statusPill(status: CampaignStatus): { cls: string; glyph: string; labelKey: string } {
   switch (status) {
-    case 'LIVE':
-      return { labelKey: 'status.live', cls: 'badge badge-active' };
-    case 'ENDED':
-      return { labelKey: 'status.ended', cls: 'badge badge-error' };
-    default:
-      return { labelKey: 'status.draft', cls: 'badge badge-neutral' };
+    case 'LIVE':    return { cls: 'camp-status-pill live',    glyph: '●',  labelKey: 'status.live' };
+    case 'PRIVATE': return { cls: 'camp-status-pill private', glyph: '🔗', labelKey: 'status.private' };
+    case 'ENDED':   return { cls: 'camp-status-pill ended',   glyph: '●',  labelKey: 'status.ended' };
+    default:        return { cls: 'camp-status-pill draft',   glyph: '●',  labelKey: 'status.draft' };
   }
 }
 
-/**
- * Formats a pair of ISO date strings into a human-readable range, e.g. "15 jan. → 31 mars 2025".
- */
 function formatDateRange(startDate: string | null, endDate: string | null): string {
   const fmt = (d: string) =>
     new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -33,31 +27,112 @@ function formatDateRange(startDate: string | null, endDate: string | null): stri
   return '';
 }
 
-interface CampaignHeroProps {
-  /** Full campaign data to display. */
-  campaign: CampaignDto;
-  /** Called when the user edits the name input. */
-  onNameChange: (name: string) => void;
-  /** Called when the user picks a new emoji. */
-  onEmojiChange: (emoji: string) => void;
+function budgetTotals(campaign: CampaignDto): { charges: number; produits: number } {
+  let charges = 0;
+  let produits = 0;
+  for (const sec of campaign.budgetSections) {
+    const total = sec.items.reduce((s, it) => s + (it.amount || 0), 0);
+    if (sec.side === 'EXPENSE') charges += total;
+    else produits += total;
+  }
+  return { charges, produits };
 }
 
-/**
- * Hero section of the campaign editor.
- *
- * Displays the campaign emoji (with picker), editable name, date range, goal,
- * status pill, and a progress bar for raised / goal amounts.
- */
-export function CampaignHero({ campaign, onNameChange, onEmojiChange }: CampaignHeroProps) {
+interface CompStep {
+  key: string;
+  labelKey: string;
+  cls: 'done' | 'missing' | 'warn' | 'boost';
+  tab: string;
+  fieldId?: string;
+}
+
+function buildCompletionSteps(campaign: CampaignDto): CompStep[] {
+  const required: CompStep[] = [
+    {
+      key: 'name',
+      labelKey: 'editor.completion.name',
+      cls: campaign.name.trim().length > 0 ? 'done' : 'missing',
+      tab: 'info',
+      fieldId: 'info-name',
+    },
+    {
+      key: 'description',
+      labelKey: 'editor.completion.description',
+      cls: (campaign.description ?? '').length >= 10 ? 'done' : 'missing',
+      tab: 'info',
+      fieldId: 'info-desc',
+    },
+    {
+      key: 'dates',
+      labelKey: 'editor.completion.dates',
+      cls: (campaign.startDate && campaign.endDate) ? 'done' : 'missing',
+      tab: 'info',
+      fieldId: 'info-start',
+    },
+    {
+      key: 'goal',
+      labelKey: 'editor.completion.goal',
+      cls: campaign.goal > 0 ? 'done' : 'missing',
+      tab: 'info',
+      fieldId: 'info-goal',
+    },
+  ];
+
+  const { charges, produits } = budgetTotals(campaign);
+  const budgetHasData = charges > 0 || produits > 0;
+  const budgetBalanced = budgetHasData && Math.abs(produits - charges) < 1;
+
+  const msAllComplete =
+    campaign.milestones.length >= 1 &&
+    campaign.milestones.every((m) => m.title && m.targetAmount > 0);
+  const msSomeIncomplete =
+    campaign.milestones.length >= 1 && !msAllComplete;
+
+  const boosters: CompStep[] = [
+    {
+      key: 'budget',
+      labelKey: 'editor.completion.budget',
+      cls: budgetBalanced ? 'done' : budgetHasData ? 'warn' : 'boost',
+      tab: 'budget',
+    },
+    {
+      key: 'milestones',
+      labelKey: 'editor.completion.milestones',
+      cls: msAllComplete ? 'done' : msSomeIncomplete ? 'warn' : 'boost',
+      tab: 'milestones',
+    },
+    // reason + impact: Step 6 fields not yet in DTO → always boost
+    { key: 'reason', labelKey: 'editor.completion.reason', cls: 'boost', tab: 'info', fieldId: 'info-reason' },
+    { key: 'impact', labelKey: 'editor.completion.impact', cls: 'boost', tab: 'info', fieldId: 'info-impact-goals' },
+  ];
+
+  return [...required, ...boosters];
+}
+
+function stepIcon(cls: CompStep['cls']) {
+  if (cls === 'done') return '✓';
+  if (cls === 'missing') return '○';
+  if (cls === 'warn') return '⚠';
+  return '★';
+}
+
+interface CampaignHeroProps {
+  campaign: CampaignDto;
+  onNameChange: (name: string) => void;
+  onEmojiChange: (emoji: string) => void;
+  onTabChange: (tab: string) => void;
+}
+
+export function CampaignHero({ campaign, onNameChange, onEmojiChange, onTabChange }: CampaignHeroProps) {
   const t = useTranslations('dashboard.campaigns');
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   const percentage = campaign.goal > 0 ? Math.min((campaign.raised / campaign.goal) * 100, 100) : 0;
-  const { labelKey, cls } = statusBadge(campaign.status);
+  const { cls: pillCls, glyph: pillGlyph, labelKey: pillLabelKey } = statusPill(campaign.status);
   const dateRange = formatDateRange(campaign.startDate, campaign.endDate);
+  const steps = buildCompletionSteps(campaign);
 
-  /* Close picker when clicking outside */
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
@@ -68,101 +143,105 @@ export function CampaignHero({ campaign, onNameChange, onEmojiChange }: Campaign
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [pickerOpen]);
 
+  function jumpToField(tab: string, fieldId?: string) {
+    onTabChange(tab);
+    if (fieldId) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(fieldId);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+        el.style.animation = 'fieldFlash .8s ease forwards';
+        setTimeout(() => { el.style.animation = ''; }, 900);
+      });
+    }
+  }
+
   return (
-    <div className="relative overflow-hidden rounded-[18px] border border-[var(--color-border)] p-[28px_32px] mb-[24px] bg-bg-2">
-      {/* Top gradient bar */}
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--color-green)] to-[var(--color-cyan)]" />
-
-      {/* Top row */}
-      <div className="flex justify-between items-start gap-[16px]">
-        {/* Left — emoji + name + dates */}
-        <div className="flex items-start gap-[16px] flex-1 min-w-0">
-          {/* Emoji picker trigger */}
-          <div className="relative" ref={pickerRef}>
-            <button
-              type="button"
-              onClick={() => setPickerOpen((o) => !o)}
-              className="text-[36px] leading-none cursor-pointer hover:opacity-80 transition-opacity select-none"
-              aria-label="Changer l'emoji"
-            >
-              {campaign.emoji || '🏕'}
-            </button>
-
-            {pickerOpen && (
-              <div className="absolute top-[calc(100%+8px)] left-0 z-50 flex flex-wrap gap-[4px] w-[240px] rounded-xl border border-[var(--color-border)] p-[8px] shadow-lg bg-bg-2">
-                {EMOJIS.map((em) => (
-                  <button
-                    key={em}
-                    type="button"
-                    onClick={() => {
-                      onEmojiChange(em);
-                      setPickerOpen(false);
-                    }}
-                    className="p-[4px] rounded-[6px] text-[17px] hover:bg-[var(--color-bg-3)] cursor-pointer transition-colors"
-                  >
-                    {em}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Name + info line */}
-          <div className="flex-1 min-w-0">
-            <input
-              type="text"
-              value={campaign.name}
-              onChange={(e) => onNameChange(e.target.value)}
-              className="font-display w-full bg-transparent border-none outline-none text-[22px] font-extrabold text-[var(--color-text)] focus:border-b-2 focus:border-[var(--color-green)]/30"
-              placeholder="Nom de votre campagne✨"
-            />
-            <div className="flex items-center gap-[10px] mt-[6px] text-[12px] text-[var(--color-text-2)]">
-              {dateRange && <span>{dateRange}</span>}
-              {dateRange && <span>·</span>}
-              <span>
-                {t('editor.hero.goal')} :{' '}
-                <strong className="text-[var(--color-green)]">
-                  {campaign.goal.toLocaleString('fr-FR')} €
-                </strong>
-              </span>
+    <div className="camp-hero">
+      <div className="camp-hero-top">
+        {/* Emoji picker */}
+        <div className="camp-emoji" ref={pickerRef} onClick={() => setPickerOpen((o) => !o)}>
+          {campaign.emoji || '🏕'}
+          {pickerOpen && (
+            <div className="ms-emoji-pick">
+              {EMOJIS.map((em) => (
+                <button
+                  key={em}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEmojiChange(em);
+                    setPickerOpen(false);
+                  }}
+                >
+                  {em}
+                </button>
+              ))}
             </div>
+          )}
+        </div>
+
+        {/* Name + meta */}
+        <div className="camp-info">
+          <input
+            id="info-name"
+            className="camp-name-edit"
+            type="text"
+            value={campaign.name}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder={t('editor.info.name.placeholder')}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', fontSize: '12px', color: 'var(--slate-lavender)', flexWrap: 'wrap' }}>
+            {dateRange && <span>{dateRange}</span>}
+            {dateRange && <span>·</span>}
+            <span>
+              {t('editor.hero.goal')} :{' '}
+              <strong style={{ color: 'var(--teal-dark)' }}>
+                {campaign.goal.toLocaleString('fr-FR')} €
+              </strong>
+            </span>
           </div>
         </div>
 
-        {/* Right — status pill */}
-        <span className={cls}>
-          {t(labelKey)}
-        </span>
+        {/* Status pill */}
+        <span className={pillCls}>{pillGlyph} {t(pillLabelKey)}</span>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-[12px] mt-[20px]">
-        <div className="bg-bg-3 rounded-lg p-[12px_14px]">
-          <div className="text-[11px] text-[var(--color-text-2)] mb-[2px]">{t('editor.hero.collected')}</div>
-          <div className="font-display font-bold text-[15px] text-[var(--color-green)]">
-            {campaign.raised.toLocaleString('fr-FR')} €
-          </div>
+      {/* Collecté / barre de progression */}
+      <div style={{ marginTop: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+          <span style={{ color: 'var(--slate-lavender)' }}>{t('editor.hero.collected')}</span>
+          <span>
+            <strong style={{ color: 'var(--teal-dark)' }}>{campaign.raised.toLocaleString('fr-FR')} €</strong>
+            <span style={{ color: 'var(--slate-lavender)' }}> / {campaign.goal.toLocaleString('fr-FR')} €</span>
+          </span>
         </div>
-        <div className="bg-bg-3 rounded-lg p-[12px_14px]">
-          <div className="text-[11px] text-[var(--color-text-2)] mb-[2px]">{t('editor.hero.goal')}</div>
-          <div className="font-display font-bold text-[15px] text-[var(--color-text)]">
-            {campaign.goal.toLocaleString('fr-FR')} €
-          </div>
-        </div>
-        <div className="bg-bg-3 rounded-lg p-[12px_14px]">
-          <div className="text-[11px] text-[var(--color-text-2)] mb-[2px]">{t('editor.hero.progress')}</div>
-          <div className="font-display font-bold text-[15px] text-[var(--color-text)]">
-            {Math.round(percentage)} %
-          </div>
+        <div className="camp-progress-bar">
+          <div className="camp-progress-fill" style={{ width: `${percentage}%` }} />
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="progress-bar mt-[16px]">
-        <div
-          className="progress-fill teal"
-          style={{ width: `${percentage}%` }}
-        />
+      {/* Completion pills */}
+      <div className="completion-bar-wrap">
+        <div className="completion-steps">
+          {steps.map((step, i) => (
+            <>
+              {i === 4 && (
+                <span key="sep" style={{ color: 'var(--slate-lavender)', fontSize: '11px', opacity: 0.5, padding: '0 4px', alignSelf: 'center' }}>·</span>
+              )}
+              <button
+                key={step.key}
+                type="button"
+                className={`comp-step ${step.cls}`}
+                onClick={() => jumpToField(step.tab, step.fieldId)}
+              >
+                <span className="comp-step-dot" />
+                {stepIcon(step.cls)} {t(step.labelKey)}
+              </button>
+            </>
+          ))}
+        </div>
       </div>
     </div>
   );

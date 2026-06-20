@@ -99,11 +99,12 @@ export default function CampaignEditorPage() {
     <div>
       <Topbar title={campaign.name} parent={t('campaigns.pageTitle')} />
 
-      <div className="p-[24px]">
+      <div className="page">
         <CampaignHero
           campaign={campaign}
           onNameChange={handleNameChange}
           onEmojiChange={handleEmojiChange}
+          onTabChange={setActiveTab}
         />
 
         <CampaignTabs

@@ -1,11 +1,13 @@
 /**
  * Possible statuses for a fundraising campaign.
  * - DRAFT: not yet published, only visible to the association
+ * - PRIVATE: published but accessible by direct link only (pending account verification)
  * - LIVE: published and accepting donations
  * - ENDED: closed, no longer accepting donations
  */
 export const CampaignStatus = {
   DRAFT: 'DRAFT',
+  PRIVATE: 'PRIVATE',
   LIVE: 'LIVE',
   ENDED: 'ENDED',
 } as const;

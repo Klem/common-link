@@ -408,6 +408,16 @@
           "sectionName": "Nom (ex: Impôts et taxes)",
           "surplus": "Excédentaire"
         },
+        "completion": {
+          "budget": "Budget",
+          "dates": "Dates",
+          "description": "Description",
+          "goal": "Objectif",
+          "impact": "Objectifs d'impact",
+          "milestones": "Jalons",
+          "name": "Nom",
+          "reason": "Pourquoi maintenant"
+        },
         "hero": {
           "collected": "Collecté",
           "goal": "Objectif",
@@ -461,8 +471,8 @@
           "budget": "Budget prév.",
           "donors": "Donateurs",
           "info": "Infos",
-          "milestones": "Milestones",
-          "payments": "Paiements",
+          "milestones": "Jalons",
+          "payments": "Paiements & Transactions",
           "reporting": "Suivi budgétaire"
         }
       },
@@ -553,7 +563,8 @@
       "status": {
         "draft": "Brouillon",
         "ended": "Clôturée",
-        "live": "Live"
+        "live": "Live",
+        "private": "Privée"
       }
     },
     "donor": {

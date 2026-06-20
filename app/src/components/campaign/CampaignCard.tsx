@@ -16,15 +16,17 @@ function formatEur(amount: number): string {
 }
 
 const STATUS_BADGE_CLASS: Record<CampaignStatus, string> = {
-  [CampaignStatus.LIVE]:  'badge badge-active',
-  [CampaignStatus.ENDED]: 'badge badge-ended',
-  [CampaignStatus.DRAFT]: 'badge badge-draft',
+  [CampaignStatus.LIVE]:    'badge badge-active',
+  [CampaignStatus.PRIVATE]: 'badge badge-draft',
+  [CampaignStatus.ENDED]:   'badge badge-ended',
+  [CampaignStatus.DRAFT]:   'badge badge-draft',
 };
 
 const STATUS_BADGE_I18N: Record<CampaignStatus, string> = {
-  [CampaignStatus.LIVE]:  'campaigns.badge.live',
-  [CampaignStatus.ENDED]: 'campaigns.badge.ended',
-  [CampaignStatus.DRAFT]: 'campaigns.badge.draft',
+  [CampaignStatus.LIVE]:    'campaigns.badge.live',
+  [CampaignStatus.PRIVATE]: 'campaigns.badge.draft',
+  [CampaignStatus.ENDED]:   'campaigns.badge.ended',
+  [CampaignStatus.DRAFT]:   'campaigns.badge.draft',
 };
 
 export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
