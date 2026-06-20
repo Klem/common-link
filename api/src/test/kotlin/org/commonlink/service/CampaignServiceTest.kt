@@ -265,6 +265,52 @@ class CampaignServiceTest {
         }
     }
 
+    @Test
+    fun `updateCampaign - endDate less than 7 days after startDate throws 422`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Date Test"))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(
+                userId, created.id,
+                UpdateCampaignRequest(
+                    startDate = java.time.LocalDate.of(2025, 1, 1),
+                    endDate = java.time.LocalDate.of(2025, 1, 6) // only 5 days later
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `updateCampaign - endDate exactly 7 days after startDate succeeds`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Date Test OK"))
+
+        val updated = campaignService.updateCampaign(
+            userId, created.id,
+            UpdateCampaignRequest(
+                startDate = java.time.LocalDate.of(2025, 1, 1),
+                endDate = java.time.LocalDate.of(2025, 1, 8) // exactly 7 days
+            )
+        )
+        assertEquals(java.time.LocalDate.of(2025, 1, 8), updated.endDate)
+    }
+
+    @Test
+    fun `updateCampaign - sets category, reason and impactGoals`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Info Test"))
+
+        val updated = campaignService.updateCampaign(
+            userId, created.id,
+            UpdateCampaignRequest(
+                category = "Education",
+                reason = "Rénover les écoles",
+                impactGoals = "450 élèves bénéficiaires"
+            )
+        )
+        assertEquals("Education", updated.category)
+        assertEquals("Rénover les écoles", updated.reason)
+        assertEquals("450 élèves bénéficiaires", updated.impactGoals)
+    }
+
     // ── deleteCampaign ────────────────────────────────────────────────────────
 
     @Test

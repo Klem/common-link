@@ -424,10 +424,6 @@
           "progress": "Progression"
         },
         "info": {
-          "contract": {
-            "label": "Smart Contract",
-            "placeholder": "Adresse du contrat"
-          },
           "description": {
             "label": "Description de la campagne",
             "placeholder": "Décrivez l'objectif, le contexte et l'impact attendu…"
@@ -447,9 +443,6 @@
           "saved": "Campagne mise à jour.",
           "startDate": {
             "label": "Date de début"
-          },
-          "status": {
-            "label": "Statut"
           },
           "title": "Informations générales"
         },
@@ -754,5 +747,35 @@
     },
     "title": "Tableau de bord",
     "welcome": "Bienvenue"
+  },
+  "editor": {
+    "info": {
+      "category": {
+        "label": "Catégorie"
+      },
+      "coverImage": {
+        "hint": "JPG, PNG — 5 Mo max · 1200×600 recommandé",
+        "label": "Image de couverture",
+        "uploadPrompt": "Glissez une image ou parcourir"
+      },
+      "dateError": "La date de fin doit être au moins 7 jours après le début",
+      "endDate": {
+        "hint": "(min. 7 jours après le début)"
+      },
+      "goal": {
+        "tip": "Vous pouvez saisir un montant libre, ou le lier automatiquement au total des charges de votre budget prévisionnel."
+      },
+      "goalLink": "🔗 Lier au total des charges du budget",
+      "impactGoals": {
+        "label": "Objectifs d'impact",
+        "placeholder": "Ex : permettre à 450 élèves d'étudier dans de bonnes conditions, réduire le taux d'absentéisme de 30%…",
+        "tip": "Décrivez concrètement ce que vous espérez accomplir : nombre de bénéficiaires, résultats mesurables, changements attendus."
+      },
+      "reason": {
+        "label": "Raison de la campagne",
+        "placeholder": "Pourquoi lancez-vous cette campagne maintenant ?",
+        "tip": "Visible sur la page publique. Rassure les donateurs sur le sérieux de votre démarche."
+      }
+    }
   }
 }

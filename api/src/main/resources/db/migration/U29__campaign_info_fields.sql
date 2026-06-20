@@ -1,0 +1,4 @@
+ALTER TABLE campaigns DROP COLUMN IF EXISTS cover_image;
+ALTER TABLE campaigns DROP COLUMN IF EXISTS impact_goals;
+ALTER TABLE campaigns DROP COLUMN IF EXISTS reason;
+ALTER TABLE campaigns DROP COLUMN IF EXISTS category;

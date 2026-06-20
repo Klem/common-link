@@ -66,6 +66,22 @@ class Campaign(
     @Column(name = "contract_address", length = 255)
     var contractAddress: String? = null,
 
+    /** Campaign category (e.g. Education, Health). */
+    @Column(name = "category", length = 50)
+    var category: String? = null,
+
+    /** Why the association is launching this campaign; shown on the public page. */
+    @Column(name = "reason", columnDefinition = "TEXT")
+    var reason: String? = null,
+
+    /** Concrete impact goals: beneficiaries, measurable outcomes, expected changes. */
+    @Column(name = "impact_goals", columnDefinition = "TEXT")
+    var impactGoals: String? = null,
+
+    /** URL or stored path of the campaign cover image. */
+    @Column(name = "cover_image", columnDefinition = "TEXT")
+    var coverImage: String? = null,
+
     /** keccak256 hex (0x + 64 chars) of the canonical budget JSON. Set at publish and updated on budget edits. */
     @Column(name = "budget_hash", length = 66)
     var budgetHash: String? = null,

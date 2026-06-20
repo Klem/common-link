@@ -15,14 +15,22 @@ import java.time.LocalDate
  * The backend enforces valid status transitions (DRAFT → LIVE → ENDED only —
  * no going backwards; ENDED is terminal).
  *
+ * Date rule: when both [startDate] and [endDate] are provided, [endDate] must be
+ * at least 7 days after [startDate]. Validation is also mirrored in the service
+ * when only one date changes and the other is already persisted.
+ *
  * @param name New display name (max 255 characters). Null = no change.
  * @param emoji New visual icon emoji (max 10 characters). Null = no change.
  * @param description New description text. Null = no change.
  * @param goal New fundraising goal in euros (>= 0). Null = no change.
  * @param status New lifecycle status. Must follow valid transition rules. Null = no change.
  * @param startDate New start date. Null = no change.
- * @param endDate New end date. Null = no change.
+ * @param endDate New end date (min. 7 days after startDate). Null = no change.
  * @param contractAddress On-chain contract address after deployment. Null = no change.
+ * @param category Campaign category (max 50 characters). Null = no change.
+ * @param reason Why the association is launching this campaign. Null = no change.
+ * @param impactGoals Concrete expected outcomes. Null = no change.
+ * @param coverImage URL or path of the cover image. Null = no change.
  */
 data class UpdateCampaignRequest(
     @field:Size(max = 255)
@@ -42,5 +50,14 @@ data class UpdateCampaignRequest(
 
     val endDate: LocalDate? = null,
 
-    val contractAddress: String? = null
+    val contractAddress: String? = null,
+
+    @field:Size(max = 50)
+    val category: String? = null,
+
+    val reason: String? = null,
+
+    val impactGoals: String? = null,
+
+    val coverImage: String? = null
 )

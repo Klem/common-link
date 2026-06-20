@@ -424,10 +424,6 @@
           "progress": "Progress"
         },
         "info": {
-          "contract": {
-            "label": "Smart Contract",
-            "placeholder": "Contract address"
-          },
           "description": {
             "label": "Campaign description",
             "placeholder": "Describe the objective, context and expected impact…"
@@ -447,9 +443,6 @@
           "saved": "Campaign updated.",
           "startDate": {
             "label": "Start date"
-          },
-          "status": {
-            "label": "Status"
           },
           "title": "General information"
         },
@@ -754,5 +747,35 @@
     },
     "title": "Dashboard",
     "welcome": "Welcome"
+  },
+  "editor": {
+    "info": {
+      "category": {
+        "label": "Category"
+      },
+      "coverImage": {
+        "hint": "JPG, PNG — 5 MB max · 1200×600 recommended",
+        "label": "Cover image",
+        "uploadPrompt": "Drag an image or browse"
+      },
+      "dateError": "End date must be at least 7 days after start date",
+      "endDate": {
+        "hint": "(min. 7 days after start)"
+      },
+      "goal": {
+        "tip": "You can enter a free amount, or link it automatically to the total expenses in your projected budget."
+      },
+      "goalLink": "🔗 Link to total expenses",
+      "impactGoals": {
+        "label": "Impact goals",
+        "placeholder": "E.g.: allow 450 students to study in good conditions, reduce absenteeism by 30%…",
+        "tip": "Describe concretely what you hope to achieve: number of beneficiaries, measurable outcomes, expected changes."
+      },
+      "reason": {
+        "label": "Campaign reason",
+        "placeholder": "Why are you launching this campaign now?",
+        "tip": "Visible on the public page. Reassures donors of your commitment."
+      }
+    }
   }
 }

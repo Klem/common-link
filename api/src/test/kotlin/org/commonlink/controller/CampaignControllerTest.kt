@@ -99,6 +99,10 @@ class CampaignControllerTest {
         endDate = null,
         contractAddress = null,
         budgetHash = null,
+        category = null,
+        reason = null,
+        impactGoals = null,
+        coverImage = null,
         budgetSections = listOf(sampleSection),
         milestones = listOf(sampleMilestone),
         createdAt = Instant.now(),
@@ -227,6 +231,27 @@ class CampaignControllerTest {
                 .content("""{"name":"X"}""")
         )
             .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `updateCampaign - 200 with info fields category, reason, impactGoals`() {
+        val updated = sampleCampaign.copy(
+            category = "Education",
+            reason = "Permettre à 450 élèves d'étudier dans de bonnes conditions.",
+            impactGoals = "Rénovation de 3 écoles, réduction de l'absentéisme de 30%."
+        )
+        every { campaignService.updateCampaign(userId, campaignId, any()) } returns updated
+
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"category":"Education","reason":"Permettre à 450 élèves d'étudier dans de bonnes conditions.","impactGoals":"Rénovation de 3 écoles, réduction de l'absentéisme de 30%."}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.category").value("Education"))
+            .andExpect(jsonPath("$.reason").value("Permettre à 450 élèves d'étudier dans de bonnes conditions."))
+            .andExpect(jsonPath("$.impactGoals").value("Rénovation de 3 écoles, réduction de l'absentéisme de 30%."))
     }
 
     // ── DELETE /api/association/campaigns/{id} ────────────────────────────────

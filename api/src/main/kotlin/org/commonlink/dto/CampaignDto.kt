@@ -22,6 +22,10 @@ import java.util.UUID
  * @param startDate Optional start date for donation acceptance.
  * @param endDate Optional end date for donation acceptance.
  * @param contractAddress On-chain contract address, null before deployment.
+ * @param category Campaign category (e.g. Education, Health).
+ * @param reason Why the association is launching this campaign.
+ * @param impactGoals Concrete expected outcomes.
+ * @param coverImage URL or path of the cover image.
  * @param budgetSections Hierarchical budget (sections → items).
  * @param milestones Ordered list of campaign milestones.
  * @param createdAt Timestamp of record creation.
@@ -39,6 +43,10 @@ data class CampaignDto(
     val endDate: LocalDate?,
     val contractAddress: String?,
     val budgetHash: String?,
+    val category: String?,
+    val reason: String?,
+    val impactGoals: String?,
+    val coverImage: String?,
     val budgetSections: List<BudgetSectionDto>,
     val milestones: List<MilestoneDto>,
     val createdAt: Instant,
@@ -60,6 +68,10 @@ fun Campaign.toDto() = CampaignDto(
     endDate = endDate,
     contractAddress = contractAddress,
     budgetHash = budgetHash,
+    category = category,
+    reason = reason,
+    impactGoals = impactGoals,
+    coverImage = coverImage,
     budgetSections = budgetSections.sortedBy { it.sortOrder }.map { it.toDto() },
     milestones = milestones.sortedBy { it.sortOrder }.map { it.toDto() },
     createdAt = createdAt,

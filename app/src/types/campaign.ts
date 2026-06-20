@@ -115,6 +115,14 @@ export interface CampaignDto {
   endDate: string | null;
   /** On-chain contract address once deployed, or null. */
   contractAddress: string | null;
+  /** Campaign category, or null. */
+  category: string | null;
+  /** Why the association is launching this campaign, or null. */
+  reason: string | null;
+  /** Concrete expected outcomes, or null. */
+  impactGoals: string | null;
+  /** URL or path of the cover image, or null. */
+  coverImage: string | null;
   /** Budget sections (charges and produits). */
   budgetSections: BudgetSectionDto[];
   /** Campaign milestones. */
@@ -191,6 +199,14 @@ export interface UpdateCampaignRequest {
   endDate?: string;
   /** On-chain contract address. */
   contractAddress?: string;
+  /** Campaign category (max 50 chars). */
+  category?: string;
+  /** Why the association is launching this campaign. */
+  reason?: string;
+  /** Concrete expected outcomes. */
+  impactGoals?: string;
+  /** URL or path of the cover image. */
+  coverImage?: string;
 }
 
 /**

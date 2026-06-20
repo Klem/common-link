@@ -1,57 +1,60 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { CampaignStatus } from '@/types/campaign';
+import { BudgetSide } from '@/types/campaign';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 interface CampaignInfoTabProps {
-  /** Current campaign data to pre-fill the form. */
   campaign: CampaignDto;
-  /** Called with the changed fields when the user clicks "Enregistrer". */
   onSave: (data: UpdateCampaignRequest) => void;
-  /** True while the save request is in-flight. */
   isSaving: boolean;
 }
 
-/** Input field shared styling classes. */
-const INPUT_CLS =
-  'w-full bg-[var(--color-bg-3)] border-[1.5px] border-[var(--color-border)] ' +
-  'text-[var(--color-text)] px-[14px] py-[11px] rounded-[9px] text-[14px] outline-none ' +
-  'placeholder:text-[var(--color-muted)] ' +
-  'focus:border-[var(--color-green)]/45 focus:shadow-[0_0_0_3px_rgba(0,184,154,.07)] transition-all';
+function computeTotalCharges(campaign: CampaignDto): number {
+  return campaign.budgetSections
+    .filter((s) => s.side === BudgetSide.EXPENSE)
+    .flatMap((s) => s.items)
+    .reduce((sum, item) => sum + item.amount, 0);
+}
 
-/** Label shared styling classes. */
-const LABEL_CLS =
-  'block text-[11.5px] font-semibold text-[var(--color-text-2)] uppercase tracking-wider mb-[6px]';
-
-/**
- * Info tab of the campaign editor.
- *
- * Renders a form pre-filled from campaign data. The save button becomes enabled
- * only when changes have been made, and is disabled while a save is in-flight.
- */
 export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabProps) {
   const t = useTranslations('dashboard.campaigns');
 
   const [name, setName] = useState(campaign.name);
   const [goal, setGoal] = useState(String(campaign.goal));
+  const [goalLinked, setGoalLinked] = useState(false);
   const [startDate, setStartDate] = useState(campaign.startDate ?? '');
   const [endDate, setEndDate] = useState(campaign.endDate ?? '');
   const [description, setDescription] = useState(campaign.description ?? '');
-  const [status, setStatus] = useState<CampaignStatus>(campaign.status);
-  const [contractAddress, setContractAddress] = useState(campaign.contractAddress ?? '');
+  const [category, setCategory] = useState(campaign.category ?? '');
+  const [reason, setReason] = useState(campaign.reason ?? '');
+  const [impactGoals, setImpactGoals] = useState(campaign.impactGoals ?? '');
 
-  /* Sync when parent campaign data changes (e.g. after a save from the hero) */
   useEffect(() => {
     setName(campaign.name);
     setGoal(String(campaign.goal));
+    setGoalLinked(false);
     setStartDate(campaign.startDate ?? '');
     setEndDate(campaign.endDate ?? '');
     setDescription(campaign.description ?? '');
-    setStatus(campaign.status);
-    setContractAddress(campaign.contractAddress ?? '');
+    setCategory(campaign.category ?? '');
+    setReason(campaign.reason ?? '');
+    setImpactGoals(campaign.impactGoals ?? '');
   }, [campaign]);
+
+  const totalCharges = useMemo(() => computeTotalCharges(campaign), [campaign]);
+
+  const handleGoalLink = (checked: boolean) => {
+    setGoalLinked(checked);
+    if (checked) setGoal(String(totalCharges));
+  };
+
+  const dateError = useMemo(() => {
+    if (!startDate || !endDate) return '';
+    const diff = (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000;
+    return diff < 7 ? t('editor.info.dateError') : '';
+  }, [startDate, endDate, t]);
 
   const isDirty =
     name !== campaign.name ||
@@ -59,124 +62,176 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
     startDate !== (campaign.startDate ?? '') ||
     endDate !== (campaign.endDate ?? '') ||
     description !== (campaign.description ?? '') ||
-    status !== campaign.status ||
-    contractAddress !== (campaign.contractAddress ?? '');
+    category !== (campaign.category ?? '') ||
+    reason !== (campaign.reason ?? '') ||
+    impactGoals !== (campaign.impactGoals ?? '');
 
   const handleSave = () => {
+    if (dateError) return;
     const data: UpdateCampaignRequest = {};
     if (name !== campaign.name) data.name = name;
     if (goal !== String(campaign.goal)) data.goal = Number(goal);
     if (startDate !== (campaign.startDate ?? '')) data.startDate = startDate || undefined;
     if (endDate !== (campaign.endDate ?? '')) data.endDate = endDate || undefined;
     if (description !== (campaign.description ?? '')) data.description = description;
-    if (status !== campaign.status) data.status = status;
-    if (contractAddress !== (campaign.contractAddress ?? '')) data.contractAddress = contractAddress || undefined;
+    if (category !== (campaign.category ?? '')) data.category = category || undefined;
+    if (reason !== (campaign.reason ?? '')) data.reason = reason || undefined;
+    if (impactGoals !== (campaign.impactGoals ?? '')) data.impactGoals = impactGoals || undefined;
     onSave(data);
   };
 
   return (
-    <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg-2)] p-[24px_28px]">
-      {/* Card title */}
-      <div className="flex items-center gap-[8px] mb-[16px]">
-        <span className="section-marker" />
-        <span className="font-display text-[13px] font-bold text-[var(--color-text-2)] uppercase tracking-wider">
-          {t('editor.info.title')}
-        </span>
-      </div>
+    <div className="cm-card">
+      <div className="cm-card-title">{t('editor.info.title')}</div>
 
-      {/* Row 1: name + goal */}
-      <div className="grid grid-cols-2 gap-[14px] mb-[14px]">
+      {/* Row 1: Nom + Objectif */}
+      <div className="row2" style={{ marginBottom: 14 }}>
         <div>
-          <label className={LABEL_CLS}>{t('editor.info.name.label')}</label>
+          <label className="cm-label">{t('editor.info.name.label')}</label>
           <input
+            className="cm-fi"
             type="text"
-            className={INPUT_CLS}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t('editor.info.name.placeholder')}
           />
         </div>
         <div>
-          <label className={LABEL_CLS}>{t('editor.info.goal.label')}</label>
+          <label className="cm-label">
+            {t('editor.info.goal.label')}{' '}
+            <span className="tip" data-tip={t('editor.info.goal.tip')}>?</span>
+          </label>
           <input
+            className="cm-fi"
             type="number"
-            className={INPUT_CLS}
             value={goal}
-            onChange={(e) => setGoal(e.target.value)}
+            onChange={(e) => { setGoalLinked(false); setGoal(e.target.value); }}
             placeholder={t('editor.info.goal.placeholder')}
             min={0}
           />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, gap: 8, flexWrap: 'wrap' }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '11.5px', color: 'var(--slate-lavender)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={goalLinked}
+                onChange={(e) => handleGoalLink(e.target.checked)}
+                style={{ accentColor: 'var(--bright-teal)' }}
+              />
+              <span>{t('editor.info.goalLink')}</span>
+            </label>
+            {goalLinked && (
+              <span style={{ fontSize: 11, color: 'var(--slate-lavender)' }}>
+                = {totalCharges.toLocaleString()} €
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Row 2: start date + end date */}
-      <div className="grid grid-cols-2 gap-[14px] mb-[14px]">
+      {/* Row 2: Dates */}
+      <div className="row2" style={{ marginBottom: 14 }}>
         <div>
-          <label className={LABEL_CLS}>{t('editor.info.startDate.label')}</label>
+          <label className="cm-label">{t('editor.info.startDate.label')}</label>
           <input
+            className="cm-fi"
             type="date"
-            className={INPUT_CLS}
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
           />
         </div>
         <div>
-          <label className={LABEL_CLS}>{t('editor.info.endDate.label')}</label>
+          <label className="cm-label">
+            {t('editor.info.endDate.label')}{' '}
+            <span style={{ color: 'var(--slate-lavender)', fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 10 }}>
+              {t('editor.info.endDate.hint')}
+            </span>
+          </label>
           <input
+            className="cm-fi"
             type="date"
-            className={INPUT_CLS}
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
+          {dateError && (
+            <div id="info-date-error">
+              <span>⚠</span>
+              <span>{dateError}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Row 3: description */}
-      <div className="mb-[14px]">
-        <label className={LABEL_CLS}>{t('editor.info.description.label')}</label>
+      {/* Catégorie */}
+      <div style={{ marginBottom: 14 }}>
+        <label className="cm-label">{t('editor.info.category.label')}</label>
+        <select className="cm-fi" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="">—</option>
+          <option value="Education">🎓 Éducation</option>
+          <option value="Alimentation">🍎 Alimentation</option>
+          <option value="Environnement">🌱 Environnement</option>
+          <option value="Santé">🏥 Santé</option>
+        </select>
+      </div>
+
+      {/* Description */}
+      <div style={{ marginBottom: 14 }}>
+        <label className="cm-label">{t('editor.info.description.label')}</label>
         <textarea
-          className={`${INPUT_CLS} resize-none min-h-[90px]`}
+          className="cm-fi"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder={t('editor.info.description.placeholder')}
+          style={{ minHeight: 90 }}
         />
       </div>
 
-      {/* Row 4: status + contract */}
-      <div className="grid grid-cols-2 gap-[14px]">
-        <div>
-          <label className={LABEL_CLS}>{t('editor.info.status.label')}</label>
-          <select
-            className={INPUT_CLS}
-            value={status}
-            onChange={(e) => setStatus(e.target.value as CampaignStatus)}
-          >
-            <option value={CampaignStatus.DRAFT}>📋 {t('status.draft')}</option>
-            <option value={CampaignStatus.LIVE}>🟢 {t('status.live')}</option>
-            <option value={CampaignStatus.ENDED}>🔴 {t('status.ended')}</option>
-          </select>
-        </div>
-        <div>
-          <label className={LABEL_CLS}>{t('editor.info.contract.label')}</label>
-          <input
-            type="text"
-            className={`${INPUT_CLS} font-mono`}
-            value={contractAddress}
-            onChange={(e) => setContractAddress(e.target.value)}
-            placeholder={t('editor.info.contract.placeholder')}
-          />
+      {/* Raison */}
+      <div style={{ marginBottom: 14 }}>
+        <label className="cm-label">
+          {t('editor.info.reason.label')}{' '}
+          <span className="tip" data-tip={t('editor.info.reason.tip')}>?</span>
+        </label>
+        <textarea
+          className="cm-fi"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder={t('editor.info.reason.placeholder')}
+          style={{ minHeight: 70 }}
+        />
+      </div>
+
+      {/* Objectifs d'impact */}
+      <div style={{ marginTop: 14 }}>
+        <label className="cm-label">
+          {t('editor.info.impactGoals.label')}{' '}
+          <span className="tip" data-tip={t('editor.info.impactGoals.tip')}>?</span>
+        </label>
+        <textarea
+          className="cm-fi"
+          value={impactGoals}
+          onChange={(e) => setImpactGoals(e.target.value)}
+          placeholder={t('editor.info.impactGoals.placeholder')}
+          style={{ minHeight: 90 }}
+        />
+      </div>
+
+      {/* Image de couverture */}
+      <div style={{ marginTop: 14 }}>
+        <label className="cm-label">{t('editor.info.coverImage.label')}</label>
+        <div className="upload">
+          <div className="upload-icon">🖼️</div>
+          <p>{t('editor.info.coverImage.uploadPrompt')}</p>
+          <small>{t('editor.info.coverImage.hint')}</small>
         </div>
       </div>
 
-      {/* Save button */}
-      <div className="flex justify-end mt-[20px]">
+      {/* Enregistrer */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
         <button
           type="button"
           onClick={handleSave}
-          disabled={!isDirty || isSaving}
-          className="px-[20px] py-[10px] rounded-[9px] text-[13px] font-semibold transition-all
-            bg-[var(--color-green)] text-[var(--color-bg)] cursor-pointer
-            hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={!isDirty || isSaving || !!dateError}
+          className="cm-btn cm-btn-primary cm-btn-sm"
         >
           {isSaving ? '⏳' : t('editor.info.save')}
         </button>

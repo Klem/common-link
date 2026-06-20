@@ -176,6 +176,16 @@ class CampaignService(
         if (req.startDate != null) campaign.startDate = req.startDate
         if (req.endDate != null) campaign.endDate = req.endDate
         if (req.contractAddress != null) campaign.contractAddress = req.contractAddress
+        if (req.category != null) campaign.category = req.category
+        if (req.reason != null) campaign.reason = req.reason
+        if (req.impactGoals != null) campaign.impactGoals = req.impactGoals
+        if (req.coverImage != null) campaign.coverImage = req.coverImage
+
+        val effectiveStart = campaign.startDate
+        val effectiveEnd = campaign.endDate
+        if (effectiveStart != null && effectiveEnd != null && effectiveEnd < effectiveStart.plusDays(7)) {
+            throw UnprocessableEntityException("End date must be at least 7 days after start date")
+        }
 
         val previousStatus = campaign.status
         if (req.status != null) {
