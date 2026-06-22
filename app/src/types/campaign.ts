@@ -77,8 +77,10 @@ export interface MilestoneDto {
   emoji: string;
   /** Short title of the milestone. */
   title: string;
-  /** Optional longer description. */
+  /** Impact description — what this milestone enables for donors. */
   description: string | null;
+  /** Editorial transparency commitment (how proof will be shared). */
+  transparencyCommitment: string | null;
   /** Amount in euros at which this milestone is triggered. */
   targetAmount: number;
   /** Current status of this milestone. */
@@ -269,8 +271,10 @@ export interface UpdateMilestoneRequest {
   title?: string;
   /** Emoji for the milestone. */
   emoji?: string;
-  /** Longer description. */
+  /** Impact description — what this milestone enables for donors. */
   description?: string;
+  /** Editorial transparency commitment (how proof will be shared). */
+  transparencyCommitment?: string;
   /** Amount in euros at which this milestone is triggered. */
   targetAmount?: number;
   /** Milestone status. */

@@ -12,7 +12,8 @@ import java.util.UUID
  * @param id UUID of the milestone.
  * @param emoji Visual icon emoji for the milestone.
  * @param title Short title describing what will be achieved.
- * @param description Optional detailed description of the milestone deliverable.
+ * @param description Impact description (what this milestone enables for donors).
+ * @param transparencyCommitment Editorial commitment to donors on how proof will be shared (optional).
  * @param targetAmount Amount of donations required to reach this milestone.
  * @param status Current progress status (LOCKED, CURRENT, or REACHED).
  * @param sortOrder Display position in the milestone list; lower value = shown first.
@@ -24,6 +25,7 @@ data class MilestoneDto(
     val emoji: String,
     val title: String,
     val description: String?,
+    val transparencyCommitment: String?,
     val targetAmount: BigDecimal,
     val status: MilestoneStatus,
     val sortOrder: Int,
@@ -39,6 +41,7 @@ fun CampaignMilestone.toDto() = MilestoneDto(
     emoji = emoji,
     title = title,
     description = description,
+    transparencyCommitment = transparencyCommitment,
     targetAmount = targetAmount,
     status = status,
     sortOrder = sortOrder,

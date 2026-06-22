@@ -308,6 +308,7 @@ class CampaignService(
             emoji = req.emoji ?: "🎯",
             title = req.title,
             description = req.description,
+            transparencyCommitment = req.transparencyCommitment,
             targetAmount = req.targetAmount,
             sortOrder = req.sortOrder
         )
@@ -342,6 +343,7 @@ class CampaignService(
         if (req.title != null) milestone.title = req.title
         if (req.emoji != null) milestone.emoji = req.emoji
         if (req.description != null) milestone.description = req.description
+        if (req.transparencyCommitment != null) milestone.transparencyCommitment = req.transparencyCommitment
         if (req.targetAmount != null) milestone.targetAmount = req.targetAmount
         if (req.status != null) milestone.status = req.status
         if (req.sortOrder != null) milestone.sortOrder = req.sortOrder

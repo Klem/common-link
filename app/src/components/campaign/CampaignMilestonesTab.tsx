@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMilestones } from '@/hooks/campaign/useMilestones';
 import { MilestoneStatus } from '@/types/campaign';
-import type { CampaignDto, MilestoneDto, MilestoneStatus as MilestoneStatusType } from '@/types/campaign';
+import type { CampaignDto, MilestoneDto, MilestoneStatus as MilestoneStatusType, UpdateMilestoneRequest } from '@/types/campaign';
 
 const EMOJIS = [
   '🌱','🌿','🌳','🏠','🏫','🏥','🌊','💧','🍎','📚','🎒','🩺','🤝','🌟','⭐','💡',
@@ -12,27 +12,14 @@ const EMOJIS = [
 ];
 
 interface CampaignMilestonesTabProps {
-  /** Campaign with its milestones. */
   campaign: CampaignDto;
-  /** Called after any milestone mutation so the parent can refresh campaign data. */
   onMilestonesChanged: () => void;
 }
 
-/**
- * Milestones tab of the campaign editor.
- *
- * Milestones are sorted by sortOrder. Each card knows its min/max amount bounds:
- * - min = previous milestone's targetAmount (or 0 for the first)
- * - max = campaign.goal
- *
- * Edits are debounced (800ms) and only sent when the value is within bounds.
- */
 export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: CampaignMilestonesTabProps) {
   const t = useTranslations('dashboard.campaigns');
-  const { isSaving, addNewMilestone, updateExistingMilestone, removeExistingMilestone } =
-    useMilestones();
+  const { isSaving, addNewMilestone, updateExistingMilestone, removeExistingMilestone } = useMilestones();
 
-  /* Milestones sorted by sortOrder for consistent bound computation */
   const sorted = [...campaign.milestones].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const handleAdd = async () => {
@@ -43,7 +30,6 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
   };
 
   const handleDelete = async (milestoneId: string) => {
-    if (!window.confirm(t('editor.milestones.deleteConfirm'))) return;
     await removeExistingMilestone(campaign.id, milestoneId);
     onMilestonesChanged();
   };
@@ -51,47 +37,65 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-[16px]">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', gap: '12px' }}>
         <div>
-          <div className="text-[15px] font-bold text-[var(--color-text)] font-display">
+          <div style={{ fontFamily: "'Nunito Sans', sans-serif", fontSize: '15px', fontWeight: 900, color: 'var(--ink-navy)' }}>
             {t('editor.milestones.title')}
           </div>
-          <div className="text-[12px] text-[var(--color-text-2)] mt-[2px]">
+          <div style={{ fontSize: '12px', color: 'var(--slate-lavender)', marginTop: '3px' }}>
             {t('editor.milestones.subtitle')}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={isSaving}
-          className="px-[14px] py-[8px] rounded-[8px] text-[12px] font-semibold bg-[var(--color-green)] text-[var(--color-bg)] cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          + {t('editor.milestones.add')}
-        </button>
+        {sorted.length > 0 && (
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={isSaving}
+            className="cm-btn cm-btn-primary cm-btn-sm"
+          >
+            + {t('editor.milestones.add')}
+          </button>
+        )}
       </div>
 
-      {/* Milestone cards — each knows its allowed range */}
-      <div className="timeline">
-        {sorted.map((milestone, idx) => {
-          const minAmount = idx > 0 ? sorted[idx - 1].targetAmount : 0;
-          const maxAmount = campaign.goal;
-          return (
-            <div
-              key={milestone.id}
-              className={`timeline-item timeline-${milestone.status.toLowerCase()}`}
-            >
-              <div className={`timeline-dot ${dotClass(milestone.status)}`} />
-              <MilestoneCard
-                milestone={milestone}
-                campaignRaised={campaign.raised}
-                campaignId={campaign.id}
-                minAmount={minAmount}
-                maxAmount={maxAmount}
-                onUpdate={updateExistingMilestone}
-                onDelete={handleDelete}
-                t={t}
-              />
+      {/* Empty state */}
+      {sorted.length === 0 && (
+        <div className="cm-card">
+          <div className="empty-state">
+            <div className="empty-state-icon">🎯</div>
+            <div className="empty-state-title">{t('editor.milestones.emptyTitle')}</div>
+            <div className="empty-state-desc">{t('editor.milestones.emptyDesc')}</div>
+            <div className="ms-formula" style={{ maxWidth: '440px', textAlign: 'left' }}>
+              💡 {t('editor.milestones.formulaFrom')} <strong>5 000 €</strong>,{' '}
+              {t('editor.milestones.formulaCanDo')} <em>{t('editor.milestones.formulaImpactPlaceholder')}</em>
             </div>
+            <button type="button" onClick={handleAdd} disabled={isSaving} className="btn btn-primary">
+              {t('editor.milestones.emptyCreate')}
+            </button>
+            <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--slate-lavender)' }}>
+              {t('editor.milestones.emptyHint')}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Milestone cards */}
+      <div id="ms-list">
+        {sorted.map((milestone, idx) => {
+          const prevTarget = idx > 0 ? sorted[idx - 1].targetAmount : 0;
+          return (
+            <MilestoneCard
+              key={milestone.id}
+              milestone={milestone}
+              idx={idx}
+              campaignRaised={campaign.raised}
+              campaignGoal={campaign.goal}
+              campaignId={campaign.id}
+              prevTarget={prevTarget}
+              onUpdate={updateExistingMilestone}
+              onDelete={handleDelete}
+              t={t}
+            />
           );
         })}
       </div>
@@ -103,260 +107,238 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
 
 interface MilestoneCardProps {
   milestone: MilestoneDto;
+  idx: number;
   campaignRaised: number;
+  campaignGoal: number;
   campaignId: string;
-  /** Minimum allowed targetAmount (= previous milestone's targetAmount, or 0). */
-  minAmount: number;
-  /** Maximum allowed targetAmount (= campaign.goal). */
-  maxAmount: number;
-  onUpdate: (campaignId: string, milestoneId: string, data: { title?: string; emoji?: string; description?: string; targetAmount?: number }) => Promise<void>;
+  prevTarget: number;
+  onUpdate: (campaignId: string, milestoneId: string, data: UpdateMilestoneRequest) => Promise<void>;
   onDelete: (milestoneId: string) => Promise<void>;
   t: ReturnType<typeof useTranslations<'dashboard.campaigns'>>;
 }
 
-/** Returns border and background classes based on milestone status. */
-function statusClasses(status: MilestoneStatusType): string {
-  switch (status) {
-    case MilestoneStatus.REACHED:
-      return 'border-[var(--color-green)]/30 bg-gradient-to-br from-[var(--color-green)]/4 to-transparent';
-    case MilestoneStatus.CURRENT:
-      return 'border-[var(--color-yellow)]/30';
-    default:
-      return 'border-[var(--color-border)]';
-  }
-}
-
-/** Maps milestone status to timeline-dot modifier class. */
-function dotClass(status: MilestoneStatusType): string {
-  switch (status) {
-    case MilestoneStatus.REACHED: return 'done';
-    case MilestoneStatus.CURRENT: return 'current';
-    default: return '';
-  }
-}
-
-/**
- * Individual milestone card with inline editing and an emoji picker.
- *
- * The targetAmount input is validated against [minAmount, maxAmount].
- * An error hint is shown when the value is out of bounds, and the API
- * call is suppressed until the value is valid.
- */
 function MilestoneCard({
-  milestone,
-  campaignRaised,
-  campaignId,
-  minAmount,
-  maxAmount,
-  onUpdate,
-  onDelete,
-  t,
+  milestone, idx, campaignRaised, campaignGoal, campaignId, prevTarget, onUpdate, onDelete, t,
 }: MilestoneCardProps) {
   const [title, setTitle] = useState(milestone.title);
-  const [description, setDescription] = useState(milestone.description ?? '');
+  const [impact, setImpact] = useState(milestone.description ?? '');
+  const [proof, setProof] = useState(milestone.transparencyCommitment ?? '');
   const [targetAmount, setTargetAmount] = useState(String(milestone.targetAmount));
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* Sync local state if parent milestone data changes (after refresh) */
   useEffect(() => {
     setTitle(milestone.title);
-    setDescription(milestone.description ?? '');
+    setImpact(milestone.description ?? '');
+    setProof(milestone.transparencyCommitment ?? '');
     setTargetAmount(String(milestone.targetAmount));
   }, [milestone]);
 
-  /* Close emoji picker on outside click */
   useEffect(() => {
     function handle(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
     }
     if (pickerOpen) document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
   }, [pickerOpen]);
 
-  /** Schedules a debounced API update. */
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) setPendingDelete(false);
+    }
+    if (pendingDelete) document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [pendingDelete]);
+
   const scheduleUpdate = useCallback(
-    (patch: { title?: string; description?: string; targetAmount?: number }) => {
+    (patch: UpdateMilestoneRequest) => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => {
-        onUpdate(campaignId, milestone.id, patch);
-      }, 800);
+      debounceTimer.current = setTimeout(() => { onUpdate(campaignId, milestone.id, patch); }, 800);
     },
     [campaignId, milestone.id, onUpdate],
   );
 
   const handleTitleChange = (v: string) => { setTitle(v); scheduleUpdate({ title: v }); };
-  const handleDescChange = (v: string) => { setDescription(v); scheduleUpdate({ description: v }); };
-
+  const handleImpactChange = (v: string) => { setImpact(v); scheduleUpdate({ description: v }); };
+  const handleProofChange = (v: string) => { setProof(v); scheduleUpdate({ transparencyCommitment: v }); };
   const handleTargetChange = (v: string) => {
     setTargetAmount(v);
     const num = parseFloat(v);
-    if (!isNaN(num) && num >= minAmount && num <= maxAmount) {
-      scheduleUpdate({ targetAmount: num });
-    }
+    if (!isNaN(num) && num > 0) scheduleUpdate({ targetAmount: num });
   };
-
   const handleEmojiSelect = (emoji: string) => {
     setPickerOpen(false);
     onUpdate(campaignId, milestone.id, { emoji });
   };
+  const handleDeleteClick = () => {
+    if (pendingDelete) { onDelete(milestone.id); }
+    else { setPendingDelete(true); }
+  };
 
-  /* Amount validation */
   const numericAmount = parseFloat(targetAmount);
-  const amountError: string | null = (() => {
-    if (isNaN(numericAmount)) return null;
-    if (numericAmount > maxAmount)
-      return `Max : ${maxAmount.toLocaleString('fr-FR')} € (objectif de la campagne)`;
-    if (numericAmount < minAmount)
-      return `Min : ${minAmount.toLocaleString('fr-FR')} € (palier précédent)`;
-    return null;
-  })();
-
-  const pct =
-    milestone.targetAmount > 0
-      ? Math.min(Math.round((campaignRaised / milestone.targetAmount) * 100), 100)
-      : 0;
-
+  const isUnreachable = !isNaN(numericAmount) && numericAmount > campaignGoal;
+  const isBelowPrev = !isNaN(numericAmount) && idx > 0 && numericAmount <= prevTarget;
+  const pct = milestone.targetAmount > 0
+    ? Math.min(Math.round((campaignRaised / milestone.targetAmount) * 100), 100) : 0;
   const displayPct = milestone.status === MilestoneStatus.REACHED ? 100 : pct;
 
+  const barColor = milestone.status === MilestoneStatus.REACHED
+    ? 'var(--bright-teal)'
+    : milestone.status === MilestoneStatus.CURRENT ? '#f5a623' : 'var(--mist-lavender)';
+
+  const numCls = milestone.status === MilestoneStatus.REACHED
+    ? 'reached' : milestone.status === MilestoneStatus.CURRENT ? 'current' : '';
+
+  const cardCls = ['ms-guided',
+    milestone.status === MilestoneStatus.REACHED ? 'reached' : '',
+    milestone.status === MilestoneStatus.CURRENT ? 'current' : '',
+    isUnreachable ? 'unreachable' : '',
+  ].filter(Boolean).join(' ');
+
+  const fmtEur = (n: number) =>
+    n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+
   return (
-    <div
-      className={`relative rounded-[9px] border p-[16px] ${statusClasses(milestone.status)}`}
-    >
-      {/* Delete button */}
+    <div className={cardCls} ref={cardRef}>
+      {/* 2-step delete */}
       <button
         type="button"
-        onClick={() => onDelete(milestone.id)}
-        className="absolute top-[10px] right-[10px] w-[22px] h-[22px] flex items-center justify-center rounded-[4px] text-[var(--color-muted)] hover:text-[var(--color-red)] hover:bg-[var(--color-red)]/8 transition-colors text-[11px]"
+        className="ms-remove"
+        onClick={handleDeleteClick}
+        style={pendingDelete ? { color: 'var(--warm-coral)', fontWeight: 700, fontSize: '10px', width: 'auto', right: '8px' } : undefined}
       >
-        ✕
+        {pendingDelete ? t('editor.milestones.deleteConfirm2') : '✕'}
       </button>
 
-      {/* Top row: emoji + title + target */}
-      <div className="flex items-start gap-[10px] pr-[28px]">
-        {/* Emoji picker */}
-        <div className="relative" ref={pickerRef}>
-          <button
-            type="button"
-            onClick={() => setPickerOpen((o) => !o)}
-            className="text-[22px] leading-none cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            {milestone.emoji || '🎯'}
-          </button>
-          {pickerOpen && (
-            <div className="absolute top-[calc(100%+6px)] left-0 z-50 flex flex-wrap gap-[4px] w-[220px] rounded-xl border border-[var(--color-border)] p-[8px] shadow-lg bg-[var(--color-bg-2)]">
-              {EMOJIS.map((em) => (
-                <button
-                  key={em}
-                  type="button"
-                  onClick={() => handleEmojiSelect(em)}
-                  className="p-[4px] rounded-[6px] text-[15px] hover:bg-[var(--color-bg-3)] cursor-pointer transition-colors"
-                >
-                  {em}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Header: emoji + step number + title */}
+      <div className="ms-guided-header">
+        <div className="ms-emoji" ref={pickerRef} onClick={() => setPickerOpen((o) => !o)}>
+          {milestone.emoji || '🎯'}
+          <div className={`ms-emoji-pick${pickerOpen ? ' open' : ''}`}>
+            {EMOJIS.map((em) => (
+              <button key={em} type="button" className="ms-emoji-opt"
+                onClick={(e) => { e.stopPropagation(); handleEmojiSelect(em); }}>
+                {em}
+              </button>
+            ))}
+          </div>
         </div>
+        <div className={`ms-guided-num${numCls ? ` ${numCls}` : ''}`}>{idx + 1}</div>
+        <div className="ms-guided-title-wrap" style={{ paddingRight: '28px' }}>
+          <input
+            className="ms-guided-title-input"
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder={t('editor.milestones.namePlaceholder')}
+          />
+        </div>
+      </div>
 
-        {/* Title input */}
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder={t('editor.milestones.namePlaceholder')}
-          className="flex-1 bg-transparent border-none outline-none text-[15px] font-bold text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-b border-[var(--color-border)] font-display"
-        />
+      {/* Formula preview */}
+      <div className="ms-formula">
+        {t('editor.milestones.formulaFrom')}{' '}
+        <strong>{numericAmount > 0 ? fmtEur(numericAmount) : t('editor.milestones.formulaAmountPlaceholder')}</strong>,{' '}
+        {t('editor.milestones.formulaCanDo')}{' '}
+        <em>{impact || t('editor.milestones.formulaImpactPlaceholder')}</em>
+      </div>
 
-        {/* Target amount + validation */}
-        <div className="flex flex-col items-end gap-[2px]">
-          <div className="flex items-center gap-[4px]">
-            <span className="text-[12px] text-[var(--color-text-2)]">€</span>
+      {/* Amount */}
+      <div className="ms-guided-field">
+        <div className="ms-guided-field-label">
+          {t('editor.milestones.amountLabel')}
+          <span className="pill-hint">{t('editor.milestones.pillAmountHint')}</span>
+        </div>
+        <div className="ms-guided-amount-row">
+          <div className="ms-guided-amount-box"
+            style={isUnreachable || isBelowPrev ? { borderColor: 'rgba(255,107,91,.5)' } : undefined}>
+            <span>€</span>
             <input
               type="number"
-              min={minAmount}
-              max={maxAmount}
               value={targetAmount}
+              placeholder="5 000"
+              min={prevTarget > 0 ? prevTarget + 1 : 1}
               onChange={(e) => handleTargetChange(e.target.value)}
-              className={`w-[110px] text-right text-[13px] font-semibold px-[8px] py-[5px] rounded-[6px] outline-none border-[1.5px] transition-colors bg-[var(--color-bg)]
-                ${amountError
-                  ? 'border-[var(--color-red)]/60 text-[var(--color-red)]'
-                  : 'border-[var(--color-border)]/30 text-[var(--color-text)] focus:border-[var(--color-green)]/45'
-                }`}
-              placeholder="0"
             />
           </div>
-          {amountError && (
-            <span className="text-[10px] text-[var(--color-red)] text-right max-w-[180px] leading-tight">
-              {amountError}
-            </span>
-          )}
+          <span style={{ fontSize: '11px', color: 'var(--slate-lavender)', flex: 1 }}>
+            {displayPct > 0 ? `${displayPct}${t('editor.milestones.pctSuffix')}` : ''}
+          </span>
         </div>
+        {isBelowPrev && (
+          <div style={{ fontSize: '11px', color: 'var(--warm-coral)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            ⚠ {t('editor.milestones.orderInvalid')} ({fmtEur(prevTarget)})
+          </div>
+        )}
       </div>
 
-      {/* Description */}
-      <textarea
-        value={description}
-        onChange={(e) => handleDescChange(e.target.value)}
-        placeholder={t('editor.milestones.descPlaceholder')}
-        rows={2}
-        className="w-full mt-[10px] bg-transparent outline-none resize-none text-[12.5px] text-[var(--color-text-2)] placeholder:text-[var(--color-muted)] border-none focus:border-b border-[var(--color-border)]"
-      />
-
-      {/* Progress bar */}
-      <div className="progress-bar mt-[10px]">
-        <div
-          className={`progress-fill progress-fill-${milestone.status.toLowerCase()}`}
-          style={{ width: `${displayPct}%` }}
+      {/* Impact */}
+      <div className="ms-guided-field">
+        <div className="ms-guided-field-label">
+          {t('editor.milestones.impactLabel')}
+          <span className="pill-hint">{t('editor.milestones.pillImpactHint')}</span>
+        </div>
+        <input
+          className="ms-guided-impact"
+          type="text"
+          value={impact}
+          placeholder={t('editor.milestones.impactPlaceholder')}
+          onChange={(e) => handleImpactChange(e.target.value)}
         />
       </div>
 
-      {/* Badges row */}
-      <div className="flex items-center gap-[8px] mt-[8px] flex-wrap">
+      {/* Proof / Transparency commitment */}
+      <div className="ms-guided-field" style={{ marginBottom: 0 }}>
+        <div className="ms-guided-field-label">
+          {t('editor.milestones.proofLabel')}
+          <span className="pill-hint">{t('editor.milestones.pillOptionalHint')}</span>
+        </div>
+        <textarea
+          className="ms-guided-proof"
+          value={proof}
+          placeholder={t('editor.milestones.proofPlaceholder')}
+          onChange={(e) => handleProofChange(e.target.value)}
+        />
+      </div>
+
+      {/* Footer */}
+      <div className="ms-guided-footer">
         <StatusBadge status={milestone.status} t={t} />
-        <span className="text-[11px] font-semibold text-[var(--color-green)]">
-          {milestone.targetAmount.toLocaleString('fr-FR')} €
-        </span>
-        {milestone.reachedAt && (
-          <span className="text-[11px] text-[var(--color-text-2)]">
-            · {new Date(milestone.reachedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+        {isUnreachable && (
+          <span className="ms-badge-unreachable">⚠ {t('editor.milestones.unreachable')}</span>
+        )}
+        {isBelowPrev && !isUnreachable && (
+          <span style={{ background: 'rgba(255,107,91,.1)', color: 'var(--warm-coral)', padding: '3px 9px', borderRadius: '50px', fontSize: '10px', fontWeight: 700 }}>
+            ⚠ {t('editor.milestones.orderInvalid')}
           </span>
         )}
-        <span className="text-[11px] text-[var(--color-muted)] ml-auto">{displayPct}%</span>
+        <div className="ms-guided-bar">
+          <div className="ms-guided-bar-fill" style={{ width: `${displayPct}%`, background: barColor }} />
+        </div>
+        <span style={{
+          fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 700,
+          color: isUnreachable ? 'var(--warm-coral)'
+            : milestone.status === MilestoneStatus.REACHED ? 'var(--teal-dark)'
+            : milestone.status === MilestoneStatus.CURRENT ? '#b37800'
+            : 'var(--slate-lavender)',
+        }}>
+          {numericAmount > 0 ? fmtEur(numericAmount) : '—'}
+        </span>
       </div>
     </div>
   );
 }
 
-/** Status badge for a milestone. */
-function StatusBadge({
-  status,
-  t,
-}: {
-  status: MilestoneStatusType;
-  t: ReturnType<typeof useTranslations<'dashboard.campaigns'>>;
-}) {
+function StatusBadge({ status, t }: { status: MilestoneStatusType; t: ReturnType<typeof useTranslations<'dashboard.campaigns'>> }) {
+  const base: React.CSSProperties = { padding: '3px 9px', borderRadius: '50px', fontSize: '10px', fontWeight: 700, fontFamily: "'Syne', sans-serif" };
   switch (status) {
     case MilestoneStatus.REACHED:
-      return (
-        <span className="text-[11px] font-semibold px-[7px] py-[2px] rounded-full bg-[var(--color-green)]/12 text-[var(--color-green)]">
-          ✓ {t('editor.milestones.reached')}
-        </span>
-      );
+      return <span style={{ ...base, background: 'rgba(78,205,196,.12)', color: 'var(--teal-dark)' }}>✓ {t('editor.milestones.reached')}</span>;
     case MilestoneStatus.CURRENT:
-      return (
-        <span className="text-[11px] font-semibold px-[7px] py-[2px] rounded-full bg-[var(--color-yellow)]/12 text-[var(--color-yellow)]">
-          ⏳ {t('editor.milestones.current')}
-        </span>
-      );
+      return <span style={{ ...base, background: 'rgba(255,179,71,.1)', color: '#b37800' }}>⏳ {t('editor.milestones.current')}</span>;
     default:
-      return (
-        <span className="text-[11px] font-semibold px-[7px] py-[2px] rounded-full bg-[var(--color-muted)]/20 text-[var(--color-muted)]">
-          🔒 {t('editor.milestones.locked')}
-        </span>
-      );
+      return <span style={{ ...base, background: 'rgba(122,113,162,.1)', color: 'var(--slate-lavender)' }}>🔒 {t('editor.milestones.locked')}</span>;
   }
 }

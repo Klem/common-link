@@ -53,6 +53,10 @@ class CampaignMilestone(
     @Column(name = "sort_order", nullable = false)
     var sortOrder: Int = 0,
 
+    /** Editorial transparency commitment shown to donors (e.g. "photos + impact report at D+30"). */
+    @Column(name = "transparency_commitment", columnDefinition = "TEXT")
+    var transparencyCommitment: String? = null,
+
     /** Timestamp when the milestone target was reached. Null until [MilestoneStatus.REACHED]. */
     @Column(name = "reached_at")
     var reachedAt: Instant? = null,
