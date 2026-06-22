@@ -119,6 +119,16 @@ export const deleteMilestone = (campaignId: string, milestoneId: string): Promis
   api.delete(`/api/association/campaigns/${campaignId}/milestones/${milestoneId}`);
 
 /**
+ * Publishes a campaign (DRAFT → LIVE).
+ * Calls `PUT /api/association/campaigns/:id` with status LIVE.
+ *
+ * @param id - UUID of the campaign to publish.
+ * @returns The updated campaign DTO.
+ */
+export const publishCampaign = (id: string): Promise<CampaignDto> =>
+  api.put<CampaignDto>(`/api/association/campaigns/${id}`, { status: 'LIVE' }).then((r) => r.data);
+
+/**
  * Reorders milestones for a campaign.
  * Calls `PUT /api/association/campaigns/:campaignId/milestones/reorder`.
  *

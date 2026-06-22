@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Topbar } from '@/components/dashboard';
-import { CampaignCard } from '@/components/campaign';
+import { CampaignCard, NewCampaignWarningModal } from '@/components/campaign';
 import { useCampaigns } from '@/hooks/campaign/useCampaigns';
 import { createCampaign } from '@/lib/api/campaign';
+import { useAccStatusStore } from '@/stores/accStatusStore';
 import { ROUTES } from '@/lib/routes';
 
 type Filter = '' | 'LIVE' | 'ENDED' | 'DRAFT';
@@ -16,15 +17,25 @@ export default function CampaignsPage() {
   const locale = useLocale();
   const t = useTranslations('dashboard');
   const { campaigns, isLoading, removeCampaign } = useCampaigns();
+  const { verified } = useAccStatusStore();
   const [activeFilter, setActiveFilter] = useState<Filter>('');
+  const [showWarnModal, setShowWarnModal] = useState(false);
 
   const filtered = activeFilter
     ? campaigns.filter((c) => c.status === activeFilter)
     : campaigns;
 
-  const handleCreate = async () => {
+  const doCreate = async () => {
     const newCampaign = await createCampaign({ name: t('campaigns.defaultName') });
     router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}/${newCampaign.id}`);
+  };
+
+  const handleCreate = () => {
+    if (!verified) {
+      setShowWarnModal(true);
+    } else {
+      doCreate();
+    }
   };
 
   const filters: { key: Filter; label: string }[] = [
@@ -80,6 +91,14 @@ export default function CampaignsPage() {
           />
         ))}
       </div>
+
+      {showWarnModal && (
+        <NewCampaignWarningModal
+          onClose={() => setShowWarnModal(false)}
+          onContinue={() => { setShowWarnModal(false); doCreate(); }}
+          onGoVerify={() => { setShowWarnModal(false); router.push(`/${locale}${ROUTES.ASSOCIATION_PROFILE}`); }}
+        />
+      )}
     </div>
   );
 }

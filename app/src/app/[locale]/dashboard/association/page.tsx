@@ -33,7 +33,7 @@ export default function AssociationDashboardPage() {
   useEffect(() => {
     if (profile !== null && connected !== null) {
       const done = (verified ? 1 : 0) + (bankConnected ? 1 : 0);
-      setAccStatus(done, 2);
+      setAccStatus(done, 2, verified, bankConnected);
     }
   }, [profile, connected, verified, bankConnected, setAccStatus]);
 

@@ -7,3 +7,5 @@ export { CampaignMilestonesTab } from './CampaignMilestonesTab';
 export { CampaignPaymentsTab } from './CampaignPaymentsTab';
 export { CampaignDonorsTab } from './CampaignDonorsTab';
 export { CampaignReportingTab } from './CampaignReportingTab';
+export { PrePublishModal } from './PrePublishModal';
+export { NewCampaignWarningModal } from './NewCampaignWarningModal';

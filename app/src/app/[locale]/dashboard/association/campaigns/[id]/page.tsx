@@ -13,10 +13,15 @@ import {
   CampaignPaymentsTab,
   CampaignDonorsTab,
   CampaignReportingTab,
+  PrePublishModal,
 } from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
 import { usePayments } from '@/hooks/campaign/usePayments';
 import { useCampaignDonors } from '@/hooks/campaign/useCampaignDonors';
+import { publishCampaign } from '@/lib/api/campaign';
+import { useAccStatusStore } from '@/stores/accStatusStore';
+import { useToastStore } from '@/stores/toastStore';
+import { CampaignStatus } from '@/types/campaign';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 /**
@@ -39,8 +44,11 @@ export default function CampaignEditorPage() {
     useCampaign(campaignId);
   const { summary: paymentSummary } = usePayments(campaignId);
   const { donorsPage } = useCampaignDonors(campaignId);
+  const { verified, bank: bankConnected } = useAccStatusStore();
+  const { addToast } = useToastStore();
 
   const [activeTab, setActiveTab] = useState('info');
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   /* Debounce ref for hero name/emoji saves */
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,6 +70,25 @@ export default function CampaignEditorPage() {
 
   const handleNameChange = (name: string) => scheduleHeroSave({ name });
   const handleEmojiChange = (emoji: string) => scheduleHeroSave({ emoji });
+
+  const handleSave = () => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    if (campaign) updateCampaignInfo({ name: campaign.name, emoji: campaign.emoji });
+  };
+
+  const handleConfirmPublish = async () => {
+    setShowPublishModal(false);
+    try {
+      const updated = await publishCampaign(campaignId);
+      setCampaign(updated);
+      addToast('success', 'campaigns.publish.toast.success');
+    } catch {
+      addToast('error', 'campaigns.publish.toast.error');
+    }
+  };
 
   /**
    * Called after the budget is saved successfully.
@@ -100,6 +127,18 @@ export default function CampaignEditorPage() {
       <Topbar title={campaign.name} parent={t('campaigns.pageTitle')} />
 
       <div className="page">
+        {/* — Barre d'actions — */}
+        <div className="camp-actions-bar">
+          <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={handleSave} disabled={isSaving}>
+            💾 {t('editor.info.save')}
+          </button>
+          {campaign.status === CampaignStatus.DRAFT && (
+            <button className="cm-btn cm-btn-primary cm-btn-sm" onClick={() => setShowPublishModal(true)}>
+              🚀 {t('editor.publish')}
+            </button>
+          )}
+        </div>
+
         <CampaignHero
           campaign={campaign}
           onNameChange={handleNameChange}
@@ -150,6 +189,16 @@ export default function CampaignEditorPage() {
           <CampaignReportingTab campaign={campaign} />
         )}
       </div>
+
+      {showPublishModal && (
+        <PrePublishModal
+          campaign={campaign}
+          verified={verified}
+          bankConnected={bankConnected}
+          onClose={() => setShowPublishModal(false)}
+          onConfirm={handleConfirmPublish}
+        />
+      )}
     </div>
   );
 }

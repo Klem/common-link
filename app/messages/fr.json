@@ -460,6 +460,7 @@
           "title": "Milestones de la campagne"
         },
         "notFound": "Campagne introuvable.",
+        "publish": "🚀 Publier",
         "tabs": {
           "budget": "Budget prév.",
           "donors": "Donateurs",
@@ -481,6 +482,16 @@
       "filterLive": "Actives",
       "loading": "Chargement…",
       "milestones": "milestone(s)",
+      "newCampaignWarn": {
+        "autoPublic": "Publié en public dès la validation de votre dossier",
+        "body": "Vous pouvez créer un brouillon dès maintenant — il sera publiable dès la validation de votre dossier.",
+        "cancel": "Annuler",
+        "continue": "Continuer en brouillon",
+        "hint": "Vous gagnerez du temps en commençant la rédaction dès maintenant.",
+        "notVerified": "Votre association n'est pas encore vérifiée.",
+        "title": "📋 Avant de créer votre campagne",
+        "verify": "📋 Vérifier mon dossier"
+      },
       "pageSubtitle": "Gérez les campagnes de collecte de votre association",
       "pageTitle": "Campagnes",
       "payments": {
@@ -545,6 +556,38 @@
           "operational": "Charges opérationnelles",
           "other": "Autres",
           "personnel": "Personnel"
+        }
+      },
+      "publish": {
+        "account": {
+          "complete": "Compte complet — prêt pour la publication",
+          "noBank": "Compte bancaire non connecté — requis pour publier",
+          "notVerified": "Votre dossier n'est pas encore vérifié (vous pouvez quand même publier)",
+          "section": "Statut du compte"
+        },
+        "add": "Ajouter",
+        "complete": "Complétez les champs requis",
+        "confirm": "🚀 Publier",
+        "continueEditing": "Continuer l'édition",
+        "fill": "Compléter",
+        "recommended": {
+          "budget": "Budget prévisionnel équilibré (+40% de dons)",
+          "impactGoals": "Objectifs d'impact mesurables",
+          "milestones": "Jalons (augmente l'engagement des donateurs)",
+          "reason": "« Pourquoi maintenant ? » (renforce la confiance)",
+          "section": "Recommandé — n'empêche pas la publication"
+        },
+        "required": {
+          "dates": "Dates de début et de fin",
+          "description": "Description (10 caractères min)",
+          "goal": "Objectif de collecte",
+          "name": "Nom de la campagne",
+          "section": "Requis pour publier"
+        },
+        "title": "Avant de publier votre campagne",
+        "toast": {
+          "error": "Échec de la publication. Veuillez réessayer.",
+          "success": "🚀 Campagne publiée !"
         }
       },
       "stats": {

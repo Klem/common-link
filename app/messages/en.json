@@ -460,6 +460,7 @@
           "title": "Campaign milestones"
         },
         "notFound": "Campaign not found.",
+        "publish": "🚀 Publish",
         "tabs": {
           "budget": "Budget",
           "donors": "Donors",
@@ -481,6 +482,16 @@
       "filterLive": "Active",
       "loading": "Loading…",
       "milestones": "milestone(s)",
+      "newCampaignWarn": {
+        "autoPublic": "Published publicly once your dossier is validated",
+        "body": "You can create a draft now. It will be publishable once your dossier is validated.",
+        "cancel": "Cancel",
+        "continue": "Continue as draft",
+        "hint": "Start writing now to save time.",
+        "notVerified": "Your association is not yet verified.",
+        "title": "📋 Before creating your campaign",
+        "verify": "📋 Verify my dossier"
+      },
       "pageSubtitle": "Manage your association's fundraising campaigns",
       "pageTitle": "Campaigns",
       "payments": {
@@ -545,6 +556,38 @@
           "operational": "Operational costs",
           "other": "Other",
           "personnel": "Personnel"
+        }
+      },
+      "publish": {
+        "account": {
+          "complete": "Account complete — ready to publish",
+          "noBank": "No bank account connected — required to publish",
+          "notVerified": "Your dossier is not yet verified (you can still publish)",
+          "section": "Account status"
+        },
+        "add": "Add",
+        "complete": "Complete required fields",
+        "confirm": "🚀 Publish",
+        "continueEditing": "Continue editing",
+        "fill": "Fill in",
+        "recommended": {
+          "budget": "Balanced estimated budget (+40% donations)",
+          "impactGoals": "Measurable impact goals",
+          "milestones": "Milestones (increases donor engagement)",
+          "reason": "\"Why now?\" (builds trust)",
+          "section": "Recommended — does not block publishing"
+        },
+        "required": {
+          "dates": "Start and end dates",
+          "description": "Description (at least 10 characters)",
+          "goal": "Fundraising goal",
+          "name": "Campaign name",
+          "section": "Required to publish"
+        },
+        "title": "Before publishing your campaign",
+        "toast": {
+          "error": "Publication failed. Please try again.",
+          "success": "🚀 Campaign published!"
         }
       },
       "stats": {

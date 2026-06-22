@@ -1821,7 +1821,7 @@ textarea.form-input {
 .camp-tab.tab-locked { opacity: .35; cursor: not-allowed; pointer-events: none; }
 .camp-tab-content { display: none; animation: fadeUp .3s ease; }
 .camp-tab-content.active { display: block; }
-.camp-actions-bar { display: flex; gap: 10px; align-items: center; }
+.camp-actions-bar { display: flex; justify-content: flex-end; gap: 10px; align-items: center; margin-bottom: 16px; }
 
 /* ── Grids extras ─────────────────────────────────────────────────────────── */
 
