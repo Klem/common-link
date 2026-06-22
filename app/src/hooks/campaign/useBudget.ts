@@ -20,6 +20,8 @@ export interface EditableBudgetSection {
   items: EditableItem[];
 }
 
+export type BudgetTemplateType = 'standard' | 'simple' | 'blank';
+
 /** Return type of {@link useBudget}. */
 export interface UseBudgetReturn {
   /** Current editable sections. */
@@ -38,8 +40,8 @@ export interface UseBudgetReturn {
   balance: number;
   /** Initialises local state from a campaign's budget sections. */
   init: (budgetSections: BudgetSectionDto[]) => void;
-  /** Pre-fills with the standard French association accounting template (amounts at 0). */
-  initTemplate: () => void;
+  /** Pre-fills with the chosen template (amounts at 0). Defaults to 'standard'. */
+  initTemplate: (type?: BudgetTemplateType) => void;
   /** Updates the label of an item. */
   updateItemLabel: (sIdx: number, iIdx: number, label: string) => void;
   /** Updates the amount of an item. */
@@ -171,6 +173,42 @@ const ACCOUNTING_TEMPLATE: EditableBudgetSection[] = [
   },
 ];
 
+/** Simplified 4-section template for small structures. */
+const SIMPLE_TEMPLATE: EditableBudgetSection[] = [
+  {
+    side: BudgetSide.EXPENSE,
+    code: '60',
+    name: 'Achats & services',
+    items: [{ label: 'Prestations de services', amount: 0 }, { label: 'Fournitures', amount: 0 }],
+  },
+  {
+    side: BudgetSide.EXPENSE,
+    code: '64',
+    name: 'Personnel',
+    items: [{ label: 'Rémunérations', amount: 0 }, { label: 'Charges sociales', amount: 0 }],
+  },
+  {
+    side: BudgetSide.REVENUE,
+    code: '74',
+    name: 'Subventions',
+    items: [{ label: 'Subventions publiques', amount: 0 }, { label: 'Mécénat', amount: 0 }],
+  },
+  {
+    side: BudgetSide.REVENUE,
+    code: '75',
+    name: 'Dons & cotisations',
+    items: [{ label: 'Dons', amount: 0 }, { label: 'Cotisations', amount: 0 }],
+  },
+];
+
+/** Blank template — one empty section per side. */
+const BLANK_TEMPLATE: EditableBudgetSection[] = [
+  { side: BudgetSide.EXPENSE, code: '', name: 'Charges', items: [{ label: '', amount: 0 }] },
+  { side: BudgetSide.REVENUE, code: '', name: 'Produits', items: [{ label: '', amount: 0 }] },
+];
+
+const TEMPLATES = { standard: ACCOUNTING_TEMPLATE, simple: SIMPLE_TEMPLATE, blank: BLANK_TEMPLATE } as const;
+
 /**
  * Hook managing local budget editing state for a campaign.
  *
@@ -198,9 +236,10 @@ export function useBudget(): UseBudgetReturn {
     setIsDirty(false);
   }, []);
 
-  /** Pre-fills with the standard French association accounting template. */
-  const initTemplate = useCallback(() => {
-    setSections(ACCOUNTING_TEMPLATE.map((s) => ({ ...s, items: s.items.map((it) => ({ ...it })) })));
+  /** Pre-fills with the chosen template (amounts at 0). */
+  const initTemplate = useCallback((type: BudgetTemplateType = 'standard') => {
+    const tpl = TEMPLATES[type];
+    setSections(tpl.map((s) => ({ ...s, items: s.items.map((it) => ({ ...it })) })));
     setCollapsedSections(new Set());
     setIsDirty(true);
   }, []);

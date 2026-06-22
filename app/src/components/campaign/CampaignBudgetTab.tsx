@@ -2,35 +2,33 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useBudget } from '@/hooks/campaign/useBudget';
+import { useBudget, type BudgetTemplateType } from '@/hooks/campaign/useBudget';
 import { BudgetSide } from '@/types/campaign';
 import type { CampaignDto } from '@/types/campaign';
 
 interface CampaignBudgetTabProps {
-  /** Campaign with its current budget sections. */
   campaign: CampaignDto;
-  /** Called with the updated campaign DTO after a successful budget save. */
   onBudgetSaved: (campaign: CampaignDto) => void;
 }
 
-/** Formats a number as a French euro string. */
 function fmtEur(n: number): string {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
 }
 
-/** Inline form state for adding a new section. */
 interface AddSectionFormState {
   side: typeof BudgetSide[keyof typeof BudgetSide];
   code: string;
   name: string;
 }
 
-/**
- * Budget prévisionnel tab of the campaign editor.
- *
- * Renders a two-column budget (charges / produits) with collapsible sections,
- * editable items, a balance bar, and a save button.
- */
+type ColFilter = 'both' | 'expense' | 'revenue';
+
+const TEMPLATES_META: { type: BudgetTemplateType; emoji: string; nameKey: string; descKey: string }[] = [
+  { type: 'standard', emoji: '📋', nameKey: 'tplStandard', descKey: 'tplStandardDesc' },
+  { type: 'simple',   emoji: '📝', nameKey: 'tplSimple',   descKey: 'tplSimpleDesc'   },
+  { type: 'blank',    emoji: '📄', nameKey: 'tplBlank',    descKey: 'tplBlankDesc'    },
+];
+
 export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTabProps) {
   const t = useTranslations('dashboard.campaigns');
 
@@ -54,23 +52,20 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
     save,
   } = useBudget();
 
-  /* Inline "add section" form state (null = hidden) */
   const [addForm, setAddForm] = useState<AddSectionFormState | null>(null);
+  const [selectedTpl, setSelectedTpl] = useState<BudgetTemplateType>('standard');
+  const [colFilter, setColFilter] = useState<ColFilter>('both');
 
-  /* Initialise from campaign on mount / campaign change */
   useEffect(() => {
     init(campaign.budgetSections);
   }, [campaign.budgetSections, init]);
 
   const isEmpty = sections.length === 0;
 
-  /** Determine balance pill style. */
-  const balancePill = () => {
-    if (Math.abs(balance) < 1)
-      return { label: `✓ ${t('editor.budget.equilibrium')}`, cls: 'text-[var(--color-green)] bg-[var(--color-green)]/10' };
-    if (balance > 0)
-      return { label: `↑ ${t('editor.budget.surplus')}`, cls: 'text-[var(--color-green)] bg-[var(--color-green)]/10' };
-    return { label: `↓ ${t('editor.budget.deficit')}`, cls: 'text-[var(--color-red)] bg-[var(--color-red)]/10' };
+  const balancePill = (): { label: string; cls: string } => {
+    if (Math.abs(balance) < 1) return { label: `✓ ${t('editor.budget.equilibrium')}`, cls: 'ok' };
+    if (balance > 0)           return { label: `↑ ${t('editor.budget.surplus')}`,     cls: 'excess' };
+    return                            { label: `↓ ${t('editor.budget.deficit')}`,      cls: 'deficit' };
   };
   const pill = balancePill();
 
@@ -89,171 +84,207 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
     setAddForm(null);
   };
 
-  const chargeSections = sections
-    .map((s, i) => ({ s, i }))
-    .filter(({ s }) => s.side === BudgetSide.EXPENSE);
+  const handleResetBudget = () => {
+    init([]);
+    setColFilter('both');
+  };
 
-  const produitSections = sections
-    .map((s, i) => ({ s, i }))
-    .filter(({ s }) => s.side === BudgetSide.REVENUE);
+  const chargeSections = sections.map((s, i) => ({ s, i })).filter(({ s }) => s.side === BudgetSide.EXPENSE);
+  const produitSections = sections.map((s, i) => ({ s, i })).filter(({ s }) => s.side === BudgetSide.REVENUE);
 
   return (
     <div>
-      {/* ── Balance bar ── */}
-      <div
-        className="flex items-center justify-between rounded-[14px] border border-[var(--color-border)] p-[14px_20px] mb-[20px] sticky top-[72px] z-50 budget-header"
-      >
-        <div className="text-center">
-          <div className="text-[12px] text-[var(--color-text-2)] mb-[2px]">📉 {t('editor.budget.charges')}</div>
-          <div className="text-[18px] font-bold text-[var(--color-red)] font-display">
-            {fmtEur(totalCharges)}
-          </div>
-        </div>
-
-        <div className="text-center">
-          <div className="text-[14px] font-bold text-[var(--color-text)] mb-[4px] font-display">
-            {fmtEur(balance)}
-          </div>
-          <span className={`text-[11px] font-semibold px-[8px] py-[2px] rounded-full ${pill.cls}`}>
-            {pill.label}
-          </span>
-        </div>
-
-        <div className="text-center">
-          <div className="text-[12px] text-[var(--color-text-2)] mb-[2px]">📈 {t('editor.budget.produits')}</div>
-          <div className="text-[18px] font-bold text-[var(--color-green)] font-display">
-            {fmtEur(totalProduits)}
-          </div>
-        </div>
-      </div>
-
       {/* ── Empty state ── */}
       {isEmpty && (
-        <div className="text-center py-[32px]">
-          <button
-            type="button"
-            onClick={initTemplate}
-            className="inline-flex flex-col items-center gap-[8px] border border-dashed border-[var(--color-green)]/40 rounded-[14px] px-[32px] py-[20px] cursor-pointer hover:bg-[var(--color-green)]/5 transition-colors"
-          >
-            <span className="text-[24px]">📋</span>
-            <span className="text-[13px] font-semibold text-[var(--color-green)]">
-              {t('editor.budget.initTemplate')}
-            </span>
-            <span className="text-[11px] text-[var(--color-text-2)] max-w-[260px]">
-              {t('editor.budget.initTemplateHint')}
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* ── Two-column grid ── */}
-      {!isEmpty && (
-        <div className="grid grid-cols-2 gap-[18px]">
-          {/* Charges column */}
-          <div>
-            <div className="flex items-center gap-[6px] text-[12px] font-semibold text-[var(--color-red)] mb-[12px]">
-              <span>📉</span>
-              <span>{t('editor.budget.charges')}</span>
+        <div id="bud-empty-state">
+          <div className="cm-card">
+            <div className="empty-state">
+              <div className="empty-state-icon">📊</div>
+              <div className="empty-state-title">{t('editor.budget.emptyTitle')}</div>
+              <div className="empty-state-desc">{t('editor.budget.emptyDesc')}</div>
+              <div className="empty-tpl-grid">
+                {TEMPLATES_META.map(({ type, emoji, nameKey, descKey }) => (
+                  <div
+                    key={type}
+                    className={`empty-tpl-card${selectedTpl === type ? ' selected' : ''}`}
+                    onClick={() => setSelectedTpl(type)}
+                  >
+                    <div className="empty-tpl-emoji">{emoji}</div>
+                    <div className="empty-tpl-name">{t(`editor.budget.${nameKey}` as Parameters<typeof t>[0])}</div>
+                    <div className="empty-tpl-desc">{t(`editor.budget.${descKey}` as Parameters<typeof t>[0])}</div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-primary" onClick={() => initTemplate(selectedTpl)}>
+                {t('editor.budget.useTpl')}
+              </button>
+              <div style={{ marginTop: '10px', fontSize: '11.5px', color: 'var(--slate-lavender)' }}>
+                {t('editor.budget.initTemplateHint')}
+              </div>
             </div>
-
-            {chargeSections.map(({ s, i }) => (
-              <BudgetSection
-                key={i}
-                section={s}
-                sIdx={i}
-                collapsed={collapsedSections.has(i)}
-                onToggle={toggleSection}
-                onUpdateLabel={updateItemLabel}
-                onUpdateAmount={updateItemAmount}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-                onRemoveSection={removeSection}
-                addItemLabel={t('editor.budget.addItem')}
-                labelPlaceholder={t('editor.budget.labelPlaceholder')}
-                amountPlaceholder={t('editor.budget.amountPlaceholder')}
-              />
-            ))}
-
-            <AddSectionButton
-              side={BudgetSide.EXPENSE}
-              label={t('editor.budget.addSection')}
-              addForm={addForm}
-              onOpen={handleAddSection}
-              onConfirm={handleAddSectionConfirm}
-              onCancel={() => setAddForm(null)}
-              onChangeCode={(v) => setAddForm((f) => f ? { ...f, code: v } : f)}
-              onChangeName={(v) => setAddForm((f) => f ? { ...f, name: v } : f)}
-              codePlaceholder={t('editor.budget.sectionCode')}
-              namePlaceholder={t('editor.budget.sectionName')}
-            />
-          </div>
-
-          {/* Produits column */}
-          <div>
-            <div className="flex items-center gap-[6px] text-[12px] font-semibold text-[var(--color-green)] mb-[12px]">
-              <span>📈</span>
-              <span>{t('editor.budget.produits')}</span>
-            </div>
-
-            {produitSections.map(({ s, i }) => (
-              <BudgetSection
-                key={i}
-                section={s}
-                sIdx={i}
-                collapsed={collapsedSections.has(i)}
-                onToggle={toggleSection}
-                onUpdateLabel={updateItemLabel}
-                onUpdateAmount={updateItemAmount}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-                onRemoveSection={removeSection}
-                addItemLabel={t('editor.budget.addItem')}
-                labelPlaceholder={t('editor.budget.labelPlaceholder')}
-                amountPlaceholder={t('editor.budget.amountPlaceholder')}
-              />
-            ))}
-
-            <AddSectionButton
-              side={BudgetSide.REVENUE}
-              label={t('editor.budget.addSection')}
-              addForm={addForm}
-              onOpen={handleAddSection}
-              onConfirm={handleAddSectionConfirm}
-              onCancel={() => setAddForm(null)}
-              onChangeCode={(v) => setAddForm((f) => f ? { ...f, code: v } : f)}
-              onChangeName={(v) => setAddForm((f) => f ? { ...f, name: v } : f)}
-              codePlaceholder={t('editor.budget.sectionCode')}
-              namePlaceholder={t('editor.budget.sectionName')}
-            />
           </div>
         </div>
       )}
 
-      {/* ── Save button ── */}
+      {/* ── Budget editor ── */}
       {!isEmpty && (
-        <div className="flex justify-end mt-[20px]">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!isDirty || isSaving}
-            className="px-[20px] py-[10px] rounded-[9px] text-[13px] font-semibold transition-all
-              bg-[var(--color-green)] text-[var(--color-bg)] cursor-pointer
-              hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isSaving ? '…' : t('editor.budget.save')}
-          </button>
+        <div id="bud-step-editor">
+          {/* Toolbar */}
+          <div className="bud-toolbar">
+            <div className="col-filter">
+              <button
+                className={`col-filter-btn${colFilter === 'both' ? ' active' : ''}`}
+                onClick={() => setColFilter('both')}
+              >
+                {t('editor.budget.colBoth')}
+              </button>
+              <button
+                className={`col-filter-btn${colFilter === 'expense' ? ' active ch' : ' ch'}`}
+                onClick={() => setColFilter('expense')}
+              >
+                📉 {t('editor.budget.charges')}
+              </button>
+              <button
+                className={`col-filter-btn${colFilter === 'revenue' ? ' active pr' : ' pr'}`}
+                onClick={() => setColFilter('revenue')}
+              >
+                📈 {t('editor.budget.produits')}
+              </button>
+            </div>
+            <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={handleResetBudget}>
+              {t('editor.budget.changeTemplate')}
+            </button>
+          </div>
+
+          {/* Balance bar */}
+          <div className="balance-bar">
+            <div className="bal-side">
+              <div className="bal-label">📉 {t('editor.budget.charges')}</div>
+              <div className="bal-val ch">{fmtEur(totalCharges)}</div>
+            </div>
+            <div className="bal-center">
+              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--ink-navy)' }}>
+                {fmtEur(balance)}
+              </div>
+              <div className={`bal-pill ${pill.cls}`}>{pill.label}</div>
+            </div>
+            <div className="bal-side">
+              <div className="bal-label">📈 {t('editor.budget.produits')}</div>
+              <div className="bal-val pr">{fmtEur(totalProduits)}</div>
+            </div>
+          </div>
+
+          {/* Two-column grid */}
+          <div className="budget-cols" id="bud-cols">
+            {/* Charges column */}
+            {colFilter !== 'revenue' && (
+              <div id="bud-col-charges">
+                <div className="col-head">
+                  <span style={{ color: 'var(--warm-coral)' }}>📉</span>
+                  {t('editor.budget.chargesHead')}
+                </div>
+                <div id="bud-charges">
+                  {chargeSections.map(({ s, i }) => (
+                    <BudgetSection
+                      key={i}
+                      section={s}
+                      sIdx={i}
+                      side="ch"
+                      isOpen={!collapsedSections.has(i)}
+                      onToggle={toggleSection}
+                      onUpdateLabel={updateItemLabel}
+                      onUpdateAmount={updateItemAmount}
+                      onAddItem={addItem}
+                      onRemoveItem={removeItem}
+                      onRemoveSection={removeSection}
+                      addItemLabel={t('editor.budget.addItem')}
+                      labelPlaceholder={t('editor.budget.labelPlaceholder')}
+                      amountPlaceholder={t('editor.budget.amountPlaceholder')}
+                    />
+                  ))}
+                </div>
+                <AddSectionButton
+                  side={BudgetSide.EXPENSE}
+                  label={t('editor.budget.addSection')}
+                  addForm={addForm}
+                  onOpen={handleAddSection}
+                  onConfirm={handleAddSectionConfirm}
+                  onCancel={() => setAddForm(null)}
+                  onChangeCode={(v) => setAddForm((f) => f ? { ...f, code: v } : f)}
+                  onChangeName={(v) => setAddForm((f) => f ? { ...f, name: v } : f)}
+                  codePlaceholder={t('editor.budget.sectionCode')}
+                  namePlaceholder={t('editor.budget.sectionName')}
+                />
+              </div>
+            )}
+
+            {/* Produits column */}
+            {colFilter !== 'expense' && (
+              <div id="bud-col-produits">
+                <div className="col-head">
+                  <span style={{ color: 'var(--teal-dark)' }}>📈</span>
+                  {t('editor.budget.produitsHead')}
+                </div>
+                <div id="bud-produits">
+                  {produitSections.map(({ s, i }) => (
+                    <BudgetSection
+                      key={i}
+                      section={s}
+                      sIdx={i}
+                      side="pr"
+                      isOpen={!collapsedSections.has(i)}
+                      onToggle={toggleSection}
+                      onUpdateLabel={updateItemLabel}
+                      onUpdateAmount={updateItemAmount}
+                      onAddItem={addItem}
+                      onRemoveItem={removeItem}
+                      onRemoveSection={removeSection}
+                      addItemLabel={t('editor.budget.addItem')}
+                      labelPlaceholder={t('editor.budget.labelPlaceholder')}
+                      amountPlaceholder={t('editor.budget.amountPlaceholder')}
+                    />
+                  ))}
+                </div>
+                <AddSectionButton
+                  side={BudgetSide.REVENUE}
+                  label={t('editor.budget.addSection')}
+                  addForm={addForm}
+                  onOpen={handleAddSection}
+                  onConfirm={handleAddSectionConfirm}
+                  onCancel={() => setAddForm(null)}
+                  onChangeCode={(v) => setAddForm((f) => f ? { ...f, code: v } : f)}
+                  onChangeName={(v) => setAddForm((f) => f ? { ...f, name: v } : f)}
+                  codePlaceholder={t('editor.budget.sectionCode')}
+                  namePlaceholder={t('editor.budget.sectionName')}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Save */}
+          <div className="flex justify-end" style={{ marginTop: '20px' }}>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!isDirty || isSaving}
+              className="cm-btn cm-btn-primary cm-btn-sm"
+            >
+              {isSaving ? '…' : t('editor.budget.save')}
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-/* ─── Sub-components ─── */
+/* ─── BudgetSection ─── */
 
 interface BudgetSectionProps {
   section: { code: string; name: string; items: { label: string; amount: number }[] };
   sIdx: number;
-  collapsed: boolean;
+  side: 'ch' | 'pr';
+  isOpen: boolean;
   onToggle: (sIdx: number) => void;
   onUpdateLabel: (sIdx: number, iIdx: number, v: string) => void;
   onUpdateAmount: (sIdx: number, iIdx: number, v: number) => void;
@@ -265,63 +296,56 @@ interface BudgetSectionProps {
   amountPlaceholder: string;
 }
 
-/** Collapsible budget section with items. */
 function BudgetSection({
-  section,
-  sIdx,
-  collapsed,
-  onToggle,
-  onUpdateLabel,
-  onUpdateAmount,
-  onAddItem,
-  onRemoveItem,
-  onRemoveSection,
-  addItemLabel,
-  labelPlaceholder,
-  amountPlaceholder,
+  section, sIdx, side, isOpen,
+  onToggle, onUpdateLabel, onUpdateAmount, onAddItem, onRemoveItem, onRemoveSection,
+  addItemLabel, labelPlaceholder, amountPlaceholder,
 }: BudgetSectionProps) {
+  const [pendingDelItem, setPendingDelItem] = useState<number | null>(null);
+  const [pendingDelSection, setPendingDelSection] = useState(false);
   const sectionTotal = section.items.reduce((s, it) => s + (it.amount || 0), 0);
 
   return (
-    <div
-      className="rounded-[9px] border border-[var(--color-border)]/35 mb-[8px] overflow-hidden bg-bg-3"
-    >
-      {/* Section header */}
-      <button
-        type="button"
-        onClick={() => onToggle(sIdx)}
-        className="w-full flex items-center justify-between px-[12px] py-[9px] cursor-pointer hover:bg-[var(--color-bg)]/20 transition-colors"
-      >
-        <div className="flex items-center gap-[7px] text-[12.5px] font-semibold text-[var(--color-text)]">
-          <span className="text-[10px] font-bold px-[6px] py-[2px] rounded-[4px] font-display">
-            {section.code}
-          </span>
+    <div className={`bsec${isOpen ? ' open' : ''}`}>
+      <div className="bsec-h" onClick={() => { if (!pendingDelSection) onToggle(sIdx); }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 600, color: 'var(--ink-navy)' }}>
+          <span className={`bsec-code ${side}`}>{section.code}</span>
           {section.name}
         </div>
-        <div className="flex items-center gap-[8px]">
-          <span className="text-[12px] font-bold text-[var(--color-text-2)] font-display">
-            {sectionTotal.toLocaleString('fr-FR')} €
-          </span>
-          <span
-            className={`text-[10px] text-[var(--color-muted)] transition-transform duration-200 ${collapsed ? '-rotate-90' : 'rotate-0'}`}
-          >
-            ▾
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="bsec-tot">{sectionTotal.toLocaleString('fr-FR')} €</span>
+          <div className={`bsec-del-confirm${pendingDelSection ? ' show' : ''}`}>
+            <button
+              className="line-del-ok"
+              onClick={(e) => { e.stopPropagation(); onRemoveSection(sIdx); }}
+            >✓</button>
+            <button
+              className="line-del-cancel"
+              onClick={(e) => { e.stopPropagation(); setPendingDelSection(false); }}
+            >✕</button>
+          </div>
+          {!pendingDelSection && (
+            <button
+              className="bsec-del"
+              onClick={(e) => { e.stopPropagation(); setPendingDelSection(true); }}
+            >✕</button>
+          )}
+          <span className="bsec-chev">▾</span>
         </div>
-      </button>
+      </div>
 
-      {/* Section body */}
-      {!collapsed && (
-        <div className="px-[12px] pb-[10px]">
-          {section.items.map((item, iIdx) => (
-            <div key={iIdx} className="flex items-center gap-[6px] py-[4px]">
+      <div className="bsec-body">
+        {section.items.map((item, iIdx) => (
+          <div key={iIdx} className="line">
+            <div className="line-lbl">
               <input
                 type="text"
                 value={item.label}
-                onChange={(e) => onUpdateLabel(sIdx, iIdx, e.target.value)}
+                onChange={(e) => { setPendingDelItem(null); onUpdateLabel(sIdx, iIdx, e.target.value); }}
                 placeholder={labelPlaceholder}
-                className="flex-1 bg-transparent text-[12.5px] text-[var(--color-text)] outline-none placeholder:text-[var(--color-muted)] border-b border-transparent focus:border-[var(--color-border)]"
               />
+            </div>
+            <div className="line-amt">
               <input
                 type="number"
                 min={0}
@@ -329,39 +353,32 @@ function BudgetSection({
                 value={item.amount || ''}
                 onChange={(e) => onUpdateAmount(sIdx, iIdx, parseFloat(e.target.value) || 0)}
                 placeholder={amountPlaceholder}
-                className="w-[100px] text-right text-[13px] text-[var(--color-text)] px-[10px] py-[6px] rounded-[6px] outline-none border-[1.5px] border-[var(--color-border)]/30 focus:border-[var(--color-green)]/45 transition-colors bg-bg"
               />
-              <button
-                type="button"
-                onClick={() => onRemoveItem(sIdx, iIdx)}
-                className="w-[24px] h-[24px] flex items-center justify-center rounded-[5px] text-[var(--color-muted)] hover:text-[var(--color-red)] hover:bg-[var(--color-red)]/8 transition-colors text-[12px]"
-              >
-                ✕
-              </button>
             </div>
-          ))}
-
-          <div className="flex justify-between items-center mt-[6px]">
-            <button
-              type="button"
-              onClick={() => onAddItem(sIdx)}
-              className="text-[11.5px] text-[var(--color-cyan)] cursor-pointer hover:underline"
-            >
-              + {addItemLabel}
-            </button>
-            <button
-              type="button"
-              onClick={() => onRemoveSection(sIdx)}
-              className="text-[11px] text-[var(--color-muted)] hover:text-[var(--color-red)] cursor-pointer"
-            >
-              ✕ section
-            </button>
+            <div className={`line-del-confirm${pendingDelItem === iIdx ? ' show' : ''}`}>
+              <button
+                className="line-del-ok"
+                onClick={() => { onRemoveItem(sIdx, iIdx); setPendingDelItem(null); }}
+              >✓</button>
+              <button
+                className="line-del-cancel"
+                onClick={() => setPendingDelItem(null)}
+              >✕</button>
+            </div>
+            {pendingDelItem !== iIdx && (
+              <button className="line-del" onClick={() => setPendingDelItem(iIdx)}>✕</button>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+        <button className="add-line" onClick={() => onAddItem(sIdx)}>
+          + {addItemLabel}
+        </button>
+      </div>
     </div>
   );
 }
+
+/* ─── AddSectionButton ─── */
 
 interface AddSectionButtonProps {
   side: typeof BudgetSide[keyof typeof BudgetSide];
@@ -376,65 +393,49 @@ interface AddSectionButtonProps {
   namePlaceholder: string;
 }
 
-/** Dashed button that expands to an inline add-section form. */
 function AddSectionButton({
-  side,
-  label,
-  addForm,
-  onOpen,
-  onConfirm,
-  onCancel,
-  onChangeCode,
-  onChangeName,
-  codePlaceholder,
-  namePlaceholder,
+  side, label, addForm, onOpen, onConfirm, onCancel, onChangeCode, onChangeName,
+  codePlaceholder, namePlaceholder,
 }: AddSectionButtonProps) {
+  const t = useTranslations('dashboard.campaigns');
   const isOpen = addForm?.side === side;
 
   if (!isOpen) {
     return (
-      <button
-        type="button"
-        onClick={() => onOpen(side)}
-        className="w-full mt-[4px] py-[8px] border border-dashed border-[var(--color-border)] rounded-[9px] text-[12px] text-[var(--color-text-2)] hover:text-[var(--color-green)] hover:border-[var(--color-green)]/40 transition-colors cursor-pointer"
-      >
+      <button type="button" className="add-sec" onClick={() => onOpen(side)}>
         + {label}
       </button>
     );
   }
 
   return (
-    <div
-      className="mt-[4px] rounded-[9px] border border-[var(--color-border)] p-[10px] flex flex-col gap-[6px] bg-bg-3"
-    >
-      <div className="flex gap-[6px]">
+    <div className="bsec" style={{ padding: '10px', marginTop: '4px' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
         <input
           type="text"
           value={addForm?.code ?? ''}
           onChange={(e) => onChangeCode(e.target.value)}
           placeholder={codePlaceholder}
-          className="w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[6px] px-[8px] py-[5px] text-[12px] text-[var(--color-text)] outline-none focus:border-[var(--color-green)]/45"
+          className="cm-fi"
+          style={{ width: '80px' }}
         />
         <input
           type="text"
           value={addForm?.name ?? ''}
           onChange={(e) => onChangeName(e.target.value)}
           placeholder={namePlaceholder}
-          className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-[6px] px-[8px] py-[5px] text-[12px] text-[var(--color-text)] outline-none focus:border-[var(--color-green)]/45"
+          className="cm-fi"
+          style={{ flex: 1 }}
           onKeyDown={(e) => { if (e.key === 'Enter') onConfirm(); if (e.key === 'Escape') onCancel(); }}
           autoFocus
         />
       </div>
-      <div className="flex gap-[6px] justify-end">
-        <button type="button" onClick={onCancel} className="text-[11px] text-[var(--color-muted)] hover:text-[var(--color-text)] px-[8px] py-[4px] cursor-pointer">
-          Annuler
+      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+        <button type="button" className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onCancel}>
+          {t('editor.budget.cancel')}
         </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="text-[11px] font-semibold bg-[var(--color-green)] text-[var(--color-bg)] px-[10px] py-[4px] rounded-[5px] cursor-pointer hover:opacity-90"
-        >
-          Ajouter
+        <button type="button" className="cm-btn cm-btn-primary cm-btn-sm" onClick={onConfirm}>
+          {t('editor.budget.confirm')}
         </button>
       </div>
     </div>
