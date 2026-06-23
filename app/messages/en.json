@@ -826,6 +826,7 @@
         "colActual": "Actual",
         "colPlanned": "Planned",
         "colVariance": "Variance",
+        "colItem": "Item",
         "donutEmpty": "No data",
         "empty": "No reporting data available.",
         "error": "Failed to load reporting.",

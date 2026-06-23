@@ -24,7 +24,7 @@ export function CampaignReportingTab({ campaign }: Props) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-[48px]">
-        <div className="w-[32px] h-[32px] rounded-full border-2 border-[var(--color-green)]/30 border-t-[var(--color-green)] animate-spin" />
+        <div className="w-[32px] h-[32px] rounded-full border-2 border-[var(--teal-dark)]/30 border-t-[var(--teal-dark)] animate-spin" />
       </div>
     );
   }
@@ -58,19 +58,19 @@ export function CampaignReportingTab({ campaign }: Props) {
         <div className="cm-stat" style={{ borderColor: 'rgba(255,107,91,.2)' }}>
           <div className="cm-stat-icon">📉</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsChargesPlanned' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--color-coral)' }}>
+          <div className="cm-stat-val" style={{ color: 'var(--warm-coral)' }}>
             {fmt.format(totals.totalPlannedCharges)}
           </div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">📉</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsChargesActual' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--color-coral)' }}>
+          <div className="cm-stat-val" style={{ color: 'var(--warm-coral)' }}>
             {fmt.format(totals.totalActualCharges)}
           </div>
           <div
             className="cm-stat-sub"
-            style={{ color: ecartCharges > 0 ? 'var(--color-coral)' : 'var(--color-green)' }}
+            style={{ color: ecartCharges > 0 ? 'var(--warm-coral)' : 'var(--teal-dark)' }}
           >
             {ecartCharges >= 0 ? '+' : ''}{fmt.format(ecartCharges)}
           </div>
@@ -78,19 +78,19 @@ export function CampaignReportingTab({ campaign }: Props) {
         <div className="cm-stat" style={{ borderColor: 'rgba(78,205,196,.2)' }}>
           <div className="cm-stat-icon">📈</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsProduitsPlanned' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--color-green)' }}>
+          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
             {fmt.format(totals.totalPlannedProduits)}
           </div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">📈</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsProduitsActual' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--color-green)' }}>
+          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
             {fmt.format(totals.totalActualProduits)}
           </div>
           <div
             className="cm-stat-sub"
-            style={{ color: ecartProduits >= 0 ? 'var(--color-green)' : 'var(--color-coral)' }}
+            style={{ color: ecartProduits >= 0 ? 'var(--teal-dark)' : 'var(--warm-coral)' }}
           >
             {ecartProduits >= 0 ? '+' : ''}{fmt.format(ecartProduits)}
           </div>
@@ -102,7 +102,7 @@ export function CampaignReportingTab({ campaign }: Props) {
         <div className="cm-card">
           <div className="cm-card-title" style={{ justifyContent: 'space-between' }}>
             <span>{t('reporting.tab.chargesTitle' as Parameters<typeof t>[0])}</span>
-            <span className="text-[10px] text-[var(--color-text-2)] font-normal normal-case">
+            <span style={{ fontSize: '10px', color: 'var(--slate-lavender)', fontWeight: 400, textTransform: 'none' }}>
               {t('reporting.tab.colPlanned' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colActual' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colVariance' as Parameters<typeof t>[0])}
@@ -113,7 +113,7 @@ export function CampaignReportingTab({ campaign }: Props) {
         <div className="cm-card">
           <div className="cm-card-title" style={{ justifyContent: 'space-between' }}>
             <span>{t('reporting.tab.produitsTitle' as Parameters<typeof t>[0])}</span>
-            <span className="text-[10px] text-[var(--color-text-2)] font-normal normal-case">
+            <span style={{ fontSize: '10px', color: 'var(--slate-lavender)', fontWeight: 400, textTransform: 'none' }}>
               {t('reporting.tab.colPlanned' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colActual' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colVariance' as Parameters<typeof t>[0])}

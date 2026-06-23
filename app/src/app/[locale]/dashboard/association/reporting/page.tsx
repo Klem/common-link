@@ -17,15 +17,22 @@ export default function ReportingPage() {
   return (
     <div>
       <Topbar title={t('nav.reporting')} />
-      <div className="p-[24px]">
-        <div className="card card-no-hover">
+      <div className="page">
+        <div className="page-head">
+          <div>
+            <h1>{t('nav.reporting')}</h1>
+            <p>{t('reporting.page.subtitle')}</p>
+          </div>
+        </div>
+        <div className="card no-hover">
           <div className="card-b">
-            <p className="text-[var(--color-text-2)] text-[14px]">
+            <p style={{ color: 'var(--slate-lavender)' }}>
               {t('reporting.page.selectCampaign')}
             </p>
             <button
               type="button"
-              className="btn btn-primary mt-[16px]"
+              className="btn btn-primary"
+              style={{ marginTop: '16px' }}
               onClick={() => router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}`)}
             >
               {t('reporting.page.openCampaign')}

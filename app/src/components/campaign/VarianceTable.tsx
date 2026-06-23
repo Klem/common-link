@@ -13,9 +13,9 @@ const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' 
 
 function varianceColor(variance: number, isCharges: boolean): string {
   if (isCharges) {
-    return variance > 0 ? 'var(--color-coral)' : 'var(--color-green)';
+    return variance > 0 ? 'var(--warm-coral)' : 'var(--teal-dark)';
   }
-  return variance >= 0 ? 'var(--color-green)' : 'var(--color-coral)';
+  return variance >= 0 ? 'var(--teal-dark)' : 'var(--warm-coral)';
 }
 
 /**
@@ -27,28 +27,22 @@ export function VarianceTable({ sections, isCharges }: VarianceTableProps) {
 
   if (sections.length === 0) {
     return (
-      <p className="text-[13px] text-[var(--color-text-2)] p-[12px]">
+      <p style={{ color: 'var(--slate-lavender)', fontSize: '13px', padding: '12px' }}>
         {t('reporting.tab.empty' as Parameters<typeof t>[0])}
       </p>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[12px]">
+    <div className="tw">
+      <table className="cm-table">
         <thead>
-          <tr className="text-[var(--color-text-2)] border-b border-[var(--color-border)]">
-            <th className="text-left py-[6px] pr-[8px] font-semibold">Poste</th>
-            <th className="text-right py-[6px] px-[8px] font-semibold min-w-[70px]">
-              {t('reporting.tab.colPlanned' as Parameters<typeof t>[0])}
-            </th>
-            <th className="text-right py-[6px] px-[8px] font-semibold min-w-[70px]">
-              {t('reporting.tab.colActual' as Parameters<typeof t>[0])}
-            </th>
-            <th className="text-right py-[6px] px-[8px] font-semibold min-w-[70px]">
-              {t('reporting.tab.colVariance' as Parameters<typeof t>[0])}
-            </th>
-            <th className="text-right py-[6px] pl-[8px] font-semibold min-w-[45px]">%</th>
+          <tr>
+            <th>{t('reporting.tab.colItem' as Parameters<typeof t>[0])}</th>
+            <th>{t('reporting.tab.colPlanned' as Parameters<typeof t>[0])}</th>
+            <th>{t('reporting.tab.colActual' as Parameters<typeof t>[0])}</th>
+            <th>{t('reporting.tab.colVariance' as Parameters<typeof t>[0])}</th>
+            <th>%</th>
           </tr>
         </thead>
         <tbody>
@@ -59,19 +53,12 @@ export function VarianceTable({ sections, isCharges }: VarianceTableProps) {
             const color = varianceColor(s.variance, isCharges);
             const sign = s.variance >= 0 ? '+' : '';
             return (
-              <tr
-                key={s.sectionCode}
-                className="border-b border-[var(--color-border)] last:border-0"
-              >
-                <td className="py-[8px] pr-[8px] text-[var(--color-text-2)]">{s.sectionName}</td>
-                <td className="py-[8px] px-[8px] text-right">{fmt.format(s.planned)}</td>
-                <td className="py-[8px] px-[8px] text-right font-semibold">{fmt.format(s.actual)}</td>
-                <td className="py-[8px] px-[8px] text-right font-semibold" style={{ color }}>
-                  {sign}{fmt.format(s.variance)}
-                </td>
-                <td className="py-[8px] pl-[8px] text-right text-[11px]" style={{ color }}>
-                  {sign}{pct}%
-                </td>
+              <tr key={s.sectionCode}>
+                <td>{s.sectionName}</td>
+                <td>{fmt.format(s.planned)}</td>
+                <td>{fmt.format(s.actual)}</td>
+                <td style={{ color }}>{sign}{fmt.format(s.variance)}</td>
+                <td style={{ color }}>{sign}{pct}%</td>
               </tr>
             );
           })}
