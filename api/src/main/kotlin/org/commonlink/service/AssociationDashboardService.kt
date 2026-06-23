@@ -6,6 +6,8 @@ import org.commonlink.dto.DashboardStatsDto
 import org.commonlink.dto.MonthlyPointDto
 import org.commonlink.dto.NextMilestoneDto
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.exception.UserNotFoundException
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -29,6 +31,7 @@ class AssociationDashboardService(
     private val donationRepository: DonationRepository,
     private val campaignRepository: CampaignRepository,
     private val campaignMilestoneRepository: CampaignMilestoneRepository,
+    private val associationProfileRepository: AssociationProfileRepository,
 ) {
 
     private val monthFmt = DateTimeFormatter.ofPattern("yyyy-MM")
@@ -38,7 +41,11 @@ class AssociationDashboardService(
      *
      * @param associationId UUID of the authenticated association profile.
      */
-    fun getDashboard(associationId: UUID): DashboardStatsDto {
+    fun getDashboard(userId: UUID): DashboardStatsDto {
+        val associationId = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+            .id!!
+
         val totalRaisedActive =
             donationRepository.sumConfirmedAmountByAssociationId(associationId) ?: BigDecimal.ZERO
 
