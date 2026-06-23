@@ -357,6 +357,7 @@
         },
         "empty": "Aucun donateur pour cette campagne.",
         "error": "Erreur lors du chargement des donateurs.",
+        "exportCsv": "Exporter CSV",
         "loading": "Chargement…",
         "search": {
           "placeholder": "Rechercher un donateur…"

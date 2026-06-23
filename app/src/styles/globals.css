@@ -1675,6 +1675,9 @@ textarea.form-input {
 .cm-stat-icon { font-size: 20px; margin-bottom: 6px; }
 .cm-stat-lbl { font-size: 11px; color: var(--slate-lavender); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
 .cm-stat-val { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink-navy); }
+.cm-stat-val.val-teal  { color: var(--bright-teal); }
+.cm-stat-val.val-dark  { color: var(--teal-dark); }
+.cm-stat-val.val-amber { color: #b37800; font-size: 14px; }
 .cm-stat-sub { font-size: 11px; color: var(--slate-lavender); margin-top: 2px; }
 
 /* ── Card dashboard extras ────────────────────────────────────────────────── */

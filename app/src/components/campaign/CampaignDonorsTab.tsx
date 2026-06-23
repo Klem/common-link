@@ -23,19 +23,26 @@ function fmtRef(ref: string) {
   return ref.length > 24 ? `${ref.slice(0, 12)}…${ref.slice(-8)}` : ref;
 }
 
+const AVATAR_COLORS = ['var(--bright-teal)', 'var(--deep-indigo)', 'var(--warm-coral)', '#b37800'];
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
+}
+
+function getAvatarBg(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) & 0xffff;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
 function OnChainChip({ onChain }: { onChain: boolean }) {
-  if (onChain) {
-    return (
-      <span className="badge-active text-[10px] px-[6px] py-[1px] rounded-full font-semibold">
-        ✓ on-chain
-      </span>
-    );
-  }
-  return (
-    <span className="badge-draft text-[10px] px-[6px] py-[1px] rounded-full font-semibold text-[var(--soft-amber)]">
-      ⏳
-    </span>
-  );
+  if (onChain) return <span className="chip green">✓ on-chain</span>;
+  return <span className="chip yellow">⏳</span>;
 }
 
 function DonationDetail({
@@ -47,36 +54,37 @@ function DonationDetail({
 }) {
   const t = useTranslations('dashboard.campaigns.donors');
   return (
-    <div className="mt-[12px] p-[14px] rounded-[var(--radius-md)] bg-[var(--color-bg-2)] border border-[var(--color-border)]">
-      <div className="flex items-center justify-between mb-[10px]">
-        <span className="font-semibold text-[13px]">💸 {t('tx.title')}</span>
+    <div className="cm-card" style={{ marginTop: '10px', marginBottom: 0 }}>
+      <div className="cm-card-title">
+        💸 {t('tx.title')}
         <button
           type="button"
-          className="btn btn-ghost text-[11px] py-[2px] px-[8px]"
+          className="cm-btn cm-btn-ghost cm-btn-sm"
           onClick={onClose}
+          style={{ marginLeft: 'auto' }}
         >
           {t('tx.close')}
         </button>
       </div>
-      <div className="flex flex-col gap-[6px] text-[12px]">
-        <div className="flex justify-between">
-          <span className="text-[var(--slate-lavender)]">{t('tx.date')}</span>
-          <span className="font-semibold">{fmtDate(donation.createdAt)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[var(--slate-lavender)]">{t('tx.title')}</span>
-          <span className="font-bold text-[var(--teal-dark)]">{fmtEur(donation.amount)}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[var(--slate-lavender)]">{t('tx.ref')}</span>
-          <code className="text-[10px] text-[var(--ink-navy)] bg-[var(--mist-lavender)] px-[6px] py-[1px] rounded">
-            {fmtRef(donation.providerRef)}
-          </code>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[var(--slate-lavender)]">{t('tx.onChain')}</span>
-          <OnChainChip onChain={donation.onChain} />
-        </div>
+      <div className="d-row">
+        <span className="d-key">{t('tx.date')}</span>
+        <span className="d-val">{fmtDate(donation.createdAt)}</span>
+      </div>
+      <div className="d-row">
+        <span className="d-key">{t('tx.title')}</span>
+        <span className="d-val" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, color: 'var(--teal-dark)' }}>
+          {fmtEur(donation.amount)}
+        </span>
+      </div>
+      <div className="d-row">
+        <span className="d-key">{t('tx.ref')}</span>
+        <code style={{ fontSize: '10px', background: 'var(--mist-lavender)', padding: '2px 6px', borderRadius: '4px' }}>
+          {fmtRef(donation.providerRef)}
+        </code>
+      </div>
+      <div className="d-row">
+        <span className="d-key">{t('tx.onChain')}</span>
+        <OnChainChip onChain={donation.onChain} />
       </div>
     </div>
   );
@@ -101,82 +109,113 @@ function DonorDetail({
 }) {
   const t = useTranslations('dashboard.campaigns.donors');
   return (
-    <div className="card card-no-hover mt-[16px]">
-      <div className="card-header flex items-center justify-between">
-        <span>👤 {donor.displayName}</span>
+    <div className="cm-card">
+      <div className="cm-card-title">
+        👤 {donor.displayName}
         <button
           type="button"
-          className="btn btn-ghost text-[11px] py-[2px] px-[8px]"
+          className="cm-btn cm-btn-ghost cm-btn-sm"
           onClick={onClose}
+          style={{ marginLeft: 'auto' }}
         >
           {t('detail.close')}
         </button>
       </div>
-      <div className="card-body">
-        {/* Donor summary */}
-        <div className="grid grid-cols-3 gap-[10px] mb-[16px]">
-          <div className="stat-card">
-            <div className="stat-card-label">{t('detail.total')}</div>
-            <div className="stat-card-value" style={{ color: 'var(--teal-dark)', fontSize: '16px' }}>
-              {fmtEur(donor.totalAmount)}
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">{t('detail.txCount')}</div>
-            <div className="stat-card-value" style={{ color: 'var(--bright-teal)', fontSize: '16px' }}>
-              {donor.txCount}
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">{t('detail.lastDonation')}</div>
-            <div className="stat-card-value" style={{ fontSize: '14px' }}>
-              {fmtDate(donor.lastDonationAt)}
-            </div>
-          </div>
-        </div>
 
-        {/* Donations list */}
-        <div className="font-semibold text-[12px] text-[var(--slate-lavender)] mb-[8px]">
-          {t('detail.transactions')}
+      <div className="cm-stats" style={{ marginBottom: '16px' }}>
+        <div className="cm-stat">
+          <div className="cm-stat-lbl">{t('detail.total')}</div>
+          <div className="cm-stat-val val-dark">{fmtEur(donor.totalAmount)}</div>
         </div>
-        {isLoading ? (
-          <div className="flex justify-center py-[16px]">
-            <div className="w-[20px] h-[20px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
-          </div>
-        ) : donations.length === 0 ? (
-          <p className="text-[12px] text-[var(--slate-lavender)] py-[8px]">{t('detail.noTx')}</p>
-        ) : (
-          <div className="flex flex-col gap-[1px]">
-            {donations.map((d) => (
-              <div key={d.id}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    selectedDonation?.id === d.id ? onCloseDonation() : onSelectDonation(d)
-                  }
-                  className="w-full flex items-center gap-[10px] py-[8px] border-b border-[var(--color-border)] last:border-0 text-left hover:bg-[var(--color-bg-2)] rounded px-[4px] transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[12px] text-[var(--teal-dark)]">
-                      {fmtEur(d.amount)}
-                    </div>
-                    <div className="text-[11px] text-[var(--slate-lavender)]">
-                      {fmtDate(d.createdAt)}
-                    </div>
-                  </div>
-                  <OnChainChip onChain={d.onChain} />
-                </button>
-                {selectedDonation?.id === d.id && (
-                  <DonationDetail
-                    donation={d}
-                    onClose={onCloseDonation}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="cm-stat">
+          <div className="cm-stat-lbl">{t('detail.txCount')}</div>
+          <div className="cm-stat-val val-teal">{donor.txCount}</div>
+        </div>
+        <div className="cm-stat">
+          <div className="cm-stat-lbl">{t('detail.lastDonation')}</div>
+          <div className="cm-stat-val" style={{ fontSize: '14px' }}>{fmtDate(donor.lastDonationAt)}</div>
+        </div>
       </div>
+
+      <div className="d-section">{t('detail.transactions')}</div>
+
+      {isLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}>
+          <div className="w-[20px] h-[20px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
+        </div>
+      ) : donations.length === 0 ? (
+        <p style={{ fontSize: '12px', color: 'var(--slate-lavender)', padding: '8px 0' }}>
+          {t('detail.noTx')}
+        </p>
+      ) : (
+        donations.map((d) => (
+          <div key={d.id}>
+            <button
+              type="button"
+              onClick={() =>
+                selectedDonation?.id === d.id ? onCloseDonation() : onSelectDonation(d)
+              }
+              className="d-row"
+              style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <span className="d-key">{fmtDate(d.createdAt)}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, color: 'var(--teal-dark)' }}>
+                  {fmtEur(d.amount)}
+                </span>
+                <OnChainChip onChain={d.onChain} />
+              </span>
+            </button>
+            {selectedDonation?.id === d.id && (
+              <DonationDetail donation={d} onClose={onCloseDonation} />
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function Pager({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  const pages: (number | '…')[] = [];
+  if (totalPages <= 7) {
+    for (let i = 0; i < totalPages; i++) pages.push(i);
+  } else {
+    pages.push(0);
+    if (page > 2) pages.push('…');
+    for (let i = Math.max(1, page - 1); i <= Math.min(totalPages - 2, page + 1); i++) pages.push(i);
+    if (page < totalPages - 3) pages.push('…');
+    pages.push(totalPages - 1);
+  }
+
+  return (
+    <div className="pager">
+      <button type="button" disabled={page === 0} onClick={() => onPageChange(page - 1)}>←</button>
+      {pages.map((p, i) =>
+        p === '…' ? (
+          <button key={`ellipsis-${i}`} type="button" disabled style={{ cursor: 'default' }}>…</button>
+        ) : (
+          <button
+            key={p}
+            type="button"
+            className={p === page ? 'active' : undefined}
+            onClick={() => onPageChange(p as number)}
+          >
+            {(p as number) + 1}
+          </button>
+        )
+      )}
+      <button type="button" disabled={page >= totalPages - 1} onClick={() => onPageChange(page + 1)}>→</button>
     </div>
   );
 }
@@ -207,178 +246,157 @@ export function CampaignDonorsTab({ campaign }: Props) {
   const totalElements = donorsPage?.totalElements ?? 0;
   const totalPages = donorsPage?.totalPages ?? 0;
 
-  /* Stats derived from current page */
   const topDonor =
     sort === DonorSort.AMOUNT && donors.length > 0 ? donors[0].displayName : '—';
   const avgAmount =
-    donors.length > 0
-      ? donors.reduce((s, d) => s + d.totalAmount, 0) / donors.length
-      : 0;
+    donors.length > 0 ? donors.reduce((s, d) => s + d.totalAmount, 0) / donors.length : 0;
+
+  function handleExportCsv() {
+    if (donors.length === 0) return;
+    const header = ['Nom', 'Montant (€)', 'Transactions', 'Dernier don'];
+    const rows = donors.map((d) => [
+      `"${d.displayName.replace(/"/g, '""')}"`,
+      d.totalAmount.toFixed(2),
+      String(d.txCount),
+      fmtDate(d.lastDonationAt),
+    ]);
+    const csv = [header, ...rows].map((r) => r.join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `donateurs-${campaign.id}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div>
-      {/* ── Stats bar ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[12px] mb-[24px]">
-        <div className="stat-card">
-          <div className="stat-card-icon">👥</div>
-          <div className="stat-card-label">{t('stats.total')}</div>
-          <div className="stat-card-value" style={{ color: 'var(--bright-teal)' }}>
-            {isLoading ? '—' : totalElements}
-          </div>
+      {/* ── Stats ─────────────────────────────────────────────────────────── */}
+      <div className="cm-stats">
+        <div className="cm-stat">
+          <div className="cm-stat-icon">👥</div>
+          <div className="cm-stat-lbl">{t('stats.total')}</div>
+          <div className="cm-stat-val val-teal">{isLoading ? '—' : totalElements}</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-card-icon">💎</div>
-          <div className="stat-card-label">{t('stats.avg')}</div>
-          <div className="stat-card-value" style={{ color: 'var(--teal-dark)' }}>
-            {donors.length > 0 ? fmtEur(avgAmount) : '—'}
-          </div>
+        <div className="cm-stat">
+          <div className="cm-stat-icon">💎</div>
+          <div className="cm-stat-lbl">{t('stats.avg')}</div>
+          <div className="cm-stat-val val-dark">{donors.length > 0 ? fmtEur(avgAmount) : '—'}</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-card-icon">🏆</div>
-          <div className="stat-card-label">{t('stats.top')}</div>
-          <div className="stat-card-value" style={{ color: '#b37800', fontSize: '14px' }}>
-            {isLoading ? '—' : topDonor}
-          </div>
+        <div className="cm-stat">
+          <div className="cm-stat-icon">🏆</div>
+          <div className="cm-stat-lbl">{t('stats.top')}</div>
+          <div className="cm-stat-val val-amber">{isLoading ? '—' : topDonor}</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-card-icon">💶</div>
-          <div className="stat-card-label">{t('stats.raised')}</div>
-          <div className="stat-card-value" style={{ color: 'var(--teal-dark)' }}>
-            {fmtEur(campaign.raised ?? 0)}
-          </div>
+        <div className="cm-stat">
+          <div className="cm-stat-icon">💶</div>
+          <div className="cm-stat-lbl">{t('stats.raised')}</div>
+          <div className="cm-stat-val val-dark">{fmtEur(campaign.raised ?? 0)}</div>
         </div>
       </div>
 
-      {/* ── Filter bar + table ─────────────────────────────────────── */}
-      <div className="card card-no-hover">
-        <div className="card-body">
-          {/* Filter bar */}
-          <div className="flex flex-wrap gap-[10px] items-center mb-[16px]">
-            <input
-              className="form-input"
-              style={{ maxWidth: '260px' }}
-              type="text"
-              placeholder={t('search.placeholder')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <select
-              className="form-input"
-              style={{ width: 'auto' }}
-              value={sort}
-              onChange={(e) => {
-                setSort(e.target.value);
-                setPage(0);
-              }}
-            >
-              <option value={DonorSort.AMOUNT}>{t('sort.amount')}</option>
-              <option value={DonorSort.DATE}>{t('sort.date')}</option>
-              <option value={DonorSort.NAME}>{t('sort.name')}</option>
-            </select>
-            <span className="text-[12px] text-[var(--slate-lavender)] ml-auto">
-              {!isLoading && t('showing', { count: totalElements })}
-            </span>
-          </div>
+      {/* ── Carte table ───────────────────────────────────────────────────── */}
+      <div className="cm-card">
+        <div className="filter-bar">
+          <input
+            className="cm-fi"
+            style={{ maxWidth: '260px' }}
+            type="text"
+            placeholder={t('search.placeholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="fsel"
+            value={sort}
+            onChange={(e) => {
+              setSort(e.target.value);
+              setPage(0);
+            }}
+          >
+            <option value={DonorSort.AMOUNT}>{t('sort.amount')}</option>
+            <option value={DonorSort.DATE}>{t('sort.date')}</option>
+            <option value={DonorSort.NAME}>{t('sort.name')}</option>
+          </select>
+          <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--slate-lavender)' }}>
+            {!isLoading && t('showing', { count: totalElements })}
+          </span>
+          <button type="button" className="cm-btn cm-btn-ghost cm-btn-sm" onClick={handleExportCsv}>
+            {t('exportCsv')}
+          </button>
+        </div>
 
-          {/* Table */}
-          {isLoading ? (
-            <div className="flex justify-center py-[32px]">
-              <div className="w-[28px] h-[28px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
-            </div>
-          ) : error ? (
-            <p className="text-[13px] text-[var(--warm-coral)] text-center py-[20px]">
-              {t('error')}
-            </p>
-          ) : donors.length === 0 ? (
-            <p className="text-[13px] text-[var(--slate-lavender)] text-center py-[28px]">
-              {t('empty')}
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-[var(--color-border)]">
-                    <th className="text-left py-[8px] pr-[12px] font-semibold text-[var(--slate-lavender)]">
-                      {t('table.donor')}
-                    </th>
-                    <th className="text-right py-[8px] pr-[12px] font-semibold text-[var(--slate-lavender)]">
-                      {t('table.amount')}
-                    </th>
-                    <th className="text-center py-[8px] pr-[12px] font-semibold text-[var(--slate-lavender)]">
-                      {t('table.transactions')}
-                    </th>
-                    <th className="text-left py-[8px] pr-[12px] font-semibold text-[var(--slate-lavender)]">
-                      {t('table.lastDonation')}
-                    </th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {donors.map((donor) => (
-                    <tr
-                      key={donor.donorId}
-                      className="border-b border-[var(--color-border)] last:border-0"
-                    >
-                      <td className="py-[10px] pr-[12px]">
-                        <span className="font-semibold">{donor.displayName}</span>
-                      </td>
-                      <td className="py-[10px] pr-[12px] text-right font-bold text-[var(--teal-dark)]">
-                        {fmtEur(donor.totalAmount)}
-                      </td>
-                      <td className="py-[10px] pr-[12px] text-center text-[var(--slate-lavender)]">
-                        {donor.txCount}
-                      </td>
-                      <td className="py-[10px] pr-[12px] text-[var(--slate-lavender)]">
-                        {fmtDate(donor.lastDonationAt)}
-                      </td>
-                      <td className="py-[10px]">
-                        <button
-                          type="button"
-                          className="btn btn-ghost text-[11px] py-[2px] px-[8px]"
-                          onClick={() =>
-                            selectedDonor?.donorId === donor.donorId
-                              ? closeDonor()
-                              : selectDonor(donor)
-                          }
+        {isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}>
+            <div className="w-[28px] h-[28px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
+          </div>
+        ) : error ? (
+          <p style={{ fontSize: '13px', color: 'var(--warm-coral)', textAlign: 'center', padding: '20px 0' }}>
+            {t('error')}
+          </p>
+        ) : donors.length === 0 ? (
+          <p style={{ fontSize: '13px', color: 'var(--slate-lavender)', textAlign: 'center', padding: '28px 0' }}>
+            {t('empty')}
+          </p>
+        ) : (
+          <div className="tw">
+            <table className="cm-table">
+              <thead>
+                <tr>
+                  <th>{t('table.donor')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('table.amount')}</th>
+                  <th style={{ textAlign: 'center' }}>{t('table.transactions')}</th>
+                  <th>{t('table.lastDonation')}</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {donors.map((donor) => (
+                  <tr key={donor.donorId}>
+                    <td>
+                      <div className="avatar-row">
+                        <div
+                          className="avatar avatar-xs"
+                          style={{ background: getAvatarBg(donor.donorId) }}
                         >
-                          {t('table.view')}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          {getInitials(donor.displayName)}
+                        </div>
+                        <div style={{ fontWeight: 500 }}>{donor.displayName}</div>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: "'Syne',sans-serif", fontWeight: 700, color: 'var(--teal-dark)' }}>
+                      {fmtEur(donor.totalAmount)}
+                    </td>
+                    <td style={{ textAlign: 'center', color: 'var(--bright-teal)', fontWeight: 600 }}>
+                      {donor.txCount}
+                    </td>
+                    <td style={{ color: 'var(--slate-lavender)' }}>
+                      {fmtDate(donor.lastDonationAt)}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="cm-btn cm-btn-ghost cm-btn-sm"
+                        onClick={() =>
+                          selectedDonor?.donorId === donor.donorId
+                            ? closeDonor()
+                            : selectDonor(donor)
+                        }
+                      >
+                        {t('table.view')}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-          {/* Pager */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-[8px] mt-[16px]">
-              <button
-                type="button"
-                className="btn btn-ghost text-[12px] py-[4px] px-[10px]"
-                disabled={page === 0}
-                onClick={() => setPage(page - 1)}
-              >
-                ←
-              </button>
-              <span className="text-[12px] text-[var(--slate-lavender)]">
-                {page + 1} / {totalPages}
-              </span>
-              <button
-                type="button"
-                className="btn btn-ghost text-[12px] py-[4px] px-[10px]"
-                disabled={page >= totalPages - 1}
-                onClick={() => setPage(page + 1)}
-              >
-                →
-              </button>
-            </div>
-          )}
-        </div>
+        <Pager page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
-      {/* ── Donor detail panel ─────────────────────────────────────── */}
+      {/* ── Donor detail panel ────────────────────────────────────────────── */}
       {selectedDonor && (
         <DonorDetail
           donor={selectedDonor}

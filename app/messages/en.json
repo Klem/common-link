@@ -357,6 +357,7 @@
         },
         "empty": "No donors for this campaign.",
         "error": "Error loading donors.",
+        "exportCsv": "Export CSV",
         "loading": "Loading…",
         "search": {
           "placeholder": "Search a donor…"
