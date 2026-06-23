@@ -5,6 +5,10 @@ import type { CampaignDto } from '@/types/campaign';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string, params?: Record<string, unknown>) => {
     if (params) return `${key}:${JSON.stringify(params)}`;

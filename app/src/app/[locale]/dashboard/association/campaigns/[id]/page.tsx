@@ -124,7 +124,7 @@ export default function CampaignEditorPage() {
 
   return (
     <div>
-      <Topbar title={campaign.name} parent={t('campaigns.pageTitle')} />
+      <Topbar title={campaign.name} parent={t('pageTitle')} />
 
       <div className="page">
         {/* — Barre d'actions — */}

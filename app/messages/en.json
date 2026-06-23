@@ -439,20 +439,42 @@
           "progress": "Progress"
         },
         "info": {
+          "category": {
+            "label": "Category"
+          },
+          "coverImage": {
+            "hint": "JPG, PNG — 5 MB max · 1200×600 recommended",
+            "label": "Cover image",
+            "uploadPrompt": "Drag an image or browse"
+          },
+          "dateError": "End date must be at least 7 days after start date",
           "description": {
             "label": "Campaign description",
             "placeholder": "Describe the objective, context and expected impact…"
           },
           "endDate": {
+            "hint": "(min. 7 days after start)",
             "label": "End date"
           },
           "goal": {
             "label": "Fundraising goal (€)",
-            "placeholder": "0"
+            "placeholder": "0",
+            "tip": "You can enter a free amount, or link it automatically to the total expenses in your projected budget."
+          },
+          "goalLink": "🔗 Link to total expenses",
+          "impactGoals": {
+            "label": "Impact goals",
+            "placeholder": "E.g.: allow 450 students to study in good conditions, reduce absenteeism by 30%…",
+            "tip": "Describe concretely what you hope to achieve: number of beneficiaries, measurable outcomes, expected changes."
           },
           "name": {
             "label": "Campaign name",
             "placeholder": "Your campaign name…"
+          },
+          "reason": {
+            "label": "Campaign reason",
+            "placeholder": "Why are you launching this campaign now?",
+            "tip": "Visible on the public page. Reassures donors of your commitment."
           },
           "save": "Save",
           "saved": "Campaign updated.",
@@ -572,6 +594,7 @@
           "PENDING": "Pending"
         },
         "toast": {
+          "addPayeeHint": "Add your beneficiary then come back to the campaign.",
           "error": "Payment failed. Please try again.",
           "success": "Payment issued!"
         },
@@ -825,35 +848,5 @@
     },
     "title": "Dashboard",
     "welcome": "Welcome"
-  },
-  "editor": {
-    "info": {
-      "category": {
-        "label": "Category"
-      },
-      "coverImage": {
-        "hint": "JPG, PNG — 5 MB max · 1200×600 recommended",
-        "label": "Cover image",
-        "uploadPrompt": "Drag an image or browse"
-      },
-      "dateError": "End date must be at least 7 days after start date",
-      "endDate": {
-        "hint": "(min. 7 days after start)"
-      },
-      "goal": {
-        "tip": "You can enter a free amount, or link it automatically to the total expenses in your projected budget."
-      },
-      "goalLink": "🔗 Link to total expenses",
-      "impactGoals": {
-        "label": "Impact goals",
-        "placeholder": "E.g.: allow 450 students to study in good conditions, reduce absenteeism by 30%…",
-        "tip": "Describe concretely what you hope to achieve: number of beneficiaries, measurable outcomes, expected changes."
-      },
-      "reason": {
-        "label": "Campaign reason",
-        "placeholder": "Why are you launching this campaign now?",
-        "tip": "Visible on the public page. Reassures donors of your commitment."
-      }
-    }
   }
 }

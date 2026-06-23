@@ -2,11 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { usePayments } from '@/hooks/campaign/usePayments';
 import { usePayees } from '@/hooks/payee/usePayees';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Donut } from '@/components/ui/Donut';
 import { useToastStore } from '@/stores/toastStore';
 import { PayoutKind, PayoutStatus } from '@/types/payment';
+import { ROUTES } from '@/lib/routes';
 import type { CampaignDto } from '@/types/campaign';
 import type { PayoutDto } from '@/types/payment';
 
@@ -14,10 +17,8 @@ interface Props {
   campaign: CampaignDto;
 }
 
-/** Plan comptable type codes that map to REMUNERATION kind. */
 const REMUNERATION_CODES = new Set(['64-rem', '64-soc']);
 
-/** Derives PayoutKind from a plan-comptable typeCode. */
 function kindFromTypeCode(code: string) {
   return REMUNERATION_CODES.has(code) ? PayoutKind.REMUNERATION : PayoutKind.EXPENSE;
 }
@@ -27,40 +28,26 @@ function fmtEur(amount: number) {
 }
 
 function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(
-    new Date(iso),
-  );
+  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(iso));
 }
 
 function StatusChip({ status }: { status: PayoutDto['status'] }) {
   if (status === PayoutStatus.CONFIRMED) {
-    return (
-      <span className="badge-active text-[11px] px-[8px] py-[2px] rounded-full font-semibold">
-        ✓
-      </span>
-    );
+    return <span className="pay-chip confirmed">✓</span>;
   }
   if (status === PayoutStatus.FAILED) {
-    return (
-      <span className="badge-draft text-[11px] px-[8px] py-[2px] rounded-full font-semibold text-[var(--warm-coral)]">
-        ✗
-      </span>
-    );
+    return <span className="pay-chip" style={{ background: 'rgba(255,107,91,.12)', color: 'var(--warm-coral)' }}>✗</span>;
   }
-  return (
-    <span className="badge-draft text-[11px] px-[8px] py-[2px] rounded-full font-semibold text-[var(--soft-amber)]">
-      ⏳
-    </span>
-  );
+  return <span className="pay-chip pending">⏳</span>;
 }
 
 export function CampaignPaymentsTab({ campaign }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
+  const router = useRouter();
   const { payouts, summary, isLoading, isSaving, error, submit } = usePayments(campaign.id);
   const { payees } = usePayees();
   const addToast = useToastStore((s) => s.addToast);
 
-  /* Form state */
   const [payeeId, setPayeeId] = useState('');
   const [payeeIbanId, setPayeeIbanId] = useState('');
   const [typeCodeRaw, setTypeCodeRaw] = useState('');
@@ -78,14 +65,8 @@ export function CampaignPaymentsTab({ campaign }: Props) {
   const isCustomType = typeCodeRaw === 'custom';
   const effectiveTypeCode = isCustomType ? customTypeCode.trim() : typeCodeRaw;
 
-  /* Validation (mirrors backend constraints) */
   const amountNum = parseFloat(amount) || 0;
-  const isValid =
-    !!payeeId &&
-    !!payeeIbanId &&
-    !!effectiveTypeCode &&
-    amountNum > 0 &&
-    label.trim().length >= 6;
+  const isValid = !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0 && label.trim().length >= 6;
 
   function handlePayeeChange(id: string) {
     setPayeeId(id);
@@ -94,316 +75,295 @@ export function CampaignPaymentsTab({ campaign }: Props) {
     if (p?.ibans.length === 1) setPayeeIbanId(p.ibans[0].id);
   }
 
+  function handleAddPayee() {
+    addToast('warning', 'dashboard.campaigns.payments.toast.addPayeeHint');
+    router.push(ROUTES.ASSOCIATION_PAYEES);
+  }
+
   async function handleConfirm() {
     setShowConfirm(false);
     try {
       await submit({
-        payeeId,
-        payeeIbanId,
-        amount: amountNum,
+        payeeId, payeeIbanId, amount: amountNum,
         kind: kindFromTypeCode(effectiveTypeCode),
         typeCode: effectiveTypeCode,
         label: label.trim(),
       });
-      setPayeeId('');
-      setPayeeIbanId('');
-      setTypeCodeRaw('');
-      setCustomTypeCode('');
-      setAmount('');
-      setLabel('');
+      setPayeeId(''); setPayeeIbanId(''); setTypeCodeRaw('');
+      setCustomTypeCode(''); setAmount(''); setLabel('');
       addToast('success', 'dashboard.campaigns.payments.toast.success');
     } catch {
       addToast('error', 'dashboard.campaigns.payments.toast.error');
     }
   }
 
-  /* Breakdown: sum confirmed amounts by typeCode */
-  const breakdown = useMemo(() => {
-    const confirmedPayouts = payouts.filter((p) => p.status === PayoutStatus.CONFIRMED);
+  /* Breakdown slices for donut */
+  const donutSlices = useMemo(() => {
+    const confirmed = payouts.filter((p) => p.status === PayoutStatus.CONFIRMED);
     const totals: Record<string, number> = {};
-    confirmedPayouts.forEach((p) => {
-      totals[p.typeCode] = (totals[p.typeCode] ?? 0) + p.amount;
-    });
-    const totalAmt = Object.values(totals).reduce((s, v) => s + v, 0);
+    confirmed.forEach((p) => { totals[p.typeCode] = (totals[p.typeCode] ?? 0) + p.amount; });
     return Object.entries(totals)
       .sort((a, b) => b[1] - a[1])
-      .map(([code, amt]) => ({ code, amt, pct: totalAmt > 0 ? (amt / totalAmt) * 100 : 0 }));
+      .map(([code, value]) => ({ label: code, value }));
   }, [payouts]);
 
   return (
     <div>
-      {/* ── Stats bar ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[12px] mb-[24px]">
-        <div className="stat-card">
-          <div className="stat-card-icon">💰</div>
-          <div className="stat-card-label">{t('stats.availableBalance')}</div>
-          <div className="stat-card-value" style={{ color: 'var(--teal-dark)' }}>
+      {/* ── Stats ─────────────────────────────────────────────────── */}
+      <div className="cm-stats">
+        <div className="cm-stat">
+          <div className="cm-stat-icon">💰</div>
+          <div className="cm-stat-lbl">{t('stats.availableBalance')}</div>
+          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
             {summary ? fmtEur(summary.availableBalance) : '—'}
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-card-icon">📤</div>
-          <div className="stat-card-label">{t('stats.paid')}</div>
-          <div className="stat-card-value" style={{ color: '#b37800' }}>
+        <div className="cm-stat">
+          <div className="cm-stat-icon">📤</div>
+          <div className="cm-stat-lbl">{t('stats.paid')}</div>
+          <div className="cm-stat-val" style={{ color: '#b37800' }}>
             {summary ? fmtEur(summary.confirmedAmount) : '—'}
           </div>
           {summary && (
-            <div className="stat-card-sub">
+            <div className="cm-stat-sub">
               {summary.confirmedCount} pmt{summary.confirmedCount !== 1 ? 's' : ''}
             </div>
           )}
         </div>
-        <div className="stat-card">
-          <div className="stat-card-icon">⏳</div>
-          <div className="stat-card-label">{t('stats.pending')}</div>
-          <div className="stat-card-value" style={{ color: 'var(--bright-teal)' }}>
+        <div className="cm-stat">
+          <div className="cm-stat-icon">⏳</div>
+          <div className="cm-stat-lbl">{t('stats.pending')}</div>
+          <div className="cm-stat-val" style={{ color: 'var(--bright-teal)' }}>
             {summary ? fmtEur(summary.pendingAmount) : '—'}
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-card-icon">⚡</div>
-          <div className="stat-card-label">{t('stats.transactions')}</div>
-          <div className="stat-card-value" style={{ color: 'var(--bright-teal)' }}>
+        <div className="cm-stat">
+          <div className="cm-stat-icon">⚡</div>
+          <div className="cm-stat-lbl">{t('stats.transactions')}</div>
+          <div className="cm-stat-val" style={{ color: 'var(--bright-teal)' }}>
             {summary?.txTotal ?? '—'}
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-card-icon">💚</div>
-          <div className="stat-card-label">{t('stats.confirmed')}</div>
-          <div className="stat-card-value" style={{ color: 'var(--teal-dark)' }}>
+        <div className="cm-stat">
+          <div className="cm-stat-icon">💚</div>
+          <div className="cm-stat-lbl">{t('stats.confirmed')}</div>
+          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
             {summary?.txConfirmed ?? '—'}
           </div>
         </div>
       </div>
 
       {/* ── Two-column grid ───────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[16px]">
+      <div className="pay-form-grid">
 
         {/* ── LEFT: form ──────────────────────────────────────────── */}
-        <div className="card card-no-hover">
-          <div className="card-header">💸 {t('form.title')}</div>
-          <div className="card-body">
+        <div className="cm-card">
+          <div className="cm-card-title">💸 {t('form.title')}</div>
 
-            {/* Payee select */}
-            <div className="form-group mb-[14px]">
-              <label className="form-label">
-                {t('form.payee')} <span className="text-[var(--warm-coral)]">*</span>
-              </label>
-              <div className="flex gap-[8px]">
-                <select
-                  className="form-input flex-1"
-                  value={payeeId}
-                  onChange={(e) => handlePayeeChange(e.target.value)}
-                >
-                  <option value="">{t('form.payeePlaceholder')}</option>
-                  {payees.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {/* IBAN preview / select */}
-              {selectedPayee && selectedPayee.ibans.length === 0 && (
-                <p className="text-[12px] text-[var(--warm-coral)] mt-[6px]">{t('noIban')}</p>
-              )}
-              {selectedPayee && selectedPayee.ibans.length === 1 && selectedIban && (
-                <div className="mt-[6px] p-[8px] rounded-[var(--radius-md)] bg-[var(--soft-cream)] text-[12px]">
-                  <div className="font-semibold text-[var(--ink-navy)]">{selectedPayee.name}</div>
-                  <div className="text-[var(--slate-lavender)] font-mono mt-[2px]">
-                    {selectedIban.iban}
-                  </div>
-                </div>
-              )}
-              {selectedPayee && selectedPayee.ibans.length > 1 && (
-                <div className="mt-[6px]">
-                  <label className="form-label text-[11px]">{t('ibanSelect')}</label>
-                  <select
-                    className="form-input"
-                    value={payeeIbanId}
-                    onChange={(e) => setPayeeIbanId(e.target.value)}
-                  >
-                    <option value="">— IBAN —</option>
-                    {selectedPayee.ibans.map((ib) => (
-                      <option key={ib.id} value={ib.id}>
-                        {ib.iban}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+          {/* Payee select + Add button */}
+          <div style={{ marginBottom: '14px' }}>
+            <label className="cm-label">
+              {t('form.payee')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+            </label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select
+                className="cm-fi"
+                style={{ flex: 1 }}
+                value={payeeId}
+                onChange={(e) => handlePayeeChange(e.target.value)}
+              >
+                <option value="">{t('form.payeePlaceholder')}</option>
+                {payees.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="cm-btn cm-btn-ghost cm-btn-sm"
+                onClick={handleAddPayee}
+              >
+                {t('form.addPayee')}
+              </button>
             </div>
 
-            {/* Type + Amount row */}
-            <div className="grid grid-cols-2 gap-[12px] mb-[14px]">
-              <div className="form-group">
-                <label className="form-label">
-                  {t('form.typeCode')} <span className="text-[var(--warm-coral)]">*</span>
-                </label>
+            {/* No IBAN warning */}
+            {selectedPayee && selectedPayee.ibans.length === 0 && (
+              <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '6px' }}>{t('noIban')}</p>
+            )}
+
+            {/* Single IBAN preview */}
+            {selectedPayee && selectedPayee.ibans.length === 1 && selectedIban && (
+              <div className="bene-preview" style={{ display: 'block' }}>
+                <div style={{ fontWeight: 600 }}>{selectedPayee.name}</div>
+                <div style={{ color: 'var(--slate-lavender)', marginTop: '2px' }}>{selectedIban.iban}</div>
+              </div>
+            )}
+
+            {/* Multi-IBAN select */}
+            {selectedPayee && selectedPayee.ibans.length > 1 && (
+              <div style={{ marginTop: '6px' }}>
+                <label className="cm-label" style={{ fontSize: '11px' }}>{t('ibanSelect')}</label>
                 <select
-                  className="form-input"
-                  value={typeCodeRaw}
-                  onChange={(e) => {
-                    setTypeCodeRaw(e.target.value);
-                    setCustomTypeCode('');
-                  }}
+                  className="cm-fi"
+                  value={payeeIbanId}
+                  onChange={(e) => setPayeeIbanId(e.target.value)}
                 >
-                  <option value="">{t('form.typeCodePlaceholder')}</option>
-                  <optgroup label={t('typeGroups.operational')}>
-                    <option value="60-mat">{t('typeCodes.60-mat')}</option>
-                    <option value="60-svc">{t('typeCodes.60-svc')}</option>
-                    <option value="61-loc">{t('typeCodes.61-loc')}</option>
-                    <option value="61-ent">{t('typeCodes.61-ent')}</option>
-                    <option value="62-tra">{t('typeCodes.62-tra')}</option>
-                    <option value="62-pub">{t('typeCodes.62-pub')}</option>
-                  </optgroup>
-                  <optgroup label={t('typeGroups.personnel')}>
-                    <option value="64-rem">{t('typeCodes.64-rem')}</option>
-                    <option value="64-soc">{t('typeCodes.64-soc')}</option>
-                  </optgroup>
-                  <optgroup label={t('typeGroups.other')}>
-                    <option value="65-ges">{t('typeCodes.65-ges')}</option>
-                    <option value="custom">{t('typeCodes.custom')}</option>
-                  </optgroup>
+                  <option value="">— IBAN —</option>
+                  {selectedPayee.ibans.map((ib) => (
+                    <option key={ib.id} value={ib.id}>{ib.iban}</option>
+                  ))}
                 </select>
-                {isCustomType && (
-                  <input
-                    className="form-input mt-[6px]"
-                    type="text"
-                    maxLength={50}
-                    placeholder={t('form.customCodePlaceholder')}
-                    value={customTypeCode}
-                    onChange={(e) => setCustomTypeCode(e.target.value)}
-                  />
+                {selectedIban && (
+                  <div className="bene-preview" style={{ display: 'block' }}>
+                    <div style={{ fontWeight: 600 }}>{selectedPayee.name}</div>
+                    <div style={{ color: 'var(--slate-lavender)', marginTop: '2px' }}>{selectedIban.iban}</div>
+                  </div>
                 )}
               </div>
-              <div className="form-group">
-                <label className="form-label">
-                  {t('form.amount')} <span className="text-[var(--warm-coral)]">*</span>
-                </label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  placeholder="0,00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Label textarea */}
-            <div className="form-group mb-[14px]">
-              <label className="form-label">
-                {t('form.label')} <span className="text-[var(--warm-coral)]">*</span>
-              </label>
-              <textarea
-                className="form-input min-h-[70px]"
-                placeholder={t('form.labelPlaceholder')}
-                maxLength={500}
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-              />
-            </div>
-
-            {/* Payment method (SEPA only) */}
-            <div className="mb-[18px]">
-              <label className="flex items-center gap-[9px] p-[10px_12px] bg-[rgba(78,205,196,.05)] border border-[rgba(78,205,196,.25)] rounded-[var(--radius-md)] cursor-pointer text-[12.5px]">
-                <input
-                  type="radio"
-                  name="pay-method"
-                  defaultChecked
-                  className="accent-[var(--bright-teal)]"
-                  readOnly
-                />
-                <div>
-                  <div className="font-semibold">{t('form.method')}</div>
-                  <div className="text-[11px] text-[var(--slate-lavender)]">{t('form.methodSub')}</div>
-                </div>
-              </label>
-            </div>
-
-            <button
-              className="btn btn-primary w-full"
-              disabled={!isValid || isSaving}
-              onClick={() => setShowConfirm(true)}
-            >
-              {isSaving ? '…' : t('form.submit')}
-            </button>
+            )}
           </div>
-        </div>
 
-        {/* ── RIGHT: history + breakdown ───────────────────────────── */}
-        <div className="flex flex-col gap-[14px]">
-
-          {/* History */}
-          <div className="card card-no-hover flex-1">
-            <div className="card-header">{t('history.title')}</div>
-            <div className="card-body">
-              {isLoading ? (
-                <div className="flex justify-center py-[20px]">
-                  <div className="w-[24px] h-[24px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
-                </div>
-              ) : error ? (
-                <p className="text-[13px] text-[var(--warm-coral)] text-center py-[16px]">{error}</p>
-              ) : payouts.length === 0 ? (
-                <p className="text-[13px] text-[var(--slate-lavender)] text-center py-[20px]">
-                  {t('history.empty')}
-                </p>
-              ) : (
-                <div className="flex flex-col gap-[1px]">
-                  {[...payouts].map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-[10px] py-[10px] border-b border-[var(--color-border)] last:border-0"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-[12px] truncate">{p.payeeName}</div>
-                        <div className="text-[11px] text-[var(--slate-lavender)]">
-                          {p.typeCode} · {fmtDate(p.createdAt)}
-                        </div>
-                      </div>
-                      <span
-                        className="font-bold font-['Syne']"
-                        style={{
-                          color:
-                            p.status === PayoutStatus.CONFIRMED
-                              ? 'var(--teal-dark)'
-                              : '#b37800',
-                        }}
-                      >
-                        {fmtEur(p.amount)}
-                      </span>
-                      <StatusChip status={p.status} />
-                    </div>
-                  ))}
-                </div>
+          {/* Type + Amount row2 */}
+          <div className="row2" style={{ marginBottom: '14px' }}>
+            <div>
+              <label className="cm-label">
+                {t('form.typeCode')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+              </label>
+              <select
+                className="cm-fi"
+                value={typeCodeRaw}
+                onChange={(e) => { setTypeCodeRaw(e.target.value); setCustomTypeCode(''); }}
+              >
+                <option value="">{t('form.typeCodePlaceholder')}</option>
+                <optgroup label={t('typeGroups.operational')}>
+                  <option value="60-mat">{t('typeCodes.60-mat')}</option>
+                  <option value="60-svc">{t('typeCodes.60-svc')}</option>
+                  <option value="61-loc">{t('typeCodes.61-loc')}</option>
+                  <option value="61-ent">{t('typeCodes.61-ent')}</option>
+                  <option value="62-tra">{t('typeCodes.62-tra')}</option>
+                  <option value="62-pub">{t('typeCodes.62-pub')}</option>
+                </optgroup>
+                <optgroup label={t('typeGroups.personnel')}>
+                  <option value="64-rem">{t('typeCodes.64-rem')}</option>
+                  <option value="64-soc">{t('typeCodes.64-soc')}</option>
+                </optgroup>
+                <optgroup label={t('typeGroups.other')}>
+                  <option value="65-ges">{t('typeCodes.65-ges')}</option>
+                  <option value="custom">{t('typeCodes.custom')}</option>
+                </optgroup>
+              </select>
+              {isCustomType && (
+                <input
+                  className="cm-fi"
+                  type="text"
+                  maxLength={50}
+                  placeholder={t('form.customCodePlaceholder')}
+                  value={customTypeCode}
+                  onChange={(e) => setCustomTypeCode(e.target.value)}
+                  style={{ marginTop: '6px' }}
+                />
               )}
             </div>
+            <div>
+              <label className="cm-label">
+                {t('form.amount')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+              </label>
+              <input
+                className="cm-fi"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0,00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
           </div>
 
-          {/* Breakdown */}
-          {breakdown.length > 0 && (
-            <div className="card card-no-hover">
-              <div className="card-header">{t('breakdown.title')}</div>
-              <div className="card-body">
-                <div className="flex flex-col gap-[8px]">
-                  {breakdown.map(({ code, amt, pct }) => (
-                    <div key={code}>
-                      <div className="flex justify-between text-[11px] mb-[3px]">
-                        <span className="text-[var(--slate-lavender)]">{code}</span>
-                        <span className="font-semibold text-[var(--ink-navy)]">{fmtEur(amt)}</span>
-                      </div>
-                      <div className="h-[6px] rounded-full bg-[var(--mist-lavender)] overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-[var(--bright-teal)]"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+          {/* Label / justificatif */}
+          <div style={{ marginBottom: '14px' }}>
+            <label className="cm-label">
+              {t('form.label')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+            </label>
+            <textarea
+              className="cm-fi"
+              placeholder={t('form.labelPlaceholder')}
+              maxLength={500}
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              style={{ minHeight: '70px' }}
+            />
+          </div>
+
+          {/* Payment method (SEPA only) */}
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: '9px',
+              padding: '10px 12px',
+              background: 'rgba(78,205,196,.05)',
+              border: '1px solid rgba(78,205,196,.25)',
+              borderRadius: 'var(--radius-md)',
+              cursor: 'pointer', fontSize: '12.5px',
+            }}>
+              <input type="radio" name="pay-method" defaultChecked
+                style={{ accentColor: 'var(--bright-teal)' }} readOnly />
+              <div>
+                <div style={{ fontWeight: 600 }}>{t('form.method')}</div>
+                <div style={{ fontSize: '11px', color: 'var(--slate-lavender)' }}>{t('form.methodSub')}</div>
+              </div>
+            </label>
+          </div>
+
+          <button
+            className="cm-btn cm-btn-primary"
+            style={{ width: '100%' }}
+            disabled={!isValid || isSaving}
+            onClick={() => setShowConfirm(true)}
+          >
+            {isSaving ? '…' : t('form.submit')}
+          </button>
+        </div>
+
+        {/* ── RIGHT: history + donut ───────────────────────────────── */}
+        <div>
+          {/* History */}
+          <div className="cm-card" style={{ marginBottom: '14px' }}>
+            <div className="cm-card-title">{t('history.title')}</div>
+            {isLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+                <div className="animate-spin" style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid rgba(78,205,196,.3)', borderTopColor: 'var(--bright-teal)' }} />
+              </div>
+            ) : error ? (
+              <p style={{ fontSize: '13px', color: 'var(--warm-coral)', textAlign: 'center', padding: '16px 0' }}>{error}</p>
+            ) : payouts.length === 0 ? (
+              <p style={{ fontSize: '13px', color: 'var(--slate-lavender)', textAlign: 'center', padding: '20px 0' }}>{t('history.empty')}</p>
+            ) : (
+              payouts.map((p) => (
+                <div key={p.id} className="pay-row">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.payeeName}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--slate-lavender)' }}>
+                      {p.typeCode} · {fmtDate(p.createdAt)}
                     </div>
-                  ))}
+                  </div>
+                  <span style={{
+                    fontWeight: 700, fontFamily: "'Syne', sans-serif",
+                    color: p.status === PayoutStatus.CONFIRMED ? 'var(--teal-dark)' : '#b37800',
+                  }}>
+                    {fmtEur(p.amount)}
+                  </span>
+                  <StatusChip status={p.status} />
                 </div>
+              ))
+            )}
+          </div>
+
+          {/* Donut breakdown */}
+          {donutSlices.length > 0 && (
+            <div className="cm-card">
+              <div className="cm-card-title">{t('breakdown.title')}</div>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+                <Donut slices={donutSlices} emptyKey="campaigns.payments.breakdown.empty" />
               </div>
             </div>
           )}
@@ -415,10 +375,7 @@ export function CampaignPaymentsTab({ campaign }: Props) {
         isOpen={showConfirm}
         variant="default"
         title={t('confirm.title')}
-        message={t('confirm.message', {
-          amount: fmtEur(amountNum),
-          payee: selectedPayee?.name ?? '',
-        })}
+        message={t('confirm.message', { amount: fmtEur(amountNum), payee: selectedPayee?.name ?? '' })}
         confirmLabel={t('confirm.submit')}
         onConfirm={handleConfirm}
         onCancel={() => setShowConfirm(false)}

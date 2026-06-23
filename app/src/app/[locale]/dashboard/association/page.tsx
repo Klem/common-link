@@ -55,7 +55,7 @@ export default function AssociationDashboardPage() {
   const displayStats = stats ?? (isLoading ? EMPTY_STATS : EMPTY_STATS);
 
   return (
-    <div>
+    <div className = "page">
       <AccountCompletionCard verified={verified} bankConnected={bankConnected} />
 
       <div className="page-head">
