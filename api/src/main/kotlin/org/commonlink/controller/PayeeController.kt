@@ -10,6 +10,7 @@ import jakarta.validation.Valid
 import org.commonlink.dto.AddIbanRequest
 import org.commonlink.dto.PayeeDto
 import org.commonlink.dto.CreatePayeeRequest
+import org.commonlink.dto.PayoutDto
 import org.commonlink.dto.VopVerifyResponseDto
 import org.commonlink.service.PayeeService
 import org.springframework.http.ResponseEntity
@@ -168,6 +169,32 @@ class PayeeController(
         payeeService.deleteIban(UUID.fromString(principal.username), id, ibanId)
         return ResponseEntity.noContent().build()
     }
+
+    /**
+     * Returns all payouts sent to a given payee, scoped to the authenticated association.
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the payee.
+     * @return 200 with the list of payouts (may be empty).
+     */
+    @GetMapping("/{id}/payouts")
+    @Operation(
+        summary = "List payouts for a payee",
+        description = "Returns all payouts sent to a given payee, newest first."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Payout list returned",
+            content = [Content(schema = Schema(implementation = Array<PayoutDto>::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Payee not found", content = [Content()])
+    )
+    fun listPayeePayouts(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+    ): ResponseEntity<List<PayoutDto>> =
+        ResponseEntity.ok(payeeService.listPayoutsByPayee(UUID.fromString(principal.username), id))
 
     /**
      * Triggers a VOP (Verification of Payee) check for a payee IBAN.

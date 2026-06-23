@@ -270,6 +270,9 @@
           "postalCodeFormat": "Le code postal doit contenir 5 chiffres."
         },
         "identifier": "SIREN",
+        "infos": {
+          "title": "Informations de l'association"
+        },
         "loading": "Chargement du profil…",
         "memberSince": "Membre depuis {date}",
         "monerium": {
@@ -298,9 +301,24 @@
           "magicLink": "Lien magique",
           "title": "Sécurité"
         },
+        "subtitle": "Gérez les informations et la vérification de votre association.",
         "success": "Profil mis à jour.",
-        "title": "Profil de l'association",
+        "tabs": {
+          "bank": "Compte bancaire",
+          "bankBadge": {
+            "connected": "Connecté",
+            "notConnected": "Non connecté"
+          },
+          "infos": "Informations",
+          "verif": "Vérification",
+          "verifBadge": {
+            "ok": "Vérifiée",
+            "todo": "À faire"
+          }
+        },
+        "title": "Paramètres",
         "verification": {
+          "comingSoon": "Bientôt : dépôt de documents et vérification d identité.",
           "pendingText": "La vérification est effectuée par l'équipe CommonLink après examen de votre dossier.",
           "title": "Vérification",
           "verified": "Votre association est vérifiée."
@@ -739,6 +757,23 @@
     },
     "payees": {
       "addPayee": "Ajouter un bénéficiaire",
+      "filter": {
+        "all": "Tous",
+        "companies": "Entreprises",
+        "persons": "Personnes"
+      },
+      "help": {
+        "text1": "Ici, vous gérez la liste des organisations à qui vous souhaitez envoyer des virements SEPA. Vous pouvez rechercher une entreprise / association par SIREN ou SIRET (base INSEE Sirene), ou ajouter directement une personne physique par nom et prénom.",
+        "text2": "Pour chaque bénéficiaire, renseignez son IBAN puis faites-le vérifier en deux étapes : le format est d'abord contrôlé automatiquement, puis l'identité du titulaire est confirmée via le service bancaire VOP (Verification of Payee). Une fois un bénéficiaire entièrement vérifié ✓, vous pouvez consulter tous les paiements envoyés.",
+        "title": "À quoi sert cet écran ?"
+      },
+      "history": {
+        "empty": "Aucun virement pour ce bénéficiaire",
+        "statusDone": "✓ Exécuté",
+        "statusPending": "⏳ En attente",
+        "toggle": "Virements",
+        "total": "Total envoyé"
+      },
       "iban": {
         "add": "Ajouter",
         "addIban": "Ajouter un IBAN",
@@ -765,11 +800,23 @@
         "deleteMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible.",
         "deleteTitle": "Supprimer le bénéficiaire",
         "empty": "Aucun bénéficiaire sélectionné.",
+        "emptyFiltered": "Aucun bénéficiaire ne correspond à ce filtre.",
         "emptyHint": "Recherchez un SIREN/SIRET et cliquez sur Sélectionner.",
         "title": "Bénéficiaires sélectionnés"
       },
-      "pageSubtitle": "Gérez les bénéficiaires de votre association",
+      "mode": {
+        "company": "Entreprise / Asso.",
+        "person": "Personne physique"
+      },
+      "pageSubtitle": "Gérez les organisations et personnes à qui vous envoyez des virements SEPA.",
       "pageTitle": "Bénéficiaires",
+      "person": {
+        "add": "Ajouter",
+        "cardTitle": "Ajouter une personne physique",
+        "error": "Le nom est requis.",
+        "firstName": "Prénom",
+        "lastName": "Nom"
+      },
       "result": {
         "active": "Actif",
         "address": "Adresse",
@@ -798,6 +845,7 @@
           "network": "Impossible de joindre l'API."
         },
         "hint": "encore {remaining} chiffre(s)",
+        "label": "SIREN ou SIRET",
         "loading": "Interrogation INSEE Sirene…",
         "placeholder": "829844810 ou 82984481000046",
         "subtitle": "Saisissez un identifiant. La détection du type est automatique.",
@@ -812,6 +860,15 @@
         "pending": "En attente",
         "verified": "Vérifié VOP"
       },
+      "statusTip": {
+        "closeMatch": "Correspondance VOP approximative — le nom est similaire mais pas exact. Vérifiez avant d'envoyer.",
+        "formatValid": "Format IBAN valide. Lancez la vérification VOP pour confirmer le titulaire.",
+        "invalid": "Format IBAN invalide.",
+        "noMatch": "Aucune correspondance VOP — le nom du titulaire ne correspond pas.",
+        "notPossible": "VOP impossible — la banque ne supporte pas ce service.",
+        "pending": "IBAN ajouté — pas encore vérifié.",
+        "verified": "Vérifié VOP — le nom du titulaire correspond."
+      },
       "vop": {}
     },
     "reporting": {
@@ -824,9 +881,9 @@
         "chargesDonutTitle": "📉 Répartition des charges réalisées",
         "chargesTitle": "📉 Charges — écarts",
         "colActual": "Réalisé",
+        "colItem": "Poste",
         "colPlanned": "Prévu",
         "colVariance": "Écart",
-        "colItem": "Poste",
         "donutEmpty": "Aucune donnée",
         "empty": "Aucune donnée de reporting disponible.",
         "error": "Impossible de charger le reporting.",

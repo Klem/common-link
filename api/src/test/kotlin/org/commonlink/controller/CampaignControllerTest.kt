@@ -69,6 +69,7 @@ class CampaignControllerTest {
         emoji = "❄️",
         title = "Urgence Chauffage",
         description = "Matériel de chauffage d'urgence",
+        transparencyCommitment = null,
         targetAmount = BigDecimal("5000"),
         status = MilestoneStatus.LOCKED,
         sortOrder = 0,

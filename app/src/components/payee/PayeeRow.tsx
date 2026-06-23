@@ -4,28 +4,21 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { PayeeDto, PayeeIbanDto } from '@/types/payee';
 import { IbanVerificationStatus } from '@/types/payee';
+import type { PayoutDto } from '@/types/payment';
+import { PayoutStatus } from '@/types/payment';
+import { getPayeePayouts } from '@/lib/api/payee';
 import { IbanRow } from './IbanRow';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface PayeeRowProps {
-  /** The payee to display. */
   payee: PayeeDto;
-  /** Called when the user clicks the delete payee button. */
   onDeletePayee: (id: string) => void;
-  /** Called when the user submits a new IBAN via the inline input. */
   onAddIban: (payeeId: string, iban: string) => void;
-  /** Called when the user deletes an IBAN. */
   onDeleteIban: (payeeId: string, ibanId: string) => void;
-  /** Called when the user triggers VOP verification on an IBAN. */
   onVerifyVop: (payeeId: string, ibanId: string) => void;
-  /** UUID of the IBAN currently being VOP-verified, or null. */
   verifyingIbanId: string | null;
 }
 
-/**
- * Computes the aggregated status from all IBANs of a payee.
- * Priority: INVALID > NO_MATCH > CLOSE_MATCH > NOT_POSSIBLE > VERIFIED (all) > FORMAT_VALID > PENDING
- */
 function computeAggregatedStatus(ibans: PayeeIbanDto[]): IbanVerificationStatus {
   if (ibans.length === 0) return IbanVerificationStatus.PENDING;
   if (ibans.some((i) => i.status === IbanVerificationStatus.INVALID)) return IbanVerificationStatus.INVALID;
@@ -37,14 +30,24 @@ function computeAggregatedStatus(ibans: PayeeIbanDto[]): IbanVerificationStatus 
   return IbanVerificationStatus.PENDING;
 }
 
-const STATUS_BADGE: Record<IbanVerificationStatus, string> = {
-  [IbanVerificationStatus.VERIFIED]:     'badge badge-success',
-  [IbanVerificationStatus.FORMAT_VALID]: 'badge badge-success',
-  [IbanVerificationStatus.CLOSE_MATCH]:  'badge badge-warning',
-  [IbanVerificationStatus.NO_MATCH]:     'badge badge-error',
-  [IbanVerificationStatus.INVALID]:      'badge badge-error',
-  [IbanVerificationStatus.PENDING]:      'badge badge-neutral',
-  [IbanVerificationStatus.NOT_POSSIBLE]: 'badge badge-neutral',
+const STATUS_ICON: Record<IbanVerificationStatus, string> = {
+  [IbanVerificationStatus.PENDING]:      '⏳',
+  [IbanVerificationStatus.FORMAT_VALID]: '✓',
+  [IbanVerificationStatus.VERIFIED]:     '✓',
+  [IbanVerificationStatus.CLOSE_MATCH]:  '≈',
+  [IbanVerificationStatus.NO_MATCH]:     '✗',
+  [IbanVerificationStatus.INVALID]:      '✗',
+  [IbanVerificationStatus.NOT_POSSIBLE]: '—',
+};
+
+const STATUS_CLASS: Record<IbanVerificationStatus, string> = {
+  [IbanVerificationStatus.PENDING]:      'pending',
+  [IbanVerificationStatus.FORMAT_VALID]: 'format-valid',
+  [IbanVerificationStatus.VERIFIED]:     'verified',
+  [IbanVerificationStatus.CLOSE_MATCH]:  'close-match',
+  [IbanVerificationStatus.NO_MATCH]:     'no-match',
+  [IbanVerificationStatus.INVALID]:      'invalid',
+  [IbanVerificationStatus.NOT_POSSIBLE]: 'not-possible',
 };
 
 const STATUS_LABEL_KEY: Record<IbanVerificationStatus, string> = {
@@ -57,20 +60,16 @@ const STATUS_LABEL_KEY: Record<IbanVerificationStatus, string> = {
   [IbanVerificationStatus.INVALID]:      'payees.status.invalid',
 };
 
-/** Returns the first 1–2 uppercase initials from a name. */
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-}
+const STATUS_TOOLTIP_KEY: Record<IbanVerificationStatus, string> = {
+  [IbanVerificationStatus.PENDING]:      'payees.statusTip.pending',
+  [IbanVerificationStatus.FORMAT_VALID]: 'payees.statusTip.formatValid',
+  [IbanVerificationStatus.VERIFIED]:     'payees.statusTip.verified',
+  [IbanVerificationStatus.CLOSE_MATCH]:  'payees.statusTip.closeMatch',
+  [IbanVerificationStatus.NO_MATCH]:     'payees.statusTip.noMatch',
+  [IbanVerificationStatus.NOT_POSSIBLE]: 'payees.statusTip.notPossible',
+  [IbanVerificationStatus.INVALID]:      'payees.statusTip.invalid',
+};
 
-/**
- * A single payee row displaying the avatar, name, first IBAN, aggregated VOP badge,
- * IBAN list with actions, and an inline "Add IBAN" input.
- */
 export function PayeeRow({
   payee,
   onDeletePayee,
@@ -83,12 +82,28 @@ export function PayeeRow({
   const [showIbanInput, setShowIbanInput] = useState(false);
   const [ibanValue, setIbanValue] = useState('');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [payouts, setPayouts] = useState<PayoutDto[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const aggregatedStatus = computeAggregatedStatus(payee.ibans);
-  const firstIban = payee.ibans[0];
-  const truncatedIban = firstIban
-    ? firstIban.iban.replace(/\s/g, '').slice(0, 16) + '…'
-    : null;
+  const statusClass = STATUS_CLASS[aggregatedStatus];
+
+  const toggleHistory = async () => {
+    const next = !historyOpen;
+    setHistoryOpen(next);
+    if (next && !historyLoaded) {
+      setHistoryLoading(true);
+      try {
+        const data = await getPayeePayouts(payee.id);
+        setPayouts(data);
+        setHistoryLoaded(true);
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
+  };
 
   const handleAddIban = () => {
     const trimmed = ibanValue.trim();
@@ -98,95 +113,149 @@ export function PayeeRow({
     setShowIbanInput(false);
   };
 
-  const handleCancelIban = () => {
-    setIbanValue('');
-    setShowIbanInput(false);
-  };
-
   return (
-    <div className="p-4">
-      {/* Header row: avatar + name/iban/badge + delete */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="avatar avatar-md avatar-indigo flex-shrink-0">
-          {getInitials(payee.name)}
+    <div className="rm-recip-card">
+      <div className="rm-recip-row">
+        {/* Col 1 — status icon */}
+        <div className="rm-status-col">
+          <div className={`rm-status-icon ${statusClass}`}>
+            {STATUS_ICON[aggregatedStatus]}
+          </div>
+          <span className={`rm-status-lbl ${statusClass}`}>
+            {t(STATUS_LABEL_KEY[aggregatedStatus] as Parameters<typeof t>[0])}
+          </span>
+          <div className="rm-status-tooltip">
+            {t(STATUS_TOOLTIP_KEY[aggregatedStatus] as Parameters<typeof t>[0])}
+          </div>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-text text-sm leading-tight">{payee.name}</p>
-          <div className="flex flex-wrap items-center gap-2 mt-1">
-            {truncatedIban && (
-              <span className="text-text-2 font-mono text-xs">{truncatedIban}</span>
+        {/* Col 2 — name + chips */}
+        <div>
+          <p className="rm-recip-name">{payee.name}</p>
+          <div className="rm-chips">
+            {payee.identifier1 && <span className="rm-chip">{payee.identifier1}</span>}
+            {payee.identifier2 && <span className="rm-chip">{payee.identifier2}</span>}
+            {payee.activityCode && <span className="rm-chip">{payee.activityCode}</span>}
+            {payee.category && <span className="rm-chip">{payee.category}</span>}
+            {payee.city && <span className="rm-chip">📍 {payee.city}</span>}
+            {payee.payeeType === 'PERSON' && (
+              <span className="rm-chip">👤 {t('payees.mode.person')}</span>
             )}
-            <span className={STATUS_BADGE[aggregatedStatus]}>
-              {t(STATUS_LABEL_KEY[aggregatedStatus] as Parameters<typeof t>[0])}
-            </span>
           </div>
-          {/* Info chips */}
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            <Chip value={payee.identifier1} />
-            {payee.identifier2 && <Chip value={payee.identifier2} />}
-            {payee.activityCode && <Chip value={payee.activityCode} />}
-            {payee.category && <Chip value={payee.category} />}
+
+          {/* IBANs */}
+          {payee.ibans.length > 0 && (
+            <div className="rm-iban-fields" style={{ marginTop: 10 }}>
+              {payee.ibans.map((iban) => (
+                <IbanRow
+                  key={iban.id}
+                  iban={iban}
+                  payeeId={payee.id}
+                  isVerifyingVop={verifyingIbanId === iban.id}
+                  onDeleteIban={(ibanId) => onDeleteIban(payee.id, ibanId)}
+                  onVerifyVop={(ibanId) => onVerifyVop(payee.id, ibanId)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Add IBAN */}
+          <div style={{ marginTop: 8 }}>
+            {showIbanInput ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  autoFocus
+                  value={ibanValue}
+                  onChange={(e) => setIbanValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddIban();
+                    if (e.key === 'Escape') { setIbanValue(''); setShowIbanInput(false); }
+                  }}
+                  placeholder={t('payees.iban.inputPlaceholder')}
+                  className="cm-fi"
+                  style={{ flex: 1, fontFamily: 'monospace', fontSize: 13 }}
+                />
+                <button onClick={handleAddIban} className="cm-btn cm-btn-primary cm-btn-sm">
+                  {t('payees.iban.add')}
+                </button>
+                <button onClick={() => { setIbanValue(''); setShowIbanInput(false); }} className="cm-btn cm-btn-ghost cm-btn-sm">
+                  {t('payees.iban.cancel')}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowIbanInput(true)}
+                className="cm-btn cm-btn-ghost cm-btn-sm"
+                style={{ fontSize: 12 }}
+              >
+                ＋ {t('payees.iban.addIban')}
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:flex-shrink-0">
+        {/* Col 3 — actions */}
+        <div className="rm-recip-actions">
           <button
+            className="rm-btn-delete"
             onClick={() => setConfirmDeleteOpen(true)}
-            className="btn btn-icon-only btn-sm text-error hover:bg-error/10"
             title={t('payees.list.delete')}
-          >
-            ✕
-          </button>
+          >✕</button>
         </div>
       </div>
 
-      {/* IBAN list */}
-      {payee.ibans.length > 0 && (
-        <div className="mt-3">
-          {payee.ibans.map((iban) => (
-            <IbanRow
-              key={iban.id}
-              iban={iban}
-              payeeId={payee.id}
-              isVerifyingVop={verifyingIbanId === iban.id}
-              onDeleteIban={(ibanId) => onDeleteIban(payee.id, ibanId)}
-              onVerifyVop={(ibanId) => onVerifyVop(payee.id, ibanId)}
-            />
-          ))}
-        </div>
-      )}
+      {/* Transfer history */}
+      <button
+        className="rm-history-btn"
+        aria-expanded={historyOpen}
+        onClick={toggleHistory}
+      >
+        <span className="ht-left">
+          📋 {t('payees.history.toggle')}
+          {historyLoaded && payouts.length > 0 && (
+            <span className="badge-count" style={{ background: 'var(--deep-indigo)', marginLeft: 6 }}>
+              {payouts.length}
+            </span>
+          )}
+        </span>
+        <span className="ht-chev">▾</span>
+      </button>
 
-      {/* Inline IBAN input */}
-      <div className="mt-3">
-        {showIbanInput ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              autoFocus
-              value={ibanValue}
-              onChange={(e) => setIbanValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddIban();
-                if (e.key === 'Escape') handleCancelIban();
-              }}
-              placeholder={t('payees.iban.inputPlaceholder')}
-              className="form-input flex-1 font-mono text-sm"
-            />
-            <button onClick={handleAddIban} className="btn btn-primary btn-sm">
-              {t('payees.iban.add')}
-            </button>
-            <button onClick={handleCancelIban} className="btn btn-ghost btn-sm">
-              {t('payees.iban.cancel')}
-            </button>
-          </div>
+      <div className={`rm-history-body${historyOpen ? ' open' : ''}`}>
+        {historyLoading ? (
+          <div className="rm-empty-recip"><span className="rm-spinner" /></div>
+        ) : payouts.length === 0 ? (
+          <div className="rm-empty-recip">{t('payees.history.empty')}</div>
         ) : (
-          <button
-            onClick={() => setShowIbanInput(true)}
-            className="w-full border border-dashed border-border rounded-lg px-3 py-1.5 text-xs text-text-2 hover:text-text hover:border-border/70 transition-colors text-left"
-          >
-            ＋ {t('payees.iban.addIban')}
-          </button>
+          <>
+            {payouts.map((p) => {
+              const date = new Date(p.createdAt).toLocaleDateString('fr-FR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+              });
+              const isDone = p.status === PayoutStatus.CONFIRMED;
+              return (
+                <div key={p.id} className="rm-hist-entry">
+                  <span className="rm-hist-entry-date">{date}</span>
+                  <span className="rm-hist-entry-ref">{p.label}</span>
+                  <span className={`rm-hist-status ${isDone ? 'rm-hist-done' : 'rm-hist-pending'}`}>
+                    {isDone ? t('payees.history.statusDone') : t('payees.history.statusPending')}
+                  </span>
+                  <span className="rm-hist-entry-amt">
+                    {p.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                  </span>
+                </div>
+              );
+            })}
+            <div className="rm-hist-total">
+              {t('payees.history.total')} :{' '}
+              <strong>
+                {payouts
+                  .reduce((s, p) => s + p.amount, 0)
+                  .toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+              </strong>
+            </div>
+          </>
         )}
       </div>
 
@@ -199,14 +268,5 @@ export function PayeeRow({
         onCancel={() => setConfirmDeleteOpen(false)}
       />
     </div>
-  );
-}
-
-/** Small info chip for identifiers and metadata. */
-function Chip({ value }: { value: string }) {
-  return (
-    <span className="badge badge-neutral font-mono text-xs">
-      {value}
-    </span>
   );
 }

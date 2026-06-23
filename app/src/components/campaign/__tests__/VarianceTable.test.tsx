@@ -34,24 +34,24 @@ describe('VarianceTable', () => {
   it('applies coral colour for positive variance on charges', () => {
     const { container } = render(<VarianceTable sections={[sections[0]]} isCharges={true} />);
     const td = container.querySelectorAll('td')[3];
-    expect(td.getAttribute('style')).toContain('var(--color-coral)');
+    expect(td.getAttribute('style')).toContain('var(--warm-coral)');
   });
 
   it('applies green colour for negative variance on charges', () => {
     const { container } = render(<VarianceTable sections={[sections[1]]} isCharges={true} />);
     const td = container.querySelectorAll('td')[3];
-    expect(td.getAttribute('style')).toContain('var(--color-green)');
+    expect(td.getAttribute('style')).toContain('var(--teal-dark)');
   });
 
   it('applies green colour for positive variance on produits', () => {
     const { container } = render(<VarianceTable sections={[sections[0]]} isCharges={false} />);
     const td = container.querySelectorAll('td')[3];
-    expect(td.getAttribute('style')).toContain('var(--color-green)');
+    expect(td.getAttribute('style')).toContain('var(--teal-dark)');
   });
 
   it('applies coral colour for negative variance on produits', () => {
     const { container } = render(<VarianceTable sections={[sections[1]]} isCharges={false} />);
     const td = container.querySelectorAll('td')[3];
-    expect(td.getAttribute('style')).toContain('var(--color-coral)');
+    expect(td.getAttribute('style')).toContain('var(--warm-coral)');
   });
 });

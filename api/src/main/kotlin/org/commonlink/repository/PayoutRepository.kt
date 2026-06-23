@@ -55,4 +55,10 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
     fun sumConfirmedAmountsByCampaignIdGroupedByTypeCode(
         @Param("campaignId") campaignId: UUID,
     ): List<Array<Any>>
+
+    /** All payouts for a given payee, scoped to the owning association, newest first. */
+    fun findByPayeeIdAndPayeeAssociationIdOrderByCreatedAtDesc(
+        payeeId: UUID,
+        associationId: UUID,
+    ): List<Payout>
 }

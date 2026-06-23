@@ -85,6 +85,35 @@ class PayeeServiceTest {
     }
 
     @Test
+    fun `createPayee PERSON - creates payee without identifier1`() {
+        val request = org.commonlink.dto.CreatePayeeRequest(
+            name = "Marie Dupont",
+            payeeType = "PERSON"
+        )
+
+        val result = payeeService.createPayee(userId, request)
+
+        assertNotNull(result.id)
+        assertEquals("PERSON", result.payeeType)
+        assertEquals("Marie Dupont", result.name)
+        assertNull(result.identifier1)
+        assertTrue(result.ibans.isEmpty())
+    }
+
+    @Test
+    fun `createPayee PERSON - two persons with same name are allowed`() {
+        val request = org.commonlink.dto.CreatePayeeRequest(
+            name = "Marie Dupont",
+            payeeType = "PERSON"
+        )
+
+        payeeService.createPayee(userId, request)
+        val second = payeeService.createPayee(userId, request.copy())
+
+        assertNotNull(second.id)
+    }
+
+    @Test
     fun `createPayee - throws ConflictException on duplicate SIREN`() {
         val request = org.commonlink.dto.CreatePayeeRequest(
             name = "Les Restos du Coeur",

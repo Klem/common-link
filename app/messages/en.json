@@ -270,6 +270,9 @@
           "postalCodeFormat": "Postal code must be 5 digits."
         },
         "identifier": "SIREN",
+        "infos": {
+          "title": "Association information"
+        },
         "loading": "Loading profile…",
         "memberSince": "Member since {date}",
         "monerium": {
@@ -298,9 +301,24 @@
           "magicLink": "Magic link",
           "title": "Security"
         },
+        "subtitle": "Manage your association's information and verification.",
         "success": "Profile updated.",
-        "title": "Association profile",
+        "tabs": {
+          "bank": "Bank account",
+          "bankBadge": {
+            "connected": "Connected",
+            "notConnected": "Not connected"
+          },
+          "infos": "Informations",
+          "verif": "Verification",
+          "verifBadge": {
+            "ok": "Verified",
+            "todo": "To do"
+          }
+        },
+        "title": "Settings",
         "verification": {
+          "comingSoon": "Coming soon: document upload and identity verification.",
           "pendingText": "Verification is carried out by the CommonLink team after reviewing your file.",
           "title": "Verification",
           "verified": "Your association is verified."
@@ -739,6 +757,23 @@
     },
     "payees": {
       "addPayee": "Add a beneficiary",
+      "filter": {
+        "all": "All",
+        "companies": "Companies",
+        "persons": "Individuals"
+      },
+      "help": {
+        "text1": "Here you manage the list of organisations you wish to send SEPA transfers to. You can search for a company or association by SIREN or SIRET (INSEE Sirene), or add an individual directly by first and last name.",
+        "text2": "For each beneficiary, enter their IBAN and have it verified in two steps: the format is checked automatically first, then the account holder's identity is confirmed via the VOP (Verification of Payee) banking service. Once a beneficiary is fully verified ✓, you can view all payments sent to them.",
+        "title": "What is this screen for?"
+      },
+      "history": {
+        "empty": "No transfers for this payee",
+        "statusDone": "✓ Executed",
+        "statusPending": "⏳ Pending",
+        "toggle": "Transfers",
+        "total": "Total sent"
+      },
       "iban": {
         "add": "Add",
         "addIban": "Add an IBAN",
@@ -765,11 +800,23 @@
         "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
         "deleteTitle": "Delete beneficiary",
         "empty": "No beneficiary selected.",
+        "emptyFiltered": "No beneficiary matches this filter.",
         "emptyHint": "Search for a SIREN/SIRET and click Select.",
         "title": "Selected beneficiaries"
       },
+      "mode": {
+        "company": "Company / Org.",
+        "person": "Individual"
+      },
       "pageSubtitle": "Manage your association's beneficiaries",
       "pageTitle": "Beneficiaries",
+      "person": {
+        "add": "Add",
+        "cardTitle": "Add an individual",
+        "error": "Last name is required.",
+        "firstName": "First name",
+        "lastName": "Last name"
+      },
       "result": {
         "active": "Active",
         "address": "Address",
@@ -798,6 +845,7 @@
           "network": "Unable to reach the API."
         },
         "hint": "{remaining} more digit(s) needed",
+        "label": "SIREN or SIRET",
         "loading": "Querying INSEE Sirene…",
         "placeholder": "829844810 or 82984481000046",
         "subtitle": "Enter an identifier. Type detection is automatic.",
@@ -812,6 +860,15 @@
         "pending": "Pending",
         "verified": "VOP Verified"
       },
+      "statusTip": {
+        "closeMatch": "VOP close match — the name is similar but not exact. Check carefully before sending funds.",
+        "formatValid": "IBAN format is valid. Run VOP verification to confirm the account holder.",
+        "invalid": "Invalid IBAN format.",
+        "noMatch": "VOP no match — the account holder name does not match.",
+        "notPossible": "VOP not possible — the bank does not support this service.",
+        "pending": "IBAN added — not yet verified.",
+        "verified": "VOP verified — the account holder name matches."
+      },
       "vop": {}
     },
     "reporting": {
@@ -824,9 +881,9 @@
         "chargesDonutTitle": "📉 Actual expense breakdown",
         "chargesTitle": "📉 Expenses — variances",
         "colActual": "Actual",
+        "colItem": "Item",
         "colPlanned": "Planned",
         "colVariance": "Variance",
-        "colItem": "Item",
         "donutEmpty": "No data",
         "empty": "No reporting data available.",
         "error": "Failed to load reporting.",

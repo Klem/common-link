@@ -6,6 +6,7 @@ import type {
   VopVerifyResponseDto,
   SireneSearchResultDto,
 } from '@/types/payee';
+import type { PayoutDto } from '@/types/payment';
 
 /**
  * Fetches the list of payees for the current association.
@@ -87,4 +88,15 @@ export const verifyIbanVop = (
 export const searchSirene = (query: string): Promise<SireneSearchResultDto> =>
   api
     .get<SireneSearchResultDto>('/api/association/sirene/search', { params: { q: query } })
+    .then((r) => r.data);
+
+/**
+ * Returns all payouts sent to a given payee, newest first.
+ * Calls `GET /api/association/payees/:payeeId/payouts`.
+ *
+ * @param payeeId - UUID of the payee.
+ */
+export const getPayeePayouts = (payeeId: string): Promise<PayoutDto[]> =>
+  api
+    .get<PayoutDto[]>(`/api/association/payees/${payeeId}/payouts`)
     .then((r) => r.data);

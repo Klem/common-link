@@ -11,8 +11,9 @@ import java.util.UUID
  * [PayeeIbanDto] so that the frontend has a complete picture in one request.
  *
  * @param id UUID of the [org.commonlink.entity.Payee] record.
- * @param name Official registered name of the payee organisation.
- * @param identifier1 French SIREN identifier (9 digits).
+ * @param payeeType COMPANY (SIREN-identified organisation) or PERSON (natural person).
+ * @param name Official registered name or "Prénom Nom" for persons.
+ * @param identifier1 French SIREN identifier (9 digits); null for PERSON payees.
  * @param identifier2 French SIRET identifier (14 digits), null if only SIREN is known.
  * @param activityCode NAF/APE activity code, null if not set.
  * @param category Legal or administrative category, null if not set.
@@ -24,8 +25,9 @@ import java.util.UUID
  */
 data class PayeeDto(
     val id: UUID,
+    val payeeType: String,
     val name: String,
-    val identifier1: String,
+    val identifier1: String?,
     val identifier2: String?,
     val activityCode: String?,
     val category: String?,
@@ -41,6 +43,7 @@ data class PayeeDto(
  */
 fun Payee.toDto() = PayeeDto(
     id = id!!,
+    payeeType = payeeType,
     name = name,
     identifier1 = identifier1,
     identifier2 = identifier2,

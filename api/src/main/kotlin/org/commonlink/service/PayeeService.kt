@@ -3,6 +3,7 @@ package org.commonlink.service
 import org.commonlink.dto.AddIbanRequest
 import org.commonlink.dto.PayeeDto
 import org.commonlink.dto.CreatePayeeRequest
+import org.commonlink.dto.PayoutDto
 import org.commonlink.dto.VopVerifyResponseDto
 import org.commonlink.dto.toDto
 import org.commonlink.entity.Payee
@@ -16,6 +17,7 @@ import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.PayeeIbanRepository
 import org.commonlink.repository.PayeeRepository
+import org.commonlink.repository.PayoutRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -33,7 +35,8 @@ class PayeeService(
     private val payeeRepository: PayeeRepository,
     private val payeeIbanRepository: PayeeIbanRepository,
     private val associationProfileRepository: AssociationProfileRepository,
-    private val vopService: VopService
+    private val vopService: VopService,
+    private val payoutRepository: PayoutRepository,
 ) {
 
     /**
@@ -63,13 +66,16 @@ class PayeeService(
     @Transactional
     fun createPayee(userId: UUID, req: CreatePayeeRequest): PayeeDto {
         val associationId = resolveAssociationId(userId)
-        if (payeeRepository.existsByAssociationIdAndIdentifier1(associationId, req.identifier1)) {
+        if (req.payeeType == "COMPANY" && req.identifier1 != null &&
+            payeeRepository.existsByAssociationIdAndIdentifier1(associationId, req.identifier1)
+        ) {
             throw ConflictException("Payee with this identifier already exists for this association")
         }
         val association = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
         val payee = Payee(
             association = association,
+            payeeType = req.payeeType,
             name = req.name,
             identifier1 = req.identifier1,
             identifier2 = req.identifier2,
@@ -239,6 +245,23 @@ class PayeeService(
      * @return UUID of the corresponding [org.commonlink.entity.AssociationProfile].
      * @throws UserNotFoundException if no profile exists for this user.
      */
+    /**
+     * Returns all payouts for a given payee, scoped to the authenticated association.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @param payeeId UUID of the payee.
+     * @return List of [PayoutDto] ordered newest-first, possibly empty.
+     * @throws UserNotFoundException if no association profile or payee exists.
+     */
+    fun listPayoutsByPayee(userId: UUID, payeeId: UUID): List<PayoutDto> {
+        val associationId = resolveAssociationId(userId)
+        payeeRepository.findByIdAndAssociationId(payeeId, associationId)
+            .orElseThrow { UserNotFoundException("Payee not found") }
+        return payoutRepository
+            .findByPayeeIdAndPayeeAssociationIdOrderByCreatedAtDesc(payeeId, associationId)
+            .map { it.toDto() }
+    }
+
     private fun resolveAssociationId(userId: UUID): UUID =
         associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }

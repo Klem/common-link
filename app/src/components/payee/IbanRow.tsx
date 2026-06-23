@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { PayeeIbanDto } from '@/types/payee';
 import { IbanVerificationStatus } from '@/types/payee';
-import { VopBanner } from './VopBanner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface IbanRowProps {
@@ -18,20 +17,6 @@ interface IbanRowProps {
   onDeleteIban: (ibanId: string) => void;
   /** Called when the user clicks the VOP verify button. */
   onVerifyVop: (ibanId: string) => void;
-}
-
-/** Maps IBAN verification status to a form-input modifier class. */
-function inputStatusClass(status: IbanVerificationStatus): string {
-  switch (status) {
-    case IbanVerificationStatus.VERIFIED:
-    case IbanVerificationStatus.FORMAT_VALID:
-      return ' success';
-    case IbanVerificationStatus.INVALID:
-    case IbanVerificationStatus.NO_MATCH:
-      return ' error';
-    default:
-      return '';
-  }
 }
 
 /**
@@ -52,7 +37,7 @@ export function IbanRow({
   const renderActions = () => {
     if (isVerifyingVop) {
       return (
-        <span className="inline-block w-5 h-5 border-2 border-border border-t-green rounded-full animate-spin-around flex-shrink-0" />
+        <span className="rm-spinner" />
       );
     }
     switch (iban.status) {
@@ -110,7 +95,8 @@ export function IbanRow({
           value={iban.iban}
           onChange={() => {}}
           placeholder={t('payees.iban.placeholder')}
-          className={`form-input flex-1 font-mono text-sm cursor-default${inputStatusClass(iban.status)}`}
+          className="cm-fi"
+          style={{ flex: 1, fontFamily: 'monospace', fontSize: 13, cursor: 'default' }}
         />
 
         {/* Copy button */}
@@ -136,10 +122,6 @@ export function IbanRow({
           </button>
         )}
       </div>
-
-      {iban.vopResult && (
-        <VopBanner vopResult={iban.vopResult} suggestedName={iban.vopSuggestedName} />
-      )}
 
       <ConfirmDialog
         isOpen={confirmOpen}

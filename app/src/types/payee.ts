@@ -55,10 +55,12 @@ export interface PayeeIbanDto {
 export interface PayeeDto {
   /** Unique identifier (UUID). */
   id: string;
-  /** Display name of the payee. */
+  /** COMPANY (SIREN-identified organisation) or PERSON (natural person). */
+  payeeType: 'COMPANY' | 'PERSON';
+  /** Display name of the payee or "Prénom Nom" for persons. */
   name: string;
-  /** SIREN (9 digits) — primary identifier. */
-  identifier1: string;
+  /** SIREN (9 digits) — primary identifier; null for PERSON payees. */
+  identifier1: string | null;
   /** SIRET (14 digits) — optional secondary identifier. */
   identifier2: string | null;
   /** NAF activity code. */
@@ -114,10 +116,12 @@ export interface SireneSearchResultDto {
  * Payload for `POST /api/association/payees`.
  */
 export interface CreatePayeeRequest {
-  /** Display name of the payee. */
+  /** Display name of the payee or "Prénom Nom" for persons. */
   name: string;
-  /** SIREN (9 digits). */
-  identifier1: string;
+  /** COMPANY (default) or PERSON. */
+  payeeType?: 'COMPANY' | 'PERSON';
+  /** SIREN (9 digits) — required for COMPANY, absent for PERSON. */
+  identifier1?: string;
   /** SIRET (14 digits), optional. */
   identifier2?: string;
   /** NAF activity code, optional. */

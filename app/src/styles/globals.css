@@ -2275,6 +2275,11 @@ label.cm-label { display: block; font-size: 11.5px; font-weight: 600; color: var
 .rm-result-header { padding: 20px 24px; border-bottom: 1px solid var(--mist-lavender); background: linear-gradient(135deg,rgba(78,205,196,.06),rgba(50,50,125,.04)); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .rm-empty-recip { padding: 36px 24px; text-align: center; color: var(--slate-lavender); font-size: 13px; line-height: 1.8; }
 .rm-error-inline { display: flex; align-items: flex-start; gap: 9px; background: rgba(255,107,91,.05); border: 1px solid rgba(255,107,91,.2); border-left: 3px solid var(--warm-coral); border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; color: var(--warm-coral); line-height: 1.5; }
+.rm-help-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--mist-lavender); background: var(--white); color: var(--slate-lavender); font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0; }
+.rm-help-btn:hover { border-color: var(--bright-teal); color: var(--deep-indigo); }
+.rm-help-panel { display: none; position: absolute; top: calc(100% + 8px); right: 0; width: 380px; background: var(--white); border: 1px solid var(--mist-lavender); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-xl); z-index: 200; font-size: 13px; line-height: 1.65; color: var(--ink-navy); }
+.rm-help-panel.open { display: block; }
+.rm-help-title { font-family: 'Nunito Sans', sans-serif; font-weight: 900; font-size: 15px; }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 

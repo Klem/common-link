@@ -203,6 +203,8 @@ describe('CampaignDonorsTab', () => {
       donorsPage: { ...basePage, totalPages: 3, totalElements: 36 },
     });
     render(<CampaignDonorsTab campaign={campaign} />);
-    expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    // pager renders numbered buttons: 1, 2, 3
+    expect(document.querySelector('.pager')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument();
   });
 });

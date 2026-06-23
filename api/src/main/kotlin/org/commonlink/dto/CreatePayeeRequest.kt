@@ -1,31 +1,33 @@
 package org.commonlink.dto
 
+import jakarta.validation.Constraint
+import jakarta.validation.ConstraintValidator
+import jakarta.validation.ConstraintValidatorContext
+import jakarta.validation.Payload
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
+import kotlin.reflect.KClass
 
 /**
  * Request body for creating a new payee under the authenticated association.
  *
- * All fields that are also validated in the frontend must be validated here as well —
- * every click can be replayed as a direct API call, so server-side validation is mandatory.
+ * [payeeType] controls which fields are required:
+ * - COMPANY: [identifier1] is mandatory (9-digit SIREN).
+ * - PERSON: [identifier1] must be absent; [name] holds "Prénom Nom" composed on the frontend.
  *
- * @param name Official registered name of the payee organisation.
- * @param identifier1 French SIREN identifier (exactly 9 digits).
- * @param identifier2 French SIRET identifier (exactly 14 digits). Null when only SIREN is known.
- * @param activityCode NAF/APE activity code (up to 10 characters).
- * @param category Legal or administrative category of the payee.
- * @param city City where the payee is headquartered.
- * @param postalCode Postal code of the payee's registered address.
- * @param active Whether this payee is immediately active. Defaults to true.
+ * Server-side validation mirrors the frontend to ensure every click is replayable as a raw API call.
  */
+@ValidPayeeRequest
 data class CreatePayeeRequest(
     @field:NotBlank
     val name: String,
 
-    @field:NotBlank
+    /** COMPANY or PERSON. Defaults to COMPANY for backward compatibility. */
+    val payeeType: String = "COMPANY",
+
     @field:Pattern(regexp = "^[0-9]{9}$", message = "identifier1 must be exactly 9 digits")
-    val identifier1: String,
+    val identifier1: String? = null,
 
     @field:Pattern(regexp = "^[0-9]{14}$", message = "identifier2 must be exactly 14 digits")
     val identifier2: String? = null,
@@ -44,3 +46,22 @@ data class CreatePayeeRequest(
 
     val active: Boolean? = true
 )
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@Constraint(validatedBy = [PayeeRequestValidator::class])
+annotation class ValidPayeeRequest(
+    val message: String = "COMPANY payees require a valid identifier1 (SIREN); PERSON payees must not provide one",
+    val groups: Array<KClass<*>> = [],
+    val payload: Array<KClass<out Payload>> = []
+)
+
+class PayeeRequestValidator : ConstraintValidator<ValidPayeeRequest, CreatePayeeRequest> {
+    override fun isValid(req: CreatePayeeRequest, ctx: ConstraintValidatorContext): Boolean {
+        return when (req.payeeType) {
+            "COMPANY" -> !req.identifier1.isNullOrBlank()
+            "PERSON"  -> req.identifier1 == null
+            else      -> false
+        }
+    }
+}

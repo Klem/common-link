@@ -24,6 +24,7 @@ class AssociationDashboardServiceTest {
     private val donationRepository: DonationRepository = mockk()
     private val campaignRepository: CampaignRepository = mockk()
     private val milestoneRepository: CampaignMilestoneRepository = mockk()
+    private val associationProfileRepository: org.commonlink.repository.AssociationProfileRepository = mockk()
 
     private lateinit var service: AssociationDashboardService
 
@@ -32,7 +33,7 @@ class AssociationDashboardServiceTest {
 
     @BeforeEach
     fun setup() {
-        service = AssociationDashboardService(donationRepository, campaignRepository, milestoneRepository)
+        service = AssociationDashboardService(donationRepository, campaignRepository, milestoneRepository, associationProfileRepository)
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
