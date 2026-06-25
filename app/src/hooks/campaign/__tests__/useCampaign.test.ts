@@ -28,7 +28,6 @@ const sampleCampaign = {
   status: 'DRAFT' as const,
   startDate: null,
   endDate: null,
-  contractAddress: null,
   budgetSections: [],
   milestones: [],
   createdAt: new Date().toISOString(),

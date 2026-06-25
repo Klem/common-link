@@ -115,8 +115,6 @@ export interface CampaignDto {
   startDate: string | null;
   /** ISO date when the campaign ends, or null. */
   endDate: string | null;
-  /** On-chain contract address once deployed, or null. */
-  contractAddress: string | null;
   /** Campaign category, or null. */
   category: string | null;
   /** Why the association is launching this campaign, or null. */
@@ -199,8 +197,6 @@ export interface UpdateCampaignRequest {
   startDate?: string;
   /** ISO date string for campaign end. */
   endDate?: string;
-  /** On-chain contract address. */
-  contractAddress?: string;
   /** Campaign category (max 50 chars). */
   category?: string;
   /** Why the association is launching this campaign. */

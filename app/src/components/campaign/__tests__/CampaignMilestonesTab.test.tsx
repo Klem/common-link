@@ -26,7 +26,6 @@ const baseCampaign: CampaignDto = {
   status: 'DRAFT',
   startDate: null,
   endDate: null,
-  contractAddress: null,
   category: null,
   reason: null,
   impactGoals: null,

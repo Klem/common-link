@@ -21,7 +21,6 @@ import java.util.UUID
  * @param status Current lifecycle status.
  * @param startDate Optional start date for donation acceptance.
  * @param endDate Optional end date for donation acceptance.
- * @param contractAddress On-chain contract address, null before deployment.
  * @param category Campaign category (e.g. Education, Health).
  * @param reason Why the association is launching this campaign.
  * @param impactGoals Concrete expected outcomes.
@@ -41,7 +40,6 @@ data class CampaignDto(
     val status: CampaignStatus,
     val startDate: LocalDate?,
     val endDate: LocalDate?,
-    val contractAddress: String?,
     val budgetHash: String?,
     val category: String?,
     val reason: String?,
@@ -66,7 +64,6 @@ fun Campaign.toDto() = CampaignDto(
     status = status,
     startDate = startDate,
     endDate = endDate,
-    contractAddress = contractAddress,
     budgetHash = budgetHash,
     category = category,
     reason = reason,

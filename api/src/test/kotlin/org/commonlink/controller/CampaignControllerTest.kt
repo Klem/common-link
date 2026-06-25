@@ -98,7 +98,6 @@ class CampaignControllerTest {
         status = CampaignStatus.DRAFT,
         startDate = null,
         endDate = null,
-        contractAddress = null,
         budgetHash = null,
         category = null,
         reason = null,

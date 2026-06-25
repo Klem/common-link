@@ -26,7 +26,6 @@ import java.time.LocalDate
  * @param status New lifecycle status. Must follow valid transition rules. Null = no change.
  * @param startDate New start date. Null = no change.
  * @param endDate New end date (min. 7 days after startDate). Null = no change.
- * @param contractAddress On-chain contract address after deployment. Null = no change.
  * @param category Campaign category (max 50 characters). Null = no change.
  * @param reason Why the association is launching this campaign. Null = no change.
  * @param impactGoals Concrete expected outcomes. Null = no change.
@@ -49,8 +48,6 @@ data class UpdateCampaignRequest(
     val startDate: LocalDate? = null,
 
     val endDate: LocalDate? = null,
-
-    val contractAddress: String? = null,
 
     @field:Size(max = 50)
     val category: String? = null,

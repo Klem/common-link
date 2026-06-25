@@ -175,7 +175,6 @@ class CampaignService(
         if (req.goal != null) campaign.goal = req.goal
         if (req.startDate != null) campaign.startDate = req.startDate
         if (req.endDate != null) campaign.endDate = req.endDate
-        if (req.contractAddress != null) campaign.contractAddress = req.contractAddress
         if (req.category != null) campaign.category = req.category
         if (req.reason != null) campaign.reason = req.reason
         if (req.impactGoals != null) campaign.impactGoals = req.impactGoals

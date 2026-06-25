@@ -9,8 +9,8 @@ import java.util.UUID
 /**
  * Represents a fundraising campaign created and managed by an [AssociationProfile].
  *
- * A campaign has a financial goal, a lifecycle [status], an optional blockchain [contractAddress],
- * a hierarchical budget ([budgetSections] → items), and progress [milestones].
+ * A campaign has a financial goal, a lifecycle [status], a hierarchical budget ([budgetSections] → items),
+ * and progress [milestones].
  *
  * Donations update the [raised] field; the campaign transitions from [CampaignStatus.DRAFT]
  * to [CampaignStatus.LIVE] once published, and to [CampaignStatus.ENDED] when closed.
@@ -61,10 +61,6 @@ class Campaign(
     /** Date when the campaign stops accepting donations. */
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
-
-    /** Ethereum/EVM contract address once the campaign is deployed on-chain. Null before deployment. */
-    @Column(name = "contract_address", length = 255)
-    var contractAddress: String? = null,
 
     /** Campaign category (e.g. Education, Health). */
     @Column(name = "category", length = 50)
