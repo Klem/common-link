@@ -408,6 +408,91 @@ DO $$
             END LOOP;
 
         -- ════════════════════════════════════════════════════════════
+        -- 4aa. PAYEE WITH NO PAYOUTS — tests the delete path in the UI
+        --      Not included in any payout generation loop.
+        -- ════════════════════════════════════════════════════════════
+        INSERT INTO payees
+        (id, association_id, name, payee_type, identifier_1, identifier_2,
+         activity_code, category, city, postal_code, active, created_at, updated_at)
+        VALUES (
+            'b0000000-0000-0000-0000-000000000001', v_assoc_id,
+            'Graphique & Co SARL', 'COMPANY', '899900001', '89990000100012',
+            '7420Z', 'Fournisseur', 'Lyon', '69002', TRUE,
+            '2026-05-01 09:00:00+01', '2026-05-01 09:00:00+01'
+        );
+        INSERT INTO payee_ibans
+        (id, payee_id, iban, status, vop_result, vop_suggested_name, verified_at, created_at)
+        VALUES (
+            'b0000000-0000-0000-0000-000000000002',
+            'b0000000-0000-0000-0000-000000000001',
+            'FR7610096000101234567890182',
+            'VERIFIED', 'MATCH', NULL,
+            '2026-05-02 10:00:00+01'::TIMESTAMPTZ,
+            '2026-05-01 09:05:00+01'
+        );
+
+        -- ════════════════════════════════════════════════════════════
+        -- 4c. ADDITIONAL IBANs on selected payees — all VERIFIED + MATCH
+        --     Gives some payees multiple IBANs so the multi-IBAN UI path
+        --     is exercisable in dev without extra setup.
+        -- ════════════════════════════════════════════════════════════
+
+        -- Payee 1 (Imprimerie Solidaire SARL) — 2nd IBAN, Société Générale
+        INSERT INTO payee_ibans
+        (id, payee_id, iban, status, vop_result, vop_suggested_name, verified_at, created_at)
+        VALUES (
+            gen_random_uuid(), v_payee_ids[1],
+            'FR7630003035301234568790150',
+            'VERIFIED', 'MATCH', NULL,
+            '2026-02-16 10:00:00+01'::TIMESTAMPTZ,
+            '2026-02-10 09:10:00+01'
+        );
+
+        -- Payee 2 (Banque Alimentaire IDF) — 2nd IBAN, La Banque Postale
+        INSERT INTO payee_ibans
+        (id, payee_id, iban, status, vop_result, vop_suggested_name, verified_at, created_at)
+        VALUES (
+            gen_random_uuid(), v_payee_ids[2],
+            'FR7620041010051234568890163',
+            'VERIFIED', 'MATCH', NULL,
+            '2026-02-16 11:00:00+01'::TIMESTAMPTZ,
+            '2026-02-11 09:10:00+01'
+        );
+
+        -- Payee 4 (Reboise & Cie) — 2nd IBAN, BNP (primary is already VERIFIED)
+        INSERT INTO payee_ibans
+        (id, payee_id, iban, status, vop_result, vop_suggested_name, verified_at, created_at)
+        VALUES (
+            gen_random_uuid(), v_payee_ids[4],
+            'FR7630006000011234569890189',
+            'VERIFIED', 'MATCH', NULL,
+            '2026-02-17 10:00:00+01'::TIMESTAMPTZ,
+            '2026-02-12 09:10:00+01'
+        );
+
+        -- Person 1 (Marie Leclerc) — 2nd IBAN, Crédit Agricole
+        INSERT INTO payee_ibans
+        (id, payee_id, iban, status, vop_result, vop_suggested_name, verified_at, created_at)
+        VALUES (
+            gen_random_uuid(), v_person_ids[1],
+            'FR7618106006001234568790175',
+            'VERIFIED', 'MATCH', NULL,
+            '2026-03-03 10:00:00+01'::TIMESTAMPTZ,
+            '2026-03-02 09:10:00+01'
+        );
+
+        -- Person 2 (Jean-Paul Moreau) — 2nd IBAN, LCL
+        INSERT INTO payee_ibans
+        (id, payee_id, iban, status, vop_result, vop_suggested_name, verified_at, created_at)
+        VALUES (
+            gen_random_uuid(), v_person_ids[2],
+            'FR7614508590001234568990142',
+            'VERIFIED', 'MATCH', NULL,
+            '2026-03-03 11:00:00+01'::TIMESTAMPTZ,
+            '2026-03-02 09:15:00+01'
+        );
+
+        -- ════════════════════════════════════════════════════════════
         -- 5. DONORS  (50 users + donor_profiles)
         -- ════════════════════════════════════════════════════════════
         FOR i IN 1..50 LOOP

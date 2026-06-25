@@ -73,6 +73,8 @@ export interface PayeeDto {
   postalCode: string | null;
   /** Whether the payee is currently active. */
   active: boolean;
+  /** True if at least one payout has been sent to this payee. */
+  hasPayouts: boolean;
   /** IBANs associated with this payee. */
   ibans: PayeeIbanDto[];
   /** ISO-8601 creation timestamp. */

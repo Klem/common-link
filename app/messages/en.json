@@ -189,6 +189,11 @@
       "serverError": "An error occurred. Please try again.",
       "sessionExpired": "Your session has expired. Please log in again."
     },
+    "addPayeeHint": "Add your beneficiary then come back to the campaign.",
+    "paymentError": "Payment failed. Please try again.",
+    "paymentSuccess": "Payment issued!",
+    "publishCampaignError": "Publication failed. Please try again.",
+    "publishCampaignSuccess": "🚀 Campaign published!",
     "loading": "Loading...",
     "milestoneCreated": "Milestone added.",
     "milestoneDeleted": "Milestone deleted.",
@@ -612,11 +617,6 @@
           "FAILED": "Failed",
           "PENDING": "Pending"
         },
-        "toast": {
-          "addPayeeHint": "Add your beneficiary then come back to the campaign.",
-          "error": "Payment failed. Please try again.",
-          "success": "Payment issued!"
-        },
         "typeCodes": {
           "60-mat": "60 · Materials / supplies",
           "60-svc": "60 · Services",
@@ -661,11 +661,7 @@
           "name": "Campaign name",
           "section": "Required to publish"
         },
-        "title": "Before publishing your campaign",
-        "toast": {
-          "error": "Publication failed. Please try again.",
-          "success": "🚀 Campaign published!"
-        }
+        "title": "Before publishing your campaign"
       },
       "stats": {
         "goal": "Total goal",
@@ -796,12 +792,16 @@
       "list": {
         "alreadyAdded": "This beneficiary is already in your list.",
         "count": "{count} entry(ies)",
+        "deactivate": "Deactivate",
         "delete": "Delete",
         "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
         "deleteTitle": "Delete beneficiary",
         "empty": "No beneficiary selected.",
         "emptyFiltered": "No beneficiary matches this filter.",
         "emptyHint": "Search for a SIREN/SIRET and click Select.",
+        "hasPayoutsTooltip": "This beneficiary has transactions and cannot be deleted. You can deactivate them to hide them from the payment form.",
+        "inactive": "Inactive",
+        "reactivate": "Reactivate",
         "title": "Selected beneficiaries"
       },
       "mode": {

@@ -61,4 +61,11 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
         payeeId: UUID,
         associationId: UUID,
     ): List<Payout>
+
+    /** True if the payee has at least one payout (any status) in the given association. */
+    fun existsByPayeeIdAndPayeeAssociationId(payeeId: UUID, associationId: UUID): Boolean
+
+    /** Distinct payee IDs that have at least one payout in the given association — for bulk listing. */
+    @Query("SELECT DISTINCT p.payee.id FROM Payout p WHERE p.payee.association.id = :associationId")
+    fun findDistinctPayeeIdsByAssociationId(@Param("associationId") associationId: UUID): Set<UUID>
 }

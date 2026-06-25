@@ -42,7 +42,7 @@ export default function CampaignEditorPage() {
 
   const { campaign, isLoading, error, isSaving, updateCampaignInfo, setCampaign, fetchCampaign } =
     useCampaign(campaignId);
-  const { summary: paymentSummary } = usePayments(campaignId);
+  const payments = usePayments(campaignId);
   const { donorsPage } = useCampaignDonors(campaignId);
   const { verified, bank: bankConnected } = useAccStatusStore();
   const { addToast } = useToastStore();
@@ -84,9 +84,9 @@ export default function CampaignEditorPage() {
     try {
       const updated = await publishCampaign(campaignId);
       setCampaign(updated);
-      addToast('success', 'campaigns.publish.toast.success');
+      addToast('success', 'publishCampaignSuccess');
     } catch {
-      addToast('error', 'campaigns.publish.toast.error');
+      addToast('error', 'publishCampaignError');
     }
   };
 
@@ -150,7 +150,7 @@ export default function CampaignEditorPage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           milestoneCount={campaign.milestones.length}
-          paymentCount={paymentSummary?.txTotal ? Number(paymentSummary.txTotal) : undefined}
+          paymentCount={payments.summary?.txTotal ? Number(payments.summary.txTotal) : undefined}
           donorCount={donorsPage?.totalElements}
         />
 
@@ -178,7 +178,7 @@ export default function CampaignEditorPage() {
         )}
 
         {activeTab === 'payments' && (
-          <CampaignPaymentsTab campaign={campaign} />
+          <CampaignPaymentsTab campaign={campaign} payments={payments} />
         )}
 
         {activeTab === 'donors' && (

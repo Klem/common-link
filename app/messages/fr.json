@@ -189,6 +189,11 @@
       "serverError": "Une erreur est survenue. Veuillez réessayer.",
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
+    "addPayeeHint": "Ajoutez votre bénéficiaire puis revenez sur la campagne.",
+    "paymentError": "Échec du paiement. Veuillez réessayer.",
+    "paymentSuccess": "Paiement émis !",
+    "publishCampaignError": "Échec de la publication. Veuillez réessayer.",
+    "publishCampaignSuccess": "🚀 Campagne publiée !",
     "loading": "Chargement...",
     "milestoneCreated": "Milestone ajouté.",
     "milestoneDeleted": "Milestone supprimé.",
@@ -612,11 +617,6 @@
           "FAILED": "Échoué",
           "PENDING": "En attente"
         },
-        "toast": {
-          "addPayeeHint": "Ajoutez votre bénéficiaire puis revenez sur la campagne.",
-          "error": "Échec du paiement. Veuillez réessayer.",
-          "success": "Paiement émis !"
-        },
         "typeCodes": {
           "60-mat": "60 · Matières / fournitures",
           "60-svc": "60 · Prestations de services",
@@ -661,11 +661,7 @@
           "name": "Nom de la campagne",
           "section": "Requis pour publier"
         },
-        "title": "Avant de publier votre campagne",
-        "toast": {
-          "error": "Échec de la publication. Veuillez réessayer.",
-          "success": "🚀 Campagne publiée !"
-        }
+        "title": "Avant de publier votre campagne"
       },
       "stats": {
         "goal": "Objectif total",
@@ -796,12 +792,16 @@
       "list": {
         "alreadyAdded": "Ce bénéficiaire est déjà dans votre liste.",
         "count": "{count} entrée(s)",
+        "deactivate": "Désactiver",
         "delete": "Supprimer",
         "deleteMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible.",
         "deleteTitle": "Supprimer le bénéficiaire",
         "empty": "Aucun bénéficiaire sélectionné.",
         "emptyFiltered": "Aucun bénéficiaire ne correspond à ce filtre.",
         "emptyHint": "Recherchez un SIREN/SIRET et cliquez sur Sélectionner.",
+        "hasPayoutsTooltip": "Ce bénéficiaire a des transactions et ne peut pas être supprimé. Vous pouvez le désactiver pour le masquer dans le formulaire de paiement.",
+        "inactive": "Inactif",
+        "reactivate": "Réactiver",
         "title": "Bénéficiaires sélectionnés"
       },
       "mode": {

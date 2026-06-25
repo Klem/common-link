@@ -91,6 +91,17 @@ export const searchSirene = (query: string): Promise<SireneSearchResultDto> =>
     .then((r) => r.data);
 
 /**
+ * Toggles the active state of a payee.
+ * Calls `PATCH /api/association/payees/:id`.
+ *
+ * @param id - UUID of the payee.
+ * @param active - New active state.
+ * @returns The updated payee DTO.
+ */
+export const patchPayeeActive = (id: string, active: boolean): Promise<PayeeDto> =>
+  api.patch<PayeeDto>(`/api/association/payees/${id}`, { active }).then((r) => r.data);
+
+/**
  * Returns all payouts sent to a given payee, newest first.
  * Calls `GET /api/association/payees/:payeeId/payouts`.
  *

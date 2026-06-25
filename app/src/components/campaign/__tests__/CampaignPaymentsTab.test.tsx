@@ -72,6 +72,7 @@ const samplePayout = {
 
 const samplePayee = {
   id: 'payee-1',
+  payeeType: 'COMPANY' as const,
   name: 'ACME Corp',
   identifier1: '123456789',
   identifier2: null,
@@ -80,6 +81,7 @@ const samplePayee = {
   city: 'Paris',
   postalCode: '75001',
   active: true,
+  hasPayouts: false,
   ibans: [{ id: 'iban-1', iban: 'FR76 0000 0000', status: 'VERIFIED', vopResult: null, vopSuggestedName: null, verifiedAt: null }],
   createdAt: '2026-01-01T00:00:00Z',
 };

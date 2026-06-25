@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 interface PayeeRowProps {
   payee: PayeeDto;
   onDeletePayee: (id: string) => void;
+  onToggleActive: (id: string, active: boolean) => void;
   onAddIban: (payeeId: string, iban: string) => void;
   onDeleteIban: (payeeId: string, ibanId: string) => void;
   onVerifyVop: (payeeId: string, ibanId: string) => void;
@@ -73,6 +74,7 @@ const STATUS_TOOLTIP_KEY: Record<IbanVerificationStatus, string> = {
 export function PayeeRow({
   payee,
   onDeletePayee,
+  onToggleActive,
   onAddIban,
   onDeleteIban,
   onVerifyVop,
@@ -114,7 +116,7 @@ export function PayeeRow({
   };
 
   return (
-    <div className="rm-recip-card">
+    <div className={`rm-recip-card${!payee.active ? ' rm-deactivated' : ''}`}>
       <div className="rm-recip-row">
         {/* Col 1 — status icon */}
         <div className="rm-status-col">
@@ -197,11 +199,29 @@ export function PayeeRow({
 
         {/* Col 3 — actions */}
         <div className="rm-recip-actions">
-          <button
-            className="rm-btn-delete"
-            onClick={() => setConfirmDeleteOpen(true)}
-            title={t('payees.list.delete')}
-          >✕</button>
+          {payee.hasPayouts ? (
+            <div className="rm-action-with-tip">
+              <button
+                className={payee.active ? 'rm-btn-deactivate' : 'rm-btn-reactivate'}
+                onClick={() => onToggleActive(payee.id, !payee.active)}
+              >
+                {payee.active ? '⏸' : '▶'}
+              </button>
+              <div className="rm-status-tooltip">
+                {t('payees.list.hasPayoutsTooltip')}
+              </div>
+            </div>
+          ) : (
+            <div className="rm-action-with-tip">
+              <button
+                className="rm-btn-delete"
+                onClick={() => setConfirmDeleteOpen(true)}
+              >✕</button>
+              <div className="rm-status-tooltip">
+                {t('payees.list.delete')}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

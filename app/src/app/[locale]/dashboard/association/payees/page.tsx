@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { SirenSearchCard, SireneResultPanel, PayeeList } from '@/components/payee';
+import { SirenSearchCard, SireneResultPanel, PayeeList, type PayeeFilter } from '@/components/payee';
 import { createPayee } from '@/lib/api/payee';
 import { usePayees } from '@/hooks/payee/usePayees';
 import { useVopVerify } from '@/hooks/payee/useVopVerify';
@@ -27,10 +27,11 @@ export default function PayeesPage() {
   const t = useTranslations('dashboard');
   const { addToast } = useToastStore();
 
-  const { payees, isLoading, fetchPayees, addPayeeIban, removePayeeIban, removePayee } = usePayees();
+  const { payees, isLoading, fetchPayees, addPayeeIban, removePayeeIban, removePayee, setPayeeActive } = usePayees();
   const { verifyingIbanId, verify } = useVopVerify();
 
   const [mode, setMode] = useState<'company' | 'person'>('company');
+  const [payeeFilter, setPayeeFilter] = useState<PayeeFilter>('all');
   const [helpOpen, setHelpOpen] = useState(false);
   const [sireneResult, setSireneResult] = useState<SireneSearchResultDto | null>(null);
   const [showPanel, setShowPanel] = useState(false);
@@ -93,6 +94,10 @@ export default function PayeesPage() {
 
   const handleDeletePayee = async (id: string) => {
     try { await removePayee(id); } catch { addToast('error', 'errors.serverError'); }
+  };
+
+  const handleToggleActive = async (id: string, active: boolean) => {
+    try { await setPayeeActive(id, active); } catch { addToast('error', 'errors.serverError'); }
   };
 
   const handleVerifyVop = async (payeeId: string, ibanId: string) => {
@@ -185,7 +190,10 @@ export default function PayeesPage() {
       <PayeeList
         payees={payees}
         isLoading={isLoading}
+        filter={payeeFilter}
+        onFilterChange={setPayeeFilter}
         onDeletePayee={handleDeletePayee}
+        onToggleActive={handleToggleActive}
         onAddIban={handleAddIban}
         onDeleteIban={handleDeleteIban}
         onVerifyVop={handleVerifyVop}

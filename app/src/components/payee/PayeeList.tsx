@@ -1,14 +1,16 @@
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { PayeeDto } from '@/types/payee';
 import { PayeeRow } from './PayeeRow';
 
-type Filter = 'all' | 'company' | 'person';
+export type PayeeFilter = 'all' | 'company' | 'person';
 
 interface PayeeListProps {
   payees: PayeeDto[];
   isLoading: boolean;
+  filter: PayeeFilter;
+  onFilterChange: (f: PayeeFilter) => void;
   onDeletePayee: (id: string) => void;
+  onToggleActive: (id: string, active: boolean) => void;
   onAddIban: (payeeId: string, iban: string) => void;
   onDeleteIban: (payeeId: string, ibanId: string) => void;
   onVerifyVop: (payeeId: string, ibanId: string) => void;
@@ -18,14 +20,16 @@ interface PayeeListProps {
 export function PayeeList({
   payees,
   isLoading,
+  filter,
+  onFilterChange,
   onDeletePayee,
+  onToggleActive,
   onAddIban,
   onDeleteIban,
   onVerifyVop,
   verifyingIbanId,
 }: PayeeListProps) {
   const t = useTranslations('dashboard');
-  const [filter, setFilter] = useState<Filter>('all');
 
   const filtered = filter === 'all'
     ? payees
@@ -43,15 +47,15 @@ export function PayeeList({
         <div className="col-filter">
           <button
             className={`col-filter-btn${filter === 'all' ? ' active' : ''}`}
-            onClick={() => setFilter('all')}
+            onClick={() => onFilterChange('all')}
           >{t('payees.filter.all')}</button>
           <button
             className={`col-filter-btn${filter === 'company' ? ' active' : ''}`}
-            onClick={() => setFilter('company')}
+            onClick={() => onFilterChange('company')}
           >🏢 {t('payees.filter.companies')}</button>
           <button
             className={`col-filter-btn${filter === 'person' ? ' active' : ''}`}
-            onClick={() => setFilter('person')}
+            onClick={() => onFilterChange('person')}
           >👤 {t('payees.filter.persons')}</button>
         </div>
       </div>
@@ -69,6 +73,7 @@ export function PayeeList({
               key={payee.id}
               payee={payee}
               onDeletePayee={onDeletePayee}
+              onToggleActive={onToggleActive}
               onAddIban={onAddIban}
               onDeleteIban={onDeleteIban}
               onVerifyVop={onVerifyVop}

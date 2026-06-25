@@ -2246,6 +2246,11 @@ label.cm-label { display: block; font-size: 11.5px; font-weight: 600; color: var
 .rm-btn-delete:hover { background: rgba(255,107,91,.12); border-color: rgba(255,107,91,.45); color: var(--warm-coral); }
 .rm-btn-cancel-del { background: var(--soft-cream); border: 1px solid var(--mist-lavender); color: var(--slate-lavender); padding: 7px 10px; border-radius: var(--radius-md); font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s; line-height: 1; }
 .rm-btn-confirm-del { background: rgba(255,107,91,.12); border: 1px solid rgba(255,107,91,.4); color: var(--warm-coral); padding: 7px 10px; border-radius: var(--radius-md); font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s; line-height: 1; }
+.rm-btn-reactivate { background: rgba(78,205,196,.08); border: 1px solid rgba(78,205,196,.2); color: var(--bright-teal); padding: 7px 10px; border-radius: var(--radius-md); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s; line-height: 1; }
+.rm-btn-reactivate:hover { background: rgba(78,205,196,.15); border-color: rgba(78,205,196,.45); color: var(--teal-dark); }
+.rm-action-with-tip { position: relative; display: inline-block; }
+.rm-action-with-tip:hover .rm-status-tooltip { display: block; }
+.rm-action-with-tip .rm-status-tooltip { left: auto; right: calc(100% + 8px); }
 .rm-del-row { display: flex; gap: 6px; align-items: center; }
 .rm-deactivated-banner { display: flex; align-items: flex-start; gap: 9px; background: var(--soft-cream); border: 1px solid var(--mist-lavender); border-left: 3px solid var(--slate-lavender); border-radius: var(--radius-md); padding: 10px 14px; margin: 0 22px 14px; font-size: 12.5px; color: var(--slate-lavender); line-height: 1.6; }
 .rm-no-delete-banner { display: flex; align-items: flex-start; gap: 9px; background: rgba(255,179,71,.04); border: 1px solid rgba(255,179,71,.18); border-left: 3px solid var(--soft-amber); border-radius: var(--radius-md); padding: 10px 14px; margin: 0 22px 14px; font-size: 12.5px; color: var(--slate-lavender); line-height: 1.6; }

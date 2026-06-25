@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.dto.AddIbanRequest
+import org.commonlink.dto.PatchPayeeRequest
 import org.commonlink.dto.PayeeDto
 import org.commonlink.dto.CreatePayeeRequest
 import org.commonlink.dto.PayoutDto
@@ -48,7 +49,9 @@ class PayeeService(
      */
     fun listPayees(userId: UUID): List<PayeeDto> {
         val associationId = resolveAssociationId(userId)
-        return payeeRepository.findAllByAssociationId(associationId).map { it.toDto() }
+        val payees = payeeRepository.findAllByAssociationId(associationId)
+        val payeeIdsWithPayouts = payoutRepository.findDistinctPayeeIdsByAssociationId(associationId)
+        return payees.map { it.toDto(hasPayouts = it.id!! in payeeIdsWithPayouts) }
     }
 
     /**
@@ -86,6 +89,25 @@ class PayeeService(
             active = req.active!!
         )
         return payeeRepository.save(payee).toDto()
+    }
+
+    /**
+     * Updates the [active] flag of a payee.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @param payeeId UUID of the payee to patch.
+     * @param req Patch payload carrying the new [active] state.
+     * @return Updated [PayeeDto].
+     * @throws UserNotFoundException if no association profile or payee is found.
+     */
+    @Transactional
+    fun setPayeeActive(userId: UUID, payeeId: UUID, req: PatchPayeeRequest): PayeeDto {
+        val associationId = resolveAssociationId(userId)
+        val payee = payeeRepository.findByIdAndAssociationId(payeeId, associationId)
+            .orElseThrow { UserNotFoundException("Payee not found") }
+        payee.active = req.active
+        val hasPayouts = payoutRepository.existsByPayeeIdAndPayeeAssociationId(payeeId, associationId)
+        return payeeRepository.save(payee).toDto(hasPayouts = hasPayouts)
     }
 
     /**

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.AddIbanRequest
+import org.commonlink.dto.PatchPayeeRequest
 import org.commonlink.dto.PayeeDto
 import org.commonlink.dto.CreatePayeeRequest
 import org.commonlink.dto.PayoutDto
@@ -18,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -85,6 +87,37 @@ class PayeeController(
         ResponseEntity.status(201).body(
             payeeService.createPayee(UUID.fromString(principal.username), req)
         )
+
+    /**
+     * Toggles the active state of a payee.
+     *
+     * A payee with existing payouts cannot be deleted but can be deactivated so it no longer
+     * appears in the payment recipient selection.
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the payee to patch.
+     * @param req Patch payload with the new [active] flag.
+     * @return 200 with the updated payee DTO.
+     */
+    @PatchMapping("/{id}")
+    @Operation(
+        summary = "Toggle payee active state",
+        description = "Activates or deactivates a payee. Deactivated payees are hidden from the payment form but remain in history."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Payee updated",
+            content = [Content(schema = Schema(implementation = PayeeDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Payee not found", content = [Content()])
+    )
+    fun patchPayee(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+        @RequestBody req: PatchPayeeRequest
+    ): ResponseEntity<PayeeDto> =
+        ResponseEntity.ok(payeeService.setPayeeActive(UUID.fromString(principal.username), id, req))
 
     /**
      * Deletes a payee (and its IBANs via cascade) from the authenticated association.

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { usePayments } from '@/hooks/campaign/usePayments';
+import type { UsePaymentsReturn } from '@/hooks/campaign/usePayments';
 import { usePayees } from '@/hooks/payee/usePayees';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Donut } from '@/components/ui/Donut';
@@ -15,6 +15,7 @@ import type { PayoutDto } from '@/types/payment';
 
 interface Props {
   campaign: CampaignDto;
+  payments: UsePaymentsReturn;
 }
 
 const REMUNERATION_CODES = new Set(['64-rem', '64-soc']);
@@ -41,10 +42,10 @@ function StatusChip({ status }: { status: PayoutDto['status'] }) {
   return <span className="pay-chip pending">⏳</span>;
 }
 
-export function CampaignPaymentsTab({ campaign }: Props) {
+export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
   const router = useRouter();
-  const { payouts, summary, isLoading, isSaving, error, submit } = usePayments(campaign.id);
+  const { payouts, summary, isLoading, isSaving, error, submit } = payments;
   const { payees } = usePayees();
   const addToast = useToastStore((s) => s.addToast);
 
@@ -56,27 +57,43 @@ export function CampaignPaymentsTab({ campaign }: Props) {
   const [label, setLabel] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const selectedPayee = useMemo(() => payees.find((p) => p.id === payeeId), [payees, payeeId]);
+  const isCustomType = typeCodeRaw === 'custom';
+  const effectiveTypeCode = isCustomType ? customTypeCode.trim() : typeCodeRaw;
+  const isRemunerationType = REMUNERATION_CODES.has(effectiveTypeCode);
+
+  const filteredPayees = useMemo(
+    () => payees.filter((p) => p.active && p.payeeType === (isRemunerationType ? 'PERSON' : 'COMPANY')),
+    [payees, isRemunerationType],
+  );
+
+  const selectedPayee = useMemo(() => filteredPayees.find((p) => p.id === payeeId), [filteredPayees, payeeId]);
   const selectedIban = useMemo(
     () => selectedPayee?.ibans.find((i) => i.id === payeeIbanId),
     [selectedPayee, payeeIbanId],
   );
 
-  const isCustomType = typeCodeRaw === 'custom';
-  const effectiveTypeCode = isCustomType ? customTypeCode.trim() : typeCodeRaw;
-
   const amountNum = parseFloat(amount) || 0;
   const isValid = !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0 && label.trim().length >= 6;
+
+  function handleTypeChange(value: string) {
+    const newIsRemu = REMUNERATION_CODES.has(value);
+    if (newIsRemu !== isRemunerationType) {
+      setPayeeId('');
+      setPayeeIbanId('');
+    }
+    setTypeCodeRaw(value);
+    setCustomTypeCode('');
+  }
 
   function handlePayeeChange(id: string) {
     setPayeeId(id);
     setPayeeIbanId('');
-    const p = payees.find((x) => x.id === id);
+    const p = filteredPayees.find((x) => x.id === id);
     if (p?.ibans.length === 1) setPayeeIbanId(p.ibans[0].id);
   }
 
   function handleAddPayee() {
-    addToast('warning', 'dashboard.campaigns.payments.toast.addPayeeHint');
+    addToast('warning', 'addPayeeHint');
     router.push(ROUTES.ASSOCIATION_PAYEES);
   }
 
@@ -91,9 +108,9 @@ export function CampaignPaymentsTab({ campaign }: Props) {
       });
       setPayeeId(''); setPayeeIbanId(''); setTypeCodeRaw('');
       setCustomTypeCode(''); setAmount(''); setLabel('');
-      addToast('success', 'dashboard.campaigns.payments.toast.success');
+      addToast('success', 'paymentSuccess');
     } catch {
-      addToast('error', 'dashboard.campaigns.payments.toast.error');
+      addToast('error', 'paymentError');
     }
   }
 
@@ -160,7 +177,64 @@ export function CampaignPaymentsTab({ campaign }: Props) {
         <div className="cm-card">
           <div className="cm-card-title">💸 {t('form.title')}</div>
 
-          {/* Payee select + Add button */}
+          {/* Type + Amount row2 — FIRST */}
+          <div className="row2" style={{ marginBottom: '14px' }}>
+            <div>
+              <label className="cm-label">
+                {t('form.typeCode')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+              </label>
+              <select
+                className="cm-fi"
+                value={typeCodeRaw}
+                onChange={(e) => handleTypeChange(e.target.value)}
+              >
+                <option value="">{t('form.typeCodePlaceholder')}</option>
+                <optgroup label={t('typeGroups.operational')}>
+                  <option value="60-mat">{t('typeCodes.60-mat')}</option>
+                  <option value="60-svc">{t('typeCodes.60-svc')}</option>
+                  <option value="61-loc">{t('typeCodes.61-loc')}</option>
+                  <option value="61-ent">{t('typeCodes.61-ent')}</option>
+                  <option value="62-tra">{t('typeCodes.62-tra')}</option>
+                  <option value="62-pub">{t('typeCodes.62-pub')}</option>
+                </optgroup>
+                <optgroup label={t('typeGroups.personnel')}>
+                  <option value="64-rem">{t('typeCodes.64-rem')}</option>
+                  <option value="64-soc">{t('typeCodes.64-soc')}</option>
+                </optgroup>
+                <optgroup label={t('typeGroups.other')}>
+                  <option value="65-ges">{t('typeCodes.65-ges')}</option>
+                  <option value="custom">{t('typeCodes.custom')}</option>
+                </optgroup>
+              </select>
+              {isCustomType && (
+                <input
+                  className="cm-fi"
+                  type="text"
+                  maxLength={50}
+                  placeholder={t('form.customCodePlaceholder')}
+                  value={customTypeCode}
+                  onChange={(e) => setCustomTypeCode(e.target.value)}
+                  style={{ marginTop: '6px' }}
+                />
+              )}
+            </div>
+            <div>
+              <label className="cm-label">
+                {t('form.amount')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+              </label>
+              <input
+                className="cm-fi"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0,00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Payee select + Add button — BELOW type/amount */}
           <div style={{ marginBottom: '14px' }}>
             <label className="cm-label">
               {t('form.payee')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
@@ -173,7 +247,7 @@ export function CampaignPaymentsTab({ campaign }: Props) {
                 onChange={(e) => handlePayeeChange(e.target.value)}
               >
                 <option value="">{t('form.payeePlaceholder')}</option>
-                {payees.map((p) => (
+                {filteredPayees.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
@@ -221,63 +295,6 @@ export function CampaignPaymentsTab({ campaign }: Props) {
                 )}
               </div>
             )}
-          </div>
-
-          {/* Type + Amount row2 */}
-          <div className="row2" style={{ marginBottom: '14px' }}>
-            <div>
-              <label className="cm-label">
-                {t('form.typeCode')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
-              </label>
-              <select
-                className="cm-fi"
-                value={typeCodeRaw}
-                onChange={(e) => { setTypeCodeRaw(e.target.value); setCustomTypeCode(''); }}
-              >
-                <option value="">{t('form.typeCodePlaceholder')}</option>
-                <optgroup label={t('typeGroups.operational')}>
-                  <option value="60-mat">{t('typeCodes.60-mat')}</option>
-                  <option value="60-svc">{t('typeCodes.60-svc')}</option>
-                  <option value="61-loc">{t('typeCodes.61-loc')}</option>
-                  <option value="61-ent">{t('typeCodes.61-ent')}</option>
-                  <option value="62-tra">{t('typeCodes.62-tra')}</option>
-                  <option value="62-pub">{t('typeCodes.62-pub')}</option>
-                </optgroup>
-                <optgroup label={t('typeGroups.personnel')}>
-                  <option value="64-rem">{t('typeCodes.64-rem')}</option>
-                  <option value="64-soc">{t('typeCodes.64-soc')}</option>
-                </optgroup>
-                <optgroup label={t('typeGroups.other')}>
-                  <option value="65-ges">{t('typeCodes.65-ges')}</option>
-                  <option value="custom">{t('typeCodes.custom')}</option>
-                </optgroup>
-              </select>
-              {isCustomType && (
-                <input
-                  className="cm-fi"
-                  type="text"
-                  maxLength={50}
-                  placeholder={t('form.customCodePlaceholder')}
-                  value={customTypeCode}
-                  onChange={(e) => setCustomTypeCode(e.target.value)}
-                  style={{ marginTop: '6px' }}
-                />
-              )}
-            </div>
-            <div>
-              <label className="cm-label">
-                {t('form.amount')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
-              </label>
-              <input
-                className="cm-fi"
-                type="number"
-                min="0.01"
-                step="0.01"
-                placeholder="0,00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
           </div>
 
           {/* Label / justificatif */}
