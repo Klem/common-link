@@ -70,18 +70,21 @@ springdoc:
     path: /api/docs/swagger-ui.html
 
 onchain:
+  mock: true
   rpc-url: ${ONCHAIN_RPC_URL:http://172.30.10.204:8545}
   chain-id: ${ONCHAIN_CHAIN_ID:31337}
-  registry-address: ${ONCHAIN_REGISTRY_ADDRESS}
-  recorder-pk: ${ONCHAIN_RECORDER_PK}
-  curator-pk: ${ONCHAIN_CURATOR_PK}
+  # Dev-only defaults — safe because OnchainRegistryClient is inactive when mock=true.
+  # Prod supply real values via environment variables.
+  registry-address: ${ONCHAIN_REGISTRY_ADDRESS:0x0000000000000000000000000000000000000000}
+  recorder-pk: ${ONCHAIN_RECORDER_PK:0x0000000000000000000000000000000000000000000000000000000000000001}
+  curator-pk: ${ONCHAIN_CURATOR_PK:0x0000000000000000000000000000000000000000000000000000000000000001}
   polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
   receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
-  donor-address-secret: ${DONOR_ADDRESS_SECRET}
+  donor-address-secret: ${DONOR_ADDRESS_SECRET:dev-placeholder-change-in-staging}
   worker:
-    enabled: false
+    enabled: true
     batch-size: 10
-    fixed-delay-ms: 5000
+    fixed-delay-ms: 30000
 
 logging:
   level:

@@ -12,6 +12,7 @@ data class OnchainConfig(
     val pollingIntervalMs: Long,
     val receiptTimeoutMs: Long,
     val donorAddressSecret: String,
+    val mock: Boolean = false,
     val worker: WorkerConfig,
 ) {
     data class WorkerConfig(

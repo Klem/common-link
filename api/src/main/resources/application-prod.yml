@@ -44,6 +44,7 @@ logging:
     org.commonlink: INFO
 
 onchain:
+  mock: false
   rpc-url: ${ONCHAIN_RPC_URL}
   chain-id: ${ONCHAIN_CHAIN_ID}
   registry-address: ${ONCHAIN_REGISTRY_ADDRESS}
@@ -56,3 +57,4 @@ onchain:
     enabled: true
     batch-size: 10
     fixed-delay-ms: 5000
+

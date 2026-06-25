@@ -81,6 +81,7 @@ springdoc:
     path: /api/docs/swagger-ui.html
 
 onchain:
+  mock: false
   worker:
     enabled: false
 
