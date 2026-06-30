@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CampaignDto, CampaignStatus } from '@/types/campaign';
 
@@ -226,12 +226,11 @@ export function CampaignHero({ campaign, onNameChange, onEmojiChange, onTabChang
       <div className="completion-bar-wrap">
         <div className="completion-steps">
           {steps.map((step, i) => (
-            <>
+            <Fragment key={step.key}>
               {i === 4 && (
-                <span key="sep" style={{ color: 'var(--slate-lavender)', fontSize: '11px', opacity: 0.5, padding: '0 4px', alignSelf: 'center' }}>·</span>
+                <span style={{ color: 'var(--slate-lavender)', fontSize: '11px', opacity: 0.5, padding: '0 4px', alignSelf: 'center' }}>·</span>
               )}
               <button
-                key={step.key}
                 type="button"
                 className={`comp-step ${step.cls}`}
                 onClick={() => jumpToField(step.tab, step.fieldId)}
@@ -239,7 +238,7 @@ export function CampaignHero({ campaign, onNameChange, onEmojiChange, onTabChang
                 <span className="comp-step-dot" />
                 {stepIcon(step.cls)} {t(step.labelKey)}
               </button>
-            </>
+            </Fragment>
           ))}
         </div>
       </div>

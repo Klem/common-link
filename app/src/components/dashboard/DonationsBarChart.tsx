@@ -22,6 +22,7 @@ export function DonationsBarChart({ data }: DonationsBarChartProps) {
   const locale = useLocale();
 
   const maxAmount = Math.max(...data.map((d) => d.amount), 1);
+  const BAR_MAX_PX = 160;
 
   return (
     <div className="card no-hover">
@@ -30,13 +31,13 @@ export function DonationsBarChart({ data }: DonationsBarChartProps) {
       </div>
       <div className="card-b">
         <div className="bar-chart-wrap">
-          {data.map((point) => {
-            const heightPct = Math.max((point.amount / maxAmount) * 100, 1);
+          {data.map((point, i) => {
+            const heightPx = Math.max((point.amount / maxAmount) * BAR_MAX_PX, 2);
             return (
-              <div key={point.month} className="bar-col">
+              <div key={`${point.month}-${i}`} className="bar-col">
                 <div
                   className="bar-fill"
-                  style={{ height: `${heightPct}%` }}
+                  style={{ height: `${heightPx}px` }}
                   title={`${point.amount} €`}
                 />
                 <span className="bar-lbl">{formatMonthLabel(point.month, locale)}</span>
