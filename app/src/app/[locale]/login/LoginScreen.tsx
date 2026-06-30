@@ -336,6 +336,26 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
               {/* Step 2 — Auth method */}
               {assoStep === 2 && (
                 <div className="flex flex-col gap-4">
+                  {selectedAsso && (
+                    <div className="flex items-center gap-[11px] px-[14px] py-[12px] bg-bg-3 border border-green/20 rounded-[10px]">
+                      <div className="w-9 h-9 rounded-[9px] flex items-center justify-center font-display font-extrabold text-[15px] text-green flex-shrink-0 bg-green/10 border border-green/20">
+                        {selectedAsso.nom[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12.5px] font-semibold text-text truncate">{selectedAsso.nom}</div>
+                        <div className="text-[11px] text-muted">
+                          📍 {selectedAsso.ville} {selectedAsso.codePostal} · SIREN {selectedAsso.siren}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAssoStep(1)}
+                        className="text-[11.5px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline flex-shrink-0 whitespace-nowrap"
+                      >
+                        ← {t('assoSearch.backToSearch')}
+                      </button>
+                    </div>
+                  )}
                   <p className="text-[13px] text-text-2">{t('signup.association.connect.title')}</p>
 
                   {/*<GoogleButton*/}
@@ -384,13 +404,6 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
                     />
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => setAssoStep(1)}
-                    className="btn btn-ghost btn-xs self-start"
-                  >
-                    ← {t('signup.association.steps.search')}
-                  </button>
                 </div>
               )}
 
