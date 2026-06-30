@@ -10,53 +10,50 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-export default function ContactPage() {
+export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'legal.contact' });
+
   return (
-    <LegalContent title="Contact">
-      <p>
-        Vous pouvez contacter CommonLink pour toute question relative au Site, à la Plateforme,
-        aux dons, aux organismes bénéficiaires, aux partenariats ou aux demandes légales.
-      </p>
+    <LegalContent title={t('title')}>
+      <p>{t('intro')}</p>
 
-      <h2>Contact général</h2>
+      <h2>{t('general.title')}</h2>
       <div className="contact-block">
-        Email : <a href="mailto:contact@common-link.org">contact@common-link.org</a><br />
-        Téléphone : 06 31 63 60 08
+        Email : <a href={`mailto:${t('general.email')}`}>{t('general.email')}</a><br />
+        Téléphone : {t('general.phone')}
       </div>
-      <p>CommonLink s'efforce de répondre aux demandes dans un délai de 48 heures ouvrées.</p>
+      <p>{t('general.response')}</p>
 
-      <h2>Demandes légales</h2>
-      <p>Pour toute demande juridique, administrative ou relative aux mentions légales :</p>
+      <h2>{t('legal.title')}</h2>
+      <p>{t('legal.intro')}</p>
       <div className="contact-block">
-        <a href="mailto:legal@common-link.org">legal@common-link.org</a>
+        <a href={`mailto:${t('legal.email')}`}>{t('legal.email')}</a>
       </div>
 
-      <h2>Données personnelles</h2>
-      <p>Pour exercer vos droits relatifs à vos données personnelles :</p>
+      <h2>{t('gdpr.title')}</h2>
+      <p>{t('gdpr.intro')}</p>
       <div className="contact-block">
-        <a href="mailto:legal@common-link.org">legal@common-link.org</a>
+        <a href={`mailto:${t('gdpr.email')}`}>{t('gdpr.email')}</a>
       </div>
-      <p>
-        CommonLink s'efforce de répondre dans un délai de 7 jours ouvrés. En tout état de cause,
-        CommonLink répond dans les délais prévus par la réglementation applicable.
-      </p>
+      <p>{t('gdpr.response')}</p>
 
-      <h2>Adresse postale</h2>
+      <h2>{t('postal.title')}</h2>
       <div className="contact-block">
-        CommonLink<br />
-        1047 Chemin des Impiniers<br />
-        06220 Vallauris<br />
-        France
+        {t('postal.line1')}<br />
+        {t('postal.line2')}<br />
+        {t('postal.line3')}<br />
+        {t('postal.line4')}
       </div>
 
-      <h2>Informations société</h2>
+      <h2>{t('company.title')}</h2>
       <div className="contact-block">
-        <strong>CommonLink</strong><br />
-        SAS, société commerciale de l'économie sociale et solidaire<br />
-        Capital social : 10 000 €<br />
-        SIREN : 105 153 928<br />
-        RCS : Antibes<br />
-        TVA intracommunautaire : FR45105153928
+        <strong>{t('company.name')}</strong><br />
+        {t('company.type')}<br />
+        {t('company.capital')}<br />
+        {t('company.siren')}<br />
+        {t('company.rcs')}<br />
+        {t('company.tva')}
       </div>
     </LegalContent>
   );
