@@ -191,6 +191,13 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
         </button>
       ) : (
         <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => setShowManual(false)}
+            className="text-[12px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline self-start"
+          >
+            ← {t('assoSearch.backToSearch')}
+          </button>
           <div className="form-group">
             <label className="form-label">{t('assoSearch.manualSiren')} *</label>
             <input

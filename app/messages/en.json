@@ -2,6 +2,7 @@
   "auth": {
     "assoSearch": {
       "apiUnavailable": "The directory is unavailable. Please enter information manually.",
+      "backToSearch": "Back to search",
       "confirm": "Confirm",
       "manualCodePostal": "Postal code",
       "manualEntry": "Manual entry",
@@ -178,6 +179,7 @@
     }
   },
   "common": {
+    "addPayeeHint": "Add your beneficiary then come back to the campaign.",
     "budgetSaved": "Budget saved.",
     "campaignUpdated": "Campaign updated.",
     "cancel": "Cancel",
@@ -189,11 +191,6 @@
       "serverError": "An error occurred. Please try again.",
       "sessionExpired": "Your session has expired. Please log in again."
     },
-    "addPayeeHint": "Add your beneficiary then come back to the campaign.",
-    "paymentError": "Payment failed. Please try again.",
-    "paymentSuccess": "Payment issued!",
-    "publishCampaignError": "Publication failed. Please try again.",
-    "publishCampaignSuccess": "🚀 Campaign published!",
     "loading": "Loading...",
     "milestoneCreated": "Milestone added.",
     "milestoneDeleted": "Milestone deleted.",
@@ -202,7 +199,11 @@
     "moneriumError": "Wallet connection failed. Please try again.",
     "moneriumErrorFetch": "Failed to get authentication URL. Please try again.",
     "payeeCreated": "Beneficiary added successfully.",
+    "paymentError": "Payment failed. Please try again.",
+    "paymentSuccess": "Payment issued!",
     "profileUpdated": "Profile updated.",
+    "publishCampaignError": "Publication failed. Please try again.",
+    "publishCampaignSuccess": "🚀 Campaign published!",
     "save": "Save",
     "setPasswordUpdated": "Password set successfully.",
     "vopVerified": "VOP verification completed."
@@ -907,5 +908,6 @@
     },
     "title": "Dashboard",
     "welcome": "Welcome"
-  }
+  },
+  "fr": "auth.assoSearch.backToSearch"
 }

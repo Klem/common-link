@@ -2,6 +2,7 @@
   "auth": {
     "assoSearch": {
       "apiUnavailable": "Le répertoire est indisponible. Saisissez les informations manuellement.",
+      "backToSearch": "Retour à la recherche",
       "confirm": "Confirmer",
       "manualCodePostal": "Code postal",
       "manualEntry": "Saisie manuelle",
@@ -178,6 +179,7 @@
     }
   },
   "common": {
+    "addPayeeHint": "Ajoutez votre bénéficiaire puis revenez sur la campagne.",
     "budgetSaved": "Budget sauvegardé.",
     "campaignUpdated": "Campagne mise à jour.",
     "cancel": "Annuler",
@@ -189,11 +191,6 @@
       "serverError": "Une erreur est survenue. Veuillez réessayer.",
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
-    "addPayeeHint": "Ajoutez votre bénéficiaire puis revenez sur la campagne.",
-    "paymentError": "Échec du paiement. Veuillez réessayer.",
-    "paymentSuccess": "Paiement émis !",
-    "publishCampaignError": "Échec de la publication. Veuillez réessayer.",
-    "publishCampaignSuccess": "🚀 Campagne publiée !",
     "loading": "Chargement...",
     "milestoneCreated": "Milestone ajouté.",
     "milestoneDeleted": "Milestone supprimé.",
@@ -202,7 +199,11 @@
     "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
     "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
     "payeeCreated": "Bénéficiaire ajouté avec succès.",
+    "paymentError": "Échec du paiement. Veuillez réessayer.",
+    "paymentSuccess": "Paiement émis !",
     "profileUpdated": "Profil mis à jour.",
+    "publishCampaignError": "Échec de la publication. Veuillez réessayer.",
+    "publishCampaignSuccess": "🚀 Campagne publiée !",
     "save": "Enregistrer",
     "setPasswordUpdated": "Mot de passe défini avec succès.",
     "vopVerified": "Vérification VOP terminée."
