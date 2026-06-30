@@ -14,11 +14,11 @@ interface ButtonProps {
 
 const variantClasses: Record<string, string> = {
   primary:
-    'bg-primary text-white hover:bg-primary-light hover:-translate-y-px hover:shadow-md',
+    'bg-secondary text-white hover:bg-secondary-light hover:-translate-y-px hover:shadow-md',
   secondary:
     'bg-white text-primary border-[1.5px] border-border hover:border-primary hover:bg-secondary-pale',
   accent:
-    'bg-secondary text-white hover:bg-secondary-light hover:-translate-y-px hover:shadow-md',
+    'bg-primary text-white hover:bg-primary-light hover:-translate-y-px hover:shadow-md',
 };
 
 const sizeClasses: Record<string, string> = {
@@ -36,7 +36,7 @@ export function Button({
   disabled = false,
   className = '',
 }: ButtonProps) {
-  const classes = `inline-flex items-center gap-2 font-ui font-semibold rounded-md border-none cursor-pointer transition-all duration-[250ms] leading-none ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`;
+  const classes = `inline-flex items-center gap-2 font-ui font-bold rounded-full border-none cursor-pointer transition-all duration-[250ms] leading-none ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`;
 
   if (href) {
     return (

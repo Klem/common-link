@@ -1,5 +1,4 @@
-import { Manrope } from 'next/font/google';
-import localFont from 'next/font/local';
+import { Nunito_Sans, Inter, Lora } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -9,18 +8,24 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import './globals.css';
 
-const manrope = Manrope({
+const nunitoSans = Nunito_Sans({
   subsets: ['latin'],
-  variable: '--font-manrope',
+  weight: ['400', '600', '700', '800', '900'],
+  variable: '--font-nunito-sans',
   display: 'swap',
 });
 
-const luciole = localFont({
-  src: [
-    { path: '../../public/fonts/Luciole-Regular.woff2', weight: '400', style: 'normal' },
-    { path: '../../public/fonts/Luciole-Bold.woff2', weight: '700', style: 'normal' },
-  ],
-  variable: '--font-luciole',
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const lora = Lora({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  weight: ['400', '500', '600'],
+  variable: '--font-lora',
   display: 'swap',
 });
 
@@ -35,7 +40,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${manrope.variable} ${luciole.variable}`}>
+    <html lang={locale} className={`${nunitoSans.variable} ${inter.variable} ${lora.variable}`}>
       <body>
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
