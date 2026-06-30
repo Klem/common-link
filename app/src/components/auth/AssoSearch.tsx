@@ -51,9 +51,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
   const [apiUnavailable, setApiUnavailable] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [manualData, setManualData] = useState({ siren: '', nom: '', ville: '', codePostal: '' });
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const search = useCallback(async (q: string) => {
     if (q.length < 2) {
@@ -62,7 +60,6 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
       return;
     }
     setSearchState('loading');
-    setDropdownOpen(false);
     try {
       const params = new URLSearchParams({
         q,
@@ -77,7 +74,6 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
       const mapped = (data.results ?? []).map(mapOrg);
       setResults(mapped);
       setSearchState(mapped.length > 0 ? 'results' : 'empty');
-      if (mapped.length > 0) setDropdownOpen(true);
       setApiUnavailable(false);
     } catch {
       setSearchState('error');
@@ -87,25 +83,13 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
 
   const handleInput = (value: string) => {
     setQuery(value);
-    setDropdownOpen(false);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => search(value), 320);
   };
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   const handleSelect = (asso: AssoResult) => {
-    setDropdownOpen(false);
     setQuery(asso.nom);
     onSelect(asso);
   };
@@ -120,7 +104,7 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
     <div className="flex flex-col gap-3">
       <p className="text-[12.5px] text-text-2 leading-[1.65]">{t('assoSearch.searchHint')}</p>
 
-      <div ref={containerRef} className="relative">
+      <div className="relative">
         <span className="absolute left-[13px] top-1/2 -translate-y-1/2 text-muted text-[15px] pointer-events-none">
           🔍
         </span>
@@ -137,36 +121,10 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
             className="absolute right-[13px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-green-dim border-t-green animate-spin-around-slow"
           />
         )}
-
-        {/* Autocomplete dropdown */}
-        {dropdownOpen && results.length > 0 && (
-          <div className="absolute top-[calc(100%+5px)] left-0 right-0 bg-bg-2 border border-border rounded-[10px] shadow-[0_12px_40px_rgba(0,0,0,.55)] z-50 overflow-hidden">
-            {results.slice(0, 5).map((asso) => (
-              <button
-                key={asso.siren}
-                type="button"
-                onClick={() => handleSelect(asso)}
-                className="flex items-center gap-[11px] w-full px-[14px] py-[11px] text-left cursor-pointer transition-colors duration-150 border-b border-border/[.18] last:border-b-0 hover:bg-bg-3"
-              >
-                <div
-                  className="w-[30px] h-[30px] rounded-[7px] flex items-center justify-center font-display font-bold text-[13px] text-green flex-shrink-0 bg-green/10 border border-green/20"
-                >
-                  {asso.nom[0]?.toUpperCase()}
-                </div>
-                <div>
-                  <div className="text-[13px] font-semibold text-text">{asso.nom}</div>
-                  <div className="text-[11px] text-muted">
-                    {asso.codePostal} {asso.ville} · SIREN {asso.siren}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Results list */}
-      {searchState === 'results' && !dropdownOpen && results.length > 0 && (
+      {searchState === 'results' && results.length > 0 && (
         <div className="flex flex-col gap-[7px] max-h-[260px] overflow-y-auto pr-[2px]">
           {results.map((asso) => {
             const isActive = asso.etat === 'A';
