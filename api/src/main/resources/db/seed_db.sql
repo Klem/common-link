@@ -105,7 +105,7 @@ DO $$
             'Prestations de services',
             'Indemnités des intervenants'
             ];
-        v_exp_code  TEXT[]    := ARRAY['SUPPLIES','LOGISTICS','SERVICES','STAFF_COMP'];
+        v_exp_code  TEXT[]    := ARRAY['60-mat','62-tra','62-svc','64-rem'];
         -- kind par ligne : la dernière (indemnités) est une RÉMUNÉRATION, le reste EXPENSE
         v_exp_kind  TEXT[]    := ARRAY['EXPENSE','EXPENSE','EXPENSE','REMUNERATION'];
 
@@ -312,49 +312,65 @@ DO $$
             END LOOP;
 
         -- ════════════════════════════════════════════════════════════
-        -- 3b. BUDGETS  (sections EXPENSE/REVENUE + lignes) pour chaque
+        -- 3b. BUDGETS  (sections plan-comptable + lignes) pour chaque
         --     campagne non-draft. Total EXPENSE == goal ; total REVENUE == goal.
-        --     Les lignes EXPENSE servent de base aux payouts (section 7).
+        --     Codes section alignés avec les préfixes typeCode des payouts :
+        --       '60' ← '60-mat'  (achats)
+        --       '62' ← '62-tra' + '62-svc'  (services & transport)
+        --       '64' ← '64-rem'  (personnel)
+        --       '74' ← typeCode donation défaut '74'
         -- ════════════════════════════════════════════════════════════
         FOREACH slot IN ARRAY v_active_slots LOOP
                 SELECT goal INTO v_goal FROM campaigns WHERE id = v_camp[slot];
 
-                -- Section CHARGES (EXPENSE)
+                -- Pre-compute the 4 expense line amounts
+                v_exp_item_amt[(slot-1)*4 + 1] := round(v_goal * v_exp_frac[1], 2);
+                v_exp_item_amt[(slot-1)*4 + 2] := round(v_goal * v_exp_frac[2], 2);
+                v_exp_item_amt[(slot-1)*4 + 3] := round(v_goal * v_exp_frac[3], 2);
+                v_exp_item_amt[(slot-1)*4 + 4] := v_goal
+                    - round(v_goal * v_exp_frac[1], 2)
+                    - round(v_goal * v_exp_frac[2], 2)
+                    - round(v_goal * v_exp_frac[3], 2);
+
+                -- Section '60' : Achats & fournitures (item k=1, 45 %)
+                v_sec_id  := gen_random_uuid();
+                v_item_id := gen_random_uuid();
+                INSERT INTO campaign_budget_sections (id, campaign_id, side, code, name, sort_order)
+                VALUES (v_sec_id, v_camp[slot], 'EXPENSE', '60', 'Achats & fournitures', 0);
+                INSERT INTO campaign_budget_items (id, section_id, label, amount, sort_order)
+                VALUES (v_item_id, v_sec_id, v_exp_label[1], v_exp_item_amt[(slot-1)*4 + 1], 0);
+                v_exp_item_ids[(slot-1)*4 + 1] := v_item_id;
+
+                -- Section '62' : Services & transport (items k=2 25 % + k=3 20 %)
+                v_sec_id  := gen_random_uuid();
+                INSERT INTO campaign_budget_sections (id, campaign_id, side, code, name, sort_order)
+                VALUES (v_sec_id, v_camp[slot], 'EXPENSE', '62', 'Services & transport', 1);
+                v_item_id := gen_random_uuid();
+                INSERT INTO campaign_budget_items (id, section_id, label, amount, sort_order)
+                VALUES (v_item_id, v_sec_id, v_exp_label[2], v_exp_item_amt[(slot-1)*4 + 2], 0);
+                v_exp_item_ids[(slot-1)*4 + 2] := v_item_id;
+                v_item_id := gen_random_uuid();
+                INSERT INTO campaign_budget_items (id, section_id, label, amount, sort_order)
+                VALUES (v_item_id, v_sec_id, v_exp_label[3], v_exp_item_amt[(slot-1)*4 + 3], 1);
+                v_exp_item_ids[(slot-1)*4 + 3] := v_item_id;
+
+                -- Section '64' : Personnel (item k=4, remainder ≈ 10 %)
+                v_sec_id  := gen_random_uuid();
+                v_item_id := gen_random_uuid();
+                INSERT INTO campaign_budget_sections (id, campaign_id, side, code, name, sort_order)
+                VALUES (v_sec_id, v_camp[slot], 'EXPENSE', '64', 'Personnel', 2);
+                INSERT INTO campaign_budget_items (id, section_id, label, amount, sort_order)
+                VALUES (v_item_id, v_sec_id, v_exp_label[4], v_exp_item_amt[(slot-1)*4 + 4], 0);
+                v_exp_item_ids[(slot-1)*4 + 4] := v_item_id;
+
+                -- Section '74' : Dons & subventions (REVENUE)
                 v_sec_id := gen_random_uuid();
                 INSERT INTO campaign_budget_sections (id, campaign_id, side, code, name, sort_order)
-                VALUES (v_sec_id, v_camp[slot], 'EXPENSE', 'EXPENSE', 'Charges prévisionnelles', 0);
-
-                FOR k IN 1..4 LOOP
-                        v_item_id := gen_random_uuid();
-                        -- dernière ligne = reliquat pour garantir somme exacte == goal
-                        IF k < 4 THEN
-                            rand_amount := round(v_goal * v_exp_frac[k], 2);
-                        ELSE
-                            rand_amount := v_goal - round(v_goal * v_exp_frac[1], 2)
-                                - round(v_goal * v_exp_frac[2], 2)
-                                - round(v_goal * v_exp_frac[3], 2);
-                        END IF;
-                        INSERT INTO campaign_budget_items (id, section_id, label, amount, sort_order)
-                        VALUES (v_item_id, v_sec_id, v_exp_label[k], rand_amount, k - 1);
-
-                        v_exp_item_ids[(slot-1)*4 + k] := v_item_id;
-                        v_exp_item_amt[(slot-1)*4 + k] := rand_amount;
-                    END LOOP;
-
-                -- Section PRODUITS (REVENUE)
-                v_sec_id := gen_random_uuid();
-                INSERT INTO campaign_budget_sections (id, campaign_id, side, code, name, sort_order)
-                VALUES (v_sec_id, v_camp[slot], 'REVENUE', 'REVENUE', 'Produits prévisionnels', 1);
-
-                FOR k IN 1..2 LOOP
-                        IF k < 2 THEN
-                            rand_amount := round(v_goal * v_rev_frac[k], 2);
-                        ELSE
-                            rand_amount := v_goal - round(v_goal * v_rev_frac[1], 2);
-                        END IF;
-                        INSERT INTO campaign_budget_items (section_id, label, amount, sort_order)
-                        VALUES (v_sec_id, v_rev_label[k], rand_amount, k - 1);
-                    END LOOP;
+                VALUES (v_sec_id, v_camp[slot], 'REVENUE', '74', 'Dons & subventions', 3);
+                INSERT INTO campaign_budget_items (section_id, label, amount, sort_order)
+                VALUES (v_sec_id, v_rev_label[1], round(v_goal * v_rev_frac[1], 2), 0);
+                INSERT INTO campaign_budget_items (section_id, label, amount, sort_order)
+                VALUES (v_sec_id, v_rev_label[2], v_goal - round(v_goal * v_rev_frac[1], 2), 1);
             END LOOP;
         FOR i IN 1..5 LOOP
                 v_payee_ids[i]      := gen_random_uuid();
@@ -692,7 +708,7 @@ DO $$
                         VALUES (
                                    v_payout_id, v_camp[slot],
                                    v_person_ids[i], v_person_iban_ids[i],
-                                   v_person_amounts[i], 'REMUNERATION', 'STAFF_COMP',
+                                   v_person_amounts[i], 'REMUNERATION', '64-rem',
                                    'Indemnités d''intervention — ' || v_person_names[i],
                                    'CONFIRMED', don_date, v_payout_conf, v_job_id
                                );

@@ -25,7 +25,8 @@ DO $$
     DECLARE
         -- ── UUID d'utilisateurs à EXCLURE de la purge (table users.id) ──
         -- Exemple : ARRAY['a0000000-0000-0000-0000-000000000001']::UUID[]
-        v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c','5a3245cb-b492-4a90-9439-8a020edfb7de','fe61fe1c-8c2f-4afc-a803-5b7d8710780a']::UUID[];
+--         v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c','5a3245cb-b492-4a90-9439-8a020edfb7de','fe61fe1c-8c2f-4afc-a803-5b7d8710780a']::UUID[];
+        v_keep_user_ids UUID[] := ARRAY[]::UUID[];
 
         -- Profils dérivés des users gardés (calculés automatiquement)
         v_keep_assoc_ids UUID[];
