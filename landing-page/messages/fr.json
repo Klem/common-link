@@ -396,6 +396,606 @@
       "title": "Comment ça marche"
     }
   },
+  "legal": {
+    "cgu": {
+      "intro": "Les présentes conditions générales d'utilisation ont pour objet de définir les conditions d'accès et d'utilisation du site https://www.common-link.org/ et des services proposés par CommonLink.",
+      "lastUpdated": "29 juin 2026",
+      "s1": {
+        "campaign": "Campagne : page ou espace dédié à une opération de collecte présentée par un organisme bénéficiaire sur la Plateforme.",
+        "commonlink": "CommonLink : la société CommonLink, SAS, immatriculée au RCS d'Antibes sous le numéro 105 153 928, dont le siège social est situé 1047 Chemin des Impiniers, 06220 Vallauris, France.",
+        "donor": "Donateur : toute personne réalisant un don au bénéfice d'un organisme bénéficiaire via la Plateforme.",
+        "intro": "Dans les présentes conditions générales, les termes ci-dessous ont la signification suivante :",
+        "org": "Organisme bénéficiaire : toute association, fondation, fonds de dotation, ONG ou structure éligible utilisant CommonLink pour présenter une campagne, recevoir des dons ou documenter l'utilisation des fonds collectés.",
+        "platform": "Plateforme : l'environnement numérique proposé par CommonLink permettant notamment à des organismes bénéficiaires de présenter des campagnes de collecte et à des donateurs de réaliser, suivre et documenter leurs dons.",
+        "site": "Site : le site internet accessible à l'adresse https://www.common-link.org/.",
+        "title": "1. Définitions",
+        "user": "Utilisateur : toute personne accédant au Site ou utilisant les services CommonLink."
+      },
+      "s10": {
+        "p1": "Lors de la réalisation d'un don, le donateur peut laisser une contribution volontaire à CommonLink. Cette contribution est facultative et peut être ramenée à zéro avant validation du paiement.",
+        "title": "10. Contribution volontaire à CommonLink"
+      },
+      "s11": {
+        "p1": "CommonLink facture aux organismes bénéficiaires des frais de service de 8 % HT et des frais de paiement et techniques de 2 % du montant des dons collectés, facturés mensuellement.",
+        "p2": "Les tarifs applicables sont précisés sur la page Tarifs du Site.",
+        "tarifsLinkLabel": "Tarifs",
+        "title": "11. Frais applicables aux organismes bénéficiaires"
+      },
+      "s12": {
+        "item0": "double paiement ;",
+        "item1": "erreur manifeste de montant ;",
+        "item2": "fraude ;",
+        "item3": "paiement non autorisé ;",
+        "item4": "campagne annulée ;",
+        "item5": "organisme bénéficiaire retiré de la Plateforme ;",
+        "item6": "situation exceptionnelle appréciée par CommonLink.",
+        "p1": "Les dons sont en principe définitifs et non remboursables. Un remboursement peut toutefois être étudié dans les cas suivants :",
+        "p2": "Les demandes doivent être adressées à : contact@common-link.org",
+        "title": "12. Remboursements"
+      },
+      "s13": {
+        "p1": "Lorsque l'organisme bénéficiaire est éligible, CommonLink génère et transmet des reçus fiscaux pour le compte de l'organisme bénéficiaire.",
+        "p2": "Les certificats numériques, NFT ou éléments de preuve complémentaires ne constituent pas des reçus fiscaux.",
+        "title": "13. Reçus fiscaux"
+      },
+      "s14": {
+        "p1": "CommonLink met à disposition des outils de transparence permettant de suivre certains flux financiers et de présenter des preuves d'utilisation fondées sur les opérations enregistrées.",
+        "p2": "CommonLink ne garantit pas que chaque euro collecté soit traçable de manière exhaustive dans toutes les situations, et ne garantit pas l'usage final des fonds par l'organisme bénéficiaire.",
+        "title": "14. Transparence et preuve d'utilisation"
+      },
+      "s15": {
+        "p1": "Les organismes bénéficiaires souhaitant utiliser CommonLink doivent créer un compte et fournir les informations et justificatifs nécessaires à leur identification et validation.",
+        "p2": "CommonLink peut valider, refuser, suspendre ou retirer un organisme bénéficiaire ou une campagne notamment en cas d'informations inexactes, de refus KYC/KYB, de soupçon de fraude ou de risque juridique.",
+        "title": "15. Conditions applicables aux organismes bénéficiaires"
+      },
+      "s16": {
+        "p1": "L'organisme bénéficiaire accorde à CommonLink une licence non exclusive, gratuite et mondiale permettant d'héberger, reproduire et diffuser les contenus transmis pour les besoins du service.",
+        "title": "16. Contenus publiés par les organismes bénéficiaires"
+      },
+      "s17": {
+        "p1": "Le contrat entre CommonLink et l'organisme bénéficiaire est conclu pour une durée indéterminée. Chaque partie peut résilier avec un préavis de 30 jours, sous réserve du traitement des opérations en cours.",
+        "p2": "CommonLink peut suspendre immédiatement l'accès d'un organisme bénéficiaire en cas de fraude, information fausse ou risque légal.",
+        "title": "17. Résiliation et suspension des organismes bénéficiaires"
+      },
+      "s18": {
+        "p1": "L'utilisateur s'engage à utiliser le Site et la Plateforme conformément à la loi et aux présentes conditions. Il est notamment interdit d'utiliser le Site à des fins frauduleuses, d'usurper une identité, de perturber le fonctionnement du Site ou de contourner les mesures de sécurité.",
+        "title": "18. Obligations des utilisateurs"
+      },
+      "s19": {
+        "p1": "Le Site, la Plateforme, la marque CommonLink et l'ensemble des contenus édités par CommonLink sont protégés par les règles applicables en matière de propriété intellectuelle. Toute reproduction ou exploitation non autorisée est interdite.",
+        "title": "19. Propriété intellectuelle"
+      },
+      "s2": {
+        "item0": "la présentation d'organismes bénéficiaires et de campagnes ;",
+        "item1": "la création d'un compte donateur ;",
+        "item2": "la réalisation de dons ponctuels ;",
+        "item3": "l'accès à un historique de dons ;",
+        "item4": "la génération et la transmission de reçus fiscaux pour le compte des organismes bénéficiaires, lorsque les conditions applicables sont réunies ;",
+        "item5": "l'accès à des informations de suivi relatives aux campagnes ;",
+        "item6": "la mise à disposition d'éléments de transparence et de preuve d'utilisation des fonds.",
+        "p1": "CommonLink est une plateforme de dons permettant aux associations, fondations, fonds de dotation, ONG et entreprises mécènes de collecter, suivre et documenter l'utilisation des fonds collectés, avec des mécanismes de transparence et de preuve d'utilisation.",
+        "p2": "La Plateforme permet notamment :",
+        "title": "2. Objet du service"
+      },
+      "s20": {
+        "p1": "Les informations relatives aux traitements de données personnelles sont décrites dans la Politique de confidentialité accessible sur le Site.",
+        "p2": "Pour exercer vos droits : legal@common-link.org",
+        "privacyLinkLabel": "Politique de confidentialité",
+        "title": "20. Données personnelles"
+      },
+      "s21": {
+        "cookiesLinkLabel": "Politique cookies",
+        "p1": "Les règles applicables sont décrites dans la Politique cookies accessible sur le Site.",
+        "title": "21. Cookies"
+      },
+      "s22": {
+        "p1": "CommonLink met en œuvre des mesures raisonnables pour assurer le bon fonctionnement du Site mais ne garantit pas une disponibilité continue ou sans erreur.",
+        "title": "22. Disponibilité et sécurité"
+      },
+      "s23": {
+        "p1": "CommonLink ne garantit pas le succès d'une campagne ni l'usage final des fonds par l'organisme bénéficiaire. CommonLink ne saurait être tenue responsable des dommages indirects ou des dysfonctionnements imputables à des prestataires tiers.",
+        "title": "23. Limitation de responsabilité"
+      },
+      "s24": {
+        "p1": "CommonLink ne saurait être tenue responsable en cas d'inexécution résultant d'un cas de force majeure ou d'un événement échappant raisonnablement à son contrôle.",
+        "title": "24. Force majeure"
+      },
+      "s25": {
+        "email": "contact@common-link.org",
+        "response": "CommonLink s'efforce de répondre dans un délai de 48 heures ouvrées.",
+        "title": "25. Contact"
+      },
+      "s26": {
+        "p1": "Les présentes conditions générales sont soumises au droit français. Pour les litiges entre CommonLink et un organisme bénéficiaire professionnel, compétence est attribuée au tribunal de commerce d'Antibes, sauf règle impérative contraire.",
+        "title": "26. Droit applicable"
+      },
+      "s3": {
+        "p1": "CommonLink est une société commerciale de l'économie sociale et solidaire. Une demande d'agrément ESUS a été déposée.",
+        "p2": "CommonLink est en cours de démarche d'immatriculation auprès de l'ORIAS en qualité d'intermédiaire en financement participatif.",
+        "p3": "CommonLink n'est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires habilités.",
+        "p4": "Les dons sont réalisés directement au bénéfice des organismes bénéficiaires. CommonLink n'encaisse pas juridiquement les fonds pour son propre compte.",
+        "title": "3. Statut de CommonLink"
+      },
+      "s4": {
+        "p1": "L'accès au Site implique l'acceptation des présentes conditions générales d'utilisation.",
+        "p2": "Pour réaliser un don ou créer un compte, l'utilisateur doit accepter expressément les présentes conditions générales.",
+        "p3": "CommonLink peut modifier les présentes conditions générales afin de tenir compte notamment de l'évolution du service, de la réglementation, des partenaires techniques ou des conditions d'utilisation des prestataires. La version applicable est celle en vigueur à la date d'utilisation du service.",
+        "title": "4. Acceptation des conditions générales"
+      },
+      "s5": {
+        "p1": "Le Site est accessible librement à tout utilisateur disposant d'un accès internet. Certaines fonctionnalités nécessitent la création d'un compte.",
+        "p2": "CommonLink peut suspendre, limiter ou interrompre l'accès au Site ou à la Plateforme pour des raisons de maintenance, sécurité, mise à jour, force majeure ou tout autre motif légitime.",
+        "title": "5. Accès au Site et à la Plateforme"
+      },
+      "s6": {
+        "p1": "La création d'un compte donateur est nécessaire pour réaliser un don via la Plateforme.",
+        "p2": "Le donateur s'engage à fournir des informations exactes, complètes et à jour, et est responsable de la confidentialité de ses identifiants.",
+        "p3": "En cas d'utilisation non autorisée de son compte, le donateur doit en informer CommonLink sans délai à l'adresse : contact@common-link.org",
+        "title": "6. Création de compte donateur"
+      },
+      "s7": {
+        "p1": "La Plateforme est destinée aux personnes majeures. Les mineurs ne peuvent utiliser la Plateforme qu'avec l'autorisation de leur représentant légal.",
+        "p2": "Le donateur choisit une campagne présentée sur la Plateforme et réalise un don au bénéfice de l'organisme bénéficiaire concerné. La sélection d'une campagne entraîne une affectation globale du don à cette campagne.",
+        "title": "7. Conditions applicables aux donateurs"
+      },
+      "s8": {
+        "p1": "Les dons réalisés via CommonLink sont ponctuels au lancement. Des fonctionnalités de dons récurrents pourront être proposées ultérieurement.",
+        "p2": "Les dons sont réalisés en euros. Le don est juridiquement acquis à l'organisme bénéficiaire dès sa réception, indépendamment de l'atteinte éventuelle de l'objectif affiché pour une campagne.",
+        "title": "8. Dons"
+      },
+      "s9": {
+        "p1": "Les moyens de paiement proposés au lancement sont la carte bancaire et le prélèvement SEPA. Les paiements sont traités par un ou plusieurs prestataires de services de paiement habilités.",
+        "p2": "CommonLink ne collecte pas, ne stocke pas et ne traite pas directement les données complètes de carte bancaire.",
+        "title": "9. Paiement"
+      },
+      "title": "Conditions générales d'utilisation"
+    },
+    "contact": {
+      "company": {
+        "capital": "Capital social : 10 000 €",
+        "name": "CommonLink",
+        "rcs": "RCS : Antibes",
+        "siren": "SIREN : 105 153 928",
+        "title": "Informations société",
+        "tva": "TVA intracommunautaire : FR45105153928",
+        "type": "SAS, société commerciale de l'économie sociale et solidaire"
+      },
+      "gdpr": {
+        "email": "legal@common-link.org",
+        "intro": "Pour exercer vos droits relatifs à vos données personnelles :",
+        "response": "CommonLink s'efforce de répondre dans un délai de 7 jours ouvrés. En tout état de cause, CommonLink répond dans les délais prévus par la réglementation applicable.",
+        "title": "Données personnelles"
+      },
+      "general": {
+        "email": "contact@common-link.org",
+        "phone": "06 31 63 60 08",
+        "response": "CommonLink s'efforce de répondre aux demandes dans un délai de 48 heures ouvrées.",
+        "title": "Contact général"
+      },
+      "intro": "Vous pouvez contacter CommonLink pour toute question relative au Site, à la Plateforme, aux dons, aux organismes bénéficiaires, aux partenariats ou aux demandes légales.",
+      "legal": {
+        "email": "legal@common-link.org",
+        "intro": "Pour toute demande juridique, administrative ou relative aux mentions légales :",
+        "title": "Demandes légales"
+      },
+      "postal": {
+        "line1": "CommonLink",
+        "line2": "1047 Chemin des Impiniers",
+        "line3": "06220 Vallauris",
+        "line4": "France",
+        "title": "Adresse postale"
+      },
+      "title": "Contact"
+    },
+    "faq": {
+      "cookiesLinkLabel": "Politique cookies",
+      "intro": "Retrouvez ci-dessous les réponses aux questions les plus fréquentes sur CommonLink.",
+      "q0": {
+        "a": "CommonLink est une plateforme de dons permettant aux associations, fondations, fonds de dotation, ONG et entreprises mécènes de collecter, suivre et documenter l'utilisation des fonds collectés, avec des mécanismes de transparence et de preuve d'utilisation.",
+        "q": "Qu'est-ce que CommonLink ?"
+      },
+      "q1": {
+        "a": "CommonLink s'adresse notamment aux associations, fondations, fonds de dotation, ONG, entreprises mécènes, et aux donateurs souhaitant suivre l'utilisation des fonds. Le service est destiné au marché français au lancement.",
+        "q": "À qui s'adresse CommonLink ?"
+      },
+      "q10": {
+        "a": "En principe, un don est définitif et non remboursable. Un remboursement peut toutefois être étudié en cas de double paiement, erreur manifeste, fraude, paiement non autorisé, campagne annulée ou organisme bénéficiaire retiré de la Plateforme. Les demandes doivent être adressées à contact@common-link.org.",
+        "q": "Le don est-il remboursable ?"
+      },
+      "q11": {
+        "a": "Sauf mention contraire, le don est juridiquement acquis à l'organisme bénéficiaire dès sa réception, indépendamment de l'atteinte de l'objectif affiché.",
+        "q": "Que se passe-t-il si une campagne n'atteint pas son objectif ?"
+      },
+      "q12": {
+        "a": "Le don est réalisé directement au bénéfice de l'organisme bénéficiaire. CommonLink n'encaisse pas juridiquement les fonds pour son propre compte.",
+        "q": "Qui reçoit juridiquement le don ?"
+      },
+      "q13": {
+        "a": "CommonLink facture aux organismes bénéficiaires 8 % HT de frais de service et 2 % de frais de paiement et de traitement technique, facturés mensuellement. Le donateur peut également laisser une contribution volontaire facultative. Voir la page Tarifs pour le détail.",
+        "q": "CommonLink prend-elle une commission sur les dons ?"
+      },
+      "q14": {
+        "a": "Lorsque l'organisme bénéficiaire est éligible, les reçus fiscaux sont générés par CommonLink pour le compte de l'organisme bénéficiaire. Ils peuvent être transmis par email et/ou mis à disposition dans le compte du donateur.",
+        "q": "Les reçus fiscaux sont-ils fournis ?"
+      },
+      "q15": {
+        "a": "Non. Un certificat numérique, NFT ou élément de preuve complémentaire ne constitue pas un reçu fiscal. Le reçu fiscal est un document distinct, généré pour le compte de l'organisme bénéficiaire lorsque les conditions applicables sont réunies.",
+        "q": "Le certificat numérique ou NFT est-il un reçu fiscal ?"
+      },
+      "q16": {
+        "a": "Non. CommonLink ne garantit pas l'usage final des fonds par l'organisme bénéficiaire. CommonLink met à disposition des outils de transparence permettant de suivre certains flux financiers et de présenter des preuves d'utilisation.",
+        "q": "CommonLink garantit-elle l'utilisation des fonds ?"
+      },
+      "q17": {
+        "a": "La preuve d'utilisation désigne les éléments permettant de documenter l'usage des fonds : opérations enregistrées, justificatifs transmis, données techniques ou blockchain lorsque ces fonctionnalités sont activées. Ces éléments ne constituent pas une certification comptable ou juridique exhaustive.",
+        "q": "Que signifie « preuve d'utilisation » ?"
+      },
+      "q18": {
+        "a": "Certaines fonctionnalités de CommonLink peuvent utiliser des technologies blockchain, notamment Polygon, afin de contribuer à la transparence et à la documentation des flux.",
+        "q": "CommonLink utilise-t-elle la blockchain ?"
+      },
+      "q19": {
+        "a": "Oui. CommonLink peut utiliser les services de Monerium pour certaines fonctionnalités liées à la monnaie électronique, à l'EURe et à la transparence des flux. Monerium est un établissement de monnaie électronique autorisé.",
+        "q": "CommonLink utilise-t-elle Monerium ?"
+      },
+      "q2": {
+        "a": "Oui. CommonLink est une société commerciale de l'économie sociale et solidaire. Une demande d'agrément ESUS a été déposée.",
+        "q": "CommonLink est-elle une société de l'économie sociale et solidaire ?"
+      },
+      "q20": {
+        "a": "Oui. CommonLink peut refuser, suspendre ou retirer un organisme bénéficiaire ou une campagne notamment en cas d'informations inexactes, de refus KYC/KYB, de soupçon de fraude, de litige sérieux ou de risque juridique.",
+        "q": "CommonLink peut-elle refuser ou suspendre un organisme ?"
+      },
+      "q21": {
+        "a": "Au lancement, CommonLink utilise uniquement des cookies strictement nécessaires au fonctionnement du Site. Les cookies analytics, marketing ou publicitaires ne sont pas actifs au lancement. Voir la Politique cookies.",
+        "q": "CommonLink utilise-t-elle des cookies ?"
+      },
+      "q22": {
+        "a": "Email : contact@common-link.org — Téléphone : 06 31 63 60 08. CommonLink s'efforce de répondre sous 48 heures ouvrées.",
+        "q": "Comment contacter CommonLink ?"
+      },
+      "q23": {
+        "a": "Pour exercer vos droits relatifs à vos données personnelles, écrivez à legal@common-link.org. CommonLink s'efforce de répondre sous 7 jours ouvrés.",
+        "q": "Comment exercer mes droits RGPD ?"
+      },
+      "q3": {
+        "a": "CommonLink est en cours de démarche d'immatriculation auprès de l'ORIAS en qualité d'intermédiaire en financement participatif.",
+        "q": "CommonLink est-elle enregistrée à l'ORIAS ?"
+      },
+      "q4": {
+        "a": "Non. CommonLink n'est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires habilités.",
+        "q": "CommonLink est-elle un établissement de paiement ?"
+      },
+      "q5": {
+        "a": "Le donateur crée un compte, sélectionne une campagne, réalise un don, reçoit une confirmation de paiement et peut accéder au suivi de son don depuis son compte. Lorsque les conditions applicables sont réunies, un reçu fiscal est généré par CommonLink pour le compte de l'organisme bénéficiaire.",
+        "q": "Comment fonctionne un don ?"
+      },
+      "q6": {
+        "a": "Non. La création d'un compte est nécessaire pour réaliser un don via CommonLink.",
+        "q": "Peut-on donner sans créer de compte ?"
+      },
+      "q7": {
+        "a": "Non. Le donateur choisit une campagne, mais ne choisit pas une affectation individuelle détaillée des fonds. L'affectation est globale à la campagne sélectionnée.",
+        "q": "Peut-on choisir précisément l'usage des fonds ?"
+      },
+      "q8": {
+        "a": "Les dons sont ponctuels au lancement. Des fonctionnalités de dons récurrents pourront être proposées ultérieurement.",
+        "q": "Les dons sont-ils ponctuels ou récurrents ?"
+      },
+      "q9": {
+        "a": "Au lancement, CommonLink prévoit d'accepter la carte bancaire et le prélèvement SEPA. D'autres moyens de paiement pourront être ajoutés ultérieurement.",
+        "q": "Quels moyens de paiement sont acceptés ?"
+      },
+      "tarifsLinkLabel": "Tarifs",
+      "title": "FAQ"
+    },
+    "mentionsLegales": {
+      "contact": {
+        "email": "contact@common-link.org",
+        "legalEmail": "legal@common-link.org",
+        "phone": "06 31 63 60 08",
+        "response": "CommonLink s'efforce de répondre aux demandes reçues dans un délai de 48 heures ouvrées.",
+        "title": "4. Contact"
+      },
+      "cookies": {
+        "linkLabel": "Politique cookies",
+        "p1": "Les règles applicables aux cookies et autres traceurs sont décrites dans la Politique cookies accessible sur le site.",
+        "title": "10. Cookies"
+      },
+      "director": {
+        "content": "Le directeur de la publication est : Julian Maiolino, Président de CommonLink",
+        "title": "2. Directeur de la publication"
+      },
+      "domain": {
+        "content": "Le nom de domaine common-link.org est géré techniquement auprès d'OVH.",
+        "title": "6. Nom de domaine"
+      },
+      "editor": {
+        "address": "Siège social : 1047 Chemin des Impiniers, 06220 Vallauris, France",
+        "capital": "Capital social : 10 000 €",
+        "ess": "CommonLink est une société commerciale de l'économie sociale et solidaire. Une demande d'agrément ESUS a été déposée.",
+        "naf": "Code NAF / APE : 6201Z",
+        "name": "CommonLink",
+        "orias": "CommonLink est en cours de démarche d'immatriculation auprès de l'ORIAS en qualité d'intermédiaire en financement participatif.",
+        "rcs": "RCS : Antibes",
+        "siren": "SIREN : 105 153 928",
+        "siret": "SIRET : 105 153 928 00012",
+        "title": "1. Éditeur du site",
+        "tva": "Numéro de TVA intracommunautaire : FR45105153928",
+        "type": "Société par actions simplifiée (SAS), société commerciale de l'économie sociale et solidaire (ESS)"
+      },
+      "editorial": {
+        "content": "Le responsable du contenu éditorial du site est : Julian Maiolino",
+        "title": "3. Responsable éditorial"
+      },
+      "hosting": {
+        "address": "4 rue Voltaire, 44000 Nantes, France",
+        "name": "Clever Cloud",
+        "title": "5. Hébergement",
+        "type": "Société par actions simplifiée (SAS)",
+        "url": "https://www.clever.cloud/"
+      },
+      "intro": "Le présent site internet, accessible à l'adresse https://www.common-link.org/, est édité par CommonLink.",
+      "ip": {
+        "p1": "L'ensemble des éléments présents sur le site, notamment les textes, logos, marques, éléments graphiques, interfaces, bases de données, images, vidéos, icônes, codes, structures, dénominations et contenus, sont protégés par les dispositions applicables en matière de propriété intellectuelle.",
+        "p2": "Toute reproduction, représentation, modification, adaptation, extraction, diffusion ou exploitation, totale ou partielle, du site ou de ses éléments, sans autorisation préalable écrite de CommonLink, est interdite.",
+        "title": "7. Propriété intellectuelle"
+      },
+      "lastUpdated": "29 juin 2026",
+      "liability": {
+        "p1": "CommonLink s'efforce de fournir sur le site des informations exactes, à jour et accessibles. Toutefois, CommonLink ne peut garantir l'absence d'erreur, d'omission, d'interruption ou d'indisponibilité temporaire du site.",
+        "p2": "Les informations présentées sur le site ont une finalité générale de présentation du service CommonLink. Elles ne constituent pas un conseil juridique, fiscal, financier ou comptable personnalisé.",
+        "title": "8. Responsabilité"
+      },
+      "privacy": {
+        "linkLabel": "Politique de confidentialité",
+        "p1": "Les traitements de données personnelles réalisés par CommonLink sont décrits dans la Politique de confidentialité accessible sur le site.",
+        "p2": "Pour toute demande relative aux données personnelles : legal@common-link.org",
+        "title": "9. Données personnelles"
+      },
+      "title": "Mentions légales"
+    },
+    "politiqueConfidentialite": {
+      "changes": {
+        "p1": "CommonLink peut modifier la présente Politique de confidentialité afin de tenir compte de l'évolution du Site, de la Plateforme, des traitements réalisés, des prestataires utilisés ou de la réglementation applicable. La version applicable est celle publiée sur le Site.",
+        "title": "13. Modification de la Politique de confidentialité"
+      },
+      "cnil": {
+        "p1": "Si une personne estime que ses droits ne sont pas respectés, elle peut introduire une réclamation auprès de la CNIL.",
+        "title": "12. Réclamation auprès de la CNIL"
+      },
+      "controller": {
+        "address": "Siège social : 1047 Chemin des Impiniers, 06220 Vallauris, France",
+        "email": "legal@common-link.org",
+        "name": "CommonLink",
+        "noDpo": "CommonLink n'a pas désigné de délégué à la protection des données.",
+        "referent": "Le référent données personnelles est : Julian Maiolino",
+        "siren": "SIREN : 105 153 928",
+        "title": "1. Responsable de traitement",
+        "type": "SAS, société commerciale de l'économie sociale et solidaire"
+      },
+      "cookies": {
+        "linkLabel": "Politique cookies",
+        "p1": "Au lancement, CommonLink utilise uniquement les cookies strictement nécessaires au fonctionnement du Site. Pour plus d'informations, l'utilisateur peut consulter la Politique cookies.",
+        "title": "9. Cookies et mesure d'audience"
+      },
+      "data": {
+        "donors": {
+          "p1": "CommonLink peut collecter notamment : prénom, nom, adresse email, adresse postale, pays de résidence, informations relatives au compte utilisateur, données relatives aux dons (date, montant, organisme, campagne, moyen de paiement), numéro d'ordre des reçus fiscaux, historique des dons, adresse IP, logs techniques, échanges avec le support.",
+          "p2": "CommonLink ne collecte pas directement les données complètes de carte bancaire.",
+          "title": "2.1 Données des donateurs"
+        },
+        "orgs": {
+          "p1": "CommonLink peut collecter notamment : dénomination, forme juridique, adresse, numéro d'identification, informations relatives aux représentants, documents KYB, informations bancaires, données relatives aux campagnes et justificatifs d'utilisation des fonds.",
+          "title": "2.2 Données des organismes bénéficiaires"
+        },
+        "technical": {
+          "p1": "CommonLink peut collecter : adresse IP, logs de connexion, données relatives au navigateur et au terminal, données de sécurité, données relatives aux cookies strictement nécessaires.",
+          "title": "2.3 Données techniques"
+        },
+        "title": "2. Données collectées"
+      },
+      "intro": "CommonLink attache une importance particulière à la protection des données personnelles. La présente Politique de confidentialité explique quelles données personnelles sont collectées, pour quelles finalités, sur quelles bases juridiques, pendant combien de temps elles sont conservées, avec qui elles peuvent être partagées et quels droits peuvent être exercés.",
+      "lastUpdated": "29 juin 2026",
+      "legalBasis": {
+        "intro": "Les traitements reposent, selon les cas, sur :",
+        "item0": "l'exécution d'un contrat ou de mesures précontractuelles ;",
+        "item1": "le respect d'obligations légales ;",
+        "item2": "l'intérêt légitime de CommonLink (sécurité, prévention de la fraude, prospection B2B) ;",
+        "item3": "le consentement de la personne concernée (newsletter, certains cookies) ;",
+        "item4": "la constatation, l'exercice ou la défense de droits en justice.",
+        "title": "4. Bases juridiques"
+      },
+      "newsletter": {
+        "p1": "CommonLink peut envoyer une newsletter aux personnes ayant donné leur consentement (opt-in). Chaque email contient un lien de désinscription.",
+        "p2": "CommonLink peut réaliser de la prospection B2B auprès d'organismes susceptibles d'être intéressés par ses services.",
+        "title": "8. Newsletter et prospection"
+      },
+      "purposes": {
+        "intro": "Les données personnelles peuvent être traitées pour :",
+        "item0": "création et gestion des comptes utilisateurs et organismes bénéficiaires ;",
+        "item1": "présentation des campagnes et traitement des dons ;",
+        "item10": "envoi de newsletters aux personnes ayant donné leur consentement.",
+        "item2": "génération et transmission des reçus fiscaux ;",
+        "item3": "mise à disposition d'informations de transparence et de preuve d'utilisation ;",
+        "item4": "conformité KYC, KYB, lutte contre la fraude et obligations applicables ;",
+        "item5": "gestion du support et des demandes de contact ;",
+        "item6": "facturation des organismes bénéficiaires et tenue comptable ;",
+        "item7": "respect des obligations légales et réglementaires ;",
+        "item8": "sécurité du Site et prévention de la fraude ;",
+        "item9": "prospection B2B auprès d'organismes susceptibles d'utiliser CommonLink ;",
+        "title": "3. Finalités des traitements"
+      },
+      "recipients": {
+        "intro": "Les données personnelles peuvent être transmises, selon les cas, aux :",
+        "item0": "équipes internes habilitées de CommonLink ;",
+        "item1": "organismes bénéficiaires concernés par les dons ;",
+        "item2": "prestataires de paiement et de monnaie électronique ;",
+        "item3": "prestataires KYC ou KYB ;",
+        "item4": "prestataires d'hébergement (Clever Cloud) ;",
+        "item5": "prestataires techniques, d'email transactionnel et de support ;",
+        "item6": "autorités administratives, judiciaires ou fiscales lorsque la loi l'exige.",
+        "monerium": "CommonLink peut utiliser les services de Monerium pour certaines fonctionnalités liées à la monnaie électronique et à la transparence des flux.",
+        "title": "5. Destinataires des données"
+      },
+      "retention": {
+        "col1": "Catégorie de données",
+        "col2": "Durée de conservation",
+        "row0col1": "Données de compte donateur",
+        "row0col2": "Durée d'existence du compte, puis archivage si nécessaire",
+        "row1col1": "Données relatives aux dons, reçus fiscaux et obligations comptables",
+        "row1col2": "Jusqu'à 10 ans à compter de la clôture de l'exercice concerné",
+        "row2col1": "Données relatives aux organismes bénéficiaires",
+        "row2col2": "Durée de la relation contractuelle, puis archivage selon obligations légales",
+        "row3col1": "Logs techniques et données de sécurité",
+        "row3col2": "6 à 12 mois, sauf nécessité plus longue en cas d'incident",
+        "row4col1": "Données de prospection B2B",
+        "row4col2": "3 ans à compter du dernier contact actif",
+        "row5col1": "Données newsletter",
+        "row5col2": "Jusqu'au retrait du consentement ou 3 ans après le dernier contact",
+        "row6col1": "Demandes relatives aux droits RGPD",
+        "row6col2": "Durée nécessaire au traitement, puis archivage probatoire jusqu'à 5 ans",
+        "title": "7. Durées de conservation"
+      },
+      "rights": {
+        "contact": "Ces droits peuvent être exercés en écrivant à : legal@common-link.org",
+        "intro": "Conformément à la réglementation applicable, toute personne concernée peut exercer :",
+        "item0": "droit d'accès ;",
+        "item1": "droit de rectification ;",
+        "item2": "droit d'effacement ;",
+        "item3": "droit d'opposition ;",
+        "item4": "droit à la limitation du traitement ;",
+        "item5": "droit à la portabilité ;",
+        "item6": "droit de retirer son consentement à tout moment ;",
+        "item7": "droit de définir des directives relatives au sort de ses données après son décès.",
+        "response": "CommonLink s'efforce de répondre dans un délai de 7 jours ouvrés.",
+        "title": "11. Droits des personnes"
+      },
+      "security": {
+        "p1": "CommonLink met en œuvre des mesures techniques et organisationnelles raisonnables pour protéger les données personnelles : contrôle des accès, hébergement sécurisé, chiffrement, journalisation, séparation des rôles, limitation des accès aux personnes habilitées.",
+        "title": "10. Sécurité"
+      },
+      "title": "Politique de confidentialité",
+      "transfers": {
+        "p1": "CommonLink privilégie des prestataires situés dans l'Union européenne. Au lancement, CommonLink n'a pas vocation à transférer les données personnelles hors de l'Union européenne.",
+        "title": "6. Transferts hors Union européenne"
+      }
+    },
+    "politiqueCookies": {
+      "browser": {
+        "p1": "L'utilisateur peut configurer son navigateur pour bloquer ou supprimer certains cookies. La désactivation de cookies strictement nécessaires peut toutefois empêcher le bon fonctionnement du Site ou de certaines fonctionnalités de la Plateforme.",
+        "title": "7. Gestion des cookies depuis le navigateur"
+      },
+      "changes": {
+        "p1": "CommonLink peut modifier la présente Politique cookies afin de tenir compte de l'évolution du Site, de la Plateforme, des outils utilisés ou de la réglementation applicable. La version applicable est celle publiée sur le Site.",
+        "title": "8. Modification de la Politique cookies"
+      },
+      "consent": {
+        "p1": "Si CommonLink active ultérieurement des cookies analytics, marketing ou de personnalisation nécessitant le consentement, l'utilisateur pourra accepter, refuser ou paramétrer ses choix, et retirer son consentement à tout moment. CommonLink mettra alors à disposition un outil de gestion du consentement accessible depuis le Site.",
+        "title": "5. Consentement"
+      },
+      "duration": {
+        "p1": "Les cookies strictement nécessaires sont conservés pour une durée limitée à ce qui est nécessaire à leur finalité. Les durées précises peuvent varier selon le type de cookie utilisé.",
+        "title": "6. Durée de conservation"
+      },
+      "intro": "La présente Politique cookies explique comment CommonLink utilise les cookies et autres traceurs sur le site https://www.common-link.org/.",
+      "lastUpdated": "29 juin 2026",
+      "notUsed": {
+        "item0": "Google Analytics ;",
+        "item1": "cookies de mesure d'audience non exemptés ;",
+        "item2": "cookies marketing ;",
+        "item3": "pixels publicitaires ;",
+        "item4": "retargeting ;",
+        "item5": "cookies de réseaux sociaux ;",
+        "item6": "outils de suivi comportemental ;",
+        "item7": "outils d'enregistrement de session ;",
+        "item8": "outils de heatmap.",
+        "p1": "Au lancement, CommonLink n'utilise pas :",
+        "p2": "Ces outils pourront être activés ultérieurement uniquement après information des utilisateurs et mise en place d'un mécanisme de consentement conforme lorsque celui-ci est requis.",
+        "title": "3. Cookies non utilisés au lancement"
+      },
+      "payment": {
+        "p1": "Certains prestataires de paiement peuvent utiliser des cookies ou traceurs nécessaires au traitement sécurisé des paiements. Lorsque ces cookies sont strictement nécessaires à l'exécution du paiement demandé par l'utilisateur, ils peuvent être déposés sans consentement préalable.",
+        "title": "4. Cookies de paiement"
+      },
+      "title": "Politique cookies",
+      "used": {
+        "item0": "permettre l'accès au Site ;",
+        "item1": "assurer la sécurité du Site ;",
+        "item2": "maintenir une session utilisateur ;",
+        "item3": "mémoriser certaines préférences strictement nécessaires ;",
+        "item4": "prévenir les abus ou accès non autorisés ;",
+        "item5": "assurer le bon fonctionnement technique de la Plateforme.",
+        "p1": "Au lancement, CommonLink utilise uniquement des cookies strictement nécessaires au fonctionnement du Site.",
+        "p2": "Ces cookies peuvent être nécessaires pour :",
+        "p3": "Ces cookies ne nécessitent pas le consentement préalable de l'utilisateur lorsqu'ils sont strictement nécessaires au service demandé.",
+        "title": "2. Cookies utilisés au lancement"
+      },
+      "whatIs": {
+        "p1": "Un cookie est un petit fichier déposé ou lu sur le terminal de l'utilisateur lorsqu'il consulte un site internet. Les cookies peuvent avoir différentes finalités : permettre le bon fonctionnement d'un site, sécuriser une session, mémoriser des préférences, mesurer l'audience ou personnaliser des contenus.",
+        "title": "1. Qu'est-ce qu'un cookie ?"
+      }
+    },
+    "tarifs": {
+      "billing": {
+        "p1": "Les frais dus par les organismes bénéficiaires sont facturés mensuellement, après collecte des dons. Les factures sont émises par CommonLink et transmises à l'organisme bénéficiaire selon les modalités convenues.",
+        "title": "8. Facturation"
+      },
+      "donors": {
+        "p1": "L'utilisation de CommonLink est gratuite pour les donateurs.",
+        "p2": "Lors d'un don, le donateur peut laisser une contribution volontaire à CommonLink. Cette contribution est facultative. Elle peut être suggérée dynamiquement ou préremplie, mais le donateur peut la modifier ou la ramener à zéro avant validation du paiement. La contribution volontaire est exprimée toutes taxes comprises.",
+        "title": "1. Donateurs"
+      },
+      "example": {
+        "col1": "Élément",
+        "col2": "Montant",
+        "intro": "Pour 100 € de dons collectés par un organisme bénéficiaire :",
+        "note": "Cet exemple est indicatif et ne tient pas compte d'éventuelles conditions particulières ou négociées.",
+        "row0col1": "Dons collectés",
+        "row0col2": "100,00 €",
+        "row1col1": "Frais de service CommonLink",
+        "row1col2": "8,00 € HT",
+        "row2col1": "TVA sur frais de service",
+        "row2col2": "1,60 €",
+        "row3col1": "Frais de paiement et techniques",
+        "row3col2": "2,00 €",
+        "row4col1": "Total facturé à l'organisme bénéficiaire",
+        "row4col2": "11,60 € TTC",
+        "title": "4. Exemple indicatif"
+      },
+      "free": {
+        "p1": "CommonLink peut proposer une offre gratuite permettant à certains organismes de bénéficier d'une visibilité sur la Plateforme. Cette offre gratuite ne permet pas de recevoir des dons via CommonLink.",
+        "title": "5. Offre de visibilité gratuite"
+      },
+      "intro": "CommonLink applique une tarification transparente aux organismes bénéficiaires utilisant la Plateforme pour collecter, suivre et documenter l'utilisation des dons.",
+      "lastUpdated": "29 juin 2026",
+      "noHidden": {
+        "p1": "CommonLink ne facture aucun frais caché. Les frais applicables aux organismes bénéficiaires sont indiqués sur cette page ou dans les conditions contractuelles applicables.",
+        "title": "7. Aucun frais caché"
+      },
+      "orgs": {
+        "fee": "8 % HT du montant des dons collectés",
+        "p1": "CommonLink facture aux organismes bénéficiaires des frais de service correspondant à :",
+        "p2": "La TVA applicable est ajoutée à ces frais. Ces frais sont supportés par l'organisme bénéficiaire. Ils ne sont pas prélevés sur le don brut au moment du paiement du donateur. Ils font l'objet d'une facturation mensuelle.",
+        "title": "2. Organismes bénéficiaires"
+      },
+      "payment": {
+        "fee": "2 % du montant des dons collectés",
+        "item0": "le traitement des paiements ;",
+        "item1": "les infrastructures techniques ;",
+        "item2": "les opérations nécessaires au fonctionnement de la Plateforme ;",
+        "item3": "le cas échéant, certaines opérations liées à la transparence ou aux technologies blockchain.",
+        "p1": "Des frais de paiement et de traitement technique correspondant à :",
+        "p2": "sont également facturés à l'organisme bénéficiaire. Ces frais couvrent notamment :",
+        "title": "3. Frais de paiement et frais techniques"
+      },
+      "specific": {
+        "p1": "CommonLink peut proposer des conditions tarifaires spécifiques ou négociées à certains organismes bénéficiaires, notamment selon leur profil, leur volume de collecte, leur statut, leur usage de la Plateforme ou un accord contractuel spécifique.",
+        "title": "6. Conditions spécifiques"
+      },
+      "title": "Tarifs"
+    }
+  },
   "metadata": {
     "associations": {
       "description": "Offrez la transparence à vos donateurs. Rejoignez Lien commun et renforcez la confiance.",
