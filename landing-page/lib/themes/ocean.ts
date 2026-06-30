@@ -23,8 +23,8 @@ export const oceanTheme: Theme = {
     error: '#dc2626',
   },
   fonts: {
-    ui: 'var(--font-manrope)',
-    body: 'var(--font-luciole)',
+    ui: 'var(--font-nunito-sans)',
+    body: 'var(--font-inter)',
   },
   radius: {
     sm: '4px',
