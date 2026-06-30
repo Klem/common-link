@@ -1,134 +1,276 @@
 {
-  "metadata": {
-    "landing": {
-      "title": "Lien commun — La transparence sur l'usage des dons",
-      "description": "Plateforme de crypto-philanthropie qui restaure la confiance des donateurs grâce à la transparence sur l'utilisation des fonds.",
-      "keywords": "transparence, dons, associations, blockchain, traçabilité, philanthropie, confiance, reçu fiscal"
+  "associations": {
+    "benefits": {
+      "items": [
+        {
+          "title": "Attirez plus de donateurs",
+          "text": "La transparence rassure. Les donateurs privilégient les structures qui montrent comment leurs fonds sont utilisés."
+        },
+        {
+          "title": "Simplifiez votre reporting",
+          "text": "Les justificatifs et preuves de dépenses sont enregistrés automatiquement. Moins de paperasse, plus de terrain."
+        },
+        {
+          "title": "Zéro compétence technique",
+          "text": "Vous gérez votre association en euros, comme d'habitude. La technologie est invisible — on s'occupe de tout."
+        }
+      ],
+      "title": "Pourquoi rejoindre Lien commun ?"
     },
-    "partners": {
-      "title": "Partenaires & Investisseurs — Lien commun",
-      "description": "Découvrez notre vision, notre équipe et comment devenir partenaire de Lien commun.",
-      "keywords": "partenaires, investisseurs, crypto-philanthropie, blockchain, fintech, impact social"
+    "form": {
+      "change": "Changer",
+      "consent": "J'accepte que Lien commun collecte ces informations pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
+      "description": "Description de votre association",
+      "descriptionPlaceholder": "En quelques mots, décrivez votre activité...",
+      "email": "Email de contact",
+      "emailPlaceholder": "contact@association.org",
+      "note": "Vos données sont collectées uniquement pour vous informer du lancement. Elles ne seront ni partagées ni utilisées à d'autres fins. Vous pouvez exercer vos droits (accès, rectification, suppression) en nous contactant à contact@liencommun.fr.",
+      "responsibleName": "Nom du responsable",
+      "responsibleNamePlaceholder": "Prénom Nom",
+      "selectedTitle": "Association sélectionnée",
+      "submit": "Rejoindre la liste d'attente",
+      "success": "Merci ! Votre association est inscrite sur la liste d'attente. Nous vous contacterons dès le lancement de la plateforme."
     },
-    "associations": {
-      "title": "Associations — Lien commun",
-      "description": "Offrez la transparence à vos donateurs. Rejoignez Lien commun et renforcez la confiance.",
-      "keywords": "associations, transparence, dons, inscription, SIRENE, reporting, gestion donations"
+    "hero": {
+      "badge": "Associations",
+      "description": "Rejoignez les premières associations pilotes de Lien commun. Nous vous accompagnons pour simplifier votre gestion et renforcer la confiance de vos soutiens.",
+      "title": "Offrez la transparence à vos donateurs"
     },
-    "donors": {
-      "title": "Donateurs — Lien commun",
-      "description": "Donnez en toute confiance. Suivez chaque euro et recevez des preuves vérifiables.",
-      "keywords": "donateurs, dons, suivi, reçu fiscal, transparence, preuves vérifiables, philanthropie"
+    "search": {
+      "active": "Active",
+      "advancedToggle": "Filtrer les résultats",
+      "button": "Rechercher",
+      "city": "Ville",
+      "clearFilters": "Effacer les filtres",
+      "closed": "Cessée",
+      "created": "Création",
+      "dep": "Dép. {code}",
+      "description": "Commencez par rechercher votre association dans le répertoire officiel. Cela nous permet de vérifier que votre structure existe et de pré-remplir vos informations.",
+      "displayedAll": "{displayed} affichées",
+      "displayedInfo": "{displayed} sur {total} affichées",
+      "endOfResults": "Fin des résultats",
+      "filters": {
+        "activeCount": "{count} filtre(s) actif(s)",
+        "city": "Ville",
+        "cityPlaceholder": "ex : Paris",
+        "department": "Département",
+        "departmentAll": "Tous les départements",
+        "employees": "Nombre de salariés",
+        "employees0": "0 salarié",
+        "employees10to49": "10 à 49 salariés",
+        "employees1to9": "1 à 9 salariés",
+        "employees200plus": "200+ salariés",
+        "employees50to199": "50 à 199 salariés",
+        "employeesAll": "Tous",
+        "postalCode": "Code Postal",
+        "postalCodePlaceholder": "ex : 75001",
+        "status": "Statut",
+        "statusActive": "Actives uniquement",
+        "statusAll": "Tous",
+        "statusClosed": "Cessées uniquement"
+      },
+      "loading": "Recherche en cours...",
+      "modal": {
+        "activity": "Activité",
+        "activitySection": "Section d'activité",
+        "address": "Adresse du siège",
+        "close": "Fermer",
+        "commune": "Commune",
+        "dateCreation": "Date de création",
+        "department": "Département",
+        "directors": "Dirigeants",
+        "employees": "Effectif",
+        "establishments": "Nb. établissements",
+        "fullAddress": "Adresse complète",
+        "identification": "Identification",
+        "naf": "Code NAF",
+        "natureJuridique": "Nature juridique",
+        "noAddress": "Adresse non disponible",
+        "region": "Région",
+        "siret": "SIRET (siège)",
+        "viewAnnuaire": "Voir sur l'Annuaire"
+      },
+      "noResults": "Aucune association trouvée. Vérifiez le nom ou le SIREN.",
+      "noResultsWithFilters": "Aucun résultat avec ces filtres. Essayez de modifier ou supprimer certains filtres.",
+      "placeholder": "Nom de votre association, SIREN, ville...",
+      "postalCode": "CP",
+      "quickFilters": {
+        "culture": "Culture",
+        "education": "Éducation",
+        "environnement": "Environnement",
+        "sante": "Santé",
+        "social": "Social",
+        "sport": "Sport"
+      },
+      "resultsCount": "<strong>{count}</strong> associations trouvées — sélectionnez la vôtre",
+      "scrollMore": "Scroll pour plus",
+      "select": "Sélectionner",
+      "siren": "SIREN",
+      "title": "Inscrivez votre association"
     }
   },
-  "nav": {
-    "partners": "Partenaires",
-    "associations": "Associations",
-    "donors": "Donateurs",
-    "home": "Lien commun — Accueil",
-    "main": "Navigation principale",
-    "mobile": "Navigation mobile",
-    "menuClose": "Fermer le menu",
-    "menuOpen": "Ouvrir le menu"
+  "common": {
+    "back": "Retour",
+    "change": "Changer",
+    "close": "Fermer",
+    "contact": "Nous contacter",
+    "learnMore": "En savoir plus",
+    "loading": "Chargement...",
+    "search": "Rechercher",
+    "select": "Sélectionner",
+    "submit": "Envoyer"
   },
-  "landing": {
-    "hero": {
-      "badge": "Traçabilité vérifiable",
-      "title": "La transparence sur l'usage des dons",
-      "subtitle": "Nous rendons visible le lien entre générosité et impact.",
-      "cta": "Découvrir la plateforme",
-      "launch": "Lancement prévu T3 2026"
+  "donors": {
+    "cta": {
+      "button": "Rejoindre la liste d'attente",
+      "description": "Rejoignez les premiers donateurs qui veulent savoir exactement où va leur argent.",
+      "title": "Prêt à donner autrement ?"
     },
-    "journal": {
-      "title": "Journal des dépenses",
-      "rows": [
-        { "label": "Achat fournitures scolaires", "badge": "Vérifié", "amount": "450 €" },
-        { "label": "Location salle événement", "badge": "Vérifié", "amount": "1 200 €" },
-        { "label": "Campagne sensibilisation", "badge": "En cours", "amount": "800 €" }
-      ],
-      "total": "Total traçé",
-      "totalAmount": "2 450 €"
-    },
-    "constat": {
-      "title": "Un constat partagé",
-      "donors": {
-        "title": "Côté donateurs",
-        "text": "« Je ne sais pas comment mon argent est utilisé. » 6 donateurs sur 10 souhaitent plus de transparence sur l'utilisation de leurs dons."
-      },
-      "associations": {
-        "title": "Côté associations",
-        "text": "« Prouver notre bonne gestion prend un temps fou. » Les associations passent des centaines d'heures à produire des rapports pour rassurer leurs financeurs."
-      }
-    },
-    "features": {
-      "title": "Ce que Lien commun apporte",
-      "items": [
+    "dashboard": {
+      "activities": [
         {
-          "title": "Transparence totale",
-          "text": "Chaque don est enregistré avec une preuve cryptographique infalsifiable. Les donateurs voient exactement où va leur argent.",
-          "tag": "Blockchain"
+          "badge": "Vérifié",
+          "text": "Achat de fournitures scolaires",
+          "amount": "85 €",
+          "type": "verified"
         },
         {
-          "title": "Preuves vérifiables",
-          "text": "Chaque dépense est accompagnée d'un justificatif horodaté et vérifié. Fini les rapports opaques.",
-          "tag": "Vérifiable"
+          "badge": "Vérifié",
+          "text": "Location salle de répétition",
+          "amount": "120 €",
+          "type": "verified"
         },
         {
-          "title": "Simplicité totale",
-          "text": "Pas besoin de comprendre la blockchain. Les donateurs donnent en euros, les associations dépensent en euros.",
-          "tag": "Accessible"
-        }
-      ]
-    },
-    "steps": {
-      "title": "Comment ça marche",
-      "items": [
-        {
-          "number": "1",
-          "title": "L'association s'inscrit",
-          "text": "Inscription gratuite en 5 minutes. Vérification automatique via le répertoire SIRENE."
-        },
-        {
-          "number": "2",
-          "title": "Le donateur donne en euros",
-          "text": "Don simple par carte ou virement. Conversion automatique et enregistrement on-chain."
-        },
-        {
-          "number": "3",
-          "title": "Chaque euro est traçé",
-          "text": "Dépenses enregistrées avec justificatifs. Reçu fiscal numérique (NFT) pour le donateur."
-        }
-      ]
-    },
-    "guarantee": {
-      "title": "Garantie traçabilité",
-      "text": "Notre technologie repose sur la blockchain Ethereum et les stablecoins régulés. Chaque transaction est immuable, vérifiable publiquement, et conforme aux réglementations européennes."
-    },
-    "status": {
-      "title": "Où en sommes-nous",
-      "items": [
-        {
-          "title": "Plateforme",
-          "text": "Architecture technique validée. Smart contracts en développement. Interface donateur en design.",
-          "badge": "En développement",
-          "badgeType": "in-progress"
-        },
-        {
-          "title": "Partenariats",
-          "text": "En recherche dun partenaire pour la gestion des stablecoins EURx",
           "badge": "En cours",
-          "badgeType": "in-progress"
+          "text": "Matériel de camping",
+          "amount": "210 €",
+          "type": "pending"
+        }
+      ],
+      "activityTitle": "Dernières activités",
+      "greeting": "Bonjour, Claire",
+      "label": "Aperçu de votre tableau de bord",
+      "stats": [
+        {
+          "value": "1 250 €",
+          "label": "Donné en 2026"
         },
         {
-          "title": "Lancement beta",
-          "text": "Programme pilote avec 5 associations partenaires prévu pour le T3 2026. Inscriptions ouvertes.",
-          "badge": "T3 2026",
-          "badgeType": "upcoming"
+          "value": "100%",
+          "label": "Traçabilité"
+        },
+        {
+          "value": "3",
+          "label": "Reçus fiscaux"
         }
-      ]
+      ],
+      "subtitle": "3 associations soutenues"
     },
     "faq": {
-      "title": "Questions fréquentes",
+      "items": [
+        {
+          "question": "Mes dons sont-ils déductibles des impôts ?",
+          "answer": "Oui. Pour chaque don à une association éligible, vous recevez un reçu fiscal valide vous permettant de bénéficier de la réduction d'impôt prévue par la loi (66% du montant dans la limite de 20% du revenu imposable pour les particuliers)."
+        },
+        {
+          "question": "Comment suivre l'utilisation de mon don ?",
+          "answer": "Depuis votre tableau de bord, vous voyez en temps réel les dépenses liées aux projets que vous soutenez. Chaque dépense est accompagnée de preuves vérifiables : justificatifs, dates, montants."
+        },
+        {
+          "question": "Quand reçois-je mon reçu fiscal ?",
+          "answer": "Instantanément. Dès que votre don est confirmé, le reçu fiscal est disponible dans votre espace. Plus besoin d'attendre le courrier de l'association en fin d'année."
+        },
+        {
+          "question": "Puis-je donner à plusieurs associations ?",
+          "answer": "Bien sûr. Vous pouvez soutenir autant d'associations partenaires que vous le souhaitez. Chaque don est tracé individuellement et vous recevez un reçu fiscal par association."
+        },
+        {
+          "question": "Mes données sont-elles protégées ?",
+          "answer": "Absolument. Nous respectons le RGPD et ne partageons jamais vos données personnelles avec des tiers. Vos informations fiscales sont chiffrées et utilisées uniquement pour générer vos reçus."
+        }
+      ],
+      "title": "Questions fréquentes"
+    },
+    "hero": {
+      "badge": "Donateurs",
+      "description": "Suivez l'utilisation de chaque euro donné. Consultez en temps réel les dépenses des associations que vous soutenez, avec des preuves vérifiables.",
+      "title": "Donnez en toute confiance"
+    },
+    "preview": {
+      "items": [
+        {
+          "title": "Suivi en temps réel",
+          "text": "Visualisez où va votre argent, étape par étape. Chaque dépense est liée à un projet concret."
+        },
+        {
+          "title": "Reçu fiscal numérique",
+          "text": "Recevez votre reçu fiscal instantanément dans votre espace. Plus besoin d'attendre des mois."
+        },
+        {
+          "title": "Historique vérifié",
+          "text": "Consultez l'ensemble de vos dons et leur impact. Des preuves sécurisées, accessibles à tout moment."
+        }
+      ],
+      "title": "Ce que vous verrez une fois inscrit"
+    },
+    "signup": {
+      "apple": "Continuer avec Apple",
+      "cardTitle": "Inscrivez-vous gratuitement",
+      "consent": "J'accepte que Lien commun collecte mon prénom et email pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
+      "description": "Soyez parmi les premiers informés du lancement. Inscrivez-vous pour réserver votre place.",
+      "divider": "ou par email",
+      "email": "Email",
+      "emailPlaceholder": "marie@exemple.fr",
+      "firstName": "Prénom",
+      "firstNamePlaceholder": "Marie",
+      "google": "Continuer avec Google",
+      "note": "Vos données sont collectées uniquement pour vous informer du lancement. Elles ne seront ni partagées ni utilisées à d'autres fins. Vous pouvez exercer vos droits (accès, rectification, suppression) en nous contactant à contact@liencommun.fr.",
+      "submit": "Rejoindre la liste d'attente",
+      "successLaunch": "Lancement prévu : T2 2026",
+      "successText": "Nous vous préviendrons dès que la plateforme sera disponible. Surveillez votre boîte mail.",
+      "successTitle": "Vous êtes sur la liste !",
+      "title": "Rejoignez la liste d'attente"
+    }
+  },
+  "footer": {
+    "brand": {
+      "description": "La transparence sur l'usage des dons, rendue possible par la technologie blockchain.",
+      "name": "Lien commun"
+    },
+    "copyright": "© {year} Lien commun. Tous droits réservés.",
+    "legal": {
+      "links": {
+        "cgu": "Conditions générales",
+        "contact": "Contact",
+        "cookies": "Politique cookies",
+        "faq": "FAQ",
+        "mentions": "Mentions légales",
+        "privacy": "Politique de confidentialité",
+        "tarifs": "Tarifs"
+      },
+      "title": "Légal"
+    },
+    "luciole": "Police <link>Luciole</link> par le Centre Technique Régional pour la Déficience Visuelle et typographies.fr — licence CC BY 4.0.",
+    "nav": {
+      "associations": "Associations",
+      "donors": "Donateurs",
+      "partners": "Partenaires",
+      "title": "Navigation"
+    }
+  },
+  "landing": {
+    "constat": {
+      "associations": {
+        "text": "« Prouver notre bonne gestion prend un temps fou. » Les associations passent des centaines d'heures à produire des rapports pour rassurer leurs financeurs.",
+        "title": "Côté associations"
+      },
+      "donors": {
+        "text": "« Je ne sais pas comment mon argent est utilisé. » 6 donateurs sur 10 souhaitent plus de transparence sur l'utilisation de leurs dons.",
+        "title": "Côté donateurs"
+      },
+      "title": "Un constat partagé"
+    },
+    "faq": {
       "items": [
         {
           "question": "Faut-il comprendre la blockchain pour utiliser Lien commun ?",
@@ -154,319 +296,329 @@
           "question": "Les données sont-elles sécurisées ?",
           "answer": "Oui. Les données personnelles sont stockées de manière chiffrée et conforme au RGPD. Seules les preuves de transactions sont publiques sur la blockchain (sans données personnelles)."
         }
-      ]
+      ],
+      "title": "Questions fréquentes"
+    },
+    "features": {
+      "items": [
+        {
+          "title": "Transparence totale",
+          "text": "Chaque don est enregistré avec une preuve cryptographique infalsifiable. Les donateurs voient exactement où va leur argent.",
+          "tag": "Blockchain"
+        },
+        {
+          "title": "Preuves vérifiables",
+          "text": "Chaque dépense est accompagnée d'un justificatif horodaté et vérifié. Fini les rapports opaques.",
+          "tag": "Vérifiable"
+        },
+        {
+          "title": "Simplicité totale",
+          "text": "Pas besoin de comprendre la blockchain. Les donateurs donnent en euros, les associations dépensent en euros.",
+          "tag": "Accessible"
+        }
+      ],
+      "title": "Ce que Lien commun apporte"
+    },
+    "guarantee": {
+      "text": "Notre technologie repose sur la blockchain Ethereum et les stablecoins régulés. Chaque transaction est immuable, vérifiable publiquement, et conforme aux réglementations européennes.",
+      "title": "Garantie traçabilité"
+    },
+    "hero": {
+      "badge": "Traçabilité vérifiable",
+      "cta": "Découvrir la plateforme",
+      "launch": "Lancement prévu T3 2026",
+      "subtitle": "Nous rendons visible le lien entre générosité et impact.",
+      "title": "La transparence sur l'usage des dons"
+    },
+    "journal": {
+      "rows": [
+        {
+          "label": "Achat fournitures scolaires",
+          "badge": "Vérifié",
+          "amount": "450 €"
+        },
+        {
+          "label": "Location salle événement",
+          "badge": "Vérifié",
+          "amount": "1 200 €"
+        },
+        {
+          "label": "Campagne sensibilisation",
+          "badge": "En cours",
+          "amount": "800 €"
+        }
+      ],
+      "title": "Journal des dépenses",
+      "total": "Total traçé",
+      "totalAmount": "2 450 €"
+    },
+    "status": {
+      "items": [
+        {
+          "title": "Plateforme",
+          "text": "Architecture technique validée. Smart contracts en développement. Interface donateur en design.",
+          "badge": "En développement",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Partenariats",
+          "text": "En recherche dun partenaire pour la gestion des stablecoins EURx",
+          "badge": "En cours",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Lancement beta",
+          "text": "Programme pilote avec 5 associations partenaires prévu pour le T3 2026. Inscriptions ouvertes.",
+          "badge": "T3 2026",
+          "badgeType": "upcoming"
+        }
+      ],
+      "title": "Où en sommes-nous"
+    },
+    "steps": {
+      "items": [
+        {
+          "number": "1",
+          "title": "L'association s'inscrit",
+          "text": "Inscription gratuite en 5 minutes. Vérification automatique via le répertoire SIRENE."
+        },
+        {
+          "number": "2",
+          "title": "Le donateur donne en euros",
+          "text": "Don simple par carte ou virement. Conversion automatique et enregistrement on-chain."
+        },
+        {
+          "number": "3",
+          "title": "Chaque euro est traçé",
+          "text": "Dépenses enregistrées avec justificatifs. Reçu fiscal numérique (NFT) pour le donateur."
+        }
+      ],
+      "title": "Comment ça marche"
     }
   },
-  "partners": {
-    "hero": {
-      "badge": "Partenaires & Investisseurs",
-      "title": "Restaurer la confiance des donateurs grâce à la transparence des fonds",
-      "description": "Le secteur associatif fait face à une crise de confiance. Lien commun y répond avec une infrastructure de traçabilité simple, vérifiable et conforme."
+  "metadata": {
+    "associations": {
+      "description": "Offrez la transparence à vos donateurs. Rejoignez Lien commun et renforcez la confiance.",
+      "keywords": "associations, transparence, dons, inscription, SIRENE, reporting, gestion donations",
+      "title": "Associations — Lien commun"
     },
-    "stats": [
-      { "number": "44%", "label": "des Français freinés par le manque de transparence" },
-      { "number": "53%", "label": "des associations jugent leur situation financière difficile" },
-      { "number": "1,5M", "label": "d'associations en France — un marché colossal" }
-    ],
-    "vision": {
-      "title": "Notre vision",
-      "promote": {
-        "title": "Promouvoir la transparence",
-        "text": "Inspirer la confiance des donateurs en rendant visible l'utilisation de chaque euro. Stimuler la générosité afin de démultiplier l'impact des associations."
-      },
-      "mission": {
-        "title": "Notre mission",
-        "text": "Restaurer la confiance des donateurs grâce à une transparence totale des fonds. Offrir des outils de traçabilité pour une gestion claire et vérifiable. Proposer une plateforme de dons intuitive et des services de support dédiés."
-      }
-    },
-    "architecture": {
-      "title": "Architecture & flux des fonds",
-      "description": "Chaque don est tracé de bout en bout. La technologie blockchain sert de registre de preuves, mais reste invisible pour les utilisateurs finaux.",
-      "steps": [
-        { "icon": "money", "title": "1. Réception du don en euros", "text": "Le donateur donne en euros via la plateforme. Zéro friction, zéro jargon crypto." },
-        { "icon": "convert", "title": "2. Conversion en EURCV", "text": "Les fonds sont convertis en stablecoin euro (EURCV) via notre partenaire institutionnel, garantissant conformité et auditabilité." },
-        { "icon": "lock", "title": "3. Transfert on-chain vers l'association", "text": "Les EURCV sont transférés sur le wallet de l'association. Chaque mouvement est inscrit dans la blockchain." },
-        { "icon": "chart", "title": "4. Répartition & dépenses", "text": "L'association répartit les fonds entre ses membres. Chaque paiement est tracé, avec reconversion EURCV → EUR pour les virements bancaires." },
-        { "icon": "receipt", "title": "5. Preuves & reçu fiscal NFT", "text": "À chaque étape, une preuve est inscrite on-chain. Le donateur reçoit son reçu fiscal sous forme de NFT, consultable à tout moment." }
-      ]
-    },
-    "infrastructure": {
-      "title": "Infrastructure & conformité",
-      "description": "Nous recherchons un partenaire institutionnel pour gérer la conformité et assurer la traçabilité et la preuve d'impact de chaque don.",
-      "items": [
-        { "title": "Conformité", "text": "KYB associations, KYC donateurs, procédures AML, alertes fraude.", "tag": "Régulé" },
-        { "title": "Gestion de fonds", "text": "Réception EUR, conversion EURCV, wallets à la demande, transferts on-chain, reconversion EUR.", "tag": "Automatisé" },
-        { "title": "Transparence", "text": "Adresses de wallets comme source de vérité, API ouverte, indexation des événements, NFT reçus fiscaux.", "tag": "Vérifiable" }
-      ]
-    },
-    "team": {
-      "title": "Une équipe engagée pour l'ESS",
-      "members": [
-        { "initials": "JM", "role": "Chief Executive Officer", "name": "Julian Maïolino", "bio": "Direction et développement de projets associatifs. + 5 ans en France et à l'international. Vision stratégique et partenariats." },
-        { "initials": "CL", "role": "Chief Operations Officer", "name": "Colin Lalouette", "bio": "Expert en structuration et croissance opérationnelle. + 20 ans en startups et conseil. Pilotage, scalabilité et exécution." },
-        { "initials": "CP", "role": "Chief Technology Officer", "name": "Clément Pignon", "bio": "Architecte de systèmes numériques de confiance Web2/3. + 20 ans de développement. Environnements régulés & critiques." }
-      ]
-    },
-    "roadmap": {
-      "title": "Feuille de route",
-      "steps": [
-        { "title": "T1 2026 — Structure & partenariats", "text": "Constitution juridique, partenariat institutionnel (conformité & infrastructure blockchain), premières associations pilotes identifiées." },
-        { "title": "T2 2026 — Lancement pilote", "text": "Onboarding des associations pilotes, premiers flux de dons tracés, tableau de bord donateur en beta." },
-        { "title": "T3-T4 2026 — Croissance", "text": "Ouverture progressive aux associations et donateurs, itérations produit, campagnes d'acquisition." }
-      ]
-    },
-    "cta": {
-      "title": "Construisons ensemble la transparence associative",
-      "description": "Investisseur, partenaire institutionnel ou technologique — échangeons sur notre vision commune."
+    "cgu": {
+      "description": "Conditions générales d'utilisation de la plateforme CommonLink.",
+      "title": "Conditions générales d'utilisation — CommonLink"
     },
     "contact": {
-      "title": "Prenons contact",
-      "name": "Nom complet",
-      "namePlaceholder": "Votre nom",
-      "email": "Email professionnel",
-      "emailPlaceholder": "vous@entreprise.com",
-      "org": "Organisation",
-      "orgPlaceholder": "Nom de votre structure",
-      "type": "Type de partenariat",
-      "typeOptions": [
-        { "value": "", "label": "Sélectionnez..." },
-        { "value": "investisseur", "label": "Investisseur / Business Angel" },
-        { "value": "institutionnel", "label": "Partenaire institutionnel" },
-        { "value": "tech", "label": "Partenaire technologique" },
-        { "value": "autre", "label": "Autre" }
-      ],
-      "message": "Message (optionnel)",
-      "messagePlaceholder": "En quoi souhaitez-vous contribuer ?",
-      "submit": "Envoyer ma demande",
-      "note": "Nous répondons sous 48h. Vos données sont traitées conformément au RGPD.",
-      "success": "Merci ! Votre demande a bien été envoyée. Nous vous recontacterons sous 48h."
-    }
-  },
-  "associations": {
-    "hero": {
-      "badge": "Associations",
-      "title": "Offrez la transparence à vos donateurs",
-      "description": "Rejoignez les premières associations pilotes de Lien commun. Nous vous accompagnons pour simplifier votre gestion et renforcer la confiance de vos soutiens."
+      "description": "Contactez CommonLink pour toute question sur la plateforme.",
+      "title": "Contact — CommonLink"
     },
-    "benefits": {
-      "title": "Pourquoi rejoindre Lien commun ?",
-      "items": [
-        {
-          "title": "Attirez plus de donateurs",
-          "text": "La transparence rassure. Les donateurs privilégient les structures qui montrent comment leurs fonds sont utilisés."
-        },
-        {
-          "title": "Simplifiez votre reporting",
-          "text": "Les justificatifs et preuves de dépenses sont enregistrés automatiquement. Moins de paperasse, plus de terrain."
-        },
-        {
-          "title": "Zéro compétence technique",
-          "text": "Vous gérez votre association en euros, comme d'habitude. La technologie est invisible — on s'occupe de tout."
-        }
-      ]
+    "cookies": {
+      "description": "Comment CommonLink utilise les cookies sur son site.",
+      "title": "Politique cookies — CommonLink"
     },
-    "search": {
-      "title": "Inscrivez votre association",
-      "description": "Commencez par rechercher votre association dans le répertoire officiel. Cela nous permet de vérifier que votre structure existe et de pré-remplir vos informations.",
-      "placeholder": "Nom de votre association, SIREN, ville...",
-      "button": "Rechercher",
-      "loading": "Recherche en cours...",
-      "resultsCount": "<strong>{count}</strong> associations trouvées — sélectionnez la vôtre",
-      "noResults": "Aucune association trouvée. Vérifiez le nom ou le SIREN.",
-      "noResultsWithFilters": "Aucun résultat avec ces filtres. Essayez de modifier ou supprimer certains filtres.",
-      "clearFilters": "Effacer les filtres",
-      "active": "Active",
-      "closed": "Cessée",
-      "city": "Ville",
-      "postalCode": "CP",
-      "siren": "SIREN",
-      "created": "Création",
-      "select": "Sélectionner",
-      "dep": "Dép. {code}",
-      "displayedInfo": "{displayed} sur {total} affichées",
-      "displayedAll": "{displayed} affichées",
-      "scrollMore": "Scroll pour plus",
-      "endOfResults": "Fin des résultats",
-      "quickFilters": {
-        "sport": "Sport",
-        "culture": "Culture",
-        "social": "Social",
-        "environnement": "Environnement",
-        "education": "Éducation",
-        "sante": "Santé"
-      },
-      "advancedToggle": "Filtrer les résultats",
-      "filters": {
-        "department": "Département",
-        "departmentAll": "Tous les départements",
-        "postalCode": "Code Postal",
-        "postalCodePlaceholder": "ex : 75001",
-        "city": "Ville",
-        "cityPlaceholder": "ex : Paris",
-        "status": "Statut",
-        "statusAll": "Tous",
-        "statusActive": "Actives uniquement",
-        "statusClosed": "Cessées uniquement",
-        "employees": "Nombre de salariés",
-        "employeesAll": "Tous",
-        "employees0": "0 salarié",
-        "employees1to9": "1 à 9 salariés",
-        "employees10to49": "10 à 49 salariés",
-        "employees50to199": "50 à 199 salariés",
-        "employees200plus": "200+ salariés",
-        "activeCount": "{count} filtre(s) actif(s)"
-      },
-      "modal": {
-        "identification": "Identification",
-        "siret": "SIRET (siège)",
-        "dateCreation": "Date de création",
-        "natureJuridique": "Nature juridique",
-        "address": "Adresse du siège",
-        "fullAddress": "Adresse complète",
-        "commune": "Commune",
-        "department": "Département",
-        "region": "Région",
-        "activity": "Activité",
-        "naf": "Code NAF",
-        "activitySection": "Section d'activité",
-        "employees": "Effectif",
-        "establishments": "Nb. établissements",
-        "directors": "Dirigeants",
-        "close": "Fermer",
-        "viewAnnuaire": "Voir sur l'Annuaire",
-        "noAddress": "Adresse non disponible"
-      }
-    },
-    "form": {
-      "selectedTitle": "Association sélectionnée",
-      "change": "Changer",
-      "responsibleName": "Nom du responsable",
-      "responsibleNamePlaceholder": "Prénom Nom",
-      "email": "Email de contact",
-      "emailPlaceholder": "contact@association.org",
-      "description": "Description de votre association",
-      "descriptionPlaceholder": "En quelques mots, décrivez votre activité...",
-      "consent": "J'accepte que Lien commun collecte ces informations pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
-      "submit": "Rejoindre la liste d'attente",
-      "success": "Merci ! Votre association est inscrite sur la liste d'attente. Nous vous contacterons dès le lancement de la plateforme.",
-      "note": "Vos données sont collectées uniquement pour vous informer du lancement. Elles ne seront ni partagées ni utilisées à d'autres fins. Vous pouvez exercer vos droits (accès, rectification, suppression) en nous contactant à contact@liencommun.fr."
-    }
-  },
-  "donors": {
-    "hero": {
-      "badge": "Donateurs",
-      "title": "Donnez en toute confiance",
-      "description": "Suivez l'utilisation de chaque euro donné. Consultez en temps réel les dépenses des associations que vous soutenez, avec des preuves vérifiables."
-    },
-    "preview": {
-      "title": "Ce que vous verrez une fois inscrit",
-      "items": [
-        {
-          "title": "Suivi en temps réel",
-          "text": "Visualisez où va votre argent, étape par étape. Chaque dépense est liée à un projet concret."
-        },
-        {
-          "title": "Reçu fiscal numérique",
-          "text": "Recevez votre reçu fiscal instantanément dans votre espace. Plus besoin d'attendre des mois."
-        },
-        {
-          "title": "Historique vérifié",
-          "text": "Consultez l'ensemble de vos dons et leur impact. Des preuves sécurisées, accessibles à tout moment."
-        }
-      ]
-    },
-    "dashboard": {
-      "label": "Aperçu de votre tableau de bord",
-      "greeting": "Bonjour, Claire",
-      "subtitle": "3 associations soutenues",
-      "stats": [
-        { "value": "1 250 €", "label": "Donné en 2026" },
-        { "value": "100%", "label": "Traçabilité" },
-        { "value": "3", "label": "Reçus fiscaux" }
-      ],
-      "activityTitle": "Dernières activités",
-      "activities": [
-        { "badge": "Vérifié", "text": "Achat de fournitures scolaires", "amount": "85 €", "type": "verified" },
-        { "badge": "Vérifié", "text": "Location salle de répétition", "amount": "120 €", "type": "verified" },
-        { "badge": "En cours", "text": "Matériel de camping", "amount": "210 €", "type": "pending" }
-      ]
-    },
-    "signup": {
-      "title": "Rejoignez la liste d'attente",
-      "description": "Soyez parmi les premiers informés du lancement. Inscrivez-vous pour réserver votre place.",
-      "cardTitle": "Inscrivez-vous gratuitement",
-      "google": "Continuer avec Google",
-      "apple": "Continuer avec Apple",
-      "divider": "ou par email",
-      "firstName": "Prénom",
-      "firstNamePlaceholder": "Marie",
-      "email": "Email",
-      "emailPlaceholder": "marie@exemple.fr",
-      "consent": "J'accepte que Lien commun collecte mon prénom et email pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
-      "submit": "Rejoindre la liste d'attente",
-      "note": "Vos données sont collectées uniquement pour vous informer du lancement. Elles ne seront ni partagées ni utilisées à d'autres fins. Vous pouvez exercer vos droits (accès, rectification, suppression) en nous contactant à contact@liencommun.fr.",
-      "successTitle": "Vous êtes sur la liste !",
-      "successText": "Nous vous préviendrons dès que la plateforme sera disponible. Surveillez votre boîte mail.",
-      "successLaunch": "Lancement prévu : T2 2026"
+    "donors": {
+      "description": "Donnez en toute confiance. Suivez chaque euro et recevez des preuves vérifiables.",
+      "keywords": "donateurs, dons, suivi, reçu fiscal, transparence, preuves vérifiables, philanthropie",
+      "title": "Donateurs — Lien commun"
     },
     "faq": {
-      "title": "Questions fréquentes",
-      "items": [
+      "description": "Questions fréquentes sur CommonLink, les dons et la transparence.",
+      "title": "FAQ — CommonLink"
+    },
+    "landing": {
+      "description": "Plateforme de crypto-philanthropie qui restaure la confiance des donateurs grâce à la transparence sur l'utilisation des fonds.",
+      "keywords": "transparence, dons, associations, blockchain, traçabilité, philanthropie, confiance, reçu fiscal",
+      "title": "Lien commun — La transparence sur l'usage des dons"
+    },
+    "mentionsLegales": {
+      "description": "Mentions légales de CommonLink, la plateforme de transparence des dons.",
+      "title": "Mentions légales — CommonLink"
+    },
+    "partners": {
+      "description": "Découvrez notre vision, notre équipe et comment devenir partenaire de Lien commun.",
+      "keywords": "partenaires, investisseurs, crypto-philanthropie, blockchain, fintech, impact social",
+      "title": "Partenaires & Investisseurs — Lien commun"
+    },
+    "privacy": {
+      "description": "Comment CommonLink collecte et utilise vos données personnelles.",
+      "title": "Politique de confidentialité — CommonLink"
+    },
+    "tarifs": {
+      "description": "Tarifs transparents pour les organismes utilisant CommonLink.",
+      "title": "Tarifs — CommonLink"
+    }
+  },
+  "nav": {
+    "associations": "Associations",
+    "donors": "Donateurs",
+    "home": "Lien commun — Accueil",
+    "main": "Navigation principale",
+    "menuClose": "Fermer le menu",
+    "menuOpen": "Ouvrir le menu",
+    "mobile": "Navigation mobile",
+    "partners": "Partenaires"
+  },
+  "partners": {
+    "architecture": {
+      "description": "Chaque don est tracé de bout en bout. La technologie blockchain sert de registre de preuves, mais reste invisible pour les utilisateurs finaux.",
+      "steps": [
         {
-          "question": "Mes dons sont-ils déductibles des impôts ?",
-          "answer": "Oui. Pour chaque don à une association éligible, vous recevez un reçu fiscal valide vous permettant de bénéficier de la réduction d'impôt prévue par la loi (66% du montant dans la limite de 20% du revenu imposable pour les particuliers)."
+          "icon": "money",
+          "title": "1. Réception du don en euros",
+          "text": "Le donateur donne en euros via la plateforme. Zéro friction, zéro jargon crypto."
         },
         {
-          "question": "Comment suivre l'utilisation de mon don ?",
-          "answer": "Depuis votre tableau de bord, vous voyez en temps réel les dépenses liées aux projets que vous soutenez. Chaque dépense est accompagnée de preuves vérifiables : justificatifs, dates, montants."
+          "icon": "convert",
+          "title": "2. Conversion en EURCV",
+          "text": "Les fonds sont convertis en stablecoin euro (EURCV) via notre partenaire institutionnel, garantissant conformité et auditabilité."
         },
         {
-          "question": "Quand reçois-je mon reçu fiscal ?",
-          "answer": "Instantanément. Dès que votre don est confirmé, le reçu fiscal est disponible dans votre espace. Plus besoin d'attendre le courrier de l'association en fin d'année."
+          "icon": "lock",
+          "title": "3. Transfert on-chain vers l'association",
+          "text": "Les EURCV sont transférés sur le wallet de l'association. Chaque mouvement est inscrit dans la blockchain."
         },
         {
-          "question": "Puis-je donner à plusieurs associations ?",
-          "answer": "Bien sûr. Vous pouvez soutenir autant d'associations partenaires que vous le souhaitez. Chaque don est tracé individuellement et vous recevez un reçu fiscal par association."
+          "icon": "chart",
+          "title": "4. Répartition & dépenses",
+          "text": "L'association répartit les fonds entre ses membres. Chaque paiement est tracé, avec reconversion EURCV → EUR pour les virements bancaires."
         },
         {
-          "question": "Mes données sont-elles protégées ?",
-          "answer": "Absolument. Nous respectons le RGPD et ne partageons jamais vos données personnelles avec des tiers. Vos informations fiscales sont chiffrées et utilisées uniquement pour générer vos reçus."
+          "icon": "receipt",
+          "title": "5. Preuves & reçu fiscal NFT",
+          "text": "À chaque étape, une preuve est inscrite on-chain. Le donateur reçoit son reçu fiscal sous forme de NFT, consultable à tout moment."
+        }
+      ],
+      "title": "Architecture & flux des fonds"
+    },
+    "contact": {
+      "email": "Email professionnel",
+      "emailPlaceholder": "vous@entreprise.com",
+      "message": "Message (optionnel)",
+      "messagePlaceholder": "En quoi souhaitez-vous contribuer ?",
+      "name": "Nom complet",
+      "namePlaceholder": "Votre nom",
+      "note": "Nous répondons sous 48h. Vos données sont traitées conformément au RGPD.",
+      "org": "Organisation",
+      "orgPlaceholder": "Nom de votre structure",
+      "submit": "Envoyer ma demande",
+      "success": "Merci ! Votre demande a bien été envoyée. Nous vous recontacterons sous 48h.",
+      "title": "Prenons contact",
+      "type": "Type de partenariat",
+      "typeOptions": [
+        {
+          "value": "",
+          "label": "Sélectionnez..."
+        },
+        {
+          "value": "investisseur",
+          "label": "Investisseur / Business Angel"
+        },
+        {
+          "value": "institutionnel",
+          "label": "Partenaire institutionnel"
+        },
+        {
+          "value": "tech",
+          "label": "Partenaire technologique"
+        },
+        {
+          "value": "autre",
+          "label": "Autre"
         }
       ]
     },
     "cta": {
-      "title": "Prêt à donner autrement ?",
-      "description": "Rejoignez les premiers donateurs qui veulent savoir exactement où va leur argent.",
-      "button": "Rejoindre la liste d'attente"
+      "description": "Investisseur, partenaire institutionnel ou technologique — échangeons sur notre vision commune.",
+      "title": "Construisons ensemble la transparence associative"
+    },
+    "hero": {
+      "badge": "Partenaires & Investisseurs",
+      "description": "Le secteur associatif fait face à une crise de confiance. Lien commun y répond avec une infrastructure de traçabilité simple, vérifiable et conforme.",
+      "title": "Restaurer la confiance des donateurs grâce à la transparence des fonds"
+    },
+    "infrastructure": {
+      "description": "Nous recherchons un partenaire institutionnel pour gérer la conformité et assurer la traçabilité et la preuve d'impact de chaque don.",
+      "items": [
+        {
+          "title": "Conformité",
+          "text": "KYB associations, KYC donateurs, procédures AML, alertes fraude.",
+          "tag": "Régulé"
+        },
+        {
+          "title": "Gestion de fonds",
+          "text": "Réception EUR, conversion EURCV, wallets à la demande, transferts on-chain, reconversion EUR.",
+          "tag": "Automatisé"
+        },
+        {
+          "title": "Transparence",
+          "text": "Adresses de wallets comme source de vérité, API ouverte, indexation des événements, NFT reçus fiscaux.",
+          "tag": "Vérifiable"
+        }
+      ],
+      "title": "Infrastructure & conformité"
+    },
+    "roadmap": {
+      "steps": [
+        {
+          "title": "T1 2026 — Structure & partenariats",
+          "text": "Constitution juridique, partenariat institutionnel (conformité & infrastructure blockchain), premières associations pilotes identifiées."
+        },
+        {
+          "title": "T2 2026 — Lancement pilote",
+          "text": "Onboarding des associations pilotes, premiers flux de dons tracés, tableau de bord donateur en beta."
+        },
+        {
+          "title": "T3-T4 2026 — Croissance",
+          "text": "Ouverture progressive aux associations et donateurs, itérations produit, campagnes d'acquisition."
+        }
+      ],
+      "title": "Feuille de route"
+    },
+    "stats": [
+      {
+        "number": "44%",
+        "label": "des Français freinés par le manque de transparence"
+      },
+      {
+        "number": "53%",
+        "label": "des associations jugent leur situation financière difficile"
+      },
+      {
+        "number": "1,5M",
+        "label": "d'associations en France — un marché colossal"
+      }
+    ],
+    "team": {
+      "members": [
+        {
+          "initials": "JM",
+          "role": "Chief Executive Officer",
+          "name": "Julian Maïolino",
+          "bio": "Direction et développement de projets associatifs. + 5 ans en France et à l'international. Vision stratégique et partenariats."
+        },
+        {
+          "initials": "CL",
+          "role": "Chief Operations Officer",
+          "name": "Colin Lalouette",
+          "bio": "Expert en structuration et croissance opérationnelle. + 20 ans en startups et conseil. Pilotage, scalabilité et exécution."
+        },
+        {
+          "initials": "CP",
+          "role": "Chief Technology Officer",
+          "name": "Clément Pignon",
+          "bio": "Architecte de systèmes numériques de confiance Web2/3. + 20 ans de développement. Environnements régulés & critiques."
+        }
+      ],
+      "title": "Une équipe engagée pour l'ESS"
+    },
+    "vision": {
+      "mission": {
+        "text": "Restaurer la confiance des donateurs grâce à une transparence totale des fonds. Offrir des outils de traçabilité pour une gestion claire et vérifiable. Proposer une plateforme de dons intuitive et des services de support dédiés.",
+        "title": "Notre mission"
+      },
+      "promote": {
+        "text": "Inspirer la confiance des donateurs en rendant visible l'utilisation de chaque euro. Stimuler la générosité afin de démultiplier l'impact des associations.",
+        "title": "Promouvoir la transparence"
+      },
+      "title": "Notre vision"
     }
-  },
-  "footer": {
-    "brand": {
-      "name": "Lien commun",
-      "description": "La transparence sur l'usage des dons, rendue possible par la technologie blockchain."
-    },
-    "nav": {
-      "title": "Navigation",
-      "partners": "Partenaires",
-      "associations": "Associations",
-      "donors": "Donateurs"
-    },
-    "legal": {
-      "title": "Légal",
-      "text": "Lien commun est une plateforme en cours de développement. Les informations présentées sur ce site sont susceptibles d'évoluer."
-    },
-    "copyright": "© {year} Lien commun. Tous droits réservés.",
-    "luciole": "Police <link>Luciole</link> par le Centre Technique Régional pour la Déficience Visuelle et typographies.fr — licence CC BY 4.0."
-  },
-  "common": {
-    "learnMore": "En savoir plus",
-    "contact": "Nous contacter",
-    "search": "Rechercher",
-    "submit": "Envoyer",
-    "loading": "Chargement...",
-    "select": "Sélectionner",
-    "change": "Changer",
-    "back": "Retour",
-    "close": "Fermer"
   }
 }

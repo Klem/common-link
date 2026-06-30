@@ -1,134 +1,276 @@
 {
-  "metadata": {
-    "landing": {
-      "title": "Common Link — Transparency on donation usage",
-      "description": "Crypto-philanthropy platform that restores donor trust through transparency on fund usage.",
-      "keywords": "transparency, donations, associations, blockchain, traceability, philanthropy, trust, tax receipt"
+  "associations": {
+    "benefits": {
+      "items": [
+        {
+          "title": "Attract more donors",
+          "text": "Transparency reassures. Donors prefer organizations that show how their funds are used."
+        },
+        {
+          "title": "Simplify your reporting",
+          "text": "Receipts and expense proofs are recorded automatically. Less paperwork, more fieldwork."
+        },
+        {
+          "title": "Zero technical skills needed",
+          "text": "You manage your association in euros, as usual. The technology is invisible — we handle everything."
+        }
+      ],
+      "title": "Why join Common Link?"
     },
-    "partners": {
-      "title": "Partners & Investors — Common Link",
-      "description": "Discover our vision, team, and how to become a Common Link partner.",
-      "keywords": "partners, investors, crypto-philanthropy, blockchain, fintech, social impact"
+    "form": {
+      "change": "Change",
+      "consent": "I agree that Common Link may collect this information to notify me about the platform launch. I can unsubscribe at any time.",
+      "description": "Describe your association",
+      "descriptionPlaceholder": "In a few words, describe your activity...",
+      "email": "Contact email",
+      "emailPlaceholder": "contact@association.org",
+      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr.",
+      "responsibleName": "Responsible person's name",
+      "responsibleNamePlaceholder": "First Last",
+      "selectedTitle": "Selected association",
+      "submit": "Join the waitlist",
+      "success": "Thank you! Your association is on the waitlist. We'll contact you as soon as the platform launches."
     },
-    "associations": {
-      "title": "Associations — Common Link",
-      "description": "Offer transparency to your donors. Join Common Link and strengthen trust.",
-      "keywords": "associations, transparency, donations, registration, SIRENE, reporting, donation management"
+    "hero": {
+      "badge": "Associations",
+      "description": "Join the first pilot associations of Common Link. We support you in simplifying your management and strengthening the trust of your supporters.",
+      "title": "Offer transparency to your donors"
     },
-    "donors": {
-      "title": "Donors — Common Link",
-      "description": "Give with confidence. Track every euro and receive verifiable proof.",
-      "keywords": "donors, donations, tracking, tax receipt, transparency, verifiable proof, philanthropy"
+    "search": {
+      "active": "Active",
+      "advancedToggle": "Filter results",
+      "button": "Search",
+      "city": "City",
+      "clearFilters": "Clear filters",
+      "closed": "Closed",
+      "created": "Created",
+      "dep": "Dept. {code}",
+      "description": "Start by searching for your association in the official directory. This allows us to verify your organization exists and pre-fill your information.",
+      "displayedAll": "{displayed} displayed",
+      "displayedInfo": "{displayed} of {total} displayed",
+      "endOfResults": "End of results",
+      "filters": {
+        "activeCount": "{count} active filter(s)",
+        "city": "City",
+        "cityPlaceholder": "e.g. Paris",
+        "department": "Department",
+        "departmentAll": "All departments",
+        "employees": "Number of employees",
+        "employees0": "0 employees",
+        "employees10to49": "10 to 49 employees",
+        "employees1to9": "1 to 9 employees",
+        "employees200plus": "200+ employees",
+        "employees50to199": "50 to 199 employees",
+        "employeesAll": "All",
+        "postalCode": "Postal Code",
+        "postalCodePlaceholder": "e.g. 75001",
+        "status": "Status",
+        "statusActive": "Active only",
+        "statusAll": "All",
+        "statusClosed": "Closed only"
+      },
+      "loading": "Searching...",
+      "modal": {
+        "activity": "Activity",
+        "activitySection": "Activity section",
+        "address": "Headquarters address",
+        "close": "Close",
+        "commune": "Municipality",
+        "dateCreation": "Date of creation",
+        "department": "Department",
+        "directors": "Directors",
+        "employees": "Employees",
+        "establishments": "Establishments",
+        "fullAddress": "Full address",
+        "identification": "Identification",
+        "naf": "NAF code",
+        "natureJuridique": "Legal form",
+        "noAddress": "Address not available",
+        "region": "Region",
+        "siret": "SIRET (headquarters)",
+        "viewAnnuaire": "View on Annuaire"
+      },
+      "noResults": "No associations found. Check the name or SIREN.",
+      "noResultsWithFilters": "No results with these filters. Try modifying or removing some filters.",
+      "placeholder": "Association name, SIREN, city...",
+      "postalCode": "Postal code",
+      "quickFilters": {
+        "culture": "Culture",
+        "education": "Education",
+        "environnement": "Environment",
+        "sante": "Health",
+        "social": "Social",
+        "sport": "Sports"
+      },
+      "resultsCount": "<strong>{count}</strong> associations found — select yours",
+      "scrollMore": "Scroll for more",
+      "select": "Select",
+      "siren": "SIREN",
+      "title": "Register your association"
     }
   },
-  "nav": {
-    "partners": "Partners",
-    "associations": "Associations",
-    "donors": "Donors",
-    "home": "Common Link — Home",
-    "main": "Main navigation",
-    "mobile": "Mobile navigation",
-    "menuClose": "Close menu",
-    "menuOpen": "Open menu"
+  "common": {
+    "back": "Back",
+    "change": "Change",
+    "close": "Close",
+    "contact": "Contact us",
+    "learnMore": "Learn more",
+    "loading": "Loading...",
+    "search": "Search",
+    "select": "Select",
+    "submit": "Submit"
   },
-  "landing": {
-    "hero": {
-      "badge": "Verifiable traceability",
-      "title": "Transparency on donation usage",
-      "subtitle": "We make the link between impact and generosity visible",
-      "cta": "Discover the platform",
-      "launch": "Launch planned Q3 2026"
+  "donors": {
+    "cta": {
+      "button": "Join the waitlist",
+      "description": "Join the first donors who want to know exactly where their money goes.",
+      "title": "Ready to give differently?"
     },
-    "journal": {
-      "title": "Expense journal",
-      "rows": [
-        { "label": "School supplies purchase", "badge": "Verified", "amount": "€450" },
-        { "label": "Event room rental", "badge": "Verified", "amount": "€1,200" },
-        { "label": "Awareness campaign", "badge": "Pending", "amount": "€800" }
+    "dashboard": {
+      "activities": [
+        {
+          "badge": "Verified",
+          "text": "School supplies purchase",
+          "amount": "€85",
+          "type": "verified"
+        },
+        {
+          "badge": "Verified",
+          "text": "Rehearsal room rental",
+          "amount": "€120",
+          "type": "verified"
+        },
+        {
+          "badge": "Pending",
+          "text": "Camping equipment",
+          "amount": "€210",
+          "type": "pending"
+        }
       ],
-      "total": "Total tracked",
-      "totalAmount": "€2,450"
-    },
-    "constat": {
-      "title": "A shared observation",
-      "donors": {
-        "title": "Donor side",
-        "text": "\"I don't know how my money is being used.\" 6 out of 10 donors want more transparency on how their donations are used."
-      },
-      "associations": {
-        "title": "Association side",
-        "text": "\"Proving our good management takes forever.\" Associations spend hundreds of hours producing reports to reassure their funders."
-      }
-    },
-    "features": {
-      "title": "What Common Link brings",
-      "items": [
+      "activityTitle": "Recent activity",
+      "greeting": "Hello, Claire",
+      "label": "Preview of your dashboard",
+      "stats": [
         {
-          "title": "Total transparency",
-          "text": "Every donation is recorded with unfalsifiable cryptographic proof. Donors see exactly where their money goes.",
-          "tag": "Blockchain"
+          "value": "€1,250",
+          "label": "Donated in 2026"
         },
         {
-          "title": "Verifiable proof",
-          "text": "Every expense comes with a timestamped and verified receipt. No more opaque reports.",
-          "tag": "Verifiable"
+          "value": "100%",
+          "label": "Traceability"
         },
         {
-          "title": "Total simplicity",
-          "text": "No need to understand blockchain. Donors give in euros, associations spend in euros.",
-          "tag": "Accessible"
+          "value": "3",
+          "label": "Tax receipts"
         }
-      ]
-    },
-    "steps": {
-      "title": "How it works",
-      "items": [
-        {
-          "number": "1",
-          "title": "The association registers",
-          "text": "Free registration in 5 minutes. Automatic verification via the SIRENE directory."
-        },
-        {
-          "number": "2",
-          "title": "The donor gives in euros",
-          "text": "Simple donation by card or bank transfer. Automatic conversion and on-chain recording."
-        },
-        {
-          "number": "3",
-          "title": "Every euro is tracked",
-          "text": "Expenses recorded with receipts. Digital tax receipt (NFT) for the donor."
-        }
-      ]
-    },
-    "guarantee": {
-      "title": "Traceability guarantee",
-      "text": "Our technology relies on the Ethereum blockchain and regulated stablecoins. Every transaction is immutable, publicly verifiable, and compliant with European regulations."
-    },
-    "status": {
-      "title": "Where are we now",
-      "items": [
-        {
-          "title": "Platform",
-          "text": "Technical architecture validated. Smart contracts in development. Donor interface in design.",
-          "badge": "In development",
-          "badgeType": "in-progress"
-        },
-        {
-          "title": "Partnerships",
-          "text": "Looking for partners for EURx management and compliance.",
-          "badge": "In progress",
-          "badgeType": "in-progress"
-        },
-        {
-          "title": "Beta launch",
-          "text": "Pilot program with 5 partner associations planned for Q3 2026. Registrations open.",
-          "badge": "Q3 2026",
-          "badgeType": "upcoming"
-        }
-      ]
+      ],
+      "subtitle": "3 associations supported"
     },
     "faq": {
-      "title": "Frequently asked questions",
+      "items": [
+        {
+          "question": "Are my donations tax-deductible?",
+          "answer": "Yes. For each donation to an eligible association, you receive a valid tax receipt allowing you to benefit from the tax reduction provided by law (66% of the amount, up to 20% of taxable income for individuals)."
+        },
+        {
+          "question": "How can I track my donation?",
+          "answer": "From your dashboard, you can see in real time the expenses related to the projects you support. Each expense comes with verifiable proof: receipts, dates, amounts."
+        },
+        {
+          "question": "When do I receive my tax receipt?",
+          "answer": "Instantly. As soon as your donation is confirmed, the tax receipt is available in your account. No more waiting for the association's mail at the end of the year."
+        },
+        {
+          "question": "Can I donate to multiple associations?",
+          "answer": "Of course. You can support as many partner associations as you wish. Each donation is tracked individually and you receive a tax receipt per association."
+        },
+        {
+          "question": "Is my data protected?",
+          "answer": "Absolutely. We comply with GDPR and never share your personal data with third parties. Your tax information is encrypted and used solely to generate your receipts."
+        }
+      ],
+      "title": "Frequently asked questions"
+    },
+    "hero": {
+      "badge": "Donors",
+      "description": "Track the use of every euro donated. Monitor in real time the expenses of the associations you support, with verifiable proof.",
+      "title": "Give with confidence"
+    },
+    "preview": {
+      "items": [
+        {
+          "title": "Real-time tracking",
+          "text": "See where your money goes, step by step. Every expense is linked to a specific project."
+        },
+        {
+          "title": "Digital tax receipt",
+          "text": "Receive your tax receipt instantly in your account. No more waiting months."
+        },
+        {
+          "title": "Verified history",
+          "text": "View all your donations and their impact. Secure proof, accessible at any time."
+        }
+      ],
+      "title": "What you'll see once registered"
+    },
+    "signup": {
+      "apple": "Continue with Apple",
+      "cardTitle": "Sign up for free",
+      "consent": "I agree that Common Link may collect my first name and email to notify me about the platform launch. I can unsubscribe at any time.",
+      "description": "Be among the first to know when we launch. Sign up to reserve your spot.",
+      "divider": "or by email",
+      "email": "Email",
+      "emailPlaceholder": "marie@example.com",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Marie",
+      "google": "Continue with Google",
+      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr.",
+      "submit": "Join the waitlist",
+      "successLaunch": "Planned launch: Q2 2026",
+      "successText": "We'll let you know as soon as the platform is available. Keep an eye on your inbox.",
+      "successTitle": "You're on the list!",
+      "title": "Join the waitlist"
+    }
+  },
+  "footer": {
+    "brand": {
+      "description": "Transparency on donation usage, made possible by blockchain technology.",
+      "name": "Common Link"
+    },
+    "copyright": "© {year} Common Link. All rights reserved.",
+    "legal": {
+      "links": {
+        "cgu": "Terms of use",
+        "contact": "Contact",
+        "cookies": "Cookie policy",
+        "faq": "FAQ",
+        "mentions": "Legal notice",
+        "privacy": "Privacy policy",
+        "tarifs": "Pricing"
+      },
+      "title": "Legal"
+    },
+    "luciole": "Typeface <link>Luciole</link> by the Centre Technique Régional pour la Déficience Visuelle and typographies.fr — CC BY 4.0 license.",
+    "nav": {
+      "associations": "Associations",
+      "donors": "Donors",
+      "partners": "Partners",
+      "title": "Navigation"
+    }
+  },
+  "landing": {
+    "constat": {
+      "associations": {
+        "text": "\"Proving our good management takes forever.\" Associations spend hundreds of hours producing reports to reassure their funders.",
+        "title": "Association side"
+      },
+      "donors": {
+        "text": "\"I don't know how my money is being used.\" 6 out of 10 donors want more transparency on how their donations are used.",
+        "title": "Donor side"
+      },
+      "title": "A shared observation"
+    },
+    "faq": {
       "items": [
         {
           "question": "Do I need to understand blockchain to use Common Link?",
@@ -154,319 +296,329 @@
           "question": "Is the data secure?",
           "answer": "Yes. Personal data is stored encrypted and GDPR compliant. Only transaction proofs are public on the blockchain (without personal data)."
         }
-      ]
+      ],
+      "title": "Frequently asked questions"
+    },
+    "features": {
+      "items": [
+        {
+          "title": "Total transparency",
+          "text": "Every donation is recorded with unfalsifiable cryptographic proof. Donors see exactly where their money goes.",
+          "tag": "Blockchain"
+        },
+        {
+          "title": "Verifiable proof",
+          "text": "Every expense comes with a timestamped and verified receipt. No more opaque reports.",
+          "tag": "Verifiable"
+        },
+        {
+          "title": "Total simplicity",
+          "text": "No need to understand blockchain. Donors give in euros, associations spend in euros.",
+          "tag": "Accessible"
+        }
+      ],
+      "title": "What Common Link brings"
+    },
+    "guarantee": {
+      "text": "Our technology relies on the Ethereum blockchain and regulated stablecoins. Every transaction is immutable, publicly verifiable, and compliant with European regulations.",
+      "title": "Traceability guarantee"
+    },
+    "hero": {
+      "badge": "Verifiable traceability",
+      "cta": "Discover the platform",
+      "launch": "Launch planned Q3 2026",
+      "subtitle": "We make the link between impact and generosity visible",
+      "title": "Transparency on donation usage"
+    },
+    "journal": {
+      "rows": [
+        {
+          "label": "School supplies purchase",
+          "badge": "Verified",
+          "amount": "€450"
+        },
+        {
+          "label": "Event room rental",
+          "badge": "Verified",
+          "amount": "€1,200"
+        },
+        {
+          "label": "Awareness campaign",
+          "badge": "Pending",
+          "amount": "€800"
+        }
+      ],
+      "title": "Expense journal",
+      "total": "Total tracked",
+      "totalAmount": "€2,450"
+    },
+    "status": {
+      "items": [
+        {
+          "title": "Platform",
+          "text": "Technical architecture validated. Smart contracts in development. Donor interface in design.",
+          "badge": "In development",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Partnerships",
+          "text": "Looking for partners for EURx management and compliance.",
+          "badge": "In progress",
+          "badgeType": "in-progress"
+        },
+        {
+          "title": "Beta launch",
+          "text": "Pilot program with 5 partner associations planned for Q3 2026. Registrations open.",
+          "badge": "Q3 2026",
+          "badgeType": "upcoming"
+        }
+      ],
+      "title": "Where are we now"
+    },
+    "steps": {
+      "items": [
+        {
+          "number": "1",
+          "title": "The association registers",
+          "text": "Free registration in 5 minutes. Automatic verification via the SIRENE directory."
+        },
+        {
+          "number": "2",
+          "title": "The donor gives in euros",
+          "text": "Simple donation by card or bank transfer. Automatic conversion and on-chain recording."
+        },
+        {
+          "number": "3",
+          "title": "Every euro is tracked",
+          "text": "Expenses recorded with receipts. Digital tax receipt (NFT) for the donor."
+        }
+      ],
+      "title": "How it works"
     }
   },
-  "partners": {
-    "hero": {
-      "badge": "Partners & Investors",
-      "title": "Restoring donor trust through fund transparency",
-      "description": "The nonprofit sector faces a trust crisis. Common Link responds with a simple, verifiable, and compliant traceability infrastructure."
+  "metadata": {
+    "associations": {
+      "description": "Offer transparency to your donors. Join Common Link and strengthen trust.",
+      "keywords": "associations, transparency, donations, registration, SIRENE, reporting, donation management",
+      "title": "Associations — Common Link"
     },
-    "stats": [
-      { "number": "44%", "label": "of French people held back by lack of transparency" },
-      { "number": "53%", "label": "of associations consider their financial situation difficult" },
-      { "number": "1.5M", "label": "associations in France — a massive market" }
-    ],
-    "vision": {
-      "title": "Our vision",
-      "promote": {
-        "title": "Promoting transparency",
-        "text": "Inspiring donor confidence by making the use of every euro visible. Stimulating generosity to multiply the impact of associations."
-      },
-      "mission": {
-        "title": "Our mission",
-        "text": "Restoring donor trust through total fund transparency. Providing traceability tools for clear and verifiable management. Offering an intuitive donation platform and dedicated support services."
-      }
-    },
-    "architecture": {
-      "title": "Architecture & fund flow",
-      "description": "Every donation is tracked end-to-end. Blockchain technology serves as a proof ledger, but remains invisible to end users.",
-      "steps": [
-        { "icon": "money", "title": "1. Receiving the donation in euros", "text": "The donor gives in euros through the platform. Zero friction, zero crypto jargon." },
-        { "icon": "convert", "title": "2. Conversion to EURCV", "text": "Funds are converted to euro stablecoin (EURCV) via our institutional partner, ensuring compliance and auditability." },
-        { "icon": "lock", "title": "3. On-chain transfer to the association", "text": "EURCV tokens are transferred to the association's wallet. Every movement is recorded on the blockchain." },
-        { "icon": "chart", "title": "4. Allocation & expenses", "text": "The association distributes funds among its members. Every payment is tracked, with EURCV → EUR reconversion for bank transfers." },
-        { "icon": "receipt", "title": "5. Proofs & NFT tax receipt", "text": "At each step, a proof is recorded on-chain. The donor receives their tax receipt as an NFT, accessible at any time." }
-      ]
-    },
-    "infrastructure": {
-      "title": "Infrastructure & compliance",
-      "description": "We are seeking an institutional partner to manage compliance and ensure the traceability and proof of impact of every donation.",
-      "items": [
-        { "title": "Compliance", "text": "Association KYB, donor KYC, AML procedures, fraud alerts.", "tag": "Regulated" },
-        { "title": "Fund management", "text": "EUR reception, EURCV conversion, on-demand wallets, on-chain transfers, EUR reconversion.", "tag": "Automated" },
-        { "title": "Transparency", "text": "Wallet addresses as source of truth, open API, event indexing, NFT tax receipts.", "tag": "Verifiable" }
-      ]
-    },
-    "team": {
-      "title": "A team committed to social economy",
-      "members": [
-        { "initials": "JM", "role": "Chief Executive Officer", "name": "Julian Maïolino", "bio": "Management and development of nonprofit projects. 5+ years in France and internationally. Strategic vision and partnerships." },
-        { "initials": "CL", "role": "Chief Operations Officer", "name": "Colin Lalouette", "bio": "Expert in operational structuring and growth. 20+ years in startups and consulting. Steering, scalability and execution." },
-        { "initials": "CP", "role": "Chief Technology Officer", "name": "Clément Pignon", "bio": "Architect of Web2/3 digital trust systems. 20+ years of development. Regulated & critical environments." }
-      ]
-    },
-    "roadmap": {
-      "title": "Roadmap",
-      "steps": [
-        { "title": "Q1 2026 — Structure & partnerships", "text": "Legal incorporation, institutional partnership (compliance & blockchain infrastructure), first pilot associations identified." },
-        { "title": "Q2 2026 — Pilot launch", "text": "Onboarding pilot associations, first tracked donation flows, donor dashboard in beta." },
-        { "title": "Q3-Q4 2026 — Growth", "text": "Gradual opening to associations and donors, product iterations, acquisition campaigns." }
-      ]
-    },
-    "cta": {
-      "title": "Let's build nonprofit transparency together",
-      "description": "Investor, institutional or technology partner — let's discuss our shared vision."
+    "cgu": {
+      "description": "Terms of use for the CommonLink platform.",
+      "title": "Terms of use — CommonLink"
     },
     "contact": {
-      "title": "Get in touch",
-      "name": "Full name",
-      "namePlaceholder": "Your name",
-      "email": "Professional email",
-      "emailPlaceholder": "you@company.com",
-      "org": "Organization",
-      "orgPlaceholder": "Your organization name",
-      "type": "Partnership type",
-      "typeOptions": [
-        { "value": "", "label": "Select..." },
-        { "value": "investisseur", "label": "Investor / Business Angel" },
-        { "value": "institutionnel", "label": "Institutional partner" },
-        { "value": "tech", "label": "Technology partner" },
-        { "value": "autre", "label": "Other" }
-      ],
-      "message": "Message (optional)",
-      "messagePlaceholder": "How would you like to contribute?",
-      "submit": "Send my request",
-      "note": "We respond within 48h. Your data is processed in compliance with GDPR.",
-      "success": "Thank you! Your request has been sent. We'll get back to you within 48h."
-    }
-  },
-  "associations": {
-    "hero": {
-      "badge": "Associations",
-      "title": "Offer transparency to your donors",
-      "description": "Join the first pilot associations of Common Link. We support you in simplifying your management and strengthening the trust of your supporters."
+      "description": "Contact CommonLink for any question about the platform.",
+      "title": "Contact — CommonLink"
     },
-    "benefits": {
-      "title": "Why join Common Link?",
-      "items": [
-        {
-          "title": "Attract more donors",
-          "text": "Transparency reassures. Donors prefer organizations that show how their funds are used."
-        },
-        {
-          "title": "Simplify your reporting",
-          "text": "Receipts and expense proofs are recorded automatically. Less paperwork, more fieldwork."
-        },
-        {
-          "title": "Zero technical skills needed",
-          "text": "You manage your association in euros, as usual. The technology is invisible — we handle everything."
-        }
-      ]
+    "cookies": {
+      "description": "How CommonLink uses cookies on its website.",
+      "title": "Cookie policy — CommonLink"
     },
-    "search": {
-      "title": "Register your association",
-      "description": "Start by searching for your association in the official directory. This allows us to verify your organization exists and pre-fill your information.",
-      "placeholder": "Association name, SIREN, city...",
-      "button": "Search",
-      "loading": "Searching...",
-      "resultsCount": "<strong>{count}</strong> associations found — select yours",
-      "noResults": "No associations found. Check the name or SIREN.",
-      "noResultsWithFilters": "No results with these filters. Try modifying or removing some filters.",
-      "clearFilters": "Clear filters",
-      "active": "Active",
-      "closed": "Closed",
-      "city": "City",
-      "postalCode": "Postal code",
-      "siren": "SIREN",
-      "created": "Created",
-      "select": "Select",
-      "dep": "Dept. {code}",
-      "displayedInfo": "{displayed} of {total} displayed",
-      "displayedAll": "{displayed} displayed",
-      "scrollMore": "Scroll for more",
-      "endOfResults": "End of results",
-      "quickFilters": {
-        "sport": "Sports",
-        "culture": "Culture",
-        "social": "Social",
-        "environnement": "Environment",
-        "education": "Education",
-        "sante": "Health"
-      },
-      "advancedToggle": "Filter results",
-      "filters": {
-        "department": "Department",
-        "departmentAll": "All departments",
-        "postalCode": "Postal Code",
-        "postalCodePlaceholder": "e.g. 75001",
-        "city": "City",
-        "cityPlaceholder": "e.g. Paris",
-        "status": "Status",
-        "statusAll": "All",
-        "statusActive": "Active only",
-        "statusClosed": "Closed only",
-        "employees": "Number of employees",
-        "employeesAll": "All",
-        "employees0": "0 employees",
-        "employees1to9": "1 to 9 employees",
-        "employees10to49": "10 to 49 employees",
-        "employees50to199": "50 to 199 employees",
-        "employees200plus": "200+ employees",
-        "activeCount": "{count} active filter(s)"
-      },
-      "modal": {
-        "identification": "Identification",
-        "siret": "SIRET (headquarters)",
-        "dateCreation": "Date of creation",
-        "natureJuridique": "Legal form",
-        "address": "Headquarters address",
-        "fullAddress": "Full address",
-        "commune": "Municipality",
-        "department": "Department",
-        "region": "Region",
-        "activity": "Activity",
-        "naf": "NAF code",
-        "activitySection": "Activity section",
-        "employees": "Employees",
-        "establishments": "Establishments",
-        "directors": "Directors",
-        "close": "Close",
-        "viewAnnuaire": "View on Annuaire",
-        "noAddress": "Address not available"
-      }
-    },
-    "form": {
-      "selectedTitle": "Selected association",
-      "change": "Change",
-      "responsibleName": "Responsible person's name",
-      "responsibleNamePlaceholder": "First Last",
-      "email": "Contact email",
-      "emailPlaceholder": "contact@association.org",
-      "description": "Describe your association",
-      "descriptionPlaceholder": "In a few words, describe your activity...",
-      "consent": "I agree that Common Link may collect this information to notify me about the platform launch. I can unsubscribe at any time.",
-      "submit": "Join the waitlist",
-      "success": "Thank you! Your association is on the waitlist. We'll contact you as soon as the platform launches.",
-      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr."
-    }
-  },
-  "donors": {
-    "hero": {
-      "badge": "Donors",
-      "title": "Give with confidence",
-      "description": "Track the use of every euro donated. Monitor in real time the expenses of the associations you support, with verifiable proof."
-    },
-    "preview": {
-      "title": "What you'll see once registered",
-      "items": [
-        {
-          "title": "Real-time tracking",
-          "text": "See where your money goes, step by step. Every expense is linked to a specific project."
-        },
-        {
-          "title": "Digital tax receipt",
-          "text": "Receive your tax receipt instantly in your account. No more waiting months."
-        },
-        {
-          "title": "Verified history",
-          "text": "View all your donations and their impact. Secure proof, accessible at any time."
-        }
-      ]
-    },
-    "dashboard": {
-      "label": "Preview of your dashboard",
-      "greeting": "Hello, Claire",
-      "subtitle": "3 associations supported",
-      "stats": [
-        { "value": "€1,250", "label": "Donated in 2026" },
-        { "value": "100%", "label": "Traceability" },
-        { "value": "3", "label": "Tax receipts" }
-      ],
-      "activityTitle": "Recent activity",
-      "activities": [
-        { "badge": "Verified", "text": "School supplies purchase", "amount": "€85", "type": "verified" },
-        { "badge": "Verified", "text": "Rehearsal room rental", "amount": "€120", "type": "verified" },
-        { "badge": "Pending", "text": "Camping equipment", "amount": "€210", "type": "pending" }
-      ]
-    },
-    "signup": {
-      "title": "Join the waitlist",
-      "description": "Be among the first to know when we launch. Sign up to reserve your spot.",
-      "cardTitle": "Sign up for free",
-      "google": "Continue with Google",
-      "apple": "Continue with Apple",
-      "divider": "or by email",
-      "firstName": "First name",
-      "firstNamePlaceholder": "Marie",
-      "email": "Email",
-      "emailPlaceholder": "marie@example.com",
-      "consent": "I agree that Common Link may collect my first name and email to notify me about the platform launch. I can unsubscribe at any time.",
-      "submit": "Join the waitlist",
-      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr.",
-      "successTitle": "You're on the list!",
-      "successText": "We'll let you know as soon as the platform is available. Keep an eye on your inbox.",
-      "successLaunch": "Planned launch: Q2 2026"
+    "donors": {
+      "description": "Give with confidence. Track every euro and receive verifiable proof.",
+      "keywords": "donors, donations, tracking, tax receipt, transparency, verifiable proof, philanthropy",
+      "title": "Donors — Common Link"
     },
     "faq": {
-      "title": "Frequently asked questions",
-      "items": [
+      "description": "Frequently asked questions about CommonLink, donations, and transparency.",
+      "title": "FAQ — CommonLink"
+    },
+    "landing": {
+      "description": "Crypto-philanthropy platform that restores donor trust through transparency on fund usage.",
+      "keywords": "transparency, donations, associations, blockchain, traceability, philanthropy, trust, tax receipt",
+      "title": "Common Link — Transparency on donation usage"
+    },
+    "mentionsLegales": {
+      "description": "Legal notice for CommonLink, the donation transparency platform.",
+      "title": "Legal notice — CommonLink"
+    },
+    "partners": {
+      "description": "Discover our vision, team, and how to become a Common Link partner.",
+      "keywords": "partners, investors, crypto-philanthropy, blockchain, fintech, social impact",
+      "title": "Partners & Investors — Common Link"
+    },
+    "privacy": {
+      "description": "How CommonLink collects and uses your personal data.",
+      "title": "Privacy policy — CommonLink"
+    },
+    "tarifs": {
+      "description": "Transparent pricing for associations and nonprofits using CommonLink.",
+      "title": "Pricing — CommonLink"
+    }
+  },
+  "nav": {
+    "associations": "Associations",
+    "donors": "Donors",
+    "home": "Common Link — Home",
+    "main": "Main navigation",
+    "menuClose": "Close menu",
+    "menuOpen": "Open menu",
+    "mobile": "Mobile navigation",
+    "partners": "Partners"
+  },
+  "partners": {
+    "architecture": {
+      "description": "Every donation is tracked end-to-end. Blockchain technology serves as a proof ledger, but remains invisible to end users.",
+      "steps": [
         {
-          "question": "Are my donations tax-deductible?",
-          "answer": "Yes. For each donation to an eligible association, you receive a valid tax receipt allowing you to benefit from the tax reduction provided by law (66% of the amount, up to 20% of taxable income for individuals)."
+          "icon": "money",
+          "title": "1. Receiving the donation in euros",
+          "text": "The donor gives in euros through the platform. Zero friction, zero crypto jargon."
         },
         {
-          "question": "How can I track my donation?",
-          "answer": "From your dashboard, you can see in real time the expenses related to the projects you support. Each expense comes with verifiable proof: receipts, dates, amounts."
+          "icon": "convert",
+          "title": "2. Conversion to EURCV",
+          "text": "Funds are converted to euro stablecoin (EURCV) via our institutional partner, ensuring compliance and auditability."
         },
         {
-          "question": "When do I receive my tax receipt?",
-          "answer": "Instantly. As soon as your donation is confirmed, the tax receipt is available in your account. No more waiting for the association's mail at the end of the year."
+          "icon": "lock",
+          "title": "3. On-chain transfer to the association",
+          "text": "EURCV tokens are transferred to the association's wallet. Every movement is recorded on the blockchain."
         },
         {
-          "question": "Can I donate to multiple associations?",
-          "answer": "Of course. You can support as many partner associations as you wish. Each donation is tracked individually and you receive a tax receipt per association."
+          "icon": "chart",
+          "title": "4. Allocation & expenses",
+          "text": "The association distributes funds among its members. Every payment is tracked, with EURCV → EUR reconversion for bank transfers."
         },
         {
-          "question": "Is my data protected?",
-          "answer": "Absolutely. We comply with GDPR and never share your personal data with third parties. Your tax information is encrypted and used solely to generate your receipts."
+          "icon": "receipt",
+          "title": "5. Proofs & NFT tax receipt",
+          "text": "At each step, a proof is recorded on-chain. The donor receives their tax receipt as an NFT, accessible at any time."
+        }
+      ],
+      "title": "Architecture & fund flow"
+    },
+    "contact": {
+      "email": "Professional email",
+      "emailPlaceholder": "you@company.com",
+      "message": "Message (optional)",
+      "messagePlaceholder": "How would you like to contribute?",
+      "name": "Full name",
+      "namePlaceholder": "Your name",
+      "note": "We respond within 48h. Your data is processed in compliance with GDPR.",
+      "org": "Organization",
+      "orgPlaceholder": "Your organization name",
+      "submit": "Send my request",
+      "success": "Thank you! Your request has been sent. We'll get back to you within 48h.",
+      "title": "Get in touch",
+      "type": "Partnership type",
+      "typeOptions": [
+        {
+          "value": "",
+          "label": "Select..."
+        },
+        {
+          "value": "investisseur",
+          "label": "Investor / Business Angel"
+        },
+        {
+          "value": "institutionnel",
+          "label": "Institutional partner"
+        },
+        {
+          "value": "tech",
+          "label": "Technology partner"
+        },
+        {
+          "value": "autre",
+          "label": "Other"
         }
       ]
     },
     "cta": {
-      "title": "Ready to give differently?",
-      "description": "Join the first donors who want to know exactly where their money goes.",
-      "button": "Join the waitlist"
+      "description": "Investor, institutional or technology partner — let's discuss our shared vision.",
+      "title": "Let's build nonprofit transparency together"
+    },
+    "hero": {
+      "badge": "Partners & Investors",
+      "description": "The nonprofit sector faces a trust crisis. Common Link responds with a simple, verifiable, and compliant traceability infrastructure.",
+      "title": "Restoring donor trust through fund transparency"
+    },
+    "infrastructure": {
+      "description": "We are seeking an institutional partner to manage compliance and ensure the traceability and proof of impact of every donation.",
+      "items": [
+        {
+          "title": "Compliance",
+          "text": "Association KYB, donor KYC, AML procedures, fraud alerts.",
+          "tag": "Regulated"
+        },
+        {
+          "title": "Fund management",
+          "text": "EUR reception, EURCV conversion, on-demand wallets, on-chain transfers, EUR reconversion.",
+          "tag": "Automated"
+        },
+        {
+          "title": "Transparency",
+          "text": "Wallet addresses as source of truth, open API, event indexing, NFT tax receipts.",
+          "tag": "Verifiable"
+        }
+      ],
+      "title": "Infrastructure & compliance"
+    },
+    "roadmap": {
+      "steps": [
+        {
+          "title": "Q1 2026 — Structure & partnerships",
+          "text": "Legal incorporation, institutional partnership (compliance & blockchain infrastructure), first pilot associations identified."
+        },
+        {
+          "title": "Q2 2026 — Pilot launch",
+          "text": "Onboarding pilot associations, first tracked donation flows, donor dashboard in beta."
+        },
+        {
+          "title": "Q3-Q4 2026 — Growth",
+          "text": "Gradual opening to associations and donors, product iterations, acquisition campaigns."
+        }
+      ],
+      "title": "Roadmap"
+    },
+    "stats": [
+      {
+        "number": "44%",
+        "label": "of French people held back by lack of transparency"
+      },
+      {
+        "number": "53%",
+        "label": "of associations consider their financial situation difficult"
+      },
+      {
+        "number": "1.5M",
+        "label": "associations in France — a massive market"
+      }
+    ],
+    "team": {
+      "members": [
+        {
+          "initials": "JM",
+          "role": "Chief Executive Officer",
+          "name": "Julian Maïolino",
+          "bio": "Management and development of nonprofit projects. 5+ years in France and internationally. Strategic vision and partnerships."
+        },
+        {
+          "initials": "CL",
+          "role": "Chief Operations Officer",
+          "name": "Colin Lalouette",
+          "bio": "Expert in operational structuring and growth. 20+ years in startups and consulting. Steering, scalability and execution."
+        },
+        {
+          "initials": "CP",
+          "role": "Chief Technology Officer",
+          "name": "Clément Pignon",
+          "bio": "Architect of Web2/3 digital trust systems. 20+ years of development. Regulated & critical environments."
+        }
+      ],
+      "title": "A team committed to social economy"
+    },
+    "vision": {
+      "mission": {
+        "text": "Restoring donor trust through total fund transparency. Providing traceability tools for clear and verifiable management. Offering an intuitive donation platform and dedicated support services.",
+        "title": "Our mission"
+      },
+      "promote": {
+        "text": "Inspiring donor confidence by making the use of every euro visible. Stimulating generosity to multiply the impact of associations.",
+        "title": "Promoting transparency"
+      },
+      "title": "Our vision"
     }
-  },
-  "footer": {
-    "brand": {
-      "name": "Common Link",
-      "description": "Transparency on donation usage, made possible by blockchain technology."
-    },
-    "nav": {
-      "title": "Navigation",
-      "partners": "Partners",
-      "associations": "Associations",
-      "donors": "Donors"
-    },
-    "legal": {
-      "title": "Legal",
-      "text": "Common Link is a platform under development. Information presented on this site is subject to change."
-    },
-    "copyright": "© {year} Common Link. All rights reserved.",
-    "luciole": "Typeface <link>Luciole</link> by the Centre Technique Régional pour la Déficience Visuelle and typographies.fr — CC BY 4.0 license."
-  },
-  "common": {
-    "learnMore": "Learn more",
-    "contact": "Contact us",
-    "search": "Search",
-    "submit": "Submit",
-    "loading": "Loading...",
-    "select": "Select",
-    "change": "Change",
-    "back": "Back",
-    "close": "Close"
   }
 }

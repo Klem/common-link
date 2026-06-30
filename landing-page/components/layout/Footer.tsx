@@ -44,11 +44,17 @@ export function Footer() {
           </div>
 
           {/* Legal */}
-          <div>
+          <div className="flex flex-col gap-2">
             <strong className="block text-white font-ui text-[0.95rem] mb-4">
               {t('legal.title')}
             </strong>
-            <p className="text-[0.85rem] leading-relaxed">{t('legal.text')}</p>
+            <Link href="/mentions-legales" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.mentions')}</Link>
+            <Link href="/conditions-generales-utilisation" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.cgu')}</Link>
+            <Link href="/politique-confidentialite" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.privacy')}</Link>
+            <Link href="/politique-cookies" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.cookies')}</Link>
+            <Link href="/contact" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.contact')}</Link>
+            <Link href="/tarifs" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.tarifs')}</Link>
+            <Link href="/faq" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.faq')}</Link>
           </div>
         </div>
 

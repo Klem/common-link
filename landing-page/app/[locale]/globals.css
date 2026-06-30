@@ -157,3 +157,99 @@ details summary::-webkit-details-marker {
 details summary {
   list-style: none;
 }
+
+/* ============================================
+   LEGAL PROSE
+   ============================================ */
+.legal-prose h2 {
+  font-family: var(--font-ui);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin: 2.5rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.legal-prose h3 {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin: 1.75rem 0 0.5rem;
+}
+
+.legal-prose p {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--color-text-body);
+  margin: 0.75rem 0;
+}
+
+.legal-prose ul, .legal-prose ol {
+  margin: 0.75rem 0 0.75rem 1.5rem;
+}
+
+.legal-prose li {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--color-text-body);
+  margin: 0.25rem 0;
+  list-style-type: disc;
+}
+
+.legal-prose strong {
+  font-weight: 700;
+  color: var(--color-text-dark);
+}
+
+.legal-prose a {
+  color: var(--color-secondary);
+  text-decoration: underline;
+}
+
+.legal-prose a:hover {
+  color: var(--color-primary);
+}
+
+.legal-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+}
+
+.legal-prose th {
+  background: var(--color-background-alt);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-dark);
+}
+
+.legal-prose td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-body);
+  vertical-align: top;
+}
+
+.legal-prose tr:nth-child(even) td {
+  background: var(--color-background);
+}
+
+.legal-prose .contact-block {
+  background: var(--color-background-alt);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  margin: 1rem 0;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: var(--color-text-body);
+}
