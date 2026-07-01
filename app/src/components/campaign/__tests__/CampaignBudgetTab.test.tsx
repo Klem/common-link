@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { CampaignBudgetTab } from '../CampaignBudgetTab';
 import type { CampaignDto } from '@/types/campaign';
 
@@ -169,6 +169,44 @@ describe('CampaignBudgetTab', () => {
       render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
       fireEvent.click(screen.getByText('editor.budget.changeTemplate'));
       expect(init).toHaveBeenCalledWith([]);
+    });
+
+    describe('autosave', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('does not save immediately when an item amount is edited', () => {
+        render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+        const input = document.querySelector('.line-amt input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '700' } });
+        expect(mockBudgetBase.save).not.toHaveBeenCalled();
+      });
+
+      it('autosaves silently 800ms after an item edit', () => {
+        render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+        const input = document.querySelector('.line-amt input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '700' } });
+
+        act(() => { vi.advanceTimersByTime(800); });
+
+        expect(mockBudgetBase.save).toHaveBeenCalledWith('camp-1', true);
+      });
+
+      it('cancels a pending autosave when the template is reset (does not overwrite with stale data)', () => {
+        render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+        const input = document.querySelector('.line-amt input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '700' } });
+        fireEvent.click(screen.getByText('editor.budget.changeTemplate'));
+
+        act(() => { vi.advanceTimersByTime(800); });
+
+        expect(mockBudgetBase.save).not.toHaveBeenCalled();
+      });
     });
   });
 });

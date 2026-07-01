@@ -20,8 +20,9 @@ export interface UseCampaignReturn {
   /**
    * Persists partial campaign changes to the API, updates local state, and shows a toast.
    * @param data - Fields to update (all optional).
+   * @param silent - If true, suppresses the success toast (used for autosave).
    */
-  updateCampaignInfo: (data: UpdateCampaignRequest) => Promise<void>;
+  updateCampaignInfo: (data: UpdateCampaignRequest, silent?: boolean) => Promise<void>;
   /** Directly overwrite local campaign state (for optimistic updates). */
   setCampaign: React.Dispatch<React.SetStateAction<CampaignDto | null>>;
 }
@@ -57,16 +58,16 @@ export function useCampaign(campaignId: string): UseCampaignReturn {
 
   /**
    * Persists partial campaign changes to the API.
-   * Updates local state on success and shows a success toast.
+   * Updates local state on success and shows a success toast, unless `silent` (autosave).
    * Shows an error toast on failure.
    */
   const updateCampaignInfo = useCallback(
-    async (data: UpdateCampaignRequest): Promise<void> => {
+    async (data: UpdateCampaignRequest, silent = false): Promise<void> => {
       setIsSaving(true);
       try {
         const updated = await updateCampaign(campaignId, data);
         setCampaign(updated);
-        addToast('success', 'campaignUpdated');
+        if (!silent) addToast('success', 'campaignUpdated');
       } catch {
         addToast('error', 'errors.serverError');
       } finally {

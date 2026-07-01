@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
 import { BudgetSide } from '@/types/campaign';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 interface CampaignInfoTabProps {
   campaign: CampaignDto;
-  onSave: (data: UpdateCampaignRequest) => void;
+  onSave: (data: UpdateCampaignRequest, silent?: boolean) => void;
   isSaving: boolean;
 }
 
@@ -45,16 +46,37 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
 
   const totalCharges = useMemo(() => computeTotalCharges(campaign), [campaign]);
 
-  const handleGoalLink = (checked: boolean) => {
-    setGoalLinked(checked);
-    if (checked) setGoal(String(totalCharges));
-  };
-
   const dateError = useMemo(() => {
     if (!startDate || !endDate) return '';
     const diff = (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000;
     return diff < 7 ? t('editor.info.dateError') : '';
   }, [startDate, endDate, t]);
+
+  const { schedule, cancel } = useDebouncedPatchSave<UpdateCampaignRequest>((patch) => {
+    if (!dateError) onSave(patch, true);
+  });
+
+  const handleGoalLink = (checked: boolean) => {
+    setGoalLinked(checked);
+    if (checked) {
+      setGoal(String(totalCharges));
+      schedule({ goal: totalCharges });
+    }
+  };
+
+  const handleNameChange = (v: string) => { setName(v); schedule({ name: v }); };
+  const handleGoalChange = (v: string) => {
+    setGoalLinked(false);
+    setGoal(v);
+    const num = Number(v);
+    if (!isNaN(num)) schedule({ goal: num });
+  };
+  const handleStartDateChange = (v: string) => { setStartDate(v); schedule({ startDate: v || undefined }); };
+  const handleEndDateChange = (v: string) => { setEndDate(v); schedule({ endDate: v || undefined }); };
+  const handleCategoryChange = (v: string) => { setCategory(v); schedule({ category: v || undefined }); };
+  const handleDescriptionChange = (v: string) => { setDescription(v); schedule({ description: v }); };
+  const handleReasonChange = (v: string) => { setReason(v); schedule({ reason: v || undefined }); };
+  const handleImpactGoalsChange = (v: string) => { setImpactGoals(v); schedule({ impactGoals: v || undefined }); };
 
   const isDirty =
     name !== campaign.name ||
@@ -68,6 +90,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
 
   const handleSave = () => {
     if (dateError) return;
+    cancel();
     const data: UpdateCampaignRequest = {};
     if (name !== campaign.name) data.name = name;
     if (goal !== String(campaign.goal)) data.goal = Number(goal);
@@ -92,7 +115,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             className="cm-fi"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleNameChange(e.target.value)}
             placeholder={t('editor.info.name.placeholder')}
           />
         </div>
@@ -105,7 +128,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             className="cm-fi"
             type="number"
             value={goal}
-            onChange={(e) => { setGoalLinked(false); setGoal(e.target.value); }}
+            onChange={(e) => handleGoalChange(e.target.value)}
             placeholder={t('editor.info.goal.placeholder')}
             min={0}
           />
@@ -136,7 +159,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             className="cm-fi"
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => handleStartDateChange(e.target.value)}
           />
         </div>
         <div>
@@ -150,7 +173,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             className="cm-fi"
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e) => handleEndDateChange(e.target.value)}
           />
           {dateError && (
             <div id="info-date-error">
@@ -164,7 +187,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
       {/* Catégorie */}
       <div style={{ marginBottom: 14 }}>
         <label className="cm-label">{t('editor.info.category.label')}</label>
-        <select className="cm-fi" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select className="cm-fi" value={category} onChange={(e) => handleCategoryChange(e.target.value)}>
           <option value="">—</option>
           <option value="Education">🎓 Éducation</option>
           <option value="Alimentation">🍎 Alimentation</option>
@@ -179,7 +202,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
         <textarea
           className="cm-fi"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => handleDescriptionChange(e.target.value)}
           placeholder={t('editor.info.description.placeholder')}
           style={{ minHeight: 90 }}
         />
@@ -194,7 +217,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
         <textarea
           className="cm-fi"
           value={reason}
-          onChange={(e) => setReason(e.target.value)}
+          onChange={(e) => handleReasonChange(e.target.value)}
           placeholder={t('editor.info.reason.placeholder')}
           style={{ minHeight: 70 }}
         />
@@ -209,7 +232,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
         <textarea
           className="cm-fi"
           value={impactGoals}
-          onChange={(e) => setImpactGoals(e.target.value)}
+          onChange={(e) => handleImpactGoalsChange(e.target.value)}
           placeholder={t('editor.info.impactGoals.placeholder')}
           style={{ minHeight: 90 }}
         />

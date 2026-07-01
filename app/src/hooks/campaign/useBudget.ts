@@ -56,8 +56,8 @@ export interface UseBudgetReturn {
   removeSection: (sIdx: number) => void;
   /** Toggles a section's collapsed state. */
   toggleSection: (sIdx: number) => void;
-  /** Saves the budget to the API. */
-  save: (campaignId: string) => Promise<CampaignDto | null>;
+  /** Saves the budget to the API. `silent` suppresses the success toast (used for autosave). */
+  save: (campaignId: string, silent?: boolean) => Promise<CampaignDto | null>;
 }
 
 /** French association accounting plan template. */
@@ -322,13 +322,14 @@ export function useBudget(): UseBudgetReturn {
 
   /**
    * Converts local state to a {@link SaveBudgetRequest} and calls the API.
-   * On success, resets isDirty and shows a toast.
+   * On success, resets isDirty and shows a toast, unless `silent` (autosave).
    *
    * @param campaignId - UUID of the campaign to save the budget for.
+   * @param silent - If true, suppresses the success toast.
    * @returns The updated campaign DTO, or null on error.
    */
   const save = useCallback(
-    async (campaignId: string): Promise<CampaignDto | null> => {
+    async (campaignId: string, silent = false): Promise<CampaignDto | null> => {
       setIsSaving(true);
       try {
         const payload: SaveBudgetRequest = {
@@ -346,7 +347,7 @@ export function useBudget(): UseBudgetReturn {
         };
         const updated = await saveBudget(campaignId, payload);
         setIsDirty(false);
-        addToast('success', 'budgetSaved');
+        if (!silent) addToast('success', 'budgetSaved');
         return updated;
       } catch {
         addToast('error', 'errors.serverError');

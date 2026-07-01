@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { CampaignMilestonesTab } from '../CampaignMilestonesTab';
 import type { CampaignDto } from '@/types/campaign';
 
@@ -137,5 +137,48 @@ describe('CampaignMilestonesTab', () => {
     const titleInputs = inputs.filter(el => (el as HTMLInputElement).value === 'Premier palier' || (el as HTMLInputElement).value === 'Second palier');
     expect((titleInputs[0] as HTMLInputElement).value).toBe('Premier palier');
     expect((titleInputs[1] as HTMLInputElement).value).toBe('Second palier');
+  });
+
+  describe('autosave', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('does not call updateExistingMilestone immediately on title change', () => {
+      const campaign = { ...baseCampaign, milestones: [milestoneBase] };
+      render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+      fireEvent.change(screen.getByDisplayValue('Premier palier'), { target: { value: 'Nouveau titre' } });
+      expect(mockHookBase.updateExistingMilestone).not.toHaveBeenCalled();
+    });
+
+    it('merges title and impact edits made within the debounce window into a single update', () => {
+      const campaign = { ...baseCampaign, milestones: [milestoneBase] };
+      render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+      fireEvent.change(screen.getByDisplayValue('Premier palier'), { target: { value: 'Nouveau titre' } });
+      act(() => { vi.advanceTimersByTime(300); });
+      fireEvent.change(screen.getByDisplayValue('Acheter du matériel'), { target: { value: 'Nouvel impact' } });
+
+      act(() => { vi.advanceTimersByTime(800); });
+
+      expect(mockHookBase.updateExistingMilestone).toHaveBeenCalledTimes(1);
+      expect(mockHookBase.updateExistingMilestone).toHaveBeenCalledWith('camp-1', 'ms-1', {
+        title: 'Nouveau titre',
+        description: 'Nouvel impact',
+      });
+    });
+
+    it('flushes a pending edit on unmount (e.g. switching tabs before the debounce fires)', () => {
+      const campaign = { ...baseCampaign, milestones: [milestoneBase] };
+      const { unmount } = render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+      fireEvent.change(screen.getByDisplayValue('Premier palier'), { target: { value: 'Nouveau titre' } });
+
+      unmount();
+
+      expect(mockHookBase.updateExistingMilestone).toHaveBeenCalledWith('camp-1', 'ms-1', { title: 'Nouveau titre' });
+    });
   });
 });

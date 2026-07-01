@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useBudget, type BudgetTemplateType } from '@/hooks/campaign/useBudget';
+import { useDebouncedCallback } from '@/hooks/campaign/useDebouncedSave';
 import { BudgetSide } from '@/types/campaign';
 import type { CampaignDto } from '@/types/campaign';
 
@@ -60,6 +61,16 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
     init(campaign.budgetSections);
   }, [campaign.budgetSections, init]);
 
+  const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback(() => {
+    save(campaign.id, true).then((updated) => { if (updated) onBudgetSaved(updated); });
+  });
+
+  const handleUpdateItemLabel = (sIdx: number, iIdx: number, v: string) => { updateItemLabel(sIdx, iIdx, v); scheduleAutosave(); };
+  const handleUpdateItemAmount = (sIdx: number, iIdx: number, v: number) => { updateItemAmount(sIdx, iIdx, v); scheduleAutosave(); };
+  const handleAddItem = (sIdx: number) => { addItem(sIdx); scheduleAutosave(); };
+  const handleRemoveItem = (sIdx: number, iIdx: number) => { removeItem(sIdx, iIdx); scheduleAutosave(); };
+  const handleRemoveSectionEdit = (sIdx: number) => { removeSection(sIdx); scheduleAutosave(); };
+
   const isEmpty = sections.length === 0;
 
   const balancePill = (): { label: string; cls: string } => {
@@ -70,6 +81,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
   const pill = balancePill();
 
   const handleSave = async () => {
+    cancelAutosave();
     const updated = await save(campaign.id);
     if (updated) onBudgetSaved(updated);
   };
@@ -82,9 +94,11 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
     if (!addForm || !addForm.name.trim()) return;
     addSection(addForm.side, addForm.code.trim() || '—', addForm.name.trim());
     setAddForm(null);
+    scheduleAutosave();
   };
 
   const handleResetBudget = () => {
+    cancelAutosave();
     init([]);
     setColFilter('both');
   };
@@ -115,7 +129,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
                   </div>
                 ))}
               </div>
-              <button className="btn btn-primary" onClick={() => initTemplate(selectedTpl)}>
+              <button className="btn btn-primary" onClick={() => { cancelAutosave(); initTemplate(selectedTpl); }}>
                 {t('editor.budget.useTpl')}
               </button>
               <div style={{ marginTop: '10px', fontSize: '11.5px', color: 'var(--slate-lavender)' }}>
@@ -192,11 +206,11 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
                       side="ch"
                       isOpen={!collapsedSections.has(i)}
                       onToggle={toggleSection}
-                      onUpdateLabel={updateItemLabel}
-                      onUpdateAmount={updateItemAmount}
-                      onAddItem={addItem}
-                      onRemoveItem={removeItem}
-                      onRemoveSection={removeSection}
+                      onUpdateLabel={handleUpdateItemLabel}
+                      onUpdateAmount={handleUpdateItemAmount}
+                      onAddItem={handleAddItem}
+                      onRemoveItem={handleRemoveItem}
+                      onRemoveSection={handleRemoveSectionEdit}
                       addItemLabel={t('editor.budget.addItem')}
                       labelPlaceholder={t('editor.budget.labelPlaceholder')}
                       amountPlaceholder={t('editor.budget.amountPlaceholder')}
@@ -234,11 +248,11 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
                       side="pr"
                       isOpen={!collapsedSections.has(i)}
                       onToggle={toggleSection}
-                      onUpdateLabel={updateItemLabel}
-                      onUpdateAmount={updateItemAmount}
-                      onAddItem={addItem}
-                      onRemoveItem={removeItem}
-                      onRemoveSection={removeSection}
+                      onUpdateLabel={handleUpdateItemLabel}
+                      onUpdateAmount={handleUpdateItemAmount}
+                      onAddItem={handleAddItem}
+                      onRemoveItem={handleRemoveItem}
+                      onRemoveSection={handleRemoveSectionEdit}
                       addItemLabel={t('editor.budget.addItem')}
                       labelPlaceholder={t('editor.budget.labelPlaceholder')}
                       amountPlaceholder={t('editor.budget.amountPlaceholder')}

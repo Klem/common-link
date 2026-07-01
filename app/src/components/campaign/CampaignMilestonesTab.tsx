@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMilestones } from '@/hooks/campaign/useMilestones';
+import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
 import { MilestoneStatus } from '@/types/campaign';
 import type { CampaignDto, MilestoneDto, MilestoneStatus as MilestoneStatusType, UpdateMilestoneRequest } from '@/types/campaign';
 
@@ -128,7 +129,6 @@ function MilestoneCard({
   const [pendingDelete, setPendingDelete] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setTitle(milestone.title);
@@ -153,12 +153,8 @@ function MilestoneCard({
     return () => document.removeEventListener('mousedown', handle);
   }, [pendingDelete]);
 
-  const scheduleUpdate = useCallback(
-    (patch: UpdateMilestoneRequest) => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => { onUpdate(campaignId, milestone.id, patch); }, 800);
-    },
-    [campaignId, milestone.id, onUpdate],
+  const { schedule: scheduleUpdate } = useDebouncedPatchSave<UpdateMilestoneRequest>(
+    (patch) => onUpdate(campaignId, milestone.id, patch),
   );
 
   const handleTitleChange = (v: string) => { setTitle(v); scheduleUpdate({ title: v }); };
