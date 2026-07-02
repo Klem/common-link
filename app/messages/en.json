@@ -781,8 +781,6 @@
         "addIban": "Add an IBAN",
         "cancel": "Cancel",
         "copy": "Copy IBAN",
-        "deleteMessage": "Are you sure you want to delete IBAN {iban}?",
-        "deleteTitle": "Delete IBAN",
         "inputPlaceholder": "Enter an IBAN",
         "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
         "verified": "Verified",

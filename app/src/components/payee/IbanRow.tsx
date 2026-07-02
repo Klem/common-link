@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { PayeeIbanDto } from '@/types/payee';
 import { IbanVerificationStatus } from '@/types/payee';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface IbanRowProps {
   /** The IBAN record to display. */
@@ -30,7 +29,7 @@ export function IbanRow({
   onVerifyVop,
 }: IbanRowProps) {
   const t = useTranslations('dashboard');
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
 
   const canDelete = iban.status !== IbanVerificationStatus.VERIFIED;
 
@@ -113,24 +112,34 @@ export function IbanRow({
         </div>
 
         {canDelete && (
-          <button
-            onClick={() => setConfirmOpen(true)}
-            className="btn btn-icon-only btn-sm text-error hover:bg-error/10 flex-shrink-0"
-            title={t('payees.list.delete')}
-          >
-            ✕
-          </button>
+          pendingDelete ? (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => setPendingDelete(false)}
+                className="rm-btn-cancel-iban-del"
+                title={t('payees.iban.cancel')}
+              >
+                ✕
+              </button>
+              <button
+                onClick={() => { setPendingDelete(false); onDeleteIban(iban.id); }}
+                className="rm-btn-confirm-iban-del"
+                title={t('payees.list.delete')}
+              >
+                ✓
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setPendingDelete(true)}
+              className="rm-btn-del-iban flex-shrink-0"
+              title={t('payees.list.delete')}
+            >
+              🗑
+            </button>
+          )
         )}
       </div>
-
-      <ConfirmDialog
-        isOpen={confirmOpen}
-        title={t('payees.iban.deleteTitle')}
-        message={t('payees.iban.deleteMessage', { iban: iban.iban })}
-        confirmLabel={t('payees.list.delete')}
-        onConfirm={() => { setConfirmOpen(false); onDeleteIban(iban.id); }}
-        onCancel={() => setConfirmOpen(false)}
-      />
     </div>
   );
 }
