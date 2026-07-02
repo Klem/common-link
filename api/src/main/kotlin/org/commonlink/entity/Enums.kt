@@ -169,4 +169,6 @@ enum class PayoutBlockingReason {
     IBAN_NOT_VERIFIED,
     /** The requested amount exceeds the campaign's available balance. */
     INSUFFICIENT_BALANCE,
+    /** The payout label/justification is shorter than 16 characters once trimmed. */
+    DESCRIPTION_TOO_SHORT,
 }

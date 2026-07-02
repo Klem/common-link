@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — Dev Seed Data
--- Run once on a clean (migrated) database (through V32).
+-- Run once on a clean (migrated) database (through V33).
 -- =============================================================
 -- Hashes below are real BCrypt ($2a, cost 12) — no edit needed.
 --   Test1234!  -> association
@@ -661,11 +661,11 @@ DO $$
                                    );
 
                             INSERT INTO payouts
-                            (id, campaign_id, payee_id, payee_iban_id, amount, kind, type_code, label,
+                            (id, campaign_id, payee_id, payee_iban_id, payee_iban_value, amount, kind, type_code, label,
                              status, created_at, confirmed_at, onchain_job_id)
                             VALUES (
                                        v_payout_id, v_camp[slot],
-                                       v_payee_ids[v_pidx], v_payee_iban_ids[v_pidx],
+                                       v_payee_ids[v_pidx], v_payee_iban_ids[v_pidx], v_payee_iban[v_pidx],
                                        v_line_amt, v_exp_kind[k], v_exp_code[k], v_exp_label[k],
                                        v_payout_status, don_date, v_payout_conf, v_job_id
                                    );
@@ -703,11 +703,11 @@ DO $$
                                );
 
                         INSERT INTO payouts
-                        (id, campaign_id, payee_id, payee_iban_id, amount, kind, type_code, label,
+                        (id, campaign_id, payee_id, payee_iban_id, payee_iban_value, amount, kind, type_code, label,
                          status, created_at, confirmed_at, onchain_job_id)
                         VALUES (
                                    v_payout_id, v_camp[slot],
-                                   v_person_ids[i], v_person_iban_ids[i],
+                                   v_person_ids[i], v_person_iban_ids[i], v_person_iban[i],
                                    v_person_amounts[i], 'REMUNERATION', '64-rem',
                                    'Indemnités d''intervention — ' || v_person_names[i],
                                    'CONFIRMED', don_date, v_payout_conf, v_job_id

@@ -369,7 +369,8 @@
       "create": "Create a campaign",
       "defaultName": "New campaign",
       "delete": "Delete",
-      "deleteConfirm": "Delete this campaign? This action is irreversible.",
+      "deleteCancel": "Cancel deletion",
+      "deleteConfirmAction": "Confirm deletion",
       "donors": {
         "detail": {
           "close": "Close",
@@ -515,7 +516,6 @@
           "amountLabel": "From what amount?",
           "current": "In progress",
           "deleteConfirm": "Delete this milestone?",
-          "deleteConfirm2": "Confirm?",
           "descPlaceholder": "Description of the concrete impact of this milestone…",
           "emptyCreate": "Create my first milestone →",
           "emptyDesc": "Milestones show donors the impact of their donations at each threshold. It is the most powerful trust lever of a successful campaign.",
@@ -581,7 +581,7 @@
       "pageTitle": "Campaigns",
       "payments": {
         "blocking": {
-          "ibanNotVerified": "Beneficiary IBAN not verified",
+          "descriptionTooShort": "Description too short (16 characters minimum)",
           "insufficientBalance": "Insufficient available balance"
         },
         "breakdown": {
@@ -801,8 +801,6 @@
         "count": "{count} entry(ies)",
         "deactivate": "Deactivate",
         "delete": "Delete",
-        "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
-        "deleteTitle": "Delete beneficiary",
         "empty": "No beneficiary selected.",
         "emptyFiltered": "No beneficiary matches this filter.",
         "emptyHint": "Search for a SIREN/SIRET and click Select.",

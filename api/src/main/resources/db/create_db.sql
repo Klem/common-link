@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — create_db.sql
--- Schéma consolidé : état final équivalent aux migrations V1 → V32.
+-- Schéma consolidé : état final équivalent aux migrations V1 → V33.
 --
 -- Ce script remplace l'exécution séquentielle des 27 migrations Flyway
 -- par les formes finales : les ALTER / RENAME / DROP INDEX intermédiaires
@@ -198,7 +198,7 @@ CREATE TABLE payee_ibans
 CREATE INDEX payee_ibans_payee_idx ON payee_ibans (payee_id);
 
 -- =============================================================
--- 4. CAMPAGNES & BUDGET  (V9 ; budget_hash ajouté en V17)
+-- 4. CAMPAGNES & BUDGET  (V9 ; budget_hash ajouté en V17, VARCHAR en V34)
 -- =============================================================
 
 CREATE TABLE campaigns
@@ -213,7 +213,7 @@ CREATE TABLE campaigns
     status           VARCHAR(20)   NOT NULL DEFAULT 'DRAFT',
     start_date       DATE,
     end_date         DATE,
-    budget_hash      CHAR(66),
+    budget_hash      VARCHAR(66),
     category         VARCHAR(50),                                   -- V29
     reason           TEXT,                                          -- V29
     impact_goals     TEXT,                                          -- V29
@@ -334,24 +334,25 @@ CREATE TABLE onchain_jobs
 CREATE INDEX idx_onchain_jobs_status_created ON onchain_jobs (status, created_at);
 
 -- =============================================================
--- 7. PAYOUTS  (V26)
+-- 7. PAYOUTS  (V26 ; payee_iban_value snapshot + FK drop en V33)
 -- =============================================================
 
 CREATE TABLE payouts
 (
-    id             UUID           PRIMARY KEY,
-    campaign_id    UUID           NOT NULL REFERENCES campaigns(id),
-    payee_id       UUID           NOT NULL REFERENCES payees(id),
-    payee_iban_id  UUID           NOT NULL REFERENCES payee_ibans(id),
-    amount         NUMERIC(12,2)  NOT NULL,
-    kind           VARCHAR(20)    NOT NULL CHECK (kind IN ('REMUNERATION', 'EXPENSE')),
-    type_code      VARCHAR(50)    NOT NULL,
-    label          VARCHAR(500)   NOT NULL,
-    status         VARCHAR(20)    NOT NULL DEFAULT 'PENDING'
+    id                UUID           PRIMARY KEY,
+    campaign_id       UUID           NOT NULL REFERENCES campaigns(id),
+    payee_id          UUID           NOT NULL REFERENCES payees(id),
+    payee_iban_id     UUID           NOT NULL, -- V33 : FK vers payee_ibans supprimée (snapshot ci-dessous)
+    payee_iban_value  VARCHAR(34)    NOT NULL, -- V33 : IBAN figé au moment du payout
+    amount            NUMERIC(12,2)  NOT NULL,
+    kind              VARCHAR(20)    NOT NULL CHECK (kind IN ('REMUNERATION', 'EXPENSE')),
+    type_code         VARCHAR(50)    NOT NULL,
+    label             VARCHAR(500)   NOT NULL,
+    status            VARCHAR(20)    NOT NULL DEFAULT 'PENDING'
         CHECK (status IN ('PENDING', 'CONFIRMED', 'FAILED')),
-    created_at     TIMESTAMPTZ    NOT NULL DEFAULT now(),
-    confirmed_at   TIMESTAMPTZ,
-    onchain_job_id UUID
+    created_at        TIMESTAMPTZ    NOT NULL DEFAULT now(),
+    confirmed_at      TIMESTAMPTZ,
+    onchain_job_id    UUID
 );
 
 CREATE INDEX idx_payouts_campaign_status  ON payouts (campaign_id, status);

@@ -1882,7 +1882,8 @@ tbody tr:last-child td { border-bottom: none; }
 .budget-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @media(max-width:700px) { .budget-cols { grid-template-columns: 1fr; } }
 .col-head { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; color: var(--ink-navy); }
-.bsec { background: var(--soft-cream); border: 1px solid rgba(230,228,244,.8); border-radius: var(--radius-md); margin-bottom: 8px; overflow: hidden; }
+.bsec, .bsec-add-form { background: var(--soft-cream); border: 1px solid rgba(230,228,244,.8); border-radius: var(--radius-md); margin-bottom: 8px; }
+.bsec { overflow: hidden; }
 .bsec-h { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; cursor: pointer; user-select: none; }
 .bsec-h:hover { background: rgba(78,205,196,.04); }
 .bsec-code { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: .03em; }
@@ -1992,6 +1993,11 @@ tbody tr:last-child td { border-bottom: none; }
 .ms-guided-bar-fill { height: 100%; border-radius: 2px; transition: width .5s ease; }
 .ms-remove { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--slate-lavender); cursor: pointer; font-size: 14px; padding: 4px; border-radius: 6px; }
 .ms-remove:hover { color: var(--warm-coral); background: rgba(255,107,91,.08); }
+.ms-remove-confirm { position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 4px; }
+.ms-remove-cancel { width: 22px; height: 22px; border-radius: 5px; background: rgba(98,98,125,.08); border: 1px solid var(--mist-lavender); color: var(--slate-lavender); cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; transition: all var(--tb); }
+.ms-remove-cancel:hover { background: rgba(98,98,125,.15); color: var(--ink-navy); }
+.ms-remove-ok { width: 22px; height: 22px; border-radius: 5px; background: rgba(255,107,91,.08); border: 1px solid rgba(255,107,91,.25); color: var(--warm-coral); cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; transition: all var(--tb); }
+.ms-remove-ok:hover { background: rgba(255,107,91,.18); }
 .ms-emoji { font-size: 24px; cursor: pointer; flex-shrink: 0; position: relative; }
 .ms-emoji-pick { display: none; position: absolute; top: 100%; left: 0; background: var(--white); border: 1px solid var(--mist-lavender); border-radius: var(--radius-md); padding: 8px; z-index: 50; flex-wrap: wrap; gap: 4px; width: 240px; box-shadow: var(--shadow-lg); }
 .ms-emoji-pick.open { display: flex; }

@@ -386,4 +386,16 @@ class CampaignControllerTest {
         )
             .andExpect(status().isUnauthorized)
     }
+
+    @Test
+    fun `deleteMilestone - 422 when milestone is not LOCKED`() {
+        every { campaignService.deleteMilestone(userId, campaignId, milestoneId) } throws
+            UnprocessableEntityException("Cannot delete milestone in status CURRENT; only LOCKED milestones can be deleted")
+
+        mockMvc.perform(
+            delete("/api/association/campaigns/$campaignId/milestones/$milestoneId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isUnprocessableContent)
+    }
 }

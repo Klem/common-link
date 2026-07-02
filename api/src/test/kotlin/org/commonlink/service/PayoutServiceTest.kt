@@ -207,7 +207,7 @@ class PayoutServiceTest {
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
         every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
 
-        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), userId)
+        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "Achat matériel pédagogique", userId)
 
         assertThat(reasons).isEmpty()
     }
@@ -223,11 +223,24 @@ class PayoutServiceTest {
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("900")
         every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
 
-        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), userId)
+        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "Achat matériel pédagogique", userId)
 
         assertThat(reasons).containsExactlyInAnyOrder(
             org.commonlink.entity.PayoutBlockingReason.IBAN_NOT_VERIFIED,
             org.commonlink.entity.PayoutBlockingReason.INSUFFICIENT_BALANCE,
         )
+    }
+
+    @Test
+    fun `computeBlockingReasons - label under 16 chars returns DESCRIPTION_TOO_SHORT`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
+        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+
+        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "trop court", userId)
+
+        assertThat(reasons).containsExactly(org.commonlink.entity.PayoutBlockingReason.DESCRIPTION_TOO_SHORT)
     }
 }

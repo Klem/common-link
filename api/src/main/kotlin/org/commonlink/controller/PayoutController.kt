@@ -129,11 +129,12 @@ class PayoutController(private val payoutService: PayoutService) {
         @PathVariable campaignId: UUID,
         @RequestParam payeeIbanId: UUID,
         @RequestParam amount: BigDecimal,
+        @RequestParam(defaultValue = "") label: String,
         @AuthenticationPrincipal principal: UserDetails,
     ): ResponseEntity<PayoutBlockingReasonsDto> =
         ResponseEntity.ok(
             PayoutBlockingReasonsDto(
-                payoutService.computeBlockingReasons(campaignId, payeeIbanId, amount, UUID.fromString(principal.username))
+                payoutService.computeBlockingReasons(campaignId, payeeIbanId, amount, label, UUID.fromString(principal.username))
             )
         )
 }

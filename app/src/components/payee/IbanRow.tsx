@@ -31,8 +31,6 @@ export function IbanRow({
   const t = useTranslations('dashboard');
   const [pendingDelete, setPendingDelete] = useState(false);
 
-  const canDelete = iban.status !== IbanVerificationStatus.VERIFIED;
-
   const renderActions = () => {
     if (isVerifyingVop) {
       return (
@@ -44,18 +42,20 @@ export function IbanRow({
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
-            className="btn btn-secondary btn-xs whitespace-nowrap"
+            className="btn btn-icon-only btn-sm"
+            title={t('payees.iban.verify')}
           >
-            {t('payees.iban.verify')}
+            ⟳
           </button>
         );
       case IbanVerificationStatus.FORMAT_VALID:
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
-            className="btn btn-primary btn-xs whitespace-nowrap"
+            className="btn btn-icon-only btn-sm"
+            title={t('payees.iban.verifyVop')}
           >
-            {t('payees.iban.verifyVop')}
+            ⟳
           </button>
         );
       case IbanVerificationStatus.VERIFIED:
@@ -111,33 +111,31 @@ export function IbanRow({
           {renderActions()}
         </div>
 
-        {canDelete && (
-          pendingDelete ? (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                onClick={() => setPendingDelete(false)}
-                className="rm-btn-cancel-iban-del"
-                title={t('payees.iban.cancel')}
-              >
-                ✕
-              </button>
-              <button
-                onClick={() => { setPendingDelete(false); onDeleteIban(iban.id); }}
-                className="rm-btn-confirm-iban-del"
-                title={t('payees.list.delete')}
-              >
-                ✓
-              </button>
-            </div>
-          ) : (
+        {pendingDelete ? (
+          <div className="flex items-center gap-1 flex-shrink-0">
             <button
-              onClick={() => setPendingDelete(true)}
-              className="rm-btn-del-iban flex-shrink-0"
+              onClick={() => setPendingDelete(false)}
+              className="rm-btn-cancel-iban-del"
+              title={t('payees.iban.cancel')}
+            >
+              ✕
+            </button>
+            <button
+              onClick={() => { setPendingDelete(false); onDeleteIban(iban.id); }}
+              className="rm-btn-confirm-iban-del"
               title={t('payees.list.delete')}
             >
-              🗑
+              ✓
             </button>
-          )
+          </div>
+        ) : (
+          <button
+            onClick={() => setPendingDelete(true)}
+            className="rm-btn-del-iban flex-shrink-0"
+            title={t('payees.list.delete')}
+          >
+            🗑
+          </button>
         )}
       </div>
     </div>

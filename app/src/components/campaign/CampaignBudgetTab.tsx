@@ -25,6 +25,9 @@ interface AddSectionFormState {
 
 type ColFilter = 'both' | 'expense' | 'revenue';
 
+/** Identifies the single section or item currently armed for 2-step deletion, app-wide. */
+type ArmedDelete = { kind: 'section'; sIdx: number } | { kind: 'item'; sIdx: number; iIdx: number } | null;
+
 const TEMPLATES_META: { type: BudgetTemplateType; emoji: string; nameKey: string; descKey: string }[] = [
   { type: 'standard', emoji: '📋', nameKey: 'tplStandard', descKey: 'tplStandardDesc' },
   { type: 'simple',   emoji: '📝', nameKey: 'tplSimple',   descKey: 'tplSimpleDesc'   },
@@ -56,20 +59,27 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
   const [addForm, setAddForm] = useState<AddSectionFormState | null>(null);
   const [selectedTpl, setSelectedTpl] = useState<BudgetTemplateType>('standard');
   const [colFilter, setColFilter] = useState<ColFilter>('both');
+  const [armedDelete, setArmedDelete] = useState<ArmedDelete>(null);
 
   useEffect(() => {
     init(campaign.budgetSections);
   }, [campaign.budgetSections, init]);
 
   const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback(() => {
+    // Backend rejects blank item labels (422) — never autosave a section/item that's still mid-edit.
+    const hasIncompleteItem = sections.some((s) => s.items.some((it) => !it.label.trim()));
+    if (hasIncompleteItem) return;
     save(campaign.id, true).then((updated) => { if (updated) onBudgetSaved(updated); });
   });
 
   const handleUpdateItemLabel = (sIdx: number, iIdx: number, v: string) => { updateItemLabel(sIdx, iIdx, v); scheduleAutosave(); };
   const handleUpdateItemAmount = (sIdx: number, iIdx: number, v: number) => { updateItemAmount(sIdx, iIdx, v); scheduleAutosave(); };
   const handleAddItem = (sIdx: number) => { addItem(sIdx); scheduleAutosave(); };
-  const handleRemoveItem = (sIdx: number, iIdx: number) => { removeItem(sIdx, iIdx); scheduleAutosave(); };
-  const handleRemoveSectionEdit = (sIdx: number) => { removeSection(sIdx); scheduleAutosave(); };
+  const handleRemoveItem = (sIdx: number, iIdx: number) => { removeItem(sIdx, iIdx); setArmedDelete(null); scheduleAutosave(); };
+  const handleRemoveSectionEdit = (sIdx: number) => { removeSection(sIdx); setArmedDelete(null); scheduleAutosave(); };
+  const armSectionDelete = (sIdx: number) => setArmedDelete({ kind: 'section', sIdx });
+  const armItemDelete = (sIdx: number, iIdx: number) => setArmedDelete({ kind: 'item', sIdx, iIdx });
+  const cancelArmedDelete = () => setArmedDelete(null);
 
   const isEmpty = sections.length === 0;
 
@@ -206,12 +216,17 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
                       sIdx={i}
                       side="ch"
                       isOpen={!collapsedSections.has(i)}
+                      isSectionArmed={armedDelete?.kind === 'section' && armedDelete.sIdx === i}
+                      isItemArmed={(iIdx) => armedDelete?.kind === 'item' && armedDelete.sIdx === i && armedDelete.iIdx === iIdx}
                       onToggle={toggleSection}
                       onUpdateLabel={handleUpdateItemLabel}
                       onUpdateAmount={handleUpdateItemAmount}
                       onAddItem={handleAddItem}
                       onRemoveItem={handleRemoveItem}
                       onRemoveSection={handleRemoveSectionEdit}
+                      onArmSectionDelete={armSectionDelete}
+                      onArmItemDelete={armItemDelete}
+                      onCancelArm={cancelArmedDelete}
                       addItemLabel={t('editor.budget.addItem')}
                       labelPlaceholder={t('editor.budget.labelPlaceholder')}
                       amountPlaceholder={t('editor.budget.amountPlaceholder')}
@@ -250,12 +265,17 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
                       isOpen={!collapsedSections.has(i)}
                       isFixed={isFixedRevenueSection(s)}
                       fixedHint={t('editor.budget.fixedRevenueHint')}
+                      isSectionArmed={armedDelete?.kind === 'section' && armedDelete.sIdx === i}
+                      isItemArmed={(iIdx) => armedDelete?.kind === 'item' && armedDelete.sIdx === i && armedDelete.iIdx === iIdx}
                       onToggle={toggleSection}
                       onUpdateLabel={handleUpdateItemLabel}
                       onUpdateAmount={handleUpdateItemAmount}
                       onAddItem={handleAddItem}
                       onRemoveItem={handleRemoveItem}
                       onRemoveSection={handleRemoveSectionEdit}
+                      onArmSectionDelete={armSectionDelete}
+                      onArmItemDelete={armItemDelete}
+                      onCancelArm={cancelArmedDelete}
                       addItemLabel={t('editor.budget.addItem')}
                       labelPlaceholder={t('editor.budget.labelPlaceholder')}
                       amountPlaceholder={t('editor.budget.amountPlaceholder')}
@@ -308,29 +328,35 @@ interface BudgetSectionProps {
   isFixed?: boolean;
   /** Tooltip explaining why the row is locked. Required when `isFixed`. */
   fixedHint?: string;
+  /** True if this section is currently armed for 2-step deletion. */
+  isSectionArmed: boolean;
+  /** True if the item at `iIdx` is currently armed for 2-step deletion. */
+  isItemArmed: (iIdx: number) => boolean;
   onToggle: (sIdx: number) => void;
   onUpdateLabel: (sIdx: number, iIdx: number, v: string) => void;
   onUpdateAmount: (sIdx: number, iIdx: number, v: number) => void;
   onAddItem: (sIdx: number) => void;
   onRemoveItem: (sIdx: number, iIdx: number) => void;
   onRemoveSection: (sIdx: number) => void;
+  onArmSectionDelete: (sIdx: number) => void;
+  onArmItemDelete: (sIdx: number, iIdx: number) => void;
+  onCancelArm: () => void;
   addItemLabel: string;
   labelPlaceholder: string;
   amountPlaceholder: string;
 }
 
 function BudgetSection({
-  section, sIdx, side, isOpen, isFixed = false, fixedHint,
+  section, sIdx, side, isOpen, isFixed = false, fixedHint, isSectionArmed, isItemArmed,
   onToggle, onUpdateLabel, onUpdateAmount, onAddItem, onRemoveItem, onRemoveSection,
+  onArmSectionDelete, onArmItemDelete, onCancelArm,
   addItemLabel, labelPlaceholder, amountPlaceholder,
 }: BudgetSectionProps) {
-  const [pendingDelItem, setPendingDelItem] = useState<number | null>(null);
-  const [pendingDelSection, setPendingDelSection] = useState(false);
   const sectionTotal = section.items.reduce((s, it) => s + (it.amount || 0), 0);
 
   return (
     <div className={`bsec${isOpen ? ' open' : ''}`}>
-      <div className="bsec-h" onClick={() => { if (!pendingDelSection) onToggle(sIdx); }}>
+      <div className="bsec-h" onClick={() => { if (!isSectionArmed) onToggle(sIdx); }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 600, color: 'var(--ink-navy)' }}>
           <span className={`bsec-code ${side}`}>{section.code}</span>
           {section.name}
@@ -341,20 +367,20 @@ function BudgetSection({
             <span className="bsec-del" style={{ opacity: 0.35, cursor: 'default' }} title={fixedHint}>🔒</span>
           ) : (
             <>
-              <div className={`bsec-del-confirm${pendingDelSection ? ' show' : ''}`}>
+              <div className={`bsec-del-confirm${isSectionArmed ? ' show' : ''}`}>
+                <button
+                  className="line-del-cancel"
+                  onClick={(e) => { e.stopPropagation(); onCancelArm(); }}
+                >✕</button>
                 <button
                   className="line-del-ok"
                   onClick={(e) => { e.stopPropagation(); onRemoveSection(sIdx); }}
                 >✓</button>
-                <button
-                  className="line-del-cancel"
-                  onClick={(e) => { e.stopPropagation(); setPendingDelSection(false); }}
-                >✕</button>
               </div>
-              {!pendingDelSection && (
+              {!isSectionArmed && (
                 <button
                   className="bsec-del"
-                  onClick={(e) => { e.stopPropagation(); setPendingDelSection(true); }}
+                  onClick={(e) => { e.stopPropagation(); onArmSectionDelete(sIdx); }}
                 >✕</button>
               )}
             </>
@@ -370,7 +396,7 @@ function BudgetSection({
               <input
                 type="text"
                 value={item.label}
-                onChange={(e) => { setPendingDelItem(null); onUpdateLabel(sIdx, iIdx, e.target.value); }}
+                onChange={(e) => { if (isItemArmed(iIdx)) onCancelArm(); onUpdateLabel(sIdx, iIdx, e.target.value); }}
                 placeholder={labelPlaceholder}
                 disabled={isFixed}
                 title={isFixed ? fixedHint : undefined}
@@ -392,18 +418,18 @@ function BudgetSection({
               <span className="line-del" style={{ opacity: 0.35, cursor: 'default' }} title={fixedHint}>🔒</span>
             ) : (
               <>
-                <div className={`line-del-confirm${pendingDelItem === iIdx ? ' show' : ''}`}>
-                  <button
-                    className="line-del-ok"
-                    onClick={() => { onRemoveItem(sIdx, iIdx); setPendingDelItem(null); }}
-                  >✓</button>
+                <div className={`line-del-confirm${isItemArmed(iIdx) ? ' show' : ''}`}>
                   <button
                     className="line-del-cancel"
-                    onClick={() => setPendingDelItem(null)}
+                    onClick={() => onCancelArm()}
                   >✕</button>
+                  <button
+                    className="line-del-ok"
+                    onClick={() => onRemoveItem(sIdx, iIdx)}
+                  >✓</button>
                 </div>
-                {pendingDelItem !== iIdx && (
-                  <button className="line-del" onClick={() => setPendingDelItem(iIdx)}>✕</button>
+                {!isItemArmed(iIdx) && (
+                  <button className="line-del" onClick={() => onArmItemDelete(sIdx, iIdx)}>✕</button>
                 )}
               </>
             )}
@@ -467,7 +493,7 @@ function AddSectionButton({
   }
 
   return (
-    <div className="bsec" style={{ padding: '10px', marginTop: '4px' }}>
+    <div className="bsec-add-form" style={{ padding: '10px', marginTop: '4px' }}>
       <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
         <input
           type="text"

@@ -31,6 +31,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-mail")
+    // TODO make sure flyway works
+//    implementation("org.springframework.boot:spring-boot-starter-flyway:4.0.1")
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -38,6 +40,11 @@ dependencies {
     // jackson-module-kotlin never registers with it, so Kotlin default parameter values
     // are silently ignored and omitted fields NPE instead of falling back to their default.
     implementation("tools.jackson.module:jackson-module-kotlin")
+    // JacksonConfig still hand-builds a classic com.fasterxml.jackson.databind.ObjectMapper
+    // bean (used by OnchainJobWorker/PayoutConfirmer for outbox payload JSON) — that one
+    // needs the Jackson 2.x kotlin module or Kotlin data classes fail with
+    // "no Creators, like default constructor, exist".
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     // Database
     runtimeOnly("org.postgresql:postgresql")

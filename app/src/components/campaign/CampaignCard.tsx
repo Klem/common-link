@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { ROUTES } from '@/lib/routes';
@@ -35,6 +36,7 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
   const locale = useLocale();
   const t = useTranslations('dashboard');
   const { addToast } = useToastStore();
+  const [pendingDelete, setPendingDelete] = useState(false);
 
   const pct = campaign.goal > 0
     ? Math.round((campaign.raised / campaign.goal) * 100)
@@ -50,14 +52,23 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
     router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}/${campaign.id}`);
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const armDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(t('campaigns.deleteConfirm'))) {
-      try {
-        await onDelete(campaign.id);
-      } catch {
-        addToast('error', 'errors.campaignDeleteBlocked');
-      }
+    setPendingDelete(true);
+  };
+
+  const cancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPendingDelete(false);
+  };
+
+  const confirmDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPendingDelete(false);
+    try {
+      await onDelete(campaign.id);
+    } catch {
+      addToast('error', 'errors.campaignDeleteBlocked');
     }
   };
 
@@ -135,16 +146,35 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
               </button>
             </>
           )}
-          {isDraft && (
+          {isDraft && (pendingDelete ? (
+            <>
+              <button
+                className="btn btn-sm btn-ghost"
+                onClick={cancelDelete}
+                aria-label={t('campaigns.deleteCancel')}
+                title={t('campaigns.deleteCancel')}
+              >
+                ✕
+              </button>
+              <button
+                className="btn btn-coral btn-sm"
+                onClick={confirmDelete}
+                aria-label={t('campaigns.deleteConfirmAction')}
+                title={t('campaigns.deleteConfirmAction')}
+              >
+                ✓
+              </button>
+            </>
+          ) : (
             <button
               className="btn btn-sm btn-ghost"
-              onClick={handleDelete}
+              onClick={armDelete}
               aria-label={t('campaigns.delete')}
               title={t('campaigns.delete')}
             >
               🗑
             </button>
-          )}
+          ))}
         </div>
       </div>
     </div>

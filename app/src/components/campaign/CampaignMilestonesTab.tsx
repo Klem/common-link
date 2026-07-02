@@ -128,7 +128,6 @@ function MilestoneCard({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTitle(milestone.title);
@@ -144,14 +143,6 @@ function MilestoneCard({
     if (pickerOpen) document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
   }, [pickerOpen]);
-
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (cardRef.current && !cardRef.current.contains(e.target as Node)) setPendingDelete(false);
-    }
-    if (pendingDelete) document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [pendingDelete]);
 
   const { schedule: scheduleUpdate } = useDebouncedPatchSave<UpdateMilestoneRequest>(
     (patch) => onUpdate(campaignId, milestone.id, patch),
@@ -169,12 +160,8 @@ function MilestoneCard({
     setPickerOpen(false);
     onUpdate(campaignId, milestone.id, { emoji });
   };
-  const handleDeleteClick = () => {
-    if (pendingDelete) { onDelete(milestone.id); }
-    else { setPendingDelete(true); }
-  };
-
   const isLockedForEdit = milestone.status === MilestoneStatus.CURRENT || milestone.status === MilestoneStatus.REACHED;
+  const canDelete = milestone.status === MilestoneStatus.LOCKED;
 
   const numericAmount = parseFloat(targetAmount);
   const isUnreachable = !isNaN(numericAmount) && numericAmount > campaignGoal;
@@ -200,16 +187,28 @@ function MilestoneCard({
     n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
   return (
-    <div className={cardCls} ref={cardRef}>
-      {/* 2-step delete */}
-      <button
-        type="button"
-        className="ms-remove"
-        onClick={handleDeleteClick}
-        style={pendingDelete ? { color: 'var(--warm-coral)', fontWeight: 700, fontSize: '10px', width: 'auto', right: '8px' } : undefined}
-      >
-        {pendingDelete ? t('editor.milestones.deleteConfirm2') : '✕'}
-      </button>
+    <div className={cardCls}>
+      {/* 2-step delete — only LOCKED milestones can be deleted */}
+      {canDelete && (pendingDelete ? (
+        <div className="ms-remove-confirm">
+          <button
+            type="button"
+            className="ms-remove-cancel"
+            onClick={() => setPendingDelete(false)}
+          >✕</button>
+          <button
+            type="button"
+            className="ms-remove-ok"
+            onClick={() => onDelete(milestone.id)}
+          >✓</button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="ms-remove"
+          onClick={() => setPendingDelete(true)}
+        >✕</button>
+      ))}
 
       {/* Header: emoji + step number + title */}
       <div className="ms-guided-header">

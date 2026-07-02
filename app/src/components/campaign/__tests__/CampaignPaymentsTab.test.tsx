@@ -336,7 +336,7 @@ describe('CampaignPaymentsTab', () => {
   // ── Lot 1: payment blocking reason pills ───────────────────────────────────
 
   it('renders a pill and disables submit when a blocking reason is active', async () => {
-    mockGetBlockingReasons.mockResolvedValue(['IBAN_NOT_VERIFIED']);
+    mockGetBlockingReasons.mockResolvedValue(['INSUFFICIENT_BALANCE']);
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
@@ -348,8 +348,23 @@ describe('CampaignPaymentsTab', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('blocking.ibanNotVerified')).toBeDefined();
+      expect(screen.getByText('blocking.insufficientBalance')).toBeDefined();
     });
+    expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('renders the descriptionTooShort pill client-side, without waiting on the blocking-reasons API', async () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
+    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
+    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
+      target: { value: 'dfgdfg' },
+    });
+
+    expect(screen.getByText('blocking.descriptionTooShort')).toBeDefined();
     expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -362,6 +377,6 @@ describe('CampaignPaymentsTab', () => {
 
     await waitFor(() => expect(mockGetBlockingReasons).toHaveBeenCalled());
     expect(screen.queryByText('blocking.insufficientBalance')).toBeNull();
-    expect(screen.queryByText('blocking.ibanNotVerified')).toBeNull();
+    expect(screen.queryByText('blocking.descriptionTooShort')).toBeNull();
   });
 });

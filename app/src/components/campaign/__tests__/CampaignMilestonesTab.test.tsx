@@ -133,11 +133,25 @@ describe('CampaignMilestonesTab', () => {
     expect(screen.getByText(/editor\.milestones\.fieldsLockedReached/)).toBeInTheDocument();
   });
 
-  it('keeps the card itself visible and does not disable the delete button when locked', () => {
-    const campaign = { ...baseCampaign, milestones: [{ ...milestoneBase, status: 'REACHED' as const }] };
+  it('shows the delete button for a LOCKED milestone', () => {
+    const campaign = { ...baseCampaign, milestones: [milestoneBase] };
     render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
     expect(screen.getByDisplayValue('Premier palier')).toBeInTheDocument();
     expect(screen.getByText('✕')).not.toBeDisabled();
+  });
+
+  it('hides the delete button for a CURRENT milestone', () => {
+    const campaign = { ...baseCampaign, milestones: [{ ...milestoneBase, status: 'CURRENT' as const }] };
+    render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+    expect(screen.getByDisplayValue('Premier palier')).toBeInTheDocument();
+    expect(screen.queryByText('✕')).not.toBeInTheDocument();
+  });
+
+  it('hides the delete button for a REACHED milestone', () => {
+    const campaign = { ...baseCampaign, milestones: [{ ...milestoneBase, status: 'REACHED' as const }] };
+    render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+    expect(screen.getByDisplayValue('Premier palier')).toBeInTheDocument();
+    expect(screen.queryByText('✕')).not.toBeInTheDocument();
   });
 
   it('shows unreachable badge when targetAmount exceeds campaign goal', () => {
@@ -153,10 +167,10 @@ describe('CampaignMilestonesTab', () => {
 
     const deleteBtn = screen.getByText('✕');
     fireEvent.click(deleteBtn);
-    expect(screen.getByText('editor.milestones.deleteConfirm2')).toBeInTheDocument();
+    expect(screen.getByText('✓')).toBeInTheDocument();
     expect(mockHookBase.removeExistingMilestone).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByText('editor.milestones.deleteConfirm2'));
+    fireEvent.click(screen.getByText('✓'));
     expect(mockHookBase.removeExistingMilestone).toHaveBeenCalledWith('camp-1', 'ms-1');
   });
 

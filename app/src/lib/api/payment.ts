@@ -48,9 +48,10 @@ export const getBlockingReasons = (
   campaignId: string,
   payeeIbanId: string,
   amount: number,
+  label: string,
 ): Promise<PayoutBlockingReason[]> =>
   api
     .get<{ reasons: PayoutBlockingReason[] }>(`${base(campaignId)}/blocking-reasons`, {
-      params: { payeeIbanId, amount },
+      params: { payeeIbanId, amount, label },
     })
     .then((r) => r.data.reasons);

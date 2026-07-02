@@ -13,7 +13,8 @@ import { PayoutKind, PayoutStatus } from '@/types/payment';
 import { IbanVerificationStatus } from '@/types/payee';
 import { ROUTES } from '@/lib/routes';
 import type { CampaignDto } from '@/types/campaign';
-import type { PayoutDto, PayoutBlockingReason } from '@/types/payment';
+import { PayoutBlockingReason } from '@/types/payment';
+import type { PayoutDto } from '@/types/payment';
 
 interface Props {
   campaign: CampaignDto;
@@ -21,6 +22,12 @@ interface Props {
 }
 
 const REMUNERATION_CODES = new Set(['64-rem', '64-soc']);
+const MIN_LABEL_LENGTH = 16;
+
+const BLOCKING_REASON_LABEL_KEYS: Record<PayoutBlockingReason, string> = {
+  INSUFFICIENT_BALANCE: 'insufficientBalance',
+  DESCRIPTION_TOO_SHORT: 'descriptionTooShort',
+};
 
 function kindFromTypeCode(code: string) {
   return REMUNERATION_CODES.has(code) ? PayoutKind.REMUNERATION : PayoutKind.EXPENSE;
@@ -89,15 +96,25 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     }
     let cancelled = false;
     const timer = setTimeout(() => {
-      getBlockingReasons(campaign.id, payeeIbanId, amountNum)
+      getBlockingReasons(campaign.id, payeeIbanId, amountNum, '')
         .then((reasons) => { if (!cancelled) setBlockingReasons(reasons); })
         .catch(() => { if (!cancelled) setBlockingReasons([]); });
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [campaign.id, payeeIbanId, amountNum]);
 
+  const isDescriptionTooShort = label.trim().length > 0 && label.trim().length < MIN_LABEL_LENGTH;
+
+  const displayedBlockingReasons = useMemo(() => {
+    const reasons: PayoutBlockingReason[] = blockingReasons.filter(
+      (r) => r !== PayoutBlockingReason.DESCRIPTION_TOO_SHORT,
+    );
+    if (isDescriptionTooShort) reasons.push(PayoutBlockingReason.DESCRIPTION_TOO_SHORT);
+    return reasons;
+  }, [blockingReasons, isDescriptionTooShort]);
+
   const isValid = !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
-    && label.trim().length >= 6 && blockingReasons.length === 0;
+    && label.trim().length >= MIN_LABEL_LENGTH && displayedBlockingReasons.length === 0;
 
   function handleTypeChange(value: string) {
     const newIsRemu = REMUNERATION_CODES.has(value);
@@ -370,11 +387,11 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
             {isSaving ? '…' : t('form.submit')}
           </button>
 
-          {blockingReasons.length > 0 && (
+          {displayedBlockingReasons.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-              {blockingReasons.map((reason) => (
+              {displayedBlockingReasons.map((reason) => (
                 <span key={reason} className="badge badge-warning">
-                  {t(`blocking.${reason === 'IBAN_NOT_VERIFIED' ? 'ibanNotVerified' : 'insufficientBalance'}`)}
+                  {t(`blocking.${BLOCKING_REASON_LABEL_KEYS[reason]}`)}
                 </span>
               ))}
             </div>

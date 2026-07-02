@@ -39,11 +39,13 @@ export interface PayoutDto {
 }
 
 /**
- * A business rule preventing a payout from being issued — mirrors backend PayoutBlockingReason enum.
+ * A business rule preventing a payout from being issued — mirrors backend PayoutBlockingReason enum,
+ * except IBAN_NOT_VERIFIED: the payee-IBAN selector only ever offers VERIFIED IBANs, so the frontend
+ * can never end up in that state and the reason is omitted here.
  */
 export const PayoutBlockingReason = {
-  IBAN_NOT_VERIFIED: 'IBAN_NOT_VERIFIED',
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+  DESCRIPTION_TOO_SHORT: 'DESCRIPTION_TOO_SHORT',
 } as const;
 export type PayoutBlockingReason = (typeof PayoutBlockingReason)[keyof typeof PayoutBlockingReason];
 

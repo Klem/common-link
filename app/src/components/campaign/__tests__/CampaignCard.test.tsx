@@ -129,24 +129,26 @@ describe('CampaignCard', () => {
 
   // ── Delete button ─────────────────────────────────────────────────────────
 
-  it('delete button calls onDelete with campaign id after confirm', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
-    fireEvent.click(screen.getByLabelText('campaigns.delete'));
-    expect(onDelete).toHaveBeenCalledWith('campaign-uuid-1');
-  });
-
-  it('delete button does not call onDelete when confirm is cancelled', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('delete button arms 2-step confirm, then calls onDelete with campaign id', () => {
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('campaigns.delete'));
     expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText('campaigns.deleteConfirmAction'));
+    expect(onDelete).toHaveBeenCalledWith('campaign-uuid-1');
   });
 
-  it('delete button click does not trigger card navigation', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('delete button does not call onDelete when cancel is clicked', () => {
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('campaigns.delete'));
+    fireEvent.click(screen.getByLabelText('campaigns.deleteCancel'));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('campaigns.delete')).toBeInTheDocument();
+  });
+
+  it('delete button clicks do not trigger card navigation', () => {
+    render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
+    fireEvent.click(screen.getByLabelText('campaigns.delete'));
+    fireEvent.click(screen.getByLabelText('campaigns.deleteConfirmAction'));
     expect(mockPush).not.toHaveBeenCalled();
   });
 
@@ -163,10 +165,10 @@ describe('CampaignCard', () => {
   });
 
   it('toasts an error when onDelete rejects (e.g. campaign no longer DRAFT)', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const failingDelete = vi.fn().mockRejectedValue(new Error('422'));
     render(<CampaignCard campaign={baseCampaign} onDelete={failingDelete} />);
     fireEvent.click(screen.getByLabelText('campaigns.delete'));
+    fireEvent.click(screen.getByLabelText('campaigns.deleteConfirmAction'));
     await screen.findByText('Hiver Solidaire 2025'); // let the rejected promise settle
     expect(mockAddToast).toHaveBeenCalledWith('error', 'errors.campaignDeleteBlocked');
   });

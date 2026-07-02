@@ -33,7 +33,7 @@ import java.util.UUID
  * - payee IBAN belongs to the requested payee
  * - campaign belongs to the requesting association
  * - only PENDING payouts can be confirmed
- * - no active [PayoutBlockingReason] (IBAN unverified, insufficient balance) — see [computeBlockingReasons]
+ * - no active [PayoutBlockingReason] (IBAN unverified, insufficient balance, description too short) — see [computeBlockingReasons]
  */
 @Service
 class PayoutService(
@@ -67,7 +67,7 @@ class PayoutService(
             .orElseThrow { NotFoundException("IBAN not found: ${request.payeeIbanId}") }
         if (payeeIban.payee.id != payee.id) throw NotFoundException("IBAN ${request.payeeIbanId} does not belong to payee ${request.payeeId}")
 
-        val blockingReasons = blockingReasonsFor(campaignId, payeeIban, request.amount!!)
+        val blockingReasons = blockingReasonsFor(campaignId, payeeIban, request.amount!!, request.label!!)
         if (blockingReasons.isNotEmpty()) {
             throw ConflictException("Payout blocked: ${blockingReasons.joinToString()}")
         }
@@ -161,21 +161,24 @@ class PayoutService(
      *
      * @throws NotFoundException if campaign or IBAN cannot be found for [userId]'s association.
      */
-    fun computeBlockingReasons(campaignId: UUID, payeeIbanId: UUID, amount: BigDecimal, userId: UUID): List<PayoutBlockingReason> {
+    fun computeBlockingReasons(campaignId: UUID, payeeIbanId: UUID, amount: BigDecimal, label: String, userId: UUID): List<PayoutBlockingReason> {
         val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
         val payeeIban = payeeIbanRepository.findById(payeeIbanId)
             .orElseThrow { NotFoundException("IBAN not found: $payeeIbanId") }
-        return blockingReasonsFor(campaignId, payeeIban, amount)
+        return blockingReasonsFor(campaignId, payeeIban, amount, label)
     }
 
-    private fun blockingReasonsFor(campaignId: UUID, payeeIban: PayeeIban, amount: BigDecimal): List<PayoutBlockingReason> {
+    private fun blockingReasonsFor(campaignId: UUID, payeeIban: PayeeIban, amount: BigDecimal, label: String): List<PayoutBlockingReason> {
         val reasons = mutableListOf<PayoutBlockingReason>()
         if (payeeIban.status != IbanVerificationStatus.VERIFIED) {
             reasons += PayoutBlockingReason.IBAN_NOT_VERIFIED
         }
         if (amount > computeAvailableBalance(campaignId)) {
             reasons += PayoutBlockingReason.INSUFFICIENT_BALANCE
+        }
+        if (label.trim().length < 16) {
+            reasons += PayoutBlockingReason.DESCRIPTION_TOO_SHORT
         }
         return reasons
     }

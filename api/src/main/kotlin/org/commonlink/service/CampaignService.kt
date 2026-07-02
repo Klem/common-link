@@ -376,6 +376,7 @@ class CampaignService(
      * @param milestoneId UUID of the milestone to delete.
      * @throws UserNotFoundException if no association profile exists for this user.
      * @throws NotFoundException if the campaign or milestone is not found.
+     * @throws UnprocessableEntityException if the milestone is not LOCKED (CURRENT/REACHED milestones cannot be deleted).
      */
     @Transactional
     fun deleteMilestone(userId: UUID, campaignId: UUID, milestoneId: UUID) {
@@ -383,6 +384,13 @@ class CampaignService(
         val campaign = resolveCampaign(campaignId, associationId)
         val milestone = campaignMilestoneRepository.findByIdAndCampaignId(milestoneId, campaign.id!!)
             .orElseThrow { NotFoundException("Milestone not found") }
+
+        if (milestone.status != MilestoneStatus.LOCKED) {
+            throw UnprocessableEntityException(
+                "Cannot delete milestone in status ${milestone.status}; only LOCKED milestones can be deleted"
+            )
+        }
+
         campaignMilestoneRepository.delete(milestone)
         logger.info("Milestone deleted: id={}, campaignId={}", milestoneId, campaignId)
     }

@@ -369,7 +369,8 @@
       "create": "Créer une campagne",
       "defaultName": "Nouvelle campagne",
       "delete": "Supprimer",
-      "deleteConfirm": "Supprimer cette campagne ? Cette action est irréversible.",
+      "deleteCancel": "Annuler la suppression",
+      "deleteConfirmAction": "Confirmer la suppression",
       "donors": {
         "detail": {
           "close": "Fermer",
@@ -515,7 +516,6 @@
           "amountLabel": "À partir de quel montant ?",
           "current": "En cours",
           "deleteConfirm": "Supprimer ce milestone ?",
-          "deleteConfirm2": "Confirmer ?",
           "descPlaceholder": "Description de l'impact concret de ce palier…",
           "emptyCreate": "Créer mon premier jalon →",
           "emptyDesc": "Les jalons montrent aux donateurs l'impact de leurs dons à chaque palier. C'est le levier de confiance le plus puissant d'une campagne réussie.",
@@ -581,7 +581,7 @@
       "pageTitle": "Campagnes",
       "payments": {
         "blocking": {
-          "ibanNotVerified": "IBAN du bénéficiaire non vérifié",
+          "descriptionTooShort": "Description trop courte (16 caractères minimum)",
           "insufficientBalance": "Solde disponible insuffisant"
         },
         "breakdown": {
@@ -801,8 +801,6 @@
         "count": "{count} entrée(s)",
         "deactivate": "Désactiver",
         "delete": "Supprimer",
-        "deleteMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible.",
-        "deleteTitle": "Supprimer le bénéficiaire",
         "empty": "Aucun bénéficiaire sélectionné.",
         "emptyFiltered": "Aucun bénéficiaire ne correspond à ce filtre.",
         "emptyHint": "Recherchez un SIREN/SIRET et cliquez sur Sélectionner.",

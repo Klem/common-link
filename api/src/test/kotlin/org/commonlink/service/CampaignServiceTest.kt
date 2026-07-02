@@ -492,6 +492,42 @@ class CampaignServiceTest {
         assertTrue(updated.milestones.isEmpty())
     }
 
+    @Test
+    fun `deleteMilestone - throws when milestone is CURRENT`() {
+        val campaign = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign"))
+        val milestone = campaignService.addMilestone(
+            userId, campaign.id, CreateMilestoneRequest(title = "Current One")
+        )
+        campaignService.updateMilestone(
+            userId, campaign.id, milestone.id, UpdateMilestoneRequest(status = MilestoneStatus.CURRENT)
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.deleteMilestone(userId, campaign.id, milestone.id)
+        }
+
+        val updated = campaignService.getCampaign(userId, campaign.id)
+        assertEquals(1, updated.milestones.size)
+    }
+
+    @Test
+    fun `deleteMilestone - throws when milestone is REACHED`() {
+        val campaign = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign"))
+        val milestone = campaignService.addMilestone(
+            userId, campaign.id, CreateMilestoneRequest(title = "Reached One")
+        )
+        campaignService.updateMilestone(
+            userId, campaign.id, milestone.id, UpdateMilestoneRequest(status = MilestoneStatus.REACHED)
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.deleteMilestone(userId, campaign.id, milestone.id)
+        }
+
+        val updated = campaignService.getCampaign(userId, campaign.id)
+        assertEquals(1, updated.milestones.size)
+    }
+
     // ── reorderMilestones ─────────────────────────────────────────────────────
 
     @Test

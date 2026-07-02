@@ -8,7 +8,6 @@ import type { PayoutDto } from '@/types/payment';
 import { PayoutStatus } from '@/types/payment';
 import { getPayeePayouts } from '@/lib/api/payee';
 import { IbanRow } from './IbanRow';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface PayeeRowProps {
   payee: PayeeDto;
@@ -83,7 +82,7 @@ export function PayeeRow({
   const t = useTranslations('dashboard');
   const [showIbanInput, setShowIbanInput] = useState(false);
   const [ibanValue, setIbanValue] = useState('');
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [payouts, setPayouts] = useState<PayoutDto[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -211,11 +210,24 @@ export function PayeeRow({
                 {t('payees.list.hasPayoutsTooltip')}
               </div>
             </div>
+          ) : pendingDelete ? (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                className="rm-btn-cancel-iban-del"
+                onClick={() => setPendingDelete(false)}
+                title={t('payees.iban.cancel')}
+              >✕</button>
+              <button
+                className="rm-btn-confirm-iban-del"
+                onClick={() => { setPendingDelete(false); onDeletePayee(payee.id); }}
+                title={t('payees.list.delete')}
+              >✓</button>
+            </div>
           ) : (
             <div className="rm-action-with-tip">
               <button
                 className="rm-btn-delete"
-                onClick={() => setConfirmDeleteOpen(true)}
+                onClick={() => setPendingDelete(true)}
               >✕</button>
               <div className="rm-status-tooltip">
                 {t('payees.list.delete')}
@@ -278,15 +290,6 @@ export function PayeeRow({
           </>
         )}
       </div>
-
-      <ConfirmDialog
-        isOpen={confirmDeleteOpen}
-        title={t('payees.list.deleteTitle')}
-        message={t('payees.list.deleteMessage', { name: payee.name })}
-        confirmLabel={t('payees.list.delete')}
-        onConfirm={() => { setConfirmDeleteOpen(false); onDeletePayee(payee.id); }}
-        onCancel={() => setConfirmDeleteOpen(false)}
-      />
     </div>
   );
 }
