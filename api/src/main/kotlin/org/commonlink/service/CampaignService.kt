@@ -326,6 +326,7 @@ class CampaignService(
      * @return Updated [MilestoneDto].
      * @throws UserNotFoundException if no association profile exists for this user.
      * @throws NotFoundException if the campaign or milestone is not found.
+     * @throws UnprocessableEntityException if the milestone is not LOCKED (CURRENT/REACHED milestones are immutable).
      */
     @Transactional
     fun updateMilestone(
@@ -338,6 +339,12 @@ class CampaignService(
         val campaign = resolveCampaign(campaignId, associationId)
         val milestone = campaignMilestoneRepository.findByIdAndCampaignId(milestoneId, campaign.id!!)
             .orElseThrow { NotFoundException("Milestone not found") }
+
+        if (milestone.status != MilestoneStatus.LOCKED) {
+            throw UnprocessableEntityException(
+                "Cannot modify milestone in status ${milestone.status}; only LOCKED milestones can be edited"
+            )
+        }
 
         if (req.title != null) milestone.title = req.title
         if (req.emoji != null) milestone.emoji = req.emoji

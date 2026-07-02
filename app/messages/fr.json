@@ -520,6 +520,8 @@
           "emptyDesc": "Les jalons montrent aux donateurs l'impact de leurs dons à chaque palier. C'est le levier de confiance le plus puissant d'une campagne réussie.",
           "emptyHint": "Recommandé : 3 jalons — petit / moyen / grand impact",
           "emptyTitle": "Aucun jalon défini",
+          "fieldsLockedCurrent": "En cours",
+          "fieldsLockedReached": "Terminé",
           "formulaAmountPlaceholder": "[montant]",
           "formulaCanDo": "nous pourrons",
           "formulaFrom": "À partir de",

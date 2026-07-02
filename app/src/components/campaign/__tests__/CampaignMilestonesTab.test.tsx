@@ -102,6 +102,44 @@ describe('CampaignMilestonesTab', () => {
     expect(screen.getByText(/editor\.milestones\.current/)).toBeInTheDocument();
   });
 
+  it('keeps fields enabled and hides lock pill for a LOCKED milestone', () => {
+    const campaign = { ...baseCampaign, milestones: [milestoneBase] };
+    render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+    expect(screen.getByDisplayValue('Premier palier')).not.toBeDisabled();
+    expect(screen.getByDisplayValue('Acheter du matériel')).not.toBeDisabled();
+    expect(screen.getByDisplayValue('Photos à J+30')).not.toBeDisabled();
+    expect(screen.getByDisplayValue('5000')).not.toBeDisabled();
+    expect(screen.queryByText('editor.milestones.fieldsLockedCurrent')).not.toBeInTheDocument();
+    expect(screen.queryByText('editor.milestones.fieldsLockedReached')).not.toBeInTheDocument();
+  });
+
+  it('disables edit fields and shows the lock pill for a CURRENT milestone', () => {
+    const campaign = { ...baseCampaign, milestones: [{ ...milestoneBase, status: 'CURRENT' as const }] };
+    render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+    expect(screen.getByDisplayValue('Premier palier')).toBeDisabled();
+    expect(screen.getByDisplayValue('Acheter du matériel')).toBeDisabled();
+    expect(screen.getByDisplayValue('Photos à J+30')).toBeDisabled();
+    expect(screen.getByDisplayValue('5000')).toBeDisabled();
+    expect(screen.getByText(/editor\.milestones\.fieldsLockedCurrent/)).toBeInTheDocument();
+  });
+
+  it('disables edit fields and shows the lock pill for a REACHED milestone', () => {
+    const campaign = { ...baseCampaign, milestones: [{ ...milestoneBase, status: 'REACHED' as const }] };
+    render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+    expect(screen.getByDisplayValue('Premier palier')).toBeDisabled();
+    expect(screen.getByDisplayValue('Acheter du matériel')).toBeDisabled();
+    expect(screen.getByDisplayValue('Photos à J+30')).toBeDisabled();
+    expect(screen.getByDisplayValue('5000')).toBeDisabled();
+    expect(screen.getByText(/editor\.milestones\.fieldsLockedReached/)).toBeInTheDocument();
+  });
+
+  it('keeps the card itself visible and does not disable the delete button when locked', () => {
+    const campaign = { ...baseCampaign, milestones: [{ ...milestoneBase, status: 'REACHED' as const }] };
+    render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);
+    expect(screen.getByDisplayValue('Premier palier')).toBeInTheDocument();
+    expect(screen.getByText('✕')).not.toBeDisabled();
+  });
+
   it('shows unreachable badge when targetAmount exceeds campaign goal', () => {
     const campaign = { ...baseCampaign, milestones: [{ ...milestoneBase, targetAmount: 99999 }] };
     render(<CampaignMilestonesTab campaign={campaign} onMilestonesChanged={vi.fn()} />);

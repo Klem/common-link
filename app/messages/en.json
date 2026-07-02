@@ -520,6 +520,8 @@
           "emptyDesc": "Milestones show donors the impact of their donations at each threshold. It is the most powerful trust lever of a successful campaign.",
           "emptyHint": "Recommended: 3 milestones — small / medium / large impact",
           "emptyTitle": "No milestones defined",
+          "fieldsLockedCurrent": "In progress",
+          "fieldsLockedReached": "Completed",
           "formulaAmountPlaceholder": "[amount]",
           "formulaCanDo": "we will be able to",
           "formulaFrom": "From",
@@ -912,5 +914,4 @@
     "title": "Dashboard",
     "welcome": "Welcome"
   },
-  "fr": "auth.assoSearch.backToSearch"
 }

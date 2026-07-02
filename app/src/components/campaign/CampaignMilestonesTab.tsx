@@ -174,6 +174,8 @@ function MilestoneCard({
     else { setPendingDelete(true); }
   };
 
+  const isLockedForEdit = milestone.status === MilestoneStatus.CURRENT || milestone.status === MilestoneStatus.REACHED;
+
   const numericAmount = parseFloat(targetAmount);
   const isUnreachable = !isNaN(numericAmount) && numericAmount > campaignGoal;
   const isBelowPrev = !isNaN(numericAmount) && idx > 0 && numericAmount <= prevTarget;
@@ -211,7 +213,12 @@ function MilestoneCard({
 
       {/* Header: emoji + step number + title */}
       <div className="ms-guided-header">
-        <div className="ms-emoji" ref={pickerRef} onClick={() => setPickerOpen((o) => !o)}>
+        <div
+          className="ms-emoji"
+          ref={pickerRef}
+          onClick={() => !isLockedForEdit && setPickerOpen((o) => !o)}
+          style={isLockedForEdit ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+        >
           {milestone.emoji || '🎯'}
           <div className={`ms-emoji-pick${pickerOpen ? ' open' : ''}`}>
             {EMOJIS.map((em) => (
@@ -229,9 +236,23 @@ function MilestoneCard({
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder={t('editor.milestones.namePlaceholder')}
+            disabled={isLockedForEdit}
           />
         </div>
       </div>
+
+      {isLockedForEdit && (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '4px',
+          background: 'rgba(122,113,162,.1)', color: 'var(--slate-lavender)',
+          padding: '3px 9px', borderRadius: '50px', fontSize: '10px', fontWeight: 700,
+          fontFamily: "'Syne', sans-serif", marginBottom: '10px',
+        }}>
+          🔒 {milestone.status === MilestoneStatus.REACHED
+            ? t('editor.milestones.fieldsLockedReached')
+            : t('editor.milestones.fieldsLockedCurrent')}
+        </span>
+      )}
 
       {/* Formula preview */}
       <div className="ms-formula">
@@ -257,6 +278,7 @@ function MilestoneCard({
               placeholder="5 000"
               min={prevTarget > 0 ? prevTarget + 1 : 1}
               onChange={(e) => handleTargetChange(e.target.value)}
+              disabled={isLockedForEdit}
             />
           </div>
           <span style={{ fontSize: '11px', color: 'var(--slate-lavender)', flex: 1 }}>
@@ -282,6 +304,7 @@ function MilestoneCard({
           value={impact}
           placeholder={t('editor.milestones.impactPlaceholder')}
           onChange={(e) => handleImpactChange(e.target.value)}
+          disabled={isLockedForEdit}
         />
       </div>
 
@@ -296,6 +319,7 @@ function MilestoneCard({
           value={proof}
           placeholder={t('editor.milestones.proofPlaceholder')}
           onChange={(e) => handleProofChange(e.target.value)}
+          disabled={isLockedForEdit}
         />
       </div>
 
