@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { CreatePayoutRequest, Page, PayoutDto, PayoutSummaryDto } from '@/types/payment';
+import type { CreatePayoutRequest, Page, PayoutBlockingReason, PayoutDto, PayoutSummaryDto } from '@/types/payment';
 
 const base = (campaignId: string) => `/api/campaigns/${campaignId}/payments`;
 
@@ -39,3 +39,18 @@ export const listPayments = (
  */
 export const getPaymentSummary = (campaignId: string): Promise<PayoutSummaryDto> =>
   api.get<PayoutSummaryDto>(`${base(campaignId)}/summary`).then((r) => r.data);
+
+/**
+ * Returns the business rules currently preventing this amount/IBAN combination from being paid out.
+ * Calls `GET /api/campaigns/{campaignId}/payments/blocking-reasons`.
+ */
+export const getBlockingReasons = (
+  campaignId: string,
+  payeeIbanId: string,
+  amount: number,
+): Promise<PayoutBlockingReason[]> =>
+  api
+    .get<{ reasons: PayoutBlockingReason[] }>(`${base(campaignId)}/blocking-reasons`, {
+      params: { payeeIbanId, amount },
+    })
+    .then((r) => r.data.reasons);

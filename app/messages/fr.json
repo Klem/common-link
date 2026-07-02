@@ -577,6 +577,10 @@
       "pageSubtitle": "Gérez les campagnes de collecte de votre association",
       "pageTitle": "Campagnes",
       "payments": {
+        "blocking": {
+          "ibanNotVerified": "IBAN du bénéficiaire non vérifié",
+          "insufficientBalance": "Solde disponible insuffisant"
+        },
         "breakdown": {
           "title": "📊 Répartition"
         },
@@ -606,6 +610,7 @@
         },
         "ibanSelect": "IBAN",
         "noIban": "Aucun IBAN enregistré pour ce bénéficiaire.",
+        "noVerifiedIban": "Aucun IBAN vérifié enregistré pour ce bénéficiaire.",
         "stats": {
           "availableBalance": "Solde disponible",
           "confirmed": "Confirmées",

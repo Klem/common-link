@@ -71,6 +71,13 @@ app:
     demo-mode: true
     api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}
     api-token: ${VOP_API_TOKEN:}
+  monerium:
+    client-id: ${MONERIUM_CLIENT_ID:}
+    base-url: ${MONERIUM_BASE_URL:}
+    redirect-uri: ${MONERIUM_REDIRECT_URI:}
+    skip-kyc: true
+    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
+
 
 springdoc:
   api-docs:

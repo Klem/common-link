@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { UsePaymentsReturn } from '@/hooks/campaign/usePayments';
@@ -8,10 +8,12 @@ import { usePayees } from '@/hooks/payee/usePayees';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Donut } from '@/components/ui/Donut';
 import { useToastStore } from '@/stores/toastStore';
+import { getBlockingReasons } from '@/lib/api/payment';
 import { PayoutKind, PayoutStatus } from '@/types/payment';
+import { IbanVerificationStatus } from '@/types/payee';
 import { ROUTES } from '@/lib/routes';
 import type { CampaignDto } from '@/types/campaign';
-import type { PayoutDto } from '@/types/payment';
+import type { PayoutDto, PayoutBlockingReason } from '@/types/payment';
 
 interface Props {
   campaign: CampaignDto;
@@ -67,13 +69,35 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
   );
 
   const selectedPayee = useMemo(() => filteredPayees.find((p) => p.id === payeeId), [filteredPayees, payeeId]);
+  const verifiedIbans = useMemo(
+    () => selectedPayee?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED) ?? [],
+    [selectedPayee],
+  );
   const selectedIban = useMemo(
-    () => selectedPayee?.ibans.find((i) => i.id === payeeIbanId),
-    [selectedPayee, payeeIbanId],
+    () => verifiedIbans.find((i) => i.id === payeeIbanId),
+    [verifiedIbans, payeeIbanId],
   );
 
   const amountNum = parseFloat(amount) || 0;
-  const isValid = !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0 && label.trim().length >= 6;
+
+  const [blockingReasons, setBlockingReasons] = useState<PayoutBlockingReason[]>([]);
+
+  useEffect(() => {
+    if (!payeeIbanId || amountNum <= 0) {
+      setBlockingReasons([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      getBlockingReasons(campaign.id, payeeIbanId, amountNum)
+        .then((reasons) => { if (!cancelled) setBlockingReasons(reasons); })
+        .catch(() => { if (!cancelled) setBlockingReasons([]); });
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [campaign.id, payeeIbanId, amountNum]);
+
+  const isValid = !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
+    && label.trim().length >= 6 && blockingReasons.length === 0;
 
   function handleTypeChange(value: string) {
     const newIsRemu = REMUNERATION_CODES.has(value);
@@ -89,7 +113,8 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     setPayeeId(id);
     setPayeeIbanId('');
     const p = filteredPayees.find((x) => x.id === id);
-    if (p?.ibans.length === 1) setPayeeIbanId(p.ibans[0].id);
+    const verified = p?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED) ?? [];
+    if (verified.length === 1) setPayeeIbanId(verified[0].id);
   }
 
   function handleAddPayee() {
@@ -260,21 +285,26 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
               </button>
             </div>
 
-            {/* No IBAN warning */}
+            {/* No IBAN at all */}
             {selectedPayee && selectedPayee.ibans.length === 0 && (
               <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '6px' }}>{t('noIban')}</p>
             )}
 
-            {/* Single IBAN preview */}
-            {selectedPayee && selectedPayee.ibans.length === 1 && selectedIban && (
+            {/* Has IBAN(s) but none VERIFIED */}
+            {selectedPayee && selectedPayee.ibans.length > 0 && verifiedIbans.length === 0 && (
+              <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '6px' }}>{t('noVerifiedIban')}</p>
+            )}
+
+            {/* Single verified IBAN preview */}
+            {selectedPayee && verifiedIbans.length === 1 && selectedIban && (
               <div className="bene-preview" style={{ display: 'block' }}>
                 <div style={{ fontWeight: 600 }}>{selectedPayee.name}</div>
                 <div style={{ color: 'var(--slate-lavender)', marginTop: '2px' }}>{selectedIban.iban}</div>
               </div>
             )}
 
-            {/* Multi-IBAN select */}
-            {selectedPayee && selectedPayee.ibans.length > 1 && (
+            {/* Multi verified-IBAN select */}
+            {selectedPayee && verifiedIbans.length > 1 && (
               <div style={{ marginTop: '6px' }}>
                 <label className="cm-label" style={{ fontSize: '11px' }}>{t('ibanSelect')}</label>
                 <select
@@ -283,7 +313,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                   onChange={(e) => setPayeeIbanId(e.target.value)}
                 >
                   <option value="">— IBAN —</option>
-                  {selectedPayee.ibans.map((ib) => (
+                  {verifiedIbans.map((ib) => (
                     <option key={ib.id} value={ib.id}>{ib.iban}</option>
                   ))}
                 </select>
@@ -339,6 +369,16 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           >
             {isSaving ? '…' : t('form.submit')}
           </button>
+
+          {blockingReasons.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+              {blockingReasons.map((reason) => (
+                <span key={reason} className="badge badge-warning">
+                  {t(`blocking.${reason === 'IBAN_NOT_VERIFIED' ? 'ibanNotVerified' : 'insufficientBalance'}`)}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── RIGHT: history + donut ───────────────────────────────── */}

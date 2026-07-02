@@ -69,7 +69,7 @@ class PayoutServiceTest {
     private val payeeIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.VERIFIED)
         .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
 
-    private val pendingPayout = Payout(campaign = campaign, payee = payee, payeeIban = payeeIban,
+    private val pendingPayout = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
         amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel", status = PayoutStatus.PENDING)
 
     @Test
@@ -78,6 +78,8 @@ class PayoutServiceTest {
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
+        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
         every { payoutRepository.save(any()) } returnsArgument 0
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
@@ -85,6 +87,35 @@ class PayoutServiceTest {
 
         assertThat(result.amount).isEqualByComparingTo("500")
         assertThat(result.status).isEqualTo(PayoutStatus.PENDING)
+    }
+
+    @Test
+    fun `create - unverified IBAN throws ConflictException`() {
+        val unverifiedIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.PENDING)
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
+
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(unverifiedIban)
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
+        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+
+        val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
+        assertThrows<ConflictException> { service.create(campaignId, request, userId) }
+    }
+
+    @Test
+    fun `create - amount exceeds available balance throws ConflictException`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("900")
+        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+
+        val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
+        assertThrows<ConflictException> { service.create(campaignId, request, userId) }
     }
 
     @Test
@@ -118,7 +149,7 @@ class PayoutServiceTest {
 
     @Test
     fun `confirm - transitions PENDING to CONFIRMED via confirmer`() {
-        val confirmedPayout = Payout(campaign = campaign, payee = payee, payeeIban = payeeIban,
+        val confirmedPayout = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
             amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel", status = PayoutStatus.CONFIRMED)
 
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
@@ -133,7 +164,7 @@ class PayoutServiceTest {
 
     @Test
     fun `confirm - already CONFIRMED throws ConflictException`() {
-        val alreadyConfirmed = Payout(campaign = campaign, payee = payee, payeeIban = payeeIban,
+        val alreadyConfirmed = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
             amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Done", status = PayoutStatus.CONFIRMED)
 
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
@@ -166,5 +197,37 @@ class PayoutServiceTest {
         assertThat(summary.pendingAmount).isEqualByComparingTo("200")
         assertThat(summary.txTotal).isEqualTo(5L)
         assertThat(summary.availableBalance).isEqualByComparingTo("4000") // 5000 - 1000
+    }
+
+    @Test
+    fun `computeBlockingReasons - VERIFIED iban and sufficient balance returns no reasons`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
+        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+
+        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), userId)
+
+        assertThat(reasons).isEmpty()
+    }
+
+    @Test
+    fun `computeBlockingReasons - unverified iban and insufficient balance returns both reasons`() {
+        val unverifiedIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.NO_MATCH)
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
+
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(unverifiedIban)
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("900")
+        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+
+        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), userId)
+
+        assertThat(reasons).containsExactlyInAnyOrder(
+            org.commonlink.entity.PayoutBlockingReason.IBAN_NOT_VERIFIED,
+            org.commonlink.entity.PayoutBlockingReason.INSUFFICIENT_BALANCE,
+        )
     }
 }

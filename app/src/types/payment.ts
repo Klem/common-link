@@ -38,6 +38,15 @@ export interface PayoutDto {
   onchainJobId: string | null;
 }
 
+/**
+ * A business rule preventing a payout from being issued — mirrors backend PayoutBlockingReason enum.
+ */
+export const PayoutBlockingReason = {
+  IBAN_NOT_VERIFIED: 'IBAN_NOT_VERIFIED',
+  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+} as const;
+export type PayoutBlockingReason = (typeof PayoutBlockingReason)[keyof typeof PayoutBlockingReason];
+
 /** Aggregated KPIs for the Payments tab. */
 export interface PayoutSummaryDto {
   confirmedAmount: number;

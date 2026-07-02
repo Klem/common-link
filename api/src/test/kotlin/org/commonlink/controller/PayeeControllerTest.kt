@@ -79,6 +79,7 @@ class PayeeControllerTest {
         city = "Paris",
         postalCode = "75001",
         active = true,
+        hasPayouts = false,
         ibans = listOf(sampleIban),
         createdAt = Instant.now()
     )
@@ -94,6 +95,7 @@ class PayeeControllerTest {
         city = null,
         postalCode = null,
         active = true,
+        hasPayouts = false,
         ibans = emptyList(),
         createdAt = Instant.now()
     )

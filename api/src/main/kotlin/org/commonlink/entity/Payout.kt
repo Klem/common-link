@@ -22,6 +22,10 @@ import java.util.UUID
  *
  * The [typeCode] stores the French plan comptable category code (e.g. "60-mat", "64-rem")
  * selected by the user; [kind] is the derived high-level group used for budget reporting.
+ *
+ * [payeeIbanId]/[payeeIbanValue] are a denormalized snapshot of the [PayeeIban] used at
+ * creation time, not a JPA relation — later edits or deletion of that IBAN must never
+ * affect an already-issued payout.
  */
 @Entity
 @Table(name = "payouts")
@@ -39,9 +43,13 @@ class Payout(
     @JoinColumn(name = "payee_id", nullable = false)
     val payee: Payee,
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "payee_iban_id", nullable = false)
-    val payeeIban: PayeeIban,
+    /** UUID of the [PayeeIban] selected at creation time; no FK constraint (see class doc). */
+    @Column(name = "payee_iban_id", nullable = false)
+    val payeeIbanId: UUID,
+
+    /** IBAN string snapshotted from the [PayeeIban] at creation time. */
+    @Column(name = "payee_iban_value", nullable = false, length = 34)
+    val payeeIbanValue: String,
 
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     val amount: BigDecimal,

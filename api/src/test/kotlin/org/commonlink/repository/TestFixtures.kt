@@ -258,7 +258,8 @@ object TestFixtures {
     ) = Payout(
         campaign = campaign,
         payee = payee,
-        payeeIban = payeeIban,
+        payeeIbanId = payeeIban.id!!,
+        payeeIbanValue = payeeIban.iban,
         amount = amount,
         kind = kind,
         typeCode = typeCode,

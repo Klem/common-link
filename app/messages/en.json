@@ -577,6 +577,10 @@
       "pageSubtitle": "Manage your association's fundraising campaigns",
       "pageTitle": "Campaigns",
       "payments": {
+        "blocking": {
+          "ibanNotVerified": "Beneficiary IBAN not verified",
+          "insufficientBalance": "Insufficient available balance"
+        },
         "breakdown": {
           "title": "📊 Breakdown"
         },
@@ -606,6 +610,7 @@
         },
         "ibanSelect": "IBAN",
         "noIban": "No IBAN registered for this recipient.",
+        "noVerifiedIban": "No verified IBAN registered for this beneficiary.",
         "stats": {
           "availableBalance": "Available balance",
           "confirmed": "Confirmed",

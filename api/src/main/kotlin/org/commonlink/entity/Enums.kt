@@ -159,3 +159,14 @@ enum class PayoutKind { REMUNERATION, EXPENSE }
 
 /** Lifecycle status of a [org.commonlink.entity.Payout]. */
 enum class PayoutStatus { PENDING, CONFIRMED, FAILED }
+
+/**
+ * A business rule preventing a payout from being issued, surfaced to the association
+ * before submission so they understand why the "Émettre le paiement" action is blocked.
+ */
+enum class PayoutBlockingReason {
+    /** The selected [org.commonlink.entity.PayeeIban] has not reached [IbanVerificationStatus.VERIFIED]. */
+    IBAN_NOT_VERIFIED,
+    /** The requested amount exceeds the campaign's available balance. */
+    INSUFFICIENT_BALANCE,
+}

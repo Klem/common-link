@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CampaignPaymentsTab } from '../CampaignPaymentsTab';
 import type { CampaignDto } from '@/types/campaign';
+import type { UsePaymentsReturn } from '@/hooks/campaign/usePayments';
+import type { PayoutDto } from '@/types/payment';
+import type { PayeeDto } from '@/types/payee';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -16,17 +19,19 @@ vi.mock('next-intl', () => ({
   },
 }));
 
-vi.mock('@/hooks/campaign/usePayments');
 vi.mock('@/hooks/payee/usePayees');
 vi.mock('@/stores/toastStore', () => ({
   useToastStore: () => vi.fn(),
 }));
+vi.mock('@/lib/api/payment', () => ({
+  getBlockingReasons: vi.fn().mockResolvedValue([]),
+}));
 
-import { usePayments } from '@/hooks/campaign/usePayments';
 import { usePayees } from '@/hooks/payee/usePayees';
+import { getBlockingReasons } from '@/lib/api/payment';
 
-const mockUsePayments = usePayments as ReturnType<typeof vi.fn>;
 const mockUsePayees = usePayees as ReturnType<typeof vi.fn>;
+const mockGetBlockingReasons = getBlockingReasons as ReturnType<typeof vi.fn>;
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -53,7 +58,7 @@ const sampleSummary = {
   availableBalance: 4400,
 };
 
-const samplePayout = {
+const samplePayout: PayoutDto = {
   id: 'payout-1',
   campaignId: 'camp-1',
   payeeId: 'payee-1',
@@ -70,7 +75,7 @@ const samplePayout = {
   onchainJobId: null,
 };
 
-const samplePayee = {
+const samplePayee: PayeeDto = {
   id: 'payee-1',
   payeeType: 'COMPANY' as const,
   name: 'ACME Corp',
@@ -86,10 +91,39 @@ const samplePayee = {
   createdAt: '2026-01-01T00:00:00Z',
 };
 
+/** Same payee, but its only IBAN has not reached VERIFIED. */
+const samplePayeeUnverifiedIban = {
+  ...samplePayee,
+  id: 'payee-2',
+  name: 'Unverified Payee',
+  ibans: [{ id: 'iban-2', iban: 'FR76 1111 1111', status: 'PENDING' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+};
+
+/** PERSON-type payee, required for REMUNERATION typeCodes. */
+const samplePayeePerson = {
+  ...samplePayee,
+  id: 'payee-person-1',
+  payeeType: 'PERSON' as const,
+  name: 'Marie Dupont',
+  identifier1: null,
+  ibans: [{ id: 'iban-person-1', iban: 'FR76 4444 4444', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+};
+
+/** Payee with one VERIFIED and one non-VERIFIED IBAN. */
+const samplePayeeMixedIbans = {
+  ...samplePayee,
+  id: 'payee-3',
+  name: 'Mixed Payee',
+  ibans: [
+    { id: 'iban-3', iban: 'FR76 2222 2222', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null },
+    { id: 'iban-4', iban: 'FR76 3333 3333', status: 'INVALID' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null },
+  ],
+};
+
 const defaultSubmit = vi.fn().mockResolvedValue(samplePayout);
 
-function setupMocks(overrides: Partial<ReturnType<typeof usePayments>> = {}) {
-  mockUsePayments.mockReturnValue({
+function setupPayments(overrides: Partial<UsePaymentsReturn> = {}): UsePaymentsReturn {
+  return {
     payouts: [],
     summary: null,
     isLoading: false,
@@ -101,9 +135,12 @@ function setupMocks(overrides: Partial<ReturnType<typeof usePayments>> = {}) {
     submit: defaultSubmit,
     refetch: vi.fn(),
     ...overrides,
-  });
+  };
+}
+
+function setupMocks(payeesOverride: PayeeDto[] = [samplePayee]) {
   mockUsePayees.mockReturnValue({
-    payees: [samplePayee],
+    payees: payeesOverride,
     isLoading: false,
     error: null,
     fetchPayees: vi.fn(),
@@ -116,14 +153,15 @@ function setupMocks(overrides: Partial<ReturnType<typeof usePayments>> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockGetBlockingReasons.mockResolvedValue([]);
 });
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('CampaignPaymentsTab', () => {
   it('renders stats bar with summary data', () => {
-    setupMocks({ summary: sampleSummary });
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ summary: sampleSummary })} />);
 
     expect(screen.getByText('stats.availableBalance')).toBeDefined();
     expect(screen.getByText('stats.paid')).toBeDefined();
@@ -134,7 +172,7 @@ describe('CampaignPaymentsTab', () => {
 
   it('submit button is disabled when form is empty', () => {
     setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
     const btn = screen.getByRole('button', { name: /form.submit/i });
     expect((btn as HTMLButtonElement).disabled).toBe(true);
@@ -142,12 +180,12 @@ describe('CampaignPaymentsTab', () => {
 
   it('submit button enables when all required fields are valid', async () => {
     setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
-    // Select payee (auto-fills IBAN since only one)
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'payee-1' } });
+    // Select payee (auto-fills IBAN since only one VERIFIED)
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
     // Select typeCode
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '60-mat' } });
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
     // Enter amount
     fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
     // Enter label (min 6 chars)
@@ -163,17 +201,19 @@ describe('CampaignPaymentsTab', () => {
 
   it('clicking submit shows the confirm dialog', async () => {
     setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '60-mat' } });
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
     fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
     fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
       target: { value: 'Achat de fournitures diverses' },
     });
 
-    const btn = screen.getByRole('button', { name: /form.submit/i });
-    fireEvent.click(btn);
+    await waitFor(() => {
+      expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(false);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /form.submit/i }));
 
     await waitFor(() => {
       expect(screen.getByText('confirm.title')).toBeDefined();
@@ -182,15 +222,18 @@ describe('CampaignPaymentsTab', () => {
 
   it('confirming the dialog calls submit and resets form', async () => {
     setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '60-mat' } });
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
     fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
     fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
       target: { value: 'Achat de fournitures diverses' },
     });
 
+    await waitFor(() => {
+      expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByRole('button', { name: /form.submit/i }));
 
     await waitFor(() => screen.getByText('confirm.title'));
@@ -211,8 +254,8 @@ describe('CampaignPaymentsTab', () => {
   });
 
   it('shows payment history list', () => {
-    setupMocks({ payouts: [samplePayout], summary: sampleSummary });
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout], summary: sampleSummary })} />);
 
     // payeeName appears in both the select option and the history row
     expect(screen.getAllByText('ACME Corp').length).toBeGreaterThan(0);
@@ -220,15 +263,15 @@ describe('CampaignPaymentsTab', () => {
   });
 
   it('shows empty state when no payouts', () => {
-    setupMocks({ payouts: [] });
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [] })} />);
 
     expect(screen.getByText('history.empty')).toBeDefined();
   });
 
   it('shows loading spinner while fetching', () => {
-    setupMocks({ isLoading: true });
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ isLoading: true })} />);
 
     // spinner present (animate-spin div)
     const spinner = document.querySelector('.animate-spin');
@@ -236,23 +279,27 @@ describe('CampaignPaymentsTab', () => {
   });
 
   it('shows error state', () => {
-    setupMocks({ error: 'common.errors.serverError' });
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ error: 'common.errors.serverError' })} />);
 
     expect(screen.getByText('common.errors.serverError')).toBeDefined();
   });
 
   it('typeCode=64-rem sets kind to REMUNERATION', async () => {
-    setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} />);
+    setupMocks([samplePayeePerson]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '64-rem' } });
+    // REMUNERATION typeCodes only list PERSON payees — select type first so the payee list updates
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '64-rem' } });
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-person-1' } });
     fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '1000' } });
     fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
       target: { value: 'Salaire mensuel développeur' },
     });
 
+    await waitFor(() => {
+      expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(false);
+    });
     fireEvent.click(screen.getByRole('button', { name: /form.submit/i }));
     await waitFor(() => screen.getByText('confirm.title'));
     fireEvent.click(screen.getByText('confirm.submit'));
@@ -262,5 +309,59 @@ describe('CampaignPaymentsTab', () => {
         expect.objectContaining({ kind: 'REMUNERATION', typeCode: '64-rem' }),
       );
     });
+  });
+
+  // ── Lot 1: verified-IBAN-only selector ─────────────────────────────────────
+
+  it('shows "no verified IBAN" message when the payee only has an unverified IBAN', () => {
+    setupMocks([samplePayeeUnverifiedIban]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-2' } });
+
+    expect(screen.getByText('noVerifiedIban')).toBeDefined();
+  });
+
+  it('does not auto-select and excludes non-VERIFIED IBANs from the multi-IBAN selector', () => {
+    setupMocks([samplePayeeMixedIbans]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-3' } });
+
+    // Only one VERIFIED IBAN exists among the two -> auto-selected, no dropdown shown, invalid one not offered
+    expect(screen.queryByText('FR76 3333 3333')).toBeNull();
+    expect(screen.getByText('FR76 2222 2222')).toBeDefined();
+  });
+
+  // ── Lot 1: payment blocking reason pills ───────────────────────────────────
+
+  it('renders a pill and disables submit when a blocking reason is active', async () => {
+    mockGetBlockingReasons.mockResolvedValue(['IBAN_NOT_VERIFIED']);
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
+    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
+    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
+      target: { value: 'Achat de fournitures diverses' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('blocking.ibanNotVerified')).toBeDefined();
+    });
+    expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('shows no pills when there are no active blocking reasons', async () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
+
+    await waitFor(() => expect(mockGetBlockingReasons).toHaveBeenCalled());
+    expect(screen.queryByText('blocking.insufficientBalance')).toBeNull();
+    expect(screen.queryByText('blocking.ibanNotVerified')).toBeNull();
   });
 });

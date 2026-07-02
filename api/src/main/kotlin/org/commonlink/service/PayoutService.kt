@@ -4,7 +4,10 @@ import org.commonlink.dto.CreatePayoutRequest
 import org.commonlink.dto.PayoutDto
 import org.commonlink.dto.PayoutSummaryDto
 import org.commonlink.dto.toDto
+import org.commonlink.entity.IbanVerificationStatus
+import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
+import org.commonlink.entity.PayoutBlockingReason
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -30,6 +33,7 @@ import java.util.UUID
  * - payee IBAN belongs to the requested payee
  * - campaign belongs to the requesting association
  * - only PENDING payouts can be confirmed
+ * - no active [PayoutBlockingReason] (IBAN unverified, insufficient balance) — see [computeBlockingReasons]
  */
 @Service
 class PayoutService(
@@ -48,6 +52,7 @@ class PayoutService(
      *
      * @throws NotFoundException if campaign, payee, or IBAN do not belong to [associationId].
      * @throws IllegalArgumentException if the IBAN does not belong to the requested payee.
+     * @throws ConflictException if a [PayoutBlockingReason] applies (unverified IBAN, insufficient balance).
      */
     fun create(campaignId: UUID, request: CreatePayoutRequest, userId: UUID): PayoutDto {
         val associationId = resolveAssociationId(userId)
@@ -62,15 +67,21 @@ class PayoutService(
             .orElseThrow { NotFoundException("IBAN not found: ${request.payeeIbanId}") }
         if (payeeIban.payee.id != payee.id) throw NotFoundException("IBAN ${request.payeeIbanId} does not belong to payee ${request.payeeId}")
 
+        val blockingReasons = blockingReasonsFor(campaignId, payeeIban, request.amount!!)
+        if (blockingReasons.isNotEmpty()) {
+            throw ConflictException("Payout blocked: ${blockingReasons.joinToString()}")
+        }
+
         val payout = payoutRepository.save(
             Payout(
-                campaign  = campaign,
-                payee     = payee,
-                payeeIban = payeeIban,
-                amount    = request.amount!!,
-                kind      = request.kind!!,
-                typeCode  = request.typeCode!!,
-                label     = request.label!!,
+                campaign        = campaign,
+                payee           = payee,
+                payeeIbanId     = payeeIban.id!!,
+                payeeIbanValue  = payeeIban.iban,
+                amount          = request.amount,
+                kind            = request.kind!!,
+                typeCode        = request.typeCode!!,
+                label           = request.label!!,
             )
         )
         log.info("Payout {} created (PENDING) for campaign {}", payout.id, campaignId)
@@ -133,7 +144,6 @@ class PayoutService(
             ?: BigDecimal.ZERO
         val txTotal         = payoutRepository.countByCampaignId(campaignId)
         val txConfirmed     = payoutRepository.countByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
-        val totalRaised     = donationRepository.sumConfirmedAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
 
         return PayoutSummaryDto(
             confirmedAmount  = confirmedAmount,
@@ -141,8 +151,41 @@ class PayoutService(
             pendingAmount    = pendingAmount,
             txTotal          = txTotal,
             txConfirmed      = txConfirmed,
-            availableBalance = totalRaised - confirmedAmount,
+            availableBalance = computeAvailableBalance(campaignId),
         )
+    }
+
+    /**
+     * Returns the [PayoutBlockingReason]s currently preventing [amount] from being paid out of
+     * [payeeIbanId] on [campaignId] — used by the frontend to explain a disabled submit button.
+     *
+     * @throws NotFoundException if campaign or IBAN cannot be found for [userId]'s association.
+     */
+    fun computeBlockingReasons(campaignId: UUID, payeeIbanId: UUID, amount: BigDecimal, userId: UUID): List<PayoutBlockingReason> {
+        val associationId = resolveAssociationId(userId)
+        assertCampaignOwnership(campaignId, associationId)
+        val payeeIban = payeeIbanRepository.findById(payeeIbanId)
+            .orElseThrow { NotFoundException("IBAN not found: $payeeIbanId") }
+        return blockingReasonsFor(campaignId, payeeIban, amount)
+    }
+
+    private fun blockingReasonsFor(campaignId: UUID, payeeIban: PayeeIban, amount: BigDecimal): List<PayoutBlockingReason> {
+        val reasons = mutableListOf<PayoutBlockingReason>()
+        if (payeeIban.status != IbanVerificationStatus.VERIFIED) {
+            reasons += PayoutBlockingReason.IBAN_NOT_VERIFIED
+        }
+        if (amount > computeAvailableBalance(campaignId)) {
+            reasons += PayoutBlockingReason.INSUFFICIENT_BALANCE
+        }
+        return reasons
+    }
+
+    /** Available funds = total confirmed donations - confirmed payouts, for [campaignId]. */
+    private fun computeAvailableBalance(campaignId: UUID): BigDecimal {
+        val confirmedAmount = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
+            ?: BigDecimal.ZERO
+        val totalRaised = donationRepository.sumConfirmedAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
+        return totalRaised - confirmedAmount
     }
 
     private fun assertCampaignOwnership(campaignId: UUID, associationId: UUID) {

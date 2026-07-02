@@ -4,6 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.commonlink.dto.PayoutDto
 import org.commonlink.dto.PayoutSummaryDto
+import org.commonlink.entity.PayoutBlockingReason
 import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
@@ -171,5 +172,20 @@ class PayoutControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.availableBalance").value(4000.0))
+    }
+
+    @Test
+    fun `GET blocking-reasons returns 200 with reasons`() {
+        every { payoutService.computeBlockingReasons(campaignId, ibanId, BigDecimal("500.00"), any()) } returns
+            listOf(PayoutBlockingReason.IBAN_NOT_VERIFIED)
+
+        mockMvc.perform(
+            get("/api/campaigns/$campaignId/payments/blocking-reasons")
+                .param("payeeIbanId", ibanId.toString())
+                .param("amount", "500.00")
+                .with(user(assocId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.reasons[0]").value("IBAN_NOT_VERIFIED"))
     }
 }

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.CreatePayoutRequest
+import org.commonlink.dto.PayoutBlockingReasonsDto
 import org.commonlink.dto.PayoutDto
 import org.commonlink.dto.PayoutSummaryDto
 import org.commonlink.service.PayoutService
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.math.BigDecimal
 import java.util.UUID
 
 @RestController
@@ -111,4 +113,27 @@ class PayoutController(private val payoutService: PayoutService) {
         @AuthenticationPrincipal principal: UserDetails,
     ): ResponseEntity<PayoutSummaryDto> =
         ResponseEntity.ok(payoutService.getSummary(campaignId, UUID.fromString(principal.username)))
+
+    @GetMapping("/blocking-reasons")
+    @Operation(
+        summary = "Get payout blocking reasons",
+        description = "Returns the business rules currently preventing this amount/IBAN combination from being paid out.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Blocking reasons returned (empty if not blocked)",
+            content = [Content(schema = Schema(implementation = PayoutBlockingReasonsDto::class))]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign or IBAN not found", content = [Content()]),
+    )
+    fun blockingReasons(
+        @PathVariable campaignId: UUID,
+        @RequestParam payeeIbanId: UUID,
+        @RequestParam amount: BigDecimal,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<PayoutBlockingReasonsDto> =
+        ResponseEntity.ok(
+            PayoutBlockingReasonsDto(
+                payoutService.computeBlockingReasons(campaignId, payeeIbanId, amount, UUID.fromString(principal.username))
+            )
+        )
 }
