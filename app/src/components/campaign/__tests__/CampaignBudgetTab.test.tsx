@@ -14,8 +14,9 @@ vi.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({ addToast: vi.fn() }),
 }));
 
-import { useBudget } from '@/hooks/campaign/useBudget';
+import { useBudget, isFixedRevenueSection } from '@/hooks/campaign/useBudget';
 const mockUseBudget = useBudget as ReturnType<typeof vi.fn>;
+const mockIsFixedRevenueSection = isFixedRevenueSection as ReturnType<typeof vi.fn>;
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -68,11 +69,10 @@ describe('CampaignBudgetTab', () => {
       mockUseBudget.mockReturnValue({ ...mockBudgetBase, sections: [] });
     });
 
-    it('renders 3 template cards', () => {
+    it('renders 2 template cards', () => {
       render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
       expect(screen.getByText('editor.budget.tplStandard')).toBeInTheDocument();
       expect(screen.getByText('editor.budget.tplSimple')).toBeInTheDocument();
-      expect(screen.getByText('editor.budget.tplBlank')).toBeInTheDocument();
     });
 
     it('selects standard template by default and calls initTemplate on CTA click', () => {
@@ -161,6 +161,25 @@ describe('CampaignBudgetTab', () => {
       fireEvent.click(chargesBtn);
       expect(document.getElementById('bud-col-produits')).toBeNull();
       expect(document.getElementById('bud-col-charges')).toBeInTheDocument();
+    });
+
+    it('locks the fixed revenue row: no delete button, disabled inputs, no add-category', () => {
+      const fixedSections = [
+        ...sections,
+        { side: 'REVENUE' as const, code: 'PRODUIT', name: 'Produit', items: [{ label: 'Dons', amount: 10000 }] },
+      ];
+      mockUseBudget.mockReturnValue({ ...mockBudgetBase, sections: fixedSections });
+      mockIsFixedRevenueSection.mockImplementation((s: { name: string }) => s.name === 'Produit');
+
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+
+      const donsRow = screen.getByDisplayValue('Dons').closest('.line') as HTMLElement;
+      expect(donsRow.querySelector('input[type="text"]')).toBeDisabled();
+      expect(donsRow.querySelector('input[type="number"]')).toBeDisabled();
+      expect(donsRow.querySelector('.line-del')).toHaveTextContent('🔒');
+
+      const produitsCol = document.getElementById('bud-col-produits') as HTMLElement;
+      expect(produitsCol.querySelector('.add-sec')).toBeNull();
     });
 
     it('calls init([]) when Changer de modèle is clicked', () => {

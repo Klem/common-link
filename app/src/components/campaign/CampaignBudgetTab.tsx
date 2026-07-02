@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useBudget, type BudgetTemplateType } from '@/hooks/campaign/useBudget';
+import { useBudget, isFixedRevenueSection, type BudgetTemplateType } from '@/hooks/campaign/useBudget';
 import { useDebouncedCallback } from '@/hooks/campaign/useDebouncedSave';
 import { BudgetSide } from '@/types/campaign';
 import type { CampaignDto } from '@/types/campaign';
+import { ACCOUNTING_ACCOUNTS } from '@/data/accountingAccounts';
 
 interface CampaignBudgetTabProps {
   campaign: CampaignDto;
@@ -27,7 +28,6 @@ type ColFilter = 'both' | 'expense' | 'revenue';
 const TEMPLATES_META: { type: BudgetTemplateType; emoji: string; nameKey: string; descKey: string }[] = [
   { type: 'standard', emoji: '📋', nameKey: 'tplStandard', descKey: 'tplStandardDesc' },
   { type: 'simple',   emoji: '📝', nameKey: 'tplSimple',   descKey: 'tplSimpleDesc'   },
-  { type: 'blank',    emoji: '📄', nameKey: 'tplBlank',    descKey: 'tplBlankDesc'    },
 ];
 
 export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTabProps) {
@@ -51,7 +51,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
     removeSection,
     toggleSection,
     save,
-  } = useBudget();
+  } = useBudget(campaign.goal);
 
   const [addForm, setAddForm] = useState<AddSectionFormState | null>(null);
   const [selectedTpl, setSelectedTpl] = useState<BudgetTemplateType>('standard');
@@ -105,6 +105,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
 
   const chargeSections = sections.map((s, i) => ({ s, i })).filter(({ s }) => s.side === BudgetSide.EXPENSE);
   const produitSections = sections.map((s, i) => ({ s, i })).filter(({ s }) => s.side === BudgetSide.REVENUE);
+  const hasFixedRevenueSection = produitSections.some(({ s }) => isFixedRevenueSection(s));
 
   return (
     <div>
@@ -247,6 +248,8 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
                       sIdx={i}
                       side="pr"
                       isOpen={!collapsedSections.has(i)}
+                      isFixed={isFixedRevenueSection(s)}
+                      fixedHint={t('editor.budget.fixedRevenueHint')}
                       onToggle={toggleSection}
                       onUpdateLabel={handleUpdateItemLabel}
                       onUpdateAmount={handleUpdateItemAmount}
@@ -259,18 +262,20 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
                     />
                   ))}
                 </div>
-                <AddSectionButton
-                  side={BudgetSide.REVENUE}
-                  label={t('editor.budget.addSection')}
-                  addForm={addForm}
-                  onOpen={handleAddSection}
-                  onConfirm={handleAddSectionConfirm}
-                  onCancel={() => setAddForm(null)}
-                  onChangeCode={(v) => setAddForm((f) => f ? { ...f, code: v } : f)}
-                  onChangeName={(v) => setAddForm((f) => f ? { ...f, name: v } : f)}
-                  codePlaceholder={t('editor.budget.sectionCode')}
-                  namePlaceholder={t('editor.budget.sectionName')}
-                />
+                {!hasFixedRevenueSection && (
+                  <AddSectionButton
+                    side={BudgetSide.REVENUE}
+                    label={t('editor.budget.addSection')}
+                    addForm={addForm}
+                    onOpen={handleAddSection}
+                    onConfirm={handleAddSectionConfirm}
+                    onCancel={() => setAddForm(null)}
+                    onChangeCode={(v) => setAddForm((f) => f ? { ...f, code: v } : f)}
+                    onChangeName={(v) => setAddForm((f) => f ? { ...f, name: v } : f)}
+                    codePlaceholder={t('editor.budget.sectionCode')}
+                    namePlaceholder={t('editor.budget.sectionName')}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -299,6 +304,10 @@ interface BudgetSectionProps {
   sIdx: number;
   side: 'ch' | 'pr';
   isOpen: boolean;
+  /** True for the fixed "Produit / Dons" revenue category — locked against edit/delete. */
+  isFixed?: boolean;
+  /** Tooltip explaining why the row is locked. Required when `isFixed`. */
+  fixedHint?: string;
   onToggle: (sIdx: number) => void;
   onUpdateLabel: (sIdx: number, iIdx: number, v: string) => void;
   onUpdateAmount: (sIdx: number, iIdx: number, v: number) => void;
@@ -311,7 +320,7 @@ interface BudgetSectionProps {
 }
 
 function BudgetSection({
-  section, sIdx, side, isOpen,
+  section, sIdx, side, isOpen, isFixed = false, fixedHint,
   onToggle, onUpdateLabel, onUpdateAmount, onAddItem, onRemoveItem, onRemoveSection,
   addItemLabel, labelPlaceholder, amountPlaceholder,
 }: BudgetSectionProps) {
@@ -328,21 +337,27 @@ function BudgetSection({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span className="bsec-tot">{sectionTotal.toLocaleString('fr-FR')} €</span>
-          <div className={`bsec-del-confirm${pendingDelSection ? ' show' : ''}`}>
-            <button
-              className="line-del-ok"
-              onClick={(e) => { e.stopPropagation(); onRemoveSection(sIdx); }}
-            >✓</button>
-            <button
-              className="line-del-cancel"
-              onClick={(e) => { e.stopPropagation(); setPendingDelSection(false); }}
-            >✕</button>
-          </div>
-          {!pendingDelSection && (
-            <button
-              className="bsec-del"
-              onClick={(e) => { e.stopPropagation(); setPendingDelSection(true); }}
-            >✕</button>
+          {isFixed ? (
+            <span className="bsec-del" style={{ opacity: 0.35, cursor: 'default' }} title={fixedHint}>🔒</span>
+          ) : (
+            <>
+              <div className={`bsec-del-confirm${pendingDelSection ? ' show' : ''}`}>
+                <button
+                  className="line-del-ok"
+                  onClick={(e) => { e.stopPropagation(); onRemoveSection(sIdx); }}
+                >✓</button>
+                <button
+                  className="line-del-cancel"
+                  onClick={(e) => { e.stopPropagation(); setPendingDelSection(false); }}
+                >✕</button>
+              </div>
+              {!pendingDelSection && (
+                <button
+                  className="bsec-del"
+                  onClick={(e) => { e.stopPropagation(); setPendingDelSection(true); }}
+                >✕</button>
+              )}
+            </>
           )}
           <span className="bsec-chev">▾</span>
         </div>
@@ -357,6 +372,8 @@ function BudgetSection({
                 value={item.label}
                 onChange={(e) => { setPendingDelItem(null); onUpdateLabel(sIdx, iIdx, e.target.value); }}
                 placeholder={labelPlaceholder}
+                disabled={isFixed}
+                title={isFixed ? fixedHint : undefined}
               />
             </div>
             <div className="line-amt">
@@ -367,26 +384,36 @@ function BudgetSection({
                 value={item.amount || ''}
                 onChange={(e) => onUpdateAmount(sIdx, iIdx, parseFloat(e.target.value) || 0)}
                 placeholder={amountPlaceholder}
+                disabled={isFixed}
+                title={isFixed ? fixedHint : undefined}
               />
             </div>
-            <div className={`line-del-confirm${pendingDelItem === iIdx ? ' show' : ''}`}>
-              <button
-                className="line-del-ok"
-                onClick={() => { onRemoveItem(sIdx, iIdx); setPendingDelItem(null); }}
-              >✓</button>
-              <button
-                className="line-del-cancel"
-                onClick={() => setPendingDelItem(null)}
-              >✕</button>
-            </div>
-            {pendingDelItem !== iIdx && (
-              <button className="line-del" onClick={() => setPendingDelItem(iIdx)}>✕</button>
+            {isFixed ? (
+              <span className="line-del" style={{ opacity: 0.35, cursor: 'default' }} title={fixedHint}>🔒</span>
+            ) : (
+              <>
+                <div className={`line-del-confirm${pendingDelItem === iIdx ? ' show' : ''}`}>
+                  <button
+                    className="line-del-ok"
+                    onClick={() => { onRemoveItem(sIdx, iIdx); setPendingDelItem(null); }}
+                  >✓</button>
+                  <button
+                    className="line-del-cancel"
+                    onClick={() => setPendingDelItem(null)}
+                  >✕</button>
+                </div>
+                {pendingDelItem !== iIdx && (
+                  <button className="line-del" onClick={() => setPendingDelItem(iIdx)}>✕</button>
+                )}
+              </>
             )}
           </div>
         ))}
-        <button className="add-line" onClick={() => onAddItem(sIdx)}>
-          + {addItemLabel}
-        </button>
+        {!isFixed && (
+          <button className="add-line" onClick={() => onAddItem(sIdx)}>
+            + {addItemLabel}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -413,6 +440,23 @@ function AddSectionButton({
 }: AddSectionButtonProps) {
   const t = useTranslations('dashboard.campaigns');
   const isOpen = addForm?.side === side;
+  const isExpense = side === BudgetSide.EXPENSE;
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const suggestions = useMemo(() => {
+    if (!isExpense) return [];
+    const q = (addForm?.name ?? '').trim().toLowerCase();
+    if (!q) return ACCOUNTING_ACCOUNTS.slice(0, 8);
+    return ACCOUNTING_ACCOUNTS
+      .filter((a) => a.code.toLowerCase().includes(q) || a.label.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [isExpense, addForm?.name]);
+
+  const handleSelectAccount = (account: { code: string; label: string }) => {
+    onChangeCode(account.code);
+    onChangeName(account.label);
+    setShowSuggestions(false);
+  };
 
   if (!isOpen) {
     return (
@@ -433,16 +477,34 @@ function AddSectionButton({
           className="cm-fi"
           style={{ width: '80px' }}
         />
-        <input
-          type="text"
-          value={addForm?.name ?? ''}
-          onChange={(e) => onChangeName(e.target.value)}
-          placeholder={namePlaceholder}
-          className="cm-fi"
-          style={{ flex: 1 }}
-          onKeyDown={(e) => { if (e.key === 'Enter') onConfirm(); if (e.key === 'Escape') onCancel(); }}
-          autoFocus
-        />
+        <div style={{ position: 'relative', flex: 1 }}>
+          <input
+            type="text"
+            value={addForm?.name ?? ''}
+            onChange={(e) => { onChangeName(e.target.value); if (isExpense) setShowSuggestions(true); }}
+            onFocus={() => { if (isExpense) setShowSuggestions(true); }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            placeholder={isExpense ? t('editor.budget.sectionNameAccounting') : namePlaceholder}
+            className="cm-fi"
+            style={{ width: '100%' }}
+            onKeyDown={(e) => { if (e.key === 'Enter') onConfirm(); if (e.key === 'Escape') onCancel(); }}
+            autoFocus
+            autoComplete="off"
+          />
+          {isExpense && showSuggestions && suggestions.length > 0 && (
+            <div className="acct-ac-list">
+              {suggestions.map((a) => (
+                <div
+                  key={a.code}
+                  className="acct-ac-item"
+                  onMouseDown={(e) => { e.preventDefault(); handleSelectAccount(a); }}
+                >
+                  <span className="acct-ac-code">{a.code}</span> {a.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
         <button type="button" className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onCancel}>

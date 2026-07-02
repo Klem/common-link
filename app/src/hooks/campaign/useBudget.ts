@@ -20,7 +20,12 @@ export interface EditableBudgetSection {
   items: EditableItem[];
 }
 
-export type BudgetTemplateType = 'standard' | 'simple' | 'blank';
+export type BudgetTemplateType = 'standard' | 'simple';
+
+/** Reserved name for the single, non-deletable revenue category on new campaigns. */
+export const FIXED_REVENUE_SECTION_NAME = 'Produit';
+/** Reserved label for the single, non-deletable revenue item on new campaigns. */
+export const FIXED_REVENUE_ITEM_LABEL = 'Dons';
 
 /** Return type of {@link useBudget}. */
 export interface UseBudgetReturn {
@@ -128,49 +133,6 @@ const ACCOUNTING_TEMPLATE: EditableBudgetSection[] = [
       { label: 'Personnel bénévole', amount: 0 },
     ],
   },
-  {
-    side: BudgetSide.REVENUE,
-    code: '70',
-    name: 'Ventes / prestations',
-    items: [
-      { label: 'Ventes de produits', amount: 0 },
-      { label: 'Prestations de services', amount: 0 },
-    ],
-  },
-  {
-    side: BudgetSide.REVENUE,
-    code: '74',
-    name: 'Subventions',
-    items: [
-      { label: 'État', amount: 0 },
-      { label: 'Régions', amount: 0 },
-      { label: 'Départements', amount: 0 },
-      { label: 'Communes', amount: 0 },
-      { label: 'Organismes sociaux', amount: 0 },
-      { label: 'Fonds européens', amount: 0 },
-      { label: 'Mécénat / aides privées', amount: 0 },
-    ],
-  },
-  {
-    side: BudgetSide.REVENUE,
-    code: '75-78',
-    name: 'Autres produits',
-    items: [
-      { label: 'Produits de gestion', amount: 0 },
-      { label: 'Produits financiers', amount: 0 },
-      { label: 'Produits exceptionnels', amount: 0 },
-    ],
-  },
-  {
-    side: BudgetSide.REVENUE,
-    code: '87',
-    name: 'Contributions vol.',
-    items: [
-      { label: 'Bénévolat', amount: 0 },
-      { label: 'Prestations en nature', amount: 0 },
-      { label: 'Dons en nature', amount: 0 },
-    ],
-  },
 ];
 
 /** Simplified 4-section template for small structures. */
@@ -187,35 +149,43 @@ const SIMPLE_TEMPLATE: EditableBudgetSection[] = [
     name: 'Personnel',
     items: [{ label: 'Rémunérations', amount: 0 }, { label: 'Charges sociales', amount: 0 }],
   },
-  {
-    side: BudgetSide.REVENUE,
-    code: '74',
-    name: 'Subventions',
-    items: [{ label: 'Subventions publiques', amount: 0 }, { label: 'Mécénat', amount: 0 }],
-  },
-  {
-    side: BudgetSide.REVENUE,
-    code: '75',
-    name: 'Dons & cotisations',
-    items: [{ label: 'Dons', amount: 0 }, { label: 'Cotisations', amount: 0 }],
-  },
 ];
 
-/** Blank template — one empty section per side. */
-const BLANK_TEMPLATE: EditableBudgetSection[] = [
-  { side: BudgetSide.EXPENSE, code: '', name: 'Charges', items: [{ label: '', amount: 0 }] },
-  { side: BudgetSide.REVENUE, code: '', name: 'Produits', items: [{ label: '', amount: 0 }] },
-];
+const TEMPLATES = { standard: ACCOUNTING_TEMPLATE, simple: SIMPLE_TEMPLATE } as const;
 
-const TEMPLATES = { standard: ACCOUNTING_TEMPLATE, simple: SIMPLE_TEMPLATE, blank: BLANK_TEMPLATE } as const;
+/** Builds the fixed, non-deletable revenue section whose amount tracks the campaign's goal. */
+function buildFixedRevenueSection(goal: number): EditableBudgetSection {
+  return {
+    side: BudgetSide.REVENUE,
+    code: 'PRODUIT',
+    name: FIXED_REVENUE_SECTION_NAME,
+    items: [{ label: FIXED_REVENUE_ITEM_LABEL, amount: goal }],
+  };
+}
+
+/** True if this section is the fixed "Produit / Dons" revenue category. */
+export function isFixedRevenueSection(s: { side: typeof BudgetSide[keyof typeof BudgetSide]; name: string }): boolean {
+  return s.side === BudgetSide.REVENUE && s.name === FIXED_REVENUE_SECTION_NAME;
+}
+
+/** Returns sections with the fixed revenue item's amount forced to the campaign's current goal. */
+function withFixedRevenueGoal(sections: EditableBudgetSection[], goal: number): EditableBudgetSection[] {
+  return sections.map((s) => (isFixedRevenueSection(s)
+    ? { ...s, items: s.items.map((it) => (it.label === FIXED_REVENUE_ITEM_LABEL ? { ...it, amount: goal } : it)) }
+    : s));
+}
 
 /**
  * Hook managing local budget editing state for a campaign.
  *
  * Budget changes are kept locally until the user clicks "Sauvegarder".
  * The hook exposes computed totals and actions for editing sections and items.
+ *
+ * @param goal - The campaign's current fundraising goal. The fixed "Produit / Dons"
+ *   revenue item is continuously re-derived from this value (never persisted stale)
+ *   so it stays in sync whenever the campaign's goal changes, with no manual resync step.
  */
-export function useBudget(): UseBudgetReturn {
+export function useBudget(goal: number): UseBudgetReturn {
   const [sections, setSections] = useState<EditableBudgetSection[]>([]);
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
   const [isDirty, setIsDirty] = useState(false);
@@ -225,24 +195,27 @@ export function useBudget(): UseBudgetReturn {
   /** Initialises local state from campaign budget sections. */
   const init = useCallback((budgetSections: BudgetSectionDto[]) => {
     setSections(
-      budgetSections.map((s) => ({
-        side: s.side,
-        code: s.code,
-        name: s.name,
-        items: s.items.map((it) => ({ label: it.label, amount: it.amount })),
-      })),
+      withFixedRevenueGoal(
+        budgetSections.map((s) => ({
+          side: s.side,
+          code: s.code,
+          name: s.name,
+          items: s.items.map((it) => ({ label: it.label, amount: it.amount })),
+        })),
+        goal,
+      ),
     );
     setCollapsedSections(new Set());
     setIsDirty(false);
-  }, []);
+  }, [goal]);
 
-  /** Pre-fills with the chosen template (amounts at 0). */
+  /** Pre-fills with the chosen template (amounts at 0), plus the fixed revenue section. */
   const initTemplate = useCallback((type: BudgetTemplateType = 'standard') => {
     const tpl = TEMPLATES[type];
-    setSections(tpl.map((s) => ({ ...s, items: s.items.map((it) => ({ ...it })) })));
+    setSections([...tpl.map((s) => ({ ...s, items: s.items.map((it) => ({ ...it })) })), buildFixedRevenueSection(goal)]);
     setCollapsedSections(new Set());
     setIsDirty(true);
-  }, []);
+  }, [goal]);
 
   /** Returns a shallow-cloned sections array after applying a mutation. */
   const mutateSections = useCallback(
@@ -333,7 +306,7 @@ export function useBudget(): UseBudgetReturn {
       setIsSaving(true);
       try {
         const payload: SaveBudgetRequest = {
-          sections: sections.map((s, sIdx) => ({
+          sections: withFixedRevenueGoal(sections, goal).map((s, sIdx) => ({
             side: s.side,
             code: s.code,
             name: s.name,
@@ -356,7 +329,7 @@ export function useBudget(): UseBudgetReturn {
         setIsSaving(false);
       }
     },
-    [sections, addToast],
+    [sections, goal, addToast],
   );
 
   const totalCharges = useMemo(
