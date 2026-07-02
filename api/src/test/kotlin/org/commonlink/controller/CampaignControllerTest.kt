@@ -11,6 +11,7 @@ import org.commonlink.dto.MilestoneDto
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
@@ -271,6 +272,18 @@ class CampaignControllerTest {
     fun `deleteCampaign - 401 without JWT`() {
         mockMvc.perform(delete("/api/association/campaigns/$campaignId"))
             .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `deleteCampaign - 422 when campaign is not DRAFT`() {
+        every { campaignService.deleteCampaign(userId, campaignId) } throws
+            UnprocessableEntityException("Cannot delete campaign in status LIVE; only DRAFT campaigns can be deleted")
+
+        mockMvc.perform(
+            delete("/api/association/campaigns/$campaignId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isUnprocessableContent)
     }
 
     // ── PUT /api/association/campaigns/{id}/budget ────────────────────────────

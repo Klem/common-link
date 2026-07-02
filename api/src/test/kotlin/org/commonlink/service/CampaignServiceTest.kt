@@ -323,6 +323,20 @@ class CampaignServiceTest {
         assertTrue(remaining.isEmpty())
     }
 
+    @Test
+    fun `deleteCampaign - throws when campaign is not DRAFT`() {
+        linkMonerium(userId)
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Live Campaign", goal = BigDecimal("10000")))
+        campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.deleteCampaign(userId, created.id)
+        }
+
+        val remaining = campaignService.listCampaigns(userId)
+        assertEquals(1, remaining.size)
+    }
+
     // ── saveBudget ────────────────────────────────────────────────────────────
 
     @Test

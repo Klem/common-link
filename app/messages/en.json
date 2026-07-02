@@ -185,6 +185,7 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "errors": {
+      "campaignDeleteBlocked": "Only draft campaigns can be deleted.",
       "conflict": "This resource already exists.",
       "networkError": "Connection problem. Check your network.",
       "rateLimitExceeded": "Too many requests. Please wait {seconds} seconds.",
@@ -913,5 +914,5 @@
     },
     "title": "Dashboard",
     "welcome": "Welcome"
-  },
+  }
 }

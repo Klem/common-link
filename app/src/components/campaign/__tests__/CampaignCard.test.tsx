@@ -15,6 +15,11 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
 
+const mockAddToast = vi.fn();
+vi.mock('@/stores/toastStore', () => ({
+  useToastStore: () => ({ addToast: mockAddToast }),
+}));
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const baseCampaign: CampaignSummaryDto = {
@@ -143,5 +148,26 @@ describe('CampaignCard', () => {
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('campaigns.delete'));
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('delete button is not rendered for LIVE campaigns', () => {
+    const liveCampaign = { ...baseCampaign, status: 'LIVE' as const };
+    render(<CampaignCard campaign={liveCampaign} onDelete={onDelete} />);
+    expect(screen.queryByLabelText('campaigns.delete')).not.toBeInTheDocument();
+  });
+
+  it('delete button is not rendered for ENDED campaigns', () => {
+    const endedCampaign = { ...baseCampaign, status: 'ENDED' as const };
+    render(<CampaignCard campaign={endedCampaign} onDelete={onDelete} />);
+    expect(screen.queryByLabelText('campaigns.delete')).not.toBeInTheDocument();
+  });
+
+  it('toasts an error when onDelete rejects (e.g. campaign no longer DRAFT)', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const failingDelete = vi.fn().mockRejectedValue(new Error('422'));
+    render(<CampaignCard campaign={baseCampaign} onDelete={failingDelete} />);
+    fireEvent.click(screen.getByLabelText('campaigns.delete'));
+    await screen.findByText('Hiver Solidaire 2025'); // let the rejected promise settle
+    expect(mockAddToast).toHaveBeenCalledWith('error', 'errors.campaignDeleteBlocked');
   });
 });

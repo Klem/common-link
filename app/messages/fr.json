@@ -185,6 +185,7 @@
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "errors": {
+      "campaignDeleteBlocked": "Seules les campagnes en brouillon peuvent être supprimées.",
       "conflict": "Cette ressource existe déjà.",
       "networkError": "Problème de connexion. Vérifiez votre réseau.",
       "rateLimitExceeded": "Trop de requêtes. Veuillez attendre {seconds} secondes.",

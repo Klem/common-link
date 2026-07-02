@@ -211,15 +211,24 @@ class CampaignService(
     /**
      * Deletes a campaign and all its related data (budget sections, items, milestones via cascade).
      *
+     * Only a campaign still in [CampaignStatus.DRAFT] can be deleted — once published, its data
+     * (donations, milestones) must be preserved for transparency and on-chain consistency.
+     *
      * @param userId UUID of the authenticated association user.
      * @param campaignId UUID of the campaign to delete.
      * @throws UserNotFoundException if no association profile exists for this user.
      * @throws NotFoundException if the campaign is not found under this association.
+     * @throws UnprocessableEntityException if the campaign is not in DRAFT status.
      */
     @Transactional
     fun deleteCampaign(userId: UUID, campaignId: UUID) {
         val associationId = resolveAssociationId(userId)
         val campaign = resolveCampaign(campaignId, associationId)
+        if (campaign.status != CampaignStatus.DRAFT) {
+            throw UnprocessableEntityException(
+                "Cannot delete campaign in status ${campaign.status}; only DRAFT campaigns can be deleted"
+            )
+        }
         campaignRepository.delete(campaign)
         logger.info("Campaign deleted: id={}, associationId={}", campaignId, associationId)
     }

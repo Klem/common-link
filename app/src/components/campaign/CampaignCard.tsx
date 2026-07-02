@@ -5,10 +5,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ROUTES } from '@/lib/routes';
 import type { CampaignSummaryDto } from '@/types/campaign';
 import { CampaignStatus } from '@/types/campaign';
+import { useToastStore } from '@/stores/toastStore';
 
 interface CampaignCardProps {
   campaign: CampaignSummaryDto;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
 }
 
 function formatEur(amount: number): string {
@@ -33,6 +34,7 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('dashboard');
+  const { addToast } = useToastStore();
 
   const pct = campaign.goal > 0
     ? Math.round((campaign.raised / campaign.goal) * 100)
@@ -48,10 +50,14 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
     router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}/${campaign.id}`);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(t('campaigns.deleteConfirm'))) {
-      onDelete(campaign.id);
+      try {
+        await onDelete(campaign.id);
+      } catch {
+        addToast('error', 'errors.campaignDeleteBlocked');
+      }
     }
   };
 
@@ -129,14 +135,16 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
               </button>
             </>
           )}
-          <button
-            className="btn btn-sm btn-ghost"
-            onClick={handleDelete}
-            aria-label={t('campaigns.delete')}
-            title={t('campaigns.delete')}
-          >
-            🗑
-          </button>
+          {isDraft && (
+            <button
+              className="btn btn-sm btn-ghost"
+              onClick={handleDelete}
+              aria-label={t('campaigns.delete')}
+              title={t('campaigns.delete')}
+            >
+              🗑
+            </button>
+          )}
         </div>
       </div>
     </div>
