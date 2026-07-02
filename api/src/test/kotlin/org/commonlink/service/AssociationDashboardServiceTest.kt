@@ -17,6 +17,7 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.util.Optional
 import java.util.UUID
 
 class AssociationDashboardServiceTest {
@@ -28,12 +29,15 @@ class AssociationDashboardServiceTest {
 
     private lateinit var service: AssociationDashboardService
 
+    private val userId: UUID = UUID.randomUUID()
     private val assocId: UUID = UUID.randomUUID()
     private val monthFmt = DateTimeFormatter.ofPattern("yyyy-MM")
 
     @BeforeEach
     fun setup() {
         service = AssociationDashboardService(donationRepository, campaignRepository, milestoneRepository, associationProfileRepository)
+        every { associationProfileRepository.findByUserId(userId) } returns
+            Optional.of(mockk<org.commonlink.entity.AssociationProfile> { every { id } returns assocId })
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -79,7 +83,7 @@ class AssociationDashboardServiceTest {
             listOf(monthlyRow(prevMonth, BigDecimal("500")), monthlyRow(currentMonth, BigDecimal("1000")))
         every { donationRepository.findRecentByAssociationId(assocId, PageRequest.of(0, 10)) } returns emptyList()
 
-        val result = service.getDashboard(assocId)
+        val result = service.getDashboard(userId)
 
         assertThat(result.totalRaisedActive).isEqualByComparingTo("1500.00")
         assertThat(result.activeCampaignCount).isEqualTo(1L)
@@ -100,7 +104,7 @@ class AssociationDashboardServiceTest {
         every { donationRepository.findMonthlyAmountsByAssociationId(assocId, any()) } returns emptyList()
         every { donationRepository.findRecentByAssociationId(assocId, PageRequest.of(0, 10)) } returns emptyList()
 
-        val result = service.getDashboard(assocId)
+        val result = service.getDashboard(userId)
 
         assertThat(result.totalRaisedActive).isEqualByComparingTo(BigDecimal.ZERO)
         assertThat(result.activeCampaignCount).isEqualTo(0L)
@@ -124,7 +128,7 @@ class AssociationDashboardServiceTest {
             listOf(monthlyRow(currentMonth, BigDecimal("200")))
         every { donationRepository.findRecentByAssociationId(assocId, PageRequest.of(0, 10)) } returns emptyList()
 
-        val result = service.getDashboard(assocId)
+        val result = service.getDashboard(userId)
 
         assertThat(result.donations6Months).hasSize(6)
         result.donations6Months.dropLast(1).forEach { assertThat(it.amount).isEqualByComparingTo(BigDecimal.ZERO) }
@@ -149,7 +153,7 @@ class AssociationDashboardServiceTest {
         every { donationRepository.findMonthlyAmountsByAssociationId(assocId, any()) } returns emptyList()
         every { donationRepository.findRecentByAssociationId(assocId, PageRequest.of(0, 10)) } returns listOf(donation)
 
-        val result = service.getDashboard(assocId)
+        val result = service.getDashboard(userId)
 
         assertThat(result.recentActivity).hasSize(1)
         assertThat(result.recentActivity[0].type).isEqualTo(ActivityType.DONATION)
@@ -174,7 +178,7 @@ class AssociationDashboardServiceTest {
         every { donationRepository.findMonthlyAmountsByAssociationId(assocId, any()) } returns emptyList()
         every { donationRepository.findRecentByAssociationId(assocId, PageRequest.of(0, 10)) } returns listOf(donation)
 
-        val result = service.getDashboard(assocId)
+        val result = service.getDashboard(userId)
 
         assertThat(result.recentActivity[0].label).isEqualTo("Bob Martin")
     }
@@ -188,7 +192,7 @@ class AssociationDashboardServiceTest {
         every { donationRepository.findMonthlyAmountsByAssociationId(assocId, any()) } returns emptyList()
         every { donationRepository.findRecentByAssociationId(assocId, PageRequest.of(0, 10)) } returns emptyList()
 
-        val result = service.getDashboard(assocId)
+        val result = service.getDashboard(userId)
 
         assertThat(result.avgProgress).isEqualByComparingTo(BigDecimal.ZERO)
     }

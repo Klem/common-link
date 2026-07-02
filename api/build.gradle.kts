@@ -34,7 +34,10 @@ dependencies {
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // Spring Boot 4 uses Jackson 3 (tools.jackson.*) internally — the Jackson 2.x
+    // jackson-module-kotlin never registers with it, so Kotlin default parameter values
+    // are silently ignored and omitted fields NPE instead of falling back to their default.
+    implementation("tools.jackson.module:jackson-module-kotlin")
 
     // Database
     runtimeOnly("org.postgresql:postgresql")
