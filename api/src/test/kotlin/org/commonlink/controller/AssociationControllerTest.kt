@@ -5,6 +5,7 @@ import io.mockk.every
 import org.commonlink.dto.ActivityItemDto
 import org.commonlink.dto.ActivityType
 import org.commonlink.dto.AssociationProfileDto
+import org.commonlink.entity.VerificationStatus
 import org.commonlink.dto.DashboardStatsDto
 import org.commonlink.dto.MonthlyPointDto
 import org.commonlink.repository.UserRepository
@@ -67,7 +68,14 @@ class AssociationControllerTest {
         postalCode = "75011",
         contactName = "contact@msf.fr",
         description = "Organisation humanitaire",
-        verified = false
+        rna = null,
+        creationYear = null,
+        contactEmail = null,
+        phone = null,
+        verificationStatus = VerificationStatus.UNVERIFIED,
+        verificationRejectionReason = null,
+        verificationSubmittedAt = null,
+        verifiedAt = null,
     )
 
     // -------------------------------------------------------------------------

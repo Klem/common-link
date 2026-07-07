@@ -4,7 +4,9 @@ import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.dto.toDto
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
+import java.time.Instant
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.onchain.OnchainCodec
 import org.commonlink.repository.AssociationProfileRepository
@@ -90,7 +92,8 @@ class AssociationService(
     fun markVerified(associationId: UUID) {
         val association = associationProfileRepository.findById(associationId)
             .orElseThrow { IllegalArgumentException("Association not found: $associationId") }
-        association.verified = true
+        association.verificationStatus = VerificationStatus.VERIFIED
+        association.verifiedAt = Instant.now()
         associationProfileRepository.save(association)
 
         val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
@@ -123,7 +126,7 @@ class AssociationService(
     fun revokeAssociation(associationId: UUID) {
         val association = associationProfileRepository.findById(associationId)
             .orElseThrow { IllegalArgumentException("Association not found: $associationId") }
-        association.verified = false
+        association.verificationStatus = VerificationStatus.UNVERIFIED
         associationProfileRepository.save(association)
 
         val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
@@ -153,7 +156,8 @@ class AssociationService(
     fun restoreAssociation(associationId: UUID) {
         val association = associationProfileRepository.findById(associationId)
             .orElseThrow { IllegalArgumentException("Association not found: $associationId") }
-        association.verified = true
+        association.verificationStatus = VerificationStatus.VERIFIED
+        association.verifiedAt = Instant.now()
         associationProfileRepository.save(association)
 
         val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress

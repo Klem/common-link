@@ -1,6 +1,7 @@
 package org.commonlink.entity
 
 import jakarta.persistence.*
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -10,8 +11,7 @@ import java.util.UUID
  * The [identifier] field stores the French SIREN/RNA identifier (9 characters) that
  * uniquely identifies the organisation with public authorities.
  *
- * The [verified] flag is set by an administrator after manual verification of the
- * organisation's legal status and is used to display a "verified" badge on the platform.
+ * KYC lifecycle is tracked via [verificationStatus]; documents are stored in [AssociationDocument].
  */
 @Entity
 @Table(name = "association_profiles")
@@ -51,7 +51,36 @@ class AssociationProfile(
     @Column(name = "description")
     var description: String? = null,
 
-    /** Whether an administrator has verified the association's legal status. */
-    @Column(name = "verified", nullable = false)
-    var verified: Boolean = false
+    /** French RNA number (e.g. W123456789). Editable after creation. */
+    @Column(name = "rna", length = 20)
+    var rna: String? = null,
+
+    /** Year the association was founded (e.g. 2018). */
+    @Column(name = "creation_year")
+    var creationYear: Short? = null,
+
+    /** Public contact email for the association. */
+    @Column(name = "contact_email", length = 255)
+    var contactEmail: String? = null,
+
+    /** Public contact phone number. */
+    @Column(name = "phone", length = 30)
+    var phone: String? = null,
+
+    /** KYC verification lifecycle status. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification_status", nullable = false, length = 20)
+    var verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED,
+
+    /** Reason provided by the admin when rejecting the KYC dossier. */
+    @Column(name = "verification_rejection_reason", columnDefinition = "TEXT")
+    var verificationRejectionReason: String? = null,
+
+    /** Timestamp when the association last submitted their KYC documents. */
+    @Column(name = "verification_submitted_at")
+    var verificationSubmittedAt: Instant? = null,
+
+    /** Timestamp when an admin approved the KYC dossier. */
+    @Column(name = "verified_at")
+    var verifiedAt: Instant? = null,
 )

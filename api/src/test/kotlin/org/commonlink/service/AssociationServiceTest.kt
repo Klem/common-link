@@ -8,6 +8,7 @@ import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MoneriumConnection
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
+import org.commonlink.entity.VerificationStatus
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,7 +36,8 @@ class AssociationServiceTest {
     private fun stubAssociation() {
         every { mockAssociation.id } returns associationId
         every { mockAssociation.identifier } returns "123456789"
-        every { mockAssociation.verified = any() } returns Unit
+        every { mockAssociation.verificationStatus = any() } returns Unit
+        every { mockAssociation.verifiedAt = any() } returns Unit
         every { associationRepo.findById(associationId) } returns Optional.of(mockAssociation)
         every { associationRepo.save(mockAssociation) } returns mockAssociation
     }

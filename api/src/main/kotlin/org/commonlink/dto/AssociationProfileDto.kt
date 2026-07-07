@@ -1,6 +1,8 @@
 package org.commonlink.dto
 
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.VerificationStatus
+import java.time.Instant
 import java.util.UUID
 
 data class AssociationProfileDto(
@@ -11,7 +13,14 @@ data class AssociationProfileDto(
     val postalCode: String?,
     val contactName: String?,
     val description: String?,
-    val verified: Boolean
+    val rna: String?,
+    val creationYear: Short?,
+    val contactEmail: String?,
+    val phone: String?,
+    val verificationStatus: VerificationStatus,
+    val verificationRejectionReason: String?,
+    val verificationSubmittedAt: Instant?,
+    val verifiedAt: Instant?,
 )
 
 fun AssociationProfile.toDto() = AssociationProfileDto(
@@ -22,5 +31,12 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     postalCode = postalCode,
     contactName = contactName,
     description = description,
-    verified = verified
+    rna = rna,
+    creationYear = creationYear,
+    contactEmail = contactEmail,
+    phone = phone,
+    verificationStatus = verificationStatus,
+    verificationRejectionReason = verificationRejectionReason,
+    verificationSubmittedAt = verificationSubmittedAt,
+    verifiedAt = verifiedAt,
 )
