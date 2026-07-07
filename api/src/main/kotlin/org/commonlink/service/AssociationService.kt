@@ -76,6 +76,10 @@ class AssociationService(
         req.city?.let { profile.city = it }
         req.postalCode?.let { profile.postalCode = it }
         req.description?.let { profile.description = it }
+        req.rna?.let { profile.rna = it }
+        req.creationYear?.let { profile.creationYear = it }
+        req.contactEmail?.let { profile.contactEmail = it }
+        req.phone?.let { profile.phone = it }
         return associationProfileRepository.save(profile).toDto()
     }
 

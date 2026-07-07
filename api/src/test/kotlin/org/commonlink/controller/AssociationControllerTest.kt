@@ -133,6 +133,68 @@ class AssociationControllerTest {
             .andExpect(status().isUnauthorized)
     }
 
+    @Test
+    fun `updateProfile - 200 with new information fields`() {
+        val updated = sampleProfile.copy(rna = "W751234567", creationYear = 1901, contactEmail = "contact@msf.fr", phone = "+33 1 23 45 67 89")
+        every { associationService.updateProfile(userId, any()) } returns updated
+
+        mockMvc.perform(
+            patch("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"rna":"W751234567","creationYear":1901,"contactEmail":"contact@msf.fr","phone":"+33 1 23 45 67 89"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.rna").value("W751234567"))
+            .andExpect(jsonPath("$.creationYear").value(1901))
+            .andExpect(jsonPath("$.contactEmail").value("contact@msf.fr"))
+            .andExpect(jsonPath("$.phone").value("+33 1 23 45 67 89"))
+    }
+
+    @Test
+    fun `updateProfile - 400 when RNA format invalid`() {
+        mockMvc.perform(
+            patch("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"rna":"X123456789"}""")
+        )
+            .andExpect(status().`is`(422))
+    }
+
+    @Test
+    fun `updateProfile - 400 when creation year out of range`() {
+        mockMvc.perform(
+            patch("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"creationYear":1500}""")
+        )
+            .andExpect(status().`is`(422))
+    }
+
+    @Test
+    fun `updateProfile - 400 when contact email invalid`() {
+        mockMvc.perform(
+            patch("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"contactEmail":"not-an-email"}""")
+        )
+            .andExpect(status().`is`(422))
+    }
+
+    @Test
+    fun `updateProfile - 400 when phone format invalid`() {
+        mockMvc.perform(
+            patch("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"phone":"abc"}""")
+        )
+            .andExpect(status().`is`(422))
+    }
+
     // -------------------------------------------------------------------------
     // GET /api/association/dashboard
     // -------------------------------------------------------------------------
