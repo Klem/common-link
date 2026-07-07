@@ -99,18 +99,18 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
 
         {/* Progress */}
         {showNoBudget ? (
-          <p style={{ fontSize: '12px', color: 'var(--slate-lavender)', marginBottom: '12px' }}>
+          <p className="camp-card-no-budget">
             {t('campaigns.draftNoBudget')}
           </p>
         ) : (
           <div className="camp-card-progress">
-            <div className="pbar" style={{ marginBottom: '6px' }}>
+            <div className="pbar">
               <div
                 className="pfill"
                 style={{ width: `${Math.min(pct, 100)}%`, ...(barColor ? { background: barColor } : {}) }}
               />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+            <div className="camp-card-progress-stats">
               <strong>{formatEur(campaign.raised)} / {campaign.goal > 0 ? formatEur(campaign.goal) : '—'}</strong>
               <span style={{ color: overfund ? 'var(--soft-amber)' : 'var(--slate-lavender)', fontWeight: overfund ? 700 : 400 }}>
                 {pct}%{overfund ? ' 🎉' : ''}
@@ -127,18 +127,18 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
         {/* Actions */}
         <div className="camp-card-actions">
           {isDraft && (
-            <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
+            <button className="btn btn-sm btn-primary flex-1" onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
               {t('campaigns.actionContinue')}
             </button>
           )}
           {isEnded && (
-            <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
+            <button className="btn btn-sm btn-secondary flex-1" onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
               {t('campaigns.actionReport')}
             </button>
           )}
           {campaign.status === CampaignStatus.LIVE && (
             <>
-              <button className="btn btn-sm btn-primary" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
+              <button className="btn btn-sm btn-primary flex-1" onClick={(e) => { e.stopPropagation(); handleCardClick(); }}>
                 {t('campaigns.actionManage')}
               </button>
               <button className="btn btn-sm btn-secondary" onClick={(e) => e.stopPropagation()}>

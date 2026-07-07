@@ -143,7 +143,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
               <button className="btn btn-primary" onClick={() => { cancelAutosave(); initTemplate(selectedTpl); }}>
                 {t('editor.budget.useTpl')}
               </button>
-              <div style={{ marginTop: '10px', fontSize: '11.5px', color: 'var(--slate-lavender)' }}>
+              <div className="budget-tpl-hint">
                 {t('editor.budget.initTemplateHint')}
               </div>
             </div>
@@ -188,7 +188,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
               <div className="bal-val ch">{fmtEur(totalCharges)}</div>
             </div>
             <div className="bal-center">
-              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '14px', fontWeight: 700, color: 'var(--ink-navy)' }}>
+              <div className="bal-center-value">
                 {fmtEur(balance)}
               </div>
               <div className={`bal-pill ${pill.cls}`}>{pill.label}</div>
@@ -205,7 +205,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
             {colFilter !== 'revenue' && (
               <div id="bud-col-charges">
                 <div className="col-head">
-                  <span style={{ color: 'var(--warm-coral)' }}>📉</span>
+                  <span className="col-head-icon ch">📉</span>
                   {t('editor.budget.chargesHead')}
                 </div>
                 <div id="bud-charges">
@@ -252,7 +252,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
             {colFilter !== 'expense' && (
               <div id="bud-col-produits">
                 <div className="col-head">
-                  <span style={{ color: 'var(--teal-dark)' }}>📈</span>
+                  <span className="col-head-icon pr">📈</span>
                   {t('editor.budget.produitsHead')}
                 </div>
                 <div id="bud-produits">
@@ -301,7 +301,7 @@ export function CampaignBudgetTab({ campaign, onBudgetSaved }: CampaignBudgetTab
           </div>
 
           {/* Save */}
-          <div className="flex justify-end" style={{ marginTop: '20px' }}>
+          <div className="form-save-row">
             <button
               type="button"
               onClick={handleSave}
@@ -357,14 +357,14 @@ function BudgetSection({
   return (
     <div className={`bsec${isOpen ? ' open' : ''}`}>
       <div className="bsec-h" onClick={() => { if (!isSectionArmed) onToggle(sIdx); }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 600, color: 'var(--ink-navy)' }}>
+        <div className="bsec-title-row">
           <span className={`bsec-code ${side}`}>{section.code}</span>
           {section.name}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div className="bsec-actions-row">
           <span className="bsec-tot">{sectionTotal.toLocaleString('fr-FR')} €</span>
           {isFixed ? (
-            <span className="bsec-del" style={{ opacity: 0.35, cursor: 'default' }} title={fixedHint}>🔒</span>
+            <span className={`bsec-del${isFixed ? ' locked' : ''}`} title={fixedHint}>🔒</span>
           ) : (
             <>
               <div className={`bsec-del-confirm${isSectionArmed ? ' show' : ''}`}>
@@ -415,7 +415,7 @@ function BudgetSection({
               />
             </div>
             {isFixed ? (
-              <span className="line-del" style={{ opacity: 0.35, cursor: 'default' }} title={fixedHint}>🔒</span>
+              <span className={`line-del${isFixed ? ' locked' : ''}`} title={fixedHint}>🔒</span>
             ) : (
               <>
                 <div className={`line-del-confirm${isItemArmed(iIdx) ? ' show' : ''}`}>
@@ -493,17 +493,16 @@ function AddSectionButton({
   }
 
   return (
-    <div className="bsec-add-form" style={{ padding: '10px', marginTop: '4px' }}>
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+    <div className="bsec-add-form">
+      <div className="bsec-add-row">
         <input
           type="text"
           value={addForm?.code ?? ''}
           onChange={(e) => onChangeCode(e.target.value)}
           placeholder={codePlaceholder}
-          className="cm-fi"
-          style={{ width: '80px' }}
+          className="cm-fi bsec-add-code-input"
         />
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div className="bsec-add-name-wrap">
           <input
             type="text"
             value={addForm?.name ?? ''}
@@ -511,8 +510,7 @@ function AddSectionButton({
             onFocus={() => { if (isExpense) setShowSuggestions(true); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             placeholder={isExpense ? t('editor.budget.sectionNameAccounting') : namePlaceholder}
-            className="cm-fi"
-            style={{ width: '100%' }}
+            className="cm-fi w-full"
             onKeyDown={(e) => { if (e.key === 'Enter') onConfirm(); if (e.key === 'Escape') onCancel(); }}
             autoFocus
             autoComplete="off"
@@ -532,7 +530,7 @@ function AddSectionButton({
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+      <div className="bsec-add-footer">
         <button type="button" className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onCancel}>
           {t('editor.budget.cancel')}
         </button>

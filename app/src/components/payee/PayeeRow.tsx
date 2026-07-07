@@ -146,7 +146,7 @@ export function PayeeRow({
 
           {/* IBANs */}
           {payee.ibans.length > 0 && (
-            <div className="rm-iban-fields" style={{ marginTop: 10 }}>
+            <div className="rm-iban-fields">
               {payee.ibans.map((iban) => (
                 <IbanRow
                   key={iban.id}
@@ -161,9 +161,9 @@ export function PayeeRow({
           )}
 
           {/* Add IBAN */}
-          <div style={{ marginTop: 8 }}>
+          <div className="rm-add-iban-wrap">
             {showIbanInput ? (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <div className="rm-add-iban-row">
                 <input
                   type="text"
                   autoFocus
@@ -174,8 +174,7 @@ export function PayeeRow({
                     if (e.key === 'Escape') { setIbanValue(''); setShowIbanInput(false); }
                   }}
                   placeholder={t('payees.iban.inputPlaceholder')}
-                  className="cm-fi"
-                  style={{ flex: 1, fontFamily: 'monospace', fontSize: 13 }}
+                  className="cm-fi-mono cm-fi-mono-flex"
                 />
                 <button onClick={handleAddIban} className="cm-btn cm-btn-primary cm-btn-sm">
                   {t('payees.iban.add')}
@@ -187,8 +186,7 @@ export function PayeeRow({
             ) : (
               <button
                 onClick={() => setShowIbanInput(true)}
-                className="cm-btn cm-btn-ghost cm-btn-sm"
-                style={{ fontSize: 12 }}
+                className="cm-btn cm-btn-ghost cm-btn-sm rm-add-iban-btn"
               >
                 ＋ {t('payees.iban.addIban')}
               </button>
@@ -246,7 +244,7 @@ export function PayeeRow({
         <span className="ht-left">
           📋 {t('payees.history.toggle')}
           {historyLoaded && payouts.length > 0 && (
-            <span className="badge-count" style={{ background: 'var(--deep-indigo)', marginLeft: 6 }}>
+            <span className="badge-count">
               {payouts.length}
             </span>
           )}

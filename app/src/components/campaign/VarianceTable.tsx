@@ -27,7 +27,7 @@ export function VarianceTable({ sections, isCharges }: VarianceTableProps) {
 
   if (sections.length === 0) {
     return (
-      <p style={{ color: 'var(--slate-lavender)', fontSize: '13px', padding: '12px' }}>
+      <p className="cm-table-empty">
         {t('reporting.tab.empty' as Parameters<typeof t>[0])}
       </p>
     );

@@ -49,6 +49,7 @@ export default function CampaignEditorPage() {
 
   const [activeTab, setActiveTab] = useState('info');
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [milestoneSortDir, setMilestoneSortDir] = useState<'asc' | 'desc'>('asc');
 
   /* Debounce ref for hero name/emoji saves */
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,6 +175,8 @@ export default function CampaignEditorPage() {
           <CampaignMilestonesTab
             campaign={campaign}
             onMilestonesChanged={fetchCampaign}
+            sortDirection={milestoneSortDir}
+            onSortDirectionChange={setMilestoneSortDir}
           />
         )}
 

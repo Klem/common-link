@@ -68,7 +68,7 @@ export function PrePublishModal({
 
   return (
     <div className="ov on" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="mod" style={{ maxWidth: '560px' }}>
+      <div className="mod mod-md">
         <div className="mod-h">
           <h3>{t('title')}</h3>
           <button className="mod-x" onClick={onClose}>✕</button>
@@ -141,7 +141,7 @@ export function PrePublishModal({
           </div>
         </div>
 
-        <div className="mod-f" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+        <div className="mod-f">
           <button className="btn btn-secondary" onClick={onClose}>
             {t('continueEditing')}
           </button>
@@ -149,7 +149,6 @@ export function PrePublishModal({
             className="btn btn-primary"
             onClick={onConfirm}
             disabled={!canPublish}
-            style={!canPublish ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
           >
             {canPublish ? t('confirm') : t('complete')}
           </button>

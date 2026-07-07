@@ -96,10 +96,8 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutPr
               fill={seg.color}
               stroke="var(--color-bg)"
               strokeWidth="2"
+              className="donut-segment"
               style={{
-                transition: 'transform 0.15s, opacity 0.15s',
-                cursor: 'pointer',
-                transformOrigin: '90px 90px',
                 transform: hovered === i ? 'scale(1.04)' : 'scale(1)',
                 filter: hovered === i ? 'brightness(1.1)' : 'none',
               }}

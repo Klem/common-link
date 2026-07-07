@@ -486,9 +486,8 @@
           "goal": {
             "label": "Fundraising goal (€)",
             "placeholder": "0",
-            "tip": "You can enter a free amount, or link it automatically to the total expenses in your projected budget."
+            "tip": "Enter the total amount you aim to raise for this campaign."
           },
-          "goalLink": "🔗 Link to total expenses",
           "impactGoals": {
             "label": "Impact goals",
             "placeholder": "E.g.: allow 450 students to study in good conditions, reduce absenteeism by 30%…",
@@ -539,6 +538,8 @@
           "proofLabel": "Transparency commitment",
           "proofPlaceholder": "e.g. photos + impact report at D+30",
           "reached": "Reached",
+          "sortAsc": "Sort ↑ (step asc)",
+          "sortDesc": "Sort ↓ (step desc)",
           "subtitle": "Each milestone is a fundraising threshold with a concrete measurable impact.",
           "targetLabel": "Target €",
           "title": "Campaign milestones",

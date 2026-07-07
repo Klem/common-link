@@ -12,22 +12,35 @@ const EMOJIS = [
   '🎨','🌈','🕊️','🌻','🏆','🚀','❤️','💚','💙','☀️','🌍','🎓','🍲','🔥','🎁','❄️','🧣',
 ];
 
+type SortDirection = 'asc' | 'desc';
+
 interface CampaignMilestonesTabProps {
   campaign: CampaignDto;
   onMilestonesChanged: () => void;
+  sortDirection?: SortDirection;
+  onSortDirectionChange?: (direction: SortDirection) => void;
 }
 
-export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: CampaignMilestonesTabProps) {
+export function CampaignMilestonesTab({
+  campaign, onMilestonesChanged, sortDirection = 'asc', onSortDirectionChange,
+}: CampaignMilestonesTabProps) {
   const t = useTranslations('dashboard.campaigns');
   const { isSaving, addNewMilestone, updateExistingMilestone, removeExistingMilestone } = useMilestones();
 
+  /* Ascending by step (sortOrder) — the true sequence driving step numbers, previous-target
+     validation and new-milestone defaults. Display order is a separate, purely visual concern. */
   const sorted = [...campaign.milestones].sort((a, b) => a.sortOrder - b.sortOrder);
+  const displaySorted = sortDirection === 'desc' ? [...sorted].reverse() : sorted;
 
   const handleAdd = async () => {
     const lastAmount = sorted.length > 0 ? sorted[sorted.length - 1].targetAmount : 0;
     const defaultAmount = Math.min(lastAmount, campaign.goal);
     await addNewMilestone(campaign.id, sorted.length, defaultAmount);
     onMilestonesChanged();
+  };
+
+  const handleToggleSort = () => {
+    onSortDirectionChange?.(sortDirection === 'asc' ? 'desc' : 'asc');
   };
 
   const handleDelete = async (milestoneId: string) => {
@@ -38,24 +51,34 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', gap: '12px' }}>
+      <div className="ms-header">
         <div>
-          <div style={{ fontFamily: "'Nunito Sans', sans-serif", fontSize: '15px', fontWeight: 900, color: 'var(--ink-navy)' }}>
+          <div className="ms-header-title">
             {t('editor.milestones.title')}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--slate-lavender)', marginTop: '3px' }}>
+          <div className="ms-header-subtitle">
             {t('editor.milestones.subtitle')}
           </div>
         </div>
         {sorted.length > 0 && (
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={isSaving}
-            className="cm-btn cm-btn-primary cm-btn-sm"
-          >
-            + {t('editor.milestones.add')}
-          </button>
+          <div className="ms-header-actions">
+            <button
+              type="button"
+              onClick={handleToggleSort}
+              className="cm-btn cm-btn-ghost cm-btn-sm"
+              title={sortDirection === 'asc' ? t('editor.milestones.sortAsc') : t('editor.milestones.sortDesc')}
+            >
+              {sortDirection === 'asc' ? '↑' : '↓'}
+            </button>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={isSaving}
+              className="cm-btn cm-btn-primary cm-btn-sm"
+            >
+              + {t('editor.milestones.add')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -66,14 +89,14 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
             <div className="empty-state-icon">🎯</div>
             <div className="empty-state-title">{t('editor.milestones.emptyTitle')}</div>
             <div className="empty-state-desc">{t('editor.milestones.emptyDesc')}</div>
-            <div className="ms-formula" style={{ maxWidth: '440px', textAlign: 'left' }}>
+            <div className="ms-formula ms-formula-empty">
               💡 {t('editor.milestones.formulaFrom')} <strong>5 000 €</strong>,{' '}
               {t('editor.milestones.formulaCanDo')} <em>{t('editor.milestones.formulaImpactPlaceholder')}</em>
             </div>
             <button type="button" onClick={handleAdd} disabled={isSaving} className="btn btn-primary">
               {t('editor.milestones.emptyCreate')}
             </button>
-            <div style={{ marginTop: '12px', fontSize: '11.5px', color: 'var(--slate-lavender)' }}>
+            <div className="empty-state-hint">
               {t('editor.milestones.emptyHint')}
             </div>
           </div>
@@ -82,7 +105,8 @@ export function CampaignMilestonesTab({ campaign, onMilestonesChanged }: Campaig
 
       {/* Milestone cards */}
       <div id="ms-list">
-        {sorted.map((milestone, idx) => {
+        {displaySorted.map((milestone) => {
+          const idx = sorted.indexOf(milestone);
           const prevTarget = idx > 0 ? sorted[idx - 1].targetAmount : 0;
           return (
             <MilestoneCard
@@ -229,7 +253,7 @@ function MilestoneCard({
           </div>
         </div>
         <div className={`ms-guided-num${numCls ? ` ${numCls}` : ''}`}>{idx + 1}</div>
-        <div className="ms-guided-title-wrap" style={{ paddingRight: '28px' }}>
+        <div className="ms-guided-title-wrap">
           <input
             className="ms-guided-title-input"
             value={title}
@@ -241,12 +265,7 @@ function MilestoneCard({
       </div>
 
       {isLockedForEdit && (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '4px',
-          background: 'rgba(122,113,162,.1)', color: 'var(--slate-lavender)',
-          padding: '3px 9px', borderRadius: '50px', fontSize: '10px', fontWeight: 700,
-          fontFamily: "'Syne', sans-serif", marginBottom: '10px',
-        }}>
+        <span className="ms-locked-badge">
           🔒 {milestone.status === MilestoneStatus.REACHED
             ? t('editor.milestones.fieldsLockedReached')
             : t('editor.milestones.fieldsLockedCurrent')}
@@ -280,12 +299,12 @@ function MilestoneCard({
               disabled={isLockedForEdit}
             />
           </div>
-          <span style={{ fontSize: '11px', color: 'var(--slate-lavender)', flex: 1 }}>
+          <span className="ms-guided-pct">
             {displayPct > 0 ? `${displayPct}${t('editor.milestones.pctSuffix')}` : ''}
           </span>
         </div>
         {isBelowPrev && (
-          <div style={{ fontSize: '11px', color: 'var(--warm-coral)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div className="ms-order-warning">
             ⚠ {t('editor.milestones.orderInvalid')} ({fmtEur(prevTarget)})
           </div>
         )}
@@ -308,7 +327,7 @@ function MilestoneCard({
       </div>
 
       {/* Proof / Transparency commitment */}
-      <div className="ms-guided-field" style={{ marginBottom: 0 }}>
+      <div className="ms-guided-field ms-guided-field-last">
         <div className="ms-guided-field-label">
           {t('editor.milestones.proofLabel')}
           <span className="pill-hint">{t('editor.milestones.pillOptionalHint')}</span>
@@ -329,15 +348,14 @@ function MilestoneCard({
           <span className="ms-badge-unreachable">⚠ {t('editor.milestones.unreachable')}</span>
         )}
         {isBelowPrev && !isUnreachable && (
-          <span style={{ background: 'rgba(255,107,91,.1)', color: 'var(--warm-coral)', padding: '3px 9px', borderRadius: '50px', fontSize: '10px', fontWeight: 700 }}>
+          <span className="ms-badge-order-invalid">
             ⚠ {t('editor.milestones.orderInvalid')}
           </span>
         )}
         <div className="ms-guided-bar">
           <div className="ms-guided-bar-fill" style={{ width: `${displayPct}%`, background: barColor }} />
         </div>
-        <span style={{
-          fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 700,
+        <span className="ms-amount-label" style={{
           color: isUnreachable ? 'var(--warm-coral)'
             : milestone.status === MilestoneStatus.REACHED ? 'var(--teal-dark)'
             : milestone.status === MilestoneStatus.CURRENT ? '#b37800'
@@ -351,13 +369,12 @@ function MilestoneCard({
 }
 
 function StatusBadge({ status, t }: { status: MilestoneStatusType; t: ReturnType<typeof useTranslations<'dashboard.campaigns'>> }) {
-  const base: React.CSSProperties = { padding: '3px 9px', borderRadius: '50px', fontSize: '10px', fontWeight: 700, fontFamily: "'Syne', sans-serif" };
   switch (status) {
     case MilestoneStatus.REACHED:
-      return <span style={{ ...base, background: 'rgba(78,205,196,.12)', color: 'var(--teal-dark)' }}>✓ {t('editor.milestones.reached')}</span>;
+      return <span className="ms-status-badge reached">✓ {t('editor.milestones.reached')}</span>;
     case MilestoneStatus.CURRENT:
-      return <span style={{ ...base, background: 'rgba(255,179,71,.1)', color: '#b37800' }}>⏳ {t('editor.milestones.current')}</span>;
+      return <span className="ms-status-badge current">⏳ {t('editor.milestones.current')}</span>;
     default:
-      return <span style={{ ...base, background: 'rgba(122,113,162,.1)', color: 'var(--slate-lavender)' }}>🔒 {t('editor.milestones.locked')}</span>;
+      return <span className="ms-status-badge locked">🔒 {t('editor.milestones.locked')}</span>;
   }
 }

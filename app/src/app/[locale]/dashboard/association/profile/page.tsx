@@ -140,7 +140,7 @@ export default function AssociationProfilePage() {
             </div>
             <div className="card-b">
               {isLoading ? (
-                <p style={{ fontSize: '14px', color: 'var(--slate-lavender)' }}>
+                <p className="profile-loading">
                   {t('association.profile.loading')}
                 </p>
               ) : (
@@ -171,7 +171,7 @@ export default function AssociationProfilePage() {
                         {...register('contactName')}
                       />
                       {errors.contactName && (
-                        <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '4px' }}>
+                        <p className="fhint error">
                           {errors.contactName.message}
                         </p>
                       )}
@@ -197,7 +197,7 @@ export default function AssociationProfilePage() {
                         {...register('postalCode')}
                       />
                       {errors.postalCode && (
-                        <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '4px' }}>
+                        <p className="fhint error">
                           {errors.postalCode.message}
                         </p>
                       )}
@@ -218,7 +218,7 @@ export default function AssociationProfilePage() {
                     />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                  <div className="frow-actions">
                     <button
                       type="button"
                       onClick={() => reset()}
@@ -251,11 +251,11 @@ export default function AssociationProfilePage() {
             </div>
             <div className="card-b">
               {profile?.verified ? (
-                <p style={{ fontSize: '14px', color: 'var(--teal-dark)', marginBottom: '12px' }}>
+                <p className="verif-msg ok">
                   ✓ {t('association.profile.verification.verified')}
                 </p>
               ) : (
-                <p style={{ fontSize: '14px', color: 'var(--slate-lavender)', marginBottom: '12px' }}>
+                <p className="verif-msg pending">
                   {t('association.profile.verification.pendingText')}
                 </p>
               )}
@@ -269,17 +269,17 @@ export default function AssociationProfilePage() {
       {activeTab === 'bank' && (
         <div className="set-tab-content active">
           {/* Carte Monerium */}
-          <div className="card no-hover" style={{ marginBottom: '20px' }}>
+          <div className="card no-hover monerium-card">
             <div className="card-h">
               <h3>{t('association.profile.monerium.title')}</h3>
               <span className="badge badge-info">{t('association.profile.monerium.badge')}</span>
             </div>
             <div className="card-b">
-              <p style={{ fontSize: '14px', color: 'var(--slate-lavender)', marginBottom: '16px', lineHeight: '1.6' }}>
+              <p className="monerium-desc">
                 {t('association.profile.monerium.description')}
               </p>
               {moneriumLoading ? (
-                <div style={{ width: '20px', height: '20px', border: '2px solid var(--deep-indigo)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <div className="monerium-spinner" />
               ) : connected ? (
                 <span className="badge badge-active">
                   {t('association.profile.monerium.connectedStatus')}
@@ -317,10 +317,10 @@ export default function AssociationProfilePage() {
               <h3>{t('association.profile.security.title')}</h3>
             </div>
             <div className="card-b">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="security-row">
                 <div>
                   <p className="fl">{t('association.profile.security.loginMethod')}</p>
-                  <p style={{ fontSize: '14px' }}>
+                  <p className="security-value">
                     {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
                   </p>
                 </div>

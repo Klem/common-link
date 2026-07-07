@@ -486,9 +486,8 @@
           "goal": {
             "label": "Objectif de collecte (€)",
             "placeholder": "0",
-            "tip": "Vous pouvez saisir un montant libre, ou le lier automatiquement au total des charges de votre budget prévisionnel."
+            "tip": "Saisissez le montant total que vous souhaitez collecter pour cette campagne."
           },
-          "goalLink": "🔗 Lier au total des charges du budget",
           "impactGoals": {
             "label": "Objectifs d'impact",
             "placeholder": "Ex : permettre à 450 élèves d'étudier dans de bonnes conditions, réduire le taux d'absentéisme de 30%…",
@@ -539,6 +538,8 @@
           "proofLabel": "Engagement de transparence",
           "proofPlaceholder": "Ex : publication de photos + rapport d'impact à J+30",
           "reached": "Atteinte",
+          "sortAsc": "Trier ↑ (palier croissant)",
+          "sortDesc": "Trier ↓ (palier décroissant)",
           "subtitle": "Chaque milestone est un palier de collecte avec un impact concret mesurable.",
           "targetLabel": "Objectif €",
           "title": "Milestones de la campagne",

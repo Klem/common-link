@@ -111,29 +111,29 @@ export default function PayeesPage() {
           <h1>{t('payees.pageTitle')}</h1>
           <p>{t('payees.pageSubtitle')}</p>
         </div>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <div className="rm-help-wrap">
           <button className="rm-help-btn" onClick={() => setHelpOpen(!helpOpen)}>?</button>
           <div className={`rm-help-panel${helpOpen ? ' open' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div className="rm-help-header">
               <span className="rm-help-title">{t('payees.help.title')}</span>
               <button
                 onClick={() => setHelpOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--slate-lavender)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
+                className="rm-help-close"
               >✕</button>
             </div>
-            <p style={{ color: 'var(--slate-lavender)' }}>{t('payees.help.text1')}</p>
-            <p style={{ color: 'var(--slate-lavender)', marginTop: 10 }}>{t('payees.help.text2')}</p>
+            <p className="rm-help-text">{t('payees.help.text1')}</p>
+            <p className="rm-help-text">{t('payees.help.text2')}</p>
           </div>
         </div>
       </div>
 
       {/* Add card */}
-      <div className="card no-hover" style={{ marginBottom: 24 }}>
+      <div className="card no-hover payees-add-card">
         <div className="card-h">
           <h3>{mode === 'company' ? t('payees.search.title') : t('payees.person.cardTitle')}</h3>
         </div>
         <div className="card-b">
-          <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+          <div className="payee-mode-tabs">
             <button
               className={`btn btn-sm ${mode === 'company' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => { setMode('company'); setPersonError(''); }}
@@ -148,27 +148,26 @@ export default function PayeesPage() {
 
           {mode === 'person' && (
             <div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                <div style={{ flex: 1 }}>
+              <div className="payee-person-row">
+                <div className="flex-1">
                   <label className="cm-label">{t('payees.person.firstName')}</label>
                   <input className="cm-fi" type="text" placeholder="Marie" value={firstName}
                     onChange={(e) => setFirstName(e.target.value)} autoComplete="off" />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="flex-1">
                   <label className="cm-label">{t('payees.person.lastName')}</label>
                   <input className="cm-fi" type="text" placeholder="Dupont" value={lastName}
                     onChange={(e) => { setLastName(e.target.value); setPersonError(''); }}
                     autoComplete="off" />
                 </div>
                 <button
-                  className="cm-btn cm-btn-primary"
+                  className="cm-btn cm-btn-primary siren-search-btn"
                   disabled={!lastName.trim() || isCreating}
                   onClick={handleAddPerson}
-                  style={{ height: 44, flexShrink: 0 }}
                 >✚ {t('payees.person.add')}</button>
               </div>
               {personError && (
-                <div style={{ marginTop: 8, color: 'var(--warm-coral)', fontSize: 13 }}>{personError}</div>
+                <div className="payee-person-error">{personError}</div>
               )}
             </div>
           )}
@@ -177,7 +176,7 @@ export default function PayeesPage() {
 
       {/* Sirene result panel */}
       {showPanel && sireneResult && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="sirene-panel-wrap">
           <SireneResultPanel
             result={sireneResult}
             onSelect={handleSelect}

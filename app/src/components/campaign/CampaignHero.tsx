@@ -192,12 +192,12 @@ export function CampaignHero({ campaign, onNameChange, onEmojiChange, onTabChang
             onChange={(e) => onNameChange(e.target.value)}
             placeholder={t('editor.info.name.placeholder')}
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', fontSize: '12px', color: 'var(--slate-lavender)', flexWrap: 'wrap' }}>
+          <div className="camp-info-meta">
             {dateRange && <span>{dateRange}</span>}
             {dateRange && <span>·</span>}
             <span>
               {t('editor.hero.goal')} :{' '}
-              <strong style={{ color: 'var(--teal-dark)' }}>
+              <strong className="camp-value-teal">
                 {campaign.goal.toLocaleString('fr-FR')} €
               </strong>
             </span>
@@ -209,12 +209,12 @@ export function CampaignHero({ campaign, onNameChange, onEmojiChange, onTabChang
       </div>
 
       {/* Collecté / barre de progression */}
-      <div style={{ marginTop: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-          <span style={{ color: 'var(--slate-lavender)' }}>{t('editor.hero.collected')}</span>
+      <div className="camp-progress-wrap">
+        <div className="camp-progress-labels">
+          <span className="camp-label-slate">{t('editor.hero.collected')}</span>
           <span>
-            <strong style={{ color: 'var(--teal-dark)' }}>{campaign.raised.toLocaleString('fr-FR')} €</strong>
-            <span style={{ color: 'var(--slate-lavender)' }}> / {campaign.goal.toLocaleString('fr-FR')} €</span>
+            <strong className="camp-value-teal">{campaign.raised.toLocaleString('fr-FR')} €</strong>
+            <span className="camp-label-slate"> / {campaign.goal.toLocaleString('fr-FR')} €</span>
           </span>
         </div>
         <div className="camp-progress-bar">
@@ -228,7 +228,7 @@ export function CampaignHero({ campaign, onNameChange, onEmojiChange, onTabChang
           {steps.map((step, i) => (
             <Fragment key={step.key}>
               {i === 4 && (
-                <span style={{ color: 'var(--slate-lavender)', fontSize: '11px', opacity: 0.5, padding: '0 4px', alignSelf: 'center' }}>·</span>
+                <span className="completion-sep">·</span>
               )}
               <button
                 type="button"

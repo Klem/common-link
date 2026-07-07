@@ -40,7 +40,7 @@ export function PayeeList({
       <div className="card-h">
         <h3>
           {t('payees.list.title')}{' '}
-          <span className="badge-count" style={{ background: 'var(--deep-indigo)' }}>
+          <span className="badge-count indigo">
             {payees.length}
           </span>
         </h3>
@@ -67,7 +67,7 @@ export function PayeeList({
           {filter === 'all' ? t('payees.list.empty') : t('payees.list.emptyFiltered')}
         </div>
       ) : (
-        <div style={{ padding: '8px 0' }}>
+        <div className="rm-list-body">
           {filtered.map((payee) => (
             <PayeeRow
               key={payee.id}

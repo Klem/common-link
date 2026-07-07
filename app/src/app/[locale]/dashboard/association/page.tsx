@@ -72,7 +72,7 @@ export default function AssociationDashboardPage() {
       </div>
 
       {error && (
-        <div className="alert alert-error" style={{ marginBottom: '24px' }}>
+        <div className="alert alert-error alert-spaced">
           {t('error')}
         </div>
       )}
