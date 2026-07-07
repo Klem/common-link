@@ -1,0 +1,288 @@
+package org.commonlink.service
+
+import org.commonlink.dto.DocumentSlotDto
+import org.commonlink.dto.OptionalDocumentDto
+import org.commonlink.dto.VerificationStateDto
+import org.commonlink.entity.AssociationDocument
+import org.commonlink.entity.AssociationDocumentType
+import org.commonlink.entity.AssociationDocumentType.OPTIONAL
+import org.commonlink.entity.AssociationDocumentType.VERIF_RNA_RECEIPT
+import org.commonlink.entity.AssociationDocumentType.VERIF_REPRESENTATIVE_ID
+import org.commonlink.entity.AssociationDocumentType.VERIF_STATUTS
+import org.commonlink.entity.VerificationStatus
+import org.commonlink.exception.ConflictException
+import org.commonlink.exception.NotFoundException
+import org.commonlink.exception.UnprocessableEntityException
+import org.commonlink.exception.UserNotFoundException
+import org.commonlink.repository.AssociationDocumentRepository
+import org.commonlink.repository.AssociationProfileRepository
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
+import java.time.Instant
+import java.util.UUID
+
+private val VERIF_DOC_TYPES = listOf(VERIF_STATUTS, VERIF_RNA_RECEIPT, VERIF_REPRESENTATIVE_ID)
+
+private val VERIF_ALLOWED_MIME = setOf(
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+)
+
+private val OPTIONAL_ALLOWED_MIME = VERIF_ALLOWED_MIME + setOf(
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+)
+
+private val VALID_CATEGORIES = setOf("financier", "rapport", "justificatif", "autre")
+
+private const val MAX_FILE_SIZE = 10L * 1024 * 1024 // 10 MB
+
+/**
+ * Business logic for association KYC verification and document management.
+ *
+ * Verification state machine: UNVERIFIED → PENDING (on submit) → VERIFIED | REJECTED.
+ * After REJECTED the association can replace documents and resubmit (REJECTED → PENDING).
+ *
+ * Document upload/delete is blocked while status is PENDING or VERIFIED.
+ * Submission requires all 3 required document slots to be filled.
+ */
+@Service
+class VerificationService(
+    private val associationProfileRepository: AssociationProfileRepository,
+    private val documentRepository: AssociationDocumentRepository,
+) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * Returns the full verification state for the association, including per-slot metadata for
+     * the 3 required documents. Content bytes are never loaded.
+     */
+    fun getVerificationState(userId: UUID): VerificationStateDto {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        val slotMap = VERIF_DOC_TYPES.associateWith { docType ->
+            documentRepository.findMetadataByAssociationIdAndDocType(profile.id!!, docType)
+        }
+
+        val slots = VERIF_DOC_TYPES.map { docType ->
+            val meta = slotMap[docType]
+            DocumentSlotDto(
+                docType = docType,
+                uploaded = meta != null,
+                id = meta?.id,
+                fileName = meta?.fileName,
+                sizeBytes = meta?.sizeBytes,
+                uploadedAt = meta?.uploadedAt,
+            )
+        }
+
+        return VerificationStateDto(
+            status = profile.verificationStatus,
+            rejectionReason = profile.verificationRejectionReason,
+            submittedAt = profile.verificationSubmittedAt,
+            verifiedAt = profile.verifiedAt,
+            requiredDocuments = slots,
+        )
+    }
+
+    /**
+     * Uploads or replaces a required verification document.
+     * Blocked when status is PENDING or VERIFIED.
+     */
+    @Transactional
+    fun uploadVerificationDocument(userId: UUID, docType: AssociationDocumentType, file: MultipartFile) {
+        require(docType in VERIF_DOC_TYPES) {
+            "docType $docType is not a verification document type"
+        }
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        guardMutableState(profile.verificationStatus)
+        validateFile(file, VERIF_ALLOWED_MIME)
+
+        // Replace: delete existing slot before inserting new one
+        if (documentRepository.existsByAssociationIdAndDocType(profile.id!!, docType)) {
+            documentRepository.deleteByAssociationIdAndDocType(profile.id!!, docType)
+        }
+
+        documentRepository.save(
+            AssociationDocument(
+                association = profile,
+                docType = docType,
+                fileName = file.originalFilename ?: file.name,
+                contentType = file.contentType ?: "application/octet-stream",
+                sizeBytes = file.size,
+                content = file.bytes,
+                uploadedAt = Instant.now(),
+            )
+        )
+        logger.info("Verification document {} uploaded for association {}", docType, profile.id)
+    }
+
+    /**
+     * Deletes a required verification document slot.
+     * Blocked when status is PENDING or VERIFIED.
+     */
+    @Transactional
+    fun deleteVerificationDocument(userId: UUID, docType: AssociationDocumentType) {
+        require(docType in VERIF_DOC_TYPES) {
+            "docType $docType is not a verification document type"
+        }
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        guardMutableState(profile.verificationStatus)
+
+        if (!documentRepository.existsByAssociationIdAndDocType(profile.id!!, docType)) {
+            throw NotFoundException("Document $docType not found for this association")
+        }
+
+        documentRepository.deleteByAssociationIdAndDocType(profile.id!!, docType)
+        logger.info("Verification document {} deleted for association {}", docType, profile.id)
+    }
+
+    /**
+     * Submits the verification dossier for admin review.
+     * Requires all 3 documents to be uploaded.
+     * Transitions UNVERIFIED | REJECTED → PENDING.
+     */
+    @Transactional
+    fun submitVerification(userId: UUID) {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        when (profile.verificationStatus) {
+            VerificationStatus.PENDING -> throw ConflictException("Verification is already pending")
+            VerificationStatus.VERIFIED -> throw ConflictException("Association is already verified")
+            else -> Unit
+        }
+
+        val uploadedCount = VERIF_DOC_TYPES.count { docType ->
+            documentRepository.existsByAssociationIdAndDocType(profile.id!!, docType)
+        }
+        if (uploadedCount < VERIF_DOC_TYPES.size) {
+            throw ConflictException("All 3 required documents must be uploaded before submission ($uploadedCount/3 present)")
+        }
+
+        profile.verificationStatus = VerificationStatus.PENDING
+        profile.verificationRejectionReason = null
+        profile.verificationSubmittedAt = Instant.now()
+        associationProfileRepository.save(profile)
+
+        logger.info("Verification submitted for association {} — status → PENDING", profile.id)
+    }
+
+    // -------------------------------------------------------------------------
+    // Optional documents
+    // -------------------------------------------------------------------------
+
+    /**
+     * Lists all supplementary (OPTIONAL) documents for an association, newest first.
+     * Content bytes are never loaded.
+     */
+    fun listOptionalDocuments(userId: UUID): List<OptionalDocumentDto> {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        return documentRepository.findAllMetadataByAssociationIdAndDocType(profile.id!!, OPTIONAL)
+            .map { it.toOptionalDto() }
+    }
+
+    /**
+     * Uploads a supplementary document (any category).
+     * Accepts PDF, JPEG, PNG, DOCX, and XLSX.
+     */
+    @Transactional
+    fun uploadOptionalDocument(userId: UUID, file: MultipartFile, category: String): OptionalDocumentDto {
+        if (category !in VALID_CATEGORIES) {
+            throw UnprocessableEntityException("Category must be one of: ${VALID_CATEGORIES.joinToString()}")
+        }
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        validateFile(file, OPTIONAL_ALLOWED_MIME)
+
+        val saved = documentRepository.save(
+            AssociationDocument(
+                association = profile,
+                docType = OPTIONAL,
+                category = category,
+                fileName = file.originalFilename ?: file.name,
+                contentType = file.contentType ?: "application/octet-stream",
+                sizeBytes = file.size,
+                content = file.bytes,
+                uploadedAt = Instant.now(),
+            )
+        )
+        logger.info("Optional document uploaded for association {} (category={})", profile.id, category)
+        return documentRepository.findMetadataByIdAndAssociationId(saved.id!!, profile.id!!)!!.toOptionalDto()
+    }
+
+    /**
+     * Deletes a supplementary document. Verifies ownership before deletion.
+     */
+    @Transactional
+    fun deleteOptionalDocument(userId: UUID, docId: UUID) {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        documentRepository.findMetadataByIdAndAssociationId(docId, profile.id!!)
+            ?: throw NotFoundException("Document $docId not found")
+
+        documentRepository.deleteById(docId)
+        logger.info("Optional document {} deleted for association {}", docId, profile.id)
+    }
+
+    /**
+     * Downloads the binary content of a document (any type).
+     * Returns a pair of (metadata, content bytes).
+     * Verifies ownership — throws NotFoundException if doc doesn't belong to this association.
+     */
+    fun downloadDocument(userId: UUID, docId: UUID): Pair<org.commonlink.repository.AssociationDocumentMetadata, ByteArray> {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        val meta = documentRepository.findMetadataByIdAndAssociationId(docId, profile.id!!)
+            ?: throw NotFoundException("Document $docId not found")
+
+        val content = documentRepository.findContentById(docId)
+            ?: throw NotFoundException("Document $docId content not found")
+
+        return meta to content
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    private fun guardMutableState(status: VerificationStatus) {
+        when (status) {
+            VerificationStatus.PENDING -> throw ConflictException("Cannot modify documents while verification is pending")
+            VerificationStatus.VERIFIED -> throw ConflictException("Cannot modify documents after verification is complete")
+            else -> Unit
+        }
+    }
+
+    private fun validateFile(file: MultipartFile, allowedMime: Set<String>) {
+        if (file.size > MAX_FILE_SIZE) {
+            throw UnprocessableEntityException("File size exceeds the 10 MB limit (${file.size} bytes)")
+        }
+        val mime = file.contentType ?: "application/octet-stream"
+        if (mime !in allowedMime) {
+            throw UnprocessableEntityException("File type '$mime' is not allowed. Accepted: ${allowedMime.joinToString()}")
+        }
+    }
+}
+
+private fun org.commonlink.repository.AssociationDocumentMetadata.toOptionalDto() = OptionalDocumentDto(
+    id = id!!,
+    fileName = fileName,
+    category = category,
+    contentType = contentType,
+    sizeBytes = sizeBytes,
+    uploadedAt = uploadedAt,
+)

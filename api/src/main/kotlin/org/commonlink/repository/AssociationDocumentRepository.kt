@@ -60,4 +60,44 @@ interface AssociationDocumentRepository : JpaRepository<AssociationDocument, UUI
 
     /** Deletes a specific document slot (used for replace/delete operations). */
     fun deleteByAssociationIdAndDocType(associationId: UUID, docType: AssociationDocumentType)
+
+    /**
+     * Lists all OPTIONAL documents for an association, newest first.
+     * Returns metadata only — content is never loaded.
+     */
+    @Query("""
+        SELECT d.id AS id, d.docType AS docType, d.category AS category,
+               d.fileName AS fileName, d.contentType AS contentType,
+               d.sizeBytes AS sizeBytes, d.uploadedAt AS uploadedAt
+        FROM AssociationDocument d
+        WHERE d.association.id = :associationId AND d.docType = :docType
+        ORDER BY d.uploadedAt DESC
+    """)
+    fun findAllMetadataByAssociationIdAndDocType(
+        @Param("associationId") associationId: UUID,
+        @Param("docType") docType: AssociationDocumentType,
+    ): List<AssociationDocumentMetadata>
+
+    /**
+     * Returns metadata for a document by its own id, with ownership check.
+     * Returns null if the document does not exist or does not belong to this association.
+     */
+    @Query("""
+        SELECT d.id AS id, d.docType AS docType, d.category AS category,
+               d.fileName AS fileName, d.contentType AS contentType,
+               d.sizeBytes AS sizeBytes, d.uploadedAt AS uploadedAt
+        FROM AssociationDocument d
+        WHERE d.id = :id AND d.association.id = :associationId
+    """)
+    fun findMetadataByIdAndAssociationId(
+        @Param("id") id: UUID,
+        @Param("associationId") associationId: UUID,
+    ): AssociationDocumentMetadata?
+
+    /**
+     * Fetches only the raw binary content for a document.
+     * Used exclusively by download endpoints — never called from listing paths.
+     */
+    @Query("SELECT d.content FROM AssociationDocument d WHERE d.id = :id")
+    fun findContentById(@Param("id") id: UUID): ByteArray?
 }
