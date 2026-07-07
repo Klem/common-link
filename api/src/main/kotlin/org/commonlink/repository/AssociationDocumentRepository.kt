@@ -100,4 +100,7 @@ interface AssociationDocumentRepository : JpaRepository<AssociationDocument, UUI
      */
     @Query("SELECT d.content FROM AssociationDocument d WHERE d.id = :id")
     fun findContentById(@Param("id") id: UUID): ByteArray?
+
+    /** Counts documents for an association whose docType is in the given set. Used for admin dossier listing. */
+    fun countByAssociationIdAndDocTypeIn(associationId: UUID, docTypes: Collection<AssociationDocumentType>): Long
 }

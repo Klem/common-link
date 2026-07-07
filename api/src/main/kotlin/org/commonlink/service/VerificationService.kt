@@ -1,5 +1,7 @@
 package org.commonlink.service
 
+import org.commonlink.dto.AdminVerificationDetailDto
+import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.DocumentSlotDto
 import org.commonlink.dto.OptionalDocumentDto
 import org.commonlink.dto.VerificationStateDto
@@ -17,6 +19,8 @@ import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -253,6 +257,111 @@ class VerificationService(
             ?: throw NotFoundException("Document $docId content not found")
 
         return meta to content
+    }
+
+    // -------------------------------------------------------------------------
+    // Admin operations
+    // -------------------------------------------------------------------------
+
+    /**
+     * Lists verification dossiers filtered by status, paginated. Never loads document content.
+     */
+    fun adminListVerifications(status: VerificationStatus, pageable: Pageable): Page<AdminVerificationSummaryDto> =
+        associationProfileRepository.findByVerificationStatus(status, pageable).map { profile ->
+            AdminVerificationSummaryDto(
+                associationId = profile.id!!,
+                name = profile.name,
+                identifier = profile.identifier,
+                status = profile.verificationStatus,
+                submittedAt = profile.verificationSubmittedAt,
+                docCount = documentRepository.countByAssociationIdAndDocTypeIn(profile.id!!, VERIF_DOC_TYPES).toInt(),
+            )
+        }
+
+    /**
+     * Returns the full dossier detail for one association: state, all document slots, and optional docs.
+     * Never loads document content.
+     */
+    fun adminGetDetail(associationId: UUID): AdminVerificationDetailDto {
+        val profile = associationProfileRepository.findById(associationId)
+            .orElseThrow { NotFoundException("Association $associationId not found") }
+
+        val slots = VERIF_DOC_TYPES.map { docType ->
+            val meta = documentRepository.findMetadataByAssociationIdAndDocType(profile.id!!, docType)
+            DocumentSlotDto(
+                docType = docType,
+                uploaded = meta != null,
+                id = meta?.id,
+                fileName = meta?.fileName,
+                sizeBytes = meta?.sizeBytes,
+                uploadedAt = meta?.uploadedAt,
+            )
+        }
+
+        val optionalDocs = documentRepository.findAllMetadataByAssociationIdAndDocType(profile.id!!, OPTIONAL)
+            .map { it.toOptionalDto() }
+
+        return AdminVerificationDetailDto(
+            associationId = profile.id!!,
+            name = profile.name,
+            identifier = profile.identifier,
+            status = profile.verificationStatus,
+            rejectionReason = profile.verificationRejectionReason,
+            submittedAt = profile.verificationSubmittedAt,
+            verifiedAt = profile.verifiedAt,
+            docCount = slots.count { it.uploaded },
+            requiredDocuments = slots,
+            optionalDocuments = optionalDocs,
+        )
+    }
+
+    /**
+     * Downloads a document on behalf of an admin, verifying that it belongs to the given association.
+     * Returns metadata and raw content bytes.
+     */
+    fun adminDownloadDocument(associationId: UUID, docId: UUID): Pair<org.commonlink.repository.AssociationDocumentMetadata, ByteArray> {
+        if (!associationProfileRepository.existsById(associationId)) {
+            throw NotFoundException("Association $associationId not found")
+        }
+        val meta = documentRepository.findMetadataByIdAndAssociationId(docId, associationId)
+            ?: throw NotFoundException("Document $docId not found for association $associationId")
+        val content = documentRepository.findContentById(docId)
+            ?: throw NotFoundException("Document $docId content not found")
+        return meta to content
+    }
+
+    /**
+     * Approves a PENDING dossier → VERIFIED, recording the timestamp.
+     * Throws [ConflictException] if the dossier is not in PENDING state.
+     */
+    @Transactional
+    fun adminApprove(associationId: UUID) {
+        val profile = associationProfileRepository.findById(associationId)
+            .orElseThrow { NotFoundException("Association $associationId not found") }
+        if (profile.verificationStatus != VerificationStatus.PENDING) {
+            throw ConflictException("Cannot approve: status is ${profile.verificationStatus}, expected PENDING")
+        }
+        profile.verificationStatus = VerificationStatus.VERIFIED
+        profile.verifiedAt = Instant.now()
+        associationProfileRepository.save(profile)
+        logger.info("Verification approved for association {} — status → VERIFIED", associationId)
+    }
+
+    /**
+     * Rejects a PENDING dossier → REJECTED, storing the admin-provided reason.
+     * Throws [ConflictException] if the dossier is not in PENDING state.
+     */
+    @Transactional
+    fun adminReject(associationId: UUID, reason: String) {
+        val profile = associationProfileRepository.findById(associationId)
+            .orElseThrow { NotFoundException("Association $associationId not found") }
+        if (profile.verificationStatus != VerificationStatus.PENDING) {
+            throw ConflictException("Cannot reject: status is ${profile.verificationStatus}, expected PENDING")
+        }
+        profile.verificationStatus = VerificationStatus.REJECTED
+        profile.verificationRejectionReason = reason
+        associationProfileRepository.save(profile)
+        logger.info("Verification rejected for association {} — reason: {}", associationId, reason)
     }
 
     // -------------------------------------------------------------------------

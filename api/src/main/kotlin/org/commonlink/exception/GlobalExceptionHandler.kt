@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -144,6 +145,19 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
             .header("Retry-After", "600")
             .body(problem)
+    }
+
+    /**
+     * Handles [AccessDeniedException] thrown by `@PreAuthorize` method security (HTTP 403).
+     *
+     * In Spring Security 7, `AuthorizationDeniedException` (a subclass) is thrown from AOP
+     * interceptors inside the MVC dispatch — after `ExceptionTranslationFilter` has already run.
+     * Without this handler it would reach [handleGeneric] and produce a 500.
+     */
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDenied(ex: AccessDeniedException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied")
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem)
     }
 
     /**
