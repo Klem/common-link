@@ -13,7 +13,8 @@ import java.math.BigDecimal
  *
  * @param title Short title describing what will be achieved at this milestone (required, max 255 characters).
  * @param emoji Visual icon emoji (max 10 characters). Defaults to "🎯" if null.
- * @param description Optional detailed description of the milestone deliverable.
+ * @param description Impact description (what this milestone enables for donors).
+ * @param transparencyCommitment Editorial commitment on how proof will be shared (optional).
  * @param targetAmount Amount of donations required to reach this milestone (>= 0). Defaults to 0.
  * @param sortOrder Display position in the milestone list; lower value = shown first.
  */
@@ -26,6 +27,8 @@ data class CreateMilestoneRequest(
     val emoji: String? = null,
 
     val description: String? = null,
+
+    val transparencyCommitment: String? = null,
 
     @field:DecimalMin("0")
     val targetAmount: BigDecimal = BigDecimal.ZERO,

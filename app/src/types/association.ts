@@ -27,3 +27,44 @@ export interface UpdateAssociationProfileRequest {
   postalCode?: string;
   description?: string;
 }
+
+/** Activity event types surfaced in the dashboard recent-activity feed. */
+export const ActivityType = {
+  DONATION: 'DONATION',
+  MILESTONE_REACHED: 'MILESTONE_REACHED',
+  PAYMENT: 'PAYMENT',
+} as const;
+export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
+
+/** One monthly bucket in the 6-month donations chart. */
+export interface MonthlyPoint {
+  /** ISO year-month string, e.g. "2026-01". */
+  month: string;
+  amount: number;
+}
+
+/** One entry in the recent activity feed. */
+export interface ActivityItem {
+  type: ActivityType;
+  /** Human-readable label, e.g. "Marie L. a donné 50€". */
+  label: string;
+  amount?: number;
+  occurredAt: string;
+}
+
+/** Closest upcoming milestone across all LIVE campaigns. */
+export interface NextMilestoneInfo {
+  label: string;
+  remainingAmount: number;
+}
+
+/** Response shape for `GET /api/association/dashboard`. */
+export interface DashboardStats {
+  totalRaisedActive: number;
+  activeCampaignCount: number;
+  nextMilestone: NextMilestoneInfo | null;
+  /** Average raised/goal ratio across LIVE campaigns, 0.0–1.0. */
+  avgProgress: number;
+  donations6Months: MonthlyPoint[];
+  recentActivity: ActivityItem[];
+}

@@ -13,7 +13,8 @@ import java.math.BigDecimal
  *
  * @param title New title (max 255 characters). Null = no change.
  * @param emoji New visual icon emoji (max 10 characters). Null = no change.
- * @param description New description text. Null = no change.
+ * @param description Impact description (what this milestone enables). Null = no change.
+ * @param transparencyCommitment Editorial commitment on how proof will be shared. Null = no change.
  * @param targetAmount New target amount in euros (>= 0). Null = no change.
  * @param status New milestone status. Null = no change.
  * @param sortOrder New display position. Null = no change.
@@ -26,6 +27,8 @@ data class UpdateMilestoneRequest(
     val emoji: String? = null,
 
     val description: String? = null,
+
+    val transparencyCommitment: String? = null,
 
     @field:DecimalMin("0")
     val targetAmount: BigDecimal? = null,

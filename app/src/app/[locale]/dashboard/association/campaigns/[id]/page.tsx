@@ -10,8 +10,18 @@ import {
   CampaignInfoTab,
   CampaignBudgetTab,
   CampaignMilestonesTab,
+  CampaignPaymentsTab,
+  CampaignDonorsTab,
+  CampaignReportingTab,
+  PrePublishModal,
 } from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
+import { usePayments } from '@/hooks/campaign/usePayments';
+import { useCampaignDonors } from '@/hooks/campaign/useCampaignDonors';
+import { publishCampaign } from '@/lib/api/campaign';
+import { useAccStatusStore } from '@/stores/accStatusStore';
+import { useToastStore } from '@/stores/toastStore';
+import { CampaignStatus } from '@/types/campaign';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 /**
@@ -32,8 +42,13 @@ export default function CampaignEditorPage() {
 
   const { campaign, isLoading, error, isSaving, updateCampaignInfo, setCampaign, fetchCampaign } =
     useCampaign(campaignId);
+  const payments = usePayments(campaignId);
+  const { donorsPage } = useCampaignDonors(campaignId);
+  const { verified, bank: bankConnected } = useAccStatusStore();
+  const { addToast } = useToastStore();
 
   const [activeTab, setActiveTab] = useState('info');
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   /* Debounce ref for hero name/emoji saves */
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,6 +71,25 @@ export default function CampaignEditorPage() {
   const handleNameChange = (name: string) => scheduleHeroSave({ name });
   const handleEmojiChange = (emoji: string) => scheduleHeroSave({ emoji });
 
+  const handleSave = () => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    if (campaign) updateCampaignInfo({ name: campaign.name, emoji: campaign.emoji });
+  };
+
+  const handleConfirmPublish = async () => {
+    setShowPublishModal(false);
+    try {
+      const updated = await publishCampaign(campaignId);
+      setCampaign(updated);
+      addToast('success', 'publishCampaignSuccess');
+    } catch {
+      addToast('error', 'publishCampaignError');
+    }
+  };
+
   /**
    * Called after the budget is saved successfully.
    * Updates the local campaign state with the returned DTO.
@@ -68,7 +102,7 @@ export default function CampaignEditorPage() {
   if (isLoading) {
     return (
       <div>
-        <Topbar title={t('pageTitle')} subtitle={t('editor.loading')} />
+        <Topbar title={t('pageTitle')} />
         <div className="flex items-center justify-center p-[48px]">
           <div className="w-[32px] h-[32px] rounded-full border-2 border-[var(--color-green)]/30 border-t-[var(--color-green)] animate-spin" />
         </div>
@@ -80,7 +114,7 @@ export default function CampaignEditorPage() {
   if (error || !campaign) {
     return (
       <div>
-        <Topbar title={t('pageTitle')} subtitle="" />
+        <Topbar title={t('pageTitle')} />
         <div className="p-[48px] text-center text-[var(--color-text-2)]">
           {t('editor.notFound')}
         </div>
@@ -90,19 +124,34 @@ export default function CampaignEditorPage() {
 
   return (
     <div>
-      <Topbar title={campaign.name} subtitle={t('pageSubtitle')} />
+      <Topbar title={campaign.name} parent={t('pageTitle')} />
 
-      <div className="p-[24px]">
+      <div className="page">
+        {/* — Barre d'actions — */}
+        <div className="camp-actions-bar">
+          <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={handleSave} disabled={isSaving}>
+            💾 {t('editor.info.save')}
+          </button>
+          {campaign.status === CampaignStatus.DRAFT && (
+            <button className="cm-btn cm-btn-primary cm-btn-sm" onClick={() => setShowPublishModal(true)}>
+              🚀 {t('editor.publish')}
+            </button>
+          )}
+        </div>
+
         <CampaignHero
           campaign={campaign}
           onNameChange={handleNameChange}
           onEmojiChange={handleEmojiChange}
+          onTabChange={setActiveTab}
         />
 
         <CampaignTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
           milestoneCount={campaign.milestones.length}
+          paymentCount={payments.summary?.txTotal ? Number(payments.summary.txTotal) : undefined}
+          donorCount={donorsPage?.totalElements}
         />
 
         {/* Tab content */}
@@ -127,7 +176,29 @@ export default function CampaignEditorPage() {
             onMilestonesChanged={fetchCampaign}
           />
         )}
+
+        {activeTab === 'payments' && (
+          <CampaignPaymentsTab campaign={campaign} payments={payments} />
+        )}
+
+        {activeTab === 'donors' && (
+          <CampaignDonorsTab campaign={campaign} />
+        )}
+
+        {activeTab === 'reporting' && (
+          <CampaignReportingTab campaign={campaign} />
+        )}
       </div>
+
+      {showPublishModal && (
+        <PrePublishModal
+          campaign={campaign}
+          verified={verified}
+          bankConnected={bankConnected}
+          onClose={() => setShowPublishModal(false)}
+          onConfirm={handleConfirmPublish}
+        />
+      )}
     </div>
   );
 }

@@ -1,11 +1,13 @@
 /**
  * Possible statuses for a fundraising campaign.
  * - DRAFT: not yet published, only visible to the association
+ * - PRIVATE: published but accessible by direct link only (pending account verification)
  * - LIVE: published and accepting donations
  * - ENDED: closed, no longer accepting donations
  */
 export const CampaignStatus = {
   DRAFT: 'DRAFT',
+  PRIVATE: 'PRIVATE',
   LIVE: 'LIVE',
   ENDED: 'ENDED',
 } as const;
@@ -75,8 +77,10 @@ export interface MilestoneDto {
   emoji: string;
   /** Short title of the milestone. */
   title: string;
-  /** Optional longer description. */
+  /** Impact description — what this milestone enables for donors. */
   description: string | null;
+  /** Editorial transparency commitment (how proof will be shared). */
+  transparencyCommitment: string | null;
   /** Amount in euros at which this milestone is triggered. */
   targetAmount: number;
   /** Current status of this milestone. */
@@ -111,8 +115,14 @@ export interface CampaignDto {
   startDate: string | null;
   /** ISO date when the campaign ends, or null. */
   endDate: string | null;
-  /** On-chain contract address once deployed, or null. */
-  contractAddress: string | null;
+  /** Campaign category, or null. */
+  category: string | null;
+  /** Why the association is launching this campaign, or null. */
+  reason: string | null;
+  /** Concrete expected outcomes, or null. */
+  impactGoals: string | null;
+  /** URL or path of the cover image, or null. */
+  coverImage: string | null;
   /** Budget sections (charges and produits). */
   budgetSections: BudgetSectionDto[];
   /** Campaign milestones. */
@@ -187,8 +197,14 @@ export interface UpdateCampaignRequest {
   startDate?: string;
   /** ISO date string for campaign end. */
   endDate?: string;
-  /** On-chain contract address. */
-  contractAddress?: string;
+  /** Campaign category (max 50 chars). */
+  category?: string;
+  /** Why the association is launching this campaign. */
+  reason?: string;
+  /** Concrete expected outcomes. */
+  impactGoals?: string;
+  /** URL or path of the cover image. */
+  coverImage?: string;
 }
 
 /**
@@ -251,8 +267,10 @@ export interface UpdateMilestoneRequest {
   title?: string;
   /** Emoji for the milestone. */
   emoji?: string;
-  /** Longer description. */
+  /** Impact description — what this milestone enables for donors. */
   description?: string;
+  /** Editorial transparency commitment (how proof will be shared). */
+  transparencyCommitment?: string;
   /** Amount in euros at which this milestone is triggered. */
   targetAmount?: number;
   /** Milestone status. */

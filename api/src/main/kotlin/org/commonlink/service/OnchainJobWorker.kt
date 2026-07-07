@@ -7,7 +7,7 @@ import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.onchain.OnchainCodec
-import org.commonlink.onchain.OnchainRegistryClient
+import org.commonlink.onchain.OnchainRegistry
 import org.commonlink.repository.CampaignRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -24,7 +24,7 @@ import java.util.UUID
  *
  * Disabled by default; enabled per-profile via `onchain.worker.enabled=true`.
  * Each tick locks up to `onchain.worker.batch-size` `PENDING` jobs (`FOR UPDATE SKIP LOCKED`),
- * dispatches them to [OnchainRegistryClient], and persists the resulting tx hash/status.
+ * dispatches them to [org.commonlink.onchain.OnchainRegistry], and persists the resulting tx hash/status.
  * On failure, jobs are re-queued until the 5th attempt, after which they become `FAILED`.
  *
  * Transaction boundary: [OnchainJobClaimer.claimBatch] runs in its own committed transaction
@@ -39,7 +39,7 @@ class OnchainJobWorker(
     private val claimer: OnchainJobClaimer,
     private val repo: org.commonlink.repository.OnchainJobRepository,
     private val campaignRepository: CampaignRepository,
-    private val client: OnchainRegistryClient,
+    private val client: OnchainRegistry,
     private val objectMapper: ObjectMapper,
     private val cfg: OnchainConfig,
 ) {
@@ -127,6 +127,14 @@ class OnchainJobWorker(
                     OnchainCodec.stringToBytes32(p.txRef),
                 )
             }
+            OnchainJobAction.RECORD_PAYOUT -> {
+                val p = objectMapper.readValue(job.payloadJson, RecordPayoutPayload::class.java)
+                client.recordPayout(
+                    OnchainCodec.uuidToBytes32(p.payoutId),
+                    OnchainCodec.uuidToBytes32(p.campaignId),
+                    p.amountCents,
+                )
+            }
             OnchainJobAction.MARK_MILESTONE_REACHED -> {
                 val p = objectMapper.readValue(job.payloadJson, MilestonePayload::class.java)
                 client.markMilestoneReached(
@@ -170,4 +178,5 @@ data class RecordDonationPayload(
     val receiptHashHex: String,
     val txRef: String,
 )
+data class RecordPayoutPayload(val payoutId: UUID, val campaignId: UUID, val amountCents: BigInteger)
 data class MilestonePayload(val campaignId: UUID, val index: Int, val proofHashHex: String)

@@ -56,21 +56,39 @@ describe('Sidebar', () => {
     expect(screen.getByText('nav.overview')).toBeInTheDocument();
     expect(screen.getByText('nav.profile')).toBeInTheDocument();
     expect(screen.getByText('nav.donations')).toBeInTheDocument();
-    expect(screen.queryByText('nav.associationProfile')).not.toBeInTheDocument();
+    expect(screen.queryByText('nav.settings')).not.toBeInTheDocument();
   });
 
-  it('shows association nav items when user.role is ASSOCIATION', () => {
+  it('shows association nav groups when user.role is ASSOCIATION', () => {
     render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
     expect(screen.getByText('nav.overview')).toBeInTheDocument();
-    expect(screen.getByText('nav.associationProfile')).toBeInTheDocument();
-    expect(screen.getByText('nav.donors')).toBeInTheDocument();
+    expect(screen.getByText('nav.campaigns')).toBeInTheDocument();
+    expect(screen.getByText('nav.reporting')).toBeInTheDocument();
+    expect(screen.getByText('nav.payees')).toBeInTheDocument();
+    expect(screen.getByText('nav.settings')).toBeInTheDocument();
     expect(screen.queryByText('nav.donations')).not.toBeInTheDocument();
   });
 
-  it('highlights active nav item based on currentPath', () => {
+  it('renders snav-label group headers for association', () => {
+    render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
+    expect(screen.getByText('nav.group.principal')).toBeInTheDocument();
+    expect(screen.getByText('nav.group.gestion')).toBeInTheDocument();
+    expect(screen.getByText('nav.group.settings')).toBeInTheDocument();
+  });
+
+  it('highlights active nav item with active class', () => {
     render(<Sidebar user={donorUser} currentPath="/dashboard/donor" />);
     const overviewLink = screen.getByRole('link', { name: /nav\.overview/ });
-    expect(overviewLink).toHaveClass('bg-green/10');
-    expect(overviewLink).toHaveClass('text-green');
+    expect(overviewLink).toHaveClass('active');
+  });
+
+  it('renders acc-mini pill for association users', () => {
+    render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
+    expect(document.querySelector('.acc-mini')).toBeInTheDocument();
+  });
+
+  it('does not render acc-mini pill for donor users', () => {
+    render(<Sidebar user={donorUser} currentPath="/dashboard/donor" />);
+    expect(document.querySelector('.acc-mini')).not.toBeInTheDocument();
   });
 });

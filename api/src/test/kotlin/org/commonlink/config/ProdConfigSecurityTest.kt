@@ -68,4 +68,11 @@ class ProdConfigSecurityTest {
         val secret = prop("app.jwt.secret") as? String ?: ""
         assertFalse(secret.contains("commonlink-dev-secret-key"))
     }
+
+    @Test
+    fun `onchain mock is disabled in prod`() {
+        val mock = prop("onchain.mock")
+        assertTrue(mock == null || mock == false,
+            "onchain.mock must be absent or false in prod, was: $mock")
+    }
 }

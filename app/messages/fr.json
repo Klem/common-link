@@ -1,294 +1,464 @@
 {
-  "common": {
-    "errors": {
-      "serverError": "Une erreur est survenue. Veuillez réessayer.",
-      "networkError": "Problème de connexion. Vérifiez votre réseau.",
-      "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
-      "rateLimitExceeded": "Trop de requêtes. Veuillez attendre {seconds} secondes.",
-      "conflict": "Cette ressource existe déjà."
-    },
-    "loading": "Chargement...",
-    "save": "Enregistrer",
-    "cancel": "Annuler",
-    "confirm": "Confirmer",
-    "profileUpdated": "Profil mis à jour.",
-    "payeeCreated": "Bénéficiaire ajouté avec succès.",
-    "vopVerified": "Vérification VOP terminée.",
-    "campaignUpdated": "Campagne mise à jour.",
-    "budgetSaved": "Budget sauvegardé.",
-    "milestoneCreated": "Milestone ajouté.",
-    "milestoneSaved": "Milestone mis à jour.",
-    "milestoneDeleted": "Milestone supprimé.",
-    "setPasswordUpdated": "Mot de passe défini avec succès.",
-    "moneriumConnected": "Portefeuille connecté avec succès.",
-    "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
-    "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
-  },
   "auth": {
-    "tabs": { "login": "Connexion", "signup": "Créer un compte" },
-    "roles": { "association": "Association", "donor": "Donateur" },
+    "assoSearch": {
+      "apiUnavailable": "Le répertoire est indisponible. Saisissez les informations manuellement.",
+      "backToSearch": "Retour à la recherche",
+      "confirm": "Confirmer",
+      "manualCodePostal": "Code postal",
+      "manualEntry": "Saisie manuelle",
+      "manualNom": "Nom de l'association",
+      "manualSiren": "SIREN",
+      "manualVille": "Ville",
+      "noResults": "Aucune association trouvée.",
+      "noResultsHint": "Vérifiez l'orthographe ou essayez votre SIREN.",
+      "searchHint": "Recherchez votre association dans le répertoire officiel."
+    },
+    "divider": {
+      "or": "ou"
+    },
+    "errors": {
+      "accountExists": "Un compte existe déjà avec cet email.",
+      "emailInvalid": "Adresse email invalide.",
+      "emailRequired": "L'email est requis.",
+      "genericError": "Une erreur est survenue. Veuillez réessayer.",
+      "invalidCredentials": "Email ou mot de passe invalide.",
+      "noAccount": "Aucun compte trouvé. Inscrivez-vous d'abord.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "passwordNotSet": "Aucun mot de passe défini. Utilisez un lien magique ou Google pour vous connecter.",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
+      "rateLimited": "Trop de tentatives. Réessayez dans 10 minutes.",
+      "tokenExpired": "Ce lien a expiré. Demandez-en un nouveau.",
+      "tokenUsed": "Ce lien a déjà été utilisé."
+    },
+    "gdpr": "Données traitées conformément au RGPD.",
     "hints": {
       "association": "Accédez à votre espace de gestion de campagnes, budget et reporting.",
       "donor": "Suivez vos dons, consultez votre impact et gérez vos badges NFT."
     },
+    "legal": "En continuant, vous acceptez nos {terms} et notre {privacy}.",
     "login": {
-      "title": "Content de vous revoir",
-      "email": { "label": "Email", "placeholder": "vous@exemple.fr" },
-      "password": { "label": "Mot de passe", "placeholder": "••••••••" },
+      "createAccount": "Créer un compte",
+      "email": {
+        "label": "Email",
+        "placeholder": "vous@exemple.fr"
+      },
       "forgotPassword": "Mot de passe oublié ?",
-      "submit": "Se connecter →",
       "google": "Continuer avec Google",
       "noAccount": "Pas encore de compte ?",
-      "createAccount": "Créer un compte",
-      "orMagicLink": "Ou connectez-vous par lien magique"
-    },
-    "signup": {
-      "donor": {
-        "title": "Rejoindre en tant que Donateur",
-        "google": "S'inscrire avec Google",
-        "magicLink": "S'inscrire par lien magique",
-        "alreadyAccount": "Déjà un compte ?",
-        "login": "Se connecter"
+      "orMagicLink": "Ou connectez-vous par lien magique",
+      "password": {
+        "label": "Mot de passe",
+        "placeholder": "••••••••"
       },
-      "emailPassword": {
-        "label": "Email & mot de passe",
-        "email": { "label": "Email", "placeholder": "vous@exemple.fr" },
-        "password": { "label": "Mot de passe", "placeholder": "8 caractères minimum" },
-        "confirm": { "label": "Confirmer le mot de passe", "placeholder": "••••••••" },
-        "submit": "Créer mon compte →",
-        "submitContinue": "Continuer →",
-        "sent": "Lien envoyé ! Vérifiez votre boîte — valable 24h.",
-        "notReceived": "Pas reçu ?",
-        "resend": "Renvoyer"
-      },
-      "association": {
-        "title": "Rejoindre en tant qu'Association",
-        "steps": { "search": "Recherche", "connect": "Connexion", "profile": "Profil" },
-        "search": {
-          "label": "Rechercher votre association",
-          "placeholder": "Nom ou SIREN…",
-          "results": "Résultats",
-          "noResults": "Aucun résultat",
-          "status": { "active": "Actif", "ceased": "Cessée" },
-          "select": "Sélectionner"
-        },
-        "connect": {
-          "title": "Choisissez votre méthode",
-          "google": "Continuer avec Google",
-          "magicLink": "Recevoir un lien magique"
-        },
-        "profile": {
-          "name": { "label": "Nom de l'association", "placeholder": "Pré-rempli" },
-          "siren": { "label": "SIREN", "placeholder": "Pré-rempli" },
-          "contact": { "label": "Nom du contact", "placeholder": "Votre nom complet" },
-          "description": { "label": "Description", "placeholder": "Décrivez votre mission (optionnel)" },
-          "submit": "Créer mon espace →"
-        }
-      }
+      "submit": "Se connecter →",
+      "title": "Content de vous revoir"
     },
     "magicLink": {
-      "label": "Lien magique — sans mot de passe",
+      "checkSpam": "Vérifiez vos spams.",
       "emailPlaceholder": "vous@exemple.fr",
+      "label": "Lien magique — sans mot de passe",
+      "notReceived": "Pas reçu ?",
+      "resend": "Renvoyer",
       "sendButton": "Recevoir le lien",
       "sending": "Envoi en cours…",
-      "sent": "Lien envoyé ! Vérifiez votre boîte — valable 15 min.",
-      "resend": "Renvoyer",
-      "notReceived": "Pas reçu ?",
-      "checkSpam": "Vérifiez vos spams."
+      "sent": "Lien envoyé ! Vérifiez votre boîte — valable 15 min."
     },
-    "setPassword": {
-      "title": "Définir un mot de passe",
-      "subtitle": "Optionnel — permet la connexion email + mot de passe",
-      "password": { "label": "Mot de passe", "placeholder": "8 caractères minimum" },
-      "confirm": { "label": "Confirmer", "placeholder": "••••••••" },
-      "submit": "Enregistrer",
-      "skip": "Plus tard",
-      "success": "Mot de passe défini."
-    },
-    "errors": {
-      "invalidCredentials": "Email ou mot de passe invalide.",
-      "passwordNotSet": "Aucun mot de passe défini. Utilisez un lien magique ou Google pour vous connecter.",
-      "emailRequired": "L'email est requis.",
-      "emailInvalid": "Adresse email invalide.",
-      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
-      "passwordMismatch": "Les mots de passe ne correspondent pas.",
-      "genericError": "Une erreur est survenue. Veuillez réessayer.",
-      "tokenExpired": "Ce lien a expiré. Demandez-en un nouveau.",
-      "tokenUsed": "Ce lien a déjà été utilisé.",
-      "rateLimited": "Trop de tentatives. Réessayez dans 10 minutes.",
-      "accountExists": "Un compte existe déjà avec cet email.",
-      "noAccount": "Aucun compte trouvé. Inscrivez-vous d'abord."
-    },
+    "privacy": "Politique de confidentialité",
     "progress": {
-      "authenticating": "Authentification via {provider}…",
-      "verified": "Identité vérifiée",
-      "loadingProfile": "Chargement du profil…",
-      "redirecting": "Chargement de votre espace…",
       "accountCreated": "Compte créé",
       "assoLinked": "Association liée au répertoire",
-      "spaceConfigured": "Espace association configuré"
-    },
-    "divider": { "or": "ou" },
-    "assoSearch": {
-      "apiUnavailable": "Le répertoire est indisponible. Saisissez les informations manuellement.",
-      "manualEntry": "Saisie manuelle",
-      "manualSiren": "SIREN",
-      "manualNom": "Nom de l'association",
-      "manualVille": "Ville",
-      "manualCodePostal": "Code postal",
-      "confirm": "Confirmer",
-      "searchHint": "Recherchez votre association dans le répertoire officiel.",
-      "noResults": "Aucune association trouvée.",
-      "noResultsHint": "Vérifiez l'orthographe ou essayez votre SIREN."
-    },
-    "verifyEmail": {
-      "verifying": "Vérification en cours…",
-      "success": "Email vérifié !",
-      "successSubtitle": "Vous allez être redirigé vers votre espace.",
-      "failed": "Lien invalide",
-      "failedSubtitle": "Ce lien est expiré ou a déjà été utilisé.",
-      "requestNew": "Demander un nouveau lien"
-    },
-    "legal": "En continuant, vous acceptez nos {terms} et notre {privacy}.",
-    "terms": "CGU",
-    "privacy": "Politique de confidentialité",
-    "gdpr": "Données traitées conformément au RGPD."
-  },
-  "dashboard": {
-    "title": "Tableau de bord",
-    "welcome": "Bienvenue",
-    "greeting": "Bonjour, {name} 👋",
-    "nav": {
-      "overview": "Tableau de bord",
-      "profile": "Mon profil",
-      "donations": "Mes dons",
-      "campaigns": "Campagnes",
-      "payees": "Bénéficiaires",
-      "donors": "Donateurs",
-      "settings": "Paramètres",
-      "associationProfile": "Profil association",
-      "logout": "Déconnexion"
+      "authenticating": "Authentification via {provider}…",
+      "loadingProfile": "Chargement du profil…",
+      "redirecting": "Chargement de votre espace…",
+      "spaceConfigured": "Espace association configuré",
+      "verified": "Identité vérifiée"
     },
     "roles": {
-      "donor": "Donateur",
-      "association": "Association"
-    },
-    "payees": {
-      "pageTitle": "Bénéficiaires",
-      "pageSubtitle": "Gérez les bénéficiaires de votre association",
-      "addPayee": "Ajouter un bénéficiaire",
-      "search": {
-        "title": "Recherche SIRET / SIREN",
-        "subtitle": "Saisissez un identifiant. La détection du type est automatique.",
-        "placeholder": "829844810 ou 82984481000046",
-        "button": "Rechercher",
-        "loading": "Interrogation INSEE Sirene…",
-        "detected": {
-          "siren": "SIREN détecté — 9 chiffres ✓",
-          "siret": "SIRET détecté — 14 chiffres ✓"
-        },
-        "hint": "encore {remaining} chiffre(s)",
-        "errors": {
-          "400": "Format SIREN/SIRET incorrect.",
-          "404": "Aucun établissement trouvé pour cet identifiant.",
-          "429": "Trop de requêtes. Réessayez dans quelques minutes.",
-          "502": "API INSEE temporairement indisponible.",
-          "network": "Impossible de joindre l'API."
-        }
-      },
-      "result": {
-        "active": "Actif",
-        "closed": "Fermé",
-        "siege": "Siège",
-        "ess": "ESS",
-        "select": "Sélectionner",
-        "close": "Fermer",
-        "siren": "SIREN",
-        "created": "Créé le",
-        "naf": "NAF",
-        "employees": "Effectif",
-        "address": "Adresse",
-        "beneficiaryCreated": "Bénéficiaire ajouté avec succès."
-      },
-      "list": {
-        "title": "Bénéficiaires sélectionnés",
-        "count": "{count} entrée(s)",
-        "empty": "Aucun bénéficiaire sélectionné.",
-        "emptyHint": "Recherchez un SIREN/SIRET et cliquez sur Sélectionner.",
-        "delete": "Supprimer",
-        "alreadyAdded": "Ce bénéficiaire est déjà dans votre liste.",
-        "deleteTitle": "Supprimer le bénéficiaire",
-        "deleteMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible."
-      },
-      "status": {
-        "pending": "En attente",
-        "formatValid": "Format ✓",
-        "verified": "Vérifié VOP",
-        "closeMatch": "Approx.",
-        "noMatch": "Nom ≠",
-        "notPossible": "Non dispo.",
-        "invalid": "Invalide"
-      },
-      "iban": {
-        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
-        "verify": "Vérifier",
-        "verifyVop": "Vérifier VOP →",
-        "verified": "Vérifié",
-        "addIban": "Ajouter un IBAN",
-        "copy": "Copier l'IBAN",
-        "inputPlaceholder": "Saisissez un IBAN",
-        "add": "Ajouter",
-        "cancel": "Annuler",
-        "deleteTitle": "Supprimer l'IBAN",
-        "deleteMessage": "Êtes-vous sûr de vouloir supprimer l'IBAN {iban} ?",
-        "vop": {
-          "match": "Identité VOP confirmée — le titulaire du compte correspond au bénéficiaire.",
-          "closeMatch": "Correspondance approximative — nom suggéré : {name}",
-          "noMatch": "Aucune correspondance — le nom du titulaire ne correspond pas au bénéficiaire.",
-          "notPossible": "Vérification non disponible pour cet IBAN (banque non participante)."
-        }
-      },
-      "vop": {}
-
+      "association": "Association",
+      "donor": "Donateur"
     },
     "setPassword": {
-      "title": "Sécurisez votre compte",
-      "subtitle": "Définissez un mot de passe pour pouvoir aussi vous connecter par email.",
-      "success": "Mot de passe défini avec succès."
+      "confirm": {
+        "label": "Confirmer",
+        "placeholder": "••••••••"
+      },
+      "password": {
+        "label": "Mot de passe",
+        "placeholder": "8 caractères minimum"
+      },
+      "skip": "Plus tard",
+      "submit": "Enregistrer",
+      "subtitle": "Optionnel — permet la connexion email + mot de passe",
+      "success": "Mot de passe défini.",
+      "title": "Définir un mot de passe"
+    },
+    "signup": {
+      "association": {
+        "connect": {
+          "google": "Continuer avec Google",
+          "magicLink": "Recevoir un lien magique",
+          "title": "Choisissez votre méthode"
+        },
+        "profile": {
+          "contact": {
+            "label": "Nom du contact",
+            "placeholder": "Votre nom complet"
+          },
+          "description": {
+            "label": "Description",
+            "placeholder": "Décrivez votre mission (optionnel)"
+          },
+          "name": {
+            "label": "Nom de l'association",
+            "placeholder": "Pré-rempli"
+          },
+          "siren": {
+            "label": "SIREN",
+            "placeholder": "Pré-rempli"
+          },
+          "submit": "Créer mon espace →"
+        },
+        "search": {
+          "label": "Rechercher votre association",
+          "noResults": "Aucun résultat",
+          "placeholder": "Nom ou SIREN…",
+          "results": "Résultats",
+          "select": "Sélectionner",
+          "status": {
+            "active": "Actif",
+            "ceased": "Cessée"
+          }
+        },
+        "steps": {
+          "connect": "Connexion",
+          "profile": "Profil",
+          "search": "Recherche"
+        },
+        "title": "Rejoindre en tant qu'Association"
+      },
+      "donor": {
+        "alreadyAccount": "Déjà un compte ?",
+        "google": "S'inscrire avec Google",
+        "login": "Se connecter",
+        "magicLink": "S'inscrire par lien magique",
+        "title": "Rejoindre en tant que Donateur"
+      },
+      "emailPassword": {
+        "confirm": {
+          "label": "Confirmer le mot de passe",
+          "placeholder": "••••••••"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "vous@exemple.fr"
+        },
+        "label": "Email & mot de passe",
+        "notReceived": "Pas reçu ?",
+        "password": {
+          "label": "Mot de passe",
+          "placeholder": "8 caractères minimum"
+        },
+        "resend": "Renvoyer",
+        "sent": "Lien envoyé ! Vérifiez votre boîte — valable 24h.",
+        "submit": "Créer mon compte →",
+        "submitContinue": "Continuer →"
+      }
+    },
+    "tabs": {
+      "login": "Connexion",
+      "signup": "Créer un compte"
+    },
+    "terms": "CGU",
+    "verifyEmail": {
+      "failed": "Lien invalide",
+      "failedSubtitle": "Ce lien est expiré ou a déjà été utilisé.",
+      "requestNew": "Demander un nouveau lien",
+      "success": "Email vérifié !",
+      "successSubtitle": "Vous allez être redirigé vers votre espace.",
+      "verifying": "Vérification en cours…"
+    }
+  },
+  "common": {
+    "addPayeeHint": "Ajoutez votre bénéficiaire puis revenez sur la campagne.",
+    "budgetSaved": "Budget sauvegardé.",
+    "campaignUpdated": "Campagne mise à jour.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "errors": {
+      "campaignDeleteBlocked": "Seules les campagnes en brouillon peuvent être supprimées.",
+      "conflict": "Cette ressource existe déjà.",
+      "networkError": "Problème de connexion. Vérifiez votre réseau.",
+      "rateLimitExceeded": "Trop de requêtes. Veuillez attendre {seconds} secondes.",
+      "serverError": "Une erreur est survenue. Veuillez réessayer.",
+      "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
+    },
+    "loading": "Chargement...",
+    "milestoneCreated": "Milestone ajouté.",
+    "milestoneDeleted": "Milestone supprimé.",
+    "milestoneSaved": "Milestone mis à jour.",
+    "moneriumConnected": "Portefeuille connecté avec succès.",
+    "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
+    "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
+    "payeeCreated": "Bénéficiaire ajouté avec succès.",
+    "paymentError": "Échec du paiement. Veuillez réessayer.",
+    "paymentSuccess": "Paiement émis !",
+    "profileUpdated": "Profil mis à jour.",
+    "publishCampaignError": "Échec de la publication. Veuillez réessayer.",
+    "publishCampaignSuccess": "🚀 Campagne publiée !",
+    "save": "Enregistrer",
+    "setPasswordUpdated": "Mot de passe défini avec succès.",
+    "vopVerified": "Vérification VOP terminée."
+  },
+  "dashboard": {
+    "association": {
+      "empty": {
+        "cta": "Créer une campagne",
+        "icon": "🚀",
+        "subtitle": "Créez une campagne de collecte pour commencer à recevoir des dons et suivre votre impact.",
+        "title": "Lancez votre première campagne"
+      },
+      "home": {
+        "accCard": {
+          "checks": {
+            "bank": {
+              "cta": "Connecter mon compte →",
+              "desc": "Pour recevoir les dons en euros, via notre partenaire Monerium",
+              "eta": "2-3 jours",
+              "title": "Compte bancaire (IBAN dédié)"
+            },
+            "kyc": {
+              "cta": "Vérifier →",
+              "desc": "Soumettez vos justificatifs pour publier publiquement",
+              "eta": "24-48h",
+              "title": "Vérification de l'association"
+            },
+            "validated": "✓ Validée"
+          },
+          "dismiss": "Masquer",
+          "sub": {
+            "bankOnly": "Votre association est vérifiée ! Finalisez la connexion de votre compte bancaire pour pouvoir recevoir des dons.",
+            "notVerified": "En attendant la validation de votre association, vous pouvez créer et publier vos campagnes en mode privé (lien direct uniquement)."
+          },
+          "title": "⚙️ Finalisez votre compte CommonLink"
+        },
+        "activity": {
+          "empty": "Aucune activité récente",
+          "title": "Activité récente"
+        },
+        "chart": {
+          "title": "Dons — 6 derniers mois"
+        },
+        "error": "Impossible de charger les données du tableau de bord.",
+        "greeting": "Bonjour, {name} 👋",
+        "newCampaign": "+ Nouvelle campagne",
+        "sidebar": {
+          "accPartial": "Compte {done}/{total}",
+          "accPending": "À configurer",
+          "accVerified": "Compte vérifié"
+        },
+        "stats": {
+          "activeCampaigns": "Campagnes actives",
+          "avgProgress": "Progression moyenne (objectif collecte)",
+          "nextMilestone": "Prochain jalon",
+          "totalRaised": "Montant collecté (campagnes actives)"
+        },
+        "subtitle": "Résumé de votre activité et de l'impact de vos campagnes."
+      },
+      "newCampaign": "Nouvelle campagne",
+      "profile": {
+        "cancel": "Annuler",
+        "city": "Ville",
+        "contactName": "Nom du contact",
+        "contactNamePlaceholder": "Votre nom complet",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrivez la mission de votre association",
+        "errors": {
+          "contactNameMin": "Le nom doit contenir au moins 2 caractères.",
+          "postalCodeFormat": "Le code postal doit contenir 5 chiffres."
+        },
+        "identifier": "SIREN",
+        "infos": {
+          "title": "Informations de l'association"
+        },
+        "loading": "Chargement du profil…",
+        "memberSince": "Membre depuis {date}",
+        "monerium": {
+          "badge": "Expérimental",
+          "cancel": "Annuler",
+          "connect": "Connecter le portefeuille",
+          "connected": "Portefeuille connecté avec succès.",
+          "connectedStatus": "Connecté",
+          "description": "Connectez votre portefeuille Monerium pour recevoir et émettre des euros numériques directement sur la blockchain.",
+          "error": "La connexion au portefeuille a échoué. Veuillez réessayer.",
+          "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
+          "pendingStatus": "Autorisation en attente",
+          "title": "Portefeuille Monerium",
+          "tryAgain": "Réessayer",
+          "waiting": "Authentification en cours… Complétez le formulaire dans la fenêtre qui vient de s'ouvrir."
+        },
+        "name": "Nom de l'association",
+        "pending": "En attente de vérification",
+        "postalCode": "Code postal",
+        "save": "Enregistrer",
+        "security": {
+          "changePassword": "Définir un mot de passe",
+          "email": "Email & mot de passe",
+          "google": "Google",
+          "loginMethod": "Méthode de connexion",
+          "magicLink": "Lien magique",
+          "title": "Sécurité"
+        },
+        "subtitle": "Gérez les informations et la vérification de votre association.",
+        "success": "Profil mis à jour.",
+        "tabs": {
+          "bank": "Compte bancaire",
+          "bankBadge": {
+            "connected": "Connecté",
+            "notConnected": "Non connecté"
+          },
+          "infos": "Informations",
+          "verif": "Vérification",
+          "verifBadge": {
+            "ok": "Vérifiée",
+            "todo": "À faire"
+          }
+        },
+        "title": "Paramètres",
+        "verification": {
+          "comingSoon": "Bientôt : dépôt de documents et vérification d identité.",
+          "pendingText": "La vérification est effectuée par l'équipe CommonLink après examen de votre dossier.",
+          "title": "Vérification",
+          "verified": "Votre association est vérifiée."
+        },
+        "verified": "Vérifiée"
+      },
+      "profileCompletion": {
+        "fields": {
+          "contact": "Contact",
+          "description": "Description",
+          "name": "Nom de l'association",
+          "siren": "SIREN"
+        },
+        "subtitle": "Un profil complet inspire confiance aux donateurs.",
+        "title": "Complétez votre profil"
+      },
+      "recentActivity": {
+        "empty": "Aucune activité récente"
+      },
+      "sections": {
+        "activeCampaigns": "Mes campagnes actives",
+        "recentActivity": "Activité récente"
+      },
+      "stats": {
+        "activeCampaigns": "Campagnes actives",
+        "conversionRate": "Taux de conversion",
+        "fundsRaised": "Fonds collectés",
+        "uniqueDonors": "Donateurs uniques"
+      }
     },
     "campaigns": {
-      "pageTitle": "Campagnes",
-      "pageSubtitle": "Gérez les campagnes de collecte de votre association",
+      "actionContinue": "Continuer",
+      "actionManage": "Gérer",
+      "actionReport": "Voir le rapport",
+      "actionShare": "Partager",
+      "badge": {
+        "draft": "⚙️ Brouillon",
+        "ended": "✓ Terminée",
+        "live": "● Active"
+      },
       "create": "Créer une campagne",
       "defaultName": "Nouvelle campagne",
-      "stats": {
-        "total": "Campagnes",
-        "live": "En cours",
-        "raised": "Total collecté",
-        "goal": "Objectif total"
-      },
-      "status": {
-        "draft": "Brouillon",
-        "live": "Live",
-        "ended": "Clôturée"
-      },
-      "milestones": "milestone(s)",
-      "empty": {
-        "icon": "🎯",
-        "title": "Aucune campagne",
-        "subtitle": "Créez votre première campagne pour commencer à collecter des dons.",
-        "cta": "Créer une campagne"
-      },
       "delete": "Supprimer",
-      "deleteConfirm": "Supprimer cette campagne ? Cette action est irréversible.",
-      "loading": "Chargement…",
+      "deleteCancel": "Annuler la suppression",
+      "deleteConfirmAction": "Confirmer la suppression",
+      "donors": {
+        "detail": {
+          "close": "Fermer",
+          "lastDonation": "Dernier don",
+          "noTx": "Aucune transaction.",
+          "title": "Détail donateur",
+          "total": "Total",
+          "transactions": "Transactions",
+          "txCount": "Dons"
+        },
+        "empty": "Aucun donateur pour cette campagne.",
+        "error": "Erreur lors du chargement des donateurs.",
+        "exportCsv": "Exporter CSV",
+        "loading": "Chargement…",
+        "search": {
+          "placeholder": "Rechercher un donateur…"
+        },
+        "showing": "{count} donateur(s)",
+        "sort": {
+          "amount": "Montant ↓",
+          "date": "Date récente",
+          "name": "Nom A→Z"
+        },
+        "stats": {
+          "avg": "Don moyen",
+          "raised": "Total collecté",
+          "top": "Top donateur",
+          "total": "Donateurs"
+        },
+        "table": {
+          "amount": "Montant",
+          "donor": "Donateur",
+          "lastDonation": "Dernier don",
+          "transactions": "Dons",
+          "view": "Voir"
+        },
+        "tx": {
+          "close": "Fermer",
+          "date": "Date",
+          "onChain": "On-chain",
+          "pending": "En attente",
+          "ref": "Référence",
+          "title": "Détail don"
+        }
+      },
+      "draftNoBudget": "Brouillon — budget non défini",
       "editor": {
-        "loading": "Chargement de la campagne…",
-        "notFound": "Campagne introuvable.",
-        "tabs": {
-          "info": "Infos",
-          "budget": "Budget prév.",
-          "milestones": "Milestones"
+        "budget": {
+          "addItem": "Ajouter un poste",
+          "addSection": "Ajouter une catégorie",
+          "amountPlaceholder": "0",
+          "balance": "Solde",
+          "cancel": "Annuler",
+          "changeTemplate": "↺ Changer de modèle",
+          "charges": "Charges (dépenses)",
+          "chargesHead": "Charges (dépenses)",
+          "colBoth": "Les deux",
+          "confirm": "Ajouter",
+          "deficit": "Déficitaire",
+          "emptyDesc": "Le budget prévisionnel montre aux donateurs comment leur argent sera utilisé. Choisissez un modèle pour démarrer en 30 secondes.",
+          "emptyTitle": "Votre budget est vide",
+          "equilibrium": "Équilibre",
+          "fixedRevenueHint": "Calculé automatiquement à partir de l'objectif de collecte de la campagne — non modifiable et non supprimable.",
+          "initTemplate": "Initialiser le modèle standard",
+          "initTemplateHint": "Pré-remplir avec le plan comptable associatif français (montants à 0).",
+          "labelPlaceholder": "Libellé",
+          "produits": "Produits (recettes)",
+          "produitsHead": "Produits (recettes)",
+          "save": "Sauvegarder le budget",
+          "sectionCode": "Code (ex: 63)",
+          "sectionName": "Nom (ex: Impôts et taxes)",
+          "sectionNameAccounting": "Rechercher ou saisir une catégorie comptable (ex : 606 - Fournitures)",
+          "surplus": "Excédentaire",
+          "tplSimple": "Simplifié",
+          "tplSimpleDesc": "Pour les petites structures",
+          "tplStandard": "Standard",
+          "tplStandardDesc": "Toutes les catégories comptables",
+          "useTpl": "Utiliser ce modèle →"
+        },
+        "completion": {
+          "budget": "Budget",
+          "dates": "Dates",
+          "description": "Description",
+          "goal": "Objectif",
+          "impact": "Objectifs d'impact",
+          "milestones": "Jalons",
+          "name": "Nom",
+          "reason": "Pourquoi maintenant"
         },
         "hero": {
           "collected": "Collecté",
@@ -296,184 +466,451 @@
           "progress": "Progression"
         },
         "info": {
-          "title": "Informations générales",
-          "name": { "label": "Nom de la campagne", "placeholder": "Nom de votre campagne…" },
-          "goal": { "label": "Objectif de collecte (€)", "placeholder": "0" },
-          "startDate": { "label": "Date de début" },
-          "endDate": { "label": "Date de fin" },
-          "description": { "label": "Description de la campagne", "placeholder": "Décrivez l'objectif, le contexte et l'impact attendu…" },
-          "status": { "label": "Statut" },
-          "contract": { "label": "Smart Contract", "placeholder": "Adresse du contrat" },
+          "category": {
+            "label": "Catégorie"
+          },
+          "coverImage": {
+            "hint": "JPG, PNG — 5 Mo max · 1200×600 recommandé",
+            "label": "Image de couverture",
+            "uploadPrompt": "Glissez une image ou parcourir"
+          },
+          "dateError": "La date de fin doit être au moins 7 jours après le début",
+          "description": {
+            "label": "Description de la campagne",
+            "placeholder": "Décrivez l'objectif, le contexte et l'impact attendu…"
+          },
+          "endDate": {
+            "hint": "(min. 7 jours après le début)",
+            "label": "Date de fin"
+          },
+          "goal": {
+            "label": "Objectif de collecte (€)",
+            "placeholder": "0",
+            "tip": "Vous pouvez saisir un montant libre, ou le lier automatiquement au total des charges de votre budget prévisionnel."
+          },
+          "goalLink": "🔗 Lier au total des charges du budget",
+          "impactGoals": {
+            "label": "Objectifs d'impact",
+            "placeholder": "Ex : permettre à 450 élèves d'étudier dans de bonnes conditions, réduire le taux d'absentéisme de 30%…",
+            "tip": "Décrivez concrètement ce que vous espérez accomplir : nombre de bénéficiaires, résultats mesurables, changements attendus."
+          },
+          "name": {
+            "label": "Nom de la campagne",
+            "placeholder": "Nom de votre campagne…"
+          },
+          "reason": {
+            "label": "Raison de la campagne",
+            "placeholder": "Pourquoi lancez-vous cette campagne maintenant ?",
+            "tip": "Visible sur la page publique. Rassure les donateurs sur le sérieux de votre démarche."
+          },
           "save": "Enregistrer",
-          "saved": "Campagne mise à jour."
+          "saved": "Campagne mise à jour.",
+          "startDate": {
+            "label": "Date de début"
+          },
+          "title": "Informations générales"
         },
-        "budget": {
-          "charges": "Charges (dépenses)",
-          "produits": "Produits (recettes)",
-          "balance": "Solde",
-          "equilibrium": "Équilibre",
-          "surplus": "Excédentaire",
-          "deficit": "Déficitaire",
-          "addItem": "Ajouter un poste",
-          "addSection": "Ajouter une catégorie",
-          "sectionCode": "Code (ex: 63)",
-          "sectionName": "Nom (ex: Impôts et taxes)",
-          "initTemplate": "Initialiser le modèle standard",
-          "initTemplateHint": "Pré-remplir avec le plan comptable associatif français (montants à 0).",
-          "save": "Sauvegarder le budget",
-          "labelPlaceholder": "Libellé",
-          "amountPlaceholder": "0"
-        },
+        "loading": "Chargement de la campagne…",
         "milestones": {
-          "title": "Milestones de la campagne",
-          "subtitle": "Chaque milestone est un palier de collecte avec un impact concret mesurable.",
           "add": "Ajouter",
-          "namePlaceholder": "Nom du palier",
-          "descPlaceholder": "Description de l'impact concret de ce palier…",
-          "reached": "Atteinte",
+          "amountLabel": "À partir de quel montant ?",
           "current": "En cours",
-          "locked": "Verrouillée",
           "deleteConfirm": "Supprimer ce milestone ?",
-          "targetLabel": "Objectif €"
+          "descPlaceholder": "Description de l'impact concret de ce palier…",
+          "emptyCreate": "Créer mon premier jalon →",
+          "emptyDesc": "Les jalons montrent aux donateurs l'impact de leurs dons à chaque palier. C'est le levier de confiance le plus puissant d'une campagne réussie.",
+          "emptyHint": "Recommandé : 3 jalons — petit / moyen / grand impact",
+          "emptyTitle": "Aucun jalon défini",
+          "fieldsLockedCurrent": "En cours",
+          "fieldsLockedReached": "Terminé",
+          "formulaAmountPlaceholder": "[montant]",
+          "formulaCanDo": "nous pourrons",
+          "formulaFrom": "À partir de",
+          "formulaImpactPlaceholder": "[décrire l'impact concret]",
+          "impactLabel": "Qu'est-ce que ce montant permettra ?",
+          "impactPlaceholder": "Ex : acheter du matériel scolaire pour 50 élèves",
+          "locked": "Verrouillée",
+          "namePlaceholder": "Nom du palier",
+          "orderInvalid": "Ordre invalide",
+          "pctSuffix": "% atteint",
+          "pillAmountHint": "palier de collecte",
+          "pillImpactHint": "impact visible",
+          "pillOptionalHint": "optionnel",
+          "proofLabel": "Engagement de transparence",
+          "proofPlaceholder": "Ex : publication de photos + rapport d'impact à J+30",
+          "reached": "Atteinte",
+          "subtitle": "Chaque milestone est un palier de collecte avec un impact concret mesurable.",
+          "targetLabel": "Objectif €",
+          "title": "Milestones de la campagne",
+          "unreachable": "Hors objectif"
+        },
+        "notFound": "Campagne introuvable.",
+        "publish": "Publier",
+        "tabs": {
+          "budget": "Budget prév.",
+          "donors": "Donateurs",
+          "info": "Infos",
+          "milestones": "Jalons",
+          "payments": "Paiements & Transactions",
+          "reporting": "Suivi budgétaire"
         }
+      },
+      "empty": {
+        "cta": "Créer une campagne",
+        "icon": "🎯",
+        "subtitle": "Créez votre première campagne pour commencer à collecter des dons.",
+        "title": "Aucune campagne"
+      },
+      "filterAll": "Toutes",
+      "filterDraft": "Brouillons",
+      "filterEnded": "Terminées",
+      "filterLive": "Actives",
+      "loading": "Chargement…",
+      "milestones": "milestone(s)",
+      "newCampaignWarn": {
+        "autoPublic": "Publié en public dès la validation de votre dossier",
+        "body": "Vous pouvez créer un brouillon dès maintenant — il sera publiable dès la validation de votre dossier.",
+        "cancel": "Annuler",
+        "continue": "Continuer en brouillon",
+        "hint": "Vous gagnerez du temps en commençant la rédaction dès maintenant.",
+        "notVerified": "Votre association n'est pas encore vérifiée.",
+        "title": "📋 Avant de créer votre campagne",
+        "verify": "📋 Vérifier mon dossier"
+      },
+      "pageSubtitle": "Gérez les campagnes de collecte de votre association",
+      "pageTitle": "Campagnes",
+      "payments": {
+        "blocking": {
+          "descriptionTooShort": "Description trop courte (16 caractères minimum)",
+          "insufficientBalance": "Solde disponible insuffisant"
+        },
+        "breakdown": {
+          "title": "📊 Répartition"
+        },
+        "confirm": {
+          "message": "Émettre {amount} à {payee} ?",
+          "submit": "Émettre",
+          "title": "Confirmer le paiement"
+        },
+        "form": {
+          "addPayee": "+ Ajouter",
+          "amount": "Montant (€)",
+          "customCodePlaceholder": "Code libre…",
+          "label": "Justificatif",
+          "labelPlaceholder": "Objet du paiement, n° facture…",
+          "method": "🏦 Virement SEPA",
+          "methodSub": "1–2 jours ouvrés",
+          "payee": "Bénéficiaire",
+          "payeePlaceholder": "— Sélectionner —",
+          "submit": "Émettre le paiement →",
+          "title": "Émettre un paiement",
+          "typeCode": "Type de dépense",
+          "typeCodePlaceholder": "— Type —"
+        },
+        "history": {
+          "empty": "Aucun paiement émis.",
+          "title": "📋 Historique paiements"
+        },
+        "ibanSelect": "IBAN",
+        "noIban": "Aucun IBAN enregistré pour ce bénéficiaire.",
+        "noVerifiedIban": "Aucun IBAN vérifié enregistré pour ce bénéficiaire.",
+        "stats": {
+          "availableBalance": "Solde disponible",
+          "confirmed": "Confirmées",
+          "paid": "Déjà versé",
+          "pending": "En attente",
+          "transactions": "Transactions"
+        },
+        "status": {
+          "CONFIRMED": "Confirmé",
+          "FAILED": "Échoué",
+          "PENDING": "En attente"
+        },
+        "typeCodes": {
+          "60-mat": "60 · Matières / fournitures",
+          "60-svc": "60 · Prestations de services",
+          "61-ent": "61 · Entretien / réparations",
+          "61-loc": "61 · Location",
+          "62-pub": "62 · Communication",
+          "62-tra": "62 · Transports",
+          "64-rem": "64 · Rémunérations",
+          "64-soc": "64 · Charges sociales",
+          "65-ges": "65 · Frais de gestion",
+          "custom": "Autre (préciser)"
+        },
+        "typeGroups": {
+          "operational": "Charges opérationnelles",
+          "other": "Autres",
+          "personnel": "Personnel"
+        }
+      },
+      "publish": {
+        "account": {
+          "complete": "Compte complet — prêt pour la publication",
+          "noBank": "Compte bancaire non connecté — requis pour publier",
+          "notVerified": "Votre dossier n'est pas encore vérifié (vous pouvez quand même publier)",
+          "section": "Statut du compte"
+        },
+        "add": "Ajouter",
+        "complete": "Complétez les champs requis",
+        "confirm": "Publier",
+        "continueEditing": "Continuer l'édition",
+        "fill": "Compléter",
+        "recommended": {
+          "budget": "Budget prévisionnel équilibré (+40% de dons)",
+          "impactGoals": "Objectifs d'impact mesurables",
+          "milestones": "Jalons (augmente l'engagement des donateurs)",
+          "reason": "« Pourquoi maintenant ? » (renforce la confiance)",
+          "section": "Recommandé — n'empêche pas la publication"
+        },
+        "required": {
+          "dates": "Dates de début et de fin",
+          "description": "Description (10 caractères min)",
+          "goal": "Objectif de collecte",
+          "name": "Nom de la campagne",
+          "section": "Requis pour publier"
+        },
+        "title": "Avant de publier votre campagne"
+      },
+      "stats": {
+        "goal": "Objectif total",
+        "live": "En cours",
+        "raised": "Total collecté",
+        "total": "Campagnes"
+      },
+      "status": {
+        "draft": "Brouillon",
+        "ended": "Clôturée",
+        "live": "Live",
+        "private": "Privée"
       }
     },
     "donor": {
-      "stats": {
-        "totalDonated": "Total donné",
-        "donationsCount": "Dons effectués",
-        "campaignsFollowed": "Campagnes suivies",
-        "impactScore": "Score d'impact"
-      },
-      "sections": {
-        "recentDonations": "Mes dons récents",
-        "nftBadges": "Mes badges NFT",
-        "followedCampaigns": "Mes campagnes suivies",
-        "viewAll": "Voir tout"
-      },
       "empty": {
+        "cta": "Explorer les campagnes",
         "icon": "🌱",
-        "title": "Votre aventure philanthropique commence ici",
         "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
-        "cta": "Explorer les campagnes"
+        "title": "Votre aventure philanthropique commence ici"
       },
       "profile": {
-        "title": "Mon profil",
-        "loading": "Chargement du profil…",
+        "anonymous": "Don anonyme par défaut",
+        "anonymousHint": "Votre identité sera masquée sur les campagnes.",
+        "cancel": "Annuler",
+        "changePhoto": "Changer la photo",
         "displayName": "Nom d'affichage",
         "displayNamePlaceholder": "Votre nom public",
         "email": "Email",
-        "anonymous": "Don anonyme par défaut",
-        "anonymousHint": "Votre identité sera masquée sur les campagnes.",
-        "changePhoto": "Changer la photo",
-        "save": "Enregistrer",
-        "cancel": "Annuler",
-        "success": "Profil mis à jour.",
-        "memberSince": "Membre depuis {date}",
-        "security": {
-          "title": "Sécurité",
-          "changePassword": "Définir un mot de passe",
-          "loginMethod": "Méthode de connexion",
-          "google": "Google",
-          "email": "Email & mot de passe",
-          "magicLink": "Lien magique"
-        }
-      }
-    },
-    "association": {
-      "stats": {
-        "fundsRaised": "Fonds collectés",
-        "uniqueDonors": "Donateurs uniques",
-        "activeCampaigns": "Campagnes actives",
-        "conversionRate": "Taux de conversion"
-      },
-      "empty": {
-        "icon": "🚀",
-        "title": "Lancez votre première campagne",
-        "subtitle": "Créez une campagne de collecte pour commencer à recevoir des dons et suivre votre impact.",
-        "cta": "Créer une campagne"
-      },
-      "newCampaign": "Nouvelle campagne",
-      "sections": {
-        "activeCampaigns": "Mes campagnes actives",
-        "recentActivity": "Activité récente"
-      },
-      "recentActivity": {
-        "empty": "Aucune activité récente"
-      },
-      "profileCompletion": {
-        "title": "Complétez votre profil",
-        "subtitle": "Un profil complet inspire confiance aux donateurs.",
-        "fields": {
-          "name": "Nom de l'association",
-          "siren": "SIREN",
-          "description": "Description",
-          "contact": "Contact"
-        }
-      },
-      "profile": {
-        "title": "Profil de l'association",
         "loading": "Chargement du profil…",
-        "name": "Nom de l'association",
-        "identifier": "SIREN",
-        "contactName": "Nom du contact",
-        "contactNamePlaceholder": "Votre nom complet",
-        "city": "Ville",
-        "postalCode": "Code postal",
-        "description": "Description",
-        "descriptionPlaceholder": "Décrivez la mission de votre association",
-        "verified": "Vérifiée",
-        "pending": "En attente de vérification",
-        "save": "Enregistrer",
-        "cancel": "Annuler",
-        "success": "Profil mis à jour.",
         "memberSince": "Membre depuis {date}",
-        "errors": {
-          "contactNameMin": "Le nom doit contenir au moins 2 caractères.",
-          "postalCodeFormat": "Le code postal doit contenir 5 chiffres."
-        },
-        "verification": {
-          "title": "Vérification",
-          "verified": "Votre association est vérifiée.",
-          "pendingText": "La vérification est effectuée par l'équipe CommonLink après examen de votre dossier."
-        },
+        "save": "Enregistrer",
         "security": {
-          "title": "Sécurité",
           "changePassword": "Définir un mot de passe",
-          "loginMethod": "Méthode de connexion",
-          "google": "Google",
           "email": "Email & mot de passe",
-          "magicLink": "Lien magique"
+          "google": "Google",
+          "loginMethod": "Méthode de connexion",
+          "magicLink": "Lien magique",
+          "title": "Sécurité"
         },
-        "monerium": {
-          "title": "Portefeuille Monerium",
-          "badge": "Expérimental",
-          "description": "Connectez votre portefeuille Monerium pour recevoir et émettre des euros numériques directement sur la blockchain.",
-          "connect": "Connecter le portefeuille",
-          "cancel": "Annuler",
-          "waiting": "Authentification en cours… Complétez le formulaire dans la fenêtre qui vient de s'ouvrir.",
-          "connected": "Portefeuille connecté avec succès.",
-          "connectedStatus": "Connecté",
-          "pendingStatus": "Autorisation en attente",
-          "tryAgain": "Réessayer",
-          "error": "La connexion au portefeuille a échoué. Veuillez réessayer.",
-          "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer."
-        }
+        "success": "Profil mis à jour.",
+        "title": "Mon profil"
+      },
+      "sections": {
+        "followedCampaigns": "Mes campagnes suivies",
+        "nftBadges": "Mes badges NFT",
+        "recentDonations": "Mes dons récents",
+        "viewAll": "Voir tout"
+      },
+      "stats": {
+        "campaignsFollowed": "Campagnes suivies",
+        "donationsCount": "Dons effectués",
+        "impactScore": "Score d'impact",
+        "totalDonated": "Total donné"
       }
     },
+    "greeting": "Bonjour, {name} 👋",
     "moneriumPopup": {
       "callback": {
-        "loading": "Chargement…",
-        "closing": "Finalisation du KYC… cette fenêtre va se fermer."
-      },
-      "success": {
-        "title": "KYC terminé",
-        "closing": "Fermeture de la fenêtre…"
+        "closing": "Finalisation du KYC… cette fenêtre va se fermer.",
+        "loading": "Chargement…"
       },
       "error": {
-        "title": "KYC échoué",
-        "retry": "Veuillez réessayer depuis la page de profil."
+        "retry": "Veuillez réessayer depuis la page de profil.",
+        "title": "KYC échoué"
+      },
+      "success": {
+        "closing": "Fermeture de la fenêtre…",
+        "title": "KYC terminé"
       }
-    }
+    },
+    "nav": {
+      "associationProfile": "Profil association",
+      "campaigns": "Campagnes",
+      "donations": "Mes dons",
+      "donors": "Donateurs",
+      "group": {
+        "gestion": "Gestion",
+        "principal": "Principal",
+        "settings": "Paramètres"
+      },
+      "logout": "Déconnexion",
+      "orgType": "Association loi 1901",
+      "overview": "Tableau de bord",
+      "payees": "Bénéficiaires",
+      "profile": "Mon profil",
+      "reporting": "Mon reporting",
+      "settings": "Paramètres"
+    },
+    "payees": {
+      "addPayee": "Ajouter un bénéficiaire",
+      "filter": {
+        "all": "Tous",
+        "companies": "Entreprises",
+        "persons": "Personnes"
+      },
+      "help": {
+        "text1": "Ici, vous gérez la liste des organisations à qui vous souhaitez envoyer des virements SEPA. Vous pouvez rechercher une entreprise / association par SIREN ou SIRET (base INSEE Sirene), ou ajouter directement une personne physique par nom et prénom.",
+        "text2": "Pour chaque bénéficiaire, renseignez son IBAN puis faites-le vérifier en deux étapes : le format est d'abord contrôlé automatiquement, puis l'identité du titulaire est confirmée via le service bancaire VOP (Verification of Payee). Une fois un bénéficiaire entièrement vérifié ✓, vous pouvez consulter tous les paiements envoyés.",
+        "title": "À quoi sert cet écran ?"
+      },
+      "history": {
+        "empty": "Aucun virement pour ce bénéficiaire",
+        "statusDone": "✓ Exécuté",
+        "statusPending": "⏳ En attente",
+        "toggle": "Virements",
+        "total": "Total envoyé"
+      },
+      "iban": {
+        "add": "Ajouter",
+        "addIban": "Ajouter un IBAN",
+        "cancel": "Annuler",
+        "copy": "Copier l'IBAN",
+        "inputPlaceholder": "Saisissez un IBAN",
+        "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+        "verified": "Vérifié",
+        "verify": "Vérifier",
+        "verifyVop": "Vérifier VOP →",
+        "vop": {
+          "closeMatch": "Correspondance approximative — nom suggéré : {name}",
+          "match": "Identité VOP confirmée — le titulaire du compte correspond au bénéficiaire.",
+          "noMatch": "Aucune correspondance — le nom du titulaire ne correspond pas au bénéficiaire.",
+          "notPossible": "Vérification non disponible pour cet IBAN (banque non participante)."
+        }
+      },
+      "list": {
+        "alreadyAdded": "Ce bénéficiaire est déjà dans votre liste.",
+        "count": "{count} entrée(s)",
+        "deactivate": "Désactiver",
+        "delete": "Supprimer",
+        "empty": "Aucun bénéficiaire sélectionné.",
+        "emptyFiltered": "Aucun bénéficiaire ne correspond à ce filtre.",
+        "emptyHint": "Recherchez un SIREN/SIRET et cliquez sur Sélectionner.",
+        "hasPayoutsTooltip": "Ce bénéficiaire a des transactions et ne peut pas être supprimé. Vous pouvez le désactiver pour le masquer dans le formulaire de paiement.",
+        "inactive": "Inactif",
+        "reactivate": "Réactiver",
+        "title": "Bénéficiaires sélectionnés"
+      },
+      "mode": {
+        "company": "Entreprise / Asso.",
+        "person": "Personne physique"
+      },
+      "pageSubtitle": "Gérez les organisations et personnes à qui vous envoyez des virements SEPA.",
+      "pageTitle": "Bénéficiaires",
+      "person": {
+        "add": "Ajouter",
+        "cardTitle": "Ajouter une personne physique",
+        "error": "Le nom est requis.",
+        "firstName": "Prénom",
+        "lastName": "Nom"
+      },
+      "result": {
+        "active": "Actif",
+        "address": "Adresse",
+        "beneficiaryCreated": "Bénéficiaire ajouté avec succès.",
+        "close": "Fermer",
+        "closed": "Fermé",
+        "created": "Créé le",
+        "employees": "Effectif",
+        "ess": "ESS",
+        "naf": "NAF",
+        "select": "Sélectionner",
+        "siege": "Siège",
+        "siren": "SIREN"
+      },
+      "search": {
+        "button": "Rechercher",
+        "detected": {
+          "siren": "SIREN détecté — 9 chiffres ✓",
+          "siret": "SIRET détecté — 14 chiffres ✓"
+        },
+        "errors": {
+          "400": "Format SIREN/SIRET incorrect.",
+          "404": "Aucun établissement trouvé pour cet identifiant.",
+          "429": "Trop de requêtes. Réessayez dans quelques minutes.",
+          "502": "API INSEE temporairement indisponible.",
+          "network": "Impossible de joindre l'API."
+        },
+        "hint": "encore {remaining} chiffre(s)",
+        "label": "SIREN ou SIRET",
+        "loading": "Interrogation INSEE Sirene…",
+        "placeholder": "829844810 ou 82984481000046",
+        "subtitle": "Saisissez un identifiant. La détection du type est automatique.",
+        "title": "Recherche SIRET / SIREN"
+      },
+      "status": {
+        "closeMatch": "Approx.",
+        "formatValid": "Format ✓",
+        "invalid": "Invalide",
+        "noMatch": "Nom ≠",
+        "notPossible": "Non dispo.",
+        "pending": "En attente",
+        "verified": "Vérifié VOP"
+      },
+      "statusTip": {
+        "closeMatch": "Correspondance VOP approximative — le nom est similaire mais pas exact. Vérifiez avant d'envoyer.",
+        "formatValid": "Format IBAN valide. Lancez la vérification VOP pour confirmer le titulaire.",
+        "invalid": "Format IBAN invalide.",
+        "noMatch": "Aucune correspondance VOP — le nom du titulaire ne correspond pas.",
+        "notPossible": "VOP impossible — la banque ne supporte pas ce service.",
+        "pending": "IBAN ajouté — pas encore vérifié.",
+        "verified": "Vérifié VOP — le nom du titulaire correspond."
+      },
+      "vop": {}
+    },
+    "reporting": {
+      "page": {
+        "openCampaign": "Ouvrir une campagne →",
+        "selectCampaign": "Sélectionnez une campagne et consultez son onglet 📊 Suivi budgétaire pour le reporting prévisionnel vs réalisé.",
+        "subtitle": "Vue globale de l'impact de vos campagnes."
+      },
+      "tab": {
+        "chargesDonutTitle": "📉 Répartition des charges réalisées",
+        "chargesTitle": "📉 Charges — écarts",
+        "colActual": "Réalisé",
+        "colItem": "Poste",
+        "colPlanned": "Prévu",
+        "colVariance": "Écart",
+        "donutEmpty": "Aucune donnée",
+        "empty": "Aucune donnée de reporting disponible.",
+        "error": "Impossible de charger le reporting.",
+        "loadError": "Impossible de charger les données de reporting.",
+        "produitsDonutTitle": "📈 Répartition des produits réalisés",
+        "produitsTitle": "📈 Produits — écarts",
+        "statsChargesActual": "Charges réalisées",
+        "statsChargesPlanned": "Charges prévues",
+        "statsProduitsActual": "Produits réalisés",
+        "statsProduitsPlanned": "Produits prévus"
+      }
+    },
+    "roles": {
+      "association": "Association",
+      "donor": "Donateur"
+    },
+    "setPassword": {
+      "subtitle": "Définissez un mot de passe pour pouvoir aussi vous connecter par email.",
+      "success": "Mot de passe défini avec succès.",
+      "title": "Sécurisez votre compte"
+    },
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue"
   }
 }

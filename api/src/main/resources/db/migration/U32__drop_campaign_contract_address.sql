@@ -1,0 +1,1 @@
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS contract_address VARCHAR(255);

@@ -38,6 +38,10 @@ class Donation(
     @Column(name = "confirmed_at")
     var confirmedAt: Instant? = null,
 
+    /** French plan comptable prefix used for budget variance reporting. Default "74" (subventions). */
+    @Column(name = "type_code", nullable = false, length = 50)
+    var typeCode: String = "74",
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 )

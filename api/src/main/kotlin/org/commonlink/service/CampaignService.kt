@@ -175,7 +175,16 @@ class CampaignService(
         if (req.goal != null) campaign.goal = req.goal
         if (req.startDate != null) campaign.startDate = req.startDate
         if (req.endDate != null) campaign.endDate = req.endDate
-        if (req.contractAddress != null) campaign.contractAddress = req.contractAddress
+        if (req.category != null) campaign.category = req.category
+        if (req.reason != null) campaign.reason = req.reason
+        if (req.impactGoals != null) campaign.impactGoals = req.impactGoals
+        if (req.coverImage != null) campaign.coverImage = req.coverImage
+
+        val effectiveStart = campaign.startDate
+        val effectiveEnd = campaign.endDate
+        if (effectiveStart != null && effectiveEnd != null && effectiveEnd < effectiveStart.plusDays(7)) {
+            throw UnprocessableEntityException("End date must be at least 7 days after start date")
+        }
 
         val previousStatus = campaign.status
         if (req.status != null) {
@@ -202,15 +211,24 @@ class CampaignService(
     /**
      * Deletes a campaign and all its related data (budget sections, items, milestones via cascade).
      *
+     * Only a campaign still in [CampaignStatus.DRAFT] can be deleted — once published, its data
+     * (donations, milestones) must be preserved for transparency and on-chain consistency.
+     *
      * @param userId UUID of the authenticated association user.
      * @param campaignId UUID of the campaign to delete.
      * @throws UserNotFoundException if no association profile exists for this user.
      * @throws NotFoundException if the campaign is not found under this association.
+     * @throws UnprocessableEntityException if the campaign is not in DRAFT status.
      */
     @Transactional
     fun deleteCampaign(userId: UUID, campaignId: UUID) {
         val associationId = resolveAssociationId(userId)
         val campaign = resolveCampaign(campaignId, associationId)
+        if (campaign.status != CampaignStatus.DRAFT) {
+            throw UnprocessableEntityException(
+                "Cannot delete campaign in status ${campaign.status}; only DRAFT campaigns can be deleted"
+            )
+        }
         campaignRepository.delete(campaign)
         logger.info("Campaign deleted: id={}, associationId={}", campaignId, associationId)
     }
@@ -298,6 +316,7 @@ class CampaignService(
             emoji = req.emoji ?: "🎯",
             title = req.title,
             description = req.description,
+            transparencyCommitment = req.transparencyCommitment,
             targetAmount = req.targetAmount,
             sortOrder = req.sortOrder
         )
@@ -316,6 +335,7 @@ class CampaignService(
      * @return Updated [MilestoneDto].
      * @throws UserNotFoundException if no association profile exists for this user.
      * @throws NotFoundException if the campaign or milestone is not found.
+     * @throws UnprocessableEntityException if the milestone is not LOCKED (CURRENT/REACHED milestones are immutable).
      */
     @Transactional
     fun updateMilestone(
@@ -329,9 +349,16 @@ class CampaignService(
         val milestone = campaignMilestoneRepository.findByIdAndCampaignId(milestoneId, campaign.id!!)
             .orElseThrow { NotFoundException("Milestone not found") }
 
+        if (milestone.status != MilestoneStatus.LOCKED) {
+            throw UnprocessableEntityException(
+                "Cannot modify milestone in status ${milestone.status}; only LOCKED milestones can be edited"
+            )
+        }
+
         if (req.title != null) milestone.title = req.title
         if (req.emoji != null) milestone.emoji = req.emoji
         if (req.description != null) milestone.description = req.description
+        if (req.transparencyCommitment != null) milestone.transparencyCommitment = req.transparencyCommitment
         if (req.targetAmount != null) milestone.targetAmount = req.targetAmount
         if (req.status != null) milestone.status = req.status
         if (req.sortOrder != null) milestone.sortOrder = req.sortOrder
@@ -349,6 +376,7 @@ class CampaignService(
      * @param milestoneId UUID of the milestone to delete.
      * @throws UserNotFoundException if no association profile exists for this user.
      * @throws NotFoundException if the campaign or milestone is not found.
+     * @throws UnprocessableEntityException if the milestone is not LOCKED (CURRENT/REACHED milestones cannot be deleted).
      */
     @Transactional
     fun deleteMilestone(userId: UUID, campaignId: UUID, milestoneId: UUID) {
@@ -356,6 +384,13 @@ class CampaignService(
         val campaign = resolveCampaign(campaignId, associationId)
         val milestone = campaignMilestoneRepository.findByIdAndCampaignId(milestoneId, campaign.id!!)
             .orElseThrow { NotFoundException("Milestone not found") }
+
+        if (milestone.status != MilestoneStatus.LOCKED) {
+            throw UnprocessableEntityException(
+                "Cannot delete milestone in status ${milestone.status}; only LOCKED milestones can be deleted"
+            )
+        }
+
         campaignMilestoneRepository.delete(milestone)
         logger.info("Milestone deleted: id={}, campaignId={}", milestoneId, campaignId)
     }

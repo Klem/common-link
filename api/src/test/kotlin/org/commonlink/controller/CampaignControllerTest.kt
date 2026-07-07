@@ -11,6 +11,7 @@ import org.commonlink.dto.MilestoneDto
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
@@ -69,6 +70,7 @@ class CampaignControllerTest {
         emoji = "❄️",
         title = "Urgence Chauffage",
         description = "Matériel de chauffage d'urgence",
+        transparencyCommitment = null,
         targetAmount = BigDecimal("5000"),
         status = MilestoneStatus.LOCKED,
         sortOrder = 0,
@@ -97,8 +99,11 @@ class CampaignControllerTest {
         status = CampaignStatus.DRAFT,
         startDate = null,
         endDate = null,
-        contractAddress = null,
         budgetHash = null,
+        category = null,
+        reason = null,
+        impactGoals = null,
+        coverImage = null,
         budgetSections = listOf(sampleSection),
         milestones = listOf(sampleMilestone),
         createdAt = Instant.now(),
@@ -229,6 +234,27 @@ class CampaignControllerTest {
             .andExpect(status().isUnauthorized)
     }
 
+    @Test
+    fun `updateCampaign - 200 with info fields category, reason, impactGoals`() {
+        val updated = sampleCampaign.copy(
+            category = "Education",
+            reason = "Permettre à 450 élèves d'étudier dans de bonnes conditions.",
+            impactGoals = "Rénovation de 3 écoles, réduction de l'absentéisme de 30%."
+        )
+        every { campaignService.updateCampaign(userId, campaignId, any()) } returns updated
+
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"category":"Education","reason":"Permettre à 450 élèves d'étudier dans de bonnes conditions.","impactGoals":"Rénovation de 3 écoles, réduction de l'absentéisme de 30%."}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.category").value("Education"))
+            .andExpect(jsonPath("$.reason").value("Permettre à 450 élèves d'étudier dans de bonnes conditions."))
+            .andExpect(jsonPath("$.impactGoals").value("Rénovation de 3 écoles, réduction de l'absentéisme de 30%."))
+    }
+
     // ── DELETE /api/association/campaigns/{id} ────────────────────────────────
 
     @Test
@@ -246,6 +272,18 @@ class CampaignControllerTest {
     fun `deleteCampaign - 401 without JWT`() {
         mockMvc.perform(delete("/api/association/campaigns/$campaignId"))
             .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `deleteCampaign - 422 when campaign is not DRAFT`() {
+        every { campaignService.deleteCampaign(userId, campaignId) } throws
+            UnprocessableEntityException("Cannot delete campaign in status LIVE; only DRAFT campaigns can be deleted")
+
+        mockMvc.perform(
+            delete("/api/association/campaigns/$campaignId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isUnprocessableContent)
     }
 
     // ── PUT /api/association/campaigns/{id}/budget ────────────────────────────
@@ -347,5 +385,17 @@ class CampaignControllerTest {
             delete("/api/association/campaigns/$campaignId/milestones/$milestoneId")
         )
             .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `deleteMilestone - 422 when milestone is not LOCKED`() {
+        every { campaignService.deleteMilestone(userId, campaignId, milestoneId) } throws
+            UnprocessableEntityException("Cannot delete milestone in status CURRENT; only LOCKED milestones can be deleted")
+
+        mockMvc.perform(
+            delete("/api/association/campaigns/$campaignId/milestones/$milestoneId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isUnprocessableContent)
     }
 }

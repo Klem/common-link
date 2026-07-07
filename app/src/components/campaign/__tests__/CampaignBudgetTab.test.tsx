@@ -1,0 +1,231 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { CampaignBudgetTab } from '../CampaignBudgetTab';
+import type { CampaignDto } from '@/types/campaign';
+
+// ── Mocks ─────────────────────────────────────────────────────────────────────
+
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
+vi.mock('@/hooks/campaign/useBudget');
+vi.mock('@/stores/toastStore', () => ({
+  useToastStore: () => ({ addToast: vi.fn() }),
+}));
+
+import { useBudget, isFixedRevenueSection } from '@/hooks/campaign/useBudget';
+const mockUseBudget = useBudget as ReturnType<typeof vi.fn>;
+const mockIsFixedRevenueSection = isFixedRevenueSection as ReturnType<typeof vi.fn>;
+
+// ── Fixtures ──────────────────────────────────────────────────────────────────
+
+const campaign: CampaignDto = {
+  id: 'camp-1',
+  name: 'Test',
+  emoji: '🌍',
+  description: '',
+  goal: 10000,
+  raised: 0,
+  status: 'DRAFT',
+  startDate: null,
+  endDate: null,
+  milestones: [],
+  budgetSections: [],
+  category: null,
+  reason: null,
+  impactGoals: null,
+  coverImage: null,
+};
+
+const mockBudgetBase = {
+  collapsedSections: new Set<number>(),
+  isDirty: false,
+  isSaving: false,
+  totalCharges: 0,
+  totalProduits: 0,
+  balance: 0,
+  init: vi.fn(),
+  initTemplate: vi.fn(),
+  updateItemLabel: vi.fn(),
+  updateItemAmount: vi.fn(),
+  addItem: vi.fn(),
+  removeItem: vi.fn(),
+  addSection: vi.fn(),
+  removeSection: vi.fn(),
+  toggleSection: vi.fn(),
+  save: vi.fn().mockResolvedValue(null),
+};
+
+// ── Tests ──────────────────────────────────────────────────────────────────────
+
+describe('CampaignBudgetTab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('empty state', () => {
+    beforeEach(() => {
+      mockUseBudget.mockReturnValue({ ...mockBudgetBase, sections: [] });
+    });
+
+    it('renders 2 template cards', () => {
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      expect(screen.getByText('editor.budget.tplStandard')).toBeInTheDocument();
+      expect(screen.getByText('editor.budget.tplSimple')).toBeInTheDocument();
+    });
+
+    it('selects standard template by default and calls initTemplate on CTA click', () => {
+      const initTemplate = vi.fn();
+      mockUseBudget.mockReturnValue({ ...mockBudgetBase, sections: [], initTemplate });
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      fireEvent.click(screen.getByText('editor.budget.useTpl'));
+      expect(initTemplate).toHaveBeenCalledWith('standard');
+    });
+
+    it('calls initTemplate with selected type when user picks Simplifié', () => {
+      const initTemplate = vi.fn();
+      mockUseBudget.mockReturnValue({ ...mockBudgetBase, sections: [], initTemplate });
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      fireEvent.click(screen.getByText('editor.budget.tplSimple'));
+      fireEvent.click(screen.getByText('editor.budget.useTpl'));
+      expect(initTemplate).toHaveBeenCalledWith('simple');
+    });
+  });
+
+  describe('editor state', () => {
+    const sections = [
+      { side: 'EXPENSE' as const, code: '60', name: 'Achats', items: [{ label: 'Fournitures', amount: 500 }] },
+      { side: 'REVENUE' as const, code: '74', name: 'Subventions', items: [{ label: 'État', amount: 1000 }] },
+    ];
+
+    beforeEach(() => {
+      mockUseBudget.mockReturnValue({
+        ...mockBudgetBase,
+        sections,
+        totalCharges: 500,
+        totalProduits: 1000,
+        balance: 500,
+      });
+    });
+
+    it('renders balance bar with charges and produits', () => {
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      expect(document.querySelector('.bal-val.ch')).toHaveTextContent('500');
+      expect(document.querySelector('.bal-val.pr')).toHaveTextContent('1 000');
+    });
+
+    it('shows excess pill when balance > 0', () => {
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      const pill = document.querySelector('.bal-pill');
+      expect(pill).toHaveClass('excess');
+    });
+
+    it('shows deficit pill when balance < 0', () => {
+      mockUseBudget.mockReturnValue({
+        ...mockBudgetBase, sections,
+        totalCharges: 1000, totalProduits: 500, balance: -500,
+      });
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      const pill = document.querySelector('.bal-pill');
+      expect(pill).toHaveClass('deficit');
+    });
+
+    it('shows ok pill when balance ≈ 0', () => {
+      mockUseBudget.mockReturnValue({
+        ...mockBudgetBase, sections,
+        totalCharges: 1000, totalProduits: 1000, balance: 0,
+      });
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      const pill = document.querySelector('.bal-pill');
+      expect(pill).toHaveClass('ok');
+    });
+
+    it('renders section names', () => {
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      expect(screen.getByText('Achats')).toBeInTheDocument();
+      expect(screen.getByText('Subventions')).toBeInTheDocument();
+    });
+
+    it('hides charges column when produits filter active', () => {
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      const produitBtn = document.querySelector('.col-filter-btn.pr') as HTMLElement;
+      fireEvent.click(produitBtn);
+      expect(document.getElementById('bud-col-charges')).toBeNull();
+      expect(document.getElementById('bud-col-produits')).toBeInTheDocument();
+    });
+
+    it('hides produits column when charges filter active', () => {
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      const chargesBtn = document.querySelector('.col-filter-btn.ch') as HTMLElement;
+      fireEvent.click(chargesBtn);
+      expect(document.getElementById('bud-col-produits')).toBeNull();
+      expect(document.getElementById('bud-col-charges')).toBeInTheDocument();
+    });
+
+    it('locks the fixed revenue row: no delete button, disabled inputs, no add-category', () => {
+      const fixedSections = [
+        ...sections,
+        { side: 'REVENUE' as const, code: 'PRODUIT', name: 'Produit', items: [{ label: 'Dons', amount: 10000 }] },
+      ];
+      mockUseBudget.mockReturnValue({ ...mockBudgetBase, sections: fixedSections });
+      mockIsFixedRevenueSection.mockImplementation((s: { name: string }) => s.name === 'Produit');
+
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+
+      const donsRow = screen.getByDisplayValue('Dons').closest('.line') as HTMLElement;
+      expect(donsRow.querySelector('input[type="text"]')).toBeDisabled();
+      expect(donsRow.querySelector('input[type="number"]')).toBeDisabled();
+      expect(donsRow.querySelector('.line-del')).toHaveTextContent('🔒');
+
+      const produitsCol = document.getElementById('bud-col-produits') as HTMLElement;
+      expect(produitsCol.querySelector('.add-sec')).toBeNull();
+    });
+
+    it('calls init([]) when Changer de modèle is clicked', () => {
+      const init = vi.fn();
+      mockUseBudget.mockReturnValue({ ...mockBudgetBase, sections, init });
+      render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+      fireEvent.click(screen.getByText('editor.budget.changeTemplate'));
+      expect(init).toHaveBeenCalledWith([]);
+    });
+
+    describe('autosave', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('does not save immediately when an item amount is edited', () => {
+        render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+        const input = document.querySelector('.line-amt input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '700' } });
+        expect(mockBudgetBase.save).not.toHaveBeenCalled();
+      });
+
+      it('autosaves silently 800ms after an item edit', () => {
+        render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+        const input = document.querySelector('.line-amt input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '700' } });
+
+        act(() => { vi.advanceTimersByTime(800); });
+
+        expect(mockBudgetBase.save).toHaveBeenCalledWith('camp-1', true);
+      });
+
+      it('cancels a pending autosave when the template is reset (does not overwrite with stale data)', () => {
+        render(<CampaignBudgetTab campaign={campaign} onBudgetSaved={vi.fn()} />);
+        const input = document.querySelector('.line-amt input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '700' } });
+        fireEvent.click(screen.getByText('editor.budget.changeTemplate'));
+
+        act(() => { vi.advanceTimersByTime(800); });
+
+        expect(mockBudgetBase.save).not.toHaveBeenCalled();
+      });
+    });
+  });
+});

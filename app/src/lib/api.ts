@@ -24,8 +24,11 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const apiBaseURL = rawApiUrl.startsWith('http') ? rawApiUrl : `https://${rawApiUrl}`;
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  baseURL: apiBaseURL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
@@ -99,7 +102,7 @@ api.interceptors.response.use(
 
       try {
         const response = await axios.post<{ accessToken: string }>(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/refresh`,
+          `${apiBaseURL}/api/auth/refresh`,
           {},
           { withCredentials: true },
         );

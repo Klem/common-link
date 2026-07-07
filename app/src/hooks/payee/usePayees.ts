@@ -6,6 +6,7 @@ import {
   addIban,
   deleteIban,
   deletePayee,
+  patchPayeeActive,
 } from '@/lib/api/payee';
 import type { PayeeDto } from '@/types/payee';
 
@@ -36,6 +37,12 @@ export interface UsePayeesReturn {
    * @param id - UUID of the payee.
    */
   removePayee: (id: string) => Promise<void>;
+  /**
+   * Toggles the active state of a payee and refreshes the list.
+   * @param id - UUID of the payee.
+   * @param active - New active state.
+   */
+  setPayeeActive: (id: string, active: boolean) => Promise<void>;
   /**
    * Re-fetches the full list (simpler than a partial update).
    * @param id - UUID of the payee to refresh (triggers a full list reload).
@@ -95,6 +102,15 @@ export function usePayees(): UsePayeesReturn {
     [fetchPayees],
   );
 
+  /** Toggles active state with local in-place update (no full reload, no scroll). */
+  const setPayeeActive = useCallback(
+    async (id: string, active: boolean): Promise<void> => {
+      const updated = await patchPayeeActive(id, active);
+      setPayees((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    },
+    [],
+  );
+
   /** Re-fetches the full list (full reload, no partial update). */
   const refreshPayee = useCallback(
     async (_id: string): Promise<void> => {
@@ -115,6 +131,7 @@ export function usePayees(): UsePayeesReturn {
     addPayeeIban,
     removePayeeIban,
     removePayee,
+    setPayeeActive,
     refreshPayee,
   };
 }

@@ -32,9 +32,13 @@ class Payee(
     @Column(name = "name", nullable = false, length = 255)
     var name: String,
 
-    /** French SIREN identifier (9 digits) — unique per association. */
-    @Column(name = "identifier_1", nullable = false, length = 9)
-    val identifier1: String,
+    /** Discriminates COMPANY (SIREN-identified) vs PERSON (natural person, no SIREN). */
+    @Column(name = "payee_type", nullable = false, length = 10)
+    val payeeType: String = "COMPANY",
+
+    /** French SIREN identifier (9 digits) — unique per association; null for PERSON payees. */
+    @Column(name = "identifier_1", nullable = true, length = 9)
+    val identifier1: String? = null,
 
     /** French SIRET identifier (14 digits) for a specific establishment. Null when only SIREN is known. */
     @Column(name = "identifier_2", length = 14)

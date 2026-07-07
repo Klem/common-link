@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { AssociationProfileDto, UpdateAssociationProfileRequest } from '@/types/association';
+import type { AssociationProfileDto, UpdateAssociationProfileRequest, DashboardStats } from '@/types/association';
 
 /**
  * Fetches the current association's profile from `GET /api/association/me`.
@@ -21,3 +21,12 @@ export const updateAssociationProfile = (
   data: UpdateAssociationProfileRequest,
 ): Promise<AssociationProfileDto> =>
   api.patch<AssociationProfileDto>('/api/association/me', data).then((r) => r.data);
+
+/**
+ * Fetches aggregated dashboard statistics for the authenticated association
+ * from `GET /api/association/dashboard`.
+ *
+ * @returns Stats DTO including totals, 6-month chart data, and recent activity.
+ */
+export const getDashboard = (): Promise<DashboardStats> =>
+  api.get<DashboardStats>('/api/association/dashboard').then((r) => r.data);

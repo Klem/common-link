@@ -265,6 +265,52 @@ class CampaignServiceTest {
         }
     }
 
+    @Test
+    fun `updateCampaign - endDate less than 7 days after startDate throws 422`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Date Test"))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(
+                userId, created.id,
+                UpdateCampaignRequest(
+                    startDate = java.time.LocalDate.of(2025, 1, 1),
+                    endDate = java.time.LocalDate.of(2025, 1, 6) // only 5 days later
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `updateCampaign - endDate exactly 7 days after startDate succeeds`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Date Test OK"))
+
+        val updated = campaignService.updateCampaign(
+            userId, created.id,
+            UpdateCampaignRequest(
+                startDate = java.time.LocalDate.of(2025, 1, 1),
+                endDate = java.time.LocalDate.of(2025, 1, 8) // exactly 7 days
+            )
+        )
+        assertEquals(java.time.LocalDate.of(2025, 1, 8), updated.endDate)
+    }
+
+    @Test
+    fun `updateCampaign - sets category, reason and impactGoals`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Info Test"))
+
+        val updated = campaignService.updateCampaign(
+            userId, created.id,
+            UpdateCampaignRequest(
+                category = "Education",
+                reason = "Rénover les écoles",
+                impactGoals = "450 élèves bénéficiaires"
+            )
+        )
+        assertEquals("Education", updated.category)
+        assertEquals("Rénover les écoles", updated.reason)
+        assertEquals("450 élèves bénéficiaires", updated.impactGoals)
+    }
+
     // ── deleteCampaign ────────────────────────────────────────────────────────
 
     @Test
@@ -275,6 +321,20 @@ class CampaignServiceTest {
 
         val remaining = campaignService.listCampaigns(userId)
         assertTrue(remaining.isEmpty())
+    }
+
+    @Test
+    fun `deleteCampaign - throws when campaign is not DRAFT`() {
+        linkMonerium(userId)
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Live Campaign", goal = BigDecimal("10000")))
+        campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.deleteCampaign(userId, created.id)
+        }
+
+        val remaining = campaignService.listCampaigns(userId)
+        assertEquals(1, remaining.size)
     }
 
     // ── saveBudget ────────────────────────────────────────────────────────────
@@ -383,6 +443,40 @@ class CampaignServiceTest {
         assertEquals(MilestoneStatus.CURRENT, result.status)
     }
 
+    @Test
+    fun `updateMilestone - throws when milestone is CURRENT`() {
+        val campaign = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign"))
+        val milestone = campaignService.addMilestone(
+            userId, campaign.id, CreateMilestoneRequest(title = "Old Title")
+        )
+        campaignService.updateMilestone(
+            userId, campaign.id, milestone.id, UpdateMilestoneRequest(status = MilestoneStatus.CURRENT)
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateMilestone(
+                userId, campaign.id, milestone.id, UpdateMilestoneRequest(title = "Blocked")
+            )
+        }
+    }
+
+    @Test
+    fun `updateMilestone - throws when milestone is REACHED`() {
+        val campaign = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign"))
+        val milestone = campaignService.addMilestone(
+            userId, campaign.id, CreateMilestoneRequest(title = "Old Title")
+        )
+        campaignService.updateMilestone(
+            userId, campaign.id, milestone.id, UpdateMilestoneRequest(status = MilestoneStatus.REACHED)
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateMilestone(
+                userId, campaign.id, milestone.id, UpdateMilestoneRequest(title = "Blocked")
+            )
+        }
+    }
+
     // ── deleteMilestone ───────────────────────────────────────────────────────
 
     @Test
@@ -396,6 +490,42 @@ class CampaignServiceTest {
 
         val updated = campaignService.getCampaign(userId, campaign.id)
         assertTrue(updated.milestones.isEmpty())
+    }
+
+    @Test
+    fun `deleteMilestone - throws when milestone is CURRENT`() {
+        val campaign = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign"))
+        val milestone = campaignService.addMilestone(
+            userId, campaign.id, CreateMilestoneRequest(title = "Current One")
+        )
+        campaignService.updateMilestone(
+            userId, campaign.id, milestone.id, UpdateMilestoneRequest(status = MilestoneStatus.CURRENT)
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.deleteMilestone(userId, campaign.id, milestone.id)
+        }
+
+        val updated = campaignService.getCampaign(userId, campaign.id)
+        assertEquals(1, updated.milestones.size)
+    }
+
+    @Test
+    fun `deleteMilestone - throws when milestone is REACHED`() {
+        val campaign = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign"))
+        val milestone = campaignService.addMilestone(
+            userId, campaign.id, CreateMilestoneRequest(title = "Reached One")
+        )
+        campaignService.updateMilestone(
+            userId, campaign.id, milestone.id, UpdateMilestoneRequest(status = MilestoneStatus.REACHED)
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.deleteMilestone(userId, campaign.id, milestone.id)
+        }
+
+        val updated = campaignService.getCampaign(userId, campaign.id)
+        assertEquals(1, updated.milestones.size)
     }
 
     // ── reorderMilestones ─────────────────────────────────────────────────────

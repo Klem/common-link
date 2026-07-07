@@ -5,15 +5,23 @@ import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.Donation
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.EmailVerificationToken
+import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.MagicLinkToken
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.entity.Payee
+import org.commonlink.entity.PayeeIban
+import org.commonlink.entity.Payout
+import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.RefreshToken
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import java.math.BigDecimal
 import java.time.Instant
+import java.util.UUID
 
 /**
  * Factories de données de test pour les entités du domaine.
@@ -186,6 +194,76 @@ object TestFixtures {
         description = "Matériel de chauffage d'urgence pour 8 familles.",
         targetAmount = targetAmount,
         sortOrder = sortOrder,
+        status = status,
+    )
+
+    /**
+     * Returns an unpersisted [Donation] entity for testing.
+     *
+     * The [providerRef] defaults to a random UUID-based string to avoid UNIQUE constraint violations.
+     *
+     * @param donor The donor profile making the donation.
+     * @param campaign The campaign receiving the donation.
+     * @param amount Donation amount in euros.
+     * @param confirmedAt When the payment was confirmed; null means unconfirmed.
+     * @param typeCode Plan comptable prefix for budget variance reporting (default "74").
+     */
+    fun donation(
+        donor: DonorProfile,
+        campaign: Campaign,
+        amount: BigDecimal = BigDecimal("50.00"),
+        providerRef: String = "test:${UUID.randomUUID()}",
+        confirmedAt: Instant? = Instant.now(),
+        typeCode: String = "74",
+    ) = Donation(
+        donor = donor,
+        campaign = campaign,
+        amount = amount,
+        providerRef = providerRef,
+        confirmedAt = confirmedAt,
+        typeCode = typeCode,
+    )
+
+    // ── Payees ───────────────────────────────────────────────────────────────
+
+    fun payee(
+        association: AssociationProfile,
+        name: String = "École Kaolack SARL",
+        identifier1: String = "123456789",
+    ) = Payee(
+        association = association,
+        name = name,
+        identifier1 = identifier1,
+    )
+
+    fun payeeIban(
+        payee: Payee,
+        iban: String = "FR7630006000011234567890189",
+        status: IbanVerificationStatus = IbanVerificationStatus.VERIFIED,
+    ) = PayeeIban(
+        payee = payee,
+        iban = iban,
+        status = status,
+    )
+
+    fun payout(
+        campaign: Campaign,
+        payee: Payee,
+        payeeIban: PayeeIban,
+        amount: BigDecimal = BigDecimal("500.00"),
+        kind: PayoutKind = PayoutKind.EXPENSE,
+        typeCode: String = "60-mat",
+        label: String = "Achat matériel pédagogique — facture FAC-001",
+        status: PayoutStatus = PayoutStatus.PENDING,
+    ) = Payout(
+        campaign = campaign,
+        payee = payee,
+        payeeIbanId = payeeIban.id!!,
+        payeeIbanValue = payeeIban.iban,
+        amount = amount,
+        kind = kind,
+        typeCode = typeCode,
+        label = label,
         status = status,
     )
 }

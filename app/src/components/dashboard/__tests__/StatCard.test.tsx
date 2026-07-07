@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { StatCard } from '../StatCard';
 
 describe('StatCard', () => {
@@ -10,13 +10,15 @@ describe('StatCard', () => {
     expect(screen.getByText('0 €')).toBeInTheDocument();
   });
 
-  it('shows trend chip when trend prop is provided', () => {
-    render(<StatCard icon="📊" label="Score" value={42} trend={{ value: '+5%', direction: 'up' }} />);
-    expect(screen.getByText('+5%')).toBeInTheDocument();
+  it('renders subLabel when provided', () => {
+    render(<StatCard icon="🎯" label="Jalon" value="500 €" subLabel="Prochaine étape" />);
+    expect(screen.getByText('Prochaine étape')).toBeInTheDocument();
   });
 
-  it('does not show trend chip when trend is undefined', () => {
-    render(<StatCard icon="📊" label="Score" value={42} />);
-    expect(screen.queryByText(/[+-]\d/)).not.toBeInTheDocument();
+  it('calls onClick when clicked', () => {
+    const onClick = vi.fn();
+    render(<StatCard icon="📢" label="Campagnes" value={3} onClick={onClick} />);
+    fireEvent.click(screen.getByText('Campagnes').closest('.st')!);
+    expect(onClick).toHaveBeenCalledOnce();
   });
 });

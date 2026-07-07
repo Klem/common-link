@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.commonlink.entity.Campaign
+import org.commonlink.entity.CampaignStatus
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.Optional
@@ -54,4 +55,10 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
      */
     @EntityGraph(attributePaths = ["milestones"])
     fun findWithDetailsByIdAndAssociationId(id: UUID, associationId: UUID): Optional<Campaign>
+
+    /** Count of campaigns with the given status for the association. */
+    fun countByAssociationIdAndStatus(associationId: UUID, status: CampaignStatus): Long
+
+    /** All campaigns with the given status for the association. */
+    fun findAllByAssociationIdAndStatus(associationId: UUID, status: CampaignStatus): List<Campaign>
 }

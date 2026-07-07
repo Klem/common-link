@@ -154,6 +154,8 @@ class CampaignController(
     /**
      * Deletes a campaign and all its related data (budget sections, items, milestones via cascade).
      *
+     * Only a campaign still in DRAFT status can be deleted.
+     *
      * @param principal Injected JWT principal; username holds the user UUID.
      * @param id UUID of the campaign to delete.
      * @return 204 No Content on success.
@@ -161,12 +163,13 @@ class CampaignController(
     @DeleteMapping("/{id}")
     @Operation(
         summary = "Delete campaign",
-        description = "Deletes a campaign and all its related budget sections, items, and milestones."
+        description = "Deletes a campaign and all its related budget sections, items, and milestones. Only DRAFT campaigns can be deleted."
     )
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "Campaign deleted", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
-        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()])
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Campaign is not in DRAFT status", content = [Content()])
     )
     fun deleteCampaign(
         @AuthenticationPrincipal principal: UserDetails,
@@ -273,6 +276,8 @@ class CampaignController(
     /**
      * Deletes a milestone from a campaign.
      *
+     * Only a milestone still in LOCKED status can be deleted.
+     *
      * @param principal Injected JWT principal; username holds the user UUID.
      * @param id UUID of the campaign that owns the milestone.
      * @param msId UUID of the milestone to delete.
@@ -281,12 +286,13 @@ class CampaignController(
     @DeleteMapping("/{id}/milestones/{msId}")
     @Operation(
         summary = "Delete milestone",
-        description = "Deletes a milestone from the campaign."
+        description = "Deletes a milestone from the campaign. Only LOCKED milestones can be deleted."
     )
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "Milestone deleted", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
-        ApiResponse(responseCode = "404", description = "Campaign or milestone not found", content = [Content()])
+        ApiResponse(responseCode = "404", description = "Campaign or milestone not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Milestone is not LOCKED", content = [Content()])
     )
     fun deleteMilestone(
         @AuthenticationPrincipal principal: UserDetails,

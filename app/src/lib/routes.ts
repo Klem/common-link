@@ -16,4 +16,5 @@ export const ROUTES = {
   ASSOCIATION_PROFILE: '/dashboard/association/profile',
   ASSOCIATION_PAYEES: '/dashboard/association/payees',
   ASSOCIATION_CAMPAIGNS: '/dashboard/association/campaigns',
+  ASSOCIATION_REPORTING: '/dashboard/association/reporting',
 } as const;

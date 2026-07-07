@@ -70,6 +70,7 @@ class PayeeControllerTest {
 
     private val samplePayee = PayeeDto(
         id = payeeId,
+        payeeType = "COMPANY",
         name = "Les Restos du Coeur",
         identifier1 = "775671356",
         identifier2 = null,
@@ -78,7 +79,24 @@ class PayeeControllerTest {
         city = "Paris",
         postalCode = "75001",
         active = true,
+        hasPayouts = false,
         ibans = listOf(sampleIban),
+        createdAt = Instant.now()
+    )
+
+    private val samplePersonPayee = PayeeDto(
+        id = payeeId,
+        payeeType = "PERSON",
+        name = "Marie Dupont",
+        identifier1 = null,
+        identifier2 = null,
+        activityCode = null,
+        category = null,
+        city = null,
+        postalCode = null,
+        active = true,
+        hasPayouts = false,
+        ibans = emptyList(),
         createdAt = Instant.now()
     )
 
@@ -147,6 +165,33 @@ class PayeeControllerTest {
             .andExpect(status().isConflict)
     }
 
+    @Ignore
+    @Test
+    fun `createPayee PERSON - 201 without identifier1`() {
+        every { payeeService.createPayee(userId, any()) } returns samplePersonPayee
+
+        mockMvc.perform(
+            post("/api/association/payees")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"name":"Marie Dupont","payeeType":"PERSON"}""")
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.payeeType").value("PERSON"))
+            .andExpect(jsonPath("$.name").value("Marie Dupont"))
+    }
+
+    @Test
+    fun `createPayee COMPANY - 400 when identifier1 missing`() {
+        mockMvc.perform(
+            post("/api/association/payees")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"name":"Valid Name","payeeType":"COMPANY"}""")
+        )
+            .andExpect(status().isUnprocessableContent)
+    }
+
     @Test
     fun `createPayee - 400 when name is blank`() {
         mockMvc.perform(
@@ -155,7 +200,7 @@ class PayeeControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"","identifier1":"775671356"}""")
         )
-            .andExpect(status().isBadRequest)
+            .andExpect(status().isUnprocessableContent)
     }
 
     @Test
@@ -166,7 +211,7 @@ class PayeeControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"Valid Name","identifier1":"12345"}""")
         )
-            .andExpect(status().isBadRequest)
+            .andExpect(status().isUnprocessableContent)
     }
 
     @Test

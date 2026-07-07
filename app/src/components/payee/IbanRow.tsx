@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { PayeeIbanDto } from '@/types/payee';
 import { IbanVerificationStatus } from '@/types/payee';
-import { VopBanner } from './VopBanner';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface IbanRowProps {
   /** The IBAN record to display. */
@@ -20,20 +18,6 @@ interface IbanRowProps {
   onVerifyVop: (ibanId: string) => void;
 }
 
-/** Maps IBAN verification status to a form-input modifier class. */
-function inputStatusClass(status: IbanVerificationStatus): string {
-  switch (status) {
-    case IbanVerificationStatus.VERIFIED:
-    case IbanVerificationStatus.FORMAT_VALID:
-      return ' success';
-    case IbanVerificationStatus.INVALID:
-    case IbanVerificationStatus.NO_MATCH:
-      return ' error';
-    default:
-      return '';
-  }
-}
-
 /**
  * Single IBAN row displaying the IBAN value, its verification status,
  * action buttons (copy / verify / delete), and an optional VOP banner.
@@ -45,14 +29,12 @@ export function IbanRow({
   onVerifyVop,
 }: IbanRowProps) {
   const t = useTranslations('dashboard');
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const canDelete = iban.status !== IbanVerificationStatus.VERIFIED;
+  const [pendingDelete, setPendingDelete] = useState(false);
 
   const renderActions = () => {
     if (isVerifyingVop) {
       return (
-        <span className="inline-block w-5 h-5 border-2 border-border border-t-green rounded-full animate-spin-around flex-shrink-0" />
+        <span className="rm-spinner" />
       );
     }
     switch (iban.status) {
@@ -60,18 +42,20 @@ export function IbanRow({
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
-            className="btn btn-secondary btn-xs whitespace-nowrap"
+            className="btn btn-icon-only btn-sm"
+            title={t('payees.iban.verify')}
           >
-            {t('payees.iban.verify')}
+            ⟳
           </button>
         );
       case IbanVerificationStatus.FORMAT_VALID:
         return (
           <button
             onClick={() => onVerifyVop(iban.id)}
-            className="btn btn-primary btn-xs whitespace-nowrap"
+            className="btn btn-icon-only btn-sm"
+            title={t('payees.iban.verifyVop')}
           >
-            {t('payees.iban.verifyVop')}
+            ⟳
           </button>
         );
       case IbanVerificationStatus.VERIFIED:
@@ -110,7 +94,8 @@ export function IbanRow({
           value={iban.iban}
           onChange={() => {}}
           placeholder={t('payees.iban.placeholder')}
-          className={`form-input flex-1 font-mono text-sm cursor-default${inputStatusClass(iban.status)}`}
+          className="cm-fi"
+          style={{ flex: 1, fontFamily: 'monospace', fontSize: 13, cursor: 'default' }}
         />
 
         {/* Copy button */}
@@ -126,29 +111,33 @@ export function IbanRow({
           {renderActions()}
         </div>
 
-        {canDelete && (
+        {pendingDelete ? (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => setPendingDelete(false)}
+              className="rm-btn-cancel-iban-del"
+              title={t('payees.iban.cancel')}
+            >
+              ✕
+            </button>
+            <button
+              onClick={() => { setPendingDelete(false); onDeleteIban(iban.id); }}
+              className="rm-btn-confirm-iban-del"
+              title={t('payees.list.delete')}
+            >
+              ✓
+            </button>
+          </div>
+        ) : (
           <button
-            onClick={() => setConfirmOpen(true)}
-            className="btn btn-icon-only btn-sm text-error hover:bg-error/10 flex-shrink-0"
+            onClick={() => setPendingDelete(true)}
+            className="rm-btn-del-iban flex-shrink-0"
             title={t('payees.list.delete')}
           >
-            ✕
+            🗑
           </button>
         )}
       </div>
-
-      {iban.vopResult && (
-        <VopBanner vopResult={iban.vopResult} suggestedName={iban.vopSuggestedName} />
-      )}
-
-      <ConfirmDialog
-        isOpen={confirmOpen}
-        title={t('payees.iban.deleteTitle')}
-        message={t('payees.iban.deleteMessage', { iban: iban.iban })}
-        confirmLabel={t('payees.list.delete')}
-        onConfirm={() => { setConfirmOpen(false); onDeleteIban(iban.id); }}
-        onCancel={() => setConfirmOpen(false)}
-      />
     </div>
   );
 }
