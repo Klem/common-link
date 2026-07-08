@@ -268,13 +268,20 @@
       "profile": {
         "cancel": "Cancel",
         "city": "City",
+        "contactEmail": "Contact email",
         "contactName": "Contact name",
         "contactNamePlaceholder": "Your full name",
+        "creationYear": "Year founded",
         "description": "Description",
         "descriptionPlaceholder": "Describe your association's mission",
         "errors": {
+          "contactEmailFormat": "Please enter a valid email address.",
           "contactNameMin": "Name must be at least 2 characters.",
-          "postalCodeFormat": "Postal code must be 5 digits."
+          "creationYearMax": "Year cannot be in the future.",
+          "creationYearMin": "Year must be 1800 or later.",
+          "phoneFormat": "Please enter a valid phone number (6–20 characters).",
+          "postalCodeFormat": "Postal code must be 5 digits.",
+          "rnaFormat": "RNA must be W followed by 9 digits (e.g. W123456789)."
         },
         "identifier": "SIREN",
         "infos": {
@@ -298,7 +305,9 @@
         },
         "name": "Association name",
         "pending": "Pending verification",
+        "phone": "Phone",
         "postalCode": "Postal code",
+        "rna": "RNA number",
         "save": "Save",
         "security": {
           "changePassword": "Set a password",

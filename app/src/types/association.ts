@@ -1,6 +1,8 @@
+/** KYC verification lifecycle states for an association. */
+export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 /**
  * Read model for an association's profile as returned by `GET /api/association/me`.
- * The `verified` flag indicates whether the association has been verified on-chain.
  */
 export interface AssociationProfileDto {
   /** Unique profile identifier (UUID). */
@@ -13,8 +15,13 @@ export interface AssociationProfileDto {
   postalCode: string | null;
   contactName: string | null;
   description: string | null;
-  /** Whether the association has received on-chain verification. */
-  verified: boolean;
+  rna: string | null;
+  creationYear: number | null;
+  contactEmail: string | null;
+  phone: string | null;
+  /** KYC verification status replacing the former `verified` boolean. */
+  verificationStatus: VerificationStatus;
+  verificationRejectionReason: string | null;
 }
 
 /**
@@ -26,6 +33,10 @@ export interface UpdateAssociationProfileRequest {
   city?: string;
   postalCode?: string;
   description?: string;
+  rna?: string;
+  creationYear?: number;
+  contactEmail?: string;
+  phone?: string;
 }
 
 /** Activity event types surfaced in the dashboard recent-activity feed. */

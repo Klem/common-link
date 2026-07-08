@@ -27,7 +27,7 @@ export default function AssociationDashboardPage() {
   const { stats, isLoading, error } = useAssociationDashboard();
   const setAccStatus = useAccStatusStore((s) => s.setAccStatus);
 
-  const verified = profile?.verified ?? false;
+  const verified = profile?.verificationStatus === 'VERIFIED';
   const bankConnected = connected === true;
 
   useEffect(() => {

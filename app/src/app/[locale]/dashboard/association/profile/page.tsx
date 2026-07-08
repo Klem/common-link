@@ -15,19 +15,33 @@ import { useSetPassword } from '@/hooks/auth/useSetPassword';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 const profileSchema = z.object({
-  contactName: z.string().min(2, 'dashboard.association.profile.errors.contactNameMin'),
-  city: z.string().optional(),
-  postalCode: z
+  rna: z
     .string()
     .optional()
-    .refine((v) => !v || /^\d{5}$/.test(v), 'dashboard.association.profile.errors.postalCodeFormat'),
-  description: z.string().optional(),
+    .refine((v) => !v || /^W\d{9}$/.test(v), 'dashboard.association.profile.errors.rnaFormat'),
+  creationYear: z
+    .number()
+    .int()
+    .min(1800, 'dashboard.association.profile.errors.creationYearMin')
+    .max(CURRENT_YEAR, 'dashboard.association.profile.errors.creationYearMax')
+    .optional()
+    .or(z.nan().transform(() => undefined)),
+  contactEmail: z
+    .string()
+    .optional()
+    .refine((v) => !v || z.string().email().safeParse(v).success, 'dashboard.association.profile.errors.contactEmailFormat'),
+  phone: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^[0-9 +().\-]{6,20}$/.test(v), 'dashboard.association.profile.errors.phoneFormat'),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-type SettingsTab = 'infos' | 'verif' | 'bank';
+type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate';
 
 const PROVIDER_KEYS = {
   GOOGLE: 'association.profile.security.google',
@@ -63,19 +77,19 @@ export default function AssociationProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     values: {
-      contactName: profile?.contactName ?? '',
-      city: profile?.city ?? '',
-      postalCode: profile?.postalCode ?? '',
-      description: profile?.description ?? '',
+      rna: profile?.rna ?? '',
+      creationYear: profile?.creationYear ?? undefined,
+      contactEmail: profile?.contactEmail ?? '',
+      phone: profile?.phone ?? '',
     },
   });
 
   const onSubmit = handleSubmit(async (data) => {
     await updateProfile({
-      contactName: data.contactName || undefined,
-      city: data.city || undefined,
-      postalCode: data.postalCode || undefined,
-      description: data.description || undefined,
+      rna: data.rna || undefined,
+      creationYear: data.creationYear,
+      contactEmail: data.contactEmail || undefined,
+      phone: data.phone || undefined,
     });
     reset(data);
   });
@@ -112,8 +126,8 @@ export default function AssociationProfilePage() {
           onClick={() => setActiveTab('verif')}
         >
           ✓ {t('association.profile.tabs.verif')}{' '}
-          <span className={`set-tab-badge${profile?.verified ? ' ok' : ''}`}>
-            {profile?.verified
+          <span className={`set-tab-badge${profile?.verificationStatus === 'VERIFIED' ? ' ok' : ''}`}>
+            {profile?.verificationStatus === 'VERIFIED'
               ? t('association.profile.tabs.verifBadge.ok')
               : t('association.profile.tabs.verifBadge.todo')}
           </span>
@@ -145,77 +159,83 @@ export default function AssociationProfilePage() {
                 </p>
               ) : (
                 <form onSubmit={onSubmit} noValidate>
-                  {/* Ligne 1 : Nom association + SIREN */}
+                  {/* Ligne 1 : Nom (read-only) | N° RNA */}
                   <div className="frow">
                     <div className="fg">
                       <label className="fl">{t('association.profile.name')}</label>
                       <input className="fi" type="text" value={profile?.name ?? ''} disabled />
                     </div>
                     <div className="fg">
+                      <label htmlFor="rna" className="fl">
+                        {t('association.profile.rna')}
+                      </label>
+                      <input
+                        id="rna"
+                        type="text"
+                        className="fi"
+                        placeholder="W123456789"
+                        {...register('rna')}
+                      />
+                      {errors.rna && (
+                        <p className="fhint error">{t(errors.rna.message as Parameters<typeof t>[0])}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ligne 2 : SIRET (read-only) | Année de création */}
+                  <div className="frow">
+                    <div className="fg">
                       <label className="fl">{t('association.profile.identifier')}</label>
                       <input className="fi" type="text" value={profile?.identifier ?? ''} disabled />
                     </div>
-                  </div>
-
-                  {/* Ligne 2 : Nom du contact + Ville */}
-                  <div className="frow">
                     <div className="fg">
-                      <label htmlFor="contactName" className="fl">
-                        {t('association.profile.contactName')}
+                      <label htmlFor="creationYear" className="fl">
+                        {t('association.profile.creationYear')}
                       </label>
                       <input
-                        id="contactName"
-                        type="text"
+                        id="creationYear"
+                        type="number"
                         className="fi"
-                        placeholder={t('association.profile.contactNamePlaceholder')}
-                        {...register('contactName')}
+                        min={1800}
+                        max={CURRENT_YEAR}
+                        {...register('creationYear', { valueAsNumber: true })}
                       />
-                      {errors.contactName && (
-                        <p className="fhint error">
-                          {errors.contactName.message}
-                        </p>
+                      {errors.creationYear && (
+                        <p className="fhint error">{t(errors.creationYear.message as Parameters<typeof t>[0])}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ligne 3 : Email de contact | Téléphone */}
+                  <div className="frow">
+                    <div className="fg">
+                      <label htmlFor="contactEmail" className="fl">
+                        {t('association.profile.contactEmail')}
+                      </label>
+                      <input
+                        id="contactEmail"
+                        type="email"
+                        className="fi"
+                        {...register('contactEmail')}
+                      />
+                      {errors.contactEmail && (
+                        <p className="fhint error">{t(errors.contactEmail.message as Parameters<typeof t>[0])}</p>
                       )}
                     </div>
                     <div className="fg">
-                      <label htmlFor="city" className="fl">
-                        {t('association.profile.city')}
-                      </label>
-                      <input id="city" type="text" className="fi" {...register('city')} />
-                    </div>
-                  </div>
-
-                  {/* Ligne 3 : Code postal */}
-                  <div className="frow">
-                    <div className="fg">
-                      <label htmlFor="postalCode" className="fl">
-                        {t('association.profile.postalCode')}
+                      <label htmlFor="phone" className="fl">
+                        {t('association.profile.phone')}
                       </label>
                       <input
-                        id="postalCode"
-                        type="text"
+                        id="phone"
+                        type="tel"
                         className="fi"
-                        {...register('postalCode')}
+                        {...register('phone')}
                       />
-                      {errors.postalCode && (
-                        <p className="fhint error">
-                          {errors.postalCode.message}
-                        </p>
+                      {errors.phone && (
+                        <p className="fhint error">{t(errors.phone.message as Parameters<typeof t>[0])}</p>
                       )}
                     </div>
-                    <div className="fg" />
-                  </div>
-
-                  {/* Description : pleine largeur */}
-                  <div className="fg">
-                    <label htmlFor="description" className="fl">
-                      {t('association.profile.description')}
-                    </label>
-                    <textarea
-                      id="description"
-                      className="fi"
-                      placeholder={t('association.profile.descriptionPlaceholder')}
-                      {...register('description')}
-                    />
                   </div>
 
                   <div className="frow-actions">
@@ -250,7 +270,7 @@ export default function AssociationProfilePage() {
               <h3>{t('association.profile.verification.title')}</h3>
             </div>
             <div className="card-b">
-              {profile?.verified ? (
+              {profile?.verificationStatus === 'VERIFIED' ? (
                 <p className="verif-msg ok">
                   ✓ {t('association.profile.verification.verified')}
                 </p>
