@@ -207,6 +207,11 @@
     "publishCampaignSuccess": "🚀 Campagne publiée !",
     "save": "Enregistrer",
     "setPasswordUpdated": "Mot de passe défini avec succès.",
+    "verificationDocDeleted": "Document retiré.",
+    "verificationDocUploaded": "Document téléversé.",
+    "verificationOptDocDeleted": "Document supprimé.",
+    "verificationOptDocUploaded": "Document ajouté.",
+    "verificationSubmitted": "📨 Dossier envoyé. Votre association sera notifiée par email.",
     "vopVerified": "Vérification VOP terminée."
   },
   "dashboard": {
@@ -329,6 +334,8 @@
           "verif": "Vérification",
           "verifBadge": {
             "ok": "Vérifiée",
+            "pending": "En cours",
+            "rejected": "Rejetée",
             "todo": "À faire"
           }
         },
@@ -921,6 +928,73 @@
       "title": "Sécurisez votre compte"
     },
     "title": "Tableau de bord",
+    "verification": {
+      "banner": {
+        "incomplete": {
+          "eta": "Tous les documents requis doivent être téléversés.",
+          "sub": "Téléversez vos justificatifs et lancez la vérification pour publier publiquement vos campagnes.",
+          "title": "📋 Vérification de votre association"
+        },
+        "pending": {
+          "btn": "Vérification en cours…",
+          "eta": "Délai de traitement : 24–48h ouvrées",
+          "sub": "Nos équipes examinent votre dossier. Vous serez notifié par email dès validation.",
+          "title": "⏳ Vérification en cours"
+        },
+        "ready": {
+          "eta": "Délai de traitement : 24–48h ouvrées",
+          "sub": "Tous les documents requis sont téléversés. Lancez la vérification quand vous êtes prêt.",
+          "title": "📋 Prêt pour la vérification"
+        },
+        "readyToResubmit": "Tous les documents sont prêts. Vous pouvez resoumettre votre dossier.",
+        "rejected": {
+          "defaultReason": "Aucun motif précisé.",
+          "title": "⚠️ Vérification rejetée"
+        },
+        "verified": {
+          "sub": "Votre association est validée. Vous pouvez publier publiquement vos campagnes et connecter votre compte bancaire.",
+          "title": "✓ Association vérifiée"
+        }
+      },
+      "docs": {
+        "idrep": {
+          "desc": "CNI ou passeport en cours de validité",
+          "label": "Pièce d'identité du représentant légal"
+        },
+        "rna": {
+          "desc": "Preuve de déclaration de l'association",
+          "label": "Récépissé RNA / Insertion JO"
+        },
+        "statuts": {
+          "desc": "Document signé déposé en préfecture",
+          "label": "Statuts de l'association"
+        }
+      },
+      "optDocs": {
+        "add": "Ajouter un document",
+        "cancel": "Annuler",
+        "categories": {
+          "autre": "📂 Autre",
+          "financier": "💶 Financier",
+          "justificatif": "🧾 Justificatif",
+          "rapport": "📊 Rapport d'activité"
+        },
+        "delete": "Supprimer",
+        "empty": "Aucun document complémentaire. Ajoutez vos rapports d'activité, bilans comptables, etc. pour renforcer la confiance des donateurs.",
+        "optional": "facultatifs",
+        "title": "Documents complémentaires",
+        "upload": "Téléverser"
+      },
+      "requiredDocs": {
+        "delete": "Supprimer",
+        "replace": "Remplacer",
+        "required": "Requis",
+        "title": "Documents requis",
+        "upload": "Téléverser",
+        "uploaded": "Téléversé"
+      },
+      "submit": "✓ Lancer la vérification"
+    },
     "welcome": "Bienvenue"
   }
 }

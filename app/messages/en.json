@@ -207,6 +207,11 @@
     "publishCampaignSuccess": "🚀 Campaign published!",
     "save": "Save",
     "setPasswordUpdated": "Password set successfully.",
+    "verificationDocDeleted": "Document removed.",
+    "verificationDocUploaded": "Document uploaded.",
+    "verificationOptDocDeleted": "Document deleted.",
+    "verificationOptDocUploaded": "Document added.",
+    "verificationSubmitted": "📨 File submitted. Your association will be notified by email.",
     "vopVerified": "VOP verification completed."
   },
   "dashboard": {
@@ -329,6 +334,8 @@
           "verif": "Verification",
           "verifBadge": {
             "ok": "Verified",
+            "pending": "In progress",
+            "rejected": "Rejected",
             "todo": "To do"
           }
         },
@@ -921,6 +928,73 @@
       "title": "Secure your account"
     },
     "title": "Dashboard",
+    "verification": {
+      "banner": {
+        "incomplete": {
+          "eta": "All required documents must be uploaded.",
+          "sub": "Upload your supporting documents and launch verification to publicly publish your campaigns.",
+          "title": "📋 Association verification"
+        },
+        "pending": {
+          "btn": "Verification in progress…",
+          "eta": "Usual processing time: 24–48 business hours",
+          "sub": "Our team is reviewing your file. You will be notified by email once validated.",
+          "title": "⏳ Verification in progress"
+        },
+        "ready": {
+          "eta": "Processing time: 24–48 business hours",
+          "sub": "All required documents are uploaded. Launch verification when ready.",
+          "title": "📋 Ready for verification"
+        },
+        "readyToResubmit": "All documents are ready. You can resubmit your file.",
+        "rejected": {
+          "defaultReason": "No reason provided.",
+          "title": "⚠️ Verification rejected"
+        },
+        "verified": {
+          "sub": "Your association is validated. You can publicly publish your campaigns and connect your bank account.",
+          "title": "✓ Association verified"
+        }
+      },
+      "docs": {
+        "idrep": {
+          "desc": "National ID or valid passport",
+          "label": "Legal representative ID"
+        },
+        "rna": {
+          "desc": "Proof of declaration of the association",
+          "label": "RNA receipt / JO insertion"
+        },
+        "statuts": {
+          "desc": "Signed document filed with the prefecture",
+          "label": "Association statutes"
+        }
+      },
+      "optDocs": {
+        "add": "Add a document",
+        "cancel": "Cancel",
+        "categories": {
+          "autre": "📂 Other",
+          "financier": "💶 Financial",
+          "justificatif": "🧾 Supporting document",
+          "rapport": "📊 Activity report"
+        },
+        "delete": "Delete",
+        "empty": "No supplementary documents. Add your activity reports, financial statements, etc. to strengthen donor confidence.",
+        "optional": "optional",
+        "title": "Supplementary documents",
+        "upload": "Upload"
+      },
+      "requiredDocs": {
+        "delete": "Delete",
+        "replace": "Replace",
+        "required": "Required",
+        "title": "Required documents",
+        "upload": "Upload",
+        "uploaded": "Uploaded"
+      },
+      "submit": "✓ Launch verification"
+    },
     "welcome": "Welcome"
   }
 }

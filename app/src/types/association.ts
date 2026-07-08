@@ -1,5 +1,11 @@
 /** KYC verification lifecycle states for an association. */
-export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+export const VerificationStatus = {
+  UNVERIFIED: 'UNVERIFIED',
+  PENDING: 'PENDING',
+  VERIFIED: 'VERIFIED',
+  REJECTED: 'REJECTED',
+} as const;
+export type VerificationStatus = typeof VerificationStatus[keyof typeof VerificationStatus];
 
 /**
  * Read model for an association's profile as returned by `GET /api/association/me`.

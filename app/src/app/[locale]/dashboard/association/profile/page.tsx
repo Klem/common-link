@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,6 +13,7 @@ import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
+import { VerificationTab } from '@/components/settings/VerificationTab';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -55,7 +57,15 @@ export default function AssociationProfilePage() {
   const t = useTranslations('dashboard');
   const user = useAuthStore((s) => s.user);
   const { profile, isLoading, updateProfile } = useAssociationProfile();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos') {
+      setActiveTab(tab as SettingsTab);
+    }
+  }, [searchParams]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMoneriumModal, setShowMoneriumModal] = useState(false);
   const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
@@ -126,9 +136,16 @@ export default function AssociationProfilePage() {
           onClick={() => setActiveTab('verif')}
         >
           ✓ {t('association.profile.tabs.verif')}{' '}
-          <span className={`set-tab-badge${profile?.verificationStatus === 'VERIFIED' ? ' ok' : ''}`}>
+          <span className={`set-tab-badge${
+            profile?.verificationStatus === 'VERIFIED' ? ' ok' :
+            profile?.verificationStatus === 'PENDING' ? ' pending' : ''
+          }`}>
             {profile?.verificationStatus === 'VERIFIED'
               ? t('association.profile.tabs.verifBadge.ok')
+              : profile?.verificationStatus === 'PENDING'
+              ? t('association.profile.tabs.verifBadge.pending')
+              : profile?.verificationStatus === 'REJECTED'
+              ? t('association.profile.tabs.verifBadge.rejected')
               : t('association.profile.tabs.verifBadge.todo')}
           </span>
         </button>
@@ -265,23 +282,7 @@ export default function AssociationProfilePage() {
       {/* ══ Onglet : Vérification ════════════════════════════════════════ */}
       {activeTab === 'verif' && (
         <div className="set-tab-content active">
-          <div className="card no-hover">
-            <div className="card-h">
-              <h3>{t('association.profile.verification.title')}</h3>
-            </div>
-            <div className="card-b">
-              {profile?.verificationStatus === 'VERIFIED' ? (
-                <p className="verif-msg ok">
-                  ✓ {t('association.profile.verification.verified')}
-                </p>
-              ) : (
-                <p className="verif-msg pending">
-                  {t('association.profile.verification.pendingText')}
-                </p>
-              )}
-              <p className="fhint">{t('association.profile.verification.comingSoon')}</p>
-            </div>
-          </div>
+          <VerificationTab onGoToVerif={() => setActiveTab('verif')} />
         </div>
       )}
 
