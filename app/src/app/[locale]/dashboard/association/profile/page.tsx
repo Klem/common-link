@@ -14,6 +14,8 @@ import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
+import { MandateTab } from '@/components/settings/MandateTab';
+import { useMandate } from '@/hooks/dashboard/useMandate';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -71,6 +73,8 @@ export default function AssociationProfilePage() {
   const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
   const { connected, pending, isLoading: moneriumLoading, refresh: refreshMonerium } =
     useMoneriumStatus();
+  const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
+    useMandate();
 
   const handlePopupClosed = useCallback(async () => {
     setMoneriumInterrupted(true);
@@ -158,6 +162,27 @@ export default function AssociationProfilePage() {
             {connected
               ? t('association.profile.tabs.bankBadge.connected')
               : t('association.profile.tabs.bankBadge.notConnected')}
+          </span>
+        </button>
+        <button
+          className={`set-tab${activeTab === 'mandate' ? ' active' : ''}`}
+          onClick={() => setActiveTab('mandate')}
+        >
+          🧾 {t('association.profile.tabs.mandate')}{' '}
+          <span
+            className={`set-tab-badge${
+              mandateState?.signed
+                ? ' ok'
+                : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
+                ? ' pending'
+                : ''
+            }`}
+          >
+            {mandateState?.signed
+              ? t('association.profile.tabs.mandateBadge.active')
+              : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
+              ? t('association.profile.tabs.mandateBadge.readyToSign')
+              : t('association.profile.tabs.mandateBadge.notSigned')}
           </span>
         </button>
       </div>
@@ -355,6 +380,22 @@ export default function AssociationProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ Onglet : Mandat fiscal ══════════════════════════════════════════ */}
+      {activeTab === 'mandate' && (
+        <div className="set-tab-content active">
+          <MandateTab
+            state={mandateState}
+            isLoading={mandateLoading}
+            onGoToVerif={() => setActiveTab('verif')}
+            onUploadDoc={uploadDoc}
+            onDeleteDoc={deleteDoc}
+            onSign={sign}
+            onRevoke={revoke}
+            onDownloadPdf={downloadPdf}
+          />
         </div>
       )}
 

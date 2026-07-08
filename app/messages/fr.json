@@ -293,6 +293,95 @@
           "title": "Informations de l'association"
         },
         "loading": "Chargement du profil…",
+        "mandate": {
+          "blocked": {
+            "cta": "→ Aller à la vérification",
+            "message": "Votre association doit d'abord être vérifiée avant de pouvoir signer le mandat d'émission des reçus fiscaux."
+          },
+          "docs": {
+            "delete": "Supprimer",
+            "replace": "Remplacer",
+            "rescrit": {
+              "desc": "Obligatoire · Document attestant l'éligibilité de l'organisme",
+              "label": "Rescrit fiscal (ou attestation sur l'honneur)"
+            },
+            "statuts": {
+              "desc": "Obligatoire · PDF ou image",
+              "label": "Statuts de l'association"
+            },
+            "upload": "Téléverser"
+          },
+          "eligibility": {
+            "oig66": {
+              "desc": "Réduction d'impôt de 66% pour le donateur · Art. 200 CGI",
+              "label": "Organisme d'intérêt général"
+            },
+            "oig75": {
+              "desc": "Réduction d'impôt de 75% (loi Coluche) · Art. 200 1 ter CGI",
+              "label": "Organisme d'aide aux personnes en difficulté"
+            },
+            "public66": {
+              "desc": "Décret en Conseil d'État · Réduction 66%",
+              "label": "Reconnu d'utilité publique"
+            }
+          },
+          "legalText": {
+            "object": {
+              "body": "Par la signature électronique ci-dessous, l'association mandate CommonLink (SAS, RCS Bordeaux) pour émettre, en son nom et pour son compte, les reçus fiscaux relatifs aux dons reçus via la plateforme.",
+              "title": "Objet du mandat."
+            },
+            "responsibility": {
+              "body": "L'association demeure seule juridiquement responsable de la délivrance des reçus et du respect de son obligation déclarative annuelle prévue à l'article 222 bis du CGI.",
+              "title": "Responsabilité."
+            },
+            "retention": {
+              "body": "Le présent mandat et les pièces justificatives sont conservés sur les serveurs CommonLink pendant 6 ans minimum, conformément aux obligations fiscales.",
+              "title": "Conservation."
+            },
+            "revocation": {
+              "body": "Le mandat peut être révoqué à tout moment depuis cet onglet. La révocation prend effet immédiatement ; les reçus déjà émis demeurent valides.",
+              "title": "Révocation."
+            }
+          },
+          "pedagogic": {
+            "sub": "CommonLink émet les reçus fiscaux au nom et pour le compte de votre association. Vous restez juridiquement responsable de la délivrance et de l'obligation déclarative annuelle (article 222 bis CGI).",
+            "title": "🧾 Mandat d'émission des reçus fiscaux"
+          },
+          "revokeModal": {
+            "body": "Révoquer le mandat ? Les reçus déjà émis restent valides, mais aucun nouveau reçu ne sera émis tant que le mandat n'est pas re-signé.",
+            "cancel": "Annuler",
+            "confirm": "Confirmer la révocation",
+            "title": "Révoquer le mandat ?"
+          },
+          "signed": {
+            "detailsTitle": "Détails du mandat",
+            "downloadPdf": "Télécharger le mandat (PDF)",
+            "eligibility": "Statut d'éligibilité déclaré",
+            "reference": "Référence du mandat",
+            "retention": "Conservation des pièces",
+            "retentionValue": "6 ans (obligation fiscale)",
+            "revokeBtn": "Révoquer le mandat",
+            "signedAt": "Signé le",
+            "sub": "Les reçus fiscaux sont émis automatiquement pour chaque don éligible reçu via CommonLink.",
+            "title": "Mandat actif"
+          },
+          "step1": {
+            "declared": "Déclaré",
+            "intro": "Seuls les organismes d'intérêt général (OIG) ou d'utilité publique peuvent faire émettre des reçus fiscaux ouvrant droit à réduction d'impôt.",
+            "title": "1. Statut d'éligibilité",
+            "toDeclare": "À déclarer"
+          },
+          "step2": {
+            "provided": "fournies",
+            "title": "2. Pièces justificatives"
+          },
+          "step3": {
+            "acceptLabel": "J'atteste sur l'honneur de l'exactitude des informations fournies et accepte les termes du mandat ci-dessus.",
+            "signBtn": "Signer le mandat",
+            "timestampNote": "Signature électronique horodatée",
+            "title": "3. Signature du mandat"
+          }
+        },
         "memberSince": "Membre depuis {date}",
         "monerium": {
           "badge": "Expérimental",
@@ -331,6 +420,12 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
+          "mandate": "🧾 Mandat fiscal",
+          "mandateBadge": {
+            "active": "✓ Actif",
+            "notSigned": "Non signé",
+            "readyToSign": "Prêt à signer"
+          },
           "verif": "Vérification",
           "verifBadge": {
             "ok": "Vérifiée",
@@ -996,5 +1091,9 @@
       "submit": "✓ Lancer la vérification"
     },
     "welcome": "Bienvenue"
-  }
+  },
+  "mandateDocDeleted": "Document supprimé.",
+  "mandateDocUploaded": "Document téléversé.",
+  "mandateRevoked": "Mandat révoqué.",
+  "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement."
 }

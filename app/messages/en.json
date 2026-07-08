@@ -293,6 +293,95 @@
           "title": "Association information"
         },
         "loading": "Loading profile…",
+        "mandate": {
+          "blocked": {
+            "cta": "→ Go to verification",
+            "message": "Your association must first be verified before signing the fiscal receipt mandate."
+          },
+          "docs": {
+            "delete": "Delete",
+            "replace": "Replace",
+            "rescrit": {
+              "desc": "Required · Document certifying the organisation eligibility",
+              "label": "Tax ruling (or sworn statement)"
+            },
+            "statuts": {
+              "desc": "Required · PDF or image",
+              "label": "Association bylaws"
+            },
+            "upload": "Upload"
+          },
+          "eligibility": {
+            "oig66": {
+              "desc": "66% tax reduction for the donor · Art. 200 CGI",
+              "label": "Organisation of general interest"
+            },
+            "oig75": {
+              "desc": "75% tax reduction (Coluche law) · Art. 200 1 ter CGI",
+              "label": "Organisation helping people in difficulty"
+            },
+            "public66": {
+              "desc": "Council of State decree · 66% reduction",
+              "label": "Recognised as of public utility"
+            }
+          },
+          "legalText": {
+            "object": {
+              "body": "By the electronic signature below, the association mandates CommonLink (SAS, RCS Bordeaux) to issue, in its name and on its behalf, tax receipts relating to donations received via the platform.",
+              "title": "Mandate object."
+            },
+            "responsibility": {
+              "body": "The association remains solely legally responsible for the issuance of receipts and compliance with its annual reporting obligation under Article 222 bis of the CGI.",
+              "title": "Responsibility."
+            },
+            "retention": {
+              "body": "This mandate and the supporting documents are stored on CommonLink servers for a minimum of 6 years, in accordance with fiscal obligations.",
+              "title": "Retention."
+            },
+            "revocation": {
+              "body": "The mandate may be revoked at any time from this tab. Revocation takes effect immediately; receipts already issued remain valid.",
+              "title": "Revocation."
+            }
+          },
+          "pedagogic": {
+            "sub": "CommonLink issues tax receipts on behalf of your association. You remain legally responsible for their issuance and annual reporting obligation (Article 222 bis CGI).",
+            "title": "🧾 Fiscal Receipt Mandate"
+          },
+          "revokeModal": {
+            "body": "Revoking the mandate? Receipts already issued remain valid, but no new receipts will be issued until the mandate is re-signed.",
+            "cancel": "Cancel",
+            "confirm": "Confirm revocation",
+            "title": "Revoke mandate?"
+          },
+          "signed": {
+            "detailsTitle": "Mandate details",
+            "downloadPdf": "Download mandate (PDF)",
+            "eligibility": "Declared eligibility status",
+            "reference": "Mandate reference",
+            "retention": "Document retention",
+            "retentionValue": "6 years (fiscal obligation)",
+            "revokeBtn": "Revoke mandate",
+            "signedAt": "Signed on",
+            "sub": "Tax receipts are automatically issued for each eligible donation received via CommonLink.",
+            "title": "Mandate active"
+          },
+          "step1": {
+            "declared": "Declared",
+            "intro": "Only organisations of general interest (OIG) or of public utility can have tax receipts issued entitling donors to tax reduction.",
+            "title": "1. Eligibility Status",
+            "toDeclare": "To declare"
+          },
+          "step2": {
+            "provided": "provided",
+            "title": "2. Supporting Documents"
+          },
+          "step3": {
+            "acceptLabel": "I certify the accuracy of the information provided and accept the terms of the mandate above.",
+            "signBtn": "Sign the mandate",
+            "timestampNote": "Timestamped electronic signature",
+            "title": "3. Mandate Signature"
+          }
+        },
         "memberSince": "Member since {date}",
         "monerium": {
           "badge": "Experimental",
@@ -331,6 +420,12 @@
             "notConnected": "Not connected"
           },
           "infos": "Informations",
+          "mandate": "🧾 Fiscal Mandate",
+          "mandateBadge": {
+            "active": "✓ Active",
+            "notSigned": "Not signed",
+            "readyToSign": "Ready to sign"
+          },
           "verif": "Verification",
           "verifBadge": {
             "ok": "Verified",
@@ -996,5 +1091,9 @@
       "submit": "✓ Launch verification"
     },
     "welcome": "Welcome"
-  }
+  },
+  "mandateDocDeleted": "Document deleted.",
+  "mandateDocUploaded": "Document uploaded.",
+  "mandateRevoked": "Mandate revoked.",
+  "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically."
 }
