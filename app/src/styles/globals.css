@@ -1802,6 +1802,10 @@ textarea.form-input {
 .vd-btn-replace:hover { border-color: var(--bright-teal); color: var(--ink-navy); }
 .vd-btn-del { background: var(--white); border-color: var(--mist-lavender); color: var(--slate-lavender); }
 .vd-btn-del:hover { border-color: var(--warm-coral); color: var(--warm-coral); }
+.vd-locked { font-size: 11px; font-weight: 600; color: var(--slate-lavender); display: flex; align-items: center; gap: 4px; }
+.vd-slot-file-btn { background: none; border: none; padding: 0; font-family: inherit; font-size: 12px; font-weight: 600; color: var(--teal-dark); margin-top: 3px; display: flex; align-items: center; gap: 6px; cursor: pointer; text-align: left; }
+.vd-slot-file-btn:hover { text-decoration: underline; }
+.vd-slot-file-btn span, .vd-slot-file span { color: var(--slate-lavender); font-weight: 400; }
 
 /* ── Optional docs ────────────────────────────────────────────────────────── */
 

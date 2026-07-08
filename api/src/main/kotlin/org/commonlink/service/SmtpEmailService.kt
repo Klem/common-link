@@ -10,7 +10,8 @@ import org.springframework.stereotype.Service
 @Profile("staging", "prod")
 class SmtpEmailService(
     private val mailSender: JavaMailSender,
-    @Value("\${app.mail.from}") private val from: String
+    @Value("\${app.mail.from}") private val from: String,
+    @Value("\${app.mail.verification-review-to}") private val verificationReviewTo: String,
 ) : EmailService {
 
     override fun sendEmailVerification(email: String, verificationUrl: String) {
@@ -25,6 +26,23 @@ class SmtpEmailService(
             <p>Cliquez sur le lien ci-dessous pour vérifier votre adresse email (valable 24 heures) :</p>
             <p><a href="$verificationUrl">$verificationUrl</a></p>
             <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
+    override fun sendVerificationSubmittedToAdmin(associationName: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(verificationReviewTo)
+        helper.setSubject("Nouveau dossier de vérification — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>L'association <strong>$associationName</strong> vient de soumettre son dossier de vérification.</p>
+            <p>Connectez-vous à l'interface d'administration CommonLink pour examiner les documents.</p>
             """.trimIndent(),
             true
         )

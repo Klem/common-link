@@ -19,7 +19,7 @@ interface UseVerificationReturn {
   isLoading: boolean;
   uploadRequired: (docType: VerificationDocType, file: File) => Promise<void>;
   deleteRequired: (docType: VerificationDocType) => Promise<void>;
-  submitDossier: () => Promise<void>;
+  submitDossier: () => Promise<boolean>;
   uploadOptional: (file: File, category: string) => Promise<void>;
   deleteOptional: (id: string) => Promise<void>;
 }
@@ -66,13 +66,15 @@ export function useVerification(): UseVerificationReturn {
     }
   };
 
-  const submitDossier = async () => {
+  const submitDossier = async (): Promise<boolean> => {
     try {
       await apiSubmitVerification();
       addToast('success', 'verificationSubmitted');
       await load();
+      return true;
     } catch {
       addToast('error', 'errors.serverError');
+      return false;
     }
   };
 

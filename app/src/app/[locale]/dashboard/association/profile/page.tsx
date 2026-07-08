@@ -61,6 +61,7 @@ export default function AssociationProfilePage() {
   const { profile, isLoading, updateProfile } = useAssociationProfile();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
+  const [verifStatus, setVerifStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -141,14 +142,14 @@ export default function AssociationProfilePage() {
         >
           ✓ {t('association.profile.tabs.verif')}{' '}
           <span className={`set-tab-badge${
-            profile?.verificationStatus === 'VERIFIED' ? ' ok' :
-            profile?.verificationStatus === 'PENDING' ? ' pending' : ''
+            (verifStatus ?? profile?.verificationStatus) === 'VERIFIED' ? ' ok' :
+            (verifStatus ?? profile?.verificationStatus) === 'PENDING' ? ' pending' : ''
           }`}>
-            {profile?.verificationStatus === 'VERIFIED'
+            {(verifStatus ?? profile?.verificationStatus) === 'VERIFIED'
               ? t('association.profile.tabs.verifBadge.ok')
-              : profile?.verificationStatus === 'PENDING'
+              : (verifStatus ?? profile?.verificationStatus) === 'PENDING'
               ? t('association.profile.tabs.verifBadge.pending')
-              : profile?.verificationStatus === 'REJECTED'
+              : (verifStatus ?? profile?.verificationStatus) === 'REJECTED'
               ? t('association.profile.tabs.verifBadge.rejected')
               : t('association.profile.tabs.verifBadge.todo')}
           </span>
@@ -307,7 +308,10 @@ export default function AssociationProfilePage() {
       {/* ══ Onglet : Vérification ════════════════════════════════════════ */}
       {activeTab === 'verif' && (
         <div className="set-tab-content active">
-          <VerificationTab onGoToVerif={() => setActiveTab('verif')} />
+          <VerificationTab
+            onGoToVerif={() => setActiveTab('verif')}
+            onVerificationSubmitted={() => setVerifStatus('PENDING')}
+          />
         </div>
       )}
 

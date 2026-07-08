@@ -345,7 +345,7 @@
           },
           "pedagogic": {
             "sub": "CommonLink issues tax receipts on behalf of your association. You remain legally responsible for their issuance and annual reporting obligation (Article 222 bis CGI).",
-            "title": "🧾 Fiscal Receipt Mandate"
+            "title": "Fiscal Receipt Mandate"
           },
           "revokeModal": {
             "body": "Revoking the mandate? Receipts already issued remain valid, but no new receipts will be issued until the mandate is re-signed.",
@@ -420,7 +420,7 @@
             "notConnected": "Not connected"
           },
           "infos": "Informations",
-          "mandate": "🧾 Fiscal Mandate",
+          "mandate": "Fiscal Mandate",
           "mandateBadge": {
             "active": "✓ Active",
             "notSigned": "Not signed",
@@ -1082,6 +1082,8 @@
       },
       "requiredDocs": {
         "delete": "Delete",
+        "download": "Download",
+        "locked": "Locked",
         "replace": "Replace",
         "required": "Required",
         "title": "Required documents",

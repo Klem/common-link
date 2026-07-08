@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useVerification } from '@/hooks/dashboard/useVerification';
+import { downloadDocument } from '@/lib/api/verification';
 import { OptionalDocsCard } from './OptionalDocsCard';
 import type { VerificationDocType } from '@/types/verification';
 
@@ -21,9 +22,10 @@ function formatSize(bytes: number): string {
 
 interface VerificationTabProps {
   onGoToVerif?: () => void;
+  onVerificationSubmitted?: () => void;
 }
 
-export function VerificationTab({ onGoToVerif: _onGoToVerif }: VerificationTabProps) {
+export function VerificationTab({ onGoToVerif: _onGoToVerif, onVerificationSubmitted }: VerificationTabProps) {
   const t = useTranslations('dashboard');
   const { state, optionalDocs, isLoading, uploadRequired, deleteRequired, submitDossier, uploadOptional, deleteOptional } =
     useVerification();
@@ -95,7 +97,7 @@ export function VerificationTab({ onGoToVerif: _onGoToVerif }: VerificationTabPr
               className="btn btn-primary"
               disabled={submitBtnDisabled}
               style={submitBtnDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
-              onClick={canSubmit ? submitDossier : undefined}
+              onClick={canSubmit ? async () => { const ok = await submitDossier(); if (ok) onVerificationSubmitted?.(); } : undefined}
             >
               {status === 'PENDING' ? (
                 <>
@@ -138,14 +140,25 @@ export function VerificationTab({ onGoToVerif: _onGoToVerif }: VerificationTabPr
                   </div>
                   <div className="vd-slot-desc">{t(slot.descKey as Parameters<typeof t>[0])}</div>
                   {uploaded && slotData?.fileName && (
-                    <div className="vd-slot-file">
-                      📄 {slotData.fileName}
-                      {slotData.sizeBytes != null && (
-                        <span style={{ color: 'var(--slate-lavender)', fontWeight: 400 }}>
-                          {' · '}{formatSize(slotData.sizeBytes)}
-                        </span>
-                      )}
-                    </div>
+                    slotData?.id ? (
+                      <button
+                        className="vd-slot-file-btn"
+                        onClick={() => downloadDocument(slotData.id!, slotData.fileName!)}
+                        title={t('verification.requiredDocs.download')}
+                      >
+                        📄 {slotData.fileName}
+                        {slotData.sizeBytes != null && (
+                          <span>{' · '}{formatSize(slotData.sizeBytes)}</span>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="vd-slot-file">
+                        📄 {slotData.fileName}
+                        {slotData.sizeBytes != null && (
+                          <span>{' · '}{formatSize(slotData.sizeBytes)}</span>
+                        )}
+                      </div>
+                    )
                   )}
                 </div>
                 <div className="vd-slot-actions">
@@ -160,19 +173,19 @@ export function VerificationTab({ onGoToVerif: _onGoToVerif }: VerificationTabPr
                       e.target.value = '';
                     }}
                   />
-                  {uploaded ? (
+                  {!canUpload ? (
+                    <span className="vd-locked">🔒 {t('verification.requiredDocs.locked')}</span>
+                  ) : uploaded ? (
                     <>
                       <button
                         className="vd-btn vd-btn-replace"
-                        disabled={!canUpload}
-                        onClick={() => canUpload && fileInputRefs.current[slot.docType]?.click()}
+                        onClick={() => fileInputRefs.current[slot.docType]?.click()}
                       >
                         {t('verification.requiredDocs.replace')}
                       </button>
                       <button
                         className="vd-btn vd-btn-del"
-                        disabled={!canUpload}
-                        onClick={() => canUpload && deleteRequired(slot.docType)}
+                        onClick={() => deleteRequired(slot.docType)}
                       >
                         {t('verification.requiredDocs.delete')}
                       </button>
@@ -180,8 +193,7 @@ export function VerificationTab({ onGoToVerif: _onGoToVerif }: VerificationTabPr
                   ) : (
                     <button
                       className="vd-btn vd-btn-up"
-                      disabled={!canUpload}
-                      onClick={() => canUpload && fileInputRefs.current[slot.docType]?.click()}
+                      onClick={() => fileInputRefs.current[slot.docType]?.click()}
                     >
                       📎 {t('verification.requiredDocs.upload')}
                     </button>

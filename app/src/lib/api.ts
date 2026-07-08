@@ -29,7 +29,6 @@ const apiBaseURL = rawApiUrl.startsWith('http') ? rawApiUrl : `https://${rawApiU
 
 const api = axios.create({
   baseURL: apiBaseURL,
-  headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
 

@@ -1082,6 +1082,8 @@
       },
       "requiredDocs": {
         "delete": "Supprimer",
+        "download": "Télécharger",
+        "locked": "Verrouillé",
         "replace": "Remplacer",
         "required": "Requis",
         "title": "Documents requis",

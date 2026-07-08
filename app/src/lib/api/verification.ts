@@ -39,7 +39,7 @@ export const uploadOptionalDocument = (
 export const deleteOptionalDocument = (id: string): Promise<void> =>
   api.delete(`/api/association/documents/${id}`).then(() => undefined);
 
-export const downloadOptionalDocument = async (id: string, fileName: string): Promise<void> => {
+export const downloadDocument = async (id: string, fileName: string): Promise<void> => {
   const response = await api.get(`/api/association/documents/${id}/content`, {
     responseType: 'blob',
   });
@@ -50,3 +50,5 @@ export const downloadOptionalDocument = async (id: string, fileName: string): Pr
   a.click();
   URL.revokeObjectURL(url);
 };
+
+export const downloadOptionalDocument = downloadDocument;

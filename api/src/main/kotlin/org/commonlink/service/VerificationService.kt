@@ -57,6 +57,7 @@ private const val MAX_FILE_SIZE = 10L * 1024 * 1024 // 10 MB
 class VerificationService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val documentRepository: AssociationDocumentRepository,
+    private val emailService: EmailService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -177,6 +178,7 @@ class VerificationService(
         profile.verificationSubmittedAt = Instant.now()
         associationProfileRepository.save(profile)
 
+        emailService.sendVerificationSubmittedToAdmin(profile.name)
         logger.info("Verification submitted for association {} — status → PENDING", profile.id)
     }
 

@@ -1,5 +1,4 @@
 package org.commonlink.service
-import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 
 /**
@@ -26,4 +25,12 @@ interface EmailService {
      * @param verificationUrl Full URL the user must visit to verify their address.
      */
     fun sendEmailVerification(email: String, verificationUrl: String)
+
+    /**
+     * Notifies the review team that an association has submitted its verification dossier.
+     * The recipient is configured via `app.mail.verification-review-to`.
+     *
+     * @param associationName Official name of the association that submitted.
+     */
+    fun sendVerificationSubmittedToAdmin(associationName: String)
 }
