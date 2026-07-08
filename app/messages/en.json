@@ -1069,10 +1069,10 @@
         "add": "Add a document",
         "cancel": "Cancel",
         "categories": {
-          "autre": "📂 Other",
-          "financier": "💶 Financial",
-          "justificatif": "🧾 Supporting document",
-          "rapport": "📊 Activity report"
+          "financial": "💶 Financial",
+          "other": "📂 Other",
+          "report": "📊 Activity report",
+          "supportingDoc": "🧾 Supporting document"
         },
         "delete": "Delete",
         "empty": "No supplementary documents. Add your activity reports, financial statements, etc. to strengthen donor confidence.",

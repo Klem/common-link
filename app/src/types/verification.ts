@@ -29,10 +29,10 @@ export interface VerificationStateDto {
 
 /** Categories for supplementary optional documents. */
 export const OptionalDocCategory = {
-  financier: 'financier',
-  rapport: 'rapport',
-  justificatif: 'justificatif',
-  autre: 'autre',
+  financial: 'FINANCIAL',
+  report: 'REPORT',
+  supportingDoc: 'SUPPORTING_DOC',
+  other: 'OTHER',
 } as const;
 export type OptionalDocCategory = typeof OptionalDocCategory[keyof typeof OptionalDocCategory];
 

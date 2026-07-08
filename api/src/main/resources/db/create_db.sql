@@ -124,18 +124,27 @@ CREATE TABLE donor_profiles
 CREATE UNIQUE INDEX idx_donor_wallet_address
     ON donor_profiles (wallet_address) WHERE wallet_address IS NOT NULL;
 
--- association_profiles  (V4)
+-- association_profiles  (V4 ; settings fields + KYC status added in V35)
 CREATE TABLE association_profiles
 (
-    id           uuid         NOT NULL DEFAULT gen_random_uuid(),
-    user_id      uuid         NOT NULL,
-    name         varchar(255) NOT NULL,
-    identifier   varchar(9)   NOT NULL,
-    city         varchar(255),
-    postal_code  varchar(10),
-    contact_name varchar(255),
-    description  text,
-    verified     boolean      NOT NULL DEFAULT false,
+    id                              uuid         NOT NULL DEFAULT gen_random_uuid(),
+    user_id                         uuid         NOT NULL,
+    name                            varchar(255) NOT NULL,
+    identifier                      varchar(9)   NOT NULL,
+    city                            varchar(255),
+    postal_code                     varchar(10),
+    contact_name                    varchar(255),
+    description                     text,
+    rna                             varchar(20),
+    creation_year                   smallint,
+    contact_email                   varchar(255),
+    phone                           varchar(30),
+    verification_status             varchar(20)  NOT NULL DEFAULT 'UNVERIFIED'
+        CONSTRAINT association_profiles_verification_status_check
+            CHECK (verification_status IN ('UNVERIFIED', 'PENDING', 'VERIFIED', 'REJECTED')),
+    verification_rejection_reason   text,
+    verification_submitted_at       timestamptz,
+    verified_at                     timestamptz,
 
     CONSTRAINT association_profiles_pkey PRIMARY KEY (id),
     CONSTRAINT association_profiles_user_id_unique UNIQUE (user_id),
@@ -397,3 +406,53 @@ CREATE TABLE monerium_oauth_states
 
 CREATE INDEX idx_monerium_oauth_states_expires   ON monerium_oauth_states (expires_at);                 -- V18
 CREATE INDEX idx_monerium_oauth_states_assoc_exp ON monerium_oauth_states (association_id, expires_at); -- V18
+
+-- =============================================================
+-- 9. VÉRIFICATION KYC & MANDAT FISCAL  (V35)
+-- =============================================================
+
+-- association_document : stockage binaire des pièces justificatives KYC et mandat
+CREATE TABLE association_document (
+    id             UUID         NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    association_id UUID         NOT NULL REFERENCES association_profiles(id),
+    doc_type       VARCHAR(30)  NOT NULL
+        CHECK (doc_type IN ('VERIF_STATUTS', 'VERIF_RNA_RECEIPT', 'VERIF_REPRESENTATIVE_ID',
+                            'MANDATE_STATUTS', 'MANDATE_RESCRIT', 'OPTIONAL')),
+    category       VARCHAR(20)
+        CHECK (category IN ('FINANCIAL', 'REPORT', 'SUPPORTING_DOC', 'OTHER')),
+    file_name      VARCHAR(255) NOT NULL,
+    content_type   VARCHAR(100) NOT NULL,
+    size_bytes     BIGINT       NOT NULL,
+    content        BYTEA        NOT NULL,
+    uploaded_at    TIMESTAMPTZ  NOT NULL
+);
+
+-- Un seul document par (association, type) sauf les documents OPTIONAL (multiples)
+CREATE UNIQUE INDEX uidx_association_document_unique_type
+    ON association_document(association_id, doc_type)
+    WHERE doc_type <> 'OPTIONAL';
+
+CREATE INDEX idx_association_document_association_id
+    ON association_document(association_id);
+
+-- Séquence pour la référence MND-<année>-<seq %04d>
+CREATE SEQUENCE fiscal_mandate_ref_seq START 1;
+
+-- fiscal_mandate : signature électronique horodatée du mandat de collecte
+CREATE TABLE fiscal_mandate (
+    id             UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    association_id UUID        NOT NULL REFERENCES association_profiles(id),
+    eligibility    VARCHAR(30) NOT NULL
+        CHECK (eligibility IN ('OIG_66', 'OIG_75_COLUCHE', 'PUBLIC_UTILITY_66')),
+    reference      VARCHAR(20) NOT NULL UNIQUE,
+    signed_at      TIMESTAMPTZ NOT NULL,
+    revoked_at     TIMESTAMPTZ
+);
+
+-- Au plus un mandat actif (non révoqué) par association ; les révoqués sont conservés
+CREATE UNIQUE INDEX uidx_fiscal_mandate_active
+    ON fiscal_mandate(association_id)
+    WHERE revoked_at IS NULL;
+
+CREATE INDEX idx_fiscal_mandate_association_id
+    ON fiscal_mandate(association_id);

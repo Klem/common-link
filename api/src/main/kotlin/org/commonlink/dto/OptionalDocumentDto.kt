@@ -8,7 +8,7 @@ import java.util.UUID
  *
  * @param id Document id.
  * @param fileName Original file name.
- * @param category Free-form category: financier | rapport | justificatif | autre.
+ * @param category Category: FINANCIAL | REPORT | SUPPORTING_DOC | OTHER.
  * @param contentType MIME type.
  * @param sizeBytes File size in bytes.
  * @param uploadedAt Upload timestamp.

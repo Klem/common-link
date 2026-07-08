@@ -40,7 +40,7 @@ private val OPTIONAL_ALLOWED_MIME = VERIF_ALLOWED_MIME + setOf(
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
 
-private val VALID_CATEGORIES = setOf("financier", "rapport", "justificatif", "autre")
+private val VALID_CATEGORIES = setOf("FINANCIAL", "REPORT", "SUPPORTING_DOC", "OTHER")
 
 private const val MAX_FILE_SIZE = 10L * 1024 * 1024 // 10 MB
 

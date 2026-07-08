@@ -115,6 +115,25 @@ DO $$
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'magic_link_tokens supprimés : %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
+        -- 5b. DOCUMENTS KYC & MANDATS FISCAUX  (V35 — pas de CASCADE sur ces FK)
+        --     Supprimer avant association_profiles pour éviter une violation de
+        --     contrainte (REFERENCES sans ON DELETE CASCADE).
+        -- ════════════════════════════════════════════════════════════
+        DELETE FROM fiscal_mandate fm
+        WHERE NOT EXISTS (
+            SELECT 1 FROM association_profiles ap
+            WHERE ap.id = fm.association_id AND ap.user_id = ANY(v_keep_user_ids)
+        );
+        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'fiscal_mandate supprimés : %', v_deleted;
+
+        DELETE FROM association_document ad
+        WHERE NOT EXISTS (
+            SELECT 1 FROM association_profiles ap
+            WHERE ap.id = ad.association_id AND ap.user_id = ANY(v_keep_user_ids)
+        );
+        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'association_document supprimés : %', v_deleted;
+
+        -- ════════════════════════════════════════════════════════════
         -- 6. PROFILS  (association_profiles cascade → payees, ibans, monerium,
         --    campagnes restantes ; donor_profiles cascade → donations restantes)
         --    On supprime les profils dont le user n'est pas gardé.
@@ -153,6 +172,7 @@ DO $$
 --   campaign_budget_items, campaign_budget_sections, campaign_milestones,
 --   campaigns, payee_ibans, payees,
 --   monerium_oauth_states, monerium_connections,
+--   fiscal_mandate, association_document,
 --   association_profiles, donor_profiles,
 --   magic_link_tokens, email_verification_tokens, refresh_tokens,
 --   users

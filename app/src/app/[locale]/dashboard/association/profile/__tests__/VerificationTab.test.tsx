@@ -46,7 +46,7 @@ const fullSlots: VerificationStateDto['requiredDocuments'] = [
 ];
 
 const sampleOptDocs: OptionalDocumentDto[] = [
-  { id: 'opt1', fileName: 'rapport-2024.pdf', category: 'rapport', contentType: 'application/pdf', sizeBytes: 1048576, uploadedAt: '2024-12-31T00:00:00Z' },
+  { id: 'opt1', fileName: 'rapport-2024.pdf', category: 'REPORT', contentType: 'application/pdf', sizeBytes: 1048576, uploadedAt: '2024-12-31T00:00:00Z' },
 ];
 
 // ── Tests ────────────────────────────────────────────────────────────────────

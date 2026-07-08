@@ -53,7 +53,7 @@ class AssociationDocumentControllerTest {
     private val sampleDto = OptionalDocumentDto(
         id = docId,
         fileName = "rapport-2024.pdf",
-        category = "rapport",
+        category = "REPORT",
         contentType = "application/pdf",
         sizeBytes = 1_200_000L,
         uploadedAt = Instant.parse("2025-01-10T10:00:00Z"),
@@ -74,7 +74,7 @@ class AssociationDocumentControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$[0].id").value(docId.toString()))
             .andExpect(jsonPath("$[0].fileName").value("rapport-2024.pdf"))
-            .andExpect(jsonPath("$[0].category").value("rapport"))
+            .andExpect(jsonPath("$[0].category").value("REPORT"))
     }
 
     @Test
@@ -99,23 +99,23 @@ class AssociationDocumentControllerTest {
 
     @Test
     fun `uploadDocument - 201 with valid file and category`() {
-        every { verificationService.uploadOptionalDocument(userId, any(), "rapport") } returns sampleDto
+        every { verificationService.uploadOptionalDocument(userId, any(), "REPORT") } returns sampleDto
 
         mockMvc.perform(
             multipart("/api/association/documents")
                 .file(pdfFile())
-                .param("category", "rapport")
+                .param("category", "REPORT")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
         )
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.id").value(docId.toString()))
-            .andExpect(jsonPath("$.category").value("rapport"))
+            .andExpect(jsonPath("$.category").value("REPORT"))
     }
 
     @Test
-    fun `uploadDocument - 201 with default category autre`() {
-        every { verificationService.uploadOptionalDocument(userId, any(), "autre") } returns
-            sampleDto.copy(category = "autre")
+    fun `uploadDocument - 201 with default category OTHER`() {
+        every { verificationService.uploadOptionalDocument(userId, any(), "OTHER") } returns
+            sampleDto.copy(category = "OTHER")
 
         mockMvc.perform(
             multipart("/api/association/documents")
@@ -188,7 +188,7 @@ class AssociationDocumentControllerTest {
         val fakeMeta = object : AssociationDocumentMetadata {
             override val id = docId
             override val docType = org.commonlink.entity.AssociationDocumentType.OPTIONAL
-            override val category = "rapport"
+            override val category = "REPORT"
             override val fileName = "rapport-2024.pdf"
             override val contentType = "application/pdf"
             override val sizeBytes = fakeContent.size.toLong()

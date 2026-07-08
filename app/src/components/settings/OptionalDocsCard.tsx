@@ -3,13 +3,17 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { downloadOptionalDocument } from '@/lib/api/verification';
-import type { OptionalDocumentDto, OptionalDocCategory } from '@/types/verification';
+import { OptionalDocCategory } from '@/types/verification';
+import type { OptionalDocumentDto } from '@/types/verification';
 
 const EXT_ICONS: Record<string, string> = {
   pdf: '📄', docx: '📝', xlsx: '📊', jpg: '🖼️', jpeg: '🖼️', png: '🖼️',
 };
 
-const CATEGORIES: OptionalDocCategory[] = ['financier', 'rapport', 'justificatif', 'autre'];
+// Map VALUE → i18n KEY (e.g. 'FINANCIAL' → 'financial')
+const VALUE_TO_I18N_KEY = Object.fromEntries(
+  Object.entries(OptionalDocCategory).map(([k, v]) => [v, k]),
+) as Record<OptionalDocCategory, string>;
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.docx,.xlsx';
 
@@ -45,7 +49,7 @@ export function OptionalDocsCard({ docs, onUpload, onDelete }: OptionalDocsCardP
 
   const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setPending({ file, category: 'autre' });
+    if (file) setPending({ file, category: OptionalDocCategory.other });
     e.target.value = '';
   };
 
@@ -101,9 +105,9 @@ export function OptionalDocsCard({ docs, onUpload, onDelete }: OptionalDocsCardP
               className="fi"
               style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }}
             >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {t(`verification.optDocs.categories.${cat}` as Parameters<typeof t>[0])}
+              {Object.entries(OptionalDocCategory).map(([key, value]) => (
+                <option key={value} value={value}>
+                  {t(`verification.optDocs.categories.${key}` as Parameters<typeof t>[0])}
                 </option>
               ))}
             </select>
@@ -149,7 +153,7 @@ export function OptionalDocsCard({ docs, onUpload, onDelete }: OptionalDocsCardP
                 </div>
                 {doc.category && (
                   <span className="od-row-cat">
-                    {t(`verification.optDocs.categories.${doc.category}` as Parameters<typeof t>[0])}
+                    {t(`verification.optDocs.categories.${VALUE_TO_I18N_KEY[doc.category as OptionalDocCategory] ?? doc.category}` as Parameters<typeof t>[0])}
                   </span>
                 )}
                 <button className="vd-btn vd-btn-del" onClick={() => onDelete(doc.id)}>

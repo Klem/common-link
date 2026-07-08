@@ -35,7 +35,7 @@ class AssociationDocument(
     @Column(name = "doc_type", nullable = false, length = 30)
     val docType: AssociationDocumentType,
 
-    /** Sub-category for [AssociationDocumentType.OPTIONAL] documents (financier, rapport, etc.). */
+    /** Sub-category for [AssociationDocumentType.OPTIONAL] documents: FINANCIAL, REPORT, SUPPORTING_DOC, OTHER. */
     @Column(name = "category", length = 20)
     val category: String? = null,
 

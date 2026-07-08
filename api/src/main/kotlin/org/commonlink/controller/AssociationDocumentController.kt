@@ -65,8 +65,8 @@ class AssociationDocumentController(
     fun uploadDocument(
         @AuthenticationPrincipal principal: UserDetails,
         @RequestParam("file") file: MultipartFile,
-        @Parameter(description = "Category: financier | rapport | justificatif | autre (default: autre)")
-        @RequestParam("category", required = false, defaultValue = "autre") category: String,
+        @Parameter(description = "Category: FINANCIAL | REPORT | SUPPORTING_DOC | OTHER (default: OTHER)")
+        @RequestParam("category", required = false, defaultValue = "OTHER") category: String,
     ): ResponseEntity<OptionalDocumentDto> {
         val dto = verificationService.uploadOptionalDocument(UUID.fromString(principal.username), file, category)
         return ResponseEntity.status(201).body(dto)

@@ -1069,10 +1069,10 @@
         "add": "Ajouter un document",
         "cancel": "Annuler",
         "categories": {
-          "autre": "📂 Autre",
-          "financier": "💶 Financier",
-          "justificatif": "🧾 Justificatif",
-          "rapport": "📊 Rapport d'activité"
+          "financial": "💶 Financier",
+          "other": "📂 Autre",
+          "report": "📊 Rapport d'activité",
+          "supportingDoc": "🧾 Justificatif"
         },
         "delete": "Supprimer",
         "empty": "Aucun document complémentaire. Ajoutez vos rapports d'activité, bilans comptables, etc. pour renforcer la confiance des donateurs.",
