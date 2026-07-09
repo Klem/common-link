@@ -21,6 +21,41 @@
     "nav": {
       "verifications": "Associations / Verifications"
     },
+    "registryCheck": {
+      "bodacc": {
+        "clean": "No collective procedure"
+      },
+      "checkedAt": "Checked on",
+      "error": "Check unavailable",
+      "insee": {
+        "active": "Active",
+        "ceased": "Ceased"
+      },
+      "joafe": {
+        "declaration": "Declaration found",
+        "noDeclaration": "No declaration"
+      },
+      "loading": "Checking...",
+      "note": "Informational only — does not replace manual review",
+      "rna": "RNA",
+      "siren": "SIREN",
+      "status": {
+        "active": "Active",
+        "ceased": "Ceased (INSEE)",
+        "dissolved": "Dissolution detected",
+        "insolvency": "Insolvency procedure",
+        "notFound": "Not found"
+      },
+      "title": "Registry check",
+      "warnings": "Warnings",
+      "refresh": "Re-run",
+      "skipped": {
+        "noRna": "RNA not found",
+        "noSiren": "SIREN not found",
+        "title": "Not performed",
+        "unavailable": "Registry search unavailable"
+      }
+    },
     "shell": {
       "logout": "Log out",
       "navLabel": "Navigation",

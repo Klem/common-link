@@ -1,0 +1,35 @@
+### Admin Verification — List PENDING
+GET http://localhost:8080/api/admin/verifications?status=PENDING&page=0&size=20
+Authorization: Bearer {{curatorToken}}
+Accept: application/json
+
+###
+
+### Admin Verification — Get dossier detail
+GET http://localhost:8080/api/admin/verifications/{{associationId}}
+Authorization: Bearer {{curatorToken}}
+Accept: application/json
+
+###
+
+### Admin Verification — Registry pre-check (informational only)
+GET http://localhost:8080/api/admin/verifications/{{associationId}}/registry-precheck
+Authorization: Bearer {{curatorToken}}
+Accept: application/json
+
+###
+
+### Admin Verification — Approve dossier
+POST http://localhost:8080/api/admin/verifications/{{associationId}}/approve
+Authorization: Bearer {{curatorToken}}
+
+###
+
+### Admin Verification — Reject dossier
+POST http://localhost:8080/api/admin/verifications/{{associationId}}/reject
+Authorization: Bearer {{curatorToken}}
+Content-Type: application/json
+
+{
+  "reason": "Document illisible. Veuillez soumettre une version plus nette."
+}

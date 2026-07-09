@@ -68,6 +68,10 @@ app:
   insee:
     api-key: ${INSEE_API_KEY:}
     base-url: ${INSEE_BASE_URL:https://api.insee.fr/api-sirene/3.11}
+  joafe:
+    base-url: ${JOAFE_BASE_URL:https://journal-officiel-datadila.opendatasoft.com/api/explore/v2.0}
+  bodacc:
+    base-url: ${BODACC_BASE_URL:https://bodacc-datadila.opendatasoft.com/api/explore/v2.0}
   vop:
     demo-mode: true
     api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}

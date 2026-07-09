@@ -1,6 +1,6 @@
 import api from '@/lib/api';
 import type { VerificationStatus } from '@/types/association';
-import type { AdminVerificationSummaryDto, AdminVerificationDetailDto } from '@/types/admin';
+import type { AdminVerificationSummaryDto, AdminVerificationDetailDto, RegistryPreCheckDto } from '@/types/admin';
 import type { Page } from '@/types/payment';
 
 /**
@@ -44,6 +44,16 @@ export const rejectVerification = (associationId: string, reason: string): Promi
   api
     .post(`/api/admin/verifications/${associationId}/reject`, { reason })
     .then(() => undefined);
+
+/**
+ * Queries French public registries to check legal existence of the association.
+ * `GET /api/admin/verifications/{associationId}/registry-precheck`
+ * Informational only — each source degrades gracefully.
+ */
+export const getRegistryPreCheck = (associationId: string): Promise<RegistryPreCheckDto> =>
+  api
+    .get<RegistryPreCheckDto>(`/api/admin/verifications/${associationId}/registry-precheck`)
+    .then((r) => r.data);
 
 /**
  * Downloads a verification document as a Blob.

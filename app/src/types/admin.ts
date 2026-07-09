@@ -25,6 +25,20 @@ export interface AdminVerificationSummaryDto {
   docCount: number;
 }
 
+/** Result of `GET /api/admin/verifications/{associationId}/registry-precheck`. Informational only. */
+export interface RegistryPreCheckDto {
+  associationExists: boolean | null;
+  siren: string | null;
+  rna: string | null;
+  /** 'A' = active, 'C' = ceased. Null if no SIREN or INSEE unavailable. */
+  etatAdministratif: string | null;
+  joafeDeclarationFound: boolean | null;
+  dissolutionDetected: boolean | null;
+  bodaccProcedureFound: boolean | null;
+  checkedAt: string;
+  warnings: string[];
+}
+
 /** Full dossier returned by `GET /api/admin/verifications/{associationId}`. */
 export interface AdminVerificationDetailDto {
   associationId: string;

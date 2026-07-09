@@ -11,6 +11,7 @@ import { ROUTES } from '@/lib/routes';
 import { STATUS_BADGE_CLASS } from '@/components/admin/adminShared';
 import { VerificationDocumentRow } from '@/components/admin/VerificationDocumentRow';
 import { VerificationDecisionPanel } from '@/components/admin/VerificationDecisionPanel';
+import { RegistryPreCheckBanner } from '@/components/admin/RegistryPreCheckBanner';
 
 interface Props {
   params: Promise<{ associationId: string }>;
@@ -158,6 +159,9 @@ export default function VerificationDetailPage({ params }: Props) {
           <p style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{detail.rejectionReason}</p>
         </div>
       )}
+
+      {/* Registry pre-check — informational, loads independently */}
+      <RegistryPreCheckBanner associationId={associationId} />
 
       {/* Required documents */}
       <section style={{ marginBottom: 32 }}>

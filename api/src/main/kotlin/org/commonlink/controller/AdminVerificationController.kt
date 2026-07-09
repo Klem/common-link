@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.AdminVerificationDetailDto
 import org.commonlink.dto.AdminVerificationSummaryDto
+import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.dto.RejectVerificationRequest
 import org.commonlink.entity.VerificationStatus
+import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.VerificationService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -36,6 +38,7 @@ import java.util.UUID
 @PreAuthorize("hasAnyRole('CURATOR','ADMIN')")
 class AdminVerificationController(
     private val verificationService: VerificationService,
+    private val registryCheckService: AssociationRegistryCheckService,
 ) {
 
     @GetMapping
@@ -138,4 +141,25 @@ class AdminVerificationController(
         verificationService.adminReject(associationId, request.reason)
         return ResponseEntity.noContent().build()
     }
+
+    @GetMapping("/{associationId}/registry-precheck")
+    @Operation(
+        summary = "Registry existence pre-check",
+        description = "Queries French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC) " +
+                "to check the legal existence of the association. Informational only — never auto-approves or rejects. " +
+                "Each source degrades gracefully: failures are reported as warnings, not errors."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Pre-check result returned (even if some sources failed)",
+            content = [Content(schema = Schema(implementation = RegistryPreCheckDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+    )
+    fun registryPreCheck(
+        @PathVariable associationId: UUID,
+    ): ResponseEntity<RegistryPreCheckDto> =
+        ResponseEntity.ok(registryCheckService.check(associationId))
 }
