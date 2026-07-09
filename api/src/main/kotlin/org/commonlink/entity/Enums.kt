@@ -154,6 +154,59 @@ enum class MilestoneStatus {
     REACHED
 }
 
+/**
+ * KYC verification lifecycle for an association.
+ *
+ * Cycle: UNVERIFIED → PENDING (after document submission) → VERIFIED | REJECTED.
+ * After REJECTED the association can replace documents and resubmit (REJECTED → PENDING).
+ */
+enum class VerificationStatus {
+    /** No documents submitted yet. */
+    UNVERIFIED,
+    /** Documents submitted, awaiting admin review. */
+    PENDING,
+    /** Admin has approved the dossier. */
+    VERIFIED,
+    /** Admin has rejected the dossier; reason stored in [AssociationProfile.verificationRejectionReason]. */
+    REJECTED,
+}
+
+/**
+ * Type of a stored [AssociationDocument].
+ *
+ * The three `VERIF_*` types are required for KYC verification; the two `MANDATE_*` types
+ * are required before signing a fiscal mandate. [OPTIONAL] documents are supplementary
+ * (activity reports, audited accounts, etc.) and can have multiple entries per association.
+ */
+enum class AssociationDocumentType {
+    /** Association statutes — required for KYC. */
+    VERIF_STATUTS,
+    /** RNA receipt or Journal Officiel insertion — required for KYC. */
+    VERIF_RNA_RECEIPT,
+    /** Legal representative's identity document — required for KYC. */
+    VERIF_REPRESENTATIVE_ID,
+    /** Association statutes — required for fiscal mandate. */
+    MANDATE_STATUTS,
+    /** Fiscal ruling (rescrit fiscal) or sworn attestation — required for fiscal mandate. */
+    MANDATE_RESCRIT,
+    /** Supplementary document freely uploaded by the association (financial reports, etc.). */
+    OPTIONAL,
+}
+
+/**
+ * Eligibility category declared by the association when signing the fiscal mandate.
+ *
+ * Determines the tax-reduction percentage donors can claim (Art. 200 or 200-1 ter CGI).
+ */
+enum class MandateEligibility {
+    /** Organisme d'intérêt général — 66 % reduction (Art. 200 CGI). */
+    OIG_66,
+    /** Organisme d'aide aux personnes en difficulté (loi Coluche) — 75 % reduction (Art. 200-1 ter CGI). */
+    OIG_75_COLUCHE,
+    /** Reconnu d'utilité publique — 66 % reduction. */
+    PUBLIC_UTILITY_66,
+}
+
 /** High-level categorisation of a [org.commonlink.entity.Payout]: personnel vs operational expense. */
 enum class PayoutKind { REMUNERATION, EXPENSE }
 

@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — Dev Seed Data
--- Run once on a clean (migrated) database (through V33).
+-- Run once on a clean (migrated) database (through V35).
 -- =============================================================
 -- Hashes below are real BCrypt ($2a, cost 12) — no edit needed.
 --   Test1234!  -> association
@@ -191,13 +191,13 @@ DO $$
                    '2026-01-10 09:00:00+01', '2026-01-10 09:00:00+01'
                );
 
-        INSERT INTO association_profiles (id, user_id, name, identifier, city, postal_code, contact_name, description, verified)
+        INSERT INTO association_profiles (id, user_id, name, identifier, city, postal_code, contact_name, description, verification_status)
         VALUES (
                    v_assoc_id, v_assoc_user_id,
                    'Fondation Lumière', '123456789',
                    'Paris', '75008', 'Marie Dupont',
                    'Association dédiée à l''éducation, l''aide humanitaire et le développement durable en France et à l''étranger.',
-                   TRUE
+                   'VERIFIED'
                );
 
         -- ════════════════════════════════════════════════════════════

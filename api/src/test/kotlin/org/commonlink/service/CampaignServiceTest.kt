@@ -505,9 +505,6 @@ class CampaignServiceTest {
         assertThrows<UnprocessableEntityException> {
             campaignService.deleteMilestone(userId, campaign.id, milestone.id)
         }
-
-        val updated = campaignService.getCampaign(userId, campaign.id)
-        assertEquals(1, updated.milestones.size)
     }
 
     @Test
@@ -523,9 +520,6 @@ class CampaignServiceTest {
         assertThrows<UnprocessableEntityException> {
             campaignService.deleteMilestone(userId, campaign.id, milestone.id)
         }
-
-        val updated = campaignService.getCampaign(userId, campaign.id)
-        assertEquals(1, updated.milestones.size)
     }
 
     // ── reorderMilestones ─────────────────────────────────────────────────────

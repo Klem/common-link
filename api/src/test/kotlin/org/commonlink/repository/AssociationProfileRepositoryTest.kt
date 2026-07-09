@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.assertj.core.api.Assertions.assertThat
+import org.commonlink.entity.VerificationStatus
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,7 +28,7 @@ class AssociationProfileRepositoryTest(
                 name = "Les Restos du Coeur",
                 identifier = "775671356",
                 city = "Paris",
-                verified = true,
+                verificationStatus = VerificationStatus.VERIFIED,
             )
         )
         associationProfileRepository.save(
@@ -36,7 +37,6 @@ class AssociationProfileRepositoryTest(
                 name = "Secours Catholique",
                 identifier = "775739054",
                 city = "Lyon",
-                verified = false,
             )
         )
 
@@ -54,7 +54,7 @@ class AssociationProfileRepositoryTest(
         assertThat(result).isPresent
         assertThat(result.get().name).isEqualTo("Les Restos du Coeur")
         assertThat(result.get().city).isEqualTo("Paris")
-        assertThat(result.get().verified).isTrue
+        assertThat(result.get().verificationStatus).isEqualTo(VerificationStatus.VERIFIED)
     }
 
     @Test
@@ -103,22 +103,22 @@ class AssociationProfileRepositoryTest(
     }
 
     @Test
-    fun `un profil non vérifié a verified à false par défaut`() {
+    fun `un profil non vérifié a verificationStatus UNVERIFIED par défaut`() {
         val result = associationProfileRepository.findByUserId(secoursCathoUserId)
 
         assertThat(result).isPresent
-        assertThat(result.get().verified).isFalse
+        assertThat(result.get().verificationStatus).isEqualTo(VerificationStatus.UNVERIFIED)
     }
 
     @Test
-    fun `mise à jour de verified persiste correctement`() {
+    fun `mise à jour de verificationStatus persiste correctement`() {
         val profile = associationProfileRepository.findByUserId(secoursCathoUserId).get()
-        profile.verified = true
+        profile.verificationStatus = VerificationStatus.VERIFIED
         associationProfileRepository.save(profile)
         em.flush()
         em.clear()
 
         val updated = associationProfileRepository.findByUserId(secoursCathoUserId)
-        assertThat(updated.get().verified).isTrue
+        assertThat(updated.get().verificationStatus).isEqualTo(VerificationStatus.VERIFIED)
     }
 }

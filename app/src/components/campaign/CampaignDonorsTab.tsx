@@ -54,14 +54,13 @@ function DonationDetail({
 }) {
   const t = useTranslations('dashboard.campaigns.donors');
   return (
-    <div className="cm-card" style={{ marginTop: '10px', marginBottom: 0 }}>
+    <div className="cm-card d-tx-card">
       <div className="cm-card-title">
         💸 {t('tx.title')}
         <button
           type="button"
-          className="cm-btn cm-btn-ghost cm-btn-sm"
+          className="cm-btn cm-btn-ghost cm-btn-sm cm-card-title-close"
           onClick={onClose}
-          style={{ marginLeft: 'auto' }}
         >
           {t('tx.close')}
         </button>
@@ -72,13 +71,13 @@ function DonationDetail({
       </div>
       <div className="d-row">
         <span className="d-key">{t('tx.title')}</span>
-        <span className="d-val" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, color: 'var(--teal-dark)' }}>
+        <span className="d-val amount-teal">
           {fmtEur(donation.amount)}
         </span>
       </div>
       <div className="d-row">
         <span className="d-key">{t('tx.ref')}</span>
-        <code style={{ fontSize: '10px', background: 'var(--mist-lavender)', padding: '2px 6px', borderRadius: '4px' }}>
+        <code className="d-ref-code">
           {fmtRef(donation.providerRef)}
         </code>
       </div>
@@ -114,15 +113,14 @@ function DonorDetail({
         👤 {donor.displayName}
         <button
           type="button"
-          className="cm-btn cm-btn-ghost cm-btn-sm"
+          className="cm-btn cm-btn-ghost cm-btn-sm cm-card-title-close"
           onClick={onClose}
-          style={{ marginLeft: 'auto' }}
         >
           {t('detail.close')}
         </button>
       </div>
 
-      <div className="cm-stats" style={{ marginBottom: '16px' }}>
+      <div className="cm-stats cm-stats-tight">
         <div className="cm-stat">
           <div className="cm-stat-lbl">{t('detail.total')}</div>
           <div className="cm-stat-val val-dark">{fmtEur(donor.totalAmount)}</div>
@@ -133,18 +131,18 @@ function DonorDetail({
         </div>
         <div className="cm-stat">
           <div className="cm-stat-lbl">{t('detail.lastDonation')}</div>
-          <div className="cm-stat-val" style={{ fontSize: '14px' }}>{fmtDate(donor.lastDonationAt)}</div>
+          <div className="cm-stat-val val-sm">{fmtDate(donor.lastDonationAt)}</div>
         </div>
       </div>
 
       <div className="d-section">{t('detail.transactions')}</div>
 
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}>
+        <div className="spinner-wrap">
           <div className="w-[20px] h-[20px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
         </div>
       ) : donations.length === 0 ? (
-        <p style={{ fontSize: '12px', color: 'var(--slate-lavender)', padding: '8px 0' }}>
+        <p className="d-empty-note">
           {t('detail.noTx')}
         </p>
       ) : (
@@ -155,12 +153,11 @@ function DonorDetail({
               onClick={() =>
                 selectedDonation?.id === d.id ? onCloseDonation() : onSelectDonation(d)
               }
-              className="d-row"
-              style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              className="d-row d-row-btn"
             >
               <span className="d-key">{fmtDate(d.createdAt)}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, color: 'var(--teal-dark)' }}>
+              <span className="d-row-amt">
+                <span className="amount-teal">
                   {fmtEur(d.amount)}
                 </span>
                 <OnChainChip onChain={d.onChain} />
@@ -203,7 +200,7 @@ function Pager({
       <button type="button" disabled={page === 0} onClick={() => onPageChange(page - 1)}>←</button>
       {pages.map((p, i) =>
         p === '…' ? (
-          <button key={`ellipsis-${i}`} type="button" disabled style={{ cursor: 'default' }}>…</button>
+          <button key={`ellipsis-${i}`} type="button" disabled>…</button>
         ) : (
           <button
             key={p}
@@ -300,7 +297,6 @@ export function CampaignDonorsTab({ campaign }: Props) {
         <div className="filter-bar">
           <input
             className="cm-fi"
-            style={{ maxWidth: '260px' }}
             type="text"
             placeholder={t('search.placeholder')}
             value={search}
@@ -318,7 +314,7 @@ export function CampaignDonorsTab({ campaign }: Props) {
             <option value={DonorSort.DATE}>{t('sort.date')}</option>
             <option value={DonorSort.NAME}>{t('sort.name')}</option>
           </select>
-          <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--slate-lavender)' }}>
+          <span className="filter-bar-count">
             {!isLoading && t('showing', { count: totalElements })}
           </span>
           <button type="button" className="cm-btn cm-btn-ghost cm-btn-sm" onClick={handleExportCsv}>
@@ -327,15 +323,15 @@ export function CampaignDonorsTab({ campaign }: Props) {
         </div>
 
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}>
+          <div className="spinner-wrap lg">
             <div className="w-[28px] h-[28px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
           </div>
         ) : error ? (
-          <p style={{ fontSize: '13px', color: 'var(--warm-coral)', textAlign: 'center', padding: '20px 0' }}>
+          <p className="cm-table-error">
             {t('error')}
           </p>
         ) : donors.length === 0 ? (
-          <p style={{ fontSize: '13px', color: 'var(--slate-lavender)', textAlign: 'center', padding: '28px 0' }}>
+          <p className="cm-table-empty-lg">
             {t('empty')}
           </p>
         ) : (
@@ -344,8 +340,8 @@ export function CampaignDonorsTab({ campaign }: Props) {
               <thead>
                 <tr>
                   <th>{t('table.donor')}</th>
-                  <th style={{ textAlign: 'right' }}>{t('table.amount')}</th>
-                  <th style={{ textAlign: 'center' }}>{t('table.transactions')}</th>
+                  <th className="col-right">{t('table.amount')}</th>
+                  <th className="col-center">{t('table.transactions')}</th>
                   <th>{t('table.lastDonation')}</th>
                   <th />
                 </tr>
@@ -361,16 +357,16 @@ export function CampaignDonorsTab({ campaign }: Props) {
                         >
                           {getInitials(donor.displayName)}
                         </div>
-                        <div style={{ fontWeight: 500 }}>{donor.displayName}</div>
+                        <div className="donor-name">{donor.displayName}</div>
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right', fontFamily: "'Syne',sans-serif", fontWeight: 700, color: 'var(--teal-dark)' }}>
+                    <td className="amount-teal col-right">
                       {fmtEur(donor.totalAmount)}
                     </td>
-                    <td style={{ textAlign: 'center', color: 'var(--bright-teal)', fontWeight: 600 }}>
+                    <td className="tx-count col-center">
                       {donor.txCount}
                     </td>
-                    <td style={{ color: 'var(--slate-lavender)' }}>
+                    <td className="col-muted">
                       {fmtDate(donor.lastDonationAt)}
                     </td>
                     <td>

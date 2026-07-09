@@ -17,36 +17,36 @@ export function NewCampaignWarningModal({
 
   return (
     <div className="ov on" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="mod" style={{ maxWidth: '520px' }}>
+      <div className="mod mod-sm">
         <div className="mod-h">
           <h3>{t('title')}</h3>
           <button className="mod-x" onClick={onClose}>✕</button>
         </div>
 
         <div className="mod-b">
-          <div className="pp-row boost" style={{ marginBottom: '18px' }}>
+          <div className="pp-row boost ncw-notice">
             <div className="pp-row-ic">i</div>
             <div className="pp-row-lbl">{t('notVerified')}</div>
           </div>
-          <p style={{ fontSize: '14px', color: 'var(--slate-lavender)', lineHeight: 1.55, marginBottom: '14px' }}>
+          <p className="ncw-body">
             {t('body')}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+          <div className="ncw-list">
             <div className="pp-row ok">
               <div className="pp-row-ic">🚀</div>
               <div className="pp-row-lbl">{t('autoPublic')}</div>
             </div>
           </div>
-          <p style={{ fontSize: '13px', color: 'var(--slate-lavender)', fontStyle: 'italic' }}>
+          <p className="ncw-hint">
             {t('hint')}
           </p>
         </div>
 
-        <div className="mod-f" style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+        <div className="mod-f mod-f-split">
           <button className="btn btn-secondary" onClick={onGoVerify}>
             {t('verify')}
           </button>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="ncw-actions">
             <button className="btn btn-secondary" onClick={onClose}>
               {t('cancel')}
             </button>

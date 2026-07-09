@@ -72,14 +72,14 @@ export default function CampaignsPage() {
       </div>
 
       {isLoading && (
-        <p style={{ color: 'var(--slate-lavender)', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>
+        <p className="camp-loading">
           {t('campaigns.loading')}
         </p>
       )}
 
       <div className="camp-grid">
         {!isLoading && filtered.length === 0 && (
-          <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--slate-lavender)', fontSize: '14px', padding: '48px 0' }}>
+          <p className="camp-grid-empty">
             {campaigns.length === 0 ? t('campaigns.empty.title') : t('campaigns.filterAll')}
           </p>
         )}

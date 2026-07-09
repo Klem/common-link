@@ -207,6 +207,11 @@
     "publishCampaignSuccess": "🚀 Campaign published!",
     "save": "Save",
     "setPasswordUpdated": "Password set successfully.",
+    "verificationDocDeleted": "Document removed.",
+    "verificationDocUploaded": "Document uploaded.",
+    "verificationOptDocDeleted": "Document deleted.",
+    "verificationOptDocUploaded": "Document added.",
+    "verificationSubmitted": "📨 File submitted. Your association will be notified by email.",
     "vopVerified": "VOP verification completed."
   },
   "dashboard": {
@@ -268,19 +273,115 @@
       "profile": {
         "cancel": "Cancel",
         "city": "City",
+        "contactEmail": "Contact email",
         "contactName": "Contact name",
         "contactNamePlaceholder": "Your full name",
+        "creationYear": "Year founded",
         "description": "Description",
         "descriptionPlaceholder": "Describe your association's mission",
         "errors": {
+          "contactEmailFormat": "Please enter a valid email address.",
           "contactNameMin": "Name must be at least 2 characters.",
-          "postalCodeFormat": "Postal code must be 5 digits."
+          "creationYearMax": "Year cannot be in the future.",
+          "creationYearMin": "Year must be 1800 or later.",
+          "phoneFormat": "Please enter a valid phone number (6–20 characters).",
+          "postalCodeFormat": "Postal code must be 5 digits.",
+          "rnaFormat": "RNA must be W followed by 9 digits (e.g. W123456789)."
         },
         "identifier": "SIREN",
         "infos": {
           "title": "Association information"
         },
         "loading": "Loading profile…",
+        "mandate": {
+          "blocked": {
+            "cta": "→ Go to verification",
+            "message": "Your association must first be verified before signing the fiscal receipt mandate."
+          },
+          "docs": {
+            "delete": "Delete",
+            "replace": "Replace",
+            "rescrit": {
+              "desc": "Required · Document certifying the organisation eligibility",
+              "label": "Tax ruling (or sworn statement)"
+            },
+            "statuts": {
+              "desc": "Required · PDF or image",
+              "label": "Association bylaws"
+            },
+            "upload": "Upload"
+          },
+          "eligibility": {
+            "oig66": {
+              "desc": "66% tax reduction for the donor · Art. 200 CGI",
+              "label": "Organisation of general interest"
+            },
+            "oig75": {
+              "desc": "75% tax reduction (Coluche law) · Art. 200 1 ter CGI",
+              "label": "Organisation helping people in difficulty"
+            },
+            "public66": {
+              "desc": "Council of State decree · 66% reduction",
+              "label": "Recognised as of public utility"
+            }
+          },
+          "legalText": {
+            "object": {
+              "body": "By the electronic signature below, the association mandates CommonLink (SAS, RCS Bordeaux) to issue, in its name and on its behalf, tax receipts relating to donations received via the platform.",
+              "title": "Mandate object."
+            },
+            "responsibility": {
+              "body": "The association remains solely legally responsible for the issuance of receipts and compliance with its annual reporting obligation under Article 222 bis of the CGI.",
+              "title": "Responsibility."
+            },
+            "retention": {
+              "body": "This mandate and the supporting documents are stored on CommonLink servers for a minimum of 6 years, in accordance with fiscal obligations.",
+              "title": "Retention."
+            },
+            "revocation": {
+              "body": "The mandate may be revoked at any time from this tab. Revocation takes effect immediately; receipts already issued remain valid.",
+              "title": "Revocation."
+            }
+          },
+          "pedagogic": {
+            "sub": "CommonLink issues tax receipts on behalf of your association. You remain legally responsible for their issuance and annual reporting obligation (Article 222 bis CGI).",
+            "title": "Fiscal Receipt Mandate"
+          },
+          "revokeModal": {
+            "body": "Revoking the mandate? Receipts already issued remain valid, but no new receipts will be issued until the mandate is re-signed.",
+            "cancel": "Cancel",
+            "confirm": "Confirm revocation",
+            "title": "Revoke mandate?"
+          },
+          "signed": {
+            "detailsTitle": "Mandate details",
+            "downloadPdf": "Download mandate (PDF)",
+            "eligibility": "Declared eligibility status",
+            "reference": "Mandate reference",
+            "retention": "Document retention",
+            "retentionValue": "6 years (fiscal obligation)",
+            "revokeBtn": "Revoke mandate",
+            "signedAt": "Signed on",
+            "sub": "Tax receipts are automatically issued for each eligible donation received via CommonLink.",
+            "title": "Mandate active"
+          },
+          "step1": {
+            "declared": "Declared",
+            "intro": "Only organisations of general interest (OIG) or of public utility can have tax receipts issued entitling donors to tax reduction.",
+            "title": "1. Eligibility Status",
+            "toDeclare": "To declare"
+          },
+          "step2": {
+            "provided": "provided",
+            "title": "2. Supporting Documents"
+          },
+          "step3": {
+            "acceptLabel": "I certify the accuracy of the information provided and accept the terms of the mandate above.",
+            "signBtn": "Sign the mandate",
+            "timestampNote": "Timestamped electronic signature",
+            "title": "3. Mandate Signature"
+          }
+        },
         "memberSince": "Member since {date}",
         "monerium": {
           "badge": "Experimental",
@@ -298,7 +399,9 @@
         },
         "name": "Association name",
         "pending": "Pending verification",
+        "phone": "Phone",
         "postalCode": "Postal code",
+        "rna": "RNA number",
         "save": "Save",
         "security": {
           "changePassword": "Set a password",
@@ -317,9 +420,17 @@
             "notConnected": "Not connected"
           },
           "infos": "Informations",
+          "mandate": "Fiscal Mandate",
+          "mandateBadge": {
+            "active": "✓ Active",
+            "notSigned": "Not signed",
+            "readyToSign": "Ready to sign"
+          },
           "verif": "Verification",
           "verifBadge": {
             "ok": "Verified",
+            "pending": "In progress",
+            "rejected": "Rejected",
             "todo": "To do"
           }
         },
@@ -486,9 +597,8 @@
           "goal": {
             "label": "Fundraising goal (€)",
             "placeholder": "0",
-            "tip": "You can enter a free amount, or link it automatically to the total expenses in your projected budget."
+            "tip": "Enter the total amount you aim to raise for this campaign."
           },
-          "goalLink": "🔗 Link to total expenses",
           "impactGoals": {
             "label": "Impact goals",
             "placeholder": "E.g.: allow 450 students to study in good conditions, reduce absenteeism by 30%…",
@@ -539,6 +649,8 @@
           "proofLabel": "Transparency commitment",
           "proofPlaceholder": "e.g. photos + impact report at D+30",
           "reached": "Reached",
+          "sortAsc": "Sort ↑ (step asc)",
+          "sortDesc": "Sort ↓ (step desc)",
           "subtitle": "Each milestone is a fundraising threshold with a concrete measurable impact.",
           "targetLabel": "Target €",
           "title": "Campaign milestones",
@@ -911,6 +1023,79 @@
       "title": "Secure your account"
     },
     "title": "Dashboard",
+    "verification": {
+      "banner": {
+        "incomplete": {
+          "eta": "All required documents must be uploaded.",
+          "sub": "Upload your supporting documents and launch verification to publicly publish your campaigns.",
+          "title": "📋 Association verification"
+        },
+        "pending": {
+          "btn": "Verification in progress…",
+          "eta": "Usual processing time: 24–48 business hours",
+          "sub": "Our team is reviewing your file. You will be notified by email once validated.",
+          "title": "⏳ Verification in progress"
+        },
+        "ready": {
+          "eta": "Processing time: 24–48 business hours",
+          "sub": "All required documents are uploaded. Launch verification when ready.",
+          "title": "📋 Ready for verification"
+        },
+        "readyToResubmit": "All documents are ready. You can resubmit your file.",
+        "rejected": {
+          "defaultReason": "No reason provided.",
+          "title": "⚠️ Verification rejected"
+        },
+        "verified": {
+          "sub": "Your association is validated. You can publicly publish your campaigns and connect your bank account.",
+          "title": "✓ Association verified"
+        }
+      },
+      "docs": {
+        "idrep": {
+          "desc": "National ID or valid passport",
+          "label": "Legal representative ID"
+        },
+        "rna": {
+          "desc": "Proof of declaration of the association",
+          "label": "RNA receipt / JO insertion"
+        },
+        "statuts": {
+          "desc": "Signed document filed with the prefecture",
+          "label": "Association statutes"
+        }
+      },
+      "optDocs": {
+        "add": "Add a document",
+        "cancel": "Cancel",
+        "categories": {
+          "financial": "💶 Financial",
+          "other": "📂 Other",
+          "report": "📊 Activity report",
+          "supportingDoc": "🧾 Supporting document"
+        },
+        "delete": "Delete",
+        "empty": "No supplementary documents. Add your activity reports, financial statements, etc. to strengthen donor confidence.",
+        "optional": "optional",
+        "title": "Supplementary documents",
+        "upload": "Upload"
+      },
+      "requiredDocs": {
+        "delete": "Delete",
+        "download": "Download",
+        "locked": "Locked",
+        "replace": "Replace",
+        "required": "Required",
+        "title": "Required documents",
+        "upload": "Upload",
+        "uploaded": "Uploaded"
+      },
+      "submit": "✓ Launch verification"
+    },
     "welcome": "Welcome"
-  }
+  },
+  "mandateDocDeleted": "Document deleted.",
+  "mandateDocUploaded": "Document uploaded.",
+  "mandateRevoked": "Mandate revoked.",
+  "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically."
 }

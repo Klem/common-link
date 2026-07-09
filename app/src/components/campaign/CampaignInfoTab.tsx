@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
-import { BudgetSide } from '@/types/campaign';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
 interface CampaignInfoTabProps {
@@ -12,19 +11,11 @@ interface CampaignInfoTabProps {
   isSaving: boolean;
 }
 
-function computeTotalCharges(campaign: CampaignDto): number {
-  return campaign.budgetSections
-    .filter((s) => s.side === BudgetSide.EXPENSE)
-    .flatMap((s) => s.items)
-    .reduce((sum, item) => sum + item.amount, 0);
-}
-
 export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabProps) {
   const t = useTranslations('dashboard.campaigns');
 
   const [name, setName] = useState(campaign.name);
   const [goal, setGoal] = useState(String(campaign.goal));
-  const [goalLinked, setGoalLinked] = useState(false);
   const [startDate, setStartDate] = useState(campaign.startDate ?? '');
   const [endDate, setEndDate] = useState(campaign.endDate ?? '');
   const [description, setDescription] = useState(campaign.description ?? '');
@@ -35,7 +26,6 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
   useEffect(() => {
     setName(campaign.name);
     setGoal(String(campaign.goal));
-    setGoalLinked(false);
     setStartDate(campaign.startDate ?? '');
     setEndDate(campaign.endDate ?? '');
     setDescription(campaign.description ?? '');
@@ -43,8 +33,6 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
     setReason(campaign.reason ?? '');
     setImpactGoals(campaign.impactGoals ?? '');
   }, [campaign]);
-
-  const totalCharges = useMemo(() => computeTotalCharges(campaign), [campaign]);
 
   const dateError = useMemo(() => {
     if (!startDate || !endDate) return '';
@@ -56,17 +44,8 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
     if (!dateError) onSave(patch, true);
   });
 
-  const handleGoalLink = (checked: boolean) => {
-    setGoalLinked(checked);
-    if (checked) {
-      setGoal(String(totalCharges));
-      schedule({ goal: totalCharges });
-    }
-  };
-
   const handleNameChange = (v: string) => { setName(v); schedule({ name: v }); };
   const handleGoalChange = (v: string) => {
-    setGoalLinked(false);
     setGoal(v);
     const num = Number(v);
     if (!isNaN(num)) schedule({ goal: num });
@@ -108,7 +87,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
       <div className="cm-card-title">{t('editor.info.title')}</div>
 
       {/* Row 1: Nom + Objectif */}
-      <div className="row2" style={{ marginBottom: 14 }}>
+      <div className="row2 mb-14">
         <div>
           <label className="cm-label">{t('editor.info.name.label')}</label>
           <input
@@ -132,27 +111,11 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             placeholder={t('editor.info.goal.placeholder')}
             min={0}
           />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, gap: 8, flexWrap: 'wrap' }}>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '11.5px', color: 'var(--slate-lavender)', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={goalLinked}
-                onChange={(e) => handleGoalLink(e.target.checked)}
-                style={{ accentColor: 'var(--bright-teal)' }}
-              />
-              <span>{t('editor.info.goalLink')}</span>
-            </label>
-            {goalLinked && (
-              <span style={{ fontSize: 11, color: 'var(--slate-lavender)' }}>
-                = {totalCharges.toLocaleString()} €
-              </span>
-            )}
-          </div>
         </div>
       </div>
 
       {/* Row 2: Dates */}
-      <div className="row2" style={{ marginBottom: 14 }}>
+      <div className="row2 mb-14">
         <div>
           <label className="cm-label">{t('editor.info.startDate.label')}</label>
           <input
@@ -165,7 +128,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
         <div>
           <label className="cm-label">
             {t('editor.info.endDate.label')}{' '}
-            <span style={{ color: 'var(--slate-lavender)', fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 10 }}>
+            <span className="cm-label-hint">
               {t('editor.info.endDate.hint')}
             </span>
           </label>
@@ -185,7 +148,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
       </div>
 
       {/* Catégorie */}
-      <div style={{ marginBottom: 14 }}>
+      <div className="mb-14">
         <label className="cm-label">{t('editor.info.category.label')}</label>
         <select className="cm-fi" value={category} onChange={(e) => handleCategoryChange(e.target.value)}>
           <option value="">—</option>
@@ -197,49 +160,46 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
       </div>
 
       {/* Description */}
-      <div style={{ marginBottom: 14 }}>
+      <div className="mb-14">
         <label className="cm-label">{t('editor.info.description.label')}</label>
         <textarea
-          className="cm-fi"
+          className="cm-fi cm-fi-h90"
           value={description}
           onChange={(e) => handleDescriptionChange(e.target.value)}
           placeholder={t('editor.info.description.placeholder')}
-          style={{ minHeight: 90 }}
         />
       </div>
 
       {/* Raison */}
-      <div style={{ marginBottom: 14 }}>
+      <div className="mb-14">
         <label className="cm-label">
           {t('editor.info.reason.label')}{' '}
           <span className="tip" data-tip={t('editor.info.reason.tip')}>?</span>
         </label>
         <textarea
-          className="cm-fi"
+          className="cm-fi cm-fi-h70"
           value={reason}
           onChange={(e) => handleReasonChange(e.target.value)}
           placeholder={t('editor.info.reason.placeholder')}
-          style={{ minHeight: 70 }}
         />
       </div>
 
       {/* Objectifs d'impact */}
-      <div style={{ marginTop: 14 }}>
+      <div className="mt-14">
         <label className="cm-label">
           {t('editor.info.impactGoals.label')}{' '}
           <span className="tip" data-tip={t('editor.info.impactGoals.tip')}>?</span>
         </label>
         <textarea
-          className="cm-fi"
+          className="cm-fi cm-fi-h90"
           value={impactGoals}
           onChange={(e) => handleImpactGoalsChange(e.target.value)}
           placeholder={t('editor.info.impactGoals.placeholder')}
-          style={{ minHeight: 90 }}
         />
       </div>
 
       {/* Image de couverture */}
-      <div style={{ marginTop: 14 }}>
+      <div className="mt-14">
         <label className="cm-label">{t('editor.info.coverImage.label')}</label>
         <div className="upload">
           <div className="upload-icon">🖼️</div>
@@ -249,7 +209,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
       </div>
 
       {/* Enregistrer */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+      <div className="form-save-row">
         <button
           type="button"
           onClick={handleSave}

@@ -46,7 +46,7 @@ function StatusChip({ status }: { status: PayoutDto['status'] }) {
     return <span className="pay-chip confirmed">✓</span>;
   }
   if (status === PayoutStatus.FAILED) {
-    return <span className="pay-chip" style={{ background: 'rgba(255,107,91,.12)', color: 'var(--warm-coral)' }}>✗</span>;
+    return <span className="pay-chip failed">✗</span>;
   }
   return <span className="pay-chip pending">⏳</span>;
 }
@@ -173,14 +173,14 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         <div className="cm-stat">
           <div className="cm-stat-icon">💰</div>
           <div className="cm-stat-lbl">{t('stats.availableBalance')}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
+          <div className="cm-stat-val val-dark">
             {summary ? fmtEur(summary.availableBalance) : '—'}
           </div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">📤</div>
           <div className="cm-stat-lbl">{t('stats.paid')}</div>
-          <div className="cm-stat-val" style={{ color: '#b37800' }}>
+          <div className="cm-stat-val val-amber-color">
             {summary ? fmtEur(summary.confirmedAmount) : '—'}
           </div>
           {summary && (
@@ -192,21 +192,21 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         <div className="cm-stat">
           <div className="cm-stat-icon">⏳</div>
           <div className="cm-stat-lbl">{t('stats.pending')}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--bright-teal)' }}>
+          <div className="cm-stat-val val-teal">
             {summary ? fmtEur(summary.pendingAmount) : '—'}
           </div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">⚡</div>
           <div className="cm-stat-lbl">{t('stats.transactions')}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--bright-teal)' }}>
+          <div className="cm-stat-val val-teal">
             {summary?.txTotal ?? '—'}
           </div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">💚</div>
           <div className="cm-stat-lbl">{t('stats.confirmed')}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
+          <div className="cm-stat-val val-dark">
             {summary?.txConfirmed ?? '—'}
           </div>
         </div>
@@ -220,10 +220,10 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           <div className="cm-card-title">💸 {t('form.title')}</div>
 
           {/* Type + Amount row2 — FIRST */}
-          <div className="row2" style={{ marginBottom: '14px' }}>
+          <div className="row2 mb-14">
             <div>
               <label className="cm-label">
-                {t('form.typeCode')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+                {t('form.typeCode')} <span className="cm-required">*</span>
               </label>
               <select
                 className="cm-fi"
@@ -250,19 +250,18 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
               </select>
               {isCustomType && (
                 <input
-                  className="cm-fi"
+                  className="cm-fi mt-6"
                   type="text"
                   maxLength={50}
                   placeholder={t('form.customCodePlaceholder')}
                   value={customTypeCode}
                   onChange={(e) => setCustomTypeCode(e.target.value)}
-                  style={{ marginTop: '6px' }}
                 />
               )}
             </div>
             <div>
               <label className="cm-label">
-                {t('form.amount')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+                {t('form.amount')} <span className="cm-required">*</span>
               </label>
               <input
                 className="cm-fi"
@@ -277,14 +276,13 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           </div>
 
           {/* Payee select + Add button — BELOW type/amount */}
-          <div style={{ marginBottom: '14px' }}>
+          <div className="mb-14">
             <label className="cm-label">
-              {t('form.payee')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+              {t('form.payee')} <span className="cm-required">*</span>
             </label>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="form-inline-row">
               <select
-                className="cm-fi"
-                style={{ flex: 1 }}
+                className="cm-fi flex-1"
                 value={payeeId}
                 onChange={(e) => handlePayeeChange(e.target.value)}
               >
@@ -304,26 +302,26 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
 
             {/* No IBAN at all */}
             {selectedPayee && selectedPayee.ibans.length === 0 && (
-              <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '6px' }}>{t('noIban')}</p>
+              <p className="cm-field-error">{t('noIban')}</p>
             )}
 
             {/* Has IBAN(s) but none VERIFIED */}
             {selectedPayee && selectedPayee.ibans.length > 0 && verifiedIbans.length === 0 && (
-              <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '6px' }}>{t('noVerifiedIban')}</p>
+              <p className="cm-field-error">{t('noVerifiedIban')}</p>
             )}
 
             {/* Single verified IBAN preview */}
             {selectedPayee && verifiedIbans.length === 1 && selectedIban && (
-              <div className="bene-preview" style={{ display: 'block' }}>
-                <div style={{ fontWeight: 600 }}>{selectedPayee.name}</div>
-                <div style={{ color: 'var(--slate-lavender)', marginTop: '2px' }}>{selectedIban.iban}</div>
+              <div className="bene-preview show">
+                <div className="bene-preview-name">{selectedPayee.name}</div>
+                <div className="bene-preview-iban">{selectedIban.iban}</div>
               </div>
             )}
 
             {/* Multi verified-IBAN select */}
             {selectedPayee && verifiedIbans.length > 1 && (
-              <div style={{ marginTop: '6px' }}>
-                <label className="cm-label" style={{ fontSize: '11px' }}>{t('ibanSelect')}</label>
+              <div className="mt-6">
+                <label className="cm-label cm-label-sm">{t('ibanSelect')}</label>
                 <select
                   className="cm-fi"
                   value={payeeIbanId}
@@ -335,9 +333,9 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                   ))}
                 </select>
                 {selectedIban && (
-                  <div className="bene-preview" style={{ display: 'block' }}>
-                    <div style={{ fontWeight: 600 }}>{selectedPayee.name}</div>
-                    <div style={{ color: 'var(--slate-lavender)', marginTop: '2px' }}>{selectedIban.iban}</div>
+                  <div className="bene-preview show">
+                    <div className="bene-preview-name">{selectedPayee.name}</div>
+                    <div className="bene-preview-iban">{selectedIban.iban}</div>
                   </div>
                 )}
               </div>
@@ -345,42 +343,33 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           </div>
 
           {/* Label / justificatif */}
-          <div style={{ marginBottom: '14px' }}>
+          <div className="mb-14">
             <label className="cm-label">
-              {t('form.label')} <span style={{ color: 'var(--warm-coral)' }}>*</span>
+              {t('form.label')} <span className="cm-required">*</span>
             </label>
             <textarea
-              className="cm-fi"
+              className="cm-fi cm-fi-h70"
               placeholder={t('form.labelPlaceholder')}
               maxLength={500}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              style={{ minHeight: '70px' }}
             />
           </div>
 
           {/* Payment method (SEPA only) */}
-          <div style={{ marginBottom: '18px' }}>
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: '9px',
-              padding: '10px 12px',
-              background: 'rgba(78,205,196,.05)',
-              border: '1px solid rgba(78,205,196,.25)',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer', fontSize: '12.5px',
-            }}>
+          <div className="mb-18">
+            <label className="pay-method-label">
               <input type="radio" name="pay-method" defaultChecked
-                style={{ accentColor: 'var(--bright-teal)' }} readOnly />
+                className="cm-accent-teal" readOnly />
               <div>
-                <div style={{ fontWeight: 600 }}>{t('form.method')}</div>
-                <div style={{ fontSize: '11px', color: 'var(--slate-lavender)' }}>{t('form.methodSub')}</div>
+                <div className="pay-method-title">{t('form.method')}</div>
+                <div className="cm-hint-sm">{t('form.methodSub')}</div>
               </div>
             </label>
           </div>
 
           <button
-            className="cm-btn cm-btn-primary"
-            style={{ width: '100%' }}
+            className="cm-btn cm-btn-primary w-full"
             disabled={!isValid || isSaving}
             onClick={() => setShowConfirm(true)}
           >
@@ -388,7 +377,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           </button>
 
           {displayedBlockingReasons.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+            <div className="blocking-reasons">
               {displayedBlockingReasons.map((reason) => (
                 <span key={reason} className="badge badge-warning">
                   {t(`blocking.${BLOCKING_REASON_LABEL_KEYS[reason]}`)}
@@ -401,29 +390,29 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         {/* ── RIGHT: history + donut ───────────────────────────────── */}
         <div>
           {/* History */}
-          <div className="cm-card" style={{ marginBottom: '14px' }}>
+          <div className="cm-card mb-14">
             <div className="cm-card-title">{t('history.title')}</div>
             {isLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
-                <div className="animate-spin" style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid rgba(78,205,196,.3)', borderTopColor: 'var(--bright-teal)' }} />
+              <div className="cm-loading-center">
+                <div className="animate-spin rm-spinner lg" />
               </div>
             ) : error ? (
-              <p style={{ fontSize: '13px', color: 'var(--warm-coral)', textAlign: 'center', padding: '16px 0' }}>{error}</p>
+              <p className="cm-error-center">{error}</p>
             ) : payouts.length === 0 ? (
-              <p style={{ fontSize: '13px', color: 'var(--slate-lavender)', textAlign: 'center', padding: '20px 0' }}>{t('history.empty')}</p>
+              <p className="cm-empty-center">{t('history.empty')}</p>
             ) : (
               payouts.map((p) => (
                 <div key={p.id} className="pay-row">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.payeeName}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--slate-lavender)' }}>
+                  <div className="pay-row-main">
+                    <div className="pay-row-name">{p.payeeName}</div>
+                    <div className="cm-hint-sm">
                       {p.typeCode} · {fmtDate(p.createdAt)}
                     </div>
                   </div>
-                  <span style={{
-                    fontWeight: 700, fontFamily: "'Syne', sans-serif",
-                    color: p.status === PayoutStatus.CONFIRMED ? 'var(--teal-dark)' : '#b37800',
-                  }}>
+                  <span
+                    className="pay-row-amount"
+                    style={{ color: p.status === PayoutStatus.CONFIRMED ? 'var(--teal-dark)' : '#b37800' }}
+                  >
                     {fmtEur(p.amount)}
                   </span>
                   <StatusChip status={p.status} />
@@ -436,7 +425,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           {donutSlices.length > 0 && (
             <div className="cm-card">
               <div className="cm-card-title">{t('breakdown.title')}</div>
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+              <div className="cm-donut-center">
                 <Donut slices={donutSlices} emptyKey="campaigns.payments.breakdown.empty" />
               </div>
             </div>

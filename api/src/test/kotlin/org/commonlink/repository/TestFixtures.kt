@@ -12,6 +12,7 @@ import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.MagicLinkToken
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.Payee
+import org.commonlink.entity.VerificationStatus
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
@@ -96,7 +97,7 @@ object TestFixtures {
         postalCode: String? = "75001",
         contactName: String? = "Jean Martin",
         description: String? = "Aide alimentaire et insertion sociale.",
-        verified: Boolean = false,
+        verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED,
     ) = AssociationProfile(
         user = user,
         name = name,
@@ -105,7 +106,7 @@ object TestFixtures {
         postalCode = postalCode,
         contactName = contactName,
         description = description,
-        verified = verified,
+        verificationStatus = verificationStatus,
     )
 
     // ── Tokens ───────────────────────────────────────────────────────────────

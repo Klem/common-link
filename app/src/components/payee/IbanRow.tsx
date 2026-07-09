@@ -94,8 +94,7 @@ export function IbanRow({
           value={iban.iban}
           onChange={() => {}}
           placeholder={t('payees.iban.placeholder')}
-          className="cm-fi"
-          style={{ flex: 1, fontFamily: 'monospace', fontSize: 13, cursor: 'default' }}
+          className="cm-fi-mono cm-fi-readonly"
         />
 
         {/* Copy button */}

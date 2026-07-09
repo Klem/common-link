@@ -27,7 +27,7 @@ export default function AssociationDashboardPage() {
   const { stats, isLoading, error } = useAssociationDashboard();
   const setAccStatus = useAccStatusStore((s) => s.setAccStatus);
 
-  const verified = profile?.verified ?? false;
+  const verified = profile?.verificationStatus === 'VERIFIED';
   const bankConnected = connected === true;
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function AssociationDashboardPage() {
       </div>
 
       {error && (
-        <div className="alert alert-error" style={{ marginBottom: '24px' }}>
+        <div className="alert alert-error alert-spaced">
           {t('error')}
         </div>
       )}

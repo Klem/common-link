@@ -207,6 +207,11 @@
     "publishCampaignSuccess": "🚀 Campagne publiée !",
     "save": "Enregistrer",
     "setPasswordUpdated": "Mot de passe défini avec succès.",
+    "verificationDocDeleted": "Document retiré.",
+    "verificationDocUploaded": "Document téléversé.",
+    "verificationOptDocDeleted": "Document supprimé.",
+    "verificationOptDocUploaded": "Document ajouté.",
+    "verificationSubmitted": "📨 Dossier envoyé. Votre association sera notifiée par email.",
     "vopVerified": "Vérification VOP terminée."
   },
   "dashboard": {
@@ -268,19 +273,115 @@
       "profile": {
         "cancel": "Annuler",
         "city": "Ville",
+        "contactEmail": "Email de contact",
         "contactName": "Nom du contact",
         "contactNamePlaceholder": "Votre nom complet",
+        "creationYear": "Année de création",
         "description": "Description",
         "descriptionPlaceholder": "Décrivez la mission de votre association",
         "errors": {
+          "contactEmailFormat": "Veuillez saisir une adresse email valide.",
           "contactNameMin": "Le nom doit contenir au moins 2 caractères.",
-          "postalCodeFormat": "Le code postal doit contenir 5 chiffres."
+          "creationYearMax": "L'année ne peut pas être dans le futur.",
+          "creationYearMin": "L'année doit être 1800 ou ultérieure.",
+          "phoneFormat": "Veuillez saisir un numéro de téléphone valide (6–20 caractères).",
+          "postalCodeFormat": "Le code postal doit contenir 5 chiffres.",
+          "rnaFormat": "Le N° RNA doit être au format W suivi de 9 chiffres (ex. W123456789)."
         },
         "identifier": "SIREN",
         "infos": {
           "title": "Informations de l'association"
         },
         "loading": "Chargement du profil…",
+        "mandate": {
+          "blocked": {
+            "cta": "→ Aller à la vérification",
+            "message": "Votre association doit d'abord être vérifiée avant de pouvoir signer le mandat d'émission des reçus fiscaux."
+          },
+          "docs": {
+            "delete": "Supprimer",
+            "replace": "Remplacer",
+            "rescrit": {
+              "desc": "Obligatoire · Document attestant l'éligibilité de l'organisme",
+              "label": "Rescrit fiscal (ou attestation sur l'honneur)"
+            },
+            "statuts": {
+              "desc": "Obligatoire · PDF ou image",
+              "label": "Statuts de l'association"
+            },
+            "upload": "Téléverser"
+          },
+          "eligibility": {
+            "oig66": {
+              "desc": "Réduction d'impôt de 66% pour le donateur · Art. 200 CGI",
+              "label": "Organisme d'intérêt général"
+            },
+            "oig75": {
+              "desc": "Réduction d'impôt de 75% (loi Coluche) · Art. 200 1 ter CGI",
+              "label": "Organisme d'aide aux personnes en difficulté"
+            },
+            "public66": {
+              "desc": "Décret en Conseil d'État · Réduction 66%",
+              "label": "Reconnu d'utilité publique"
+            }
+          },
+          "legalText": {
+            "object": {
+              "body": "Par la signature électronique ci-dessous, l'association mandate CommonLink (SAS, RCS Bordeaux) pour émettre, en son nom et pour son compte, les reçus fiscaux relatifs aux dons reçus via la plateforme.",
+              "title": "Objet du mandat."
+            },
+            "responsibility": {
+              "body": "L'association demeure seule juridiquement responsable de la délivrance des reçus et du respect de son obligation déclarative annuelle prévue à l'article 222 bis du CGI.",
+              "title": "Responsabilité."
+            },
+            "retention": {
+              "body": "Le présent mandat et les pièces justificatives sont conservés sur les serveurs CommonLink pendant 6 ans minimum, conformément aux obligations fiscales.",
+              "title": "Conservation."
+            },
+            "revocation": {
+              "body": "Le mandat peut être révoqué à tout moment depuis cet onglet. La révocation prend effet immédiatement ; les reçus déjà émis demeurent valides.",
+              "title": "Révocation."
+            }
+          },
+          "pedagogic": {
+            "sub": "CommonLink émet les reçus fiscaux au nom et pour le compte de votre association. Vous restez juridiquement responsable de la délivrance et de l'obligation déclarative annuelle (article 222 bis CGI).",
+            "title": "🧾 Mandat d'émission des reçus fiscaux"
+          },
+          "revokeModal": {
+            "body": "Révoquer le mandat ? Les reçus déjà émis restent valides, mais aucun nouveau reçu ne sera émis tant que le mandat n'est pas re-signé.",
+            "cancel": "Annuler",
+            "confirm": "Confirmer la révocation",
+            "title": "Révoquer le mandat ?"
+          },
+          "signed": {
+            "detailsTitle": "Détails du mandat",
+            "downloadPdf": "Télécharger le mandat (PDF)",
+            "eligibility": "Statut d'éligibilité déclaré",
+            "reference": "Référence du mandat",
+            "retention": "Conservation des pièces",
+            "retentionValue": "6 ans (obligation fiscale)",
+            "revokeBtn": "Révoquer le mandat",
+            "signedAt": "Signé le",
+            "sub": "Les reçus fiscaux sont émis automatiquement pour chaque don éligible reçu via CommonLink.",
+            "title": "Mandat actif"
+          },
+          "step1": {
+            "declared": "Déclaré",
+            "intro": "Seuls les organismes d'intérêt général (OIG) ou d'utilité publique peuvent faire émettre des reçus fiscaux ouvrant droit à réduction d'impôt.",
+            "title": "1. Statut d'éligibilité",
+            "toDeclare": "À déclarer"
+          },
+          "step2": {
+            "provided": "fournies",
+            "title": "2. Pièces justificatives"
+          },
+          "step3": {
+            "acceptLabel": "J'atteste sur l'honneur de l'exactitude des informations fournies et accepte les termes du mandat ci-dessus.",
+            "signBtn": "Signer le mandat",
+            "timestampNote": "Signature électronique horodatée",
+            "title": "3. Signature du mandat"
+          }
+        },
         "memberSince": "Membre depuis {date}",
         "monerium": {
           "badge": "Expérimental",
@@ -298,7 +399,9 @@
         },
         "name": "Nom de l'association",
         "pending": "En attente de vérification",
+        "phone": "Téléphone",
         "postalCode": "Code postal",
+        "rna": "N° RNA",
         "save": "Enregistrer",
         "security": {
           "changePassword": "Définir un mot de passe",
@@ -317,9 +420,17 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
+          "mandate": "🧾 Mandat fiscal",
+          "mandateBadge": {
+            "active": "✓ Actif",
+            "notSigned": "Non signé",
+            "readyToSign": "Prêt à signer"
+          },
           "verif": "Vérification",
           "verifBadge": {
             "ok": "Vérifiée",
+            "pending": "En cours",
+            "rejected": "Rejetée",
             "todo": "À faire"
           }
         },
@@ -486,9 +597,8 @@
           "goal": {
             "label": "Objectif de collecte (€)",
             "placeholder": "0",
-            "tip": "Vous pouvez saisir un montant libre, ou le lier automatiquement au total des charges de votre budget prévisionnel."
+            "tip": "Saisissez le montant total que vous souhaitez collecter pour cette campagne."
           },
-          "goalLink": "🔗 Lier au total des charges du budget",
           "impactGoals": {
             "label": "Objectifs d'impact",
             "placeholder": "Ex : permettre à 450 élèves d'étudier dans de bonnes conditions, réduire le taux d'absentéisme de 30%…",
@@ -539,6 +649,8 @@
           "proofLabel": "Engagement de transparence",
           "proofPlaceholder": "Ex : publication de photos + rapport d'impact à J+30",
           "reached": "Atteinte",
+          "sortAsc": "Trier ↑ (palier croissant)",
+          "sortDesc": "Trier ↓ (palier décroissant)",
           "subtitle": "Chaque milestone est un palier de collecte avec un impact concret mesurable.",
           "targetLabel": "Objectif €",
           "title": "Milestones de la campagne",
@@ -911,6 +1023,79 @@
       "title": "Sécurisez votre compte"
     },
     "title": "Tableau de bord",
+    "verification": {
+      "banner": {
+        "incomplete": {
+          "eta": "Tous les documents requis doivent être téléversés.",
+          "sub": "Téléversez vos justificatifs et lancez la vérification pour publier publiquement vos campagnes.",
+          "title": "📋 Vérification de votre association"
+        },
+        "pending": {
+          "btn": "Vérification en cours…",
+          "eta": "Délai de traitement : 24–48h ouvrées",
+          "sub": "Nos équipes examinent votre dossier. Vous serez notifié par email dès validation.",
+          "title": "⏳ Vérification en cours"
+        },
+        "ready": {
+          "eta": "Délai de traitement : 24–48h ouvrées",
+          "sub": "Tous les documents requis sont téléversés. Lancez la vérification quand vous êtes prêt.",
+          "title": "📋 Prêt pour la vérification"
+        },
+        "readyToResubmit": "Tous les documents sont prêts. Vous pouvez resoumettre votre dossier.",
+        "rejected": {
+          "defaultReason": "Aucun motif précisé.",
+          "title": "⚠️ Vérification rejetée"
+        },
+        "verified": {
+          "sub": "Votre association est validée. Vous pouvez publier publiquement vos campagnes et connecter votre compte bancaire.",
+          "title": "✓ Association vérifiée"
+        }
+      },
+      "docs": {
+        "idrep": {
+          "desc": "CNI ou passeport en cours de validité",
+          "label": "Pièce d'identité du représentant légal"
+        },
+        "rna": {
+          "desc": "Preuve de déclaration de l'association",
+          "label": "Récépissé RNA / Insertion JO"
+        },
+        "statuts": {
+          "desc": "Document signé déposé en préfecture",
+          "label": "Statuts de l'association"
+        }
+      },
+      "optDocs": {
+        "add": "Ajouter un document",
+        "cancel": "Annuler",
+        "categories": {
+          "financial": "💶 Financier",
+          "other": "📂 Autre",
+          "report": "📊 Rapport d'activité",
+          "supportingDoc": "🧾 Justificatif"
+        },
+        "delete": "Supprimer",
+        "empty": "Aucun document complémentaire. Ajoutez vos rapports d'activité, bilans comptables, etc. pour renforcer la confiance des donateurs.",
+        "optional": "facultatifs",
+        "title": "Documents complémentaires",
+        "upload": "Téléverser"
+      },
+      "requiredDocs": {
+        "delete": "Supprimer",
+        "download": "Télécharger",
+        "locked": "Verrouillé",
+        "replace": "Remplacer",
+        "required": "Requis",
+        "title": "Documents requis",
+        "upload": "Téléverser",
+        "uploaded": "Téléversé"
+      },
+      "submit": "✓ Lancer la vérification"
+    },
     "welcome": "Bienvenue"
-  }
+  },
+  "mandateDocDeleted": "Document supprimé.",
+  "mandateDocUploaded": "Document téléversé.",
+  "mandateRevoked": "Mandat révoqué.",
+  "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement."
 }

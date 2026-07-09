@@ -55,17 +55,17 @@ export function CampaignReportingTab({ campaign }: Props) {
     <div className="flex flex-col gap-[24px]">
       {/* KPI stats */}
       <div className="cm-stats">
-        <div className="cm-stat" style={{ borderColor: 'rgba(255,107,91,.2)' }}>
+        <div className="cm-stat stat-coral">
           <div className="cm-stat-icon">📉</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsChargesPlanned' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--warm-coral)' }}>
+          <div className="cm-stat-val val-coral">
             {fmt.format(totals.totalPlannedCharges)}
           </div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">📉</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsChargesActual' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--warm-coral)' }}>
+          <div className="cm-stat-val val-coral">
             {fmt.format(totals.totalActualCharges)}
           </div>
           <div
@@ -75,17 +75,17 @@ export function CampaignReportingTab({ campaign }: Props) {
             {ecartCharges >= 0 ? '+' : ''}{fmt.format(ecartCharges)}
           </div>
         </div>
-        <div className="cm-stat" style={{ borderColor: 'rgba(78,205,196,.2)' }}>
+        <div className="cm-stat stat-teal">
           <div className="cm-stat-icon">📈</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsProduitsPlanned' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
+          <div className="cm-stat-val val-dark">
             {fmt.format(totals.totalPlannedProduits)}
           </div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">📈</div>
           <div className="cm-stat-lbl">{t('reporting.tab.statsProduitsActual' as Parameters<typeof t>[0])}</div>
-          <div className="cm-stat-val" style={{ color: 'var(--teal-dark)' }}>
+          <div className="cm-stat-val val-dark">
             {fmt.format(totals.totalActualProduits)}
           </div>
           <div
@@ -100,9 +100,9 @@ export function CampaignReportingTab({ campaign }: Props) {
       {/* Variance tables */}
       <div className="row2">
         <div className="cm-card">
-          <div className="cm-card-title" style={{ justifyContent: 'space-between' }}>
+          <div className="cm-card-title cm-card-title-split">
             <span>{t('reporting.tab.chargesTitle' as Parameters<typeof t>[0])}</span>
-            <span style={{ fontSize: '10px', color: 'var(--slate-lavender)', fontWeight: 400, textTransform: 'none' }}>
+            <span className="cm-card-legend">
               {t('reporting.tab.colPlanned' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colActual' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colVariance' as Parameters<typeof t>[0])}
@@ -111,9 +111,9 @@ export function CampaignReportingTab({ campaign }: Props) {
           <VarianceTable sections={charges} isCharges={true} />
         </div>
         <div className="cm-card">
-          <div className="cm-card-title" style={{ justifyContent: 'space-between' }}>
+          <div className="cm-card-title cm-card-title-split">
             <span>{t('reporting.tab.produitsTitle' as Parameters<typeof t>[0])}</span>
-            <span style={{ fontSize: '10px', color: 'var(--slate-lavender)', fontWeight: 400, textTransform: 'none' }}>
+            <span className="cm-card-legend">
               {t('reporting.tab.colPlanned' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colActual' as Parameters<typeof t>[0])} ·{' '}
               {t('reporting.tab.colVariance' as Parameters<typeof t>[0])}

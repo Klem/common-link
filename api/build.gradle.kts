@@ -56,6 +56,9 @@ dependencies {
     // SpringDoc OpenAPI (3.x required for Spring Boot 4 / Spring Framework 7)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
 
+    // PDF generation (LGPL/MPL — not iText AGPL)
+    implementation("com.github.librepdf:openpdf:1.3.35")
+
     // JWT (jjwt 0.12.x)
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")

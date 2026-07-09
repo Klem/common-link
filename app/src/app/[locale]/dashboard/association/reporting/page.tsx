@@ -26,13 +26,12 @@ export default function ReportingPage() {
         </div>
         <div className="card no-hover">
           <div className="card-b">
-            <p style={{ color: 'var(--slate-lavender)' }}>
+            <p className="reporting-hint">
               {t('reporting.page.selectCampaign')}
             </p>
             <button
               type="button"
-              className="btn btn-primary"
-              style={{ marginTop: '16px' }}
+              className="btn btn-primary reporting-cta"
               onClick={() => router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}`)}
             >
               {t('reporting.page.openCampaign')}

@@ -26,4 +26,9 @@ class EmailServiceStub : EmailService {
     override fun sendMagicLink(email: String, link: String) {
         logger.info("Magic link for $email: $link")
     }
+
+    /** Logs the verification submission notification instead of sending an email. */
+    override fun sendVerificationSubmittedToAdmin(associationName: String) {
+        logger.info("Verification dossier submitted by association: $associationName")
+    }
 }

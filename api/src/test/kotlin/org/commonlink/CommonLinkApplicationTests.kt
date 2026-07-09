@@ -9,10 +9,13 @@ import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
+import org.commonlink.service.VerificationService
 import org.commonlink.service.PayeeService
 import org.commonlink.service.CampaignService
 import org.commonlink.service.DonorAggregateService
 import org.commonlink.service.DonorService
+import org.commonlink.service.MandatePdfService
+import org.commonlink.service.MandateService
 import org.commonlink.service.MoneriumService
 import org.commonlink.service.OnchainOutboxService
 import org.commonlink.service.PayoutService
@@ -51,6 +54,9 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var donorAggregateService: DonorAggregateService
     @MockkBean private lateinit var payoutService: PayoutService
     @MockkBean private lateinit var reportingService: ReportingService
+    @MockkBean private lateinit var verificationService: VerificationService
+    @MockkBean private lateinit var mandateService: MandateService
+    @MockkBean private lateinit var mandatePdfService: MandatePdfService
 
     @Test
     fun contextLoads() {

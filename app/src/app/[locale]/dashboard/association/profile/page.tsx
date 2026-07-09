@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,22 +13,39 @@ import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
+import { VerificationTab } from '@/components/settings/VerificationTab';
+import { MandateTab } from '@/components/settings/MandateTab';
+import { useMandate } from '@/hooks/dashboard/useMandate';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 const profileSchema = z.object({
-  contactName: z.string().min(2, 'dashboard.association.profile.errors.contactNameMin'),
-  city: z.string().optional(),
-  postalCode: z
+  rna: z
     .string()
     .optional()
-    .refine((v) => !v || /^\d{5}$/.test(v), 'dashboard.association.profile.errors.postalCodeFormat'),
-  description: z.string().optional(),
+    .refine((v) => !v || /^W\d{9}$/.test(v), 'dashboard.association.profile.errors.rnaFormat'),
+  creationYear: z
+    .number()
+    .int()
+    .min(1800, 'dashboard.association.profile.errors.creationYearMin')
+    .max(CURRENT_YEAR, 'dashboard.association.profile.errors.creationYearMax')
+    .optional()
+    .or(z.nan().transform(() => undefined)),
+  contactEmail: z
+    .string()
+    .optional()
+    .refine((v) => !v || z.string().email().safeParse(v).success, 'dashboard.association.profile.errors.contactEmailFormat'),
+  phone: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^[0-9 +().\-]{6,20}$/.test(v), 'dashboard.association.profile.errors.phoneFormat'),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-type SettingsTab = 'infos' | 'verif' | 'bank';
+type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate';
 
 const PROVIDER_KEYS = {
   GOOGLE: 'association.profile.security.google',
@@ -41,12 +59,23 @@ export default function AssociationProfilePage() {
   const t = useTranslations('dashboard');
   const user = useAuthStore((s) => s.user);
   const { profile, isLoading, updateProfile } = useAssociationProfile();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
+  const [verifStatus, setVerifStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos') {
+      setActiveTab(tab as SettingsTab);
+    }
+  }, [searchParams]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMoneriumModal, setShowMoneriumModal] = useState(false);
   const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
   const { connected, pending, isLoading: moneriumLoading, refresh: refreshMonerium } =
     useMoneriumStatus();
+  const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
+    useMandate();
 
   const handlePopupClosed = useCallback(async () => {
     setMoneriumInterrupted(true);
@@ -63,19 +92,19 @@ export default function AssociationProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     values: {
-      contactName: profile?.contactName ?? '',
-      city: profile?.city ?? '',
-      postalCode: profile?.postalCode ?? '',
-      description: profile?.description ?? '',
+      rna: profile?.rna ?? '',
+      creationYear: profile?.creationYear ?? undefined,
+      contactEmail: profile?.contactEmail ?? '',
+      phone: profile?.phone ?? '',
     },
   });
 
   const onSubmit = handleSubmit(async (data) => {
     await updateProfile({
-      contactName: data.contactName || undefined,
-      city: data.city || undefined,
-      postalCode: data.postalCode || undefined,
-      description: data.description || undefined,
+      rna: data.rna || undefined,
+      creationYear: data.creationYear,
+      contactEmail: data.contactEmail || undefined,
+      phone: data.phone || undefined,
     });
     reset(data);
   });
@@ -112,9 +141,16 @@ export default function AssociationProfilePage() {
           onClick={() => setActiveTab('verif')}
         >
           ✓ {t('association.profile.tabs.verif')}{' '}
-          <span className={`set-tab-badge${profile?.verified ? ' ok' : ''}`}>
-            {profile?.verified
+          <span className={`set-tab-badge${
+            (verifStatus ?? profile?.verificationStatus) === 'VERIFIED' ? ' ok' :
+            (verifStatus ?? profile?.verificationStatus) === 'PENDING' ? ' pending' : ''
+          }`}>
+            {(verifStatus ?? profile?.verificationStatus) === 'VERIFIED'
               ? t('association.profile.tabs.verifBadge.ok')
+              : (verifStatus ?? profile?.verificationStatus) === 'PENDING'
+              ? t('association.profile.tabs.verifBadge.pending')
+              : (verifStatus ?? profile?.verificationStatus) === 'REJECTED'
+              ? t('association.profile.tabs.verifBadge.rejected')
               : t('association.profile.tabs.verifBadge.todo')}
           </span>
         </button>
@@ -129,6 +165,27 @@ export default function AssociationProfilePage() {
               : t('association.profile.tabs.bankBadge.notConnected')}
           </span>
         </button>
+        <button
+          className={`set-tab${activeTab === 'mandate' ? ' active' : ''}`}
+          onClick={() => setActiveTab('mandate')}
+        >
+          🧾 {t('association.profile.tabs.mandate')}{' '}
+          <span
+            className={`set-tab-badge${
+              mandateState?.signed
+                ? ' ok'
+                : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
+                ? ' pending'
+                : ''
+            }`}
+          >
+            {mandateState?.signed
+              ? t('association.profile.tabs.mandateBadge.active')
+              : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
+              ? t('association.profile.tabs.mandateBadge.readyToSign')
+              : t('association.profile.tabs.mandateBadge.notSigned')}
+          </span>
+        </button>
       </div>
 
       {/* ══ Onglet : Informations ═════════════════════════════════════════ */}
@@ -140,85 +197,91 @@ export default function AssociationProfilePage() {
             </div>
             <div className="card-b">
               {isLoading ? (
-                <p style={{ fontSize: '14px', color: 'var(--slate-lavender)' }}>
+                <p className="profile-loading">
                   {t('association.profile.loading')}
                 </p>
               ) : (
                 <form onSubmit={onSubmit} noValidate>
-                  {/* Ligne 1 : Nom association + SIREN */}
+                  {/* Ligne 1 : Nom (read-only) | N° RNA */}
                   <div className="frow">
                     <div className="fg">
                       <label className="fl">{t('association.profile.name')}</label>
                       <input className="fi" type="text" value={profile?.name ?? ''} disabled />
                     </div>
                     <div className="fg">
+                      <label htmlFor="rna" className="fl">
+                        {t('association.profile.rna')}
+                      </label>
+                      <input
+                        id="rna"
+                        type="text"
+                        className="fi"
+                        placeholder="W123456789"
+                        {...register('rna')}
+                      />
+                      {errors.rna && (
+                        <p className="fhint error">{t(errors.rna.message as Parameters<typeof t>[0])}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ligne 2 : SIRET (read-only) | Année de création */}
+                  <div className="frow">
+                    <div className="fg">
                       <label className="fl">{t('association.profile.identifier')}</label>
                       <input className="fi" type="text" value={profile?.identifier ?? ''} disabled />
                     </div>
-                  </div>
-
-                  {/* Ligne 2 : Nom du contact + Ville */}
-                  <div className="frow">
                     <div className="fg">
-                      <label htmlFor="contactName" className="fl">
-                        {t('association.profile.contactName')}
+                      <label htmlFor="creationYear" className="fl">
+                        {t('association.profile.creationYear')}
                       </label>
                       <input
-                        id="contactName"
-                        type="text"
+                        id="creationYear"
+                        type="number"
                         className="fi"
-                        placeholder={t('association.profile.contactNamePlaceholder')}
-                        {...register('contactName')}
+                        min={1800}
+                        max={CURRENT_YEAR}
+                        {...register('creationYear', { valueAsNumber: true })}
                       />
-                      {errors.contactName && (
-                        <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '4px' }}>
-                          {errors.contactName.message}
-                        </p>
+                      {errors.creationYear && (
+                        <p className="fhint error">{t(errors.creationYear.message as Parameters<typeof t>[0])}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ligne 3 : Email de contact | Téléphone */}
+                  <div className="frow">
+                    <div className="fg">
+                      <label htmlFor="contactEmail" className="fl">
+                        {t('association.profile.contactEmail')}
+                      </label>
+                      <input
+                        id="contactEmail"
+                        type="email"
+                        className="fi"
+                        {...register('contactEmail')}
+                      />
+                      {errors.contactEmail && (
+                        <p className="fhint error">{t(errors.contactEmail.message as Parameters<typeof t>[0])}</p>
                       )}
                     </div>
                     <div className="fg">
-                      <label htmlFor="city" className="fl">
-                        {t('association.profile.city')}
-                      </label>
-                      <input id="city" type="text" className="fi" {...register('city')} />
-                    </div>
-                  </div>
-
-                  {/* Ligne 3 : Code postal */}
-                  <div className="frow">
-                    <div className="fg">
-                      <label htmlFor="postalCode" className="fl">
-                        {t('association.profile.postalCode')}
+                      <label htmlFor="phone" className="fl">
+                        {t('association.profile.phone')}
                       </label>
                       <input
-                        id="postalCode"
-                        type="text"
+                        id="phone"
+                        type="tel"
                         className="fi"
-                        {...register('postalCode')}
+                        {...register('phone')}
                       />
-                      {errors.postalCode && (
-                        <p style={{ fontSize: '12px', color: 'var(--warm-coral)', marginTop: '4px' }}>
-                          {errors.postalCode.message}
-                        </p>
+                      {errors.phone && (
+                        <p className="fhint error">{t(errors.phone.message as Parameters<typeof t>[0])}</p>
                       )}
                     </div>
-                    <div className="fg" />
                   </div>
 
-                  {/* Description : pleine largeur */}
-                  <div className="fg">
-                    <label htmlFor="description" className="fl">
-                      {t('association.profile.description')}
-                    </label>
-                    <textarea
-                      id="description"
-                      className="fi"
-                      placeholder={t('association.profile.descriptionPlaceholder')}
-                      {...register('description')}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                  <div className="frow-actions">
                     <button
                       type="button"
                       onClick={() => reset()}
@@ -245,23 +308,10 @@ export default function AssociationProfilePage() {
       {/* ══ Onglet : Vérification ════════════════════════════════════════ */}
       {activeTab === 'verif' && (
         <div className="set-tab-content active">
-          <div className="card no-hover">
-            <div className="card-h">
-              <h3>{t('association.profile.verification.title')}</h3>
-            </div>
-            <div className="card-b">
-              {profile?.verified ? (
-                <p style={{ fontSize: '14px', color: 'var(--teal-dark)', marginBottom: '12px' }}>
-                  ✓ {t('association.profile.verification.verified')}
-                </p>
-              ) : (
-                <p style={{ fontSize: '14px', color: 'var(--slate-lavender)', marginBottom: '12px' }}>
-                  {t('association.profile.verification.pendingText')}
-                </p>
-              )}
-              <p className="fhint">{t('association.profile.verification.comingSoon')}</p>
-            </div>
-          </div>
+          <VerificationTab
+            onGoToVerif={() => setActiveTab('verif')}
+            onVerificationSubmitted={() => setVerifStatus('PENDING')}
+          />
         </div>
       )}
 
@@ -269,17 +319,17 @@ export default function AssociationProfilePage() {
       {activeTab === 'bank' && (
         <div className="set-tab-content active">
           {/* Carte Monerium */}
-          <div className="card no-hover" style={{ marginBottom: '20px' }}>
+          <div className="card no-hover monerium-card">
             <div className="card-h">
               <h3>{t('association.profile.monerium.title')}</h3>
               <span className="badge badge-info">{t('association.profile.monerium.badge')}</span>
             </div>
             <div className="card-b">
-              <p style={{ fontSize: '14px', color: 'var(--slate-lavender)', marginBottom: '16px', lineHeight: '1.6' }}>
+              <p className="monerium-desc">
                 {t('association.profile.monerium.description')}
               </p>
               {moneriumLoading ? (
-                <div style={{ width: '20px', height: '20px', border: '2px solid var(--deep-indigo)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <div className="monerium-spinner" />
               ) : connected ? (
                 <span className="badge badge-active">
                   {t('association.profile.monerium.connectedStatus')}
@@ -317,10 +367,10 @@ export default function AssociationProfilePage() {
               <h3>{t('association.profile.security.title')}</h3>
             </div>
             <div className="card-b">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="security-row">
                 <div>
                   <p className="fl">{t('association.profile.security.loginMethod')}</p>
-                  <p style={{ fontSize: '14px' }}>
+                  <p className="security-value">
                     {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
                   </p>
                 </div>
@@ -334,6 +384,22 @@ export default function AssociationProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ Onglet : Mandat fiscal ══════════════════════════════════════════ */}
+      {activeTab === 'mandate' && (
+        <div className="set-tab-content active">
+          <MandateTab
+            state={mandateState}
+            isLoading={mandateLoading}
+            onGoToVerif={() => setActiveTab('verif')}
+            onUploadDoc={uploadDoc}
+            onDeleteDoc={deleteDoc}
+            onSign={sign}
+            onRevoke={revoke}
+            onDownloadPdf={downloadPdf}
+          />
         </div>
       )}
 

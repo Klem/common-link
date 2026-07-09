@@ -32,8 +32,8 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 8 }}>
-        <div style={{ flex: 1 }}>
+      <div className="siren-search-row">
+        <div className="flex-1">
           <label className="cm-label">{t('payees.search.label')}</label>
           <input
             id="siren-search-input"
@@ -44,8 +44,7 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={t('payees.search.placeholder')}
-            className="cm-fi"
-            style={{ fontFamily: 'monospace' }}
+            className="cm-fi cm-fi-mono"
             aria-label={t('payees.search.title')}
             autoComplete="off"
           />
@@ -53,19 +52,18 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
         <button
           onClick={search}
           disabled={!detectedType || isLoading}
-          className="cm-btn cm-btn-primary"
+          className="cm-btn cm-btn-primary siren-search-btn"
           aria-busy={isLoading}
-          style={{ height: 44, flexShrink: 0 }}
         >
           {isLoading
-            ? <><span className="rm-spinner" style={{ marginRight: 6 }} />{t('payees.search.loading')}</>
+            ? <><span className="rm-spinner rm-spinner-inline" />{t('payees.search.loading')}</>
             : <>🔍 {t('payees.search.button')}</>
           }
         </button>
       </div>
 
       {/* Detection / hint pill */}
-      <div style={{ marginBottom: 8, minHeight: 24 }}>
+      <div className="siren-hint-row">
         {detectedType === 'siren' && (
           <span className="rm-dpill siren">
             <span className="rm-dpill-d" />
