@@ -1,4 +1,13 @@
 {
+  "admin": {
+    "nav": {
+      "verifications": "Associations / Vérifications"
+    },
+    "shell": {
+      "logout": "Déconnexion",
+      "title": "Console Admin"
+    }
+  },
   "auth": {
     "assoSearch": {
       "apiUnavailable": "Le répertoire est indisponible. Saisissez les informations manuellement.",

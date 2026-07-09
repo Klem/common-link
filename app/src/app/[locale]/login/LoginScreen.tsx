@@ -26,6 +26,7 @@ import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@/types/auth';
+import { getHomePath } from '@/lib/routes';
 
 /** Active tab on the auth card — login or signup. */
 type View = 'login' | 'signup';
@@ -46,6 +47,12 @@ interface LoginScreenProps {
    * When non-null, the screen immediately shows the loading overlay and starts verification.
    */
   magicLinkToken: string | null;
+  /**
+   * Deep-link destination set by the middleware when a protected route redirects to login.
+   * When non-null, the user is sent here after successful authentication instead of their
+   * default home page. Only honored when the authenticated role is authorized for the path.
+   */
+  redirectAfterLogin?: string | null;
 }
 
 /**
@@ -68,7 +75,7 @@ interface LoginScreenProps {
  *
  * @param props - See {@link LoginScreenProps}.
  */
-export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginScreenProps) {
+export function LoginScreen({ initialView, initialRole, magicLinkToken, redirectAfterLogin }: LoginScreenProps) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const router = useRouter();
@@ -84,7 +91,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
   // Hooks
   const googleAuth = useGoogleAuth();
   const magicLink = useMagicLink();
-  const emailLogin = useEmailLogin();
+  const emailLogin = useEmailLogin(redirectAfterLogin);
   const emailRegister = useEmailRegister();
 
   // Magic link token verification (triggered when ?token is present)
@@ -94,7 +101,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken }: LoginS
       setShowOverlay(false);
       const user = useAuthStore.getState().user;
       const role = user?.role ?? UserRole.DONOR;
-      router.push(`/${locale}/dashboard/${role.toLowerCase()}`);
+      router.push(redirectAfterLogin ?? getHomePath(locale, role));
     },
   );
 

@@ -1,4 +1,13 @@
 {
+  "admin": {
+    "nav": {
+      "verifications": "Associations / Verifications"
+    },
+    "shell": {
+      "logout": "Log out",
+      "title": "Admin Console"
+    }
+  },
   "auth": {
     "assoSearch": {
       "apiUnavailable": "The directory is unavailable. Please enter information manually.",

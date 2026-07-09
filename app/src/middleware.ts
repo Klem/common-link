@@ -6,7 +6,7 @@ import { getRedirectForRole } from './lib/routeGuard';
 
 const intlMiddleware = createMiddleware(routing);
 
-const PROTECTED_PATHS = ['/dashboard', '/settings'];
+const PROTECTED_PATHS = ['/dashboard', '/settings', '/admin'];
 
 // These pages are loaded inside the OAuth popup which has no auth cookie.
 const AUTH_EXEMPT_PATHS = [

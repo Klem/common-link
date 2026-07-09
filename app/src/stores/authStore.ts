@@ -70,6 +70,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
 
   setAuth: (accessToken, user) => {
+    // role is stored verbatim from the JWT claim — CURATOR is a valid value here
     Cookies.set('auth-session', JSON.stringify({ userId: user.id, role: user.role }), {
       expires: 30,
       sameSite: 'strict',
