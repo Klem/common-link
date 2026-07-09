@@ -1,11 +1,79 @@
 {
   "admin": {
+    "decision": {
+      "approve": "Approve",
+      "approved": "Dossier approved.",
+      "cancel": "Cancel",
+      "confirmApprove": "Confirm approval?",
+      "notPending": "This dossier is no longer pending — it may have been processed by someone else. Reloading...",
+      "reasonLabel": "Rejection reason (required)",
+      "reasonRequired": "Rejection reason is required.",
+      "reasonTooLong": "Maximum 1000 characters.",
+      "reject": "Reject",
+      "rejected": "Dossier rejected.",
+      "submit": "Submit rejection"
+    },
+    "docType": {
+      "verifRepresentativeId": "Legal representative's ID",
+      "verifRnaReceipt": "RNA receipt / JOAFE publication",
+      "verifStatuts": "Articles of association"
+    },
     "nav": {
       "verifications": "Associations / Verifications"
     },
     "shell": {
       "logout": "Log out",
+      "navLabel": "Navigation",
       "title": "Admin Console"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "REJECTED": "Rejected",
+      "UNVERIFIED": "Not submitted",
+      "VERIFIED": "Verified"
+    },
+    "verificationDetail": {
+      "backToList": "← Back to list",
+      "doc": {
+        "download": "Download",
+        "downloadError": "Failed to download document.",
+        "missing": "Missing",
+        "previewUnavailable": "Preview unavailable",
+        "size": "Size",
+        "uploadedOn": "Uploaded on",
+        "view": "View"
+      },
+      "error": "Failed to load dossier.",
+      "noDocs": "No additional documents.",
+      "notFound": "Dossier not found.",
+      "optionalDocs": "Additional documents",
+      "rejectionReason": "Rejection reason",
+      "requiredDocs": "Required documents",
+      "submittedOn": "Submitted on",
+      "title": "Verification Dossier",
+      "verifiedOn": "Verified on"
+    },
+    "verifications": {
+      "col": {
+        "docs": "Docs",
+        "identifier": "SIREN / RNA",
+        "name": "Association",
+        "status": "Status",
+        "submitted": "Submitted on"
+      },
+      "empty": "No associations in this status.",
+      "error": "Failed to load verifications.",
+      "loading": "Loading...",
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      },
+      "tabs": {
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "unverified": "Not submitted",
+        "verified": "Verified"
+      },
+      "title": "Verifications"
     }
   },
   "auth": {

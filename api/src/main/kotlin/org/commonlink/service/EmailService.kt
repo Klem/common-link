@@ -33,4 +33,23 @@ interface EmailService {
      * @param associationName Official name of the association that submitted.
      */
     fun sendVerificationSubmittedToAdmin(associationName: String)
+
+    /**
+     * Notifies the association that its KYC dossier has been approved.
+     * Recipient is the association's contact email, with fallback to the linked user email.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Resolved email address to notify.
+     */
+    fun sendVerificationApprovedToAssociation(associationName: String, recipientEmail: String)
+
+    /**
+     * Notifies the association that its KYC dossier has been rejected, including the reason.
+     * Recipient is the association's contact email, with fallback to the linked user email.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Resolved email address to notify.
+     * @param reason          The rejection reason provided by the curator.
+     */
+    fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String)
 }

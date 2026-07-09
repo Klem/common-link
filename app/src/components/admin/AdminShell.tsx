@@ -52,7 +52,7 @@ export function AdminShell({ children }: AdminShellProps) {
         </div>
 
         <div className="sidebar-nav">
-          <p className="snav-label">Navigation</p>
+          <p className="snav-label">{t('shell.navLabel')}</p>
           <ul>
             <li>
               <Link

@@ -49,6 +49,43 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendVerificationApprovedToAssociation(associationName: String, recipientEmail: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Votre dossier de vérification a été approuvé — CommonLink")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Nous avons le plaisir de vous informer que le dossier de vérification de l'association <strong>$associationName</strong> a été <strong>approuvé</strong>.</p>
+            <p>Votre espace CommonLink est maintenant pleinement accessible. Vous pouvez dès à présent publier des campagnes et recevoir des dons certifiés.</p>
+            <p>Merci pour votre confiance,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
+    override fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Votre dossier de vérification a été rejeté — CommonLink")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Nous vous informons que le dossier de vérification de l'association <strong>$associationName</strong> a été <strong>rejeté</strong> pour le motif suivant :</p>
+            <blockquote style="border-left:3px solid #ccc;margin:12px 0;padding:8px 16px;color:#555;">$reason</blockquote>
+            <p>Vous pouvez corriger les documents concernés et soumettre à nouveau votre dossier depuis votre espace CommonLink.</p>
+            <p>Cordialement,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendMagicLink(email: String, link: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")

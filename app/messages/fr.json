@@ -1,11 +1,79 @@
 {
   "admin": {
+    "decision": {
+      "approve": "Approuver",
+      "approved": "Dossier approuvé.",
+      "cancel": "Annuler",
+      "confirmApprove": "Confirmer l'approbation ?",
+      "notPending": "Ce dossier n'est plus en attente — il a peut-être déjà été traité. Rechargement...",
+      "reasonLabel": "Motif de rejet (obligatoire)",
+      "reasonRequired": "Le motif de rejet est obligatoire.",
+      "reasonTooLong": "Maximum 1000 caractères.",
+      "reject": "Rejeter",
+      "rejected": "Dossier rejeté.",
+      "submit": "Soumettre le rejet"
+    },
+    "docType": {
+      "verifRepresentativeId": "Pièce d'identité du représentant légal",
+      "verifRnaReceipt": "Récépissé RNA / insertion au JOAFE",
+      "verifStatuts": "Statuts de l'association"
+    },
     "nav": {
       "verifications": "Associations / Vérifications"
     },
     "shell": {
       "logout": "Déconnexion",
+      "navLabel": "Navigation",
       "title": "Console Admin"
+    },
+    "status": {
+      "PENDING": "En attente",
+      "REJECTED": "Rejetée",
+      "UNVERIFIED": "Non soumise",
+      "VERIFIED": "Vérifiée"
+    },
+    "verificationDetail": {
+      "backToList": "← Retour à la liste",
+      "doc": {
+        "download": "Télécharger",
+        "downloadError": "Échec du téléchargement du document.",
+        "missing": "Manquant",
+        "previewUnavailable": "Aperçu non disponible",
+        "size": "Taille",
+        "uploadedOn": "Déposé le",
+        "view": "Voir"
+      },
+      "error": "Impossible de charger le dossier.",
+      "noDocs": "Aucun document complémentaire.",
+      "notFound": "Dossier introuvable.",
+      "optionalDocs": "Documents complémentaires",
+      "rejectionReason": "Motif de rejet",
+      "requiredDocs": "Documents requis",
+      "submittedOn": "Soumis le",
+      "title": "Dossier de vérification",
+      "verifiedOn": "Vérifié le"
+    },
+    "verifications": {
+      "col": {
+        "docs": "Docs",
+        "identifier": "SIREN / RNA",
+        "name": "Association",
+        "status": "Statut",
+        "submitted": "Soumis le"
+      },
+      "empty": "Aucune association dans ce statut.",
+      "error": "Impossible de charger les vérifications.",
+      "loading": "Chargement...",
+      "pagination": {
+        "pageOf": "Page {current} sur {total}"
+      },
+      "tabs": {
+        "pending": "En attente",
+        "rejected": "Rejetées",
+        "unverified": "Non soumises",
+        "verified": "Vérifiées"
+      },
+      "title": "Vérifications"
     }
   },
   "auth": {

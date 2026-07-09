@@ -347,6 +347,13 @@ class VerificationService(
         profile.verifiedAt = Instant.now()
         associationProfileRepository.save(profile)
         logger.info("Verification approved for association {} — status → VERIFIED", associationId)
+        // Notify association after persistence — failure must not rollback the decision
+        val recipientEmail = profile.contactEmail ?: profile.user.email
+        try {
+            emailService.sendVerificationApprovedToAssociation(profile.name, recipientEmail)
+        } catch (e: Exception) {
+            logger.error("Failed to send approval email for association {}: {}", associationId, e.message)
+        }
     }
 
     /**
@@ -364,6 +371,13 @@ class VerificationService(
         profile.verificationRejectionReason = reason
         associationProfileRepository.save(profile)
         logger.info("Verification rejected for association {} — reason: {}", associationId, reason)
+        // Notify association after persistence — failure must not rollback the decision
+        val recipientEmail = profile.contactEmail ?: profile.user.email
+        try {
+            emailService.sendVerificationRejectedToAssociation(profile.name, recipientEmail, reason)
+        } catch (e: Exception) {
+            logger.error("Failed to send rejection email for association {}: {}", associationId, e.message)
+        }
     }
 
     // -------------------------------------------------------------------------
