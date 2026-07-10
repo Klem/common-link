@@ -23,7 +23,7 @@ const mockProfile: AssociationProfileDto = {
   postalCode: null,
   contactName: null,
   description: null,
-  rna: 'W123456789',
+  siren: '123456789',
   creationYear: 2018,
   contactEmail: 'contact@asso.org',
   phone: '01 23 45 67 89',
@@ -81,7 +81,7 @@ describe('Onglet Informations — profile/page.tsx', () => {
 
   it('affiche les champs éditables pré-remplis', () => {
     render(<AssociationProfilePage />);
-    expect(screen.getByDisplayValue('W123456789')).not.toBeDisabled();
+    expect(screen.getByDisplayValue('123456789')).not.toBeDisabled();
     expect(screen.getByDisplayValue('contact@asso.org')).not.toBeDisabled();
     expect(screen.getByDisplayValue('01 23 45 67 89')).not.toBeDisabled();
   });
@@ -89,7 +89,7 @@ describe('Onglet Informations — profile/page.tsx', () => {
   it('affiche une erreur si le RNA ne respecte pas le format', async () => {
     render(<AssociationProfilePage />);
 
-    const rnaInput = screen.getByDisplayValue('W123456789');
+    const rnaInput = screen.getByDisplayValue('123456789');
     fireEvent.change(rnaInput, { target: { value: 'INVALID' } });
 
     const saveBtn = screen.getByRole('button', { name: /association\.profile\.save/i });
@@ -97,7 +97,7 @@ describe('Onglet Informations — profile/page.tsx', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('dashboard.association.profile.errors.rnaFormat'),
+        screen.getByText('dashboard.association.profile.errors.sirenFormat'),
       ).toBeInTheDocument();
     });
     expect(mockUpdateProfile).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe('Onglet Informations — profile/page.tsx', () => {
     await waitFor(() => {
       expect(mockUpdateProfile).toHaveBeenCalledWith(
         expect.objectContaining({
-          rna: 'W123456789',
+          siren: '123456789',
           contactEmail: 'contact@asso.org',
           phone: '06 12 34 56 78',
         }),

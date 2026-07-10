@@ -114,20 +114,24 @@ test.describe('Auth smoke tests', () => {
     page,
   }) => {
     // Mock association search API
-    await page.route('https://recherche-entreprises.api.gouv.fr/**', (route) =>
+    await page.route('https://journal-officiel-datadila.opendatasoft.com/**', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          results: [
+          records: [
             {
-              nom_complet: 'Association Test',
-              siren: '123456789',
-              siege: { libelle_commune: 'Paris', code_postal: '75001' },
-              etat_administratif: 'A',
+              record: {
+                fields: {
+                  numero_rna: 'W123456789',
+                  titre: 'Association Test',
+                  typeavis: 'Création',
+                  commune_actuelle: 'Paris',
+                  codepostal_actuel: '75001',
+                },
+              },
             },
           ],
-          total_results: 1,
         }),
       }),
     );

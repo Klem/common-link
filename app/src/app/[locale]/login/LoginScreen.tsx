@@ -177,7 +177,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
 
   const handleMagicLinkAsso = (email: string) => {
     magicLink.sendLink(email, UserRole.ASSOCIATION, selectedAsso
-      ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
+      ? { name: selectedAsso.nom, identifier: selectedAsso.identifier, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
       : undefined);
   };
 
@@ -186,7 +186,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
   const handleEmailRegisterAsso = async (email: string, password: string) => {
     try {
       await emailRegister.register(email, password, UserRole.ASSOCIATION, selectedAsso
-        ? { name: selectedAsso.nom, identifier: selectedAsso.siren, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
+        ? { name: selectedAsso.nom, identifier: selectedAsso.identifier, city: selectedAsso.ville, postalCode: selectedAsso.codePostal }
         : undefined);
     } catch {
       // error set in hook
@@ -351,7 +351,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
                       <div className="flex-1 min-w-0">
                         <div className="text-[12.5px] font-semibold text-text truncate">{selectedAsso.nom}</div>
                         <div className="text-[11px] text-muted">
-                          📍 {selectedAsso.ville} {selectedAsso.codePostal} · SIREN {selectedAsso.siren}
+                          📍 {selectedAsso.ville} {selectedAsso.codePostal} · RNA {selectedAsso.identifier}
                         </div>
                       </div>
                       <button

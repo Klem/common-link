@@ -15,13 +15,14 @@ export interface AssociationProfileDto {
   id: string;
   /** Official name of the association. */
   name: string;
-  /** SIREN / official registration identifier. */
+  /** RNA / official registration identifier (W-number for JOAFE registrations, or SIREN for legacy). */
   identifier: string;
   city: string | null;
   postalCode: string | null;
   contactName: string | null;
   description: string | null;
-  rna: string | null;
+  /** SIREN number (optional secondary identifier, nullable). */
+  siren: string | null;
   creationYear: number | null;
   contactEmail: string | null;
   phone: string | null;
@@ -39,7 +40,7 @@ export interface UpdateAssociationProfileRequest {
   city?: string;
   postalCode?: string;
   description?: string;
-  rna?: string;
+  siren?: string;
   creationYear?: number;
   contactEmail?: string;
   phone?: string;

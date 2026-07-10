@@ -18,7 +18,7 @@ import jakarta.validation.constraints.Size
  * @param city City of the association's headquarters.
  * @param postalCode French postal code (exactly 5 digits when provided).
  * @param description Public description of the association's mission.
- * @param rna French RNA number (W followed by 9 digits, e.g. W751234567).
+ * @param siren French SIREN number (9 digits).
  * @param creationYear Year the association was founded (1800–2100).
  * @param contactEmail Association contact email address.
  * @param phone Association phone number (6–20 chars, digits/spaces/+/parens/dots/hyphens).
@@ -37,8 +37,8 @@ data class UpdateAssociationProfileRequest(
     @field:Size(max = 1000)
     val description: String?,
 
-    @field:Pattern(regexp = "^W[0-9]{9}$", message = "RNA must be W followed by 9 digits")
-    val rna: String?,
+    @field:Pattern(regexp = "^[0-9]{9}$", message = "SIREN must be exactly 9 digits")
+    val siren: String?,
 
     @field:Min(1800)
     @field:Max(2100)

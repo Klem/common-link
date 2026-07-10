@@ -8,7 +8,7 @@ data class AssociationProfileRequestDto(
     val name: String,
 
     @field:NotBlank
-    @field:Size(min = 9, max = 9)
+    @field:Size(max = 20)
     val identifier: String,
 
     val city: String? = null,

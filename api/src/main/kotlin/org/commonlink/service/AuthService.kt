@@ -462,7 +462,7 @@ class AuthService(
      * Creates or updates the [AssociationProfile] for the authenticated user.
      *
      * If a profile already exists, all mutable fields are updated. If no profile exists,
-     * a new one is created using [dto.nom] and [dto.siren] as the immutable identity fields.
+     * a new one is created using [dto.nom] and [dto.identifier] as the immutable identity fields.
      *
      * Only users with [UserRole.ASSOCIATION] may call this method.
      *
@@ -493,7 +493,7 @@ class AuthService(
                 AssociationProfile(
                     user = user,
                     name = dto.nom,
-                    identifier = dto.siren,
+                    identifier = dto.identifier,
                     city = dto.ville,
                     postalCode = dto.codePostal,
                     contactName = dto.contact,

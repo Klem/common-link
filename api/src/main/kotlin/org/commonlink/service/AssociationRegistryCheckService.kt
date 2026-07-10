@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.web.util.UriComponentsBuilder
 import java.net.URLEncoder
 import java.util.UUID
 
@@ -66,61 +67,66 @@ class AssociationRegistryCheckService(
     /**
      * Queries every registry and assembles an unsaved [AssociationRegistryCheck] row.
      *
-     * [AssociationProfile.identifier] (SIREN, mandatory) and [AssociationProfile.rna] (optional) are
-     * independent identifiers. When both are present on the profile, the SIREN-based checks (INSEE,
-     * BODACC) and the RNA-based check (JOAFE) are all run and cumulated — neither is skipped in favor
+     * [AssociationProfile.identifier] holds the RNA for JOAFE registrations or the SIREN for legacy rows.
+     * [AssociationProfile.siren] holds the SIREN when both identifiers are known. The SIREN-based checks
+     * (INSEE, BODACC) and the RNA-based check (JOAFE) are run independently when available — neither is skipped in favor
      * of the other.
      */
     private fun runLiveCheck(profile: AssociationProfile, checkedBy: UUID?): AssociationRegistryCheck {
         val warnings = mutableListOf<String>()
 
-        val siren = profile.identifier
-        val rnaFromProfile = profile.rna?.takeIf { it.isNotBlank() }
+        // identifier holds RNA for JOAFE registrations (starts with "W"), SIREN for legacy rows
+        val siren = profile.siren ?: profile.identifier.takeUnless { it.startsWith("W") }
+        val rnaFromProfile = profile.identifier.takeIf { it.startsWith("W") }
 
         // ── Step 1: Recherche d'entreprises (searched by SIREN, the mandatory identifier) ─────
         var associationExists: Boolean? = null
         var rnaFromSearch: String? = null
 
-        try {
-            val url = "$rechercheEntreprisesBaseUrl/search?q=${enc(siren)}&limit=1"
-            restTemplate.getForObject(url, String::class.java)?.let { body ->
-                val results: JsonNode = objectMapper.readTree(body).path("results")
-                if (results.isArray && results.size() > 0) {
-                    val first: JsonNode = results[0]
-                    val estAssociation = first.path("complements").path("est_association").asBoolean(false)
-                    val natureJuridique = first.path("nature_juridique").asText("")
-                    associationExists = estAssociation || natureJuridique == "9220"
-                    rnaFromSearch = first.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
-                } else {
-                    associationExists = false
+        if (siren != null) {
+            try {
+                val url = "$rechercheEntreprisesBaseUrl/search?q=${enc(siren)}&limit=1"
+                restTemplate.getForObject(url, String::class.java)?.let { body ->
+                    val results: JsonNode = objectMapper.readTree(body).path("results")
+                    if (results.isArray && results.size() > 0) {
+                        val first: JsonNode = results[0]
+                        val estAssociation = first.path("complements").path("est_association").asBoolean(false)
+                        val natureJuridique = first.path("nature_juridique").asText("")
+                        associationExists = estAssociation || natureJuridique == "9220"
+                        rnaFromSearch = first.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
+                    } else {
+                        associationExists = false
+                    }
                 }
+            } catch (ex: Exception) {
+                log.warn("Recherche d'entreprises lookup failed for SIREN={}: {}", siren, ex.message)
+                warnings.add("recherche-entreprises: ${ex.message ?: "unavailable"}")
             }
-        } catch (ex: Exception) {
-            log.warn("Recherche d'entreprises lookup failed for SIREN={}: {}", siren, ex.message)
-            warnings.add("recherche-entreprises: ${ex.message ?: "unavailable"}")
         }
 
         // ── Step 2: INSEE Sirene (SIREN always available from the profile) ──────────────────────
         var etatAdministratif: String? = null
 
-        try {
-            val url = "$inseeBaseUrl/siren/$siren"
-            val headers = HttpHeaders().apply {
-                set("X-INSEE-Api-Key-Integration", inseeApiKey)
-                set("Accept", "application/json")
+        if (siren != null) {
+            try {
+                val url = "$inseeBaseUrl/siren/$siren"
+                val headers = HttpHeaders().apply {
+                    set("X-INSEE-Api-Key-Integration", inseeApiKey)
+                    set("Accept", "application/json")
+                }
+                val response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity<Unit>(headers), String::class.java)
+                response.body?.let { body ->
+                    val tree: JsonNode = objectMapper.readTree(body)
+                    etatAdministratif = tree
+                        .path("uniteLegale")
+                        .path("etatAdministratifUniteLegale")
+                        .asText("")
+                        .takeIf { it.isNotBlank() }
+                }
+            } catch (ex: Exception) {
+                log.warn("INSEE Sirene lookup failed for SIREN={}: {}", siren, ex.message)
+                warnings.add("insee-sirene: ${ex.message ?: "unavailable"}")
             }
-            val response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity<Unit>(headers), String::class.java)
-            response.body?.let { body ->
-                val tree: JsonNode = objectMapper.readTree(body)
-                etatAdministratif = tree
-                    .path("uniteLegale")
-                    .path("etatAdministratifUniteLegale")
-                    .asText("")
-                    .takeIf { it.isNotBlank() }
-            }
-        } catch (ex: Exception) {
-            log.warn("INSEE Sirene lookup failed for SIREN={}: {}", siren, ex.message)
-            warnings.add("insee-sirene: ${ex.message ?: "unavailable"}")
         }
 
         // ── Step 3: JOAFE (RNA — cumulated independently of the SIREN checks above) ────────────
@@ -130,8 +136,11 @@ class AssociationRegistryCheckService(
         val rna = rnaFromProfile ?: rnaFromSearch
         rna?.let {
             try {
-                val url = "$joafeBaseUrl/catalog/datasets/jo_associations/records?q=${enc(rna)}&limit=10"
-                restTemplate.getForObject(url, String::class.java)?.let { body ->
+                val uri = UriComponentsBuilder.fromUriString("$joafeBaseUrl/catalog/datasets/jo_associations/records")
+                    .queryParam("where", "numero_rna='$rna'")
+                    .queryParam("limit", 10)
+                    .build().encode().toUri()
+                restTemplate.getForObject(uri, String::class.java)?.let { body ->
                     val records: JsonNode = objectMapper.readTree(body).path("records")
                     val fieldsList = if (records.isArray) (0 until records.size()).map { i ->
                         records[i].path("record").path("fields")
@@ -158,17 +167,25 @@ class AssociationRegistryCheckService(
         // ── Step 4: BODACC (SIREN, insolvency filter) ───────────────────────────────────────────
         var bodaccProcedureFound: Boolean? = null
 
-        try {
-            val url = "$bodaccBaseUrl/catalog/datasets/annonces-commerciales/records?q=${enc(siren)}&limit=10"
-            restTemplate.getForObject(url, String::class.java)?.let { body ->
-                val records: JsonNode = objectMapper.readTree(body).path("results")
-                bodaccProcedureFound = records.isArray && (0 until records.size()).any { i ->
-                    records[i].path("familleavis").asText("").equals("pc", ignoreCase = true)
+        if (siren != null) {
+            try {
+                val uri = UriComponentsBuilder.fromUriString("$bodaccBaseUrl/catalog/datasets/annonces-commerciales/records")
+                    .queryParam("where", "registre like '%$siren%'")
+                    .queryParam("limit", 10)
+                    .build().encode().toUri()
+                restTemplate.getForObject(uri, String::class.java)?.let { body ->
+                    val records: JsonNode = objectMapper.readTree(body).path("records")
+                    val fieldsList = if (records.isArray) (0 until records.size()).map { i ->
+                        records[i].path("record").path("fields")
+                    } else emptyList()
+                    bodaccProcedureFound = fieldsList.any { fields ->
+                        fields.path("familleavis").asText("").equals("pc", ignoreCase = true)
+                    }
                 }
+            } catch (ex: Exception) {
+                log.warn("BODACC lookup failed for SIREN={}: {}", siren, ex.message)
+                warnings.add("bodacc: ${ex.message ?: "unavailable"}")
             }
-        } catch (ex: Exception) {
-            log.warn("BODACC lookup failed for SIREN={}: {}", siren, ex.message)
-            warnings.add("bodacc: ${ex.message ?: "unavailable"}")
         }
 
         return AssociationRegistryCheck(

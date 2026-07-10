@@ -22,10 +22,10 @@ import { useMandate } from '@/hooks/dashboard/useMandate';
 const CURRENT_YEAR = new Date().getFullYear();
 
 const profileSchema = z.object({
-  rna: z
+  siren: z
     .string()
     .optional()
-    .refine((v) => !v || /^W\d{9}$/.test(v), 'dashboard.association.profile.errors.rnaFormat'),
+    .refine((v) => !v || /^\d{9}$/.test(v), 'dashboard.association.profile.errors.sirenFormat'),
   creationYear: z
     .number()
     .int()
@@ -92,7 +92,7 @@ export default function AssociationProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     values: {
-      rna: profile?.rna ?? '',
+      siren: profile?.siren ?? '',
       creationYear: profile?.creationYear ?? undefined,
       contactEmail: profile?.contactEmail ?? '',
       phone: profile?.phone ?? '',
@@ -101,7 +101,7 @@ export default function AssociationProfilePage() {
 
   const onSubmit = handleSubmit(async (data) => {
     await updateProfile({
-      rna: data.rna || undefined,
+      siren: data.siren || undefined,
       creationYear: data.creationYear,
       contactEmail: data.contactEmail || undefined,
       phone: data.phone || undefined,
@@ -209,18 +209,18 @@ export default function AssociationProfilePage() {
                       <input className="fi" type="text" value={profile?.name ?? ''} disabled />
                     </div>
                     <div className="fg">
-                      <label htmlFor="rna" className="fl">
-                        {t('association.profile.rna')}
+                      <label htmlFor="siren" className="fl">
+                        {t('association.profile.siren')}
                       </label>
                       <input
-                        id="rna"
+                        id="siren"
                         type="text"
                         className="fi"
-                        placeholder="W123456789"
-                        {...register('rna')}
+                        placeholder="123456789"
+                        {...register('siren')}
                       />
-                      {errors.rna && (
-                        <p className="fhint error">{t(errors.rna.message as Parameters<typeof t>[0])}</p>
+                      {errors.siren && (
+                        <p className="fhint error">{t(errors.siren.message as Parameters<typeof t>[0])}</p>
                       )}
                     </div>
                   </div>

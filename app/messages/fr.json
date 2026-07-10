@@ -36,9 +36,18 @@
         "noDeclaration": "Aucune déclaration"
       },
       "loading": "Vérification en cours...",
+      "neverChecked": "Jamais contrôlé — lancez un contrôle pour interroger les registres.",
       "note": "Informationnel uniquement — ne remplace pas la revue manuelle",
+      "refresh": "Relancer",
       "rna": "RNA",
+      "scan": "Lancer le contrôle",
       "siren": "SIREN",
+      "skipped": {
+        "noRna": "RNA non trouvé",
+        "noSiren": "SIREN non trouvé",
+        "title": "Non effectué",
+        "unavailable": "Recherche registres indisponible"
+      },
       "status": {
         "active": "Active",
         "ceased": "Cessée (INSEE)",
@@ -47,16 +56,7 @@
         "notFound": "Non trouvée"
       },
       "title": "Vérification registres",
-      "warnings": "Avertissements",
-      "refresh": "Relancer",
-      "neverChecked": "Jamais contrôlé — lancez un contrôle pour interroger les registres.",
-      "scan": "Lancer le contrôle",
-      "skipped": {
-        "noRna": "RNA non trouvé",
-        "noSiren": "SIREN non trouvé",
-        "title": "Non effectué",
-        "unavailable": "Recherche registres indisponible"
-      }
+      "warnings": "Avertissements"
     },
     "shell": {
       "logout": "Déconnexion",
@@ -121,10 +121,10 @@
       "manualCodePostal": "Code postal",
       "manualEntry": "Saisie manuelle",
       "manualNom": "Nom de l'association",
-      "manualSiren": "SIREN",
+      "manualRna": "RNA / SIREN",
       "manualVille": "Ville",
       "noResults": "Aucune association trouvée.",
-      "noResultsHint": "Vérifiez l'orthographe ou essayez votre SIREN.",
+      "noResultsHint": "Vérifiez l'orthographe ou essayez votre RNA.",
       "searchHint": "Recherchez votre association dans le répertoire officiel."
     },
     "divider": {
@@ -226,8 +226,8 @@
             "label": "Nom de l'association",
             "placeholder": "Pré-rempli"
           },
-          "siren": {
-            "label": "SIREN",
+          "rna": {
+            "label": "RNA",
             "placeholder": "Pré-rempli"
           },
           "submit": "Créer mon espace →"
@@ -235,7 +235,7 @@
         "search": {
           "label": "Rechercher votre association",
           "noResults": "Aucun résultat",
-          "placeholder": "Nom ou SIREN…",
+          "placeholder": "Nom ou RNA…",
           "results": "Résultats",
           "select": "Sélectionner",
           "status": {
@@ -400,9 +400,10 @@
           "creationYearMin": "L'année doit être 1800 ou ultérieure.",
           "phoneFormat": "Veuillez saisir un numéro de téléphone valide (6–20 caractères).",
           "postalCodeFormat": "Le code postal doit contenir 5 chiffres.",
-          "rnaFormat": "Le N° RNA doit être au format W suivi de 9 chiffres (ex. W123456789)."
+          "rnaFormat": "Le N° RNA doit être au format W suivi de 9 chiffres (ex. W123456789).",
+          "sirenFormat": "Le SIREN doit contenir exactement 9 chiffres."
         },
-        "identifier": "SIREN",
+        "identifier": "N° RNA",
         "infos": {
           "title": "Informations de l'association"
         },
@@ -525,6 +526,7 @@
           "magicLink": "Lien magique",
           "title": "Sécurité"
         },
+        "siren": "SIREN",
         "subtitle": "Gérez les informations et la vérification de votre association.",
         "success": "Profil mis à jour.",
         "tabs": {

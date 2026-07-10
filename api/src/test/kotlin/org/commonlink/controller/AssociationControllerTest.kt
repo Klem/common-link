@@ -68,7 +68,7 @@ class AssociationControllerTest {
         postalCode = "75011",
         contactName = "contact@msf.fr",
         description = "Organisation humanitaire",
-        rna = null,
+        siren = null,
         creationYear = null,
         contactEmail = null,
         phone = null,
@@ -135,29 +135,29 @@ class AssociationControllerTest {
 
     @Test
     fun `updateProfile - 200 with new information fields`() {
-        val updated = sampleProfile.copy(rna = "W751234567", creationYear = 1901, contactEmail = "contact@msf.fr", phone = "+33 1 23 45 67 89")
+        val updated = sampleProfile.copy(siren = "123456789", creationYear = 1901, contactEmail = "contact@msf.fr", phone = "+33 1 23 45 67 89")
         every { associationService.updateProfile(userId, any()) } returns updated
 
         mockMvc.perform(
             patch("/api/association/me")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"rna":"W751234567","creationYear":1901,"contactEmail":"contact@msf.fr","phone":"+33 1 23 45 67 89"}""")
+                .content("""{"siren":"123456789","creationYear":1901,"contactEmail":"contact@msf.fr","phone":"+33 1 23 45 67 89"}""")
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.rna").value("W751234567"))
+            .andExpect(jsonPath("$.siren").value("123456789"))
             .andExpect(jsonPath("$.creationYear").value(1901))
             .andExpect(jsonPath("$.contactEmail").value("contact@msf.fr"))
             .andExpect(jsonPath("$.phone").value("+33 1 23 45 67 89"))
     }
 
     @Test
-    fun `updateProfile - 400 when RNA format invalid`() {
+    fun `updateProfile - 422 when SIREN format invalid`() {
         mockMvc.perform(
             patch("/api/association/me")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"rna":"X123456789"}""")
+                .content("""{"siren":"INVALID"}""")
         )
             .andExpect(status().`is`(422))
     }

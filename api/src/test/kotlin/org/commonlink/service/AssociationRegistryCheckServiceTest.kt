@@ -18,6 +18,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.server.ResponseStatusException
+import java.net.URI
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
@@ -48,8 +49,8 @@ class AssociationRegistryCheckServiceTest {
         id = associationId,
         user = mockUser,
         name = "Test Association",
-        identifier = "123456789",
-        rna = "W123456789",
+        identifier = "W123456789",
+        siren = "123456789",
     )
 
     private val profileNoRna = AssociationProfile(
@@ -57,7 +58,7 @@ class AssociationRegistryCheckServiceTest {
         user = mockUser,
         name = "Test Association",
         identifier = "123456789",
-        rna = null,
+        siren = null,
     )
 
     private val rechercheOk =
@@ -69,9 +70,9 @@ class AssociationRegistryCheckServiceTest {
     private val joafeDissolution =
         """{"records":[{"record":{"fields":{"numero_rna":"W123456789","typeavis":"Dissolution"}}}]}"""
     private val bodaccEmpty =
-        """{"results":[]}"""
+        """{"records":[]}"""
     private val bodaccProcedure =
-        """{"results":[{"familleavis":"pc"}]}"""
+        """{"records":[{"record":{"fields":{"familleavis":"pc"}}}]}"""
 
     private fun stubInsee(body: String = inseeOk) {
         every {
@@ -111,8 +112,8 @@ class AssociationRegistryCheckServiceTest {
     fun `scan returns full result and persists a row when all sources respond`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
         val result = service.scan(associationId, curatorId)
 
@@ -132,8 +133,8 @@ class AssociationRegistryCheckServiceTest {
     fun `scan detects dissolution in JOAFE`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeDissolution
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeDissolution
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
         val result = service.scan(associationId, curatorId)
 
@@ -145,8 +146,8 @@ class AssociationRegistryCheckServiceTest {
     fun `scan detects BODACC procedure collective`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccProcedure
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccProcedure
 
         val result = service.scan(associationId, curatorId)
 
@@ -159,8 +160,8 @@ class AssociationRegistryCheckServiceTest {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } throws RuntimeException("connect timeout")
         // SIREN (profile.identifier) and RNA (profile.rna) checks still run independently — they don't depend on this call.
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
         val result = service.scan(associationId, curatorId)
 
@@ -183,8 +184,8 @@ class AssociationRegistryCheckServiceTest {
                 String::class.java,
             )
         } throws RuntimeException("401 Unauthorized")
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
         val result = service.scan(associationId, curatorId)
 
@@ -197,8 +198,8 @@ class AssociationRegistryCheckServiceTest {
     fun `scan adds warning and continues when JOAFE fails`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } throws RuntimeException("503 Service Unavailable")
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } throws RuntimeException("503 Service Unavailable")
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
         val result = service.scan(associationId, curatorId)
 
@@ -211,8 +212,8 @@ class AssociationRegistryCheckServiceTest {
     fun `scan adds warning and continues when BODACC fails`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } throws RuntimeException("timeout")
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } throws RuntimeException("timeout")
 
         val result = service.scan(associationId, curatorId)
 
@@ -225,7 +226,7 @@ class AssociationRegistryCheckServiceTest {
         every { repository.findById(associationId) } returns Optional.of(profileNoRna)
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns """{"results":[]}"""
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
         val result = service.scan(associationId, curatorId)
 
@@ -243,8 +244,8 @@ class AssociationRegistryCheckServiceTest {
         // must all run, even if Recherche d'entreprises (which could otherwise gate them) fails.
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } throws RuntimeException("unavailable")
         stubInsee()
-        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
-        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccProcedure
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccProcedure
 
         val result = service.scan(associationId, curatorId)
 
