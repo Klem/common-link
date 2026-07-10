@@ -83,4 +83,12 @@ class AssociationProfile(
     /** Timestamp when an admin approved the KYC dossier. */
     @Column(name = "verified_at")
     var verifiedAt: Instant? = null,
+
+    /**
+     * Frozen reference to the [AssociationRegistryCheck] that informed the KYC decision
+     * (approve/reject). Null if the dossier is undecided or was decided without a prior scan.
+     * The referenced row is immutable, so this is a faithful decision-time snapshot (LCB-FT).
+     */
+    @Column(name = "decision_registry_check_id")
+    var decisionRegistryCheckId: UUID? = null,
 )

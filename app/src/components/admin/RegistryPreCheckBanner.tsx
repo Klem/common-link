@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { getRegistryPreCheck } from '@/lib/api/admin';
+import { getRegistryPreCheck, scanRegistryPreCheck } from '@/lib/api/admin';
 import type { RegistryPreCheckDto } from '@/types/admin';
 
 interface Props {
@@ -52,14 +52,26 @@ export function RegistryPreCheckBanner({ associationId }: Props) {
   const locale = useLocale();
 
   const [data, setData] = useState<RegistryPreCheckDto | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
-  const runCheck = () => {
+  // On mount, load the latest persisted scan — a pure read, no external registry call.
+  useEffect(() => {
+    let active = true;
     setLoading(true);
     setFailed(false);
-    setData(null);
     getRegistryPreCheck(associationId)
+      .then((d) => { if (active) setData(d); })
+      .catch(() => { if (active) setFailed(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [associationId]);
+
+  // Run a fresh live scan: queries the registries and persists the result (append-only).
+  const runScan = () => {
+    setLoading(true);
+    setFailed(false);
+    scanRegistryPreCheck(associationId)
       .then(setData)
       .catch(() => setFailed(true))
       .finally(() => setLoading(false));
@@ -67,7 +79,7 @@ export function RegistryPreCheckBanner({ associationId }: Props) {
 
   const refreshBtn = (
     <button
-      onClick={runCheck}
+      onClick={runScan}
       disabled={loading}
       style={{
         fontSize: 12,
@@ -80,7 +92,7 @@ export function RegistryPreCheckBanner({ associationId }: Props) {
         opacity: loading ? 0.5 : 1,
       }}
     >
-      {t('registryCheck.refresh')}
+      {data ? t('registryCheck.refresh') : t('registryCheck.scan')}
     </button>
   );
 
@@ -101,6 +113,9 @@ export function RegistryPreCheckBanner({ associationId }: Props) {
           <span style={{ fontWeight: 700, fontSize: 13 }}>{t('registryCheck.title')}</span>
           {refreshBtn}
         </div>
+        <p style={{ color: 'var(--color-text-2)', margin: '8px 0 0', fontSize: 12 }}>
+          {t('registryCheck.neverChecked')}
+        </p>
       </div>
     );
   }

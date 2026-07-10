@@ -25,8 +25,10 @@ export interface AdminVerificationSummaryDto {
   docCount: number;
 }
 
-/** Result of `GET /api/admin/verifications/{associationId}/registry-precheck`. Informational only. */
+/** A persisted registry pre-check scan. Informational only. */
 export interface RegistryPreCheckDto {
+  /** Identifier of the persisted scan row. */
+  id: string;
   associationExists: boolean | null;
   siren: string | null;
   rna: string | null;

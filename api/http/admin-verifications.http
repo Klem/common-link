@@ -12,8 +12,15 @@ Accept: application/json
 
 ###
 
-### Admin Verification — Registry pre-check (informational only)
+### Admin Verification — Latest persisted registry pre-check (200, or 204 if never scanned)
 GET http://localhost:8080/api/admin/verifications/{{associationId}}/registry-precheck
+Authorization: Bearer {{curatorToken}}
+Accept: application/json
+
+###
+
+### Admin Verification — Run a registry pre-check scan (persists an append-only row)
+POST http://localhost:8080/api/admin/verifications/{{associationId}}/registry-precheck
 Authorization: Bearer {{curatorToken}}
 Accept: application/json
 

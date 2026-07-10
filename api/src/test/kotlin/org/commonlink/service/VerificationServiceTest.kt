@@ -5,11 +5,13 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.entity.User
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.util.Optional
@@ -22,9 +24,10 @@ class VerificationServiceTest {
 
     private val associationRepo: AssociationProfileRepository = mockk()
     private val documentRepo: AssociationDocumentRepository = mockk()
+    private val registryCheckRepo: AssociationRegistryCheckRepository = mockk(relaxed = true)
     private val emailService: EmailService = mockk(relaxed = true)
 
-    private val service = VerificationService(associationRepo, documentRepo, emailService)
+    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService)
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000042")
 
@@ -78,6 +81,29 @@ class VerificationServiceTest {
 
         // Must not propagate the email failure
         service.adminApprove(associationId)
+    }
+
+    @Test
+    fun `adminApprove freezes the latest registry check as decision evidence`() {
+        val profile = mockPendingProfile()
+        val checkId = UUID.randomUUID()
+        val latest: AssociationRegistryCheck = mockk()
+        every { latest.id } returns checkId
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns latest
+
+        service.adminApprove(associationId)
+
+        verify { profile.decisionRegistryCheckId = checkId }
+    }
+
+    @Test
+    fun `adminApprove freezes null when association was never scanned`() {
+        val profile = mockPendingProfile()
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns null
+
+        service.adminApprove(associationId)
+
+        verify { profile.decisionRegistryCheckId = null }
     }
 
     @Test

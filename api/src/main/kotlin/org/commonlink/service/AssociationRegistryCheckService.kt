@@ -3,7 +3,10 @@ package org.commonlink.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.dto.RegistryPreCheckDto
+import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
@@ -14,7 +17,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.server.ResponseStatusException
 import java.net.URLEncoder
-import java.time.Instant
 import java.util.UUID
 
 /**
@@ -23,36 +25,64 @@ import java.util.UUID
  *
  * All external calls degrade gracefully: a failure adds a warning to the result
  * but never blocks or influences the manual KYC review.
+ *
+ * Scans are persisted append-only ([AssociationRegistryCheckRepository]) to keep an
+ * LCB-FT audit trail. [scan] runs a live check and stores a new row; [latest] reads the
+ * most recent stored scan without contacting any external registry.
  */
 @Service
 class AssociationRegistryCheckService(
     private val associationProfileRepository: AssociationProfileRepository,
+    private val registryCheckRepository: AssociationRegistryCheckRepository,
     private val restTemplate: RestTemplate,
     private val objectMapper: ObjectMapper,
     @Value("\${app.insee.api-key}") private val inseeApiKey: String,
     @Value("\${app.insee.base-url}") private val inseeBaseUrl: String,
     @Value("\${app.joafe.base-url}") private val joafeBaseUrl: String,
     @Value("\${app.bodacc.base-url}") private val bodaccBaseUrl: String,
+    @Value("\${app.recherche-entreprises.base-url}") private val rechercheEntreprisesBaseUrl: String,
 ) {
 
     private val log = LoggerFactory.getLogger(AssociationRegistryCheckService::class.java)
 
-    fun check(associationId: UUID): RegistryPreCheckDto {
+    /**
+     * Runs a live registry scan, persists it as a new immutable row, and returns the result.
+     * @param checkedBy UUID of the curator who triggered the scan (for the audit trail).
+     */
+    fun scan(associationId: UUID, checkedBy: UUID?): RegistryPreCheckDto {
         val profile = associationProfileRepository.findById(associationId)
             .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Association not found: $associationId") }
 
+        val check = runLiveCheck(profile, checkedBy)
+        val saved = registryCheckRepository.save(check)
+        log.info("Registry pre-check scan persisted id={} association={} by={}", saved.id, associationId, checkedBy)
+        return saved.toDto()
+    }
+
+    /** Returns the most recent persisted scan for the association, or null if none exists. No external calls. */
+    fun latest(associationId: UUID): RegistryPreCheckDto? =
+        registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId)?.toDto()
+
+    /**
+     * Queries every registry and assembles an unsaved [AssociationRegistryCheck] row.
+     *
+     * [AssociationProfile.identifier] (SIREN, mandatory) and [AssociationProfile.rna] (optional) are
+     * independent identifiers. When both are present on the profile, the SIREN-based checks (INSEE,
+     * BODACC) and the RNA-based check (JOAFE) are all run and cumulated — neither is skipped in favor
+     * of the other.
+     */
+    private fun runLiveCheck(profile: AssociationProfile, checkedBy: UUID?): AssociationRegistryCheck {
         val warnings = mutableListOf<String>()
 
-        // Prefer the full RNA number if available; fall back to the 9-char identifier.
-        val lookupKey = profile.rna?.takeIf { it.isNotBlank() } ?: profile.identifier
+        val siren = profile.identifier
+        val rnaFromProfile = profile.rna?.takeIf { it.isNotBlank() }
 
-        // ── Step 1: Recherche d'entreprises ──────────────────────────────────────
+        // ── Step 1: Recherche d'entreprises (searched by SIREN, the mandatory identifier) ─────
         var associationExists: Boolean? = null
-        var sirenFound: String? = null
-        var rnaFound: String? = null
+        var rnaFromSearch: String? = null
 
         try {
-            val url = "https://recherche-entreprises.api.gouv.fr/search?q=${enc(lookupKey)}&limit=1"
+            val url = "$rechercheEntreprisesBaseUrl/search?q=${enc(siren)}&limit=1"
             restTemplate.getForObject(url, String::class.java)?.let { body ->
                 val results: JsonNode = objectMapper.readTree(body).path("results")
                 if (results.isArray && results.size() > 0) {
@@ -60,59 +90,59 @@ class AssociationRegistryCheckService(
                     val estAssociation = first.path("complements").path("est_association").asBoolean(false)
                     val natureJuridique = first.path("nature_juridique").asText("")
                     associationExists = estAssociation || natureJuridique == "9220"
-                    sirenFound = first.path("siren").asText("").takeIf { it.isNotBlank() }
-                    rnaFound = first.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
+                    rnaFromSearch = first.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
                 } else {
                     associationExists = false
                 }
             }
         } catch (ex: Exception) {
-            log.warn("Recherche d'entreprises lookup failed for identifier={}: {}", lookupKey, ex.message)
+            log.warn("Recherche d'entreprises lookup failed for SIREN={}: {}", siren, ex.message)
             warnings.add("recherche-entreprises: ${ex.message ?: "unavailable"}")
         }
 
-        // ── Step 2: INSEE Sirene (requires SIREN) ────────────────────────────────
+        // ── Step 2: INSEE Sirene (SIREN always available from the profile) ──────────────────────
         var etatAdministratif: String? = null
 
-        sirenFound?.let { siren ->
-            try {
-                val url = "$inseeBaseUrl/siren/$siren"
-                val headers = HttpHeaders().apply {
-                    set("X-INSEE-Api-Key-Integration", inseeApiKey)
-                    set("Accept", "application/json")
-                }
-                val response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity<Unit>(headers), String::class.java)
-                response.body?.let { body ->
-                    val tree: JsonNode = objectMapper.readTree(body)
-                    etatAdministratif = tree
-                        .path("uniteLegale")
-                        .path("etatAdministratifUniteLegale")
-                        .asText("")
-                        .takeIf { it.isNotBlank() }
-                }
-            } catch (ex: Exception) {
-                log.warn("INSEE Sirene lookup failed for SIREN={}: {}", siren, ex.message)
-                warnings.add("insee-sirene: ${ex.message ?: "unavailable"}")
+        try {
+            val url = "$inseeBaseUrl/siren/$siren"
+            val headers = HttpHeaders().apply {
+                set("X-INSEE-Api-Key-Integration", inseeApiKey)
+                set("Accept", "application/json")
             }
+            val response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity<Unit>(headers), String::class.java)
+            response.body?.let { body ->
+                val tree: JsonNode = objectMapper.readTree(body)
+                etatAdministratif = tree
+                    .path("uniteLegale")
+                    .path("etatAdministratifUniteLegale")
+                    .asText("")
+                    .takeIf { it.isNotBlank() }
+            }
+        } catch (ex: Exception) {
+            log.warn("INSEE Sirene lookup failed for SIREN={}: {}", siren, ex.message)
+            warnings.add("insee-sirene: ${ex.message ?: "unavailable"}")
         }
 
-        // ── Step 3: JOAFE (requires RNA W number) ────────────────────────────────
+        // ── Step 3: JOAFE (RNA — cumulated independently of the SIREN checks above) ────────────
         var joafeDeclarationFound: Boolean? = null
         var dissolutionDetected: Boolean? = null
 
-        val rnaForJoafe = rnaFound ?: profile.rna?.takeIf { it.isNotBlank() }
-        rnaForJoafe?.let { rna ->
+        val rna = rnaFromProfile ?: rnaFromSearch
+        rna?.let {
             try {
                 val url = "$joafeBaseUrl/catalog/datasets/jo_associations/records?q=${enc(rna)}&limit=10"
                 restTemplate.getForObject(url, String::class.java)?.let { body ->
-                    val records: JsonNode = objectMapper.readTree(body).path("results")
-                    val matching = if (records.isArray) (0 until records.size()).filter { i ->
-                        records[i].path("numero_rna").asText("").equals(rna, ignoreCase = true)
+                    val records: JsonNode = objectMapper.readTree(body).path("records")
+                    val fieldsList = if (records.isArray) (0 until records.size()).map { i ->
+                        records[i].path("record").path("fields")
                     } else emptyList()
+                    val matching = fieldsList.filter { fields ->
+                        fields.path("numero_rna").asText("").equals(rna, ignoreCase = true)
+                    }
                     if (matching.isNotEmpty()) {
                         joafeDeclarationFound = true
-                        dissolutionDetected = matching.any { i ->
-                            records[i].path("typeavis").asText("").contains("dissolution", ignoreCase = true)
+                        dissolutionDetected = matching.any { fields ->
+                            fields.path("typeavis").asText("").contains("dissolution", ignoreCase = true)
                         }
                     } else {
                         joafeDeclarationFound = false
@@ -125,36 +155,48 @@ class AssociationRegistryCheckService(
             }
         }
 
-        // ── Step 4: BODACC (requires SIREN, insolvency filter) ───────────────────
+        // ── Step 4: BODACC (SIREN, insolvency filter) ───────────────────────────────────────────
         var bodaccProcedureFound: Boolean? = null
 
-        sirenFound?.let { siren ->
-            try {
-                val url = "$bodaccBaseUrl/catalog/datasets/annonces-commerciales/records?q=${enc(siren)}&limit=10"
-                restTemplate.getForObject(url, String::class.java)?.let { body ->
-                    val records: JsonNode = objectMapper.readTree(body).path("results")
-                    bodaccProcedureFound = records.isArray && (0 until records.size()).any { i ->
-                        records[i].path("familleavis").asText("").equals("pc", ignoreCase = true)
-                    }
+        try {
+            val url = "$bodaccBaseUrl/catalog/datasets/annonces-commerciales/records?q=${enc(siren)}&limit=10"
+            restTemplate.getForObject(url, String::class.java)?.let { body ->
+                val records: JsonNode = objectMapper.readTree(body).path("results")
+                bodaccProcedureFound = records.isArray && (0 until records.size()).any { i ->
+                    records[i].path("familleavis").asText("").equals("pc", ignoreCase = true)
                 }
-            } catch (ex: Exception) {
-                log.warn("BODACC lookup failed for SIREN={}: {}", siren, ex.message)
-                warnings.add("bodacc: ${ex.message ?: "unavailable"}")
             }
+        } catch (ex: Exception) {
+            log.warn("BODACC lookup failed for SIREN={}: {}", siren, ex.message)
+            warnings.add("bodacc: ${ex.message ?: "unavailable"}")
         }
 
-        return RegistryPreCheckDto(
+        return AssociationRegistryCheck(
+            associationId = profile.id!!,
             associationExists = associationExists,
-            siren = sirenFound,
-            rna = rnaFound ?: rnaForJoafe,
+            siren = siren,
+            rna = rna,
             etatAdministratif = etatAdministratif,
             joafeDeclarationFound = joafeDeclarationFound,
             dissolutionDetected = dissolutionDetected,
             bodaccProcedureFound = bodaccProcedureFound,
-            checkedAt = Instant.now(),
-            warnings = warnings,
+            warnings = warnings.toList(),
+            checkedBy = checkedBy,
         )
     }
+
+    private fun AssociationRegistryCheck.toDto() = RegistryPreCheckDto(
+        id = id!!,
+        associationExists = associationExists,
+        siren = siren,
+        rna = rna,
+        etatAdministratif = etatAdministratif,
+        joafeDeclarationFound = joafeDeclarationFound,
+        dissolutionDetected = dissolutionDetected,
+        bodaccProcedureFound = bodaccProcedureFound,
+        checkedAt = checkedAt,
+        warnings = warnings,
+    )
 
     private fun enc(value: String): String =
         URLEncoder.encode(value, Charsets.UTF_8).replace("+", "%20")

@@ -49,6 +49,8 @@
       "title": "Vérification registres",
       "warnings": "Avertissements",
       "refresh": "Relancer",
+      "neverChecked": "Jamais contrôlé — lancez un contrôle pour interroger les registres.",
+      "scan": "Lancer le contrôle",
       "skipped": {
         "noRna": "RNA non trouvé",
         "noSiren": "SIREN non trouvé",
@@ -457,7 +459,7 @@
           },
           "pedagogic": {
             "sub": "CommonLink émet les reçus fiscaux au nom et pour le compte de votre association. Vous restez juridiquement responsable de la délivrance et de l'obligation déclarative annuelle (article 222 bis CGI).",
-            "title": "🧾 Mandat d'émission des reçus fiscaux"
+            "title": "Mandat d'émission des reçus fiscaux"
           },
           "revokeModal": {
             "body": "Révoquer le mandat ? Les reçus déjà émis restent valides, mais aucun nouveau reçu ne sera émis tant que le mandat n'est pas re-signé.",
@@ -532,7 +534,7 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
-          "mandate": "🧾 Mandat fiscal",
+          "mandate": "Mandat fiscal",
           "mandateBadge": {
             "active": "✓ Actif",
             "notSigned": "Non signé",

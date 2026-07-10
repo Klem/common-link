@@ -7,6 +7,7 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationDashboardService
+import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.AssociationService
 import org.commonlink.service.AuthService
 import org.commonlink.service.VerificationService
@@ -57,6 +58,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var verificationService: VerificationService
     @MockkBean private lateinit var mandateService: MandateService
     @MockkBean private lateinit var mandatePdfService: MandatePdfService
+    @MockkBean private lateinit var associationRegistryCheckService: AssociationRegistryCheckService
 
     @Test
     fun contextLoads() {

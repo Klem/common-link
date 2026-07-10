@@ -3,11 +3,14 @@ package org.commonlink.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.entity.User
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpEntity
@@ -15,24 +18,31 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.server.ResponseStatusException
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
 class AssociationRegistryCheckServiceTest {
 
     private val repository: AssociationProfileRepository = mockk()
+    private val registryCheckRepository: AssociationRegistryCheckRepository = mockk()
     private val restTemplate: RestTemplate = mockk()
     private val objectMapper = ObjectMapper()
 
     private val service = AssociationRegistryCheckService(
         associationProfileRepository = repository,
+        registryCheckRepository = registryCheckRepository,
         restTemplate = restTemplate,
         objectMapper = objectMapper,
         inseeApiKey = "test-key",
         inseeBaseUrl = "https://api.insee.fr/api-sirene/3.11",
+        joafeBaseUrl = "https://journal-officiel.example",
+        bodaccBaseUrl = "https://bodacc.example",
+        rechercheEntreprisesBaseUrl = "https://recherche-entreprises.api.gouv.fr",
     )
 
     private val associationId = UUID.randomUUID()
+    private val curatorId = UUID.randomUUID()
     private val mockUser: User = mockk()
     private val profileWithRna = AssociationProfile(
         id = associationId,
@@ -55,9 +65,9 @@ class AssociationRegistryCheckServiceTest {
     private val inseeOk =
         """{"uniteLegale":{"etatAdministratifUniteLegale":"A"}}"""
     private val joafeCreation =
-        """{"results":[{"typeavis":"Création"}]}"""
+        """{"records":[{"record":{"fields":{"numero_rna":"W123456789","typeavis":"Création"}}}]}"""
     private val joafeDissolution =
-        """{"results":[{"typeavis":"Dissolution"}]}"""
+        """{"records":[{"record":{"fields":{"numero_rna":"W123456789","typeavis":"Dissolution"}}}]}"""
     private val bodaccEmpty =
         """{"results":[]}"""
     private val bodaccProcedure =
@@ -77,17 +87,36 @@ class AssociationRegistryCheckServiceTest {
     @BeforeEach
     fun setup() {
         every { repository.findById(associationId) } returns Optional.of(profileWithRna)
+        // save() assigns an id, mirroring the DB default — returns a persisted clone.
+        every { registryCheckRepository.save(any<AssociationRegistryCheck>()) } answers {
+            val c = firstArg<AssociationRegistryCheck>()
+            AssociationRegistryCheck(
+                id = UUID.randomUUID(),
+                associationId = c.associationId,
+                associationExists = c.associationExists,
+                siren = c.siren,
+                rna = c.rna,
+                etatAdministratif = c.etatAdministratif,
+                joafeDeclarationFound = c.joafeDeclarationFound,
+                dissolutionDetected = c.dissolutionDetected,
+                bodaccProcedureFound = c.bodaccProcedureFound,
+                warnings = c.warnings,
+                checkedBy = c.checkedBy,
+                checkedAt = c.checkedAt,
+            )
+        }
     }
 
     @Test
-    fun `check returns full result when all sources respond`() {
+    fun `scan returns full result and persists a row when all sources respond`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
         every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
         every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
+        assertThat(result.id).isNotNull()
         assertThat(result.associationExists).isTrue()
         assertThat(result.siren).isEqualTo("123456789")
         assertThat(result.rna).isEqualTo("W123456789")
@@ -96,52 +125,55 @@ class AssociationRegistryCheckServiceTest {
         assertThat(result.dissolutionDetected).isFalse()
         assertThat(result.bodaccProcedureFound).isFalse()
         assertThat(result.warnings).isEmpty()
+        verify(exactly = 1) { registryCheckRepository.save(match<AssociationRegistryCheck> { it.checkedBy == curatorId }) }
     }
 
     @Test
-    fun `check detects dissolution in JOAFE`() {
+    fun `scan detects dissolution in JOAFE`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
         every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeDissolution
         every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
         assertThat(result.dissolutionDetected).isTrue()
         assertThat(result.warnings).isEmpty()
     }
 
     @Test
-    fun `check detects BODACC procedure collective`() {
+    fun `scan detects BODACC procedure collective`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
         every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
         every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccProcedure
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
         assertThat(result.bodaccProcedureFound).isTrue()
         assertThat(result.warnings).isEmpty()
     }
 
     @Test
-    fun `check adds warning and continues when Recherche d'entreprises fails`() {
+    fun `scan adds warning and continues when Recherche d'entreprises fails`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } throws RuntimeException("connect timeout")
-        // JOAFE still runs because profile.rna is set; INSEE and BODACC are skipped (no sirenFound)
+        // SIREN (profile.identifier) and RNA (profile.rna) checks still run independently — they don't depend on this call.
+        stubInsee()
         every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
         assertThat(result.associationExists).isNull()
-        assertThat(result.siren).isNull()
-        assertThat(result.etatAdministratif).isNull()
-        assertThat(result.bodaccProcedureFound).isNull()
+        assertThat(result.siren).isEqualTo("123456789")
+        assertThat(result.etatAdministratif).isEqualTo("A")
+        assertThat(result.bodaccProcedureFound).isFalse()
         assertThat(result.joafeDeclarationFound).isTrue()
         assertThat(result.warnings).anyMatch { it.startsWith("recherche-entreprises:") }
     }
 
     @Test
-    fun `check adds warning and continues when INSEE fails`() {
+    fun `scan adds warning and continues when INSEE fails`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         every {
             restTemplate.exchange(
@@ -154,7 +186,7 @@ class AssociationRegistryCheckServiceTest {
         every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
         every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
         assertThat(result.etatAdministratif).isNull()
         assertThat(result.associationExists).isTrue()
@@ -162,13 +194,13 @@ class AssociationRegistryCheckServiceTest {
     }
 
     @Test
-    fun `check adds warning and continues when JOAFE fails`() {
+    fun `scan adds warning and continues when JOAFE fails`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
         every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } throws RuntimeException("503 Service Unavailable")
         every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
         assertThat(result.joafeDeclarationFound).isNull()
         assertThat(result.dissolutionDetected).isNull()
@@ -176,39 +208,93 @@ class AssociationRegistryCheckServiceTest {
     }
 
     @Test
-    fun `check adds warning and continues when BODACC fails`() {
+    fun `scan adds warning and continues when BODACC fails`() {
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
         stubInsee()
         every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
         every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } throws RuntimeException("timeout")
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
         assertThat(result.bodaccProcedureFound).isNull()
         assertThat(result.warnings).anyMatch { it.startsWith("bodacc:") }
     }
 
     @Test
-    fun `check skips INSEE and BODACC when no SIREN found`() {
+    fun `scan runs INSEE and BODACC from profile SIREN and skips JOAFE when no RNA found`() {
         every { repository.findById(associationId) } returns Optional.of(profileNoRna)
         every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns """{"results":[]}"""
+        stubInsee()
+        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccEmpty
 
-        val result = service.check(associationId)
+        val result = service.scan(associationId, curatorId)
 
         assertThat(result.associationExists).isFalse()
-        assertThat(result.siren).isNull()
-        assertThat(result.etatAdministratif).isNull()
+        assertThat(result.siren).isEqualTo("123456789")
+        assertThat(result.etatAdministratif).isEqualTo("A")
         assertThat(result.joafeDeclarationFound).isNull()
-        assertThat(result.bodaccProcedureFound).isNull()
+        assertThat(result.bodaccProcedureFound).isFalse()
         assertThat(result.warnings).isEmpty()
     }
 
     @Test
-    fun `check throws 404 when association not found`() {
+    fun `scan cumulates SIREN and RNA checks when association has both`() {
+        // profileWithRna has both identifier (SIREN) and rna set — INSEE/BODACC (SIREN) and JOAFE (RNA)
+        // must all run, even if Recherche d'entreprises (which could otherwise gate them) fails.
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } throws RuntimeException("unavailable")
+        stubInsee()
+        every { restTemplate.getForObject(match<String> { it.contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<String> { it.contains("bodacc") }, String::class.java) } returns bodaccProcedure
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.siren).isEqualTo("123456789")
+        assertThat(result.rna).isEqualTo("W123456789")
+        assertThat(result.etatAdministratif).isEqualTo("A")
+        assertThat(result.joafeDeclarationFound).isTrue()
+        assertThat(result.bodaccProcedureFound).isTrue()
+    }
+
+    @Test
+    fun `scan throws 404 when association not found`() {
         every { repository.findById(associationId) } returns Optional.empty()
 
-        assertThatThrownBy { service.check(associationId) }
+        assertThatThrownBy { service.scan(associationId, curatorId) }
             .isInstanceOf(ResponseStatusException::class.java)
             .hasMessageContaining("Association not found")
+    }
+
+    @Test
+    fun `latest returns null when association was never scanned`() {
+        every { registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns null
+
+        assertThat(service.latest(associationId)).isNull()
+    }
+
+    @Test
+    fun `latest maps the most recent stored scan without any external call`() {
+        val stored = AssociationRegistryCheck(
+            id = UUID.randomUUID(),
+            associationId = associationId,
+            associationExists = true,
+            siren = "123456789",
+            rna = "W123456789",
+            etatAdministratif = "A",
+            joafeDeclarationFound = true,
+            dissolutionDetected = false,
+            bodaccProcedureFound = false,
+            warnings = listOf("insee-sirene: timeout"),
+            checkedBy = curatorId,
+            checkedAt = Instant.now(),
+        )
+        every { registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns stored
+
+        val result = service.latest(associationId)!!
+
+        assertThat(result.id).isEqualTo(stored.id)
+        assertThat(result.associationExists).isTrue()
+        assertThat(result.siren).isEqualTo("123456789")
+        assertThat(result.warnings).containsExactly("insee-sirene: timeout")
+        // No restTemplate interaction is stubbed — a call would fail the test.
     }
 }

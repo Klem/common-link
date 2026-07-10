@@ -49,6 +49,8 @@
       "title": "Registry check",
       "warnings": "Warnings",
       "refresh": "Re-run",
+      "neverChecked": "Never checked — run a check to query the registries.",
+      "scan": "Run check",
       "skipped": {
         "noRna": "RNA not found",
         "noSiren": "SIREN not found",

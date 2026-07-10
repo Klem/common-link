@@ -46,13 +46,23 @@ export const rejectVerification = (associationId: string, reason: string): Promi
     .then(() => undefined);
 
 /**
- * Queries French public registries to check legal existence of the association.
+ * Fetches the latest persisted registry pre-check without contacting any external registry.
  * `GET /api/admin/verifications/{associationId}/registry-precheck`
- * Informational only — each source degrades gracefully.
+ * Returns `null` (HTTP 204) if the association has never been scanned.
  */
-export const getRegistryPreCheck = (associationId: string): Promise<RegistryPreCheckDto> =>
+export const getRegistryPreCheck = (associationId: string): Promise<RegistryPreCheckDto | null> =>
   api
     .get<RegistryPreCheckDto>(`/api/admin/verifications/${associationId}/registry-precheck`)
+    .then((r) => (r.status === 204 ? null : r.data));
+
+/**
+ * Runs a fresh registry pre-check scan and persists it (append-only audit trail).
+ * `POST /api/admin/verifications/{associationId}/registry-precheck`
+ * Informational only — each source degrades gracefully.
+ */
+export const scanRegistryPreCheck = (associationId: string): Promise<RegistryPreCheckDto> =>
+  api
+    .post<RegistryPreCheckDto>(`/api/admin/verifications/${associationId}/registry-precheck`)
     .then((r) => r.data);
 
 /**

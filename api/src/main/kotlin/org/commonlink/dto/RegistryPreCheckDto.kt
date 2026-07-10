@@ -2,6 +2,7 @@ package org.commonlink.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
+import java.util.UUID
 
 /**
  * Automated legal-existence pre-check result for an association.
@@ -9,9 +10,14 @@ import java.time.Instant
  * Informational only — never used to auto-approve or auto-reject a KYC dossier.
  * Null fields mean the source was unavailable or the check was not applicable
  * (e.g. no SIREN → INSEE and BODACC checks are skipped).
+ *
+ * Each result is a persisted, immutable scan row (see [org.commonlink.entity.AssociationRegistryCheck]).
  */
 @Schema(description = "Automated registry pre-check result. Informational only — never auto-approves or rejects.")
 data class RegistryPreCheckDto(
+
+    @Schema(description = "Identifier of the persisted scan row.")
+    val id: UUID,
 
     @Schema(description = "Whether the entity was found as an association in the Recherche d'entreprises registry.")
     val associationExists: Boolean?,
