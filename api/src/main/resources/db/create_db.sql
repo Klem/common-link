@@ -1,8 +1,8 @@
 -- =============================================================
 -- CommonLink — create_db.sql
--- Schéma consolidé : état final équivalent aux migrations V1 → V33.
+-- Schéma consolidé : état final équivalent aux migrations V1 → V37.
 --
--- Ce script remplace l'exécution séquentielle des 27 migrations Flyway
+-- Ce script remplace l'exécution séquentielle des 37 migrations Flyway
 -- par les formes finales : les ALTER / RENAME / DROP INDEX intermédiaires
 -- sont supprimés, seules les définitions résultantes subsistent.
 --
@@ -124,7 +124,7 @@ CREATE TABLE donor_profiles
 CREATE UNIQUE INDEX idx_donor_wallet_address
     ON donor_profiles (wallet_address) WHERE wallet_address IS NOT NULL;
 
--- association_profiles  (V4 ; settings fields + KYC status added in V35)
+-- association_profiles  (V4 ; settings fields + KYC status V35 ; identifier→RNA + siren swap V37)
 CREATE TABLE association_profiles
 (
     id                              uuid         NOT NULL DEFAULT gen_random_uuid(),
@@ -436,7 +436,7 @@ CREATE INDEX idx_association_document_association_id
     ON association_document(association_id);
 
 -- Séquence pour la référence MND-<année>-<seq %04d>
-CREATE SEQUENCE fiscal_mandate_ref_seq START 1;
+CREATE SEQUENCE if not exists fiscal_mandate_ref_seq START 1;
 
 -- fiscal_mandate : signature électronique horodatée du mandat de collecte
 CREATE TABLE fiscal_mandate (
@@ -456,3 +456,44 @@ CREATE UNIQUE INDEX uidx_fiscal_mandate_active
 
 CREATE INDEX idx_fiscal_mandate_association_id
     ON fiscal_mandate(association_id);
+
+-- =============================================================
+-- 10. VÉRIFICATION REGISTRES LÉGAUX  (V36)
+-- =============================================================
+
+-- association_registry_check : audit trail immuable des vérifications JOAFE/BODACC/INSEE
+-- Append-only : une ligne par scan, jamais modifiée ni supprimée.
+CREATE TABLE association_registry_check (
+    id                      UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    association_id          UUID        NOT NULL REFERENCES association_profiles(id),
+
+    -- Recherche d'entreprises
+    association_exists      BOOLEAN,
+    siren                   VARCHAR(9),
+    rna                     VARCHAR(20),
+
+    -- INSEE Sirene : 'A' = active, 'C' = ceased
+    etat_administratif      VARCHAR(1)  CHECK (etat_administratif IN ('A', 'C')),
+
+    -- JOAFE
+    joafe_declaration_found BOOLEAN,
+    dissolution_detected    BOOLEAN,
+
+    -- BODACC
+    bodacc_procedure_found  BOOLEAN,
+
+    -- Échecs non-bloquants par source (JSON array via StringListJsonConverter)
+    warnings                TEXT        NOT NULL DEFAULT '[]',
+
+    -- Curateur ayant déclenché le scan
+    checked_by              UUID        REFERENCES users(id),
+    checked_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Dernier scan par association = ORDER BY checked_at DESC LIMIT 1
+CREATE INDEX idx_association_registry_check_assoc_checked_at
+    ON association_registry_check(association_id, checked_at DESC);
+
+-- Gel du scan ayant motivé la décision KYC (nullable : le scan est informatif)
+ALTER TABLE association_profiles
+    ADD COLUMN decision_registry_check_id UUID REFERENCES association_registry_check(id);

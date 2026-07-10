@@ -7,10 +7,7 @@ import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { getHomePath } from '@/lib/routes';
-import type { AuthResponseDto } from '@/types/auth';
-
-/** User role discriminator — determines which dashboard the user lands on. */
-type UserRole = 'ASSOCIATION' | 'DONOR';
+import type { AuthResponseDto, UserRole } from '@/types/auth';
 
 /** Internal state shape for the Google auth hook. */
 interface GoogleAuthState {
