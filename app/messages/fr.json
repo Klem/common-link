@@ -115,14 +115,8 @@
   },
   "auth": {
     "assoSearch": {
-      "apiUnavailable": "Le répertoire est indisponible. Saisissez les informations manuellement.",
+      "apiUnavailable": "Le répertoire est temporairement indisponible. Veuillez réessayer plus tard.",
       "backToSearch": "Retour à la recherche",
-      "confirm": "Confirmer",
-      "manualCodePostal": "Code postal",
-      "manualEntry": "Saisie manuelle",
-      "manualNom": "Nom de l'association",
-      "manualRna": "RNA / SIREN",
-      "manualVille": "Ville",
       "noResults": "Aucune association trouvée.",
       "noResultsHint": "Vérifiez l'orthographe ou essayez votre RNA.",
       "searchHint": "Recherchez votre association dans le répertoire officiel."
@@ -237,11 +231,7 @@
           "noResults": "Aucun résultat",
           "placeholder": "Nom ou RNA…",
           "results": "Résultats",
-          "select": "Sélectionner",
-          "status": {
-            "active": "Actif",
-            "ceased": "Cessée"
-          }
+          "select": "Sélectionner"
         },
         "steps": {
           "connect": "Connexion",

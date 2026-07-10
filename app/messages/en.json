@@ -115,14 +115,8 @@
   },
   "auth": {
     "assoSearch": {
-      "apiUnavailable": "The directory is unavailable. Please enter information manually.",
+      "apiUnavailable": "The directory is temporarily unavailable. Please try again later.",
       "backToSearch": "Back to search",
-      "confirm": "Confirm",
-      "manualCodePostal": "Postal code",
-      "manualEntry": "Manual entry",
-      "manualNom": "Association name",
-      "manualRna": "RNA / SIREN",
-      "manualVille": "City",
       "noResults": "No association found.",
       "noResultsHint": "Check the spelling or try your RNA.",
       "searchHint": "Search your association in the official directory."
@@ -237,11 +231,7 @@
           "noResults": "No results",
           "placeholder": "Name or RNA…",
           "results": "Results",
-          "select": "Select",
-          "status": {
-            "active": "Active",
-            "ceased": "Ceased"
-          }
+          "select": "Select"
         },
         "steps": {
           "connect": "Connect",

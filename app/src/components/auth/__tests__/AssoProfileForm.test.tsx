@@ -12,7 +12,6 @@ const mockAsso: AssoResult = {
   nom: 'Association Test',
   ville: 'Paris',
   codePostal: '75001',
-  etat: 'A',
 };
 
 describe('AssoProfileForm', () => {
