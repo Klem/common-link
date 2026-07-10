@@ -17,4 +17,18 @@ export const ROUTES = {
   ASSOCIATION_PAYEES: '/dashboard/association/payees',
   ASSOCIATION_CAMPAIGNS: '/dashboard/association/campaigns',
   ASSOCIATION_REPORTING: '/dashboard/association/reporting',
+  admin: {
+    root: '/admin',
+    verifications: '/admin/verifications',
+    verificationDetail: (id: string) => `/admin/verifications/${id}`,
+  },
 } as const;
+
+/**
+ * Returns the locale-prefixed home path for a given role.
+ * Centralises role → landing page logic so all auth hooks stay in sync.
+ */
+export function getHomePath(locale: string, role: string): string {
+  if (role === 'CURATOR') return `/${locale}${ROUTES.admin.root}`;
+  return `/${locale}/dashboard/${role.toLowerCase()}`;
+}

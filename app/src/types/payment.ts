@@ -77,4 +77,6 @@ export interface Page<T> {
   totalPages: number;
   number: number;
   size: number;
+  first: boolean;
+  last: boolean;
 }

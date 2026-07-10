@@ -2,8 +2,14 @@
 export const UserRole = {
   ASSOCIATION: 'ASSOCIATION',
   DONOR: 'DONOR',
+  CURATOR: 'CURATOR',
 } as const;
 export type UserRole = typeof UserRole[keyof typeof UserRole];
+
+/** Returns true if the user holds the CURATOR (admin) role. */
+export function isCurator(user: UserDto | null | undefined): boolean {
+  return user?.role === UserRole.CURATOR;
+}
 
 /** Authentication provider used to create or log in the account. */
 export const AuthProvider = {

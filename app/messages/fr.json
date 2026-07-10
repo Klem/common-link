@@ -1,16 +1,124 @@
 {
+  "admin": {
+    "decision": {
+      "approve": "Approuver",
+      "approved": "Dossier approuvé.",
+      "cancel": "Annuler",
+      "confirmApprove": "Confirmer l'approbation ?",
+      "notPending": "Ce dossier n'est plus en attente — il a peut-être déjà été traité. Rechargement...",
+      "reasonLabel": "Motif de rejet (obligatoire)",
+      "reasonRequired": "Le motif de rejet est obligatoire.",
+      "reasonTooLong": "Maximum 1000 caractères.",
+      "reject": "Rejeter",
+      "rejected": "Dossier rejeté.",
+      "submit": "Soumettre le rejet"
+    },
+    "docType": {
+      "verifRepresentativeId": "Pièce d'identité du représentant légal",
+      "verifRnaReceipt": "Récépissé RNA / insertion au JOAFE",
+      "verifStatuts": "Statuts de l'association"
+    },
+    "nav": {
+      "verifications": "Associations / Vérifications"
+    },
+    "registryCheck": {
+      "bodacc": {
+        "clean": "Aucune procédure collective"
+      },
+      "checkedAt": "Vérifié le",
+      "error": "Vérification indisponible",
+      "insee": {
+        "active": "Actif",
+        "ceased": "Cessé"
+      },
+      "joafe": {
+        "declaration": "Déclaration trouvée",
+        "noDeclaration": "Aucune déclaration"
+      },
+      "loading": "Vérification en cours...",
+      "neverChecked": "Jamais contrôlé — lancez un contrôle pour interroger les registres.",
+      "note": "Informationnel uniquement — ne remplace pas la revue manuelle",
+      "refresh": "Relancer",
+      "rna": "RNA",
+      "scan": "Lancer le contrôle",
+      "siren": "SIREN",
+      "skipped": {
+        "noRna": "RNA non trouvé",
+        "noSiren": "SIREN non trouvé",
+        "title": "Non effectué",
+        "unavailable": "Recherche registres indisponible"
+      },
+      "status": {
+        "active": "Active",
+        "ceased": "Cessée (INSEE)",
+        "dissolved": "Dissolution détectée",
+        "insolvency": "Procédure collective",
+        "notFound": "Non trouvée"
+      },
+      "title": "Vérification registres",
+      "warnings": "Avertissements"
+    },
+    "shell": {
+      "logout": "Déconnexion",
+      "navLabel": "Navigation",
+      "title": "Console Admin"
+    },
+    "status": {
+      "PENDING": "En attente",
+      "REJECTED": "Rejetée",
+      "UNVERIFIED": "Non soumise",
+      "VERIFIED": "Vérifiée"
+    },
+    "verificationDetail": {
+      "backToList": "← Retour à la liste",
+      "doc": {
+        "download": "Télécharger",
+        "downloadError": "Échec du téléchargement du document.",
+        "missing": "Manquant",
+        "previewUnavailable": "Aperçu non disponible",
+        "size": "Taille",
+        "uploadedOn": "Déposé le",
+        "view": "Voir"
+      },
+      "error": "Impossible de charger le dossier.",
+      "noDocs": "Aucun document complémentaire.",
+      "notFound": "Dossier introuvable.",
+      "optionalDocs": "Documents complémentaires",
+      "rejectionReason": "Motif de rejet",
+      "requiredDocs": "Documents requis",
+      "submittedOn": "Soumis le",
+      "title": "Dossier de vérification",
+      "verifiedOn": "Vérifié le"
+    },
+    "verifications": {
+      "col": {
+        "docs": "Docs",
+        "identifier": "SIREN / RNA",
+        "name": "Association",
+        "status": "Statut",
+        "submitted": "Soumis le"
+      },
+      "empty": "Aucune association dans ce statut.",
+      "error": "Impossible de charger les vérifications.",
+      "loading": "Chargement...",
+      "pagination": {
+        "pageOf": "Page {current} sur {total}"
+      },
+      "tabs": {
+        "pending": "En attente",
+        "rejected": "Rejetées",
+        "unverified": "Non soumises",
+        "verified": "Vérifiées"
+      },
+      "title": "Vérifications"
+    }
+  },
   "auth": {
     "assoSearch": {
-      "apiUnavailable": "Le répertoire est indisponible. Saisissez les informations manuellement.",
+      "apiUnavailable": "Le répertoire est temporairement indisponible. Veuillez réessayer plus tard.",
       "backToSearch": "Retour à la recherche",
-      "confirm": "Confirmer",
-      "manualCodePostal": "Code postal",
-      "manualEntry": "Saisie manuelle",
-      "manualNom": "Nom de l'association",
-      "manualSiren": "SIREN",
-      "manualVille": "Ville",
       "noResults": "Aucune association trouvée.",
-      "noResultsHint": "Vérifiez l'orthographe ou essayez votre SIREN.",
+      "noResultsHint": "Vérifiez l'orthographe ou essayez votre RNA.",
       "searchHint": "Recherchez votre association dans le répertoire officiel."
     },
     "divider": {
@@ -112,8 +220,8 @@
             "label": "Nom de l'association",
             "placeholder": "Pré-rempli"
           },
-          "siren": {
-            "label": "SIREN",
+          "rna": {
+            "label": "RNA",
             "placeholder": "Pré-rempli"
           },
           "submit": "Créer mon espace →"
@@ -121,13 +229,9 @@
         "search": {
           "label": "Rechercher votre association",
           "noResults": "Aucun résultat",
-          "placeholder": "Nom ou SIREN…",
+          "placeholder": "Nom ou RNA…",
           "results": "Résultats",
-          "select": "Sélectionner",
-          "status": {
-            "active": "Actif",
-            "ceased": "Cessée"
-          }
+          "select": "Sélectionner"
         },
         "steps": {
           "connect": "Connexion",
@@ -286,9 +390,10 @@
           "creationYearMin": "L'année doit être 1800 ou ultérieure.",
           "phoneFormat": "Veuillez saisir un numéro de téléphone valide (6–20 caractères).",
           "postalCodeFormat": "Le code postal doit contenir 5 chiffres.",
-          "rnaFormat": "Le N° RNA doit être au format W suivi de 9 chiffres (ex. W123456789)."
+          "rnaFormat": "Le N° RNA doit être au format W suivi de 9 chiffres (ex. W123456789).",
+          "sirenFormat": "Le SIREN doit contenir exactement 9 chiffres."
         },
-        "identifier": "SIREN",
+        "identifier": "N° RNA",
         "infos": {
           "title": "Informations de l'association"
         },
@@ -345,7 +450,7 @@
           },
           "pedagogic": {
             "sub": "CommonLink émet les reçus fiscaux au nom et pour le compte de votre association. Vous restez juridiquement responsable de la délivrance et de l'obligation déclarative annuelle (article 222 bis CGI).",
-            "title": "🧾 Mandat d'émission des reçus fiscaux"
+            "title": "Mandat d'émission des reçus fiscaux"
           },
           "revokeModal": {
             "body": "Révoquer le mandat ? Les reçus déjà émis restent valides, mais aucun nouveau reçu ne sera émis tant que le mandat n'est pas re-signé.",
@@ -411,6 +516,7 @@
           "magicLink": "Lien magique",
           "title": "Sécurité"
         },
+        "siren": "SIREN",
         "subtitle": "Gérez les informations et la vérification de votre association.",
         "success": "Profil mis à jour.",
         "tabs": {
@@ -420,7 +526,7 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
-          "mandate": "🧾 Mandat fiscal",
+          "mandate": "Mandat fiscal",
           "mandateBadge": {
             "active": "✓ Actif",
             "notSigned": "Non signé",

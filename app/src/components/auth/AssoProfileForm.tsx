@@ -51,8 +51,8 @@ export function AssoProfileForm({ asso, onSubmit, loading = false }: AssoProfile
           <input type="text" value={asso.nom} disabled className="form-input" />
         </div>
         <div className="form-group">
-          <label className="form-label">{t('signup.association.profile.siren.label')}</label>
-          <input type="text" value={asso.siren} disabled className="form-input" />
+          <label className="form-label">{t('signup.association.profile.rna.label')}</label>
+          <input type="text" value={asso.identifier} disabled className="form-input" />
         </div>
       </div>
 

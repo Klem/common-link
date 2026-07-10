@@ -32,12 +32,17 @@ describe('AssoSearch', () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: async () => ({
-        results: [
+        records: [
           {
-            siren: '123456789',
-            nom_complet: 'Croix Rouge Française',
-            siege: { code_postal: '75008', libelle_commune: 'PARIS' },
-            etat_administratif: 'A',
+            record: {
+              fields: {
+                numero_rna: 'W123456789',
+                titre: 'Croix Rouge Française',
+                typeavis: 'Création',
+                commune_actuelle: 'PARIS',
+                codepostal_actuel: '75008',
+              },
+            },
           },
         ],
       }),

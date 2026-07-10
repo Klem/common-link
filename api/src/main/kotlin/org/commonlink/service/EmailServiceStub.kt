@@ -31,4 +31,14 @@ class EmailServiceStub : EmailService {
     override fun sendVerificationSubmittedToAdmin(associationName: String) {
         logger.info("Verification dossier submitted by association: $associationName")
     }
+
+    /** Logs the approval notification instead of sending an email. */
+    override fun sendVerificationApprovedToAssociation(associationName: String, recipientEmail: String) {
+        logger.info("Verification approved for '$associationName' — would notify $recipientEmail")
+    }
+
+    /** Logs the rejection notification instead of sending an email. */
+    override fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String) {
+        logger.info("Verification rejected for '$associationName' — would notify $recipientEmail (reason: $reason)")
+    }
 }

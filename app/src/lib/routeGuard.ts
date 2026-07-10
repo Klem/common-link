@@ -10,6 +10,8 @@ import { UserRole } from '@/types/auth';
  * - Authenticated users accessing a dashboard for the wrong role are cross-redirected
  *   to their own dashboard (e.g. a DONOR visiting `/dashboard/association` is sent to
  *   `/dashboard/donor`).
+ * - CURATOR users on user-facing paths (dashboard, settings, login) are redirected to `/admin`.
+ * - Non-CURATOR users on `/admin/**` are redirected to their own dashboard.
  * - Authenticated users landing on the login page are bounced to their dashboard.
  *
  * @param path - The current pathname (locale-stripped, e.g. `/dashboard/donor`).
@@ -20,14 +22,29 @@ export function getRedirectForRole(path: string, role: string | null): string | 
   const isDonorPath = path === ROUTES.DONOR_DASHBOARD || path.startsWith(`${ROUTES.DONOR_DASHBOARD}/`);
   const isAssociationPath =
     path === ROUTES.ASSOCIATION_DASHBOARD || path.startsWith(`${ROUTES.ASSOCIATION_DASHBOARD}/`);
+  const isAdminPath = path === ROUTES.admin.root || path.startsWith(`${ROUTES.admin.root}/`);
+  const isSettingsPath = path === '/settings' || path.startsWith('/settings/');
   const isLoginPath = path === ROUTES.LOGIN;
 
   // Unauthenticated user on a protected path → send to login
   if (role === null) {
-    if (isDonorPath || isAssociationPath) {
+    if (isDonorPath || isAssociationPath || isAdminPath) {
       return ROUTES.LOGIN;
     }
     return null;
+  }
+
+  // CURATOR: redirect away from user-facing areas to the admin console
+  if (role === UserRole.CURATOR) {
+    if (isDonorPath || isAssociationPath || isSettingsPath || isLoginPath) {
+      return ROUTES.admin.root;
+    }
+    return null; // CURATOR on /admin/** or any other path → no redirect
+  }
+
+  // Non-CURATOR on admin path → redirect to their own dashboard
+  if (isAdminPath) {
+    return role === UserRole.DONOR ? ROUTES.DONOR_DASHBOARD : ROUTES.ASSOCIATION_DASHBOARD;
   }
 
   // Wrong-role access — cross-redirect

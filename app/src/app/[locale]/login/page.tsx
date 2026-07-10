@@ -6,6 +6,7 @@ interface LoginPageProps {
     view?: string;
     role?: string;
     token?: string;
+    redirect?: string;
   }>;
 }
 
@@ -15,6 +16,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const view = params.view === 'signup' ? 'signup' : 'login';
   const role = params.role === 'association' ? UserRole.ASSOCIATION : UserRole.DONOR;
   const token = params.token ?? null;
+  const redirect = params.redirect ?? null;
 
-  return <LoginScreen initialView={view} initialRole={role} magicLinkToken={token} />;
+  return <LoginScreen initialView={view} initialRole={role} magicLinkToken={token} redirectAfterLogin={redirect} />;
 }

@@ -8,8 +8,8 @@ data class AssociationProfileUpsertDto(
     val nom: String,
 
     @field:NotBlank
-    @field:Size(min = 9, max = 9)
-    val siren: String,
+    @field:Size(max = 20)
+    val identifier: String,
 
     val ville: String? = null,
     val codePostal: String? = null,

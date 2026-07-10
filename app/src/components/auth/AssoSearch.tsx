@@ -4,24 +4,26 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 
 export interface AssoResult {
-  siren: string;
+  identifier: string;
   nom: string;
   ville: string;
   codePostal: string;
-  etat: 'A' | 'F';
 }
 
-interface ApiOrganization {
-  nom_complet?: string;
-  nom_raison_sociale?: string;
-  siren: string;
-  siege?: { code_postal?: string; libelle_commune?: string };
-  etat_administratif?: 'A' | 'F';
+interface JoafeFields {
+  numero_rna?: string;
+  titre?: string;
+  typeavis?: string;
+  commune_actuelle?: string;
+  codepostal_actuel?: string;
 }
 
-interface ApiSearchResponse {
-  results: ApiOrganization[];
-  total_results?: number;
+interface JoafeRecord {
+  record: { fields: JoafeFields };
+}
+
+interface JoafeResponse {
+  records: JoafeRecord[];
 }
 
 interface AssoSearchProps {
@@ -30,17 +32,31 @@ interface AssoSearchProps {
 
 type SearchState = 'idle' | 'loading' | 'results' | 'empty' | 'error';
 
-const API_BASE = 'https://recherche-entreprises.api.gouv.fr';
-const NATURE_JURIDIQUE_ASSO = '9210,9220,9221,9222,9223,9224,9230,9240,9260,9300';
+const JOAFE_BASE = 'https://journal-officiel-datadila.opendatasoft.com/api/explore/v2.0/catalog/datasets/jo_associations/records';
 
-function mapOrg(org: ApiOrganization): AssoResult {
-  return {
-    siren: org.siren,
-    nom: org.nom_complet ?? org.nom_raison_sociale ?? '—',
-    ville: org.siege?.libelle_commune ?? '',
-    codePostal: org.siege?.code_postal ?? '',
-    etat: org.etat_administratif ?? 'A',
-  };
+function mapJoafeRecords(records: JoafeRecord[]): AssoResult[] {
+  const byRna = new Map<string, { fields: JoafeFields; dissolved: boolean }>();
+
+  for (const { record: { fields } } of records) {
+    const rna = fields.numero_rna;
+    if (!rna) continue;
+    const dissolved = fields.typeavis?.toLowerCase().includes('dissolution') ?? false;
+    const existing = byRna.get(rna);
+    if (existing) {
+      if (dissolved) existing.dissolved = true;
+    } else {
+      byRna.set(rna, { fields, dissolved });
+    }
+  }
+
+  return Array.from(byRna.values())
+    .filter(({ dissolved }) => !dissolved)
+    .map(({ fields }) => ({
+      identifier: fields.numero_rna!,
+      nom: fields.titre ?? '—',
+      ville: fields.commune_actuelle ?? '',
+      codePostal: fields.codepostal_actuel ?? '',
+    }));
 }
 
 export function AssoSearch({ onSelect }: AssoSearchProps) {
@@ -49,8 +65,6 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
   const [results, setResults] = useState<AssoResult[]>([]);
   const [searchState, setSearchState] = useState<SearchState>('idle');
   const [apiUnavailable, setApiUnavailable] = useState(false);
-  const [showManual, setShowManual] = useState(false);
-  const [manualData, setManualData] = useState({ siren: '', nom: '', ville: '', codePostal: '' });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const search = useCallback(async (q: string) => {
@@ -61,17 +75,14 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
     }
     setSearchState('loading');
     try {
-      const params = new URLSearchParams({
-        q,
-        per_page: '10',
-        nature_juridique: NATURE_JURIDIQUE_ASSO,
-        etat_administratif: 'A',
-      });
-      const url = `${API_BASE}/search?${params}`;
-      const res = await fetch(url);
+      const safeQ = q.replace(/'/g, "''");
+      const isRna = /^W\d{6,}$/i.test(q.trim());
+      const whereClause = isRna ? `numero_rna='${safeQ}'` : `titre like '%${safeQ}%'`;
+      const params = new URLSearchParams({ where: whereClause, limit: '10' });
+      const res = await fetch(`${JOAFE_BASE}?${params}`);
       if (!res.ok) throw new Error('API error');
-      const data = (await res.json()) as ApiSearchResponse;
-      const mapped = (data.results ?? []).map(mapOrg);
+      const data = (await res.json()) as JoafeResponse;
+      const mapped = mapJoafeRecords(data.records ?? []);
       setResults(mapped);
       setSearchState(mapped.length > 0 ? 'results' : 'empty');
       setApiUnavailable(false);
@@ -93,12 +104,6 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
     setQuery(asso.nom);
     onSelect(asso);
   };
-
-  const handleManualConfirm = () => {
-    if (!manualData.nom.trim() || !manualData.siren.trim()) return;
-    onSelect({ ...manualData, etat: 'A' });
-  };
-
 
   return (
     <div className="flex flex-col gap-3">
@@ -126,45 +131,31 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
       {/* Results list */}
       {searchState === 'results' && results.length > 0 && (
         <div className="flex flex-col gap-[7px] max-h-[260px] overflow-y-auto pr-[2px]">
-          {results.map((asso) => {
-            const isActive = asso.etat === 'A';
-            return (
-              <div
-                key={asso.siren}
-                className={`bg-bg-3 border border-border rounded-[10px] px-[14px] py-[13px] flex items-center gap-[11px] transition-all duration-200 ${
-                  isActive ? 'cursor-pointer hover:border-green/30 hover:bg-green/[.04]' : 'opacity-45 cursor-not-allowed'
-                }`}
-                onClick={() => isActive && handleSelect(asso)}
-              >
-                <div
-                  className="w-9 h-9 rounded-[9px] flex items-center justify-center font-display font-extrabold text-[15px] text-green flex-shrink-0 bg-green/10 border border-green/20"
-                >
-                  {asso.nom[0]?.toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12.5px] font-semibold text-text truncate">{asso.nom}</div>
-                  <div className="text-[11px] text-muted flex flex-wrap gap-2">
-                    <span>📍 {asso.ville} {asso.codePostal}</span>
-                    <span>SIREN {asso.siren}</span>
-                    <span className={`badge ${isActive ? 'badge-active' : 'badge-neutral'}`}>
-                      {isActive
-                        ? t('signup.association.search.status.active')
-                        : t('signup.association.search.status.ceased')}
-                    </span>
-                  </div>
-                </div>
-                {isActive && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleSelect(asso); }}
-                    className="px-[11px] py-[5px] rounded-[6px] font-body text-[12px] font-semibold text-green flex-shrink-0 cursor-pointer transition-all duration-200 hover:opacity-80 bg-green/10 border border-green/25"
-                  >
-                    {t('signup.association.search.select')} →
-                  </button>
-                )}
+          {results.map((asso) => (
+            <div
+              key={asso.identifier}
+              className="bg-bg-3 border border-border rounded-[10px] px-[14px] py-[13px] flex items-center gap-[11px] transition-all duration-200 cursor-pointer hover:border-green/30 hover:bg-green/[.04]"
+              onClick={() => handleSelect(asso)}
+            >
+              <div className="w-9 h-9 rounded-[9px] flex items-center justify-center font-display font-extrabold text-[15px] text-green flex-shrink-0 bg-green/10 border border-green/20">
+                {asso.nom[0]?.toUpperCase()}
               </div>
-            );
-          })}
+              <div className="flex-1 min-w-0">
+                <div className="text-[12.5px] font-semibold text-text truncate">{asso.nom}</div>
+                <div className="text-[11px] text-muted flex flex-wrap gap-2">
+                  <span>📍 {asso.ville} {asso.codePostal}</span>
+                  <span>RNA {asso.identifier}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleSelect(asso); }}
+                className="px-[11px] py-[5px] rounded-[6px] font-body text-[12px] font-semibold text-green flex-shrink-0 cursor-pointer transition-all duration-200 hover:opacity-80 bg-green/10 border border-green/25"
+              >
+                {t('signup.association.search.select')} →
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -180,72 +171,6 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
         <p className="text-[12px] text-red">{t('assoSearch.apiUnavailable')}</p>
       )}
 
-      {/* Manual entry — always available */}
-      {!showManual ? (
-        <button
-          type="button"
-          onClick={() => setShowManual(true)}
-          className="text-[12px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline self-start"
-        >
-          {t('assoSearch.manualEntry')} →
-        </button>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => setShowManual(false)}
-            className="text-[12px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline self-start"
-          >
-            ← {t('assoSearch.backToSearch')}
-          </button>
-          <div className="form-group">
-            <label className="form-label">{t('assoSearch.manualSiren')} *</label>
-            <input
-              type="text"
-              value={manualData.siren}
-              onChange={(e) => setManualData((d) => ({ ...d, siren: e.target.value }))}
-              className="form-input"
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">{t('assoSearch.manualNom')} *</label>
-            <input
-              type="text"
-              value={manualData.nom}
-              onChange={(e) => setManualData((d) => ({ ...d, nom: e.target.value }))}
-              className="form-input"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="form-group">
-              <label className="form-label">{t('assoSearch.manualVille')}</label>
-              <input
-                type="text"
-                value={manualData.ville}
-                onChange={(e) => setManualData((d) => ({ ...d, ville: e.target.value }))}
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">{t('assoSearch.manualCodePostal')}</label>
-              <input
-                type="text"
-                value={manualData.codePostal}
-                onChange={(e) => setManualData((d) => ({ ...d, codePostal: e.target.value }))}
-                className="form-input"
-              />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleManualConfirm}
-            disabled={!manualData.nom.trim() || !manualData.siren.trim()}
-            className="btn btn-primary btn-md w-full"
-          >
-            {t('assoSearch.confirm')}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

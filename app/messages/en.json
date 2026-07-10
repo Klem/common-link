@@ -1,16 +1,124 @@
 {
+  "admin": {
+    "decision": {
+      "approve": "Approve",
+      "approved": "Dossier approved.",
+      "cancel": "Cancel",
+      "confirmApprove": "Confirm approval?",
+      "notPending": "This dossier is no longer pending — it may have been processed by someone else. Reloading...",
+      "reasonLabel": "Rejection reason (required)",
+      "reasonRequired": "Rejection reason is required.",
+      "reasonTooLong": "Maximum 1000 characters.",
+      "reject": "Reject",
+      "rejected": "Dossier rejected.",
+      "submit": "Submit rejection"
+    },
+    "docType": {
+      "verifRepresentativeId": "Legal representative's ID",
+      "verifRnaReceipt": "RNA receipt / JOAFE publication",
+      "verifStatuts": "Articles of association"
+    },
+    "nav": {
+      "verifications": "Associations / Verifications"
+    },
+    "registryCheck": {
+      "bodacc": {
+        "clean": "No collective procedure"
+      },
+      "checkedAt": "Checked on",
+      "error": "Check unavailable",
+      "insee": {
+        "active": "Active",
+        "ceased": "Ceased"
+      },
+      "joafe": {
+        "declaration": "Declaration found",
+        "noDeclaration": "No declaration"
+      },
+      "loading": "Checking...",
+      "neverChecked": "Never checked — run a check to query the registries.",
+      "note": "Informational only — does not replace manual review",
+      "refresh": "Re-run",
+      "rna": "RNA",
+      "scan": "Run check",
+      "siren": "SIREN",
+      "skipped": {
+        "noRna": "RNA not found",
+        "noSiren": "SIREN not found",
+        "title": "Not performed",
+        "unavailable": "Registry search unavailable"
+      },
+      "status": {
+        "active": "Active",
+        "ceased": "Ceased (INSEE)",
+        "dissolved": "Dissolution detected",
+        "insolvency": "Insolvency procedure",
+        "notFound": "Not found"
+      },
+      "title": "Registry check",
+      "warnings": "Warnings"
+    },
+    "shell": {
+      "logout": "Log out",
+      "navLabel": "Navigation",
+      "title": "Admin Console"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "REJECTED": "Rejected",
+      "UNVERIFIED": "Not submitted",
+      "VERIFIED": "Verified"
+    },
+    "verificationDetail": {
+      "backToList": "← Back to list",
+      "doc": {
+        "download": "Download",
+        "downloadError": "Failed to download document.",
+        "missing": "Missing",
+        "previewUnavailable": "Preview unavailable",
+        "size": "Size",
+        "uploadedOn": "Uploaded on",
+        "view": "View"
+      },
+      "error": "Failed to load dossier.",
+      "noDocs": "No additional documents.",
+      "notFound": "Dossier not found.",
+      "optionalDocs": "Additional documents",
+      "rejectionReason": "Rejection reason",
+      "requiredDocs": "Required documents",
+      "submittedOn": "Submitted on",
+      "title": "Verification Dossier",
+      "verifiedOn": "Verified on"
+    },
+    "verifications": {
+      "col": {
+        "docs": "Docs",
+        "identifier": "SIREN / RNA",
+        "name": "Association",
+        "status": "Status",
+        "submitted": "Submitted on"
+      },
+      "empty": "No associations in this status.",
+      "error": "Failed to load verifications.",
+      "loading": "Loading...",
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      },
+      "tabs": {
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "unverified": "Not submitted",
+        "verified": "Verified"
+      },
+      "title": "Verifications"
+    }
+  },
   "auth": {
     "assoSearch": {
-      "apiUnavailable": "The directory is unavailable. Please enter information manually.",
+      "apiUnavailable": "The directory is temporarily unavailable. Please try again later.",
       "backToSearch": "Back to search",
-      "confirm": "Confirm",
-      "manualCodePostal": "Postal code",
-      "manualEntry": "Manual entry",
-      "manualNom": "Association name",
-      "manualSiren": "SIREN",
-      "manualVille": "City",
       "noResults": "No association found.",
-      "noResultsHint": "Check the spelling or try your SIREN.",
+      "noResultsHint": "Check the spelling or try your RNA.",
       "searchHint": "Search your association in the official directory."
     },
     "divider": {
@@ -112,8 +220,8 @@
             "label": "Association name",
             "placeholder": "Pre-filled"
           },
-          "siren": {
-            "label": "SIREN",
+          "rna": {
+            "label": "RNA",
             "placeholder": "Pre-filled"
           },
           "submit": "Create my space →"
@@ -121,13 +229,9 @@
         "search": {
           "label": "Search your association",
           "noResults": "No results",
-          "placeholder": "Name or SIREN…",
+          "placeholder": "Name or RNA…",
           "results": "Results",
-          "select": "Select",
-          "status": {
-            "active": "Active",
-            "ceased": "Ceased"
-          }
+          "select": "Select"
         },
         "steps": {
           "connect": "Connect",
@@ -286,9 +390,10 @@
           "creationYearMin": "Year must be 1800 or later.",
           "phoneFormat": "Please enter a valid phone number (6–20 characters).",
           "postalCodeFormat": "Postal code must be 5 digits.",
-          "rnaFormat": "RNA must be W followed by 9 digits (e.g. W123456789)."
+          "rnaFormat": "RNA must be W followed by 9 digits (e.g. W123456789).",
+          "sirenFormat": "SIREN must be exactly 9 digits."
         },
-        "identifier": "SIREN",
+        "identifier": "N° RNA",
         "infos": {
           "title": "Association information"
         },
@@ -411,6 +516,7 @@
           "magicLink": "Magic link",
           "title": "Security"
         },
+        "siren": "SIREN",
         "subtitle": "Manage your association's information and verification.",
         "success": "Profile updated.",
         "tabs": {

@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { getHomePath } from '@/lib/routes';
 import type { AuthResponseDto } from '@/types/auth';
 
 /** User role discriminator — determines which dashboard the user lands on. */
@@ -51,7 +52,7 @@ export function useGoogleAuth() {
     try {
       const { data } = await api.post<AuthResponseDto>('/api/auth/login/google', { idToken });
       setAuth(data.accessToken, data.user);
-      router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
+      router.push(getHomePath(locale, data.user.role));
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 401) {
         setState({ loading: false, error: 'errors.noAccount' });

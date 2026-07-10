@@ -18,6 +18,7 @@ import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -57,6 +58,7 @@ private const val MAX_FILE_SIZE = 10L * 1024 * 1024 // 10 MB
 class VerificationService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val documentRepository: AssociationDocumentRepository,
+    private val registryCheckRepository: AssociationRegistryCheckRepository,
     private val emailService: EmailService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -345,8 +347,18 @@ class VerificationService(
         }
         profile.verificationStatus = VerificationStatus.VERIFIED
         profile.verifiedAt = Instant.now()
+        // Freeze the registry pre-check that informed this decision (LCB-FT audit trail; null if never scanned)
+        profile.decisionRegistryCheckId =
+            registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId)?.id
         associationProfileRepository.save(profile)
         logger.info("Verification approved for association {} — status → VERIFIED", associationId)
+        // Notify association after persistence — failure must not rollback the decision
+        val recipientEmail = profile.contactEmail ?: profile.user.email
+        try {
+            emailService.sendVerificationApprovedToAssociation(profile.name, recipientEmail)
+        } catch (e: Exception) {
+            logger.error("Failed to send approval email for association {}: {}", associationId, e.message)
+        }
     }
 
     /**
@@ -362,8 +374,18 @@ class VerificationService(
         }
         profile.verificationStatus = VerificationStatus.REJECTED
         profile.verificationRejectionReason = reason
+        // Freeze the registry pre-check that informed this decision (LCB-FT audit trail; null if never scanned)
+        profile.decisionRegistryCheckId =
+            registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId)?.id
         associationProfileRepository.save(profile)
         logger.info("Verification rejected for association {} — reason: {}", associationId, reason)
+        // Notify association after persistence — failure must not rollback the decision
+        val recipientEmail = profile.contactEmail ?: profile.user.email
+        try {
+            emailService.sendVerificationRejectedToAssociation(profile.name, recipientEmail, reason)
+        } catch (e: Exception) {
+            logger.error("Failed to send rejection email for association {}: {}", associationId, e.message)
+        }
     }
 
     // -------------------------------------------------------------------------

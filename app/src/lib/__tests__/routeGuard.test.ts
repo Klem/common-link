@@ -61,4 +61,56 @@ describe('getRedirectForRole', () => {
   it('redirects authenticated ASSOCIATION on /login → /dashboard/association', () => {
     expect(getRedirectForRole(ROUTES.LOGIN, UserRole.ASSOCIATION)).toBe('/dashboard/association');
   });
+
+  // ── Admin path: unauthenticated ──────────────────────────────────────────
+
+  it('returns /login for /admin when role is null', () => {
+    expect(getRedirectForRole(ROUTES.admin.root, null)).toBe(ROUTES.LOGIN);
+  });
+
+  it('returns /login for a nested admin path when role is null', () => {
+    expect(getRedirectForRole(ROUTES.admin.verifications, null)).toBe(ROUTES.LOGIN);
+  });
+
+  // ── Admin path: non-CURATOR blocked ──────────────────────────────────────
+
+  it('redirects DONOR on /admin → /dashboard/donor', () => {
+    expect(getRedirectForRole(ROUTES.admin.root, UserRole.DONOR)).toBe(ROUTES.DONOR_DASHBOARD);
+  });
+
+  it('redirects ASSOCIATION on /admin → /dashboard/association', () => {
+    expect(getRedirectForRole(ROUTES.admin.root, UserRole.ASSOCIATION)).toBe(ROUTES.ASSOCIATION_DASHBOARD);
+  });
+
+  it('redirects DONOR on a nested admin path → /dashboard/donor', () => {
+    expect(getRedirectForRole(ROUTES.admin.verifications, UserRole.DONOR)).toBe(ROUTES.DONOR_DASHBOARD);
+  });
+
+  // ── CURATOR: redirected away from user-facing areas ──────────────────────
+
+  it('redirects CURATOR on /dashboard/donor → /admin', () => {
+    expect(getRedirectForRole(ROUTES.DONOR_DASHBOARD, UserRole.CURATOR)).toBe(ROUTES.admin.root);
+  });
+
+  it('redirects CURATOR on /dashboard/association → /admin', () => {
+    expect(getRedirectForRole(ROUTES.ASSOCIATION_DASHBOARD, UserRole.CURATOR)).toBe(ROUTES.admin.root);
+  });
+
+  it('redirects CURATOR on /login → /admin', () => {
+    expect(getRedirectForRole(ROUTES.LOGIN, UserRole.CURATOR)).toBe(ROUTES.admin.root);
+  });
+
+  it('redirects CURATOR on /settings → /admin', () => {
+    expect(getRedirectForRole('/settings', UserRole.CURATOR)).toBe(ROUTES.admin.root);
+  });
+
+  // ── CURATOR: allowed on admin paths ──────────────────────────────────────
+
+  it('returns null for CURATOR on /admin (no redirect)', () => {
+    expect(getRedirectForRole(ROUTES.admin.root, UserRole.CURATOR)).toBeNull();
+  });
+
+  it('returns null for CURATOR on /admin/verifications (no redirect)', () => {
+    expect(getRedirectForRole(ROUTES.admin.verifications, UserRole.CURATOR)).toBeNull();
+  });
 });

@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               // Google OAuth frames + API
               "frame-src https://accounts.google.com/",
-              `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://recherche-entreprises.api.gouv.fr`,
+              `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com`,
               "img-src 'self' data: https:",
             ].join('; '),
           },

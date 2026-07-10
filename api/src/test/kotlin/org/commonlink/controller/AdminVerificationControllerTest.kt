@@ -8,6 +8,7 @@ import io.mockk.justRun
 import org.commonlink.dto.AdminVerificationDetailDto
 import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.DocumentSlotDto
+import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
@@ -18,6 +19,7 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.VerificationService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,6 +51,7 @@ class AdminVerificationControllerTest {
     private val objectMapper = ObjectMapper().registerKotlinModule()
 
     @MockkBean private lateinit var verificationService: VerificationService
+    @MockkBean private lateinit var registryCheckService: AssociationRegistryCheckService
     @MockkBean private lateinit var jwtService: JwtService
     @MockkBean private lateinit var userDetailsService: UserDetailsServiceImpl
     @MockkBean private lateinit var userRepository: UserRepository
@@ -185,6 +188,69 @@ class AdminVerificationControllerTest {
                 .with(user("curator").roles("CURATOR"))
         )
             .andExpect(status().isNotFound)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET/POST /api/admin/verifications/{associationId}/registry-precheck
+    // -------------------------------------------------------------------------
+
+    private val samplePreCheck = RegistryPreCheckDto(
+        id = UUID.fromString("00000000-0000-0000-0000-0000000000aa"),
+        associationExists = true,
+        siren = "123456789",
+        rna = "W123456789",
+        etatAdministratif = "A",
+        joafeDeclarationFound = true,
+        dissolutionDetected = false,
+        bodaccProcedureFound = false,
+        checkedAt = now,
+        warnings = emptyList(),
+    )
+
+    @Test
+    fun `latestRegistryPreCheck - 200 when a scan exists`() {
+        every { registryCheckService.latest(associationId) } returns samplePreCheck
+
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/registry-precheck")
+                .with(user("curator").roles("CURATOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.id").value(samplePreCheck.id.toString()))
+            .andExpect(jsonPath("$.siren").value("123456789"))
+    }
+
+    @Test
+    fun `latestRegistryPreCheck - 204 when never scanned`() {
+        every { registryCheckService.latest(associationId) } returns null
+
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/registry-precheck")
+                .with(user("curator").roles("CURATOR"))
+        )
+            .andExpect(status().isNoContent)
+    }
+
+    @Test
+    fun `scanRegistryPreCheck - 200 runs and persists a scan`() {
+        every { registryCheckService.scan(associationId, any()) } returns samplePreCheck
+
+        // Principal username must be a UUID — the controller resolves the curator id from it.
+        mockMvc.perform(
+            post("/api/admin/verifications/$associationId/registry-precheck")
+                .with(user(associationId.toString()).roles("CURATOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.id").value(samplePreCheck.id.toString()))
+    }
+
+    @Test
+    fun `scanRegistryPreCheck - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            post("/api/admin/verifications/$associationId/registry-precheck")
+                .with(user(associationId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isForbidden)
     }
 
     // -------------------------------------------------------------------------

@@ -68,6 +68,7 @@ class SecurityConfig(
                 // Monerium callback is public — Monerium calls it directly after OAuth
                 auth.requestMatchers("/api/monerium/callback").permitAll()
                 auth.requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
+                auth.requestMatchers("/api/admin/verifications/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
                 auth.requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
                 auth.requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())

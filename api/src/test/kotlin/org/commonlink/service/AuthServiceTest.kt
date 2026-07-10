@@ -584,7 +584,7 @@ class AuthServiceTest {
 
         val dto = AssociationProfileUpsertDto(
             nom = "MyAsso",
-            siren = "123456789",
+            identifier = "123456789",
             ville = "Paris",
             codePostal = "75001",
             contact = "contact@myasso.fr",
@@ -610,7 +610,7 @@ class AuthServiceTest {
 
         val dto = AssociationProfileUpsertDto(
             nom = "MyAsso",
-            siren = "123456789",
+            identifier = "123456789",
             ville = "Paris",
             codePostal = "75001",
             contact = "new@myasso.fr",
@@ -631,7 +631,7 @@ class AuthServiceTest {
         assertThrows<AuthException> {
             authService.upsertAssociationProfile(
                 donorUser.id!!,
-                AssociationProfileUpsertDto(nom = "X", siren = "123456789")
+                AssociationProfileUpsertDto(nom = "X", identifier = "123456789")
             )
         }
     }

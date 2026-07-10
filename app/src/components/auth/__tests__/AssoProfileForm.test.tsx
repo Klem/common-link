@@ -8,11 +8,10 @@ vi.mock('next-intl', () => ({
 }));
 
 const mockAsso: AssoResult = {
-  siren: '123456789',
+  identifier: 'W123456789',
   nom: 'Association Test',
   ville: 'Paris',
   codePostal: '75001',
-  etat: 'A',
 };
 
 describe('AssoProfileForm', () => {
@@ -22,9 +21,9 @@ describe('AssoProfileForm', () => {
     expect(inputs.length).toBeGreaterThan(0);
   });
 
-  it('renders the SIREN field pre-filled', () => {
+  it('renders the RNA field pre-filled', () => {
     render(<AssoProfileForm asso={mockAsso} onSubmit={vi.fn()} />);
-    expect(screen.getByDisplayValue('123456789')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('W123456789')).toBeInTheDocument();
   });
 
   it('submit button is initially disabled', () => {

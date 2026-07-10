@@ -53,8 +53,14 @@ class MandatePdfService {
         // ── Association identity ───────────────────────────────────────────
         document.add(Paragraph("Identité de l'association", sectionFont).apply { spacingAfter = 8f })
         document.add(Paragraph("Nom : ${profile.name}", normalFont))
-        profile.rna?.let { document.add(Paragraph("N° RNA : $it", normalFont)) }
-        document.add(Paragraph("SIREN / identifiant : ${profile.identifier}", normalFont).apply { spacingAfter = 20f })
+        if (profile.identifier.startsWith("W")) {
+            document.add(Paragraph("N° RNA : ${profile.identifier}", normalFont))
+        }
+        profile.siren?.let { document.add(Paragraph("SIREN : $it", normalFont)) }
+        document.add(Paragraph(
+            if (profile.identifier.startsWith("W")) "" else "SIREN / identifiant : ${profile.identifier}",
+            normalFont
+        ).apply { spacingAfter = 20f })
 
         // ── Mandate details ───────────────────────────────────────────────
         document.add(Paragraph("Détails du mandat", sectionFont).apply { spacingAfter = 8f })

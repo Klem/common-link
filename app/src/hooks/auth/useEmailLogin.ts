@@ -7,6 +7,7 @@ import { isAxiosError } from 'axios';
 import { z } from 'zod';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { getHomePath } from '@/lib/routes';
 import type { AuthResponseDto } from '@/types/auth';
 
 /**
@@ -42,7 +43,7 @@ interface ProblemDetail {
  *
  * @returns `onSubmit` handler, `loading` flag, and i18n error key string.
  */
-export function useEmailLogin() {
+export function useEmailLogin(redirectAfterLogin?: string | null) {
   const router = useRouter();
   const locale = useLocale();
   const { setAuth } = useAuthStore();
@@ -55,7 +56,7 @@ export function useEmailLogin() {
     try {
       const { data } = await api.post<AuthResponseDto>('/api/auth/login', { email, password });
       setAuth(data.accessToken, data.user);
-      router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
+      router.push(redirectAfterLogin ?? getHomePath(locale, data.user.role));
     } catch (err) {
       if (isAxiosError(err)) {
         const problemDetail = err.response?.data as ProblemDetail | undefined;

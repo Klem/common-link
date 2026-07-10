@@ -8,8 +8,8 @@ import java.util.UUID
  * Public profile for a non-profit association user.
  *
  * Created at registration time and linked one-to-one with the parent [User].
- * The [identifier] field stores the French SIREN/RNA identifier (9 characters) that
- * uniquely identifies the organisation with public authorities.
+ * The [identifier] field stores the primary identifier — RNA (W-number, 10 chars) for JOAFE registrations,
+ * SIREN (9 digits) for legacy registrations. Secondary [siren] field holds SIREN when both are known.
  *
  * KYC lifecycle is tracked via [verificationStatus]; documents are stored in [AssociationDocument].
  */
@@ -31,8 +31,8 @@ class AssociationProfile(
     @Column(name = "name", nullable = false)
     val name: String,
 
-    /** French SIREN or RNA identifier (9 characters) for legal identification. */
-    @Column(name = "identifier", nullable = false, length = 9)
+    /** RNA identifier (e.g. W123456789, 10 characters) or SIREN for legacy registrations. Primary legal identifier. */
+    @Column(name = "identifier", nullable = false, length = 20)
     val identifier: String,
 
     /** City where the association is headquartered. */
@@ -51,9 +51,9 @@ class AssociationProfile(
     @Column(name = "description")
     var description: String? = null,
 
-    /** French RNA number (e.g. W123456789). Editable after creation. */
-    @Column(name = "rna", length = 20)
-    var rna: String? = null,
+    /** French SIREN number (9 digits). Nullable — JOAFE-registered associations may not have one. */
+    @Column(name = "siren", length = 9)
+    var siren: String? = null,
 
     /** Year the association was founded (e.g. 2018). */
     @Column(name = "creation_year")
@@ -83,4 +83,12 @@ class AssociationProfile(
     /** Timestamp when an admin approved the KYC dossier. */
     @Column(name = "verified_at")
     var verifiedAt: Instant? = null,
+
+    /**
+     * Frozen reference to the [AssociationRegistryCheck] that informed the KYC decision
+     * (approve/reject). Null if the dossier is undecided or was decided without a prior scan.
+     * The referenced row is immutable, so this is a faithful decision-time snapshot (LCB-FT).
+     */
+    @Column(name = "decision_registry_check_id")
+    var decisionRegistryCheckId: UUID? = null,
 )

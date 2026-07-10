@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.AdminVerificationDetailDto
 import org.commonlink.dto.AdminVerificationSummaryDto
+import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.dto.RejectVerificationRequest
 import org.commonlink.entity.VerificationStatus
+import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.VerificationService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -21,6 +23,8 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -36,6 +40,7 @@ import java.util.UUID
 @PreAuthorize("hasAnyRole('CURATOR','ADMIN')")
 class AdminVerificationController(
     private val verificationService: VerificationService,
+    private val registryCheckService: AssociationRegistryCheckService,
 ) {
 
     @GetMapping
@@ -138,4 +143,50 @@ class AdminVerificationController(
         verificationService.adminReject(associationId, request.reason)
         return ResponseEntity.noContent().build()
     }
+
+    @GetMapping("/{associationId}/registry-precheck")
+    @Operation(
+        summary = "Latest registry pre-check",
+        description = "Returns the most recent persisted registry pre-check for the association, without " +
+                "contacting any external registry. Returns 204 if the association has never been scanned. " +
+                "Use POST to run a fresh scan. Informational only — never auto-approves or rejects."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Latest persisted pre-check returned",
+            content = [Content(schema = Schema(implementation = RegistryPreCheckDto::class))]
+        ),
+        ApiResponse(responseCode = "204", description = "Association has never been scanned", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun latestRegistryPreCheck(
+        @PathVariable associationId: UUID,
+    ): ResponseEntity<RegistryPreCheckDto> =
+        registryCheckService.latest(associationId)
+            ?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.noContent().build()
+
+    @PostMapping("/{associationId}/registry-precheck")
+    @Operation(
+        summary = "Run a registry pre-check scan",
+        description = "Queries French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC) " +
+                "to check the legal existence of the association, then persists the result as a new immutable " +
+                "scan (append-only audit trail). Informational only — never auto-approves or rejects. " +
+                "Each source degrades gracefully: failures are reported as warnings, not errors."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Scan performed and persisted (even if some sources failed)",
+            content = [Content(schema = Schema(implementation = RegistryPreCheckDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+    )
+    fun scanRegistryPreCheck(
+        @PathVariable associationId: UUID,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<RegistryPreCheckDto> =
+        ResponseEntity.ok(registryCheckService.scan(associationId, UUID.fromString(principal.username)))
 }

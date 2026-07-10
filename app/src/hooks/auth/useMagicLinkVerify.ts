@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { getHomePath } from '@/lib/routes';
 import type { AuthResponseDto } from '@/types/auth';
 
 /**
@@ -65,7 +66,7 @@ export function useMagicLinkVerify(
         if (onSuccess) {
           onSuccess();
         } else {
-          router.push(`/${locale}/dashboard/${data.user.role.toLowerCase()}`);
+          router.push(getHomePath(locale, data.user.role));
         }
       } catch (err) {
         if (isAxiosError(err)) {
