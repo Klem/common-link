@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-
-type UserRole = 'ASSOCIATION' | 'DONOR';
+import type { UserRole } from '@/types/auth';
 
 interface RoleToggleProps {
   value: UserRole;

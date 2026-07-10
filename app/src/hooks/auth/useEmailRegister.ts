@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
-
-/** User role discriminator — determines which dashboard and profile are created. */
-type UserRole = 'ASSOCIATION' | 'DONOR';
+import type { UserRole } from '@/types/auth';
 
 /**
  * Association registration data included in the signup payload when the user

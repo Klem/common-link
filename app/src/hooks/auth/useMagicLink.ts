@@ -3,12 +3,10 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
+import type { UserRole } from '@/types/auth';
 
 /** Lifecycle states of a magic link send request. */
 type MagicLinkStatus = 'idle' | 'sending' | 'sent' | 'error';
-
-/** User role discriminator — forwarded to the backend to scope the magic link. */
-type UserRole = 'ASSOCIATION' | 'DONOR';
 
 /**
  * Association registration data included in the magic link request payload

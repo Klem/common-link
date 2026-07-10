@@ -25,8 +25,8 @@ DO $$
     DECLARE
         -- ── UUID d'utilisateurs à EXCLURE de la purge (table users.id) ──
         -- Exemple : ARRAY['a0000000-0000-0000-0000-000000000001']::UUID[]
-        v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c','5a3245cb-b492-4a90-9439-8a020edfb7de','fe61fe1c-8c2f-4afc-a803-5b7d8710780a']::UUID[];
---         v_keep_user_ids UUID[] := ARRAY[]::UUID[];
+--         v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c','5a3245cb-b492-4a90-9439-8a020edfb7de','fe61fe1c-8c2f-4afc-a803-5b7d8710780a']::UUID[];
+        v_keep_user_ids UUID[] := ARRAY[]::UUID[];
 
         -- Profils dérivés des users gardés (calculés automatiquement)
         v_keep_assoc_ids UUID[];
@@ -115,7 +115,26 @@ DO $$
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'magic_link_tokens supprimés : %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
-        -- 5b. DOCUMENTS KYC & MANDATS FISCAUX  (V35 — pas de CASCADE sur ces FK)
+        -- 5b. REGISTRY CHECKS  (V36 — pas de CASCADE ; dépendance circulaire via
+        --     decision_registry_check_id sur association_profiles → nullifier d'abord)
+        -- ════════════════════════════════════════════════════════════
+        UPDATE association_profiles ap
+        SET decision_registry_check_id = NULL
+        WHERE decision_registry_check_id IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM association_profiles ap2
+            WHERE ap2.id = ap.id AND ap2.user_id = ANY(v_keep_user_ids)
+        );
+
+        DELETE FROM association_registry_check arc
+        WHERE NOT EXISTS (
+            SELECT 1 FROM association_profiles ap
+            WHERE ap.id = arc.association_id AND ap.user_id = ANY(v_keep_user_ids)
+        );
+        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'association_registry_check supprimés : %', v_deleted;
+
+        -- ════════════════════════════════════════════════════════════
+        -- 5c. DOCUMENTS KYC & MANDATS FISCAUX  (V35 — pas de CASCADE sur ces FK)
         --     Supprimer avant association_profiles pour éviter une violation de
         --     contrainte (REFERENCES sans ON DELETE CASCADE).
         -- ════════════════════════════════════════════════════════════
@@ -172,6 +191,7 @@ DO $$
 --   campaign_budget_items, campaign_budget_sections, campaign_milestones,
 --   campaigns, payee_ibans, payees,
 --   monerium_oauth_states, monerium_connections,
+--   association_registry_check,
 --   fiscal_mandate, association_document,
 --   association_profiles, donor_profiles,
 --   magic_link_tokens, email_verification_tokens, refresh_tokens,
