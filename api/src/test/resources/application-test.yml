@@ -16,7 +16,7 @@ spring:
 
 app:
   jwt:
-    secret:  ${COMMON_LINK_SECRET:commonlink-dev-secret-key-must-be-at-least-32-chars-long}
+    secret: ${COMMON_LINK_SECRET:test-secret-key-for-automated-tests-only-not-production!!}
   frontend-url: http://localhost:3000
 
 onchain:

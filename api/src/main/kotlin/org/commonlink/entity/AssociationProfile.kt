@@ -91,4 +91,21 @@ class AssociationProfile(
      */
     @Column(name = "decision_registry_check_id")
     var decisionRegistryCheckId: UUID? = null,
+
+    /**
+     * Public opaque token identifying this association's donation widget (e.g. `clk_…`).
+     * Null means the widget is inactive. Unique across all associations; generated and
+     * rotated via the dedicated token endpoint (B7). Never expose internal IDs through this.
+     */
+    @Column(name = "widget_token", unique = true)
+    var widgetToken: String? = null,
+
+    /**
+     * The campaign that receives donations submitted through this association's widget.
+     * Null if no destination has been configured yet. Set to null automatically (ON DELETE SET NULL)
+     * if the targeted campaign is deleted — the widget will then refuse donations until reconfigured.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "widget_destination_campaign_id")
+    var widgetDestinationCampaign: Campaign? = null,
 )

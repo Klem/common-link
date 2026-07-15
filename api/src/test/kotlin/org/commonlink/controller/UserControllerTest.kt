@@ -129,7 +129,7 @@ class UserControllerTest {
             patch("/api/user/me/association-profile")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"nom":"MyAsso","siren":"123456789","ville":"Paris","codePostal":"75001","contact":"c@test.fr","description":"desc"}""")
+                .content("""{"nom":"MyAsso","identifier":"123456789","ville":"Paris","codePostal":"75001","contact":"c@test.fr","description":"desc"}""")
         )
             .andExpect(status().isNoContent)
 
@@ -152,19 +152,19 @@ class UserControllerTest {
             patch("/api/user/me/association-profile")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"nom":"","siren":"123456789"}""")
+                .content("""{"nom":"","identifier":"123456789"}""")
         )
             .andExpect(status().isUnprocessableEntity)
             .andExpect(jsonPath("$.errors").isArray)
     }
 
     @Test
-    fun `upsertAssociationProfile - 422 when siren is wrong length`() {
+    fun `upsertAssociationProfile - 422 when identifier exceeds max length`() {
         mockMvc.perform(
             patch("/api/user/me/association-profile")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"nom":"MyAsso","siren":"12345"}""")
+                .content("""{"nom":"MyAsso","identifier":"${"A".repeat(21)}"}""")
         )
             .andExpect(status().isUnprocessableEntity)
             .andExpect(jsonPath("$.errors").isArray)
