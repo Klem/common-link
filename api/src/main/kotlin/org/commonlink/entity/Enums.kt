@@ -29,7 +29,14 @@ enum class AuthProvider {
     /** Account created via Google OAuth sign-up. */
     GOOGLE,
     /** Account created by clicking a one-time magic-link sent to the user's email. */
-    MAGIC_LINK
+    MAGIC_LINK,
+    /**
+     * Account provisioned automatically by the donation widget for a guest donor.
+     *
+     * These accounts are non-connectable: no password, no Google sub. The [User.guest]
+     * flag is always `true` for accounts with this provider.
+     */
+    GUEST,
 }
 
 /**

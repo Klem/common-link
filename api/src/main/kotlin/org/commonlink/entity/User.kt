@@ -70,5 +70,15 @@ class User(
 
     /** Timestamp of last profile modification; updated on every save. */
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: Instant = Instant.now()
+    var updatedAt: Instant = Instant.now(),
+
+    /**
+     * Whether this account was provisioned by the donation widget for a guest donor.
+     *
+     * Guest accounts are non-connectable: they have no password, no Google sub, and
+     * [emailVerified] is `false`. They exist solely to anchor a [DonorProfile] for on-chain
+     * donation recording. [provider] is always [AuthProvider.GUEST] for these accounts.
+     */
+    @Column(name = "guest", nullable = false)
+    var guest: Boolean = false,
 )
