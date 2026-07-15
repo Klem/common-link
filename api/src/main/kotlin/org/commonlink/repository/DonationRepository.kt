@@ -22,6 +22,22 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     fun findByProviderRef(providerRef: String): Donation?
 
     /**
+     * Returns confirmed donations that have no matching RECORD_DONATION outbox job.
+     *
+     * Used by the receipt reconciler to recover from failures in the async event listener.
+     * Each row's correlationKey pattern is `DONATION:<donationId>`.
+     */
+    @Query("""
+        SELECT d FROM Donation d
+        WHERE d.confirmedAt IS NOT NULL
+          AND NOT EXISTS (
+            SELECT j FROM OnchainJob j
+            WHERE j.correlationKey = concat('DONATION:', str(d.id))
+          )
+    """)
+    fun findConfirmedWithoutOnchainJob(): List<Donation>
+
+    /**
      * Sum of confirmed donation amounts across all LIVE campaigns for the given association.
      * Returns null when there are no matching rows; callers should treat null as zero.
      */

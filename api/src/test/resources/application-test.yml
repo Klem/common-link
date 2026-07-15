@@ -27,6 +27,10 @@ onchain:
   worker:
     enabled: false
 
+donation:
+  receipt:
+    reconciler-initial-delay-ms: 3600000
+
 logging:
   level:
     org.commonlink: DEBUG

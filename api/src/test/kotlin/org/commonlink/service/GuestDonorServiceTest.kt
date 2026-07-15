@@ -90,8 +90,7 @@ class GuestDonorServiceTest {
         val campaign = campaignRepository.save(TestFixtures.campaign(assoc, status = CampaignStatus.LIVE))
 
         val providerRef = "mollie:tr_guesttest_001"
-        val receipt = ByteArray(32) { it.toByte() }
-        donationService.recordPayment(providerRef, guestProfile.id!!, campaign.id!!, BigDecimal("10.00"), receipt)
+        donationService.recordPayment(providerRef, guestProfile.id!!, campaign.id!!, BigDecimal("10.00"))
 
         val donation = donationRepository.findByProviderRef(providerRef)
         assertNotNull(donation?.confirmedAt, "Donation should be confirmed")
