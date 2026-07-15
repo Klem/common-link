@@ -67,6 +67,8 @@ class SecurityConfig(
                 if (docsEnabled) auth.requestMatchers("/api/docs/**").permitAll()
                 // Monerium callback is public — Monerium calls it directly after OAuth
                 auth.requestMatchers("/api/monerium/callback").permitAll()
+                // Public widget and webhook endpoints — no JWT required
+                auth.requestMatchers("/api/public/**").permitAll()
                 auth.requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/admin/verifications/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
