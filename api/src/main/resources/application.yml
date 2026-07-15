@@ -72,6 +72,16 @@ app:
     email: ${APP_CURATOR_EMAIL:}
     password: ${APP_CURATOR_PASSWORD:}
 
+# Mollie payment gateway — supply real values via environment variables in non-local environments.
+# Use a sandbox test key (test_xxx) for local development; never commit a live key.
+mollie:
+  api-key: ${MOLLIE_API_KEY:test_placeholder}
+  api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
+  # Base URL of the frontend, used by B5 to build redirect/cancel return URLs for Mollie.
+  redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
+  # Publicly reachable URL of the Mollie webhook endpoint on this API (must be HTTPS in production).
+  webhook-url: ${MOLLIE_WEBHOOK_URL:http://localhost:8080/api/public/webhooks/mollie}
+
 springdoc:
   api-docs:
     enabled: true
