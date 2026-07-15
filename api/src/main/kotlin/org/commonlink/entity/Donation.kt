@@ -44,4 +44,32 @@ class Donation(
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
+
+    /** Site tiers auto-déclaré via le snippet widget (best-effort, nettoyé à la saisie — ne pas faire confiance). */
+    @Column(name = "source_site", length = 255)
+    val sourceSite: String? = null,
+
+    /** Snapshot d'identité à la date du don, requis pour le reçu fiscal Cerfa 2041-RD. */
+    @Column(name = "donor_full_name", length = 255)
+    val donorFullName: String? = null,
+
+    /** Snapshot d'identité — ligne 1 de l'adresse postale. */
+    @Column(name = "donor_address_line1", length = 255)
+    val donorAddressLine1: String? = null,
+
+    /** Snapshot d'identité — complément d'adresse (optionnel). */
+    @Column(name = "donor_address_line2", length = 255)
+    val donorAddressLine2: String? = null,
+
+    /** Snapshot d'identité — code postal. */
+    @Column(name = "donor_postal_code", length = 16)
+    val donorPostalCode: String? = null,
+
+    /** Snapshot d'identité — ville. */
+    @Column(name = "donor_city", length = 128)
+    val donorCity: String? = null,
+
+    /** Snapshot d'identité — code pays ISO-3166 sur 2 lettres (ex. "FR"). */
+    @Column(name = "donor_country", length = 2)
+    val donorCountry: String? = null,
 )

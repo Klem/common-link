@@ -1,40 +1,40 @@
 package org.commonlink.service
 
+import org.commonlink.config.MollieProperties
+import org.commonlink.dto.CreateGuestDonationRequest
+import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.PublicWidgetDto
+import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.MolliePaymentException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.DonorProfileRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.net.URI
+import java.util.UUID
 
 /**
- * Resolves a public widget token to a safe campaign projection for the donation iframe.
- *
- * Resolution rules:
- * - Unknown token → 404
- * - Token found but no destination campaign configured → 404
- * - Destination campaign exists but not LIVE → 409 (campaign not accepting donations)
- * - Otherwise → [PublicWidgetDto] with only donor-safe fields
+ * Public widget service — resolves tokens and orchestrates guest donation creation.
  */
 @Service
 class PublicWidgetService(
     private val associationProfileRepository: AssociationProfileRepository,
+    private val donorProfileRepository: DonorProfileRepository,
+    private val guestDonorService: GuestDonorService,
+    private val mollieClient: MollieClient,
+    private val mollieProperties: MollieProperties,
+    private val donationService: DonationService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     fun getWidget(widgetToken: String): PublicWidgetDto {
-        val association = associationProfileRepository.findByWidgetToken(widgetToken)
-            .orElseThrow { NotFoundException("Widget not found") }
-
-        val campaign = association.widgetDestinationCampaign
-            ?: throw NotFoundException("No destination campaign configured")
-
-        if (campaign.status != CampaignStatus.LIVE) {
-            logger.debug("Widget token {} resolved to campaign {} with status {}", widgetToken, campaign.id, campaign.status)
-            throw ConflictException("Campaign is not accepting donations")
-        }
-
+        val (association, campaign) = resolveWidget(widgetToken)
         return PublicWidgetDto(
             associationName = association.name,
             campaignId = campaign.id!!,
@@ -45,5 +45,121 @@ class PublicWidgetService(
             raised = campaign.raised,
             campaignCoverImage = campaign.coverImage,
         )
+    }
+
+    /**
+     * Orchestrates a guest donation:
+     * 1. Resolves widget token to a LIVE campaign
+     * 2. Provisions (or retrieves) the guest donor
+     * 3. Creates a Mollie hosted-checkout payment
+     * 4. Persists a pending [org.commonlink.entity.Donation] with identity snapshot
+     *
+     * The donation remains pending until confirmed by the Mollie webhook (B6).
+     * The Mollie paymentId is returned to the frontend for sessionStorage before redirect.
+     */
+    fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
+        val (association, campaign) = resolveWidget(widgetToken)
+
+        // Provision guest donor (idempotent by email)
+        val donorProfile = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
+
+        // Sync display preferences (anonymous flag, display name) — last donation wins
+        if (donorProfile.anonymous != request.anonymousDisplay || donorProfile.displayName != request.donorFullName) {
+            donorProfile.anonymous = request.anonymousDisplay
+            donorProfile.displayName = request.donorFullName
+            donorProfileRepository.save(donorProfile)
+        }
+
+        val cleanSourceSite = sanitizeSourceSite(request.sourceSite)
+        val amountCents = request.amount.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toLong()
+        val idempotencyKey = buildIdempotencyKey(widgetToken, donorProfile.id!!, amountCents)
+
+        val redirectUrl = "${mollieProperties.redirectBaseUrl}/embed/donate/$widgetToken/return"
+        val cancelUrl = "${mollieProperties.redirectBaseUrl}/embed/donate/$widgetToken"
+        val description = "Don - ${campaign.name}".take(255)
+
+        logger.info(
+            "Creating Mollie payment for widget={} campaign={} amount={}",
+            widgetToken, campaign.id, request.amount
+        )
+
+        val molliePayment = mollieClient.createPayment(
+            amount = request.amount,
+            currency = "EUR",
+            description = description,
+            redirectUrl = redirectUrl,
+            cancelUrl = cancelUrl,
+            webhookUrl = mollieProperties.webhookUrl,
+            metadata = mapOf(
+                "campaignId" to campaign.id!!.toString(),
+                "donorProfileId" to donorProfile.id.toString(),
+                "widgetToken" to widgetToken,
+            ),
+            idempotencyKey = idempotencyKey,
+        )
+
+        val identity = DonorIdentitySnapshot(
+            fullName = request.donorFullName,
+            addressLine1 = request.donorAddressLine1,
+            addressLine2 = request.donorAddressLine2,
+            postalCode = request.donorPostalCode,
+            city = request.donorCity,
+            country = request.donorCountry,
+        )
+
+        donationService.initiatePendingDonation(
+            providerRef = "mollie:${molliePayment.id}",
+            donorProfileId = donorProfile.id,
+            campaignId = campaign.id,
+            amount = request.amount,
+            sourceSite = cleanSourceSite,
+            identity = identity,
+        )
+
+        val checkoutUrl = molliePayment.checkoutUrl
+            ?: throw MolliePaymentException("Mollie returned no checkout URL for payment ${molliePayment.id}")
+
+        logger.info("Pending donation created — mollieId={} campaign={}", molliePayment.id, campaign.id)
+        return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id)
+    }
+
+    // ── Private helpers ──────────────────────────────────────────────────────
+
+    private fun resolveWidget(widgetToken: String): Pair<AssociationProfile, Campaign> {
+        val association = associationProfileRepository.findByWidgetToken(widgetToken)
+            .orElseThrow { NotFoundException("Widget not found") }
+        val campaign = association.widgetDestinationCampaign
+            ?: throw NotFoundException("No destination campaign configured")
+        if (campaign.status != CampaignStatus.LIVE) {
+            logger.debug("Widget {} has non-LIVE campaign {} ({})", widgetToken, campaign.id, campaign.status)
+            throw ConflictException("Campaign is not accepting donations")
+        }
+        return association to campaign
+    }
+
+    /**
+     * Extracts scheme+host only from [raw]; returns null if parsing fails or input is blank.
+     * The value is untrusted (auto-declared by the widget snippet) — never interpolate raw.
+     */
+    private fun sanitizeSourceSite(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        return try {
+            val uri = URI(raw.trim())
+            val scheme = uri.scheme?.takeIf { it.isNotBlank() } ?: return null
+            val host = uri.host?.takeIf { it.isNotBlank() } ?: return null
+            "$scheme://$host".take(255)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Stable idempotency key for a given widget+donor+amount within a 1-hour window.
+     * Protects against network retries before a providerRef exists locally.
+     */
+    private fun buildIdempotencyKey(widgetToken: String, donorProfileId: UUID, amountCents: Long): String {
+        val hourBucket = System.currentTimeMillis() / 3_600_000L
+        val input = "$widgetToken|$donorProfileId|$amountCents|$hourBucket"
+        return UUID.nameUUIDFromBytes(input.toByteArray(Charsets.UTF_8)).toString()
     }
 }

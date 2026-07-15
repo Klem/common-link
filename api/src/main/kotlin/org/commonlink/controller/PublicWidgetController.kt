@@ -6,11 +6,16 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
+import org.commonlink.dto.CreateGuestDonationRequest
+import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.service.PublicWidgetService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -50,4 +55,35 @@ class PublicWidgetController(
     )
     fun getWidget(@PathVariable widgetToken: String): ResponseEntity<PublicWidgetDto> =
         ResponseEntity.ok(publicWidgetService.getWidget(widgetToken))
+
+    /**
+     * Creates a guest donation and a Mollie hosted-checkout payment for the given widget.
+     *
+     * The donation is persisted in PENDING state. Confirmation happens asynchronously
+     * when the Mollie webhook fires (B6). The caller must redirect the donor to [checkoutUrl]
+     * and store [paymentId] in sessionStorage before doing so, so the return page can poll status.
+     *
+     * @param widgetToken Opaque public token identifying the association's widget.
+     * @param request Donation body including amount, donor identity and RGPD consent.
+     * @return [CreateGuestDonationResponse] with the Mollie checkout URL and payment ID.
+     */
+    @PostMapping("/{widgetToken}/donations")
+    @Operation(
+        summary = "Create guest donation",
+        description = "Initiates a guest donation for the widget campaign. Returns a Mollie checkout URL. No authentication required."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Donation initiated - redirect donor to checkoutUrl",
+            content = [Content(schema = Schema(implementation = CreateGuestDonationResponse::class))]
+        ),
+        ApiResponse(responseCode = "404", description = "Unknown token or no LIVE destination campaign", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Destination campaign is not accepting donations", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Validation failed (amount, email, identity or consent)", content = [Content()])
+    )
+    fun createDonation(
+        @PathVariable widgetToken: String,
+        @Valid @RequestBody request: CreateGuestDonationRequest,
+    ): ResponseEntity<CreateGuestDonationResponse> =
+        ResponseEntity.ok(publicWidgetService.createDonation(widgetToken, request))
 }

@@ -18,6 +18,20 @@ import java.time.Instant
 import java.util.UUID
 
 /**
+ * Snapshot of donor identity fields captured at donation time for the Cerfa 2041-RD receipt.
+ *
+ * Stored on the [Donation] row — immutable fiscal truth independent of later profile changes.
+ */
+data class DonorIdentitySnapshot(
+    val fullName: String,
+    val addressLine1: String,
+    val addressLine2: String?,
+    val postalCode: String,
+    val city: String,
+    val country: String,
+)
+
+/**
  * Handles donation lifecycle, including on-chain recording when a payment is confirmed.
  */
 @Service
@@ -119,5 +133,56 @@ class DonationService(
             correlationKey = "DONATION:${donation.id}",
         )
         logger.info("Enqueued RECORD_DONATION job for donation {}", donation.id)
+    }
+
+    /**
+     * Creates a pending [Donation] row for a widget payment that has been initiated with Mollie
+     * but not yet confirmed. The donation remains pending until the Mollie webhook fires (B6).
+     *
+     * Idempotent at the [providerRef] level: a second call with the same providerRef is a no-op
+     * (the existing pending row is returned as-is).
+     *
+     * @param providerRef Mollie payment reference in format "mollie:tr_xxx".
+     * @param donorProfileId UUID of the guest [org.commonlink.entity.DonorProfile].
+     * @param campaignId UUID of the destination [org.commonlink.entity.Campaign].
+     * @param amount Donation amount in EUR.
+     * @param sourceSite Sanitised origin site from the widget snippet (nullable, untrusted).
+     * @param identity Fiscal identity snapshot required for the Cerfa 2041-RD receipt.
+     */
+    @Transactional
+    fun initiatePendingDonation(
+        providerRef: String,
+        donorProfileId: UUID,
+        campaignId: UUID,
+        amount: BigDecimal,
+        sourceSite: String?,
+        identity: DonorIdentitySnapshot,
+    ): Donation {
+        val existing = donationRepository.findByProviderRef(providerRef)
+        if (existing != null) {
+            logger.info("Pending donation already exists for providerRef={}", providerRef)
+            return existing
+        }
+
+        val donor = donorProfileRepository.findById(donorProfileId)
+            .orElseThrow { NotFoundException("Donor profile not found: $donorProfileId") }
+        val campaign = campaignRepository.findById(campaignId)
+            .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
+
+        return donationRepository.save(
+            Donation(
+                donor = donor,
+                campaign = campaign,
+                amount = amount,
+                providerRef = providerRef,
+                sourceSite = sourceSite,
+                donorFullName = identity.fullName,
+                donorAddressLine1 = identity.addressLine1,
+                donorAddressLine2 = identity.addressLine2,
+                donorPostalCode = identity.postalCode,
+                donorCity = identity.city,
+                donorCountry = identity.country,
+            )
+        ).also { logger.info("Created pending donation id={} providerRef={}", it.id, providerRef) }
     }
 }
