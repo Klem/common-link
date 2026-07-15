@@ -2,6 +2,7 @@ package org.commonlink.controller
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.justRun
 import org.commonlink.dto.ActivityItemDto
 import org.commonlink.dto.ActivityType
 import org.commonlink.dto.AssociationProfileDto
@@ -23,8 +24,10 @@ import org.springframework.http.MediaType
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
@@ -76,6 +79,8 @@ class AssociationControllerTest {
         verificationRejectionReason = null,
         verificationSubmittedAt = null,
         verifiedAt = null,
+        widgetToken = null,
+        widgetDestinationCampaignId = null,
     )
 
     // -------------------------------------------------------------------------
@@ -193,6 +198,83 @@ class AssociationControllerTest {
                 .content("""{"phone":"abc"}""")
         )
             .andExpect(status().`is`(422))
+    }
+
+    @Test
+    fun `getProfile - exposes widgetToken and widgetDestinationCampaignId`() {
+        val campaignId = UUID.fromString("00000000-0000-0000-0000-000000000099")
+        val profileWithWidget = sampleProfile.copy(
+            widgetToken = "clk_abc123",
+            widgetDestinationCampaignId = campaignId,
+        )
+        every { associationService.getProfile(userId) } returns profileWithWidget
+
+        mockMvc.perform(
+            get("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.widgetToken").value("clk_abc123"))
+            .andExpect(jsonPath("$.widgetDestinationCampaignId").value(campaignId.toString()))
+    }
+
+    @Test
+    fun `updateProfile - accepts widgetDestinationCampaignId`() {
+        val campaignId = UUID.fromString("00000000-0000-0000-0000-000000000099")
+        val updated = sampleProfile.copy(widgetDestinationCampaignId = campaignId)
+        every { associationService.updateProfile(userId, any()) } returns updated
+
+        mockMvc.perform(
+            patch("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"widgetDestinationCampaignId":"$campaignId"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.widgetDestinationCampaignId").value(campaignId.toString()))
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/association/me/widget/token
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `generateWidgetToken - 200 returns clk_ token`() {
+        every { associationService.generateWidgetToken(userId) } returns "clk_newtoken123"
+
+        mockMvc.perform(
+            post("/api/association/me/widget/token")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.token").value("clk_newtoken123"))
+    }
+
+    @Test
+    fun `generateWidgetToken - 401 when not authenticated`() {
+        mockMvc.perform(post("/api/association/me/widget/token"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // DELETE /api/association/me/widget/token
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `deleteWidgetToken - 204 when authenticated`() {
+        justRun { associationService.deleteWidgetToken(userId) }
+
+        mockMvc.perform(
+            delete("/api/association/me/widget/token")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isNoContent)
+    }
+
+    @Test
+    fun `deleteWidgetToken - 401 when not authenticated`() {
+        mockMvc.perform(delete("/api/association/me/widget/token"))
+            .andExpect(status().isUnauthorized)
     }
 
     // -------------------------------------------------------------------------

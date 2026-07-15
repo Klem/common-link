@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
+import java.util.UUID
 
 /**
  * Request body for updating an association's editable profile fields.
@@ -49,4 +50,12 @@ data class UpdateAssociationProfileRequest(
 
     @field:Pattern(regexp = "^[0-9 +(). -]{6,20}$", message = "Phone number format is invalid")
     val phone: String?,
+
+    /**
+     * UUID of the campaign to use as the widget donation destination.
+     * Null = no change. The campaign must belong to the same association;
+     * non-LIVE campaigns are accepted here — the widget (B4) refuses donations
+     * at request time if the destination is not LIVE.
+     */
+    val widgetDestinationCampaignId: UUID?,
 )

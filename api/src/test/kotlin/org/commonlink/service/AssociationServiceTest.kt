@@ -10,6 +10,7 @@ import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -22,10 +23,11 @@ import java.util.UUID
 class AssociationServiceTest {
 
     private val associationRepo: AssociationProfileRepository = mockk()
+    private val campaignRepo: CampaignRepository = mockk()
     private val connectionRepo: MoneriumConnectionRepository = mockk()
     private val outbox: OnchainOutboxService = mockk()
 
-    private val service = AssociationService(associationRepo, connectionRepo, outbox)
+    private val service = AssociationService(associationRepo, campaignRepo, connectionRepo, outbox)
 
     private val associationId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"

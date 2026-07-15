@@ -21,6 +21,10 @@ data class AssociationProfileDto(
     val verificationRejectionReason: String?,
     val verificationSubmittedAt: Instant?,
     val verifiedAt: Instant?,
+    /** Public opaque widget token (`clk_…`). Null if the widget is inactive. */
+    val widgetToken: String?,
+    /** UUID of the campaign configured as donation destination for the widget. */
+    val widgetDestinationCampaignId: UUID?,
 )
 
 fun AssociationProfile.toDto() = AssociationProfileDto(
@@ -39,4 +43,6 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     verificationRejectionReason = verificationRejectionReason,
     verificationSubmittedAt = verificationSubmittedAt,
     verifiedAt = verifiedAt,
+    widgetToken = widgetToken,
+    widgetDestinationCampaignId = widgetDestinationCampaign?.id,
 )

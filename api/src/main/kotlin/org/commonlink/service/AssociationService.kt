@@ -10,11 +10,14 @@ import java.time.Instant
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.onchain.OnchainCodec
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.web3j.utils.Numeric
+import java.security.SecureRandom
+import java.util.Base64
 import java.util.UUID
 
 /**
@@ -27,6 +30,7 @@ import java.util.UUID
 @Service
 class AssociationService(
     private val associationProfileRepository: AssociationProfileRepository,
+    private val campaignRepository: CampaignRepository,
     private val connectionRepo: MoneriumConnectionRepository,
     private val outbox: OnchainOutboxService,
 ) {
@@ -80,7 +84,52 @@ class AssociationService(
         req.creationYear?.let { profile.creationYear = it }
         req.contactEmail?.let { profile.contactEmail = it }
         req.phone?.let { profile.phone = it }
+        req.widgetDestinationCampaignId?.let { campaignId ->
+            val campaign = campaignRepository.findByIdAndAssociationId(campaignId, profile.id!!)
+                .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
+            profile.widgetDestinationCampaign = campaign
+        }
         return associationProfileRepository.save(profile).toDto()
+    }
+
+    /**
+     * Generates a new widget token for the association, revoking any existing one.
+     *
+     * The token is a cryptographically random opaque string prefixed with `clk_`.
+     * Rotation is implicit — a new call replaces the previous token, immediately
+     * invalidating any existing embeds that reference the old token.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @return The newly generated widget token.
+     * @throws UserNotFoundException if no profile exists for this user.
+     */
+    @Transactional
+    fun generateWidgetToken(userId: UUID): String {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+        val bytes = ByteArray(24).also { SecureRandom().nextBytes(it) }
+        val token = "clk_" + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+        profile.widgetToken = token
+        associationProfileRepository.save(profile)
+        logger.info("Widget token rotated for association {}", profile.id)
+        return token
+    }
+
+    /**
+     * Disables the donation widget for the association by clearing its token.
+     *
+     * Any existing embed using the old token will return 404 until a new token is generated.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @throws UserNotFoundException if no profile exists for this user.
+     */
+    @Transactional
+    fun deleteWidgetToken(userId: UUID) {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+        profile.widgetToken = null
+        associationProfileRepository.save(profile)
+        logger.info("Widget token deleted for association {}", profile.id)
     }
 
     /**
