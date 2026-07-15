@@ -15,6 +15,7 @@ import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
+import { WidgetTab } from '@/components/settings/WidgetTab';
 import { useMandate } from '@/hooks/dashboard/useMandate';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate';
+type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget';
 
 const PROVIDER_KEYS = {
   GOOGLE: 'association.profile.security.google',
@@ -58,14 +59,14 @@ const PROVIDER_KEYS = {
 export default function AssociationProfilePage() {
   const t = useTranslations('dashboard');
   const user = useAuthStore((s) => s.user);
-  const { profile, isLoading, updateProfile } = useAssociationProfile();
+  const { profile, isLoading, updateProfile, refreshProfile } = useAssociationProfile();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
   const [verifStatus, setVerifStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos') {
+    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' || tab === 'widget') {
       setActiveTab(tab as SettingsTab);
     }
   }, [searchParams]);
@@ -164,6 +165,12 @@ export default function AssociationProfilePage() {
               ? t('association.profile.tabs.bankBadge.connected')
               : t('association.profile.tabs.bankBadge.notConnected')}
           </span>
+        </button>
+        <button
+          className={`set-tab${activeTab === 'widget' ? ' active' : ''}`}
+          onClick={() => setActiveTab('widget')}
+        >
+          🎁 {t('association.profile.tabs.widget')}
         </button>
         <button
           className={`set-tab${activeTab === 'mandate' ? ' active' : ''}`}
@@ -384,6 +391,16 @@ export default function AssociationProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ Onglet : Widget de don ═══════════════════════════════════════ */}
+      {activeTab === 'widget' && (
+        <div className="set-tab-content active">
+          <WidgetTab
+            profile={profile}
+            onTokenChanged={refreshProfile}
+          />
         </div>
       )}
 

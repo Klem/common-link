@@ -538,7 +538,8 @@
             "pending": "In progress",
             "rejected": "Rejected",
             "todo": "To do"
-          }
+          },
+          "widget": "Donation Widget"
         },
         "title": "Settings",
         "verification": {
@@ -1203,5 +1204,36 @@
   "mandateDocDeleted": "Document deleted.",
   "mandateDocUploaded": "Document uploaded.",
   "mandateRevoked": "Mandate revoked.",
-  "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically."
+  "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically.",
+  "settings": {
+    "widget": {
+      "destination": {
+        "error": "Failed to update destination",
+        "label": "Destination campaign",
+        "placeholder": "Select a campaign",
+        "saved": "Destination campaign updated",
+        "warningNotLive": "This campaign is not live. The widget will refuse donations until it goes live."
+      },
+      "snippet": {
+        "copied": "Copied!",
+        "copy": "Copy",
+        "iframeUrl": "Direct iframe URL",
+        "label": "Embed snippet",
+        "noLiveCampaign": "Select a live campaign to display the snippet.",
+        "noToken": "Generate a token first to get the snippet."
+      },
+      "title": "Donation Widget",
+      "token": {
+        "active": "Active",
+        "disable": "Disable",
+        "error": "Failed to generate token",
+        "generate": "Generate link",
+        "generated": "Token generated successfully",
+        "inactive": "Inactive",
+        "label": "Widget token",
+        "regenerate": "Regenerate link",
+        "regenerateWarning": "Regenerating revokes the current token and breaks existing integrations."
+      }
+    }
+  }
 }

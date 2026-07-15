@@ -30,3 +30,20 @@ export const updateAssociationProfile = (
  */
 export const getDashboard = (): Promise<DashboardStats> =>
   api.get<DashboardStats>('/api/association/dashboard').then((r) => r.data);
+
+/**
+ * Generates (or rotates) the widget token for the current association.
+ * Calls `POST /api/association/me/widget/token`.
+ * Rotating revokes the previous token and breaks existing integrations.
+ *
+ * @returns The newly generated widget token.
+ */
+export const generateWidgetToken = (): Promise<{ widgetToken: string }> =>
+  api.post<{ widgetToken: string }>('/api/association/me/widget/token').then((r) => r.data);
+
+/**
+ * Deletes the widget token for the current association, disabling the widget.
+ * Calls `DELETE /api/association/me/widget/token`.
+ */
+export const deleteWidgetToken = (): Promise<void> =>
+  api.delete('/api/association/me/widget/token');

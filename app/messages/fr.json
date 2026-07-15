@@ -538,7 +538,8 @@
             "pending": "En cours",
             "rejected": "Rejetée",
             "todo": "À faire"
-          }
+          },
+          "widget": "Widget de don"
         },
         "title": "Paramètres",
         "verification": {
@@ -1203,5 +1204,36 @@
   "mandateDocDeleted": "Document supprimé.",
   "mandateDocUploaded": "Document téléversé.",
   "mandateRevoked": "Mandat révoqué.",
-  "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement."
+  "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement.",
+  "settings": {
+    "widget": {
+      "destination": {
+        "error": "Erreur lors de la mise à jour",
+        "label": "Campagne de destination",
+        "placeholder": "Sélectionner une campagne",
+        "saved": "Campagne de destination mise à jour",
+        "warningNotLive": "Cette campagne n'est pas en ligne. Le widget refusera les dons tant qu'elle n'est pas publiée."
+      },
+      "snippet": {
+        "copied": "Copié !",
+        "copy": "Copier",
+        "iframeUrl": "URL directe de l'iframe",
+        "label": "Snippet à intégrer",
+        "noLiveCampaign": "Sélectionnez une campagne en ligne pour afficher le snippet.",
+        "noToken": "Générez d’abord un token pour obtenir le snippet."
+      },
+      "title": "Widget de don",
+      "token": {
+        "active": "Actif",
+        "disable": "Désactiver",
+        "error": "Erreur lors de la génération du token",
+        "generate": "Générer le lien",
+        "generated": "Token généré avec succès",
+        "inactive": "Inactif",
+        "label": "Token du widget",
+        "regenerate": "Régénérer le lien",
+        "regenerateWarning": "Régénérer révoque le token actuel et casse les intégrations existantes."
+      }
+    }
+  }
 }

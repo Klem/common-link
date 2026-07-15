@@ -29,6 +29,10 @@ export interface AssociationProfileDto {
   /** KYC verification status replacing the former `verified` boolean. */
   verificationStatus: VerificationStatus;
   verificationRejectionReason: string | null;
+  /** Public opaque widget token (e.g. `clk_…`), null if not generated yet. */
+  widgetToken: string | null;
+  /** UUID of the campaign configured as widget destination, null if not set. */
+  widgetDestinationCampaignId: string | null;
 }
 
 /**
@@ -44,6 +48,8 @@ export interface UpdateAssociationProfileRequest {
   creationYear?: number;
   contactEmail?: string;
   phone?: string;
+  /** UUID of the campaign to set as widget donation destination, or null to unset. */
+  widgetDestinationCampaignId?: string | null;
 }
 
 /** Activity event types surfaced in the dashboard recent-activity feed. */
