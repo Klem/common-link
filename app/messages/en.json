@@ -1235,5 +1235,55 @@
         "regenerateWarning": "Regenerating revokes the current token and breaks existing integrations."
       }
     }
+  },
+  "widget": {
+    "amounts": {
+      "custom": "Other amount (€)",
+      "customPlaceholder": "Enter amount",
+      "title": "Select an amount"
+    },
+    "anonymous": {
+      "hint": "Hides your name from the public donation feed only. Your tax receipt always shows your real identity.",
+      "label": "Make my donation anonymous"
+    },
+    "campaign": {
+      "goal": "Goal",
+      "raised": "Raised"
+    },
+    "consent": {
+      "label": "I consent to my personal data being processed for this donation (GDPR)"
+    },
+    "errors": {
+      "amountDecimals": "Amount can have at most 2 decimal places",
+      "amountMax": "Maximum donation is 10,000 €",
+      "amountMin": "Minimum donation is 1 €",
+      "amountRequired": "Amount is required",
+      "consentRequired": "You must consent to proceed",
+      "countryInvalid": "Please enter a valid 2-letter country code",
+      "emailInvalid": "Please enter a valid email address",
+      "emailRequired": "Email is required",
+      "fieldRequired": "This field is required",
+      "fieldTooLong": "This field is too long",
+      "submitFailed": "An error occurred. Please try again."
+    },
+    "identity": {
+      "addressLine1": "Address",
+      "addressLine1Placeholder": "Street and number",
+      "addressLine2": "Address (line 2)",
+      "addressLine2Placeholder": "Apartment, building, etc. (optional)",
+      "city": "City",
+      "country": "Country",
+      "email": "Email",
+      "emailPlaceholder": "your@email.com",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "First and last name",
+      "hint": "Required for your tax receipt (Cerfa 2041-RD).",
+      "postalCode": "Postal code",
+      "title": "Your details for the receipt"
+    },
+    "loading": "Loading widget...",
+    "submit": "Donate",
+    "submitting": "Processing...",
+    "unavailable": "This widget is not available."
   }
 }

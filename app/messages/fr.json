@@ -1235,5 +1235,55 @@
         "regenerateWarning": "Régénérer révoque le token actuel et casse les intégrations existantes."
       }
     }
+  },
+  "widget": {
+    "amounts": {
+      "custom": "Autre montant (€)",
+      "customPlaceholder": "Saisir un montant",
+      "title": "Choisissez un montant"
+    },
+    "anonymous": {
+      "hint": "Masque uniquement votre nom sur le fil de dons public. Votre reçu fiscal portera toujours votre identité réelle.",
+      "label": "Rendre mon don anonyme"
+    },
+    "campaign": {
+      "goal": "Objectif",
+      "raised": "Collecté"
+    },
+    "consent": {
+      "label": "Je consens au traitement de mes données personnelles pour ce don (RGPD)"
+    },
+    "errors": {
+      "amountDecimals": "Le montant ne peut avoir plus de 2 décimales",
+      "amountMax": "Le don maximum est de 10 000 €",
+      "amountMin": "Le don minimum est de 1 €",
+      "amountRequired": "Le montant est requis",
+      "consentRequired": "Vous devez consentir pour continuer",
+      "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
+      "emailInvalid": "Veuillez saisir une adresse e-mail valide",
+      "emailRequired": "L'e-mail est requis",
+      "fieldRequired": "Ce champ est obligatoire",
+      "fieldTooLong": "Ce champ est trop long",
+      "submitFailed": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "identity": {
+      "addressLine1": "Adresse",
+      "addressLine1Placeholder": "Numéro et rue",
+      "addressLine2": "Adresse (ligne 2)",
+      "addressLine2Placeholder": "Appartement, bâtiment, etc. (facultatif)",
+      "city": "Ville",
+      "country": "Pays",
+      "email": "E-mail",
+      "emailPlaceholder": "votre@email.com",
+      "fullName": "Nom complet",
+      "fullNamePlaceholder": "Prénom et nom",
+      "hint": "Obligatoires pour votre reçu fiscal (Cerfa 2041-RD).",
+      "postalCode": "Code postal",
+      "title": "Vos coordonnées pour le reçu"
+    },
+    "loading": "Chargement du widget...",
+    "submit": "Faire un don",
+    "submitting": "Traitement en cours...",
+    "unavailable": "Ce widget n'est pas disponible."
   }
 }
