@@ -25,14 +25,26 @@ interface Props {
 
 export function EmbedDonateReturnClient({ paymentId, widgetToken, locale, _pollIntervalMs }: Props) {
   const t = useTranslations('widget.return');
-  const [pollState, setPollState] = useState<PollState>(
-    paymentId ? PollState.LOADING : PollState.FAILED,
-  );
+  const [pollState, setPollState] = useState<PollState>(PollState.LOADING);
+  const [activePaymentId, setActivePaymentId] = useState<string | null>(paymentId);
+  const [backUrl, setBackUrl] = useState(`/${locale}/embed/donate/${widgetToken}`);
 
-  const embedBaseUrl = `/${locale}/embed/donate/${widgetToken}`;
+  // Resolve paymentId and sourceSite from localStorage when not provided via URL searchParam
+  useEffect(() => {
+    const storedSource = localStorage.getItem(`widget_source_${widgetToken}`);
+    if (storedSource) setBackUrl(storedSource);
+
+    if (paymentId) return;
+    const storedPayment = localStorage.getItem(`widget_payment_${widgetToken}`);
+    if (storedPayment) {
+      setActivePaymentId(storedPayment);
+    } else {
+      setPollState(PollState.FAILED);
+    }
+  }, [paymentId, widgetToken]);
 
   useEffect(() => {
-    if (!paymentId) return;
+    if (!activePaymentId) return;
 
     let cancelled = false;
     let attempts = 0;
@@ -43,7 +55,7 @@ export function EmbedDonateReturnClient({ paymentId, widgetToken, locale, _pollI
       attempts += 1;
 
       try {
-        const result = await getDonationStatus(paymentId);
+        const result = await getDonationStatus(activePaymentId);
         if (cancelled) return;
         if (result.status === DonationReturnStatus.CONFIRMED) {
           setPollState(PollState.CONFIRMED);
@@ -67,7 +79,7 @@ export function EmbedDonateReturnClient({ paymentId, widgetToken, locale, _pollI
     return () => {
       cancelled = true;
     };
-  }, [paymentId, _pollIntervalMs]);
+  }, [activePaymentId, _pollIntervalMs]);
 
   return (
     <div className="widget-return">
@@ -81,7 +93,7 @@ export function EmbedDonateReturnClient({ paymentId, widgetToken, locale, _pollI
         <div className="widget-return-success" aria-live="polite">
           <h2>{t('confirmed.title')}</h2>
           <p>{t('confirmed.message')}</p>
-          <a href={embedBaseUrl} className="btn btn-primary">
+          <a href={backUrl} className="btn btn-primary">
             {t('retry')}
           </a>
         </div>
@@ -91,7 +103,7 @@ export function EmbedDonateReturnClient({ paymentId, widgetToken, locale, _pollI
         <div className="widget-return-pending" aria-live="polite">
           <h2>{t('pending.title')}</h2>
           <p>{t('pending.message')}</p>
-          <a href={embedBaseUrl} className="btn btn-secondary">
+          <a href={backUrl} className="btn btn-secondary">
             {t('retry')}
           </a>
         </div>
@@ -101,7 +113,7 @@ export function EmbedDonateReturnClient({ paymentId, widgetToken, locale, _pollI
         <div className="widget-return-failed" aria-live="polite">
           <h2>{t('failed.title')}</h2>
           <p>{t('failed.message')}</p>
-          <a href={embedBaseUrl} className="btn btn-secondary">
+          <a href={backUrl} className="btn btn-secondary">
             {t('retry')}
           </a>
         </div>

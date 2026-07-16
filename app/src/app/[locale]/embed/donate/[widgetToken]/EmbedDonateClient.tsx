@@ -82,6 +82,12 @@ export function EmbedDonateClient({ widgetToken, sourceSite }: Props) {
         ...data,
         sourceSite,
       });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`widget_payment_${widgetToken}`, response.paymentId);
+        if (sourceSite) {
+          localStorage.setItem(`widget_source_${widgetToken}`, sourceSite);
+        }
+      }
       const top = typeof window !== 'undefined' ? window.top : null;
       if (top) {
         top.location.href = response.checkoutUrl;

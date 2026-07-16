@@ -24,6 +24,7 @@ const defaultProps = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
 });
 
 describe('EmbedDonateReturnClient', () => {
@@ -58,10 +59,32 @@ describe('EmbedDonateReturnClient', () => {
     });
   });
 
-  it('shows failed state immediately when paymentId is null', () => {
+  it('shows failed state when paymentId is null and localStorage is empty', async () => {
     render(<EmbedDonateReturnClient {...defaultProps} paymentId={null} />);
-    expect(screen.getByText('failed.title')).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText('failed.title')).toBeDefined();
+    });
     expect(mockGetStatus).not.toHaveBeenCalled();
+  });
+
+  it('polls using paymentId from localStorage when prop is null', async () => {
+    localStorage.setItem('widget_payment_clk_test', 'tr_from_storage');
+    mockGetStatus.mockResolvedValue({ status: 'CONFIRMED' });
+    render(<EmbedDonateReturnClient {...defaultProps} paymentId={null} />);
+    await waitFor(() => {
+      expect(screen.getByText('confirmed.title')).toBeDefined();
+    });
+    expect(mockGetStatus).toHaveBeenCalledWith('tr_from_storage');
+  });
+
+  it('uses sourceSite from localStorage as back button href', async () => {
+    localStorage.setItem('widget_source_clk_test', 'http://192.168.1.11/path/to/widget');
+    mockGetStatus.mockResolvedValue({ status: 'CONFIRMED' });
+    render(<EmbedDonateReturnClient {...defaultProps} />);
+    await waitFor(() => {
+      const link = screen.getByRole('link', { name: 'retry' });
+      expect(link.getAttribute('href')).toBe('http://192.168.1.11/path/to/widget');
+    });
   });
 
   it('shows retry button in PENDING_TIMEOUT state', async () => {

@@ -316,7 +316,9 @@
     "verificationOptDocDeleted": "Document supprimé.",
     "verificationOptDocUploaded": "Document ajouté.",
     "verificationSubmitted": "📨 Dossier envoyé. Votre association sera notifiée par email.",
-    "vopVerified": "Vérification VOP terminée."
+    "vopVerified": "Vérification VOP terminée.",
+    "widgetDestinationSaved": "Campagne de destination enregistrée.",
+    "widgetTokenGenerated": "Token widget généré."
   },
   "dashboard": {
     "association": {
@@ -1217,10 +1219,12 @@
       "snippet": {
         "copied": "Copié !",
         "copy": "Copier",
+        "iframeHelp": "Utilisez cette URL pour intégrer le widget directement via une iframe.",
         "iframeUrl": "URL directe de l'iframe",
         "label": "Snippet à intégrer",
         "noLiveCampaign": "Sélectionnez une campagne en ligne pour afficher le snippet.",
-        "noToken": "Générez d’abord un token pour obtenir le snippet."
+        "noToken": "Générez d’abord un token pour obtenir le snippet.",
+        "snippetHelp": "Collez cette balise script dans le HTML de votre site pour afficher le widget de don."
       },
       "title": "Widget de don",
       "token": {

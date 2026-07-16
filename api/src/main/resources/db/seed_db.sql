@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — Dev Seed Data
--- Run once on a clean (migrated) database (through V37).
+-- Run once on a clean (migrated) database (through V40).
 -- =============================================================
 -- Hashes below are real BCrypt ($2a, cost 12) — no edit needed.
 --   Test1234!  -> association
@@ -280,6 +280,15 @@ DO $$
              '2026-05-28 10:00:00+01', '2026-05-28 10:00:00+01');
 
         -- ════════════════════════════════════════════════════════════
+        -- 2b. WIDGET  (V38) — activer le widget sur l'association de test
+        --     Token fixe pour les appels dev ; destination = campagne 1 (LIVE)
+        -- ════════════════════════════════════════════════════════════
+        UPDATE association_profiles
+        SET widget_token                   = 'clk_test_fondation_lumiere',
+            widget_destination_campaign_id = v_camp[1]
+        WHERE id = v_assoc_id;
+
+        -- ════════════════════════════════════════════════════════════
         -- 3. CAMPAIGN MILESTONES  (3 per non-draft campaign)
         --    Slot order in v_ms_frac: 25 % / 50 % / 100 % of goal.
         --    ENDED → all REACHED; LIVE → first REACHED, second CURRENT, rest LOCKED.
@@ -540,6 +549,26 @@ DO $$
 
                 INSERT INTO donor_profiles (id, user_id, display_name, anonymous)
                 VALUES (v_did, v_uid, v_donor_names[i], v_donor_anon[i]);
+            END LOOP;
+
+        -- ════════════════════════════════════════════════════════════
+        -- 5b. WALLET ADDRESSES — dérivées par HMAC-SHA256 comme DonorAddressGenerator
+        --     last 20 bytes of hmac(donor_id::text, secret, 'sha256')
+        --     Secret = valeur dev de onchain.donor-address-secret dans application.yml.
+        --     Résultat identique à ce que l'appli génère avec onchain.mock=true.
+        -- ════════════════════════════════════════════════════════════
+        FOR i IN 1..50 LOOP
+                UPDATE donor_profiles
+                SET    wallet_address = '0x' || encode(
+                           substring(
+                               hmac(v_donor_ids[i]::text,
+                                    'dev-placeholder-change-in-staging',
+                                    'sha256')
+                               FROM 13 FOR 20
+                           ),
+                           'hex'
+                       )
+                WHERE  id = v_donor_ids[i];
             END LOOP;
 
         -- ════════════════════════════════════════════════════════════

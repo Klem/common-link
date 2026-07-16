@@ -1,8 +1,8 @@
 -- =============================================================
 -- CommonLink — create_db.sql
--- Schéma consolidé : état final équivalent aux migrations V1 → V37.
+-- Schéma consolidé : état final équivalent aux migrations V1 → V40.
 --
--- Ce script remplace l'exécution séquentielle des 37 migrations Flyway
+-- Ce script remplace l'exécution séquentielle des 40 migrations Flyway
 -- par les formes finales : les ALTER / RENAME / DROP INDEX intermédiaires
 -- sont supprimés, seules les définitions résultantes subsistent.
 --
@@ -30,13 +30,14 @@ CREATE TABLE users
     display_name   varchar(255),
     avatar_url     text,
     email_verified boolean      NOT NULL DEFAULT false,
+    guest          boolean      NOT NULL DEFAULT false,            -- V39
     created_at     timestamptz  NOT NULL DEFAULT now(),
     updated_at     timestamptz  NOT NULL DEFAULT now(),
 
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_email_unique UNIQUE (email),
     CONSTRAINT users_role_check CHECK (role IN ('DONOR', 'ASSOCIATION', 'CURATOR')),
-    CONSTRAINT users_provider_check CHECK (provider IN ('EMAIL', 'GOOGLE', 'MAGIC_LINK'))
+    CONSTRAINT users_provider_check CHECK (provider IN ('EMAIL', 'GOOGLE', 'MAGIC_LINK', 'GUEST'))
 );
 
 -- V25 a supprimé l'index plain users_email_idx (redondant avec users_email_unique) : non recréé.
@@ -291,6 +292,13 @@ CREATE TABLE donations
     provider_ref VARCHAR(255)  NOT NULL,
     confirmed_at TIMESTAMPTZ,
     type_code    VARCHAR(50)   NOT NULL DEFAULT '74',
+    source_site          VARCHAR(255),                            -- V40 : site tiers auto-déclaré (best-effort)
+    donor_full_name      VARCHAR(255),                            -- V40 : snapshot fiscal
+    donor_address_line1  VARCHAR(255),                            -- V40
+    donor_address_line2  VARCHAR(255),                            -- V40
+    donor_postal_code    VARCHAR(16),                             -- V40
+    donor_city           VARCHAR(128),                            -- V40
+    donor_country        VARCHAR(2),                              -- V40
     created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
     CONSTRAINT donations_provider_ref_unique UNIQUE (provider_ref)
@@ -497,3 +505,25 @@ CREATE INDEX idx_association_registry_check_assoc_checked_at
 -- Gel du scan ayant motivé la décision KYC (nullable : le scan est informatif)
 ALTER TABLE association_profiles
     ADD COLUMN decision_registry_check_id UUID REFERENCES association_registry_check(id);
+
+-- =============================================================
+-- 11. WIDGET DE DON  (V38)
+-- =============================================================
+
+-- Token public opaque (ex. clk_…) identifiant le widget d'une association.
+ALTER TABLE association_profiles
+    ADD COLUMN widget_token VARCHAR(255);
+ALTER TABLE association_profiles
+    ADD CONSTRAINT association_profiles_widget_token_unique UNIQUE (widget_token);
+
+-- Campagne de destination choisie par l'association pour les dons widget.
+ALTER TABLE association_profiles
+    ADD COLUMN widget_destination_campaign_id UUID;
+ALTER TABLE association_profiles
+    ADD CONSTRAINT association_profiles_widget_destination_campaign_id_fkey
+        FOREIGN KEY (widget_destination_campaign_id)
+            REFERENCES campaigns (id)
+            ON DELETE SET NULL;
+CREATE INDEX idx_association_profiles_widget_destination_campaign_id
+    ON association_profiles (widget_destination_campaign_id)
+    WHERE widget_destination_campaign_id IS NOT NULL;

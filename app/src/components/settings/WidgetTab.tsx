@@ -53,9 +53,9 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
     setIsSavingCampaign(true);
     try {
       await updateAssociationProfile({ widgetDestinationCampaignId: campaignId || null });
-      addToast('success', 'settings.widget.destination.saved');
+      addToast('success', 'widgetDestinationSaved');
     } catch {
-      addToast('error', 'settings.widget.destination.error');
+      addToast('error', 'errors.serverError');
     } finally {
       setIsSavingCampaign(false);
     }
@@ -67,9 +67,9 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
       const { widgetToken: newToken } = await generateWidgetToken();
       setWidgetToken(newToken);
       await onTokenChanged();
-      addToast('success', 'settings.widget.token.generated');
+      addToast('success', 'widgetTokenGenerated');
     } catch {
-      addToast('error', 'settings.widget.token.error');
+      addToast('error', 'errors.serverError');
     } finally {
       setIsGeneratingToken(false);
     }
@@ -82,7 +82,7 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
       setWidgetToken(null);
       await onTokenChanged();
     } catch {
-      addToast('error', 'settings.widget.token.error');
+      addToast('error', 'errors.serverError');
     } finally {
       setIsGeneratingToken(false);
     }
@@ -102,7 +102,7 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
   return (
     <div>
       {/* ── Campagne de destination ──────────────────────────────────── */}
-      <div className="card no-hover">
+      <div className="card no-hover" style={{ marginBottom: 24 }}>
         <div className="card-h">
           <h3>{t('title')}</h3>
         </div>
@@ -131,7 +131,7 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
       </div>
 
       {/* ── Token ────────────────────────────────────────────────────── */}
-      <div className="card no-hover">
+      <div className="card no-hover" style={{ marginBottom: 24 }}>
         <div className="card-h">
           <h3>{t('token.label')}</h3>
           <span className={`set-tab-badge${widgetToken ? ' ok' : ''}`}>
@@ -184,39 +184,51 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
           )}
           {showSnippet && (
             <>
-              <div className="fg">
+              <div className="fg" style={{ marginBottom: 20 }}>
                 <label className="fl">{t('snippet.label')}</label>
-                <div className="frow">
+                <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.snippetHelp')}</p>
+                <div style={{ position: 'relative' }}>
                   <code
                     className="fi"
-                    style={{ fontFamily: 'monospace', fontSize: '12px', overflowX: 'auto', flex: 1 }}
+                    style={{ fontFamily: 'monospace', fontSize: '12px', overflowX: 'auto', display: 'block', paddingRight: 40 }}
                   >
                     {snippetCode}
                   </code>
                   <button
                     type="button"
-                    className="btn btn-secondary btn-sm"
+                    title={copiedSnippet ? t('snippet.copied') : t('snippet.copy')}
                     onClick={() => copyToClipboard(snippetCode, 'snippet')}
+                    style={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--slate-lavender)' }}
                   >
-                    {copiedSnippet ? t('snippet.copied') : t('snippet.copy')}
+                    {copiedSnippet ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    )}
                   </button>
                 </div>
               </div>
               <div className="fg">
                 <label className="fl">{t('snippet.iframeUrl')}</label>
-                <div className="frow">
+                <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.iframeHelp')}</p>
+                <div style={{ position: 'relative' }}>
                   <code
                     className="fi"
-                    style={{ fontFamily: 'monospace', fontSize: '12px', flex: 1 }}
+                    style={{ fontFamily: 'monospace', fontSize: '12px', display: 'block', paddingRight: 40 }}
                   >
                     {iframeUrl}
                   </code>
                   <button
                     type="button"
-                    className="btn btn-secondary btn-sm"
+                    title={copiedIframe ? t('snippet.copied') : t('snippet.copy')}
                     onClick={() => copyToClipboard(iframeUrl, 'iframe')}
+                    style={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--slate-lavender)' }}
                   >
-                    {copiedIframe ? t('snippet.copied') : t('snippet.copy')}
+                    {copiedIframe ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    )}
                   </button>
                 </div>
               </div>

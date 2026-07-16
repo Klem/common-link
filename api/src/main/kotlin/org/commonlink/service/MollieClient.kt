@@ -70,7 +70,7 @@ private data class MollieCreatePaymentRequestJson(
     val amount: MollieAmountJson,
     val redirectUrl: String,
     val cancelUrl: String?,
-    val webhookUrl: String,
+    val webhookUrl: String?,
     val metadata: Map<String, String>
 )
 
@@ -116,7 +116,7 @@ class MollieClient(
         description: String,
         redirectUrl: String,
         cancelUrl: String? = null,
-        webhookUrl: String,
+        webhookUrl: String? = null,
         metadata: Map<String, String>,
         idempotencyKey: String? = null
     ): MolliePayment {
@@ -129,7 +129,7 @@ class MollieClient(
             amount = amountJson,
             redirectUrl = redirectUrl,
             cancelUrl = cancelUrl,
-            webhookUrl = webhookUrl,
+            webhookUrl = webhookUrl?.takeIf { it.isNotBlank() },
             metadata = metadata
         )
         log.debug("Creating Mollie payment: {} {} — '{}'", amountJson.value, currency, body.description)

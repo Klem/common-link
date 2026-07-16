@@ -316,7 +316,9 @@
     "verificationOptDocDeleted": "Document deleted.",
     "verificationOptDocUploaded": "Document added.",
     "verificationSubmitted": "📨 File submitted. Your association will be notified by email.",
-    "vopVerified": "VOP verification completed."
+    "vopVerified": "VOP verification completed.",
+    "widgetDestinationSaved": "Destination campaign saved.",
+    "widgetTokenGenerated": "Widget token generated."
   },
   "dashboard": {
     "association": {
@@ -1217,10 +1219,12 @@
       "snippet": {
         "copied": "Copied!",
         "copy": "Copy",
+        "iframeHelp": "Use this URL to embed the widget directly via an iframe.",
         "iframeUrl": "Direct iframe URL",
         "label": "Embed snippet",
         "noLiveCampaign": "Select a live campaign to display the snippet.",
-        "noToken": "Generate a token first to get the snippet."
+        "noToken": "Generate a token first to get the snippet.",
+        "snippetHelp": "Paste this script tag into your site's HTML to display the donation widget."
       },
       "title": "Donation Widget",
       "token": {

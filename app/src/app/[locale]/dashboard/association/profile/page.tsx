@@ -167,12 +167,6 @@ export default function AssociationProfilePage() {
           </span>
         </button>
         <button
-          className={`set-tab${activeTab === 'widget' ? ' active' : ''}`}
-          onClick={() => setActiveTab('widget')}
-        >
-          🎁 {t('association.profile.tabs.widget')}
-        </button>
-        <button
           className={`set-tab${activeTab === 'mandate' ? ' active' : ''}`}
           onClick={() => setActiveTab('mandate')}
         >
@@ -192,6 +186,12 @@ export default function AssociationProfilePage() {
               ? t('association.profile.tabs.mandateBadge.readyToSign')
               : t('association.profile.tabs.mandateBadge.notSigned')}
           </span>
+        </button>
+        <button
+          className={`set-tab${activeTab === 'widget' ? ' active' : ''}`}
+          onClick={() => setActiveTab('widget')}
+        >
+          🎁 {t('association.profile.tabs.widget')}
         </button>
       </div>
 
@@ -394,16 +394,6 @@ export default function AssociationProfilePage() {
         </div>
       )}
 
-      {/* ══ Onglet : Widget de don ═══════════════════════════════════════ */}
-      {activeTab === 'widget' && (
-        <div className="set-tab-content active">
-          <WidgetTab
-            profile={profile}
-            onTokenChanged={refreshProfile}
-          />
-        </div>
-      )}
-
       {/* ══ Onglet : Mandat fiscal ══════════════════════════════════════════ */}
       {activeTab === 'mandate' && (
         <div className="set-tab-content active">
@@ -416,6 +406,16 @@ export default function AssociationProfilePage() {
             onSign={sign}
             onRevoke={revoke}
             onDownloadPdf={downloadPdf}
+          />
+        </div>
+      )}
+
+      {/* ══ Onglet : Widget de don ═══════════════════════════════════════ */}
+      {activeTab === 'widget' && (
+        <div className="set-tab-content active">
+          <WidgetTab
+            profile={profile}
+            onTokenChanged={refreshProfile}
           />
         </div>
       )}

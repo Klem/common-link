@@ -7,6 +7,7 @@ import org.commonlink.onchain.OnchainCodec
 import org.commonlink.repository.DonationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
@@ -30,6 +31,7 @@ import java.util.UUID
  * Spring AOP proxy so that [@Transactional] applies (avoids self-invocation bypass).
  */
 @Service
+@ConditionalOnProperty(prefix = "onchain.worker", name = ["enabled"], havingValue = "true")
 class DonationReceiptService(
     private val donationRepository: DonationRepository,
     private val receiptService: ReceiptService,

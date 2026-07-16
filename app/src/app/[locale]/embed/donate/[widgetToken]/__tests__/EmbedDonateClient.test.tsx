@@ -51,6 +51,7 @@ function fillValidForm() {
 describe('EmbedDonateClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mockGetWidget.mockResolvedValue(sampleWidget);
     // Mock window.top
     Object.defineProperty(window, 'top', {
@@ -232,5 +233,6 @@ describe('EmbedDonateClient', () => {
       }));
     });
     expect(locationSpy).toHaveBeenCalledWith('https://checkout.mollie.com/pay/tr_test123');
+    expect(localStorage.getItem('widget_payment_clk_test')).toBe('tr_test123');
   });
 });

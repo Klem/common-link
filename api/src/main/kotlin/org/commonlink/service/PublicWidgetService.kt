@@ -76,7 +76,7 @@ class PublicWidgetService(
 
         val cleanSourceSite = sanitizeSourceSite(request.sourceSite)
         val amountCents = request.amount.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toLong()
-        val idempotencyKey = buildIdempotencyKey(widgetToken, donorProfile.id!!, amountCents)
+        val idempotencyKey = buildIdempotencyKey(widgetToken, donorProfile.id!!, amountCents, mollieProperties.webhookUrl)
 
         val redirectUrl = "${mollieProperties.redirectBaseUrl}/embed/donate/$widgetToken/return"
         val cancelUrl = "${mollieProperties.redirectBaseUrl}/embed/donate/$widgetToken"
@@ -176,9 +176,9 @@ class PublicWidgetService(
      * Stable idempotency key for a given widget+donor+amount within a 1-hour window.
      * Protects against network retries before a providerRef exists locally.
      */
-    private fun buildIdempotencyKey(widgetToken: String, donorProfileId: UUID, amountCents: Long): String {
+    private fun buildIdempotencyKey(widgetToken: String, donorProfileId: UUID, amountCents: Long, webhookUrl: String): String {
         val hourBucket = System.currentTimeMillis() / 3_600_000L
-        val input = "$widgetToken|$donorProfileId|$amountCents|$hourBucket"
+        val input = "$widgetToken|$donorProfileId|$amountCents|${webhookUrl.ifBlank { "none" }}|$hourBucket"
         return UUID.nameUUIDFromBytes(input.toByteArray(Charsets.UTF_8)).toString()
     }
 }

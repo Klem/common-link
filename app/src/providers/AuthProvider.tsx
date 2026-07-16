@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useTranslations } from 'next-intl';
 
@@ -16,6 +17,9 @@ import { useTranslations } from 'next-intl';
  * set to `true` and children are rendered. The auth store's `isAuthenticated`
  * flag reflects whether hydration succeeded.
  *
+ * Embed routes (`/embed/`) are skipped — no session exists in an iframe context
+ * and the refresh call would always fail with 401.
+ *
  * This component must be placed above any component that reads from `useAuthStore`.
  *
  * @param children - The application subtree to render after hydration.
@@ -23,8 +27,14 @@ import { useTranslations } from 'next-intl';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const t = useTranslations('common');
+  const pathname = usePathname();
 
   useEffect(() => {
+    if (pathname.includes('/embed/')) {
+      useAuthStore.setState({ isLoading: false });
+      setHydrated(true);
+      return;
+    }
     useAuthStore.getState().hydrateFromStorage().finally(() => {
       setHydrated(true);
     });
