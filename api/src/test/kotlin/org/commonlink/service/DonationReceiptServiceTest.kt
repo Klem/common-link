@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.event.DonationConfirmedEvent
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -17,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.util.AopTestUtils
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
@@ -83,6 +85,24 @@ class DonationReceiptServiceTest {
         val pending = donationRepository.findConfirmedWithoutOnchainJob()
         val found = pending.any { it.id == donationId }
         assertEquals(false, found, "Donation with job should not appear in reconciler query")
+    }
+
+    // ── T2 : event listener wiring ───────────────────────────────────────────
+
+    @Test
+    fun `onDonationConfirmed event handler calls enqueueOnchainJob and creates RECORD_DONATION job`() {
+        val (donationId) = setupConfirmedDonation()
+
+        // Bypass @Async proxy so the method runs synchronously on the test thread.
+        // self.enqueueOnchainJob still goes through the Spring proxy → @Transactional applies.
+        val rawService = AopTestUtils.getUltimateTargetObject<DonationReceiptService>(donationReceiptService)
+        rawService.onDonationConfirmed(DonationConfirmedEvent(donationId))
+
+        val jobs = onchainJobRepository.findAll()
+            .filter { it.action == OnchainJobAction.RECORD_DONATION }
+            .filter { it.correlationKey == "DONATION:$donationId" }
+        assertEquals(1, jobs.size, "onDonationConfirmed must enqueue exactly one RECORD_DONATION job")
+        assertNotNull(jobs[0].payloadJson)
     }
 
     // ── Setup helper ─────────────────────────────────────────────────────────
