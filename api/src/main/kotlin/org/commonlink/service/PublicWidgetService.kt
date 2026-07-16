@@ -3,6 +3,8 @@ package org.commonlink.service
 import org.commonlink.config.MollieProperties
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
+import org.commonlink.dto.DonationPublicStatus
+import org.commonlink.dto.DonationStatusDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.Campaign
@@ -11,6 +13,7 @@ import org.commonlink.exception.ConflictException
 import org.commonlink.exception.MolliePaymentException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -25,6 +28,7 @@ import java.util.UUID
 @Service
 class PublicWidgetService(
     private val associationProfileRepository: AssociationProfileRepository,
+    private val donationRepository: DonationRepository,
     private val donorProfileRepository: DonorProfileRepository,
     private val guestDonorService: GuestDonorService,
     private val mollieClient: MollieClient,
@@ -121,6 +125,21 @@ class PublicWidgetService(
 
         logger.info("Pending donation created — mollieId={} campaign={}", molliePayment.id, campaign.id)
         return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id)
+    }
+
+    /**
+     * Returns the public confirmation status of a donation by its Mollie payment ID.
+     *
+     * Used by the return page to poll for confirmation.
+     * Leaks no internal data — only PENDING or CONFIRMED.
+     *
+     * @throws [NotFoundException] if no donation exists for this paymentId.
+     */
+    fun getDonationStatus(paymentId: String): DonationStatusDto {
+        val donation = donationRepository.findByProviderRef("mollie:$paymentId")
+            ?: throw NotFoundException("Payment not found")
+        val status = if (donation.confirmedAt != null) DonationPublicStatus.CONFIRMED else DonationPublicStatus.PENDING
+        return DonationStatusDto(status)
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

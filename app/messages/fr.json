@@ -1282,6 +1282,23 @@
       "title": "Vos coordonnées pour le reçu"
     },
     "loading": "Chargement du widget...",
+    "return": {
+      "back": "Retour",
+      "confirmed": {
+        "message": "Votre don a bien été confirmé.",
+        "title": "Merci pour votre don !"
+      },
+      "failed": {
+        "message": "Votre paiement n'a pas abouti. Vous pouvez réessayer.",
+        "title": "Paiement non abouti"
+      },
+      "loading": "Vérification du statut du paiement…",
+      "pending": {
+        "message": "Votre paiement est en cours de traitement. Vous recevrez une confirmation par email.",
+        "title": "Confirmation en cours…"
+      },
+      "retry": "Refaire un don"
+    },
     "submit": "Faire un don",
     "submitting": "Traitement en cours...",
     "unavailable": "Ce widget n'est pas disponible."

@@ -6,6 +6,8 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
+import org.commonlink.dto.DonationPublicStatus
+import org.commonlink.dto.DonationStatusDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -253,5 +255,39 @@ class PublicWidgetControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRequest))
         ).andExpect(status().isNotFound)
+    }
+
+    // ── GET /widget/donations/{paymentId}/status ─────────────────────────────
+
+    @Test
+    fun `getDonationStatus - 200 CONFIRMED when donation is confirmed`() {
+        every { publicWidgetService.getDonationStatus("tr_test123") } returns
+            DonationStatusDto(DonationPublicStatus.CONFIRMED)
+
+        mockMvc.perform(get("/api/public/widget/donations/tr_test123/status"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("CONFIRMED"))
+            .andExpect(jsonPath("$.id").doesNotExist())
+            .andExpect(jsonPath("$.donorId").doesNotExist())
+            .andExpect(jsonPath("$.campaignId").doesNotExist())
+            .andExpect(jsonPath("$.amount").doesNotExist())
+    }
+
+    @Test
+    fun `getDonationStatus - 200 PENDING when donation is not yet confirmed`() {
+        every { publicWidgetService.getDonationStatus("tr_pending") } returns
+            DonationStatusDto(DonationPublicStatus.PENDING)
+
+        mockMvc.perform(get("/api/public/widget/donations/tr_pending/status"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("PENDING"))
+    }
+
+    @Test
+    fun `getDonationStatus - 404 for unknown paymentId`() {
+        every { publicWidgetService.getDonationStatus("tr_unknown") } throws NotFoundException("Payment not found")
+
+        mockMvc.perform(get("/api/public/widget/donations/tr_unknown/status"))
+            .andExpect(status().isNotFound)
     }
 }

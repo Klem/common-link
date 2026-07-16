@@ -1282,6 +1282,23 @@
       "title": "Your details for the receipt"
     },
     "loading": "Loading widget...",
+    "return": {
+      "back": "Back",
+      "confirmed": {
+        "message": "Your donation has been confirmed.",
+        "title": "Thank you for your donation!"
+      },
+      "failed": {
+        "message": "Your payment did not go through. You can try again.",
+        "title": "Payment unsuccessful"
+      },
+      "loading": "Checking payment status…",
+      "pending": {
+        "message": "Your payment is being processed. You will receive a confirmation by email.",
+        "title": "Confirmation in progress…"
+      },
+      "retry": "Donate again"
+    },
     "submit": "Donate",
     "submitting": "Processing...",
     "unavailable": "This widget is not available."

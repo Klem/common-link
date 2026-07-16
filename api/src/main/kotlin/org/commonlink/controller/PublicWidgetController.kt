@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
+import org.commonlink.dto.DonationStatusDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.service.PublicWidgetService
 import org.springframework.http.ResponseEntity
@@ -86,4 +87,27 @@ class PublicWidgetController(
         @Valid @RequestBody request: CreateGuestDonationRequest,
     ): ResponseEntity<CreateGuestDonationResponse> =
         ResponseEntity.ok(publicWidgetService.createDonation(widgetToken, request))
+
+    /**
+     * Returns the public confirmation status of a donation identified by its Mollie payment ID.
+     *
+     * Used by the return page to poll until confirmation or timeout.
+     * Returns only PENDING/CONFIRMED — no internal data exposed.
+     *
+     * @param paymentId Mollie payment ID (tr_…), without the "mollie:" prefix.
+     */
+    @GetMapping("/donations/{paymentId}/status")
+    @Operation(
+        summary = "Get donation payment status",
+        description = "Returns CONFIRMED when the Mollie webhook has confirmed the payment, PENDING otherwise. No authentication required."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Status returned",
+            content = [Content(schema = Schema(implementation = DonationStatusDto::class))]
+        ),
+        ApiResponse(responseCode = "404", description = "Payment ID not found", content = [Content()])
+    )
+    fun getDonationStatus(@PathVariable paymentId: String): ResponseEntity<DonationStatusDto> =
+        ResponseEntity.ok(publicWidgetService.getDonationStatus(paymentId))
 }

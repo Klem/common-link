@@ -47,3 +47,18 @@ export const createGuestDonation = (
   publicApi
     .post<CreateGuestDonationResponse>(`/api/public/widget/${token}/donations`, payload)
     .then((r) => r.data);
+
+export const DonationReturnStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+} as const;
+export type DonationReturnStatus = (typeof DonationReturnStatus)[keyof typeof DonationReturnStatus];
+
+export interface DonationStatusResponse {
+  status: DonationReturnStatus;
+}
+
+export const getDonationStatus = (paymentId: string): Promise<DonationStatusResponse> =>
+  publicApi
+    .get<DonationStatusResponse>(`/api/public/widget/donations/${paymentId}/status`)
+    .then((r) => r.data);
