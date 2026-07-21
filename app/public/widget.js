@@ -42,20 +42,19 @@
     return;
   }
 
-  // Capture the host page origin (best-effort, non-trusted — backend sanitises).
-  // Used for donation attribution; never used for security decisions.
-  var sourceOrigin = '';
+  // Capture the full host page URL (best-effort, non-trusted — backend sanitises).
+  // Persisted as donations.source_site and used as the post-payment redirect target.
+  // Never used for security decisions: the redirect is gated server-side/client-side
+  // by the association's widgetAllowedOrigin (origin match), not by this value.
+  var sourceUrl = '';
   try {
-    sourceOrigin = window.location.origin || '';
+    sourceUrl = window.location.href || '';
   } catch (e) {
     // cross-origin restriction in some sandboxes
   }
-  if (!sourceOrigin && document.referrer) {
-    try {
-      sourceOrigin = new URL(document.referrer).origin;
-    } catch (e) {
-      // malformed referrer
-    }
+  if (!sourceUrl && document.referrer) {
+    // referrer is already a full URL — keep it as-is
+    sourceUrl = document.referrer;
   }
 
   var iframeSrc =
@@ -65,8 +64,8 @@
     '/embed/donate/' +
     encodeURIComponent(token);
 
-  if (sourceOrigin) {
-    iframeSrc += '?source=' + encodeURIComponent(sourceOrigin);
+  if (sourceUrl) {
+    iframeSrc += '?source=' + encodeURIComponent(sourceUrl);
   }
 
   var iframe = document.createElement('iframe');

@@ -39,6 +39,20 @@ describe('EmbedDonateReturnClient', () => {
       expect(screen.getByText('redirecting')).toBeDefined();
     });
 
+    it('matches when the stored allowlist origin has a trailing slash', async () => {
+      mockGetWidget.mockResolvedValue({ widgetAllowedOrigin: 'https://example.com/' });
+      render(
+        <EmbedDonateReturnClient
+          widgetToken="clk_test"
+          locale="fr"
+          cancelled={false}
+          source="https://example.com/some/deep/page.html"
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('confirmed.title')).toBeDefined());
+      expect(screen.getByText('redirecting')).toBeDefined();
+    });
+
     it('stays on loading when widgetAllowedOrigin is null', async () => {
       mockGetWidget.mockResolvedValue({ widgetAllowedOrigin: null });
       render(
