@@ -8,8 +8,10 @@ import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Donation
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.EmailVerificationToken
+import org.commonlink.entity.FiscalMandate
 import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.MagicLinkToken
+import org.commonlink.entity.MandateEligibility
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.Payee
 import org.commonlink.entity.VerificationStatus
@@ -223,6 +225,20 @@ object TestFixtures {
         providerRef = providerRef,
         confirmedAt = confirmedAt,
         typeCode = typeCode,
+    )
+
+    // ── Mandates ─────────────────────────────────────────────────────────────
+
+    fun fiscalMandate(
+        association: AssociationProfile,
+        eligibility: MandateEligibility = MandateEligibility.OIG_66,
+        reference: String = "MND-2026-0001",
+        signedAt: Instant = Instant.now(),
+    ) = FiscalMandate(
+        association = association,
+        eligibility = eligibility,
+        reference = reference,
+        signedAt = signedAt,
     )
 
     // ── Payees ───────────────────────────────────────────────────────────────

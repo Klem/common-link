@@ -10,15 +10,20 @@ import jakarta.validation.Valid
 import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.DashboardStatsDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
+import org.commonlink.dto.UpdateWidgetConfigRequest
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -80,4 +85,61 @@ class AssociationController(
     )
     fun getDashboard(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<DashboardStatsDto> =
         ResponseEntity.ok(dashboardService.getDashboard(UUID.fromString(principal.username)))
+
+    @PostMapping("/me/widget/token")
+    @Operation(
+        summary = "Generate or rotate widget token",
+        description = "Generates a new cryptographically random widget token (`clk_…`) for the association's donation widget. " +
+            "If a token already exists, it is revoked and replaced — existing embeds using the old token will immediately return 404."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "New widget token generated",
+            content = [Content(schema = Schema(implementation = WidgetTokenResponse::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+    )
+    fun generateWidgetToken(
+        @AuthenticationPrincipal principal: UserDetails
+    ): ResponseEntity<WidgetTokenResponse> {
+        val token = associationService.generateWidgetToken(UUID.fromString(principal.username))
+        return ResponseEntity.ok(WidgetTokenResponse(token))
+    }
+
+    @PatchMapping("/me/widget")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+        summary = "Update widget configuration",
+        description = "Sets the allowed origin for post-payment redirects. Null clears the setting."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Widget config updated", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+    )
+    fun updateWidgetConfig(
+        @AuthenticationPrincipal principal: UserDetails,
+        @Valid @RequestBody req: UpdateWidgetConfigRequest,
+    ) {
+        associationService.updateWidgetConfig(UUID.fromString(principal.username), req.widgetAllowedOrigin)
+    }
+
+    @DeleteMapping("/me/widget/token")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+        summary = "Delete widget token",
+        description = "Disables the donation widget by clearing its token. " +
+            "Any existing embed using the old token will return 404 until a new token is generated."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Widget token deleted", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+    )
+    fun deleteWidgetToken(@AuthenticationPrincipal principal: UserDetails) {
+        associationService.deleteWidgetToken(UUID.fromString(principal.username))
+    }
 }
+
+data class WidgetTokenResponse(val token: String)

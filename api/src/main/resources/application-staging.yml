@@ -85,7 +85,6 @@ app:
     skip-kyc: true
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
 
-
 springdoc:
   api-docs:
     enabled: true
@@ -95,9 +94,11 @@ springdoc:
     path: /api/docs/swagger-ui.html
 
 onchain:
-  mock: false
+  mock: true
   worker:
-    enabled: false
+    enabled: true
+    batch-size: 10
+    fixed-delay-ms: 30000
 
 logging:
   level:

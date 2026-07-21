@@ -91,4 +91,44 @@ class AssociationProfile(
      */
     @Column(name = "decision_registry_check_id")
     var decisionRegistryCheckId: UUID? = null,
+
+    /**
+     * Public opaque token identifying this association's donation widget (e.g. `clk_…`).
+     * Null means the widget is inactive. Unique across all associations; generated and
+     * rotated via the dedicated token endpoint (B7). Never expose internal IDs through this.
+     */
+    @Column(name = "widget_token", unique = true)
+    var widgetToken: String? = null,
+
+    /**
+     * The campaign that receives donations submitted through this association's widget.
+     * Null if no destination has been configured yet. Set to null automatically (ON DELETE SET NULL)
+     * if the targeted campaign is deleted — the widget will then refuse donations until reconfigured.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "widget_destination_campaign_id")
+    var widgetDestinationCampaign: Campaign? = null,
+
+    /**
+     * Allowed origin for widget post-payment redirects (e.g. `https://www.asso-a.fr`).
+     * Null means no dynamic redirect is permitted — open-redirect protection by default.
+     */
+    @Column(name = "widget_allowed_origin", length = 255)
+    var widgetAllowedOrigin: String? = null,
+
+    /** Full street address of the association's registered office (e.g. "42 RUE DE CLICHY 75009 PARIS"). Printed on Cerfa receipts. */
+    @Column(name = "address_line1", length = 255)
+    var addressLine1: String? = null,
+
+    /** Official purpose / objet social (e.g. "Aide bénévole à l'alimentation…"). Printed on Cerfa receipts. */
+    @Column(name = "legal_object", columnDefinition = "TEXT")
+    var legalObject: String? = null,
+
+    /** Full name of the person authorised to sign receipts on behalf of the association. */
+    @Column(name = "signer_name", length = 255)
+    var signerName: String? = null,
+
+    /** Role/title of the authorised signer (e.g. "Trésorier"). */
+    @Column(name = "signer_role", length = 100)
+    var signerRole: String? = null,
 )

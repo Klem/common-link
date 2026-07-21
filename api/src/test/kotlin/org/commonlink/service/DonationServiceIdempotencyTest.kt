@@ -1,15 +1,14 @@
 package org.commonlink.service
 
-import org.commonlink.entity.OnchainJobAction
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
-import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +37,6 @@ class DonationServiceIdempotencyTest {
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var donationRepository: DonationRepository
-    @Autowired private lateinit var onchainJobRepository: OnchainJobRepository
 
     private lateinit var donorProfileId: UUID
     private lateinit var campaignId: UUID
@@ -56,32 +54,29 @@ class DonationServiceIdempotencyTest {
     }
 
     @Test
-    fun `same providerRef called twice enqueues RECORD_DONATION exactly once`() {
-        val providerRef = "monerium:${UUID.randomUUID()}"
-        val receipt = ByteArray(32) { it.toByte() }
+    fun `same providerRef called twice confirms donation exactly once`() {
+        val providerRef = "mollie:tr_${UUID.randomUUID()}"
 
-        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("50.00"), receipt)
-        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("50.00"), receipt)
+        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("50.00"))
+        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("50.00"))
 
-        val jobs = onchainJobRepository.findAll()
-            .filter { it.action == OnchainJobAction.RECORD_DONATION }
-            .filter { it.correlationKey?.startsWith("DONATION:") == true }
-
-        assertEquals(1, jobs.size, "Expected exactly one RECORD_DONATION job, got ${jobs.size}")
+        val donations = donationRepository.findAll()
+            .filter { it.providerRef == providerRef }
+        assertEquals(1, donations.size, "Expected exactly one Donation row")
+        assertNotNull(donations[0].confirmedAt, "Donation must be confirmed")
     }
 
     @Test
     fun `already-confirmed donation is skipped on second call`() {
-        val providerRef = "stripe:pi_${UUID.randomUUID()}"
-        val receipt = ByteArray(32) { it.toByte() }
+        val providerRef = "mollie:tr_${UUID.randomUUID()}"
 
-        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("25.00"), receipt)
+        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("25.00"))
 
         val donation = donationRepository.findByProviderRef(providerRef)!!
         val confirmedAt = donation.confirmedAt
-        assert(confirmedAt != null) { "Donation should be confirmed after first call" }
+        assertNotNull(confirmedAt) { "Donation should be confirmed after first call" }
 
-        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("25.00"), receipt)
+        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("25.00"))
 
         val reloaded = donationRepository.findByProviderRef(providerRef)!!
         assertEquals(confirmedAt, reloaded.confirmedAt, "confirmedAt must not change on second call")

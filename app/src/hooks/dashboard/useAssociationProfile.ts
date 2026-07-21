@@ -20,6 +20,8 @@ interface UseAssociationProfileReturn {
    * Enqueues a success or error toast via `useToastStore`.
    */
   updateProfile: (data: UpdateAssociationProfileRequest) => Promise<void>;
+  /** Re-fetches the profile from the server and updates local state. */
+  refreshProfile: () => Promise<void>;
 }
 
 /**
@@ -67,5 +69,12 @@ export function useAssociationProfile(): UseAssociationProfileReturn {
     }
   };
 
-  return { profile, isLoading, error, isSuccess, updateProfile };
+  const refreshProfile = async (): Promise<void> => {
+    try {
+      const data = await getAssociationProfile();
+      setProfile(data);
+    } catch {}
+  };
+
+  return { profile, isLoading, error, isSuccess, updateProfile, refreshProfile };
 }

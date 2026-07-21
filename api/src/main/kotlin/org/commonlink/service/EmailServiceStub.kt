@@ -41,4 +41,18 @@ class EmailServiceStub : EmailService {
     override fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String) {
         logger.info("Verification rejected for '$associationName' — would notify $recipientEmail (reason: $reason)")
     }
+
+    /** Logs the donation receipt details instead of sending an email with attachment. */
+    override fun sendDonationReceipt(
+        donorEmail: String,
+        donorName: String,
+        associationName: String,
+        receiptNumber: String,
+        pdfBytes: ByteArray,
+    ) {
+        logger.info(
+            "Donation receipt {} for '{}' — would send PDF ({} bytes) to {}",
+            receiptNumber, associationName, pdfBytes.size, donorEmail,
+        )
+    }
 }

@@ -29,6 +29,9 @@ const mockProfile: AssociationProfileDto = {
   phone: '01 23 45 67 89',
   verificationStatus: 'UNVERIFIED',
   verificationRejectionReason: null,
+  widgetToken: null,
+  widgetDestinationCampaignId: null,
+  widgetAllowedOrigin: null,
 };
 
 vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({
@@ -38,7 +41,16 @@ vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({
     error: null,
     isSuccess: false,
     updateProfile: mockUpdateProfile,
+    refreshProfile: vi.fn().mockResolvedValue(undefined),
   }),
+}));
+
+vi.mock('@/components/settings/WidgetTab', () => ({
+  WidgetTab: () => null,
+}));
+
+vi.mock('@/lib/api/campaign', () => ({
+  getCampaigns: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/hooks/monerium/useMoneriumStatus', () => ({

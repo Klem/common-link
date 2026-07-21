@@ -188,6 +188,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * Handles [MolliePaymentException] when the Mollie payment gateway is unreachable or returns an error (HTTP 502).
+     */
+    @ExceptionHandler(MolliePaymentException::class)
+    fun handleMolliePayment(ex: MolliePaymentException): ResponseEntity<ProblemDetail> {
+        appLogger.error("Mollie payment error: {}", ex.message)
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, "Payment gateway error")
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
+    }
+
+    /**
      * Catch-all handler for any unhandled [Exception] (HTTP 500).
      *
      * Logs the full stack trace at ERROR level but returns only a generic message to the

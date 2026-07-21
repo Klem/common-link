@@ -12,4 +12,5 @@ interface AssociationProfileRepository : JpaRepository<AssociationProfile, UUID>
     fun findByUserId(userId: UUID): Optional<AssociationProfile>
     fun findByIdentifier(identifier: String): Optional<AssociationProfile>
     fun findByVerificationStatus(status: VerificationStatus, pageable: Pageable): Page<AssociationProfile>
+    fun findByWidgetToken(widgetToken: String): Optional<AssociationProfile>
 }

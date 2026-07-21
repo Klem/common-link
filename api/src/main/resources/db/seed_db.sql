@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — Dev Seed Data
--- Run once on a clean (migrated) database (through V37).
+-- Run once on a clean (migrated) database (through V44).
 -- =============================================================
 -- Hashes below are real BCrypt ($2a, cost 12) — no edit needed.
 --   Test1234!  -> association
@@ -18,8 +18,11 @@
 --   5   payees COMPANY + IBANs (mixed VOP statuses)
 --   3   payees PERSON  (intervenants) + IBANs (VERIFIED)
 --   50  donors          (20 named · 30 anonymous)
---   ~600 donations       over the last 3 months (90 % confirmed)
---   ~25 payouts          on LIVE/ENDED campaigns (+ backing onchain_jobs)
+--   ~600 donations       over the last 3 months (100 % confirmed)
+--   ~600 donation_receipts (Cerfa 2041-RD, sequential 2026-NNNN) + RECORD_DONATION
+--        onchain_jobs (all DONE, tx_hash + block_number)
+--   1   signed fiscal_mandate (OIG_66) + receipt_seq counter
+--   ~25 payouts          on LIVE/ENDED campaigns — all CONFIRMED (+ DONE onchain_jobs)
 --
 -- Idempotent-ish: this block does NOT delete first. Run on a clean DB,
 -- or TRUNCATE the tables below before re-running.
@@ -192,14 +195,24 @@ DO $$
                );
 
         -- identifier = RNA (V37) ; siren = SIREN secondaire
-        INSERT INTO association_profiles (id, user_id, name, identifier, siren, city, postal_code, contact_name, description, verification_status)
+        -- Champs émetteur reçu Cerfa (V42) renseignés → reçus fiscaux émettables.
+        INSERT INTO association_profiles
+        (id, user_id, name, identifier, siren, city, postal_code, contact_name, description, verification_status,
+         address_line1, legal_object, signer_name, signer_role)
         VALUES (
                    v_assoc_id, v_assoc_user_id,
                    'Fondation Lumière', 'W751234567', '123456789',
                    'Paris', '75008', 'Marie Dupont',
                    'Association dédiée à l''éducation, l''aide humanitaire et le développement durable en France et à l''étranger.',
-                   'VERIFIED'
+                   'VERIFIED',
+                   '12 rue de la Solidarité',
+                   'Promouvoir l''éducation, l''aide humanitaire et le développement durable.',
+                   'Marie Dupont', 'Présidente'
                );
+
+        -- Mandat fiscal signé (V35) — prérequis à l'émission de reçus.
+        INSERT INTO fiscal_mandate (association_id, eligibility, reference, signed_at)
+        VALUES (v_assoc_id, 'OIG_66', 'MND-2026-0001', '2026-01-12 10:00:00+01');
 
         -- ════════════════════════════════════════════════════════════
         -- 2. CAMPAIGNS  (no `reason` column — dropped)
@@ -278,6 +291,16 @@ DO $$
              7500, 0, 'LIVE', '2026-06-01', NULL,
              '0x' || repeat('c', 64),
              '2026-05-28 10:00:00+01', '2026-05-28 10:00:00+01');
+
+        -- ════════════════════════════════════════════════════════════
+        -- 2b. WIDGET  (V38) — activer le widget sur l'association de test
+        --     Token fixe pour les appels dev ; destination = campagne 1 (LIVE)
+        -- ════════════════════════════════════════════════════════════
+        UPDATE association_profiles
+        SET widget_token                   = 'clk_test_fondation_lumiere',
+            widget_destination_campaign_id = v_camp[1],
+            widget_allowed_origin          = 'https://exemple-partenaire.org'
+        WHERE id = v_assoc_id;
 
         -- ════════════════════════════════════════════════════════════
         -- 3. CAMPAIGN MILESTONES  (3 per non-draft campaign)
@@ -543,6 +566,26 @@ DO $$
             END LOOP;
 
         -- ════════════════════════════════════════════════════════════
+        -- 5b. WALLET ADDRESSES — dérivées par HMAC-SHA256 comme DonorAddressGenerator
+        --     last 20 bytes of hmac(donor_id::text, secret, 'sha256')
+        --     Secret = valeur dev de onchain.donor-address-secret dans application.yml.
+        --     Résultat identique à ce que l'appli génère avec onchain.mock=true.
+        -- ════════════════════════════════════════════════════════════
+        FOR i IN 1..50 LOOP
+                UPDATE donor_profiles
+                SET    wallet_address = '0x' || encode(
+                           substring(
+                               hmac(v_donor_ids[i]::text,
+                                    'dev-placeholder-change-in-staging',
+                                    'sha256')
+                               FROM 13 FOR 20
+                           ),
+                           'hex'
+                       )
+                WHERE  id = v_donor_ids[i];
+            END LOOP;
+
+        -- ════════════════════════════════════════════════════════════
         -- 6. DONATIONS
         --    Each donor: 3–25 donations across the 10 non-draft campaigns.
         --    Window: 2026-03-17 → 2026-06-17 (92 days). 90 % confirmed.
@@ -558,15 +601,19 @@ DO $$
                             + (floor(random() * 92) || ' days')::INTERVAL
                             + (floor(random() * 86400) || ' seconds')::INTERVAL;
 
-                        confirmed := CASE WHEN random() < 0.9
-                                              THEN don_date + INTERVAL '2 minutes'
-                                          ELSE NULL
-                            END;
+                        -- Tous les dons sont confirmés (état soldé).
+                        confirmed := don_date + INTERVAL '2 minutes';
 
                         pref_id := 'seed_' || substr(gen_random_uuid()::TEXT, 1, 12);
 
-                        INSERT INTO donations (donor_id, campaign_id, amount, provider_ref, confirmed_at, created_at)
-                        VALUES (v_donor_ids[i], v_camp[rand_camp], rand_amount, pref_id, confirmed, don_date);
+                        -- Snapshot fiscal (V40) figé sur le don → alimente le reçu Cerfa.
+                        INSERT INTO donations
+                        (donor_id, campaign_id, amount, provider_ref, confirmed_at, created_at,
+                         donor_full_name, donor_address_line1, donor_postal_code, donor_city, donor_country)
+                        VALUES (
+                                   v_donor_ids[i], v_camp[rand_camp], rand_amount, pref_id, confirmed, don_date,
+                                   v_donor_names[i], i || ' avenue des Donateurs', '75001', 'Paris', 'FR'
+                               );
                     END LOOP;
             END LOOP;
 
@@ -580,6 +627,46 @@ DO $$
                           FROM donations d
                           WHERE d.campaign_id = c.id AND d.confirmed_at IS NOT NULL),
             updated_at = NOW();
+
+        -- ════════════════════════════════════════════════════════════
+        -- 7b. REÇUS FISCAUX + ANCRAGE ON-CHAIN (état soldé)
+        --     Chaque don confirmé → un job RECORD_DONATION soldé (DONE, tx_hash)
+        --     et un reçu Cerfa séquentiel 2026-NNNN. correlation_key = DONATION:<id>.
+        --     Tous les dons du seed tombent en 2026 → une seule année de séquence.
+        -- ════════════════════════════════════════════════════════════
+        INSERT INTO onchain_jobs
+        (id, action, payload_json, status, attempts, tx_hash, block_number, correlation_key, created_at, updated_at)
+        SELECT gen_random_uuid(),
+               'RECORD_DONATION',
+               jsonb_build_object('donationId', d.id, 'amountCents', (d.amount * 100)::BIGINT),
+               'DONE', 1,
+               '0x' || md5(d.id::TEXT) || md5(d.id::TEXT || ':donation'),   -- 0x + 64 hex
+               (17500000 + floor(random() * 500000))::BIGINT,
+               'DONATION:' || d.id::TEXT,
+               d.confirmed_at, d.confirmed_at + INTERVAL '3 minutes'
+        FROM donations d
+        WHERE d.confirmed_at IS NOT NULL;
+
+        INSERT INTO donation_receipts
+        (id, donation_id, receipt_number, pdf_bytes, generated_at, emailed_at)
+        SELECT gen_random_uuid(),
+               r.id,
+               '2026-' || lpad(r.seq::TEXT, 4, '0'),
+               decode('255044462d312e34', 'hex'),                    -- %PDF-1.4 (contenu factice)
+               r.confirmed_at + INTERVAL '2 minutes',
+               r.confirmed_at + INTERVAL '10 minutes'
+        FROM (
+                 SELECT id, confirmed_at,
+                        row_number() OVER (ORDER BY confirmed_at, id) AS seq
+                 FROM donations
+                 WHERE confirmed_at IS NOT NULL
+             ) r;
+
+        -- Compteur de séquence aligné sur le nombre de reçus émis.
+        INSERT INTO receipt_seq (association_id, year, last_seq)
+        SELECT v_assoc_id, 2026::SMALLINT, count(*)::INT
+        FROM donations
+        WHERE confirmed_at IS NOT NULL;
 
         -- ════════════════════════════════════════════════════════════
         -- 8. PAYOUTS (+ backing onchain_jobs) — COHÉRENTS avec budget & dons
@@ -626,12 +713,8 @@ DO $$
                             -- (rémunération) va au payee "intervenants", sinon round-robin.
                             v_pidx := 1 + ((slot + k) % 5);
 
-                            -- statut on-chain : ENDED toujours soldé ; LIVE ~85 % confirmé
-                            IF v_status = 'ENDED' OR random() < 0.85 THEN
-                                v_payout_status := 'CONFIRMED';
-                            ELSE
-                                v_payout_status := 'PENDING';
-                            END IF;
+                            -- État soldé : tous les payouts sont confirmés on-chain.
+                            v_payout_status := 'CONFIRMED';
 
                             don_date := '2026-04-01 00:00:00+02'::TIMESTAMPTZ
                                 + (floor(random() * 70) || ' days')::INTERVAL
@@ -651,14 +734,11 @@ DO $$
                                                'campaignId', v_camp[slot],
                                                'amountCents', (v_line_amt * 100)::BIGINT
                                        ),
-                                       CASE WHEN v_payout_status = 'CONFIRMED' THEN 'DONE' ELSE 'PENDING' END,
-                                       CASE WHEN v_payout_status = 'CONFIRMED' THEN 1 ELSE 0 END,
-                                       CASE WHEN v_payout_status = 'CONFIRMED'
-                                                THEN '0x' || substr(md5(v_job_id::TEXT), 1, 64) ELSE NULL END,
-                                       CASE WHEN v_payout_status = 'CONFIRMED'
-                                                THEN (18000000 + floor(random() * 500000))::BIGINT ELSE NULL END,
+                                       'DONE', 1,
+                                       '0x' || md5(v_job_id::TEXT) || md5(v_job_id::TEXT || ':payout'),  -- 0x + 64 hex
+                                       (18000000 + floor(random() * 500000))::BIGINT,
                                        'payout:' || v_job_id::TEXT,
-                                       don_date, COALESCE(v_payout_conf, don_date)
+                                       don_date, v_payout_conf
                                    );
 
                             INSERT INTO payouts
@@ -697,7 +777,7 @@ DO $$
                                            'amountCents', (v_person_amounts[i] * 100)::BIGINT
                                    ),
                                    'DONE', 1,
-                                   '0x' || substr(md5(v_job_id::TEXT), 1, 64),
+                                   '0x' || md5(v_job_id::TEXT) || md5(v_job_id::TEXT || ':payout'),  -- 0x + 64 hex
                                    (18100000 + floor(random() * 500000))::BIGINT,
                                    'payout:p:' || v_job_id::TEXT,
                                    don_date, v_payout_conf

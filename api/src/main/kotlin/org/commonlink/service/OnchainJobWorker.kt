@@ -39,6 +39,7 @@ class OnchainJobWorker(
     private val claimer: OnchainJobClaimer,
     private val repo: org.commonlink.repository.OnchainJobRepository,
     private val campaignRepository: CampaignRepository,
+    private val donationReceiptService: DonationReceiptService,
     private val client: OnchainRegistry,
     private val objectMapper: ObjectMapper,
     private val cfg: OnchainConfig,
@@ -78,6 +79,11 @@ class OnchainJobWorker(
                     campaignRepository.save(campaign)
                     logger.info("Campaign reverted to DRAFT after on-chain confirmation: campaignId={}", campaignId)
                 }
+            }
+            OnchainJobAction.RECORD_DONATION -> {
+                val donationId = objectMapper.readValue(job.payloadJson, RecordDonationPayload::class.java).donationId
+                runCatching { donationReceiptService.sendReceiptEmailIfNeeded(donationId) }
+                    .onFailure { logger.error("Failed to send receipt email for donation {}", donationId, it) }
             }
             else -> Unit
         }

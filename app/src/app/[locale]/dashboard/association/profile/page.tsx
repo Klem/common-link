@@ -15,6 +15,7 @@ import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
+import { WidgetTab } from '@/components/settings/WidgetTab';
 import { useMandate } from '@/hooks/dashboard/useMandate';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -41,11 +42,15 @@ const profileSchema = z.object({
     .string()
     .optional()
     .refine((v) => !v || /^[0-9 +().\-]{6,20}$/.test(v), 'dashboard.association.profile.errors.phoneFormat'),
+  addressLine1: z.string().max(255).optional(),
+  legalObject: z.string().max(2000).optional(),
+  signerName: z.string().max(255).optional(),
+  signerRole: z.string().max(100).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate';
+type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget';
 
 const PROVIDER_KEYS = {
   GOOGLE: 'association.profile.security.google',
@@ -58,14 +63,14 @@ const PROVIDER_KEYS = {
 export default function AssociationProfilePage() {
   const t = useTranslations('dashboard');
   const user = useAuthStore((s) => s.user);
-  const { profile, isLoading, updateProfile } = useAssociationProfile();
+  const { profile, isLoading, updateProfile, refreshProfile } = useAssociationProfile();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
   const [verifStatus, setVerifStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos') {
+    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' || tab === 'widget') {
       setActiveTab(tab as SettingsTab);
     }
   }, [searchParams]);
@@ -96,6 +101,10 @@ export default function AssociationProfilePage() {
       creationYear: profile?.creationYear ?? undefined,
       contactEmail: profile?.contactEmail ?? '',
       phone: profile?.phone ?? '',
+      addressLine1: profile?.addressLine1 ?? '',
+      legalObject: profile?.legalObject ?? '',
+      signerName: profile?.signerName ?? '',
+      signerRole: profile?.signerRole ?? '',
     },
   });
 
@@ -105,6 +114,10 @@ export default function AssociationProfilePage() {
       creationYear: data.creationYear,
       contactEmail: data.contactEmail || undefined,
       phone: data.phone || undefined,
+      addressLine1: data.addressLine1 || undefined,
+      legalObject: data.legalObject || undefined,
+      signerName: data.signerName || undefined,
+      signerRole: data.signerRole || undefined,
     });
     reset(data);
   });
@@ -185,6 +198,12 @@ export default function AssociationProfilePage() {
               ? t('association.profile.tabs.mandateBadge.readyToSign')
               : t('association.profile.tabs.mandateBadge.notSigned')}
           </span>
+        </button>
+        <button
+          className={`set-tab${activeTab === 'widget' ? ' active' : ''}`}
+          onClick={() => setActiveTab('widget')}
+        >
+          🎁 {t('association.profile.tabs.widget')}
         </button>
       </div>
 
@@ -278,6 +297,66 @@ export default function AssociationProfilePage() {
                       {errors.phone && (
                         <p className="fhint error">{t(errors.phone.message as Parameters<typeof t>[0])}</p>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Ligne 4 : Adresse postale (full width) */}
+                  <div className="frow">
+                    <div className="fg" style={{ flex: '1 1 100%' }}>
+                      <label htmlFor="addressLine1" className="fl">
+                        {t('association.profile.addressLine1')}
+                      </label>
+                      <input
+                        id="addressLine1"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.addressLine1Placeholder')}
+                        {...register('addressLine1')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Ligne 5 : Objet social (full width) */}
+                  <div className="frow">
+                    <div className="fg" style={{ flex: '1 1 100%' }}>
+                      <label htmlFor="legalObject" className="fl">
+                        {t('association.profile.legalObject')}
+                      </label>
+                      <input
+                        id="legalObject"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.legalObjectPlaceholder')}
+                        {...register('legalObject')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Ligne 6 : Signataire nom | Fonction */}
+                  <div className="frow">
+                    <div className="fg">
+                      <label htmlFor="signerName" className="fl">
+                        {t('association.profile.signerName')}
+                      </label>
+                      <input
+                        id="signerName"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.signerNamePlaceholder')}
+                        {...register('signerName')}
+                      />
+                    </div>
+                    <div className="fg">
+                      <label htmlFor="signerRole" className="fl">
+                        {t('association.profile.signerRole')}
+                      </label>
+                      <input
+                        id="signerRole"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.signerRolePlaceholder')}
+                        {...register('signerRole')}
+                      />
                     </div>
                   </div>
 
@@ -399,6 +478,16 @@ export default function AssociationProfilePage() {
             onSign={sign}
             onRevoke={revoke}
             onDownloadPdf={downloadPdf}
+          />
+        </div>
+      )}
+
+      {/* ══ Onglet : Widget de don ═══════════════════════════════════════ */}
+      {activeTab === 'widget' && (
+        <div className="set-tab-content active">
+          <WidgetTab
+            profile={profile}
+            onTokenChanged={refreshProfile}
           />
         </div>
       )}

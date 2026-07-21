@@ -25,8 +25,8 @@ DO $$
     DECLARE
         -- ── UUID d'utilisateurs à EXCLURE de la purge (table users.id) ──
         -- Exemple : ARRAY['a0000000-0000-0000-0000-000000000001']::UUID[]
---         v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c','5a3245cb-b492-4a90-9439-8a020edfb7de','fe61fe1c-8c2f-4afc-a803-5b7d8710780a']::UUID[];
-        v_keep_user_ids UUID[] := ARRAY[]::UUID[];
+        v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c']::UUID[];
+--         v_keep_user_ids UUID[] := ARRAY[]::UUID[];
 
         -- Profils dérivés des users gardés (calculés automatiquement)
         v_keep_assoc_ids UUID[];
@@ -66,16 +66,9 @@ DO $$
         );
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'payouts supprimés : %', v_deleted;
 
-        -- ════════════════════════════════════════════════════════════
-        -- 2. ONCHAIN JOBS  (table indépendante, aucune FK → purge globale)
-        --    On ne peut pas la rattacher de façon fiable à un user gardé,
-        --    donc on conserve uniquement les jobs liés à un payout conservé.
-        -- ════════════════════════════════════════════════════════════
-        DELETE FROM onchain_jobs j
-        WHERE NOT EXISTS (
-            SELECT 1 FROM payouts p WHERE p.onchain_job_id = j.id
-        );
-        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'onchain_jobs supprimés : %', v_deleted;
+        -- (Les onchain_jobs sont purgés en 3b, APRÈS la suppression des donations :
+        --  un job RECORD_DONATION se rattache à un don via correlation_key
+        --  'DONATION:<id>', il faut donc que les dons purgés soient déjà partis.)
 
         -- ════════════════════════════════════════════════════════════
         -- 3. DONATIONS
@@ -93,6 +86,18 @@ DO $$
             WHERE c.id = d.campaign_id AND c.association_id = ANY(v_keep_assoc_ids)
         );
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'donations supprimées : %', v_deleted;
+        -- Les donation_receipts des dons supprimés partent par ON DELETE CASCADE.
+
+        -- ════════════════════════════════════════════════════════════
+        -- 3b. ONCHAIN JOBS  (table indépendante, aucune FK → purge par rattachement)
+        --     Exécuté APRÈS payouts (étape 1) ET donations (étape 3) : on conserve
+        --     uniquement les jobs encore reliés à un payout conservé (onchain_job_id)
+        --     ou à un don conservé (correlation_key 'DONATION:<id>').
+        -- ════════════════════════════════════════════════════════════
+        DELETE FROM onchain_jobs j
+        WHERE NOT EXISTS (SELECT 1 FROM payouts p WHERE p.onchain_job_id = j.id)
+          AND NOT EXISTS (SELECT 1 FROM donations d WHERE j.correlation_key = 'DONATION:' || d.id);
+        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'onchain_jobs supprimés : %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
         -- 4. CAMPAGNES  (cascade → milestones, budget_sections → budget_items)
@@ -187,12 +192,12 @@ DO $$
 -- Décommenter pour un reset total et instantané du schéma.
 -- =============================================================
 -- TRUNCATE TABLE
---   payouts, onchain_jobs, donations,
+--   payouts, onchain_jobs, donation_receipts, donations,
 --   campaign_budget_items, campaign_budget_sections, campaign_milestones,
 --   campaigns, payee_ibans, payees,
 --   monerium_oauth_states, monerium_connections,
 --   association_registry_check,
---   fiscal_mandate, association_document,
+--   fiscal_mandate, association_document, receipt_seq,
 --   association_profiles, donor_profiles,
 --   magic_link_tokens, email_verification_tokens, refresh_tokens,
 --   users

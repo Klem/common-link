@@ -9,10 +9,14 @@ import org.commonlink.entity.MoneriumConnection
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.entity.VerificationStatus
+import org.commonlink.dto.UpdateAssociationProfileRequest
+import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.Optional
 import java.util.UUID
 
@@ -22,10 +26,11 @@ import java.util.UUID
 class AssociationServiceTest {
 
     private val associationRepo: AssociationProfileRepository = mockk()
+    private val campaignRepo: CampaignRepository = mockk()
     private val connectionRepo: MoneriumConnectionRepository = mockk()
     private val outbox: OnchainOutboxService = mockk()
 
-    private val service = AssociationService(associationRepo, connectionRepo, outbox)
+    private val service = AssociationService(associationRepo, campaignRepo, connectionRepo, outbox)
 
     private val associationId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
@@ -156,5 +161,28 @@ class AssociationServiceTest {
         service.restoreAssociation(associationId)
 
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+    }
+
+    // ── T6 : multi-tenant isolation ───────────────────────────────────────────
+
+    @Test
+    fun `updateProfile - widgetDestinationCampaignId from another association throws NotFoundException`() {
+        val userId = UUID.randomUUID()
+        val ownAssocId = UUID.randomUUID()
+        val foreignCampaignId = UUID.randomUUID()
+
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.id } returns ownAssocId
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        // Campaign lookup scoped to ownAssocId returns empty → belongs to another association
+        every { campaignRepo.findByIdAndAssociationId(foreignCampaignId, ownAssocId) } returns Optional.empty()
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = null, creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = foreignCampaignId,
+        )
+
+        assertThrows<NotFoundException> { service.updateProfile(userId, req) }
     }
 }

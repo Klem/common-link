@@ -9,4 +9,5 @@ interface UserRepository : JpaRepository<User, UUID> {
     fun findByEmail(email: String): Optional<User>
     fun findByGoogleSub(googleSub: String): Optional<User>
     fun existsByEmail(email: String): Boolean
+    fun findByEmailIgnoreCase(email: String): Optional<User>
 }

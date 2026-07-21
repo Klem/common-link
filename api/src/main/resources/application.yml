@@ -16,7 +16,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
-    show-sql: true
+    show-sql: false
 
   flyway:
     enabled: true
@@ -63,9 +63,14 @@ app:
   monerium:
     client-id: ${MONERIUM_CLIENT_ID:}
     base-url: ${MONERIUM_BASE_URL:https://api.monerium.dev}
-    redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/monerium/callback}
+    redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/public/webhooks/monerium}
     skip-kyc: true
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
+  mollie:
+    api-key: ${MOLLIE_API_KEY:test_hBpdFb3fmHBaNN5Nvdg5r9cC4psU59}
+    api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
+    redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
+    webhook-url: ${MOLLIE_WEBHOOK_URL:}
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:
