@@ -85,17 +85,6 @@ app:
     skip-kyc: true
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
 
-
-# Mollie payment gateway — all values must be supplied via environment variables in staging.
-# Use a sandbox test key (test_xxx) until production go-live.
-mollie:
-  api-key: ${MOLLIE_API_KEY}
-  api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
-  # Base URL of the frontend, used to build Mollie redirect/cancel return URLs.
-  redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL}
-  # Publicly reachable HTTPS URL of the webhook endpoint (required by Mollie).
-  webhook-url: ${MOLLIE_WEBHOOK_URL}
-
 springdoc:
   api-docs:
     enabled: true
@@ -105,9 +94,11 @@ springdoc:
     path: /api/docs/swagger-ui.html
 
 onchain:
-  mock: false
+  mock: true
   worker:
-    enabled: false
+    enabled: true
+    batch-size: 10
+    fixed-delay-ms: 30000
 
 logging:
   level:

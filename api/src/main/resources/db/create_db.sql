@@ -1,8 +1,8 @@
 -- =============================================================
 -- CommonLink — create_db.sql
--- Schéma consolidé : état final équivalent aux migrations V1 → V40.
+-- Schéma consolidé : état final équivalent aux migrations V1 → V44.
 --
--- Ce script remplace l'exécution séquentielle des 40 migrations Flyway
+-- Ce script remplace l'exécution séquentielle des migrations Flyway
 -- par les formes finales : les ALTER / RENAME / DROP INDEX intermédiaires
 -- sont supprimés, seules les définitions résultantes subsistent.
 --
@@ -527,3 +527,45 @@ ALTER TABLE association_profiles
 CREATE INDEX idx_association_profiles_widget_destination_campaign_id
     ON association_profiles (widget_destination_campaign_id)
     WHERE widget_destination_campaign_id IS NOT NULL;
+
+-- Origine autorisée pour la redirection post-paiement du widget (V41).
+ALTER TABLE association_profiles
+    ADD COLUMN widget_allowed_origin VARCHAR(255);
+
+-- =============================================================
+-- 12. REÇUS FISCAUX  (V42 champs émetteur · V43 reçus · V44 séquence)
+-- =============================================================
+
+-- Champs requis pour l'émission du reçu Cerfa 2041-RD (V42).
+ALTER TABLE association_profiles
+    ADD COLUMN address_line1 VARCHAR(255),
+    ADD COLUMN legal_object  TEXT,
+    ADD COLUMN signer_name   VARCHAR(255),
+    ADD COLUMN signer_role   VARCHAR(100);
+
+-- donation_receipts : PDF Cerfa figé par don confirmé (V43).
+-- pdf_bytes = octets exacts dont le keccak256 est ancré on-chain.
+-- emailed_at NULL tant que le reçu n'est pas envoyé (garde anti-doublon).
+CREATE TABLE donation_receipts
+(
+    id             UUID        NOT NULL DEFAULT gen_random_uuid(),
+    donation_id    UUID        NOT NULL,
+    receipt_number VARCHAR(20) NOT NULL,
+    pdf_bytes      BYTEA       NOT NULL,
+    generated_at   TIMESTAMPTZ NOT NULL,
+    emailed_at     TIMESTAMPTZ,
+    CONSTRAINT pk_donation_receipts     PRIMARY KEY (id),
+    CONSTRAINT uq_donation_receipts_don UNIQUE (donation_id),
+    CONSTRAINT fk_donation_receipts_don FOREIGN KEY (donation_id)
+        REFERENCES donations (id) ON DELETE CASCADE
+);
+
+-- receipt_seq : compteur séquentiel par (association, année) (V44).
+-- Incrémenté atomiquement via INSERT ... ON CONFLICT DO UPDATE RETURNING.
+CREATE TABLE receipt_seq
+(
+    association_id UUID     NOT NULL REFERENCES association_profiles (id) ON DELETE CASCADE,
+    year           SMALLINT NOT NULL,
+    last_seq       INTEGER  NOT NULL DEFAULT 0,
+    CONSTRAINT pk_receipt_seq PRIMARY KEY (association_id, year)
+);
