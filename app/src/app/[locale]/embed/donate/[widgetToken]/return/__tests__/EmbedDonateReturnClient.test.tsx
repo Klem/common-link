@@ -7,99 +7,90 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('@/lib/api/public', () => ({
-  getDonationStatus: vi.fn(),
-  DonationReturnStatus: { PENDING: 'PENDING', CONFIRMED: 'CONFIRMED' },
+  getWidget: vi.fn(),
 }));
 
-import { getDonationStatus } from '@/lib/api/public';
+import { getWidget } from '@/lib/api/public';
 
-const mockGetStatus = getDonationStatus as ReturnType<typeof vi.fn>;
+const mockGetWidget = getWidget as ReturnType<typeof vi.fn>;
 
-const defaultProps = {
-  paymentId: 'tr_test123',
-  widgetToken: 'clk_test',
-  locale: 'fr',
-  _pollIntervalMs: 0,
-};
+const allowedWidget = { widgetAllowedOrigin: 'https://example.com' };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  localStorage.clear();
 });
 
 describe('EmbedDonateReturnClient', () => {
-  it('shows loading state initially while first poll is pending', () => {
-    mockGetStatus.mockReturnValue(new Promise(() => {}));
-    render(<EmbedDonateReturnClient {...defaultProps} />);
-    expect(screen.getByText('loading')).toBeDefined();
-  });
+  describe('success path', () => {
+    it('shows loading state initially while getWidget resolves', () => {
+      mockGetWidget.mockReturnValue(new Promise(() => {}));
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={false} source="https://example.com/page" />,
+      );
+      expect(screen.getByText('loading')).toBeDefined();
+    });
 
-  it('shows confirmed state when API returns CONFIRMED', async () => {
-    mockGetStatus.mockResolvedValue({ status: 'CONFIRMED' });
-    render(<EmbedDonateReturnClient {...defaultProps} />);
-    await waitFor(() => {
-      expect(screen.getByText('confirmed.title')).toBeDefined();
+    it('shows confirmed UI when source origin matches allowlist', async () => {
+      mockGetWidget.mockResolvedValue(allowedWidget);
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={false} source="https://example.com/page?ref=widget" />,
+      );
+      await waitFor(() => expect(screen.getByText('confirmed.title')).toBeDefined());
+      expect(screen.getByText('redirecting')).toBeDefined();
+    });
+
+    it('stays on loading when widgetAllowedOrigin is null', async () => {
+      mockGetWidget.mockResolvedValue({ widgetAllowedOrigin: null });
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={false} source="https://example.com/page" />,
+      );
+      await waitFor(() => expect(mockGetWidget).toHaveBeenCalled());
+      expect(screen.getByText('loading')).toBeDefined();
+    });
+
+    it('stays on loading when source origin does not match allowlist', async () => {
+      mockGetWidget.mockResolvedValue(allowedWidget);
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={false} source="https://attacker.com/evil" />,
+      );
+      await waitFor(() => expect(mockGetWidget).toHaveBeenCalled());
+      expect(screen.getByText('loading')).toBeDefined();
+    });
+
+    it('stays on loading when source is null', () => {
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={false} source={null} />,
+      );
+      expect(screen.getByText('loading')).toBeDefined();
+      expect(mockGetWidget).not.toHaveBeenCalled();
     });
   });
 
-  it('shows pending timeout state after max attempts still returning PENDING', async () => {
-    mockGetStatus.mockResolvedValue({ status: 'PENDING' });
-    render(<EmbedDonateReturnClient {...defaultProps} />);
-    await waitFor(() => {
-      expect(screen.getByText('pending.title')).toBeDefined();
+  describe('cancel path', () => {
+    it('shows cancelled UI immediately', () => {
+      mockGetWidget.mockReturnValue(new Promise(() => {}));
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={true} source="https://example.com/page" />,
+      );
+      expect(screen.getByText('cancelled.title')).toBeDefined();
+      expect(screen.getByText('cancelled.message')).toBeDefined();
     });
-    expect(mockGetStatus).toHaveBeenCalledTimes(5);
-  });
 
-  it('shows failed state when API throws', async () => {
-    mockGetStatus.mockRejectedValue(new Error('Not Found'));
-    render(<EmbedDonateReturnClient {...defaultProps} />);
-    await waitFor(() => {
-      expect(screen.getByText('failed.title')).toBeDefined();
+    it('calls getWidget to validate source on cancel', async () => {
+      mockGetWidget.mockResolvedValue(allowedWidget);
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={true} source="https://example.com/page" />,
+      );
+      await waitFor(() => expect(mockGetWidget).toHaveBeenCalledWith('clk_test'));
     });
-  });
 
-  it('shows failed state when paymentId is null and localStorage is empty', async () => {
-    render(<EmbedDonateReturnClient {...defaultProps} paymentId={null} />);
-    await waitFor(() => {
-      expect(screen.getByText('failed.title')).toBeDefined();
-    });
-    expect(mockGetStatus).not.toHaveBeenCalled();
-  });
-
-  it('polls using paymentId from localStorage when prop is null', async () => {
-    localStorage.setItem('widget_payment_clk_test', 'tr_from_storage');
-    mockGetStatus.mockResolvedValue({ status: 'CONFIRMED' });
-    render(<EmbedDonateReturnClient {...defaultProps} paymentId={null} />);
-    await waitFor(() => {
-      expect(screen.getByText('confirmed.title')).toBeDefined();
-    });
-    expect(mockGetStatus).toHaveBeenCalledWith('tr_from_storage');
-  });
-
-  it('uses sourceSite from localStorage as back button href', async () => {
-    localStorage.setItem('widget_source_clk_test', 'http://192.168.1.11/path/to/widget');
-    mockGetStatus.mockResolvedValue({ status: 'CONFIRMED' });
-    render(<EmbedDonateReturnClient {...defaultProps} />);
-    await waitFor(() => {
-      const link = screen.getByRole('link', { name: 'retry' });
-      expect(link.getAttribute('href')).toBe('http://192.168.1.11/path/to/widget');
-    });
-  });
-
-  it('shows retry button in PENDING_TIMEOUT state', async () => {
-    mockGetStatus.mockResolvedValue({ status: 'PENDING' });
-    render(<EmbedDonateReturnClient {...defaultProps} />);
-    await waitFor(() => {
-      expect(screen.getByText('retry')).toBeDefined();
-    });
-  });
-
-  it('shows retry button in FAILED state', async () => {
-    mockGetStatus.mockRejectedValue(new Error('Network error'));
-    render(<EmbedDonateReturnClient {...defaultProps} />);
-    await waitFor(() => {
-      expect(screen.getByText('retry')).toBeDefined();
+    it('shows fallback link when source is null on cancel', () => {
+      render(
+        <EmbedDonateReturnClient widgetToken="clk_test" locale="fr" cancelled={true} source={null} />,
+      );
+      expect(screen.getByText('cancelled.title')).toBeDefined();
+      const link = screen.getByRole('link');
+      expect(link.getAttribute('href')).toBe('/fr/embed/donate/clk_test');
     });
   });
 });

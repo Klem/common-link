@@ -116,6 +116,36 @@ class AssociationService(
     }
 
     /**
+     * Updates widget configuration: stores the normalized origin of [widgetAllowedOrigin].
+     * Null clears the setting, disabling post-payment redirects.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @param widgetAllowedOrigin Raw origin URL supplied by the association. Normalized to scheme+host.
+     * @throws UserNotFoundException if no profile exists for this user.
+     */
+    @Transactional
+    fun updateWidgetConfig(userId: UUID, widgetAllowedOrigin: String?) {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+        profile.widgetAllowedOrigin = normalizeOrigin(widgetAllowedOrigin)
+        associationProfileRepository.save(profile)
+        logger.info("Widget config updated for association {}", profile.id)
+    }
+
+    private fun normalizeOrigin(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        return try {
+            val uri = java.net.URI(raw.trim())
+            val scheme = uri.scheme?.takeIf { it == "http" || it == "https" } ?: return null
+            val host = uri.host?.takeIf { it.isNotBlank() } ?: return null
+            val port = if (uri.port != -1) ":${uri.port}" else ""
+            "$scheme://$host$port"
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
      * Disables the donation widget for the association by clearing its token.
      *
      * Any existing embed using the old token will return 404 until a new token is generated.

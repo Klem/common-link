@@ -108,4 +108,11 @@ class AssociationProfile(
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "widget_destination_campaign_id")
     var widgetDestinationCampaign: Campaign? = null,
+
+    /**
+     * Allowed origin for widget post-payment redirects (e.g. `https://www.asso-a.fr`).
+     * Null means no dynamic redirect is permitted — open-redirect protection by default.
+     */
+    @Column(name = "widget_allowed_origin", length = 255)
+    var widgetAllowedOrigin: String? = null,
 )

@@ -68,6 +68,7 @@ class PublicWidgetControllerTest {
         raised = BigDecimal("3500.00"),
         campaignCoverImage = "https://example.com/cover.jpg",
         currency = "EUR",
+        widgetAllowedOrigin = "https://www.msf.fr",
     )
 
     private val validRequest = CreateGuestDonationRequest(

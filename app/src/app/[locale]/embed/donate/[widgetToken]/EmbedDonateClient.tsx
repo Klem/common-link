@@ -36,9 +36,10 @@ type DonationFormData = z.infer<typeof donationSchema>;
 interface Props {
   widgetToken: string;
   sourceSite: string | null;
+  locale: string;
 }
 
-export function EmbedDonateClient({ widgetToken, sourceSite }: Props) {
+export function EmbedDonateClient({ widgetToken, sourceSite, locale }: Props) {
   const t = useTranslations('widget');
 
   const [widget, setWidget] = useState<PublicWidgetDto | null>(null);
@@ -81,13 +82,8 @@ export function EmbedDonateClient({ widgetToken, sourceSite }: Props) {
       const response = await createGuestDonation(widgetToken, {
         ...data,
         sourceSite,
+        locale,
       });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`widget_payment_${widgetToken}`, response.paymentId);
-        if (sourceSite) {
-          localStorage.setItem(`widget_source_${widgetToken}`, sourceSite);
-        }
-      }
       const top = typeof window !== 'undefined' ? window.top : null;
       if (top) {
         top.location.href = response.checkoutUrl;

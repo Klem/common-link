@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { getCampaigns } from '@/lib/api/campaign';
-import { generateWidgetToken, deleteWidgetToken, updateAssociationProfile } from '@/lib/api/association';
+import { generateWidgetToken, deleteWidgetToken, updateAssociationProfile, updateWidgetConfig } from '@/lib/api/association';
 import { useToastStore } from '@/stores/toastStore';
 import { CampaignStatus } from '@/types/campaign';
 import type { AssociationProfileDto } from '@/types/association';
@@ -24,8 +24,10 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
     profile?.widgetDestinationCampaignId ?? '',
   );
   const [widgetToken, setWidgetToken] = useState<string | null>(profile?.widgetToken ?? null);
+  const [origin, setOrigin] = useState<string>(profile?.widgetAllowedOrigin ?? '');
   const [isSavingCampaign, setIsSavingCampaign] = useState(false);
   const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [isSavingOrigin, setIsSavingOrigin] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedIframe, setCopiedIframe] = useState(false);
 
@@ -33,11 +35,11 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
     getCampaigns().then(setCampaigns).catch(() => {});
   }, []);
 
-  // Sync token from parent profile when profile reloads (e.g. after refreshProfile)
   useEffect(() => {
     setWidgetToken(profile?.widgetToken ?? null);
     setSelectedCampaignId(profile?.widgetDestinationCampaignId ?? '');
-  }, [profile?.widgetToken, profile?.widgetDestinationCampaignId]);
+    setOrigin(profile?.widgetAllowedOrigin ?? '');
+  }, [profile?.widgetToken, profile?.widgetDestinationCampaignId, profile?.widgetAllowedOrigin]);
 
   const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId) ?? null;
   const isDestinationLive = selectedCampaign?.status === CampaignStatus.LIVE;
@@ -85,6 +87,18 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
       addToast('error', 'errors.serverError');
     } finally {
       setIsGeneratingToken(false);
+    }
+  };
+
+  const handleSaveOrigin = async () => {
+    setIsSavingOrigin(true);
+    try {
+      await updateWidgetConfig({ widgetAllowedOrigin: origin.trim() || null });
+      addToast('success', 'widgetAllowedOriginSaved');
+    } catch {
+      addToast('error', 'errors.serverError');
+    } finally {
+      setIsSavingOrigin(false);
     }
   };
 
@@ -145,13 +159,21 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
             </p>
           )}
           {widgetToken && (
-            <p className="fhint error">{t('token.regenerateWarning')}</p>
+            <p className="fhint error">
+              ⚠️ {t('token.regenerateWarning')}
+            </p>
+          )}
+          {widgetToken && (
+            <p className="fhint error">
+              ⚠️ {t('token.disableWarning')}
+            </p>
           )}
           <div className="frow-actions">
             {widgetToken && (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
+                style={{ color: 'var(--error, #dc3545)', borderColor: 'var(--error, #dc3545)' }}
                 onClick={handleDeleteToken}
                 disabled={isGeneratingToken}
               >
@@ -161,10 +183,42 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
             <button
               type="button"
               className="btn btn-primary btn-sm"
+              style={widgetToken ? { background: 'var(--error, #dc3545)', borderColor: 'var(--error, #dc3545)' } : undefined}
               onClick={handleGenerateToken}
               disabled={isGeneratingToken}
             >
               {widgetToken ? t('token.regenerate') : t('token.generate')}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Redirection post-paiement ────────────────────────────────── */}
+      <div className="card no-hover" style={{ marginBottom: 24 }}>
+        <div className="card-h">
+          <h3>{t('redirect.title')}</h3>
+        </div>
+        <div className="card-b">
+          <div className="fg">
+            <label className="fl">{t('redirect.label')}</label>
+            <p className="fhint" style={{ marginBottom: 6 }}>{t('redirect.hint')}</p>
+            <input
+              type="url"
+              className="fi"
+              value={origin}
+              onChange={(e) => setOrigin(e.target.value)}
+              placeholder={t('redirect.placeholder')}
+              disabled={isSavingOrigin}
+            />
+          </div>
+          <div className="frow-actions">
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleSaveOrigin}
+              disabled={isSavingOrigin}
+            >
+              {t('redirect.save')}
             </button>
           </div>
         </div>

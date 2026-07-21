@@ -19,4 +19,6 @@ data class PublicWidgetDto(
     val raised: BigDecimal,
     val campaignCoverImage: String?,
     val currency: String = "EUR",
+    /** Allowed origin for widget post-payment redirects. Null if not configured. */
+    val widgetAllowedOrigin: String? = null,
 )

@@ -16,6 +16,7 @@ export interface PublicWidgetDto {
   raised: number;
   campaignCoverImage: string | null;
   currency: string;
+  widgetAllowedOrigin: string | null;
 }
 
 export interface CreateGuestDonationRequest {
@@ -30,6 +31,8 @@ export interface CreateGuestDonationRequest {
   anonymousDisplay: boolean;
   consent: boolean;
   sourceSite?: string | null;
+  /** UI locale (e.g. "fr", "en"). Used by the backend to build locale-prefixed redirect URLs. */
+  locale?: string;
 }
 
 export interface CreateGuestDonationResponse {

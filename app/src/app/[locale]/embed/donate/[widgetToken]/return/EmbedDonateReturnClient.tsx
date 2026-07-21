@@ -1,123 +1,93 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { getDonationStatus, DonationReturnStatus } from '@/lib/api/public';
+import { getWidget } from '@/lib/api/public';
 
-const PollState = {
-  LOADING: 'LOADING',
-  CONFIRMED: 'CONFIRMED',
-  PENDING_TIMEOUT: 'PENDING_TIMEOUT',
-  FAILED: 'FAILED',
-} as const;
-type PollState = (typeof PollState)[keyof typeof PollState];
-
-const POLL_INTERVAL_MS = 3000;
-const POLL_MAX_ATTEMPTS = 5;
+/** Delay before auto-redirecting to sourceSite after a successful donation. */
+const SUCCESS_REDIRECT_DELAY_MS = 3000;
 
 interface Props {
-  paymentId: string | null;
   widgetToken: string;
   locale: string;
-  /** Override poll interval for testing only. */
-  _pollIntervalMs?: number;
+  cancelled: boolean;
+  source: string | null;
 }
 
-export function EmbedDonateReturnClient({ paymentId, widgetToken, locale, _pollIntervalMs }: Props) {
+export function EmbedDonateReturnClient({ widgetToken, locale, cancelled, source }: Props) {
   const t = useTranslations('widget.return');
-  const [pollState, setPollState] = useState<PollState>(PollState.LOADING);
-  const [activePaymentId, setActivePaymentId] = useState<string | null>(paymentId);
-  const [backUrl, setBackUrl] = useState(`/${locale}/embed/donate/${widgetToken}`);
-
-  // Resolve paymentId and sourceSite from localStorage when not provided via URL searchParam
-  useEffect(() => {
-    const storedSource = localStorage.getItem(`widget_source_${widgetToken}`);
-    if (storedSource) setBackUrl(storedSource);
-
-    if (paymentId) return;
-    const storedPayment = localStorage.getItem(`widget_payment_${widgetToken}`);
-    if (storedPayment) {
-      setActivePaymentId(storedPayment);
-    } else {
-      setPollState(PollState.FAILED);
-    }
-  }, [paymentId, widgetToken]);
+  const [validatedSource, setValidatedSource] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!activePaymentId) return;
+    if (!source) return;
 
-    let cancelled = false;
-    let attempts = 0;
-    const interval = _pollIntervalMs ?? POLL_INTERVAL_MS;
-
-    const poll = async () => {
-      if (cancelled) return;
-      attempts += 1;
-
+    const run = async () => {
       try {
-        const result = await getDonationStatus(activePaymentId);
-        if (cancelled) return;
-        if (result.status === DonationReturnStatus.CONFIRMED) {
-          setPollState(PollState.CONFIRMED);
+        const widget = await getWidget(widgetToken);
+        if (!widget.widgetAllowedOrigin) return;
+
+        let sourceOrigin: string;
+        try {
+          sourceOrigin = new URL(source).origin;
+        } catch {
           return;
         }
+
+        if (sourceOrigin !== widget.widgetAllowedOrigin) return;
+
+        setValidatedSource(source);
+
+        const top = typeof window !== 'undefined' ? (window.top ?? window) : null;
+        if (!top) return;
+
+        if (cancelled) {
+          top.location.href = source;
+        } else {
+          setTimeout(() => { top.location.href = source; }, SUCCESS_REDIRECT_DELAY_MS);
+        }
       } catch {
-        if (!cancelled) setPollState(PollState.FAILED);
-        return;
+        // getWidget failed — can't validate, no redirect
       }
-
-      if (attempts >= POLL_MAX_ATTEMPTS) {
-        if (!cancelled) setPollState(PollState.PENDING_TIMEOUT);
-        return;
-      }
-
-      setTimeout(poll, interval);
     };
 
-    poll();
+    run();
+  }, [widgetToken, source, cancelled]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [activePaymentId, _pollIntervalMs]);
+  const fallbackUrl = `/${locale}/embed/donate/${widgetToken}`;
 
-  return (
-    <div className="widget-return">
-      {pollState === PollState.LOADING && (
-        <div className="widget-return-loading" aria-live="polite">
-          <p>{t('loading')}</p>
+  if (cancelled) {
+    return (
+      <div className="widget-return">
+        <div className="widget-return-cancelled" aria-live="polite">
+          <h2>{t('cancelled.title')}</h2>
+          <p>{t('cancelled.message')}</p>
+          <a href={validatedSource ?? fallbackUrl} className="btn btn-secondary btn-md">
+            {t('back')}
+          </a>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {pollState === PollState.CONFIRMED && (
+  if (validatedSource) {
+    return (
+      <div className="widget-return">
         <div className="widget-return-success" aria-live="polite">
           <h2>{t('confirmed.title')}</h2>
           <p>{t('confirmed.message')}</p>
-          <a href={backUrl} className="btn btn-primary">
-            {t('retry')}
-          </a>
+          <p style={{ fontSize: 13, color: 'var(--color-text-2)', marginTop: 8 }}>
+            {t('redirecting')}
+          </p>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {pollState === PollState.PENDING_TIMEOUT && (
-        <div className="widget-return-pending" aria-live="polite">
-          <h2>{t('pending.title')}</h2>
-          <p>{t('pending.message')}</p>
-          <a href={backUrl} className="btn btn-secondary">
-            {t('retry')}
-          </a>
-        </div>
-      )}
-
-      {pollState === PollState.FAILED && (
-        <div className="widget-return-failed" aria-live="polite">
-          <h2>{t('failed.title')}</h2>
-          <p>{t('failed.message')}</p>
-          <a href={backUrl} className="btn btn-secondary">
-            {t('retry')}
-          </a>
-        </div>
-      )}
+  return (
+    <div className="widget-return">
+      <div className="widget-return-loading" aria-live="polite">
+        <p>{t('loading')}</p>
+      </div>
     </div>
   );
 }

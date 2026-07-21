@@ -57,4 +57,8 @@ data class CreateGuestDonationRequest(
 
     /** Origin site auto-declared by the widget snippet. Sanitised server-side; treat as untrusted. */
     val sourceSite: String? = null,
+
+    /** UI locale from the widget iframe (e.g. "fr", "en"). Used to build locale-prefixed redirect URLs. */
+    @field:Pattern(regexp = "[a-z]{2}", message = "must be a 2-letter lowercase locale code")
+    val locale: String? = null,
 )

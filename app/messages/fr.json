@@ -317,6 +317,7 @@
     "verificationOptDocUploaded": "Document ajouté.",
     "verificationSubmitted": "📨 Dossier envoyé. Votre association sera notifiée par email.",
     "vopVerified": "Vérification VOP terminée.",
+    "widgetAllowedOriginSaved": "Origine de redirection enregistrée.",
     "widgetDestinationSaved": "Campagne de destination enregistrée.",
     "widgetTokenGenerated": "Token widget généré."
   },
@@ -1216,6 +1217,13 @@
         "saved": "Campagne de destination mise à jour",
         "warningNotLive": "Cette campagne n'est pas en ligne. Le widget refusera les dons tant qu'elle n'est pas publiée."
       },
+      "redirect": {
+        "hint": "Après paiement, les donateurs sont redirigés vers cette origine. Seules les pages de ce domaine exact seront acceptées.",
+        "label": "Origine de redirection autorisée",
+        "placeholder": "https://votre-site.com",
+        "save": "Enregistrer",
+        "title": "Redirection post-paiement"
+      },
       "snippet": {
         "copied": "Copié !",
         "copy": "Copier",
@@ -1230,6 +1238,7 @@
       "token": {
         "active": "Actif",
         "disable": "Désactiver",
+        "disableWarning": "Désactiver le widget cassera immédiatement toutes les intégrations existantes.",
         "error": "Erreur lors de la génération du token",
         "generate": "Générer le lien",
         "generated": "Token généré avec succès",
@@ -1288,6 +1297,10 @@
     "loading": "Chargement du widget...",
     "return": {
       "back": "Retour",
+      "cancelled": {
+        "message": "Votre paiement n'a pas été finalisé.",
+        "title": "Paiement annulé"
+      },
       "confirmed": {
         "message": "Votre don a bien été confirmé.",
         "title": "Merci pour votre don !"
@@ -1301,6 +1314,7 @@
         "message": "Votre paiement est en cours de traitement. Vous recevrez une confirmation par email.",
         "title": "Confirmation en cours…"
       },
+      "redirecting": "Vous allez être redirigé vers le site…",
       "retry": "Refaire un don"
     },
     "submit": "Faire un don",

@@ -25,6 +25,8 @@ data class AssociationProfileDto(
     val widgetToken: String?,
     /** UUID of the campaign configured as donation destination for the widget. */
     val widgetDestinationCampaignId: UUID?,
+    /** Allowed origin for widget post-payment redirects. Null if not configured. */
+    val widgetAllowedOrigin: String?,
 )
 
 fun AssociationProfile.toDto() = AssociationProfileDto(
@@ -45,4 +47,5 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     verifiedAt = verifiedAt,
     widgetToken = widgetToken,
     widgetDestinationCampaignId = widgetDestinationCampaign?.id,
+    widgetAllowedOrigin = widgetAllowedOrigin,
 )

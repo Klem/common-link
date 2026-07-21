@@ -31,6 +31,7 @@ const mockProfile: AssociationProfileDto = {
   verificationRejectionReason: null,
   widgetToken: null,
   widgetDestinationCampaignId: null,
+  widgetAllowedOrigin: null,
 };
 
 vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({

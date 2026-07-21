@@ -47,3 +47,10 @@ export const generateWidgetToken = (): Promise<{ widgetToken: string }> =>
  */
 export const deleteWidgetToken = (): Promise<void> =>
   api.delete('/api/association/me/widget/token');
+
+/**
+ * Updates widget configuration via `PATCH /api/association/me/widget`.
+ * Sets the allowed origin for post-payment redirects.
+ */
+export const updateWidgetConfig = (data: { widgetAllowedOrigin?: string | null }): Promise<void> =>
+  api.patch('/api/association/me/widget', data);

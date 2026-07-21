@@ -33,6 +33,8 @@ export interface AssociationProfileDto {
   widgetToken: string | null;
   /** UUID of the campaign configured as widget destination, null if not set. */
   widgetDestinationCampaignId: string | null;
+  /** Allowed origin for post-payment redirects (scheme+host), null if not configured. */
+  widgetAllowedOrigin: string | null;
 }
 
 /**

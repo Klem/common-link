@@ -317,6 +317,7 @@
     "verificationOptDocUploaded": "Document added.",
     "verificationSubmitted": "📨 File submitted. Your association will be notified by email.",
     "vopVerified": "VOP verification completed.",
+    "widgetAllowedOriginSaved": "Redirect origin saved.",
     "widgetDestinationSaved": "Destination campaign saved.",
     "widgetTokenGenerated": "Widget token generated."
   },
@@ -1216,6 +1217,13 @@
         "saved": "Destination campaign updated",
         "warningNotLive": "This campaign is not live. The widget will refuse donations until it goes live."
       },
+      "redirect": {
+        "hint": "After payment, donors are redirected to this origin. Only pages on this exact domain will be accepted.",
+        "label": "Allowed redirect origin",
+        "placeholder": "https://your-site.com",
+        "save": "Save",
+        "title": "Post-payment redirect"
+      },
       "snippet": {
         "copied": "Copied!",
         "copy": "Copy",
@@ -1230,6 +1238,7 @@
       "token": {
         "active": "Active",
         "disable": "Disable",
+        "disableWarning": "Disabling the widget will immediately break all existing integrations.",
         "error": "Failed to generate token",
         "generate": "Generate link",
         "generated": "Token generated successfully",
@@ -1288,6 +1297,10 @@
     "loading": "Loading widget...",
     "return": {
       "back": "Back",
+      "cancelled": {
+        "message": "Your payment was not completed.",
+        "title": "Payment cancelled"
+      },
       "confirmed": {
         "message": "Your donation has been confirmed.",
         "title": "Thank you for your donation!"
@@ -1301,6 +1314,7 @@
         "message": "Your payment is being processed. You will receive a confirmation by email.",
         "title": "Confirmation in progress…"
       },
+      "redirecting": "Redirecting you back to the site…",
       "retry": "Donate again"
     },
     "submit": "Donate",

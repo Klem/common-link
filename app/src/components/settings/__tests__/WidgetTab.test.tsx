@@ -65,6 +65,7 @@ const baseProfile: AssociationProfileDto = {
   verificationRejectionReason: null,
   widgetToken: null,
   widgetDestinationCampaignId: null,
+  widgetAllowedOrigin: null,
 };
 
 const onTokenChanged = vi.fn().mockResolvedValue(undefined);

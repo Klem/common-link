@@ -10,6 +10,7 @@ import jakarta.validation.Valid
 import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.DashboardStatsDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
+import org.commonlink.dto.UpdateWidgetConfigRequest
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationService
 import org.springframework.http.ResponseEntity
@@ -104,6 +105,24 @@ class AssociationController(
     ): ResponseEntity<WidgetTokenResponse> {
         val token = associationService.generateWidgetToken(UUID.fromString(principal.username))
         return ResponseEntity.ok(WidgetTokenResponse(token))
+    }
+
+    @PatchMapping("/me/widget")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+        summary = "Update widget configuration",
+        description = "Sets the allowed origin for post-payment redirects. Null clears the setting."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Widget config updated", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+    )
+    fun updateWidgetConfig(
+        @AuthenticationPrincipal principal: UserDetails,
+        @Valid @RequestBody req: UpdateWidgetConfigRequest,
+    ) {
+        associationService.updateWidgetConfig(UUID.fromString(principal.username), req.widgetAllowedOrigin)
     }
 
     @DeleteMapping("/me/widget/token")

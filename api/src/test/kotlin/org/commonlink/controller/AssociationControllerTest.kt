@@ -81,6 +81,7 @@ class AssociationControllerTest {
         verifiedAt = null,
         widgetToken = null,
         widgetDestinationCampaignId = null,
+        widgetAllowedOrigin = null,
     )
 
     // -------------------------------------------------------------------------

@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URI
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 /**
@@ -48,6 +50,7 @@ class PublicWidgetService(
             goal = campaign.goal,
             raised = campaign.raised,
             campaignCoverImage = campaign.coverImage,
+            widgetAllowedOrigin = association.widgetAllowedOrigin,
         )
     }
 
@@ -75,11 +78,14 @@ class PublicWidgetService(
         }
 
         val cleanSourceSite = sanitizeSourceSite(request.sourceSite)
+        val safeLocale = request.locale?.takeIf { it.matches(Regex("[a-z]{2}")) } ?: "fr"
+        val encodedSource = cleanSourceSite?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
         val amountCents = request.amount.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toLong()
         val idempotencyKey = buildIdempotencyKey(widgetToken, donorProfile.id!!, amountCents, mollieProperties.webhookUrl)
 
-        val redirectUrl = "${mollieProperties.redirectBaseUrl}/embed/donate/$widgetToken/return"
-        val cancelUrl = "${mollieProperties.redirectBaseUrl}/embed/donate/$widgetToken"
+        val base = "${mollieProperties.redirectBaseUrl}/$safeLocale/embed/donate/$widgetToken/return"
+        val redirectUrl = if (encodedSource != null) "$base?source=$encodedSource" else base
+        val cancelUrl = if (encodedSource != null) "$base?cancelled=true&source=$encodedSource" else "$base?cancelled=true"
         val description = "Don - ${campaign.name}".take(255)
 
         logger.info(
@@ -157,16 +163,16 @@ class PublicWidgetService(
     }
 
     /**
-     * Extracts scheme+host only from [raw]; returns null if parsing fails or input is blank.
+     * Sanitizes [raw] to a safe redirect URL: enforces http/https, strips fragment, preserves path+query.
      * The value is untrusted (auto-declared by the widget snippet) — never interpolate raw.
      */
     private fun sanitizeSourceSite(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         return try {
             val uri = URI(raw.trim())
-            val scheme = uri.scheme?.takeIf { it.isNotBlank() } ?: return null
-            val host = uri.host?.takeIf { it.isNotBlank() } ?: return null
-            "$scheme://$host".take(255)
+            val scheme = uri.scheme?.takeIf { it == "http" || it == "https" } ?: return null
+            if (uri.host.isNullOrBlank()) return null
+            URI(scheme, uri.userInfo, uri.host, uri.port, uri.path, uri.query, null).toString().take(2048)
         } catch (_: Exception) {
             null
         }

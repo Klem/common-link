@@ -127,15 +127,15 @@ class PublicWidgetServiceIntegrationTest {
     // ── T5 : sourceSite sanitisation ─────────────────────────────────────────
 
     @Test
-    fun `createDonation strips path and query from sourceSite - keeps scheme+host only`() {
+    fun `createDonation preserves path and query from sourceSite - strips fragment only`() {
         val req = validRequest(sourceSite = "https://example.com/some/path?q=hello&ref=abc#section")
 
         val response = publicWidgetService.createDonation(widgetToken, req)
 
         val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")
         assertNotNull(donation)
-        assertEquals("https://example.com", donation!!.sourceSite,
-            "sourceSite must be stripped to scheme+host only")
+        assertEquals("https://example.com/some/path?q=hello&ref=abc", donation!!.sourceSite,
+            "sourceSite must preserve path+query and strip fragment only")
     }
 
     @Test
