@@ -378,6 +378,8 @@
       },
       "newCampaign": "Nouvelle campagne",
       "profile": {
+        "addressLine1": "Adresse du siège social",
+        "addressLine1Placeholder": "42 RUE DE CLICHY 75009 PARIS",
         "cancel": "Annuler",
         "city": "Ville",
         "contactEmail": "Email de contact",
@@ -400,6 +402,8 @@
         "infos": {
           "title": "Informations de l'association"
         },
+        "legalObject": "Objet social",
+        "legalObjectPlaceholder": "Aide bénévole à l'alimentation et à l'insertion...",
         "loading": "Chargement du profil…",
         "mandate": {
           "blocked": {
@@ -519,6 +523,10 @@
           "magicLink": "Lien magique",
           "title": "Sécurité"
         },
+        "signerName": "Nom du signataire habilité",
+        "signerNamePlaceholder": "Jean MARTIN",
+        "signerRole": "Fonction du signataire",
+        "signerRolePlaceholder": "Trésorier",
         "siren": "SIREN",
         "subtitle": "Gérez les informations et la vérification de votre association.",
         "success": "Profil mis à jour.",

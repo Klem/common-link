@@ -89,6 +89,10 @@ class AssociationService(
                 .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
             profile.widgetDestinationCampaign = campaign
         }
+        req.addressLine1?.let { profile.addressLine1 = it }
+        req.legalObject?.let { profile.legalObject = it }
+        req.signerName?.let { profile.signerName = it }
+        req.signerRole?.let { profile.signerRole = it }
         return associationProfileRepository.save(profile).toDto()
     }
 

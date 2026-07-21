@@ -35,6 +35,14 @@ export interface AssociationProfileDto {
   widgetDestinationCampaignId: string | null;
   /** Allowed origin for post-payment redirects (scheme+host), null if not configured. */
   widgetAllowedOrigin: string | null;
+  /** Full street address of the registered office. Null if not yet filled. */
+  addressLine1: string | null;
+  /** Official purpose / objet social. Null if not yet filled. */
+  legalObject: string | null;
+  /** Full name of the authorised receipt signer. Null if not yet filled. */
+  signerName: string | null;
+  /** Role/title of the authorised signer. Null if not yet filled. */
+  signerRole: string | null;
 }
 
 /**
@@ -52,6 +60,14 @@ export interface UpdateAssociationProfileRequest {
   phone?: string;
   /** UUID of the campaign to set as widget donation destination, or null to unset. */
   widgetDestinationCampaignId?: string | null;
+  /** Full street address of the registered office. */
+  addressLine1?: string;
+  /** Official purpose / objet social. */
+  legalObject?: string;
+  /** Full name of the authorised receipt signer. */
+  signerName?: string;
+  /** Role/title of the authorised signer (e.g. "Trésorier"). */
+  signerRole?: string;
 }
 
 /** Activity event types surfaced in the dashboard recent-activity feed. */

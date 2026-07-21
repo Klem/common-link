@@ -52,4 +52,21 @@ interface EmailService {
      * @param reason          The rejection reason provided by the curator.
      */
     fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String)
+
+    /**
+     * Sends the Cerfa 2041-RD fiscal receipt PDF to the donor after on-chain confirmation.
+     *
+     * @param donorEmail      Donor's email address.
+     * @param donorName       Donor's full name (used in the email body).
+     * @param associationName Name of the receiving association.
+     * @param receiptNumber   Receipt reference, e.g. `2026-0042`.
+     * @param pdfBytes        Raw PDF to attach — exact bytes whose hash is on-chain.
+     */
+    fun sendDonationReceipt(
+        donorEmail: String,
+        donorName: String,
+        associationName: String,
+        receiptNumber: String,
+        pdfBytes: ByteArray,
+    )
 }

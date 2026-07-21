@@ -50,11 +50,12 @@ class AssociationRegistryCheckService(
      * Runs a live registry scan, persists it as a new immutable row, and returns the result.
      * @param checkedBy UUID of the curator who triggered the scan (for the audit trail).
      */
+    @org.springframework.transaction.annotation.Transactional
     fun scan(associationId: UUID, checkedBy: UUID?): RegistryPreCheckDto {
         val profile = associationProfileRepository.findById(associationId)
             .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Association not found: $associationId") }
 
-        val check = runLiveCheck(profile, checkedBy)
+        val check = runLiveCheck(profile, checkedBy)  // may update profile.addressLine1 / legalObject; dirty-checking flushes on commit
         val saved = registryCheckRepository.save(check)
         log.info("Registry pre-check scan persisted id={} association={} by={}", saved.id, associationId, checkedBy)
         return saved.toDto()
@@ -152,6 +153,21 @@ class AssociationRegistryCheckService(
                         joafeDeclarationFound = true
                         dissolutionDetected = matching.any { fields ->
                             fields.path("typeavis").asText("").contains("dissolution", ignoreCase = true)
+                        }
+                        // Prepopulate receipt fields from JOAFE when they are not yet set.
+                        matching.firstOrNull()?.let { fields ->
+                            val joafeAddress = fields.path("adresse_libelle").asText("").takeIf { it.isNotBlank() }
+                                ?: fields.path("adresse_siege_libelle").asText("").takeIf { it.isNotBlank() }
+                                ?: fields.path("adresse_gestion_libelle").asText("").takeIf { it.isNotBlank() }
+                            val joafeObjet = fields.path("objet").asText("").takeIf { it.isNotBlank() }
+                            if (profile.addressLine1.isNullOrBlank() && joafeAddress != null) {
+                                profile.addressLine1 = joafeAddress
+                                log.info("JOAFE prepopulated addressLine1 for association {}", profile.id)
+                            }
+                            if (profile.legalObject.isNullOrBlank() && joafeObjet != null) {
+                                profile.legalObject = joafeObjet
+                                log.info("JOAFE prepopulated legalObject for association {}", profile.id)
+                            }
                         }
                     } else {
                         joafeDeclarationFound = false

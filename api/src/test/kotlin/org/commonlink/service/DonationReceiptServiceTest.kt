@@ -2,6 +2,8 @@ package org.commonlink.service
 
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.event.DonationConfirmedEvent
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -12,6 +14,7 @@ import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -29,6 +32,7 @@ import java.time.Instant
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000",
     "app.vop.demo-mode=true",
+    "onchain.worker.enabled=true",
 ])
 @Transactional
 class DonationReceiptServiceTest {
@@ -40,6 +44,15 @@ class DonationReceiptServiceTest {
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var donationRepository: DonationRepository
     @Autowired private lateinit var onchainJobRepository: OnchainJobRepository
+    // PDF generation uses Postgres-specific SQL — mock to keep tests H2-compatible
+    @MockkBean private lateinit var receiptService: ReceiptService
+    @MockkBean private lateinit var receiptNumberService: ReceiptNumberService
+
+    @BeforeEach
+    fun setUpMocks() {
+        every { receiptNumberService.nextNumber(any(), any()) } returns "2026-0001"
+        every { receiptService.generate(any(), any()) } returns ByteArray(32)
+    }
 
     @Test
     fun `enqueueOnchainJob creates exactly one RECORD_DONATION job`() {

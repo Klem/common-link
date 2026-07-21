@@ -42,6 +42,10 @@ const profileSchema = z.object({
     .string()
     .optional()
     .refine((v) => !v || /^[0-9 +().\-]{6,20}$/.test(v), 'dashboard.association.profile.errors.phoneFormat'),
+  addressLine1: z.string().max(255).optional(),
+  legalObject: z.string().max(2000).optional(),
+  signerName: z.string().max(255).optional(),
+  signerRole: z.string().max(100).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -97,6 +101,10 @@ export default function AssociationProfilePage() {
       creationYear: profile?.creationYear ?? undefined,
       contactEmail: profile?.contactEmail ?? '',
       phone: profile?.phone ?? '',
+      addressLine1: profile?.addressLine1 ?? '',
+      legalObject: profile?.legalObject ?? '',
+      signerName: profile?.signerName ?? '',
+      signerRole: profile?.signerRole ?? '',
     },
   });
 
@@ -106,6 +114,10 @@ export default function AssociationProfilePage() {
       creationYear: data.creationYear,
       contactEmail: data.contactEmail || undefined,
       phone: data.phone || undefined,
+      addressLine1: data.addressLine1 || undefined,
+      legalObject: data.legalObject || undefined,
+      signerName: data.signerName || undefined,
+      signerRole: data.signerRole || undefined,
     });
     reset(data);
   });
@@ -285,6 +297,66 @@ export default function AssociationProfilePage() {
                       {errors.phone && (
                         <p className="fhint error">{t(errors.phone.message as Parameters<typeof t>[0])}</p>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Ligne 4 : Adresse postale (full width) */}
+                  <div className="frow">
+                    <div className="fg" style={{ flex: '1 1 100%' }}>
+                      <label htmlFor="addressLine1" className="fl">
+                        {t('association.profile.addressLine1')}
+                      </label>
+                      <input
+                        id="addressLine1"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.addressLine1Placeholder')}
+                        {...register('addressLine1')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Ligne 5 : Objet social (full width) */}
+                  <div className="frow">
+                    <div className="fg" style={{ flex: '1 1 100%' }}>
+                      <label htmlFor="legalObject" className="fl">
+                        {t('association.profile.legalObject')}
+                      </label>
+                      <input
+                        id="legalObject"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.legalObjectPlaceholder')}
+                        {...register('legalObject')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Ligne 6 : Signataire nom | Fonction */}
+                  <div className="frow">
+                    <div className="fg">
+                      <label htmlFor="signerName" className="fl">
+                        {t('association.profile.signerName')}
+                      </label>
+                      <input
+                        id="signerName"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.signerNamePlaceholder')}
+                        {...register('signerName')}
+                      />
+                    </div>
+                    <div className="fg">
+                      <label htmlFor="signerRole" className="fl">
+                        {t('association.profile.signerRole')}
+                      </label>
+                      <input
+                        id="signerRole"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.signerRolePlaceholder')}
+                        {...register('signerRole')}
+                      />
                     </div>
                   </div>
 

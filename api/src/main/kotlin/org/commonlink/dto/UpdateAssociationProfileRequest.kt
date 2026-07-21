@@ -58,4 +58,20 @@ data class UpdateAssociationProfileRequest(
      * at request time if the destination is not LIVE.
      */
     val widgetDestinationCampaignId: UUID?,
+
+    /** Full street address of the registered office. Printed on Cerfa receipts. */
+    @field:Size(max = 255)
+    val addressLine1: String? = null,
+
+    /** Official purpose / objet social. Printed on Cerfa receipts. */
+    @field:Size(max = 2000)
+    val legalObject: String? = null,
+
+    /** Full name of the authorised receipt signer. Printed on Cerfa receipts. */
+    @field:Size(max = 255)
+    val signerName: String? = null,
+
+    /** Role/title of the authorised signer (e.g. "Trésorier"). Printed on Cerfa receipts. */
+    @field:Size(max = 100)
+    val signerRole: String? = null,
 )

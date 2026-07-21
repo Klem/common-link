@@ -115,4 +115,20 @@ class AssociationProfile(
      */
     @Column(name = "widget_allowed_origin", length = 255)
     var widgetAllowedOrigin: String? = null,
+
+    /** Full street address of the association's registered office (e.g. "42 RUE DE CLICHY 75009 PARIS"). Printed on Cerfa receipts. */
+    @Column(name = "address_line1", length = 255)
+    var addressLine1: String? = null,
+
+    /** Official purpose / objet social (e.g. "Aide bénévole à l'alimentation…"). Printed on Cerfa receipts. */
+    @Column(name = "legal_object", columnDefinition = "TEXT")
+    var legalObject: String? = null,
+
+    /** Full name of the person authorised to sign receipts on behalf of the association. */
+    @Column(name = "signer_name", length = 255)
+    var signerName: String? = null,
+
+    /** Role/title of the authorised signer (e.g. "Trésorier"). */
+    @Column(name = "signer_role", length = 100)
+    var signerRole: String? = null,
 )

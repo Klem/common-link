@@ -378,6 +378,8 @@
       },
       "newCampaign": "New campaign",
       "profile": {
+        "addressLine1": "Registered office address",
+        "addressLine1Placeholder": "42 RUE DE CLICHY 75009 PARIS",
         "cancel": "Cancel",
         "city": "City",
         "contactEmail": "Contact email",
@@ -400,6 +402,8 @@
         "infos": {
           "title": "Association information"
         },
+        "legalObject": "Purpose (objet social)",
+        "legalObjectPlaceholder": "Charitable activities in favour of...",
         "loading": "Loading profile…",
         "mandate": {
           "blocked": {
@@ -519,6 +523,10 @@
           "magicLink": "Magic link",
           "title": "Security"
         },
+        "signerName": "Authorised signer name",
+        "signerNamePlaceholder": "Jean MARTIN",
+        "signerRole": "Signer role / title",
+        "signerRolePlaceholder": "Treasurer",
         "siren": "SIREN",
         "subtitle": "Manage your association's information and verification.",
         "success": "Profile updated.",

@@ -82,6 +82,10 @@ class AssociationControllerTest {
         widgetToken = null,
         widgetDestinationCampaignId = null,
         widgetAllowedOrigin = null,
+        addressLine1 = null,
+        legalObject = null,
+        signerName = null,
+        signerRole = null,
     )
 
     // -------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import jakarta.mail.util.ByteArrayDataSource
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.mail.javamail.JavaMailSender
@@ -100,6 +101,36 @@ class SmtpEmailService(
             <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>
             """.trimIndent(),
             true
+        )
+        mailSender.send(message)
+    }
+
+    override fun sendDonationReceipt(
+        donorEmail: String,
+        donorName: String,
+        associationName: String,
+        receiptNumber: String,
+        pdfBytes: ByteArray,
+    ) {
+        val message = mailSender.createMimeMessage()
+        // multipart=true to support attachment
+        val helper = MimeMessageHelper(message, true, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(donorEmail)
+        helper.setSubject("Votre reçu fiscal $receiptNumber — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour $donorName,</p>
+            <p>Veuillez trouver ci-joint votre reçu fiscal (n° $receiptNumber) pour votre don à <strong>$associationName</strong>.</p>
+            <p>Ce reçu vous permet de bénéficier d'une réduction d'impôt conformément aux articles 200, 238 bis et 978 du CGI.
+            Conservez-le précieusement.</p>
+            <p>Merci pour votre générosité,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        helper.addAttachment(
+            "recu-fiscal-$receiptNumber.pdf",
+            ByteArrayDataSource(pdfBytes, "application/pdf"),
         )
         mailSender.send(message)
     }

@@ -27,6 +27,14 @@ data class AssociationProfileDto(
     val widgetDestinationCampaignId: UUID?,
     /** Allowed origin for widget post-payment redirects. Null if not configured. */
     val widgetAllowedOrigin: String?,
+    /** Full street address of the registered office. Null if not yet filled. */
+    val addressLine1: String?,
+    /** Official purpose / objet social. Null if not yet filled. */
+    val legalObject: String?,
+    /** Full name of the authorised receipt signer. Null if not yet filled. */
+    val signerName: String?,
+    /** Role/title of the authorised signer. Null if not yet filled. */
+    val signerRole: String?,
 )
 
 fun AssociationProfile.toDto() = AssociationProfileDto(
@@ -48,4 +56,8 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     widgetToken = widgetToken,
     widgetDestinationCampaignId = widgetDestinationCampaign?.id,
     widgetAllowedOrigin = widgetAllowedOrigin,
+    addressLine1 = addressLine1,
+    legalObject = legalObject,
+    signerName = signerName,
+    signerRole = signerRole,
 )
