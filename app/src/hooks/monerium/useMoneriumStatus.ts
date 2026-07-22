@@ -28,10 +28,10 @@ export interface UseMoneriumStatusReturn {
  *
  * @returns Connection status, loading/error state, and a `refresh` action.
  */
-export function useMoneriumStatus(): UseMoneriumStatusReturn {
+export function useMoneriumStatus(enabled: boolean = true): UseMoneriumStatusReturn {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [pending, setPending] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async (): Promise<void> => {
@@ -49,8 +49,9 @@ export function useMoneriumStatus(): UseMoneriumStatusReturn {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     fetchStatus();
-  }, [fetchStatus]);
+  }, [fetchStatus, enabled]);
 
   return { connected, pending, isLoading, error, refresh: fetchStatus };
 }

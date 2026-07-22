@@ -58,6 +58,9 @@ const PROVIDER_KEYS = {
   MAGIC_LINK: 'association.profile.security.magicLink',
 } as const;
 
+// Monerium est temporairement masqué de l'UI — code conservé intégralement, réactivation = passer à true.
+const MONERIUM_ENABLED = false
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AssociationProfilePage() {
@@ -78,7 +81,7 @@ export default function AssociationProfilePage() {
   const [showMoneriumModal, setShowMoneriumModal] = useState(false);
   const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
   const { connected, pending, isLoading: moneriumLoading, refresh: refreshMonerium } =
-    useMoneriumStatus();
+    useMoneriumStatus(MONERIUM_ENABLED);
   const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
     useMandate();
 
@@ -398,6 +401,7 @@ export default function AssociationProfilePage() {
       {activeTab === 'bank' && (
         <div className="set-tab-content active">
           {/* Carte Monerium */}
+          {MONERIUM_ENABLED && (
           <div className="card no-hover monerium-card">
             <div className="card-h">
               <h3>{t('association.profile.monerium.title')}</h3>
@@ -438,6 +442,12 @@ export default function AssociationProfilePage() {
                 </button>
               )}
             </div>
+          </div>
+          )}
+
+          {/* MOLLIE_KYC_CARD — à compléter en F2 */}
+          <div className="card no-hover mollie-kyc-card">
+            <p>Mollie KYC — TODO (F2)</p>
           </div>
 
           {/* Carte Sécurité */}
