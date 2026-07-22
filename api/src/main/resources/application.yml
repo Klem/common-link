@@ -71,6 +71,14 @@ app:
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}
+    # api-key ci-dessus = clé de PAIEMENT, ne sert PAS au Connect (incapable d'appeler /v2/client-links)
+    connect:
+      client-id: ${MOLLIE_CONNECT_CLIENT_ID:app_placeholder}
+      client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET:}
+      organization-token: ${MOLLIE_CONNECT_ORGANIZATION_TOKEN:}
+      redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI:http://localhost:8080/api/public/webhooks/mollie-connect}
+      scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
+      mock: ${MOLLIE_CONNECT_MOCK:false}
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:

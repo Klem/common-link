@@ -84,6 +84,14 @@ app:
     redirect-uri: ${MONERIUM_REDIRECT_URI:}
     skip-kyc: true
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
+  mollie:
+    connect:
+      client-id: ${MOLLIE_CONNECT_CLIENT_ID:}
+      client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET:}
+      organization-token: ${MOLLIE_CONNECT_ORGANIZATION_TOKEN:}
+      redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI:}
+      scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
+      mock: false
 
 springdoc:
   api-docs:
