@@ -9,9 +9,11 @@ import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
 import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
 import { useMoneriumStatus } from '@/hooks/monerium/useMoneriumStatus';
+import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
+import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
@@ -65,6 +67,7 @@ const MONERIUM_ENABLED = false
 
 export default function AssociationProfilePage() {
   const t = useTranslations('dashboard');
+  const tM = useTranslations('settings');
   const user = useAuthStore((s) => s.user);
   const { profile, isLoading, updateProfile, refreshProfile } = useAssociationProfile();
   const searchParams = useSearchParams();
@@ -82,6 +85,17 @@ export default function AssociationProfilePage() {
   const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
   const { connected, pending, isLoading: moneriumLoading, refresh: refreshMonerium } =
     useMoneriumStatus(MONERIUM_ENABLED);
+  const [showMollieModal, setShowMollieModal] = useState(false);
+  const [mollieInterrupted, setMollieInterrupted] = useState(false);
+  const {
+    connected: mollieConnected,
+    pending: molliePending,
+    broken: mollieBroken,
+    onboardingStatus,
+    canReceivePayments,
+    isLoading: mollieLoading,
+    refresh: refreshMollie,
+  } = useMollieKycStatus();
   const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
     useMandate();
 
@@ -89,6 +103,11 @@ export default function AssociationProfilePage() {
     setMoneriumInterrupted(true);
     await refreshMonerium();
   }, [refreshMonerium]);
+
+  const handleMolliePopupClosed = useCallback(async () => {
+    setMollieInterrupted(true);
+    await refreshMollie();
+  }, [refreshMollie]);
 
   const { onSubmit: submitPassword, loading: passwordLoading } = useSetPassword();
 
@@ -175,8 +194,8 @@ export default function AssociationProfilePage() {
           onClick={() => setActiveTab('bank')}
         >
           🏦 {t('association.profile.tabs.bank')}{' '}
-          <span className={`set-tab-badge${connected ? ' ok' : ''}`}>
-            {connected
+          <span className={`set-tab-badge${(mollieConnected && canReceivePayments) ? ' ok' : ''}`}>
+            {(mollieConnected && canReceivePayments)
               ? t('association.profile.tabs.bankBadge.connected')
               : t('association.profile.tabs.bankBadge.notConnected')}
           </span>
@@ -445,9 +464,55 @@ export default function AssociationProfilePage() {
           </div>
           )}
 
-          {/* MOLLIE_KYC_CARD — à compléter en F2 */}
+          {/* Carte Mollie */}
           <div className="card no-hover mollie-kyc-card">
-            <p>Mollie KYC — TODO (F2)</p>
+            <div className="card-h">
+              <h3>{tM('mollie.title')}</h3>
+            </div>
+            <div className="card-b">
+              <p className="monerium-desc">{tM('mollie.description')}</p>
+              {mollieLoading ? (
+                <div className="monerium-spinner" />
+              ) : mollieConnected && !mollieBroken && onboardingStatus === 'COMPLETED' && canReceivePayments ? (
+                <span className="badge badge-active">{tM('mollie.status.completed')}</span>
+              ) : mollieBroken ? (
+                <div className="flex items-center gap-3">
+                  <span className="badge badge-error">{tM('mollie.status.broken')}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMollieModal(true)}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    {tM('mollie.reconnect')}
+                  </button>
+                </div>
+              ) : mollieConnected && onboardingStatus === 'IN_REVIEW' ? (
+                <span className="badge badge-warning">{tM('mollie.status.inReview')}</span>
+              ) : mollieConnected && onboardingStatus === 'NEEDS_DATA' ? (
+                <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
+              ) : mollieInterrupted ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMollieInterrupted(false);
+                    setShowMollieModal(true);
+                  }}
+                  className="btn btn-secondary btn-sm"
+                >
+                  {tM('mollie.tryAgain')}
+                </button>
+              ) : molliePending ? (
+                <span className="badge badge-warning">{tM('mollie.status.pending')}</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowMollieModal(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  {tM('mollie.connect')}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Carte Sécurité */}
@@ -530,6 +595,17 @@ export default function AssociationProfilePage() {
           refreshMonerium();
         }}
         onPopupClosed={handlePopupClosed}
+      />
+
+      {/* ── Mollie onboard modal ─────────────────────────────────────────── */}
+      <MollieOnboardModal
+        isOpen={showMollieModal}
+        onClose={() => setShowMollieModal(false)}
+        onConnected={() => {
+          setMollieInterrupted(false);
+          refreshMollie();
+        }}
+        onPopupClosed={handleMolliePopupClosed}
       />
     </div>
   );

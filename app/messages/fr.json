@@ -300,6 +300,9 @@
     "milestoneCreated": "Milestone ajouté.",
     "milestoneDeleted": "Milestone supprimé.",
     "milestoneSaved": "Milestone mis à jour.",
+    "mollieConnected": "Compte Mollie connecté.",
+    "mollieError": "Connexion Mollie échouée. Veuillez réessayer.",
+    "mollieErrorFetch": "Impossible d'obtenir l'URL Mollie. Veuillez réessayer.",
     "moneriumConnected": "Portefeuille connecté avec succès.",
     "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
     "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
@@ -958,6 +961,16 @@
       }
     },
     "greeting": "Bonjour, {name} 👋",
+    "molliePopup": {
+      "error": {
+        "retry": "Veuillez réessayer depuis la page profil.",
+        "title": "Connexion échouée"
+      },
+      "success": {
+        "closing": "Fermeture de la fenêtre…",
+        "title": "Mollie connecté"
+      }
+    },
     "moneriumPopup": {
       "callback": {
         "closing": "Finalisation du KYC… cette fenêtre va se fermer.",
@@ -1217,6 +1230,27 @@
   "mandateRevoked": "Mandat révoqué.",
   "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement.",
   "settings": {
+    "mollie": {
+      "connect": "Connecter Mollie",
+      "description": "Connectez votre compte Mollie pour recevoir des dons.",
+      "modal": {
+        "cancel": "Annuler",
+        "connect": "Connecter",
+        "description": "Vous allez être redirigé vers Mollie pour autoriser la connexion.",
+        "title": "Connecter Mollie",
+        "waiting": "En attente d'autorisation…"
+      },
+      "reconnect": "Reconnecter",
+      "status": {
+        "broken": "Reconnexion requise",
+        "completed": "Actif",
+        "inReview": "En cours de vérification",
+        "needsData": "Onboarding requis",
+        "pending": "En attente"
+      },
+      "title": "Paiements Mollie",
+      "tryAgain": "Réessayer"
+    },
     "widget": {
       "destination": {
         "error": "Erreur lors de la mise à jour",

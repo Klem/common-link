@@ -300,6 +300,9 @@
     "milestoneCreated": "Milestone added.",
     "milestoneDeleted": "Milestone deleted.",
     "milestoneSaved": "Milestone updated.",
+    "mollieConnected": "Mollie account connected.",
+    "mollieError": "Mollie connection failed. Please try again.",
+    "mollieErrorFetch": "Failed to get Mollie authentication URL. Please try again.",
     "moneriumConnected": "Wallet connected successfully.",
     "moneriumError": "Wallet connection failed. Please try again.",
     "moneriumErrorFetch": "Failed to get authentication URL. Please try again.",
@@ -958,6 +961,16 @@
       }
     },
     "greeting": "Hello, {name} 👋",
+    "molliePopup": {
+      "error": {
+        "retry": "Please try again from the profile page.",
+        "title": "Connection failed"
+      },
+      "success": {
+        "closing": "Closing window…",
+        "title": "Mollie connected"
+      }
+    },
     "moneriumPopup": {
       "callback": {
         "closing": "Completing KYC… this window will close.",
@@ -1217,6 +1230,27 @@
   "mandateRevoked": "Mandate revoked.",
   "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically.",
   "settings": {
+    "mollie": {
+      "connect": "Connect Mollie",
+      "description": "Connect your Mollie account to receive donations.",
+      "modal": {
+        "cancel": "Cancel",
+        "connect": "Connect",
+        "description": "You will be redirected to Mollie to authorize the connection.",
+        "title": "Connect Mollie",
+        "waiting": "Waiting for authorization…"
+      },
+      "reconnect": "Reconnect",
+      "status": {
+        "broken": "Reconnect required",
+        "completed": "Active",
+        "inReview": "In review",
+        "needsData": "Onboarding required",
+        "pending": "Pending"
+      },
+      "title": "Mollie Payments",
+      "tryAgain": "Try again"
+    },
     "widget": {
       "destination": {
         "error": "Failed to update destination",
