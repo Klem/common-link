@@ -606,6 +606,7 @@ export default function AssociationProfilePage() {
           refreshMollie();
         }}
         onPopupClosed={handleMolliePopupClosed}
+        contactEmail={profile?.contactEmail}
       />
     </div>
   );

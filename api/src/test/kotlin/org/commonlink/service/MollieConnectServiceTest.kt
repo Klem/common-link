@@ -119,7 +119,7 @@ class MollieConnectServiceTest {
             // Required fields only — optional fields are dropped to avoid Mollie field-level 400s.
             .andExpect(jsonPath("$.name").exists())
             .andExpect(jsonPath("$.address.country").value("FR"))
-            .andExpect(jsonPath("$.owner.email").exists())
+            .andExpect(jsonPath("$.owner.email").value("contact@restos-du-coeur.org"))
             .andExpect(jsonPath("$.owner.givenName").exists())
             .andExpect(jsonPath("$.owner.familyName").exists())
             .andExpect(jsonPath("$.owner.locale").doesNotExist())

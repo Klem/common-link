@@ -257,13 +257,15 @@ class MollieConnectService(
      * here with 400 {"detail":"Invalid Authorization header"}.
      * Body: application/json —
      *   - name + registrationNumber + address.country at root level (organization details)
-     *   - owner = physical contact person (email / givenName / familyName)
+     *   - owner = physical contact person (email from [AssociationProfile.contactEmail] / givenName / familyName)
      *
      * ⚠ Country defaults to "FR" — all CommonLink associations are French. A dedicated country
      *   field on AssociationProfile would be cleaner; tracked in .tasks/todo.md.
      * ⚠ givenName/familyName split on first space from contactName — best-effort approximation.
      */
     private fun createClientLink(association: AssociationProfile, user: User): String {
+        val contactEmail = association.contactEmail
+            ?: throw IllegalStateException("Contact email is not set for association ${association.id}")
         val contactName = association.contactName ?: user.displayName ?: user.email
         val spaceIdx = contactName.indexOf(' ')
         val givenName = if (spaceIdx > 0) contactName.substring(0, spaceIdx) else contactName
@@ -274,7 +276,7 @@ class MollieConnectService(
             "registrationNumber" to association.identifier,
             "address" to mapOf("country" to "FR"),
             "owner" to mapOf(
-                "email" to user.email,
+                "email" to contactEmail,
                 "givenName" to givenName,
                 "familyName" to familyName,
             ),

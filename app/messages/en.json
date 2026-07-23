@@ -1237,6 +1237,7 @@
         "cancel": "Cancel",
         "connect": "Connect",
         "description": "You will be redirected to Mollie to authorize the connection.",
+        "missingContactEmail": "A contact email is required to start the Mollie onboarding. Please fill in the Contact Email field in the Infos tab and save first.",
         "title": "Connect Mollie",
         "waiting": "Waiting for authorization…"
       },

@@ -13,6 +13,8 @@ interface MollieOnboardModalProps {
   onConnected: () => void;
   /** Called whenever the OAuth2 popup closes (success, error, or manual close) — use to refresh connection status. */
   onPopupClosed?: () => void;
+  /** Association contact email — required by Mollie. If missing, the connect flow is blocked. */
+  contactEmail?: string | null;
 }
 
 /**
@@ -20,7 +22,7 @@ interface MollieOnboardModalProps {
  * Opens a popup window for the OAuth consent screen and listens for a postMessage
  * from the success popup page to update the connection state without a full page reload.
  */
-export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed }: MollieOnboardModalProps) {
+export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail }: MollieOnboardModalProps) {
   const t = useTranslations('settings');
   const { addToast } = useToastStore();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -103,20 +105,32 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
         </div>
         <div className="modal-body">
           <p className="text-sm text-text-2 leading-relaxed mb-6">{t('mollie.modal.description')}</p>
-          {isConnecting && (
+          {!contactEmail && (
+            <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded p-3 leading-relaxed">
+              {t('mollie.modal.missingContactEmail')}
+            </p>
+          )}
+          {contactEmail && isConnecting && (
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-text-2">{t('mollie.modal.waiting')}</p>
             </div>
           )}
         </div>
-        {!isConnecting && (
+        {contactEmail && !isConnecting && (
           <div className="modal-footer">
             <button onClick={onClose} className="btn btn-ghost btn-md">
               {t('mollie.modal.cancel')}
             </button>
             <button onClick={handleConnect} className="btn btn-primary btn-md">
               {t('mollie.modal.connect')}
+            </button>
+          </div>
+        )}
+        {!contactEmail && (
+          <div className="modal-footer">
+            <button onClick={onClose} className="btn btn-primary btn-md">
+              {t('mollie.modal.cancel')}
             </button>
           </div>
         )}

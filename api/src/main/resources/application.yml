@@ -78,7 +78,7 @@ app:
       advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN:}
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI:}
       api-base-url: ${MOLLIE_CONNECT_API_BASE_URL:https://api.mollie.com}
-      scopes: "onboarding.read onboarding.write organizations.read organization.write payments.read payments.write profiles.read profiles.write"
+      scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
       mock: ${MOLLIE_CONNECT_MOCK:false}
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.

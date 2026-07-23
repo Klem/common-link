@@ -1237,6 +1237,7 @@
         "cancel": "Annuler",
         "connect": "Connecter",
         "description": "Vous allez être redirigé vers Mollie pour autoriser la connexion.",
+        "missingContactEmail": "Un email de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Email de contact dans l'onglet Informations et enregistrer.",
         "title": "Connecter Mollie",
         "waiting": "En attente d'autorisation…"
       },
