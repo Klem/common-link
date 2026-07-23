@@ -11,15 +11,26 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * JPA converter for Monerium OAuth tokens. When MONERIUM_TOKEN_ENC_KEY is set the tokens are
+ * JPA converter for OAuth tokens. When MONERIUM_TOKEN_ENC_KEY is set the tokens are
  * stored as Base64(12-byte-IV || AES-256-GCM-ciphertext). When the key is absent the converter
  * is a no-op (plaintext), which is the intended behaviour for dev and staging environments.
+ *
+ * ⚠ SHARED converter: despite the Monerium-centric name, this also encrypts the Mollie Connect
+ * tokens ([org.commonlink.entity.MollieConnection.accessToken] / refreshToken) under the SAME
+ * MONERIUM_TOKEN_ENC_KEY. Consequences to keep in mind:
+ *   - Rotating/removing the key breaks decryption of BOTH integrations' stored tokens. Old rows
+ *     then throw in [convertToEntityAttribute] (Base64/GCM failure) → 500 on the status read,
+ *     not a graceful reconnect. Any key change needs a re-encryption migration.
+ *   - Enabling the key on an environment that already holds plaintext rows has the same effect.
+ * A neutrally-named shared key (e.g. APP_TOKEN_ENC_KEY) would be cleaner but is deferred to keep
+ * the blast radius minimal; documented in docs/glossary.md and the pre-deploy checklist instead.
  *
  * Hibernate 7 + Spring Boot 4: annotated as both @Component and @Converter so Hibernate resolves
  * this bean from the Spring container, enabling constructor injection of the key.
  */
 @Component
 @Converter
+// TODO: generify to "tokenConverter"
 class MoneriumTokenConverter(
     @Value("\${app.monerium.token-enc-key:}") rawKey: String
 ) : AttributeConverter<String, String> {
@@ -29,7 +40,7 @@ class MoneriumTokenConverter(
     init {
         if (rawKey.isBlank()) {
             secretKey = null
-            logger.warn("MoneriumTokenConverter: DISABLED — MONERIUM_TOKEN_ENC_KEY not set; tokens stored as plaintext")
+            logger.warn("MoneriumTokenConverter: DISABLED — MONERIUM_TOKEN_ENC_KEY not set; Mollie & Monerium access tokens stored as plaintext")
         } else {
             val keyBytes = try {
                 Base64.getDecoder().decode(rawKey)

@@ -128,7 +128,9 @@ class MollieConnectServiceTest {
             .andExpect(jsonPath("$.owner.givenName").exists())
             .andExpect(jsonPath("$.owner.familyName").exists())
             .andExpect(jsonPath("$.owner.locale").value("fr_FR"))
-            .andExpect(jsonPath("$.registrationNumber").exists())
+            // No SIREN on the fixture → registrationNumber omitted entirely: Mollie validates it
+            // against the SIREN registry, the RNA identifier must never be sent there.
+            .andExpect(jsonPath("$.registrationNumber").doesNotExist())
             .andRespond(withSuccess(
                 """{"_links":{"clientLink":{"href":"https://my.mollie.com/dashboard/client-link/xxx"}}}""",
                 MediaType.APPLICATION_JSON,
@@ -143,8 +145,9 @@ class MollieConnectServiceTest {
     }
 
     @Test
-    fun `buildAuthorizationUrl - prefills full address when addressLine1, postalCode and city are all set`() {
+    fun `buildAuthorizationUrl - prefills full address and SIREN when set`() {
         association.addressLine1 = "12 rue de la Paix"
+        association.siren = "123456789"
         associationProfileRepository.save(association)
 
         mockServer.expect(requestTo("https://api.mollie.com/v2/client-links"))
@@ -153,6 +156,7 @@ class MollieConnectServiceTest {
             .andExpect(jsonPath("$.address.streetAndNumber").value("12 rue de la Paix"))
             .andExpect(jsonPath("$.address.postalCode").value("75001"))
             .andExpect(jsonPath("$.address.city").value("Paris"))
+            .andExpect(jsonPath("$.registrationNumber").value("123456789"))
             .andRespond(withSuccess(
                 """{"_links":{"clientLink":{"href":"https://my.mollie.com/dashboard/client-link/yyy"}}}""",
                 MediaType.APPLICATION_JSON,

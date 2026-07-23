@@ -263,7 +263,10 @@ class MollieConnectService(
      * (client_id:client_secret) is valid ONLY on the /oauth2/tokens endpoints — Mollie rejects it
      * here with 400 {"detail":"Invalid Authorization header"}.
      * Body: application/json —
-     *   - name + registrationNumber + address + legalEntity at root level (organization details)
+     *   - name + address + legalEntity at root level (organization details)
+     *   - registrationNumber: only when [AssociationProfile.siren] is set — Mollie validates it
+     *     against the chamber-of-commerce registry (SIREN in France) and the field is optional;
+     *     the RNA identifier (W…) must never be sent there
      *   - address: country always; streetAndNumber/postalCode/city only when all three are set
      *     (Mollie requires postalCode + city as soon as a street is provided)
      *   - legalEntity: "fr-association" (Mollie legal-entity list) — all CommonLink associations
@@ -297,7 +300,6 @@ class MollieConnectService(
 
         val requestBody = mutableMapOf<String, Any>(
             "name" to association.name,
-            "registrationNumber" to association.identifier,
             "address" to address,
             "legalEntity" to "fr-association",
             "owner" to mapOf(
