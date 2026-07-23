@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
+import org.springframework.web.client.postForEntity
 import java.net.URLEncoder
 import java.time.Instant
 import java.util.Base64
@@ -68,6 +69,7 @@ class MollieConnectTokenManager(
     private val connectionRepo: MollieConnectionRepository,
     private val restTemplate: RestTemplate,
     private val config: MollieConnectConfig,
+    @Value("\${app.mollie.connect.api-base-url}") private val mollieApiBaseUrl: String,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -128,7 +130,7 @@ class MollieConnectTokenManager(
 
         val tokenResponse = try {
             restTemplate.postForEntity(
-                "https://api.mollie.com/oauth2/tokens",
+                "${mollieApiBaseUrl}/oauth2/tokens",
                 HttpEntity(body, headers),
                 TokenResponse::class.java,
             ).body ?: throw IllegalStateException("Empty refresh response from Mollie")
@@ -174,6 +176,7 @@ class MollieConnectService(
     private val restTemplate: RestTemplate,
     private val tokenManager: MollieConnectTokenManager,
     @Value("\${app.frontend-url}") private val frontendUrl: String,
+    @Value("\${app.mollie.connect.api-base-url}") private val mollieApiBaseUrl: String,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -182,7 +185,7 @@ class MollieConnectService(
      *
      * Mock mode ([MollieConnectConfig.mock] = true): creates a COMPLETED connection locally
      * and returns the success page URL — no Mollie API call made.
-     * Normal mode: creates a Client Link via POST /v2/client-links (organization access token),
+     * Normal mode: creates a Client Link via POST /v2/client-links (Bearer advanced access token),
      * persists a CSRF state record, and appends OAuth2 query params to the client-link URL.
      *
      * @param userId UUID of the authenticating user.
@@ -248,10 +251,13 @@ class MollieConnectService(
     /**
      * Calls POST /v2/client-links with the association's data and returns the client-link href.
      *
-     * Auth: organization access token (clients.write permission) — NOT the payment api-key.
-     * Payload structure (verified against Mollie OpenAPI spec):
-     *   - name + address at root level (organization details)
-     *   - owner = physical contact person (email / givenName / familyName / locale)
+     * Auth: Bearer with the organization's Advanced access token ([MollieConnectConfig.advancedToken],
+     * provisioned in the Mollie dashboard) carrying the clients.write permission. HTTP Basic
+     * (client_id:client_secret) is valid ONLY on the /oauth2/tokens endpoints — Mollie rejects it
+     * here with 400 {"detail":"Invalid Authorization header"}.
+     * Body: application/json —
+     *   - name + registrationNumber + address.country at root level (organization details)
+     *   - owner = physical contact person (email / givenName / familyName)
      *
      * ⚠ Country defaults to "FR" — all CommonLink associations are French. A dedicated country
      *   field on AssociationProfile would be cleaner; tracked in .tasks/todo.md.
@@ -259,23 +265,18 @@ class MollieConnectService(
      */
     private fun createClientLink(association: AssociationProfile, user: User): String {
         val contactName = association.contactName ?: user.displayName ?: user.email
-        val givenName = contactName.substringBefore(" ")
-        val familyName = contactName.substringAfter(" ", "")
-
-        val addressMap = mutableMapOf<String, Any?>("country" to "FR").apply {
-            association.addressLine1?.let { put("streetAndNumber", it) }
-            association.postalCode?.let { put("postalCode", it) }
-            association.city?.let { put("city", it) }
-        }
+        val spaceIdx = contactName.indexOf(' ')
+        val givenName = if (spaceIdx > 0) contactName.substring(0, spaceIdx) else contactName
+        val familyName = if (spaceIdx > 0) contactName.substring(spaceIdx + 1) else contactName
 
         val requestBody = mutableMapOf<String, Any>(
             "name" to association.name,
-            "address" to addressMap,
+            "registrationNumber" to association.identifier,
+            "address" to mapOf("country" to "FR"),
             "owner" to mapOf(
                 "email" to user.email,
                 "givenName" to givenName,
                 "familyName" to familyName,
-                "locale" to "fr_FR",
             ),
         ).apply {
             association.siren?.let { put("registrationNumber", it) }
@@ -283,19 +284,18 @@ class MollieConnectService(
 
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_JSON
-            setBearerAuth(config.organizationToken)
+            setBearerAuth(config.advancedToken)
         }
 
         val response = try {
-            restTemplate.postForEntity(
-                "https://api.mollie.com/v2/client-links",
+            restTemplate.postForEntity<ClientLinkResponse>(
+                "${mollieApiBaseUrl}/v2/client-links",
                 HttpEntity(requestBody, headers),
-                ClientLinkResponse::class.java,
             )
         } catch (ex: HttpStatusCodeException) {
             logger.warn(
-                "Mollie client-links call failed for association {}: status={}",
-                association.id, ex.statusCode,
+                "Mollie client-links call failed for association {}: requestBody={} status={} responseBody={}",
+                association.id, requestBody, ex.statusCode, ex.responseBodyAsString,
             )
             throw IllegalStateException("Failed to create Mollie client link: ${ex.statusCode}")
         }
@@ -463,7 +463,7 @@ class MollieConnectService(
             add("redirect_uri", config.redirectUri)
         }
         val response = restTemplate.postForEntity(
-            "https://api.mollie.com/oauth2/tokens",
+            "${mollieApiBaseUrl}/oauth2/tokens",
             HttpEntity(body, headers),
             TokenResponse::class.java,
         )
@@ -473,7 +473,7 @@ class MollieConnectService(
     private fun fetchOrganizationId(accessToken: String): String {
         val headers = HttpHeaders().apply { setBearerAuth(accessToken) }
         val response = restTemplate.exchange(
-            "https://api.mollie.com/v2/organizations/me",
+            "${mollieApiBaseUrl}/v2/organizations/me",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
             OrganizationResponse::class.java,
@@ -485,7 +485,7 @@ class MollieConnectService(
     private fun fetchOnboardingStatus(accessToken: String): OnboardingResponse {
         val headers = HttpHeaders().apply { setBearerAuth(accessToken) }
         val response = restTemplate.exchange(
-            "https://api.mollie.com/v2/onboarding/me",
+            "${mollieApiBaseUrl}/v2/onboarding/me",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
             OnboardingResponse::class.java,

@@ -30,7 +30,9 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.client.MockRestServiceServer
+import org.springframework.test.web.client.match.MockRestRequestMatchers.content
 import org.springframework.test.web.client.match.MockRestRequestMatchers.header
+import org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
 import org.springframework.test.web.client.match.MockRestRequestMatchers.method
 import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
@@ -62,7 +64,7 @@ import java.util.UUID
     "app.vop.demo-mode=true",
     "app.mollie.connect.client-id=test_client",
     "app.mollie.connect.client-secret=test_secret",
-    "app.mollie.connect.organization-token=test_org_token",
+    "app.mollie.connect.advanced-token=test_advanced_token",
     "app.mollie.connect.redirect-uri=http://localhost:8080/api/public/webhooks/mollie-connect",
     "app.mollie.connect.scopes=onboarding.read",
     "app.mollie.connect.mock=false",
@@ -109,10 +111,19 @@ class MollieConnectServiceTest {
     }
 
     @Test
-    fun `buildAuthorizationUrl - calls client-links with org token and returns URL with state`() {
+    fun `buildAuthorizationUrl - calls client-links with bearer advanced token and returns URL with state`() {
         mockServer.expect(requestTo("https://api.mollie.com/v2/client-links"))
             .andExpect(method(HttpMethod.POST))
-            .andExpect(header("Authorization", "Bearer test_org_token"))
+            .andExpect(header("Authorization", "Bearer test_advanced_token"))
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            // Required fields only — optional fields are dropped to avoid Mollie field-level 400s.
+            .andExpect(jsonPath("$.name").exists())
+            .andExpect(jsonPath("$.address.country").value("FR"))
+            .andExpect(jsonPath("$.owner.email").exists())
+            .andExpect(jsonPath("$.owner.givenName").exists())
+            .andExpect(jsonPath("$.owner.familyName").exists())
+            .andExpect(jsonPath("$.owner.locale").doesNotExist())
+            .andExpect(jsonPath("$.registrationNumber").exists())
             .andRespond(withSuccess(
                 """{"_links":{"clientLink":{"href":"https://my.mollie.com/dashboard/client-link/xxx"}}}""",
                 MediaType.APPLICATION_JSON,
