@@ -440,7 +440,48 @@ class MollieConnectService(
             onboardingStatus = connection?.onboardingStatus?.name,
             canReceivePayments = connection?.canReceivePayments,
             dashboardUrl = connection?.onboardingDashboardUrl,
+            canForceComplete = config.allowFakeCompletion,
         )
+    }
+
+    /**
+     * DEV/STAGING ONLY — simulates Mollie validating the association's KYC.
+     *
+     * Flips an EXISTING real connection to COMPLETED with canReceivePayments/canReceiveSettlements
+     * true, exactly as [refreshOnboardingStatusIfStale] would after Mollie returns
+     * status="completed" on GET /v2/onboarding/me. The real OAuth popup + client-link creation are
+     * left untouched — this only fakes the final validation step Mollie has no dashboard button for.
+     *
+     * No runtime flag guard here: access is gated declaratively by [org.commonlink.controller.MollieConnectMockController],
+     * whose bean only exists when `app.mollie.connect.allow-fake-completion=true` (mirrors the
+     * on-chain [org.commonlink.onchain.MockOnchainRegistry] style). In production the flag is false,
+     * the controller is absent, and this method is unreachable.
+     *
+     * Requires a connection to already exist (we never fabricate one here — that is
+     * [buildMockConnection]'s job). Once COMPLETED, [refreshOnboardingStatusIfStale] short-circuits
+     * and never re-polls Mollie, so the forced state is durable.
+     *
+     * @param userId UUID of the authenticating user.
+     * @throws IllegalStateException when no connection exists.
+     */
+    @Transactional
+    fun forceCompleteOnboarding(userId: UUID): MollieKycStatusDto {
+        val association = associationRepo.findByUserId(userId)
+            .orElseThrow { NotFoundException("Association not found for user: $userId") }
+        val connection = connectionRepo.findByAssociationId(association.id!!)
+            ?: throw IllegalStateException("No Mollie connection to complete — connect first")
+
+        connection.state = MollieConnectionState.ACTIVE
+        connection.onboardingStatus = MollieOnboardingStatus.COMPLETED
+        connection.canReceivePayments = true
+        connection.canReceiveSettlements = true
+        connection.lastSyncedAt = Instant.now()
+        connectionRepo.save(connection)
+        logger.warn(
+            "DEV: forced Mollie onboarding COMPLETED for association {} (allowFakeCompletion=true)",
+            association.id,
+        )
+        return getConnectionStatus(userId)
     }
 
     /**

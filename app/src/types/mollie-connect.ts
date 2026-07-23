@@ -19,4 +19,6 @@ export interface MollieKycStatus {
   canReceivePayments: boolean | null;
   /** Deep link to the Mollie hosted onboarding wizard; null once onboarding is complete. */
   dashboardUrl: string | null;
+  /** True when the dev/staging "simulate KYC validation" endpoint is enabled. Always false in prod. */
+  canForceComplete: boolean;
 }

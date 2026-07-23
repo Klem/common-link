@@ -79,7 +79,10 @@ app:
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI:}
       api-base-url: ${MOLLIE_CONNECT_API_BASE_URL:https://api.mollie.com}
       scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
+      #Mock the entire mollie process
       mock: ${MOLLIE_CONNECT_MOCK:false}
+      #Force the Onboarding / KYC to "true"
+      allow-fake-completion: ${MOLLIE_CONNECT_ALLOW_FAKE_COMPLETION:true}
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:

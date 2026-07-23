@@ -1234,6 +1234,7 @@
       "completeOnboarding": "Complete my onboarding",
       "connect": "Connect Mollie",
       "description": "Connect your Mollie account to receive donations.",
+      "devForceComplete": "Simulate KYC validation (dev)",
       "modal": {
         "cancel": "Cancel",
         "connect": "Connect",

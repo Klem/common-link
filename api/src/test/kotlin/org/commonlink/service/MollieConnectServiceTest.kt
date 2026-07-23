@@ -362,6 +362,14 @@ class MollieConnectServiceTest {
         assertTrue(dto.canReceivePayments!!)
     }
 
+    // ── forceCompleteOnboarding / canForceComplete ────────────────────────────
+
+    @Test
+    fun `getConnectionStatus - canForceComplete is false when flag disabled`() {
+        val dto = mollieConnectService.getConnectionStatus(userId)
+        assertFalse(dto.canForceComplete)
+    }
+
     // ── MollieConnectTokenManager ─────────────────────────────────────────────
 
     @Test

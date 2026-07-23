@@ -14,6 +14,7 @@ import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
+import { forceCompleteMollieOnboarding } from '@/lib/api/mollie-connect';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
@@ -94,6 +95,7 @@ export default function AssociationProfilePage() {
     onboardingStatus,
     canReceivePayments,
     dashboardUrl: mollieDashboardUrl,
+    canForceComplete: mollieCanForceComplete,
     isLoading: mollieLoading,
     refresh: refreshMollie,
   } = useMollieKycStatus();
@@ -108,6 +110,15 @@ export default function AssociationProfilePage() {
   const handleMolliePopupClosed = useCallback(async () => {
     setMollieInterrupted(true);
     await refreshMollie();
+  }, [refreshMollie]);
+
+  // DEV/STAGING only — simulates a Mollie KYC validation (button gated by mollieCanForceComplete).
+  const handleMollieForceComplete = useCallback(async () => {
+    try {
+      await forceCompleteMollieOnboarding();
+    } finally {
+      await refreshMollie();
+    }
   }, [refreshMollie]);
 
   const { onSubmit: submitPassword, loading: passwordLoading } = useSetPassword();
@@ -523,6 +534,15 @@ export default function AssociationProfilePage() {
                   className="btn btn-primary btn-sm"
                 >
                   {tM('mollie.connect')}
+                </button>
+              )}
+              {mollieCanForceComplete && mollieConnected && onboardingStatus !== 'COMPLETED' && (
+                <button
+                  type="button"
+                  onClick={handleMollieForceComplete}
+                  className="btn btn-ghost btn-sm mt-3"
+                >
+                  {tM('mollie.devForceComplete')}
                 </button>
               )}
             </div>

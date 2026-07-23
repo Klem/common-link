@@ -93,6 +93,8 @@ app:
       api-base-url: ${MOLLIE_CONNECT_API_BASE_URL:https://api.mollie.com}
       scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
       mock: false
+      # Dev/staging only — enables POST /api/mollie/connect/dev/complete to simulate a Mollie KYC validation.
+      allow-fake-completion: true
 
 springdoc:
   api-docs:

@@ -23,4 +23,10 @@ data class MollieKycStatusDto(
      * while the status is NEEDS_DATA.
      */
     val dashboardUrl: String?,
+    /**
+     * True when the dev/staging fake-completion endpoint is enabled
+     * ([org.commonlink.config.MollieConnectConfig.allowFakeCompletion]). Drives a dev-only
+     * "simulate KYC validation" button in the frontend. Always false in production.
+     */
+    val canForceComplete: Boolean = false,
 )

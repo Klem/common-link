@@ -16,6 +16,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * @param advancedToken Organization Advanced access token (Bearer) with the clients.write permission,
  *                      provisioned in the Mollie dashboard. Required to create client links.
  * @param mock When true, skips Mollie entirely and creates a mock COMPLETED connection locally.
+ * @param allowFakeCompletion Dev/staging escape hatch. When true, exposes an endpoint that flips an
+ *                            EXISTING real connection to COMPLETED — as if Mollie had just validated
+ *                            the KYC — without touching Mollie. Unlike [mock] it does NOT bypass the
+ *                            OAuth popup / client-link creation: the connection must already exist.
+ *                            MUST stay false in production (the endpoint returns 403 when false).
  */
 @ConfigurationProperties(prefix = "app.mollie.connect")
 data class MollieConnectConfig(
@@ -25,4 +30,5 @@ data class MollieConnectConfig(
     val scopes: String,
     val advancedToken: String = "",
     val mock: Boolean = false,
+    val allowFakeCompletion: Boolean = false,
 )
