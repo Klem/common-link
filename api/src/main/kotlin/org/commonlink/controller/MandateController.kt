@@ -69,7 +69,7 @@ class MandateController(
         ApiResponse(responseCode = "204", description = "Document uploaded", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
-        ApiResponse(responseCode = "409", description = "Upload blocked by active mandate", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Upload blocked: association not VERIFIED, or an active mandate is signed", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Invalid file type, size, or document type", content = [Content()]),
     )
     fun uploadMandateDocument(
@@ -91,7 +91,7 @@ class MandateController(
         ApiResponse(responseCode = "204", description = "Document deleted", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Document not found", content = [Content()]),
-        ApiResponse(responseCode = "409", description = "Delete blocked by active mandate", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Delete blocked: association not VERIFIED, or an active mandate is signed", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Document type is not a mandate document", content = [Content()]),
     )
     fun deleteMandateDocument(

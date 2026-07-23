@@ -57,7 +57,8 @@ class MollieConnectController(
         ),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
-        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "No signed fiscal mandate yet — required before connecting a bank account", content = [Content()])
     )
     fun getAuthUrl(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<Map<String, String>> {
         val authUrl = mollieConnectService.buildAuthorizationUrl(UUID.fromString(principal.username))

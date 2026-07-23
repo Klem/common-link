@@ -74,13 +74,6 @@ export default function AssociationProfilePage() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
   const [verifStatus, setVerifStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' || tab === 'widget') {
-      setActiveTab(tab as SettingsTab);
-    }
-  }, [searchParams]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMoneriumModal, setShowMoneriumModal] = useState(false);
   const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
@@ -101,6 +94,32 @@ export default function AssociationProfilePage() {
   } = useMollieKycStatus();
   const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
     useMandate();
+
+  // ─── Verrouillage séquentiel des onglets ───────────────────────────────────
+  // Chaque onglet se débloque quand son prérequis DIRECT est terminé (= condition
+  // du badge "ok" du prérequis, pour que lock et badge ne divergent jamais).
+  const verifDone = (verifStatus ?? profile?.verificationStatus) === 'VERIFIED';
+  const mandateDone = mandateState?.signed === true;
+  const bankDone = Boolean(mollieConnected && canReceivePayments);
+  const tabUnlocked: Record<SettingsTab, boolean> = {
+    infos: true,
+    verif: true,
+    mandate: verifDone,
+    bank: mandateDone,
+    widget: bankDone,
+  };
+
+  // Deep-link ?tab= : n'active l'onglet demandé que s'il est déverrouillé, et
+  // seulement une fois les données chargées (sinon un user déjà onboardé serait
+  // renvoyé sur "infos" au premier render tant que les flags sont encore false).
+  useEffect(() => {
+    if (isLoading || mandateLoading || mollieLoading) return;
+    const tab = searchParams.get('tab');
+    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' || tab === 'widget') {
+      setActiveTab(tabUnlocked[tab] ? tab : 'infos');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isLoading, mandateLoading, mollieLoading, verifDone, mandateDone, bankDone]);
 
   const handlePopupClosed = useCallback(async () => {
     setMoneriumInterrupted(true);
@@ -202,21 +221,12 @@ export default function AssociationProfilePage() {
           </span>
         </button>
         <button
-          className={`set-tab${activeTab === 'bank' ? ' active' : ''}`}
-          onClick={() => setActiveTab('bank')}
+          className={`set-tab${activeTab === 'mandate' ? ' active' : ''}${tabUnlocked.mandate ? '' : ' locked'}`}
+          onClick={() => tabUnlocked.mandate && setActiveTab('mandate')}
+          disabled={!tabUnlocked.mandate}
+          title={tabUnlocked.mandate ? undefined : t('association.profile.tabs.locked')}
         >
-          🏦 {t('association.profile.tabs.bank')}{' '}
-          <span className={`set-tab-badge${(mollieConnected && canReceivePayments) ? ' ok' : ''}`}>
-            {(mollieConnected && canReceivePayments)
-              ? t('association.profile.tabs.bankBadge.connected')
-              : t('association.profile.tabs.bankBadge.notConnected')}
-          </span>
-        </button>
-        <button
-          className={`set-tab${activeTab === 'mandate' ? ' active' : ''}`}
-          onClick={() => setActiveTab('mandate')}
-        >
-          🧾 {t('association.profile.tabs.mandate')}{' '}
+          {tabUnlocked.mandate ? '🧾' : '🔒'} {t('association.profile.tabs.mandate')}{' '}
           <span
             className={`set-tab-badge${
               mandateState?.signed
@@ -234,10 +244,25 @@ export default function AssociationProfilePage() {
           </span>
         </button>
         <button
-          className={`set-tab${activeTab === 'widget' ? ' active' : ''}`}
-          onClick={() => setActiveTab('widget')}
+          className={`set-tab${activeTab === 'bank' ? ' active' : ''}${tabUnlocked.bank ? '' : ' locked'}`}
+          onClick={() => tabUnlocked.bank && setActiveTab('bank')}
+          disabled={!tabUnlocked.bank}
+          title={tabUnlocked.bank ? undefined : t('association.profile.tabs.locked')}
         >
-          🎁 {t('association.profile.tabs.widget')}
+          {tabUnlocked.bank ? '🏦' : '🔒'} {t('association.profile.tabs.bank')}{' '}
+          <span className={`set-tab-badge${(mollieConnected && canReceivePayments) ? ' ok' : ''}`}>
+            {(mollieConnected && canReceivePayments)
+              ? t('association.profile.tabs.bankBadge.connected')
+              : t('association.profile.tabs.bankBadge.notConnected')}
+          </span>
+        </button>
+        <button
+          className={`set-tab${activeTab === 'widget' ? ' active' : ''}${tabUnlocked.widget ? '' : ' locked'}`}
+          onClick={() => tabUnlocked.widget && setActiveTab('widget')}
+          disabled={!tabUnlocked.widget}
+          title={tabUnlocked.widget ? undefined : t('association.profile.tabs.locked')}
+        >
+          {tabUnlocked.widget ? '🎁' : '🔒'} {t('association.profile.tabs.widget')}
         </button>
       </div>
 
@@ -433,7 +458,7 @@ export default function AssociationProfilePage() {
         <div className="set-tab-content active">
           {/* Carte Monerium */}
           {MONERIUM_ENABLED && (
-          <div className="card no-hover monerium-card">
+          <div className="card no-hover monerium-card mb-5">
             <div className="card-h">
               <h3>{t('association.profile.monerium.title')}</h3>
               <span className="badge badge-info">{t('association.profile.monerium.badge')}</span>
@@ -477,7 +502,7 @@ export default function AssociationProfilePage() {
           )}
 
           {/* Carte Mollie */}
-          <div className="card no-hover mollie-kyc-card">
+          <div className="card no-hover mollie-kyc-card mb-5">
             <div className="card-h">
               <h3>{tM('mollie.title')}</h3>
             </div>

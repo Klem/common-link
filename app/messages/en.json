@@ -540,6 +540,7 @@
             "notConnected": "Not connected"
           },
           "infos": "Informations",
+          "locked": "Complete the previous step first",
           "mandate": "Fiscal Mandate",
           "mandateBadge": {
             "active": "✓ Active",

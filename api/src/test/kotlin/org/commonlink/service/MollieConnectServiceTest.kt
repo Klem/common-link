@@ -5,7 +5,9 @@ import org.commonlink.entity.MollieConnection
 import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOAuthState
 import org.commonlink.entity.MollieOnboardingStatus
+import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
+import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.MollieOAuthStateRepository
@@ -68,6 +70,10 @@ import java.util.UUID
     "app.mollie.connect.redirect-uri=http://localhost:8080/api/public/webhooks/mollie-connect",
     "app.mollie.connect.scopes=onboarding.read",
     "app.mollie.connect.mock=false",
+    // Explicitly disabled so `canForceComplete is false when flag disabled` is deterministic,
+    // independent of the app-wide default (which is true). The enabled path lives in
+    // MollieConnectForceCompleteTest.
+    "app.mollie.connect.allow-fake-completion=false",
 ])
 @Transactional
 class MollieConnectServiceTest {
@@ -79,6 +85,7 @@ class MollieConnectServiceTest {
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
     @Autowired private lateinit var mollieConnectionRepository: MollieConnectionRepository
     @Autowired private lateinit var mollieOAuthStateRepository: MollieOAuthStateRepository
+    @Autowired private lateinit var fiscalMandateRepository: FiscalMandateRepository
 
     private lateinit var mockServer: MockRestServiceServer
     private lateinit var association: AssociationProfile
@@ -111,7 +118,16 @@ class MollieConnectServiceTest {
     }
 
     @Test
+    fun `buildAuthorizationUrl - throws ConflictException when no signed mandate (chain guard)`() {
+        // No fiscal mandate saved → bank account connection must be refused (409).
+        assertThrows<ConflictException> {
+            mollieConnectService.buildAuthorizationUrl(userId)
+        }
+    }
+
+    @Test
     fun `buildAuthorizationUrl - calls client-links with bearer advanced token and returns URL with state`() {
+        fiscalMandateRepository.save(TestFixtures.fiscalMandate(association))
         mockServer.expect(requestTo("https://api.mollie.com/v2/client-links"))
             .andExpect(method(HttpMethod.POST))
             .andExpect(header("Authorization", "Bearer test_advanced_token"))
@@ -146,6 +162,7 @@ class MollieConnectServiceTest {
 
     @Test
     fun `buildAuthorizationUrl - prefills full address and SIREN when set`() {
+        fiscalMandateRepository.save(TestFixtures.fiscalMandate(association))
         association.addressLine1 = "12 rue de la Paix"
         association.siren = "123456789"
         associationProfileRepository.save(association)

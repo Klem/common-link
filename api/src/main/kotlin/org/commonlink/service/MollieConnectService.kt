@@ -182,6 +182,7 @@ class MollieConnectService(
     private val associationRepo: AssociationProfileRepository,
     private val restTemplate: RestTemplate,
     private val tokenManager: MollieConnectTokenManager,
+    private val onboardingGate: OnboardingGateService,
     @Value("\${app.frontend-url}") private val frontendUrl: String,
     @Value("\${app.mollie.connect.api-base-url}") private val mollieApiBaseUrl: String,
 ) {
@@ -198,11 +199,16 @@ class MollieConnectService(
      * @param userId UUID of the authenticating user.
      * @return URL to open in the frontend popup.
      * @throws NotFoundException if the user has no association profile.
+     * @throws org.commonlink.exception.ConflictException if no signed fiscal mandate exists yet.
      * @throws IllegalStateException if the Mollie client-link call fails.
      */
     fun buildAuthorizationUrl(userId: UUID): String {
         val association = associationRepo.findByUserId(userId)
             .orElseThrow { NotFoundException("Association not found for user: $userId") }
+
+        // Chain guard (mirrors frontend tab lock): a bank account can only be connected once the
+        // fiscal mandate is signed. Enforced even in mock mode so the flow order is replay-safe.
+        onboardingGate.requireMandateSigned(userId)
 
         if (config.mock) {
             return buildMockConnection(association)

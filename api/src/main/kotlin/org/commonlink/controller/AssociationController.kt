@@ -62,7 +62,8 @@ class AssociationController(
             content = [Content(schema = Schema(implementation = AssociationProfileDto::class))]
         ),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
-        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Setting a widget destination campaign requires a completed bank account (Mollie)", content = [Content()])
     )
     fun updateProfile(
         @AuthenticationPrincipal principal: UserDetails,
@@ -98,7 +99,8 @@ class AssociationController(
             content = [Content(schema = Schema(implementation = WidgetTokenResponse::class))]
         ),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
-        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Bank account (Mollie) not completed — required before enabling the widget", content = [Content()])
     )
     fun generateWidgetToken(
         @AuthenticationPrincipal principal: UserDetails
@@ -116,7 +118,8 @@ class AssociationController(
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "Widget config updated", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
-        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Bank account (Mollie) not completed — required before enabling the widget", content = [Content()])
     )
     fun updateWidgetConfig(
         @AuthenticationPrincipal principal: UserDetails,

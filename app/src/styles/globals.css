@@ -1775,6 +1775,8 @@ textarea.form-input {
 .set-tab { padding: 10px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; color: var(--slate-lavender); cursor: pointer; transition: all .2s; white-space: nowrap; border: none; background: none; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
 .set-tab:hover { color: var(--ink-navy); background: rgba(78,205,196,.06); }
 .set-tab.active { background: var(--soft-cream); color: var(--ink-navy); box-shadow: 0 2px 8px rgba(23,23,68,.08); }
+.set-tab:disabled, .set-tab.locked { opacity: .45; cursor: not-allowed; }
+.set-tab:disabled:hover, .set-tab.locked:hover { color: var(--slate-lavender); background: none; }
 .set-tab-badge { font-size: 10px; background: var(--mist-lavender); padding: 2px 7px; border-radius: 10px; font-weight: 700; font-family: 'Syne', sans-serif; }
 .set-tab-badge.ok { background: rgba(78,205,196,.18); color: var(--teal-dark); }
 .set-tab-badge.pending { background: rgba(255,179,71,.2); color: #9a6a14; }

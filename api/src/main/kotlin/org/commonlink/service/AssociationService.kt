@@ -33,6 +33,7 @@ class AssociationService(
     private val campaignRepository: CampaignRepository,
     private val connectionRepo: MoneriumConnectionRepository,
     private val outbox: OnchainOutboxService,
+    private val onboardingGate: OnboardingGateService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -85,6 +86,10 @@ class AssociationService(
         req.contactEmail?.let { profile.contactEmail = it }
         req.phone?.let { profile.phone = it }
         req.widgetDestinationCampaignId?.let { campaignId ->
+            // Chain guard: a destination campaign is a widget setting — the bank account (Mollie)
+            // must be completed first. Only enforced when a destination is actually being set,
+            // so the general profile edit (infos tab) is unaffected.
+            onboardingGate.requireBankReady(userId)
             val campaign = campaignRepository.findByIdAndAssociationId(campaignId, profile.id!!)
                 .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
             profile.widgetDestinationCampaign = campaign
@@ -106,9 +111,11 @@ class AssociationService(
      * @param userId UUID of the authenticated association user.
      * @return The newly generated widget token.
      * @throws UserNotFoundException if no profile exists for this user.
+     * @throws org.commonlink.exception.ConflictException if the bank account (Mollie) is not completed.
      */
     @Transactional
     fun generateWidgetToken(userId: UUID): String {
+        onboardingGate.requireBankReady(userId)
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
         val bytes = ByteArray(24).also { SecureRandom().nextBytes(it) }
@@ -126,9 +133,11 @@ class AssociationService(
      * @param userId UUID of the authenticated association user.
      * @param widgetAllowedOrigin Raw origin URL supplied by the association. Normalized to scheme+host.
      * @throws UserNotFoundException if no profile exists for this user.
+     * @throws org.commonlink.exception.ConflictException if the bank account (Mollie) is not completed.
      */
     @Transactional
     fun updateWidgetConfig(userId: UUID, widgetAllowedOrigin: String?) {
+        onboardingGate.requireBankReady(userId)
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
         profile.widgetAllowedOrigin = normalizeOrigin(widgetAllowedOrigin)

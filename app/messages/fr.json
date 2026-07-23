@@ -540,6 +540,7 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
+          "locked": "Terminez d'abord l'étape précédente",
           "mandate": "Mandat fiscal",
           "mandateBadge": {
             "active": "✓ Actif",

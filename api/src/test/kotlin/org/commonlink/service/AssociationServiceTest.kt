@@ -29,8 +29,10 @@ class AssociationServiceTest {
     private val campaignRepo: CampaignRepository = mockk()
     private val connectionRepo: MoneriumConnectionRepository = mockk()
     private val outbox: OnchainOutboxService = mockk()
+    // Relaxed: chain guards are no-ops here; dedicated gate behaviour is covered in OnboardingGateService tests.
+    private val onboardingGate: OnboardingGateService = mockk(relaxed = true)
 
-    private val service = AssociationService(associationRepo, campaignRepo, connectionRepo, outbox)
+    private val service = AssociationService(associationRepo, campaignRepo, connectionRepo, outbox, onboardingGate)
 
     private val associationId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
