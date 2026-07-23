@@ -10,6 +10,7 @@ export interface UseMollieKycStatusReturn {
   broken: boolean | null;
   onboardingStatus: MollieOnboardingStatus | null;
   canReceivePayments: boolean | null;
+  dashboardUrl: string | null;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -27,6 +28,7 @@ export function useMollieKycStatus(): UseMollieKycStatusReturn {
   const [broken, setBroken] = useState<boolean | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState<MollieOnboardingStatus | null>(null);
   const [canReceivePayments, setCanReceivePayments] = useState<boolean | null>(null);
+  const [dashboardUrl, setDashboardUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +42,7 @@ export function useMollieKycStatus(): UseMollieKycStatusReturn {
       setBroken(data.broken);
       setOnboardingStatus(data.onboardingStatus);
       setCanReceivePayments(data.canReceivePayments);
+      setDashboardUrl(data.dashboardUrl);
     } catch {
       setError('common.errors.serverError');
     } finally {
@@ -51,5 +54,5 @@ export function useMollieKycStatus(): UseMollieKycStatusReturn {
     fetchStatus();
   }, [fetchStatus]);
 
-  return { connected, pending, broken, onboardingStatus, canReceivePayments, isLoading, error, refresh: fetchStatus };
+  return { connected, pending, broken, onboardingStatus, canReceivePayments, dashboardUrl, isLoading, error, refresh: fetchStatus };
 }

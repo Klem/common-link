@@ -1231,6 +1231,7 @@
   "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically.",
   "settings": {
     "mollie": {
+      "completeOnboarding": "Complete my onboarding",
       "connect": "Connect Mollie",
       "description": "Connect your Mollie account to receive donations.",
       "modal": {

@@ -80,4 +80,12 @@ class MollieConnection(
     /** Last time onboarding status was synced from Mollie. Used for 5-minute throttle. */
     @Column(name = "last_synced_at")
     var lastSyncedAt: Instant? = null,
+
+    /**
+     * Deep link to the Mollie hosted onboarding wizard (_links.dashboard of GET /v2/onboarding/me).
+     * Mollie only returns it while onboarding is incomplete; synced alongside [onboardingStatus].
+     * The frontend opens it in a new tab when the status is NEEDS_DATA.
+     */
+    @Column(name = "onboarding_dashboard_url", columnDefinition = "TEXT")
+    var onboardingDashboardUrl: String? = null,
 )

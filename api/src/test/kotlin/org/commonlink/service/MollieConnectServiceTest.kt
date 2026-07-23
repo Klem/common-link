@@ -116,13 +116,18 @@ class MollieConnectServiceTest {
             .andExpect(method(HttpMethod.POST))
             .andExpect(header("Authorization", "Bearer test_advanced_token"))
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-            // Required fields only — optional fields are dropped to avoid Mollie field-level 400s.
             .andExpect(jsonPath("$.name").exists())
             .andExpect(jsonPath("$.address.country").value("FR"))
+            // No addressLine1 on the fixture → street/postalCode/city are omitted as a block
+            // (Mollie requires postalCode + city as soon as a street is provided)
+            .andExpect(jsonPath("$.address.streetAndNumber").doesNotExist())
+            .andExpect(jsonPath("$.address.postalCode").doesNotExist())
+            .andExpect(jsonPath("$.address.city").doesNotExist())
+            .andExpect(jsonPath("$.legalEntity").value("fr-association"))
             .andExpect(jsonPath("$.owner.email").value("contact@restos-du-coeur.org"))
             .andExpect(jsonPath("$.owner.givenName").exists())
             .andExpect(jsonPath("$.owner.familyName").exists())
-            .andExpect(jsonPath("$.owner.locale").doesNotExist())
+            .andExpect(jsonPath("$.owner.locale").value("fr_FR"))
             .andExpect(jsonPath("$.registrationNumber").exists())
             .andRespond(withSuccess(
                 """{"_links":{"clientLink":{"href":"https://my.mollie.com/dashboard/client-link/xxx"}}}""",
@@ -135,6 +140,27 @@ class MollieConnectServiceTest {
         assertTrue(url.contains("client_id=test_client"))
         assertTrue(url.contains("approval_prompt=force"))
         assertTrue(url.contains("state="))
+    }
+
+    @Test
+    fun `buildAuthorizationUrl - prefills full address when addressLine1, postalCode and city are all set`() {
+        association.addressLine1 = "12 rue de la Paix"
+        associationProfileRepository.save(association)
+
+        mockServer.expect(requestTo("https://api.mollie.com/v2/client-links"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(jsonPath("$.address.country").value("FR"))
+            .andExpect(jsonPath("$.address.streetAndNumber").value("12 rue de la Paix"))
+            .andExpect(jsonPath("$.address.postalCode").value("75001"))
+            .andExpect(jsonPath("$.address.city").value("Paris"))
+            .andRespond(withSuccess(
+                """{"_links":{"clientLink":{"href":"https://my.mollie.com/dashboard/client-link/yyy"}}}""",
+                MediaType.APPLICATION_JSON,
+            ))
+
+        val url = mollieConnectService.buildAuthorizationUrl(userId)
+
+        assertTrue(url.startsWith("https://my.mollie.com/dashboard/client-link/yyy?"))
     }
 
     // ── handleCallback ────────────────────────────────────────────────────────
@@ -219,6 +245,7 @@ class MollieConnectServiceTest {
         assertNotNull(conn)
         assertEquals(MollieConnectionState.ACTIVE, conn!!.state)
         assertEquals(MollieOnboardingStatus.IN_REVIEW, conn.onboardingStatus)
+        assertEquals("https://my.mollie.com/dashboard/org_test/onboarding", conn.onboardingDashboardUrl)
         assertEquals("org_xyz", conn.mollieOrganizationId)
         assertFalse(mollieOAuthStateRepository.existsById(stateId))
     }
@@ -260,6 +287,38 @@ class MollieConnectServiceTest {
         assertTrue(dto.connected)
         assertEquals("COMPLETED", dto.onboardingStatus)
         assertTrue(dto.canReceivePayments!!)
+    }
+
+    @Test
+    fun `getConnectionStatus - syncs and exposes dashboardUrl while onboarding needs data`() {
+        mollieConnectionRepository.save(MollieConnection(
+            association = association,
+            accessToken = "valid_token",
+            refreshToken = "ref",
+            expiresAt = Instant.now().plusSeconds(3600),
+            onboardingStatus = MollieOnboardingStatus.NEEDS_DATA,
+            lastSyncedAt = Instant.now().minusSeconds(600),  // stale → re-fetch
+        ))
+
+        mockServer.expect(requestTo("https://api.mollie.com/v2/onboarding/me"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess(
+                """
+                {"status":"needs-data","canReceivePayments":false,"canReceiveSettlements":false,
+                 "_links":{"dashboard":{"href":"https://my.mollie.com/dashboard/org_test/onboarding","type":"text/html"}}}
+                """.trimIndent(),
+                MediaType.APPLICATION_JSON,
+            ))
+
+        val dto = mollieConnectService.getConnectionStatus(userId)
+
+        assertEquals("NEEDS_DATA", dto.onboardingStatus)
+        // Reflected in the same call (refreshed instance), and persisted for subsequent reads
+        assertEquals("https://my.mollie.com/dashboard/org_test/onboarding", dto.dashboardUrl)
+        assertEquals(
+            "https://my.mollie.com/dashboard/org_test/onboarding",
+            mollieConnectionRepository.findByAssociationId(associationId)!!.onboardingDashboardUrl,
+        )
     }
 
     @Test
@@ -372,7 +431,10 @@ class MollieConnectServiceTest {
         mockServer.expect(requestTo("https://api.mollie.com/v2/onboarding/me"))
             .andExpect(method(HttpMethod.GET))
             .andRespond(withSuccess(
-                """{"status":"in-review","canReceivePayments":false,"canReceiveSettlements":false}""",
+                """
+                {"status":"in-review","canReceivePayments":false,"canReceiveSettlements":false,
+                 "_links":{"dashboard":{"href":"https://my.mollie.com/dashboard/org_test/onboarding","type":"text/html"}}}
+                """.trimIndent(),
                 MediaType.APPLICATION_JSON,
             ))
     }

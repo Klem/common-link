@@ -1231,6 +1231,7 @@
   "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement.",
   "settings": {
     "mollie": {
+      "completeOnboarding": "Compléter mon dossier",
       "connect": "Connecter Mollie",
       "description": "Connectez votre compte Mollie pour recevoir des dons.",
       "modal": {

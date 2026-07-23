@@ -93,8 +93,9 @@ class MollieConnectControllerTest {
             connected = true,
             pending = false,
             broken = false,
-            onboardingStatus = "IN_REVIEW",
+            onboardingStatus = "NEEDS_DATA",
             canReceivePayments = false,
+            dashboardUrl = "https://my.mollie.com/dashboard/onboarding",
         )
 
         mockMvc.perform(
@@ -105,8 +106,9 @@ class MollieConnectControllerTest {
             .andExpect(jsonPath("$.connected").value(true))
             .andExpect(jsonPath("$.pending").value(false))
             .andExpect(jsonPath("$.broken").value(false))
-            .andExpect(jsonPath("$.onboardingStatus").value("IN_REVIEW"))
+            .andExpect(jsonPath("$.onboardingStatus").value("NEEDS_DATA"))
             .andExpect(jsonPath("$.canReceivePayments").value(false))
+            .andExpect(jsonPath("$.dashboardUrl").value("https://my.mollie.com/dashboard/onboarding"))
     }
 
     @Test
@@ -117,6 +119,7 @@ class MollieConnectControllerTest {
             broken = false,
             onboardingStatus = null,
             canReceivePayments = null,
+            dashboardUrl = null,
         )
 
         mockMvc.perform(

@@ -17,4 +17,6 @@ export interface MollieKycStatus {
   broken: boolean;
   onboardingStatus: MollieOnboardingStatus | null;
   canReceivePayments: boolean | null;
+  /** Deep link to the Mollie hosted onboarding wizard; null once onboarding is complete. */
+  dashboardUrl: string | null;
 }

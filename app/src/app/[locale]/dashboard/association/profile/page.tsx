@@ -93,6 +93,7 @@ export default function AssociationProfilePage() {
     broken: mollieBroken,
     onboardingStatus,
     canReceivePayments,
+    dashboardUrl: mollieDashboardUrl,
     isLoading: mollieLoading,
     refresh: refreshMollie,
   } = useMollieKycStatus();
@@ -489,7 +490,19 @@ export default function AssociationProfilePage() {
               ) : mollieConnected && onboardingStatus === 'IN_REVIEW' ? (
                 <span className="badge badge-warning">{tM('mollie.status.inReview')}</span>
               ) : mollieConnected && onboardingStatus === 'NEEDS_DATA' ? (
-                <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
+                <div className="flex items-center gap-3">
+                  <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
+                  {mollieDashboardUrl && (
+                    <a
+                      href={mollieDashboardUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary btn-sm"
+                    >
+                      {tM('mollie.completeOnboarding')}
+                    </a>
+                  )}
+                </div>
               ) : mollieInterrupted ? (
                 <button
                   type="button"

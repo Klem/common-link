@@ -54,7 +54,14 @@ private data class OnboardingResponse(
     @field:JsonProperty("status") val status: String,
     @field:JsonProperty("canReceivePayments") val canReceivePayments: Boolean,
     @field:JsonProperty("canReceiveSettlements") val canReceiveSettlements: Boolean,
-)
+    @field:JsonProperty("_links") val links: OnboardingLinks? = null,
+) {
+    data class OnboardingLinks(@field:JsonProperty("dashboard") val dashboard: Href?)
+    data class Href(val href: String)
+
+    /** Deep link to the Mollie hosted onboarding wizard; null once onboarding is complete. */
+    val dashboardUrl: String? get() = links?.dashboard?.href
+}
 
 /**
  * Handles @Transactional token operations with a pessimistic write lock.
@@ -256,8 +263,15 @@ class MollieConnectService(
      * (client_id:client_secret) is valid ONLY on the /oauth2/tokens endpoints — Mollie rejects it
      * here with 400 {"detail":"Invalid Authorization header"}.
      * Body: application/json —
-     *   - name + registrationNumber + address.country at root level (organization details)
-     *   - owner = physical contact person (email from [AssociationProfile.contactEmail] / givenName / familyName)
+     *   - name + registrationNumber + address + legalEntity at root level (organization details)
+     *   - address: country always; streetAndNumber/postalCode/city only when all three are set
+     *     (Mollie requires postalCode + city as soon as a street is provided)
+     *   - legalEntity: "fr-association" (Mollie legal-entity list) — all CommonLink associations
+     *   - owner = physical contact person (email from [AssociationProfile.contactEmail] / givenName /
+     *     familyName / locale fr_FR)
+     *
+     * Every field pre-filled here is one less field the association has to type in the Mollie
+     * hosted onboarding wizard.
      *
      * ⚠ Country defaults to "FR" — all CommonLink associations are French. A dedicated country
      *   field on AssociationProfile would be cleaner; tracked in .tasks/todo.md.
@@ -271,14 +285,26 @@ class MollieConnectService(
         val givenName = if (spaceIdx > 0) contactName.substring(0, spaceIdx) else contactName
         val familyName = if (spaceIdx > 0) contactName.substring(spaceIdx + 1) else contactName
 
+        val address = mutableMapOf<String, Any>("country" to "FR")
+        val street = association.addressLine1
+        val postalCode = association.postalCode
+        val city = association.city
+        if (street != null && postalCode != null && city != null) {
+            address["streetAndNumber"] = street
+            address["postalCode"] = postalCode
+            address["city"] = city
+        }
+
         val requestBody = mutableMapOf<String, Any>(
             "name" to association.name,
             "registrationNumber" to association.identifier,
-            "address" to mapOf("country" to "FR"),
+            "address" to address,
+            "legalEntity" to "fr-association",
             "owner" to mapOf(
                 "email" to contactEmail,
                 "givenName" to givenName,
                 "familyName" to familyName,
+                "locale" to "fr_FR",
             ),
         ).apply {
             association.siren?.let { put("registrationNumber", it) }
@@ -360,6 +386,7 @@ class MollieConnectService(
         connection.onboardingStatus = MollieOnboardingStatus.fromMollie(onboardingResponse.status)
         connection.canReceivePayments = onboardingResponse.canReceivePayments
         connection.canReceiveSettlements = onboardingResponse.canReceiveSettlements
+        connection.onboardingDashboardUrl = onboardingResponse.dashboardUrl
         connection.mollieOrganizationId = organizationId
         connection.lastSyncedAt = Instant.now()
         connectionRepo.save(connection)
@@ -398,11 +425,9 @@ class MollieConnectService(
         val association = associationRepo.findByUserId(userId)
             .orElseThrow { NotFoundException("Association not found for user: $userId") }
         val associationId = association.id!!
-        val connection = connectionRepo.findByAssociationId(associationId)
-
-        if (connection != null) {
-            refreshOnboardingStatusIfStale(connection)
-        }
+        val stored = connectionRepo.findByAssociationId(associationId)
+        // Use the refreshed instance when a sync happened, so the DTO reflects it immediately
+        val connection = stored?.let { refreshOnboardingStatusIfStale(it) ?: it }
 
         val pending = stateRepo.existsByAssociationIdAndExpiresAtAfter(associationId, Instant.now())
 
@@ -412,6 +437,7 @@ class MollieConnectService(
             broken = connection?.state == MollieConnectionState.BROKEN,
             onboardingStatus = connection?.onboardingStatus?.name,
             canReceivePayments = connection?.canReceivePayments,
+            dashboardUrl = connection?.onboardingDashboardUrl,
         )
     }
 
@@ -422,33 +448,39 @@ class MollieConnectService(
      *
      * Uses [tokenManager] (a separate bean) so the @Transactional pessimistic lock on
      * [getValidAccessToken] is properly applied — avoids Spring self-invocation proxy bypass.
+     *
+     * @return the freshly-synced connection instance, or null when the sync was skipped
+     *         (BROKEN / COMPLETED / throttled) or failed — callers fall back to their instance.
      */
-    private fun refreshOnboardingStatusIfStale(connection: MollieConnection) {
-        if (connection.state == MollieConnectionState.BROKEN) return
-        if (connection.onboardingStatus == MollieOnboardingStatus.COMPLETED) return
+    private fun refreshOnboardingStatusIfStale(connection: MollieConnection): MollieConnection? {
+        if (connection.state == MollieConnectionState.BROKEN) return null
+        if (connection.onboardingStatus == MollieOnboardingStatus.COMPLETED) return null
         val fiveMinutesAgo = Instant.now().minusSeconds(300)
-        if (connection.lastSyncedAt?.isAfter(fiveMinutesAgo) == true) return
+        if (connection.lastSyncedAt?.isAfter(fiveMinutesAgo) == true) return null
 
         val associationId = connection.association.id!!
-        try {
+        return try {
             val token = tokenManager.getValidAccessToken(associationId)
             val onboarding = fetchOnboardingStatus(token)
             // Re-fetch to avoid overwriting token updates that tokenManager committed above
-            val updated = connectionRepo.findByAssociationId(associationId) ?: return
+            val updated = connectionRepo.findByAssociationId(associationId) ?: return null
             updated.onboardingStatus = MollieOnboardingStatus.fromMollie(onboarding.status)
             updated.canReceivePayments = onboarding.canReceivePayments
             updated.canReceiveSettlements = onboarding.canReceiveSettlements
+            updated.onboardingDashboardUrl = onboarding.dashboardUrl
             updated.lastSyncedAt = Instant.now()
             connectionRepo.save(updated)
             logger.info(
                 "Refreshed Mollie onboarding status for association {}: {}",
                 associationId, onboarding.status,
             )
+            updated
         } catch (ex: Exception) {
             logger.warn(
                 "Failed to refresh Mollie onboarding status for association {}: {}",
                 associationId, ex.message,
             )
+            null
         }
     }
 
