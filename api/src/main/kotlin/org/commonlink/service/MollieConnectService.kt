@@ -460,8 +460,11 @@ class MollieConnectService(
      *
      * No runtime flag guard here: access is gated declaratively by [org.commonlink.controller.MollieConnectMockController],
      * whose bean only exists when `app.mollie.connect.allow-fake-completion=true` (mirrors the
-     * on-chain [org.commonlink.onchain.MockOnchainRegistry] style). In production the flag is false,
-     * the controller is absent, and this method is unreachable.
+     * on-chain [org.commonlink.onchain.MockOnchainRegistry] style). Base `application.yml` defaults
+     * the flag to `true` for local dev; `application-prod.yml` overrides it to `false` explicitly
+     * (and the controller carries `@Profile("!prod")`), so under the prod profile the controller is
+     * absent and this method is unreachable. Prod safety depends on that explicit override, not the
+     * base default — see the C1 finding in the 2026-07-24 security audit.
      *
      * Requires a connection to already exist (we never fabricate one here — that is
      * [buildMockConnection]'s job). Once COMPLETED, [refreshOnboardingStatusIfStale] short-circuits

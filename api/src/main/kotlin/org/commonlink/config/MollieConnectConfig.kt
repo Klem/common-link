@@ -20,7 +20,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *                            EXISTING real connection to COMPLETED — as if Mollie had just validated
  *                            the KYC — without touching Mollie. Unlike [mock] it does NOT bypass the
  *                            OAuth popup / client-link creation: the connection must already exist.
- *                            MUST stay false in production (the endpoint returns 403 when false).
+ *                            MUST stay false in production. When false the mock controller bean is
+ *                            not registered (`@ConditionalOnProperty havingValue="true"`), so the
+ *                            route returns 404. `application-prod.yml` sets it false explicitly.
  */
 @ConfigurationProperties(prefix = "app.mollie.connect")
 data class MollieConnectConfig(
@@ -31,4 +33,9 @@ data class MollieConnectConfig(
     val advancedToken: String = "",
     val mock: Boolean = false,
     val allowFakeCompletion: Boolean = false,
-)
+) {
+    /** Redacts [clientSecret] and [advancedToken] (Bearer with clients.write) so they never leak via logs. */
+    override fun toString(): String =
+        "MollieConnectConfig(clientId=$clientId, clientSecret=***, redirectUri=$redirectUri, " +
+        "scopes=$scopes, advancedToken=***, mock=$mock, allowFakeCompletion=$allowFakeCompletion)"
+}

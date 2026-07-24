@@ -75,4 +75,30 @@ class ProdConfigSecurityTest {
         assertTrue(mock == null || mock == false,
             "onchain.mock must be absent or false in prod, was: $mock")
     }
+
+    @Test
+    fun `mollie allow-fake-completion is false in prod`() {
+        // C1: base defaults this true; prod must override it explicitly or the self-service
+        // fake-KYC route ships active in production.
+        assertEquals(false, prop("app.mollie.connect.allow-fake-completion"))
+    }
+
+    @Test
+    fun `mollie connect mock is false in prod`() {
+        assertEquals(false, prop("app.mollie.connect.mock"))
+    }
+
+    @Test
+    fun `mollie api-key does not inherit the committed test key in prod`() {
+        // M1: base hardcodes a Mollie test key as the default; prod must require MOLLIE_API_KEY.
+        val apiKey = prop("app.mollie.api-key") as? String ?: ""
+        assertFalse(apiKey.contains("test_"), "prod must not inherit the base test key, was: $apiKey")
+        assertEquals("\${MOLLIE_API_KEY}", apiKey)
+    }
+
+    @Test
+    fun `monerium token-enc-key is required with no plaintext-inheriting default in prod`() {
+        // H4: base/staging default this empty (→ plaintext tokens); prod must require the key.
+        assertEquals("\${MONERIUM_TOKEN_ENC_KEY}", prop("app.monerium.token-enc-key"))
+    }
 }

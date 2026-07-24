@@ -2,8 +2,12 @@ package org.commonlink.repository
 
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.util.Optional
 import java.util.UUID
 
@@ -61,4 +65,15 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
 
     /** All campaigns with the given status for the association. */
     fun findAllByAssociationIdAndStatus(associationId: UUID, status: CampaignStatus): List<Campaign>
+
+    /**
+     * Loads a campaign holding a pessimistic write lock on its row.
+     *
+     * Used to serialize concurrent payout create/confirm on the same campaign so the available-balance
+     * check and the payout insert happen atomically — closes the TOCTOU that let parallel requests each
+     * see the full un-reserved balance and collectively over-withdraw (security audit 2026-07-24, H2).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Campaign c WHERE c.id = :id")
+    fun findByIdForUpdate(@Param("id") id: UUID): Campaign?
 }

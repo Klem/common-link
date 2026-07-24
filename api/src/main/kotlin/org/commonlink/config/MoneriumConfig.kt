@@ -26,4 +26,9 @@ data class MoneriumConfig(
      * Generate: openssl rand -base64 32
      */
     val tokenEncKey: String = "",
-)
+) {
+    /** Redacts [tokenEncKey] (AES-256 master key for all token-at-rest) so it never leaks via logs. */
+    override fun toString(): String =
+        "MoneriumConfig(clientId=$clientId, baseUrl=$baseUrl, redirectUri=$redirectUri, " +
+        "skipKyc=$skipKyc, tokenEncKey=***)"
+}

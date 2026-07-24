@@ -67,7 +67,7 @@ app:
     skip-kyc: true
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
   mollie:
-    api-key: ${MOLLIE_API_KEY:test_hBpdFb3fmHBaNN5Nvdg5r9cC4psU59}
+    api-key: ${MOLLIE_API_KEY:}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}

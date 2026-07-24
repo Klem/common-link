@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -54,10 +55,13 @@ class PayoutService(
      * @throws IllegalArgumentException if the IBAN does not belong to the requested payee.
      * @throws ConflictException if a [PayoutBlockingReason] applies (unverified IBAN, insufficient balance).
      */
+    @Transactional
     fun create(campaignId: UUID, request: CreatePayoutRequest, userId: UUID): PayoutDto {
         val associationId = resolveAssociationId(userId)
-        val campaign = campaignRepository.findById(campaignId)
-            .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
+        // Lock the campaign row for the duration of the transaction so concurrent create/confirm
+        // requests serialize and each sees the balance already reserved by the others (H2 TOCTOU).
+        val campaign = campaignRepository.findByIdForUpdate(campaignId)
+            ?: throw NotFoundException("Campaign not found: $campaignId")
         if (campaign.association.id != associationId) throw NotFoundException("Campaign not found: $campaignId")
 
         val payee = payeeRepository.findById(request.payeeId!!)
@@ -92,16 +96,33 @@ class PayoutService(
      * Confirms a PENDING payout, setting it to CONFIRMED and enqueuing an on-chain job.
      *
      * @throws NotFoundException if payout or campaign cannot be found for [associationId].
-     * @throws ConflictException if the payout is not in PENDING status.
+     * @throws ConflictException if the payout is not PENDING, its IBAN is no longer VERIFIED,
+     *         or confirming it would exceed the confirmable balance (re-validated here — H2).
      */
+    @Transactional
     fun confirm(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
         val associationId = resolveAssociationId(userId)
+        // Lock the campaign row so concurrent confirms serialize against the balance re-check (H2).
+        val campaign = campaignRepository.findByIdForUpdate(campaignId)
+            ?: throw NotFoundException("Campaign not found: $campaignId")
+        if (campaign.association.id != associationId) throw NotFoundException("Campaign not found: $campaignId")
+
         val payout = payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(
             campaignId, payoutId, associationId
         ) ?: throw NotFoundException("Payout not found: $payoutId")
 
         if (payout.status != PayoutStatus.PENDING) {
             throw ConflictException("Payout $payoutId is already ${payout.status}")
+        }
+
+        // Re-validate at confirm time: the IBAN may have been downgraded/removed and other payouts
+        // may have consumed the balance since this one was created (create-time check is not enough).
+        val payeeIban = payeeIbanRepository.findById(payout.payeeIbanId).orElse(null)
+        if (payeeIban == null || payeeIban.status != IbanVerificationStatus.VERIFIED) {
+            throw ConflictException("Payout blocked: ${PayoutBlockingReason.IBAN_NOT_VERIFIED}")
+        }
+        if (payout.amount > computeConfirmableBalance(campaignId)) {
+            throw ConflictException("Payout blocked: ${PayoutBlockingReason.INSUFFICIENT_BALANCE}")
         }
 
         return confirmer.confirmAndEnqueue(payout).toDto()
@@ -183,8 +204,23 @@ class PayoutService(
         return reasons
     }
 
-    /** Available funds = total confirmed donations - confirmed payouts, for [campaignId]. */
+    /**
+     * Available funds still allocatable = confirmed donations − CONFIRMED payouts − **PENDING** payouts.
+     * PENDING payouts are reserved (H2): without this, N pending payouts each ≤ balance could be created
+     * and later confirmed to collectively exceed the funds raised.
+     */
     private fun computeAvailableBalance(campaignId: UUID): BigDecimal {
+        val pending = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING)
+            ?: BigDecimal.ZERO
+        return computeConfirmableBalance(campaignId) - pending
+    }
+
+    /**
+     * Funds confirmable right now = confirmed donations − already-CONFIRMED payouts (PENDING excluded).
+     * Used at confirm time: the payout being confirmed is itself still PENDING, so it must be checked
+     * against the balance net of *other* CONFIRMED payouts only.
+     */
+    private fun computeConfirmableBalance(campaignId: UUID): BigDecimal {
         val confirmedAmount = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
             ?: BigDecimal.ZERO
         val totalRaised = donationRepository.sumConfirmedAmountByCampaignId(campaignId) ?: BigDecimal.ZERO

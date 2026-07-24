@@ -3,6 +3,7 @@ package org.commonlink.security
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 import java.security.SecureRandom
 import java.util.Base64
@@ -14,6 +15,9 @@ import javax.crypto.spec.SecretKeySpec
  * JPA converter for OAuth tokens. When MONERIUM_TOKEN_ENC_KEY is set the tokens are
  * stored as Base64(12-byte-IV || AES-256-GCM-ciphertext). When the key is absent the converter
  * is a no-op (plaintext), which is the intended behaviour for dev and staging environments.
+ *
+ * Under the `prod` profile a blank key is a hard startup failure (H4): the fail-open plaintext
+ * fallback is acceptable for local/staging only, never for production token-at-rest.
  *
  * ⚠ SHARED converter: despite the Monerium-centric name, this also encrypts the Mollie Connect
  * tokens ([org.commonlink.entity.MollieConnection.accessToken] / refreshToken) under the SAME
@@ -32,13 +36,20 @@ import javax.crypto.spec.SecretKeySpec
 @Converter
 // TODO: generify to "tokenConverter"
 class MoneriumTokenConverter(
-    @Value("\${app.monerium.token-enc-key:}") rawKey: String
+    @Value("\${app.monerium.token-enc-key:}") rawKey: String,
+    environment: Environment,
 ) : AttributeConverter<String, String> {
 
     private val secretKey: SecretKeySpec?
 
     init {
         if (rawKey.isBlank()) {
+            if (environment.activeProfiles.contains("prod")) {
+                throw IllegalStateException(
+                    "MONERIUM_TOKEN_ENC_KEY must be set under the prod profile — " +
+                    "refusing to store Monerium & Mollie OAuth tokens as plaintext"
+                )
+            }
             secretKey = null
             logger.warn("MoneriumTokenConverter: DISABLED — MONERIUM_TOKEN_ENC_KEY not set; Mollie & Monerium access tokens stored as plaintext")
         } else {

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.commonlink.dto.MollieKycStatusDto
 import org.commonlink.service.MollieConnectService
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Profile
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -20,8 +21,10 @@ import java.util.UUID
 /**
  * DEV/STAGING-ONLY Mollie Connect endpoints, mirroring the declarative mock style used by the
  * on-chain layer ([org.commonlink.onchain.MockOnchainRegistry]): the whole controller bean is only
- * registered when `app.mollie.connect.allow-fake-completion=true`. In production the flag is false,
- * the bean never exists, and the routes return 404 — no runtime guard needed inside the service.
+ * registered when `app.mollie.connect.allow-fake-completion=true`. `application-prod.yml` sets that
+ * flag `false` explicitly, and `@Profile("!prod")` is a belt-and-braces guard, so under the prod
+ * profile the bean never exists and the routes return 404. (Base `application.yml` defaults the flag
+ * to `true` for local dev — prod safety relies on the explicit override, not the base default.)
  *
  * Unlike `app.mollie.connect.mock` (which bypasses the OAuth popup entirely and fabricates a
  * connection), these endpoints operate on a REAL connection created through the genuine popup flow —
@@ -31,6 +34,7 @@ import java.util.UUID
  */
 @RestController
 @RequestMapping("/api/mollie/connect/dev")
+@Profile("!prod")
 @ConditionalOnProperty(prefix = "app.mollie.connect", name = ["allow-fake-completion"], havingValue = "true")
 @Tag(name = "Mollie Connect (dev)", description = "Dev/staging-only helpers to simulate Mollie KYC validation")
 class MollieConnectMockController(
