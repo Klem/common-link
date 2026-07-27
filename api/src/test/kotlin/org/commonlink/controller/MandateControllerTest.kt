@@ -221,11 +221,15 @@ class MandateControllerTest {
             .andExpect(status().isConflict)
     }
 
+    // NOTE: the mandate-documents precondition in MandateService.signMandate is temporarily
+    // disabled (see SHOW_MANDATE_DOCS on the frontend). This test now only verifies the generic
+    // ConflictException → 409 mapping via a mocked service; restore the docs-specific scenario
+    // when the guard comes back.
     @Test
-    fun `signMandate - 409 when mandate docs missing`() {
+    fun `signMandate - 409 on service ConflictException (docs guard temporarily disabled)`() {
         every {
             mandateService.signMandate(userId, any())
-        } throws ConflictException("Both mandate documents must be uploaded before signing")
+        } throws ConflictException("An active mandate already exists; revoke it before re-signing")
         val body = mapOf("eligibility" to "OIG_75_COLUCHE", "accepted" to true)
 
         mockMvc.perform(

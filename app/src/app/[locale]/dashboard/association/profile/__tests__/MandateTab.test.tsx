@@ -92,27 +92,27 @@ describe('MandateTab — bloqué', () => {
 // ── Non signé : activation progressive ───────────────────────────────────────
 
 describe('MandateTab — non signé', () => {
-  it('affiche les 3 étapes quand non bloqué', () => {
+  it('affiche les étapes visibles, la carte docs étant masquée (SHOW_MANDATE_DOCS=false)', () => {
     render(<MandateTab {...makeProps(unSignedState)} />);
     expect(screen.getByText('association.profile.mandate.step1.title')).toBeInTheDocument();
-    expect(screen.getByText('association.profile.mandate.step2.title')).toBeInTheDocument();
+    expect(screen.queryByText('association.profile.mandate.step2.title')).not.toBeInTheDocument();
     expect(screen.getByText('association.profile.mandate.step3.title')).toBeInTheDocument();
   });
 
-  it('bouton signer désactivé sans radio, sans docs et sans checkbox', () => {
+  it('bouton signer désactivé sans radio et sans checkbox', () => {
     render(<MandateTab {...makeProps(unSignedState)} />);
     const signBtn = screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
     expect(signBtn).toBeDisabled();
   });
 
-  it('bouton signer désactivé si radio sélectionné mais pas de docs', () => {
+  it('bouton signer actif avec radio + checkbox, sans docs (docs non requis)', () => {
     render(<MandateTab {...makeProps(unSignedState)} />);
     const radio = screen.getAllByRole('radio')[0];
     fireEvent.click(radio);
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox);
     const signBtn = screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
-    expect(signBtn).toBeDisabled();
+    expect(signBtn).not.toBeDisabled();
   });
 
   it('bouton signer actif si radio + 2 docs + checkbox', () => {
@@ -147,18 +147,9 @@ describe('MandateTab — non signé', () => {
     );
   });
 
-  it('appelle onDeleteDoc au clic Supprimer sur un slot uploadé', async () => {
-    const props = makeProps(unSignedWithDocs);
-    render(<MandateTab {...props} />);
-    const delBtns = screen.getAllByRole('button', { name: /association\.profile\.mandate\.docs\.delete/i });
-    await act(async () => { fireEvent.click(delBtns[0]); });
-    await waitFor(() => expect(props.onDeleteDoc).toHaveBeenCalledWith('MANDATE_STATUTS'));
-  });
-
-  it('affiche le nom de fichier pour un slot uploadé', () => {
-    render(<MandateTab {...makeProps(unSignedWithDocs)} />);
-    expect(screen.getByText(/statuts\.pdf/)).toBeInTheDocument();
-  });
+  // NOTE: the "Pièces justificatives" card (upload/delete UI + filename display) is hidden while
+  // SHOW_MANDATE_DOCS=false. Tests covering onDeleteDoc and the uploaded-filename display were
+  // removed with it and should be restored (git history) when the docs step comes back.
 });
 
 // ── Vue signée ────────────────────────────────────────────────────────────────

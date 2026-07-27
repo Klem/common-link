@@ -39,6 +39,7 @@ interface ProblemDetail {
  *
  * On failure, maps backend error codes to i18n error keys:
  * - `PASSWORD_NOT_SET` (401) → user registered via magic link and has no password yet.
+ * - `EMAIL_NOT_VERIFIED` (401) → account exists but email not yet verified.
  * - Generic 401 → invalid credentials.
  *
  * @returns `onSubmit` handler, `loading` flag, and i18n error key string.
@@ -63,6 +64,8 @@ export function useEmailLogin(redirectAfterLogin?: string | null) {
         if (err.response?.status === 401) {
           if (problemDetail?.code === 'PASSWORD_NOT_SET') {
             setError('errors.passwordNotSet');
+          } else if (problemDetail?.code === 'EMAIL_NOT_VERIFIED') {
+            setError('errors.emailNotVerified');
           } else {
             setError('errors.invalidCredentials');
           }

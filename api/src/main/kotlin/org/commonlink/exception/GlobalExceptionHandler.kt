@@ -74,6 +74,19 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * Handles [EmailNotVerifiedException] with a machine-readable `code: EMAIL_NOT_VERIFIED` property (HTTP 401).
+     *
+     * The frontend uses this code to tell the user their email is unverified rather than
+     * mislabelling it as a wrong password.
+     */
+    @ExceptionHandler(EmailNotVerifiedException::class)
+    fun handleEmailNotVerified(ex: EmailNotVerifiedException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.message ?: "Email not verified")
+        problem.setProperty("code", "EMAIL_NOT_VERIFIED")
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem)
+    }
+
+    /**
      * Handles [TokenExpiredException] with a `code: TOKEN_EXPIRED` property (HTTP 401).
      *
      * The frontend uses this code to automatically attempt a token refresh before retrying.

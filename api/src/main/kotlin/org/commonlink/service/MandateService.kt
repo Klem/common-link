@@ -111,8 +111,9 @@ class MandateService(
     /**
      * Signs a new fiscal mandate.
      *
-     * Guards (in order): accepted == true, verificationStatus == VERIFIED, no active mandate exists,
-     * both mandate documents are present.
+     * Guards (in order): accepted == true, verificationStatus == VERIFIED, no active mandate exists.
+     * The mandate-documents precondition is temporarily disabled (see the body and MandateTab
+     * SHOW_MANDATE_DOCS on the frontend).
      */
     @Transactional
     fun signMandate(userId: UUID, request: SignMandateRequest): MandateStateDto {
@@ -125,12 +126,9 @@ class MandateService(
         if (fiscalMandateRepository.findByAssociationIdAndRevokedAtIsNull(profile.id!!) != null) {
             throw ConflictException("An active mandate already exists; revoke it before re-signing")
         }
-        val allDocsPresent = MANDATE_DOC_TYPES.all {
-            documentRepository.existsByAssociationIdAndDocType(profile.id!!, it)
-        }
-        if (!allDocsPresent) {
-            throw ConflictException("Both mandate documents (statuts + rescrit) must be uploaded before signing")
-        }
+        // Mandate documents (statuts + rescrit) are temporarily NOT required to sign: the upload
+        // UI is hidden on the frontend (see MandateTab SHOW_MANDATE_DOCS). This guard is intentionally
+        // disabled and must be restored alongside that flag when the documents step comes back.
 
         val seq = fiscalMandateRepository.nextSequenceValue()
         val year = ZonedDateTime.now(ZoneId.of("Europe/Paris")).year

@@ -39,6 +39,13 @@ const ELIGIBILITY_OPTIONS: { value: MandateEligibility; labelKey: string; descKe
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.docx';
 
+// Temporarily hides the mandate "Pièces justificatives" (supporting documents) step and drops
+// the doc-upload precondition for signing. Set back to true to restore the step.
+// NOTE: when restoring, also revert the step3 title number "2." → "3." in messages/{fr,en}.json
+// (association.profile.mandate.step3.title). The backend doc guard in MandateService.signMandate
+// was removed in the same change and must be restored alongside this flag.
+const SHOW_MANDATE_DOCS = false;
+
 function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} Mo`;
   return `${Math.round(bytes / 1024)} Ko`;
@@ -94,7 +101,8 @@ export function MandateTab({
   }
 
   const uploadedCount = state.mandateDocs.filter((d) => d.uploaded).length;
-  const canSign = selectedEligibility !== null && uploadedCount === 2 && accepted && !state.signed;
+  const canSign =
+    selectedEligibility !== null && (!SHOW_MANDATE_DOCS || uploadedCount === 2) && accepted && !state.signed;
   const canUpload = !state.signed;
 
   const eligibilityLabel = (e: MandateEligibility | null | undefined): string => {
@@ -209,7 +217,8 @@ export function MandateTab({
             </div>
           </div>
 
-          {/* Étape 2 — Pièces justificatives */}
+          {/* Étape 2 — Pièces justificatives (masquée temporairement — voir SHOW_MANDATE_DOCS) */}
+          {SHOW_MANDATE_DOCS && (
           <div className="card no-hover" style={{ marginBottom: 16 }}>
             <div className="card-h">
               <h3>{t('association.profile.mandate.step2.title')}</h3>
@@ -301,6 +310,7 @@ export function MandateTab({
               })}
             </div>
           </div>
+          )}
 
           {/* Étape 3 — Signature */}
           <div className="card no-hover" style={{ marginBottom: 16 }}>

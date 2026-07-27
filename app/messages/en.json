@@ -127,6 +127,7 @@
     "errors": {
       "accountExists": "An account already exists with this email.",
       "emailInvalid": "Invalid email address.",
+      "emailNotVerified": "Email not verified. Check your inbox to activate your account.",
       "emailRequired": "Email is required.",
       "genericError": "An error occurred. Please try again.",
       "invalidCredentials": "Invalid email or password.",
@@ -297,6 +298,10 @@
       "sessionExpired": "Your session has expired. Please log in again."
     },
     "loading": "Loading...",
+    "mandateDocDeleted": "Document deleted.",
+    "mandateDocUploaded": "Document uploaded.",
+    "mandateRevoked": "Mandate revoked.",
+    "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically.",
     "milestoneCreated": "Milestone added.",
     "milestoneDeleted": "Milestone deleted.",
     "milestoneSaved": "Milestone updated.",
@@ -494,7 +499,7 @@
             "acceptLabel": "I certify the accuracy of the information provided and accept the terms of the mandate above.",
             "signBtn": "Sign the mandate",
             "timestampNote": "Timestamped electronic signature",
-            "title": "3. Mandate Signature"
+            "title": "2. Mandate Signature"
           }
         },
         "memberSince": "Member since {date}",
@@ -1226,10 +1231,6 @@
     },
     "welcome": "Welcome"
   },
-  "mandateDocDeleted": "Document deleted.",
-  "mandateDocUploaded": "Document uploaded.",
-  "mandateRevoked": "Mandate revoked.",
-  "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically.",
   "settings": {
     "mollie": {
       "completeOnboarding": "Complete my onboarding",

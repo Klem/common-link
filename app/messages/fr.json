@@ -127,6 +127,7 @@
     "errors": {
       "accountExists": "Un compte existe déjà avec cet email.",
       "emailInvalid": "Adresse email invalide.",
+      "emailNotVerified": "Email non vérifié. Consultez votre boîte mail pour activer votre compte.",
       "emailRequired": "L'email est requis.",
       "genericError": "Une erreur est survenue. Veuillez réessayer.",
       "invalidCredentials": "Email ou mot de passe invalide.",
@@ -297,6 +298,10 @@
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
     "loading": "Chargement...",
+    "mandateDocDeleted": "Document supprimé.",
+    "mandateDocUploaded": "Document téléversé.",
+    "mandateRevoked": "Mandat révoqué.",
+    "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement.",
     "milestoneCreated": "Milestone ajouté.",
     "milestoneDeleted": "Milestone supprimé.",
     "milestoneSaved": "Milestone mis à jour.",
@@ -494,7 +499,7 @@
             "acceptLabel": "J'atteste sur l'honneur de l'exactitude des informations fournies et accepte les termes du mandat ci-dessus.",
             "signBtn": "Signer le mandat",
             "timestampNote": "Signature électronique horodatée",
-            "title": "3. Signature du mandat"
+            "title": "2. Signature du mandat"
           }
         },
         "memberSince": "Membre depuis {date}",
@@ -1226,10 +1231,6 @@
     },
     "welcome": "Bienvenue"
   },
-  "mandateDocDeleted": "Document supprimé.",
-  "mandateDocUploaded": "Document téléversé.",
-  "mandateRevoked": "Mandat révoqué.",
-  "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement.",
   "settings": {
     "mollie": {
       "completeOnboarding": "Compléter mon dossier",

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
 import { useAuthStore } from '@/stores/authStore';
-import { ROUTES } from '@/lib/routes';
+import { ROUTES, getHomePath } from '@/lib/routes';
 import { useRouter } from 'next/navigation';
 import { AuthCard } from '@/components/auth/AuthCard';
 
@@ -20,7 +20,8 @@ export function VerifyTokenScreen({ token }: VerifyTokenScreenProps) {
   const { status, error } = useMagicLinkVerify(token, () => {
     const user = useAuthStore.getState().user;
     const role = user?.role ?? 'DONOR';
-    router.replace(`/${locale}/dashboard/${role.toLowerCase()}`);
+    // Use the canonical role→home mapping so CURATOR lands on /admin, not /dashboard/curator (404).
+    router.replace(getHomePath(locale, role));
   });
 
   return (
