@@ -7,11 +7,13 @@ import io.mockk.verify
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.entity.User
+import org.commonlink.entity.UserRole
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.util.Optional
@@ -26,10 +28,29 @@ class VerificationServiceTest {
     private val documentRepo: AssociationDocumentRepository = mockk()
     private val registryCheckRepo: AssociationRegistryCheckRepository = mockk(relaxed = true)
     private val emailService: EmailService = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk()
 
-    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService)
+    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository)
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000042")
+    private val userId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+
+    private fun mockCurator(email: String): User {
+        val curator: User = mockk()
+        every { curator.email } returns email
+        return curator
+    }
+
+    private fun mockUnverifiedProfile(): AssociationProfile {
+        val profile: AssociationProfile = mockk(relaxed = true)
+        every { profile.id } returns associationId
+        every { profile.name } returns "Association Test"
+        every { profile.verificationStatus } returns VerificationStatus.UNVERIFIED
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+        every { documentRepo.existsByAssociationIdAndDocType(any(), any()) } returns true
+        return profile
+    }
 
     private fun mockPendingProfile(contactEmail: String? = "contact@assoc.fr", userEmail: String = "user@assoc.fr"): AssociationProfile {
         val user: User = mockk(relaxed = true)
@@ -46,6 +67,40 @@ class VerificationServiceTest {
         every { associationRepo.save(profile) } returns profile
 
         return profile
+    }
+
+    // ─── submitVerification ──────────────────────────────────────────────────
+
+    @Test
+    fun `submitVerification notifies all CURATOR users by email`() {
+        mockUnverifiedProfile()
+        val curator1 = mockCurator("curator1@commonlink.org")
+        val curator2 = mockCurator("curator2@commonlink.org")
+        every { userRepository.findAllByRole(UserRole.CURATOR) } returns listOf(curator1, curator2)
+
+        service.submitVerification(userId)
+
+        verify(exactly = 1) { emailService.sendVerificationSubmittedToAdmin("Association Test", "curator1@commonlink.org") }
+        verify(exactly = 1) { emailService.sendVerificationSubmittedToAdmin("Association Test", "curator2@commonlink.org") }
+    }
+
+    @Test
+    fun `submitVerification does not throw when email service fails for a curator`() {
+        mockUnverifiedProfile()
+        every { userRepository.findAllByRole(UserRole.CURATOR) } returns listOf(mockCurator("curator@commonlink.org"))
+        every { emailService.sendVerificationSubmittedToAdmin(any(), any()) } throws RuntimeException("SMTP unavailable")
+
+        service.submitVerification(userId)
+    }
+
+    @Test
+    fun `submitVerification succeeds silently when no CURATOR users exist`() {
+        mockUnverifiedProfile()
+        every { userRepository.findAllByRole(UserRole.CURATOR) } returns emptyList()
+
+        service.submitVerification(userId)
+
+        verify(exactly = 0) { emailService.sendVerificationSubmittedToAdmin(any(), any()) }
     }
 
     // ─── adminApprove ────────────────────────────────────────────────────────

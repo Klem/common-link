@@ -28,8 +28,8 @@ class EmailServiceStub : EmailService {
     }
 
     /** Logs the verification submission notification instead of sending an email. */
-    override fun sendVerificationSubmittedToAdmin(associationName: String) {
-        logger.info("Verification dossier submitted by association: $associationName")
+    override fun sendVerificationSubmittedToAdmin(associationName: String, recipientEmail: String) {
+        logger.info("Verification dossier submitted by '$associationName' — would notify CURATOR at $recipientEmail")
     }
 
     /** Logs the approval notification instead of sending an email. */

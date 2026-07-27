@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service
 class SmtpEmailService(
     private val mailSender: JavaMailSender,
     @Value("\${app.mail.from}") private val from: String,
-    @Value("\${app.mail.verification-review-to}") private val verificationReviewTo: String,
 ) : EmailService {
 
     override fun sendEmailVerification(email: String, verificationUrl: String) {
@@ -33,11 +32,11 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
-    override fun sendVerificationSubmittedToAdmin(associationName: String) {
+    override fun sendVerificationSubmittedToAdmin(associationName: String, recipientEmail: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
         helper.setFrom(from)
-        helper.setTo(verificationReviewTo)
+        helper.setTo(recipientEmail)
         helper.setSubject("Nouveau dossier de vérification — $associationName")
         helper.setText(
             """

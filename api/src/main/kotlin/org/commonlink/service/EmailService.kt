@@ -27,12 +27,12 @@ interface EmailService {
     fun sendEmailVerification(email: String, verificationUrl: String)
 
     /**
-     * Notifies the review team that an association has submitted its verification dossier.
-     * The recipient is configured via `app.mail.verification-review-to`.
+     * Notifies a curator that an association has submitted its verification dossier.
      *
      * @param associationName Official name of the association that submitted.
+     * @param recipientEmail  Email address of the curator to notify.
      */
-    fun sendVerificationSubmittedToAdmin(associationName: String)
+    fun sendVerificationSubmittedToAdmin(associationName: String, recipientEmail: String)
 
     /**
      * Notifies the association that its KYC dossier has been approved.

@@ -12,6 +12,7 @@ import org.commonlink.entity.AssociationDocumentType.VERIF_RNA_RECEIPT
 import org.commonlink.entity.AssociationDocumentType.VERIF_REPRESENTATIVE_ID
 import org.commonlink.entity.AssociationDocumentType.VERIF_STATUTS
 import org.commonlink.entity.VerificationStatus
+import org.commonlink.entity.UserRole
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
@@ -19,6 +20,7 @@ import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -60,6 +62,7 @@ class VerificationService(
     private val documentRepository: AssociationDocumentRepository,
     private val registryCheckRepository: AssociationRegistryCheckRepository,
     private val emailService: EmailService,
+    private val userRepository: UserRepository,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -180,7 +183,17 @@ class VerificationService(
         profile.verificationSubmittedAt = Instant.now()
         associationProfileRepository.save(profile)
 
-        emailService.sendVerificationSubmittedToAdmin(profile.name)
+        val curators = userRepository.findAllByRole(UserRole.CURATOR)
+        if (curators.isEmpty()) {
+            logger.warn("No CURATOR users found — skipping submission notification for association {}", profile.id)
+        }
+        curators.forEach { curator ->
+            try {
+                emailService.sendVerificationSubmittedToAdmin(profile.name, curator.email)
+            } catch (e: Exception) {
+                logger.error("Failed to notify CURATOR {} of verification submission for association {}", curator.email, profile.id, e)
+            }
+        }
         logger.info("Verification submitted for association {} — status → PENDING", profile.id)
     }
 

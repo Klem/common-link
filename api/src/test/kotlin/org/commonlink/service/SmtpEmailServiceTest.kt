@@ -19,7 +19,7 @@ class SmtpEmailServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = SmtpEmailService(mailSender, from, "review@commonlink.org")
+        service = SmtpEmailService(mailSender, from)
         every { mailSender.createMimeMessage() } returns mimeMessage
         every { mailSender.send(mimeMessage) } returns Unit
     }
