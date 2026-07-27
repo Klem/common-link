@@ -42,6 +42,18 @@ class EmailServiceStub : EmailService {
         logger.info("Verification rejected for '$associationName' — would notify $recipientEmail (reason: $reason)")
     }
 
+    override fun sendMollieOnboardingNeedsData(associationName: String, recipientEmail: String) {
+        logger.info("Mollie KYC needs-data for '$associationName' — would notify $recipientEmail")
+    }
+
+    override fun sendMollieOnboardingInReview(associationName: String, recipientEmail: String) {
+        logger.info("Mollie KYC in-review for '$associationName' — would notify $recipientEmail")
+    }
+
+    override fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String) {
+        logger.info("Mollie KYC completed for '$associationName' — would notify $recipientEmail")
+    }
+
     /** Logs the donation receipt details instead of sending an email with attachment. */
     override fun sendDonationReceipt(
         donorEmail: String,

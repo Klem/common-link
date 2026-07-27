@@ -1,8 +1,10 @@
 package org.commonlink.service
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MollieConnectConfig
 import org.commonlink.dto.MollieKycStatusDto
+import org.commonlink.event.MollieOnboardingStatusChangedEvent
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MollieConnection
 import org.commonlink.entity.MollieConnectionState
@@ -19,6 +21,7 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -50,17 +53,79 @@ private data class OrganizationResponse(
     @field:JsonProperty("id") val id: String?,
 )
 
-private data class OnboardingResponse(
-    @field:JsonProperty("status") val status: String,
-    @field:JsonProperty("canReceivePayments") val canReceivePayments: Boolean,
-    @field:JsonProperty("canReceiveSettlements") val canReceiveSettlements: Boolean,
-    @field:JsonProperty("_links") val links: OnboardingLinks? = null,
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class CapabilitiesResponse(
+    @field:JsonProperty("_embedded") val embedded: Embedded? = null,
 ) {
-    data class OnboardingLinks(@field:JsonProperty("dashboard") val dashboard: Href?)
-    data class Href(val href: String)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Embedded(val capabilities: List<Capability>? = null)
 
-    /** Deep link to the Mollie hosted onboarding wizard; null once onboarding is complete. */
-    val dashboardUrl: String? get() = links?.dashboard?.href
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Capability(
+        val name: String,
+        val status: String,
+        val statusReason: String? = null,
+        val requirements: List<Requirement>? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Requirement(
+        val id: String,
+        val status: String,
+        @field:JsonProperty("_links") val links: ReqLinks? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class ReqLinks(val dashboard: Href? = null)
+
+    data class Href(val href: String)
+}
+
+private data class OnboardingSnapshot(
+    val onboardingStatus: MollieOnboardingStatus,
+    val canReceivePayments: Boolean,
+    val canReceiveSettlements: Boolean,
+    val dashboardUrl: String?,
+)
+
+/**
+ * Maps a Capabilities API response to the 4-field snapshot used internally.
+ *
+ * Status derivation:
+ * - payments capability `status=enabled` → COMPLETED
+ * - payments capability absent → NEEDS_DATA (account not yet set up)
+ * - payments capability present + requirement currently-due/past-due or statusReason signals info needed → NEEDS_DATA
+ * - payments capability pending with no immediate action required → IN_REVIEW
+ *
+ * Dashboard URL: first currently-due/past-due requirement with a dashboard link; falls back to
+ * any requirement with a dashboard link (e.g. if none are currently-due yet).
+ */
+private fun CapabilitiesResponse.toOnboardingSnapshot(): OnboardingSnapshot {
+    val caps = embedded?.capabilities ?: emptyList()
+    val payments = caps.firstOrNull { it.name == "payments" }
+    val settlements = caps.firstOrNull { it.name == "settlements" }
+
+    val canReceivePayments = payments?.status == "enabled"
+    val canReceiveSettlements = settlements?.status == "enabled"
+
+    val onboardingStatus = when {
+        canReceivePayments -> MollieOnboardingStatus.COMPLETED
+        payments == null -> MollieOnboardingStatus.NEEDS_DATA
+        else -> {
+            val actionRequired = payments.requirements
+                ?.any { it.status == "currently-due" || it.status == "past-due" } == true
+                || payments.statusReason == "onboarding-information-needed"
+                || payments.statusReason == "requirement-past-due"
+            if (actionRequired) MollieOnboardingStatus.NEEDS_DATA else MollieOnboardingStatus.IN_REVIEW
+        }
+    }
+
+    val dashboardUrl = payments?.requirements
+        ?.filter { it.status == "currently-due" || it.status == "past-due" }
+        ?.firstNotNullOfOrNull { it.links?.dashboard?.href }
+        ?: payments?.requirements?.firstNotNullOfOrNull { it.links?.dashboard?.href }
+
+    return OnboardingSnapshot(onboardingStatus, canReceivePayments, canReceiveSettlements, dashboardUrl)
 }
 
 /**
@@ -183,6 +248,7 @@ class MollieConnectService(
     private val restTemplate: RestTemplate,
     private val tokenManager: MollieConnectTokenManager,
     private val onboardingGate: OnboardingGateService,
+    private val eventPublisher: ApplicationEventPublisher,
     @Value("\${app.frontend-url}") private val frontendUrl: String,
     @Value("\${app.mollie.connect.api-base-url}") private val mollieApiBaseUrl: String,
 ) {
@@ -277,7 +343,7 @@ class MollieConnectService(
      *     (Mollie requires postalCode + city as soon as a street is provided)
      *   - legalEntity: "fr-association" (Mollie legal-entity list) — all CommonLink associations
      *   - owner = physical contact person (email from [AssociationProfile.contactEmail] / givenName /
-     *     familyName / locale fr_FR)
+     *     familyName from [AssociationProfile.contactName] / locale fr_FR)
      *
      * Every field pre-filled here is one less field the association has to type in the Mollie
      * hosted onboarding wizard.
@@ -285,11 +351,13 @@ class MollieConnectService(
      * ⚠ Country defaults to "FR" — all CommonLink associations are French. A dedicated country
      *   field on AssociationProfile would be cleaner; tracked in .tasks/todo.md.
      * ⚠ givenName/familyName split on first space from contactName — best-effort approximation.
+     * ⚠ contactEmail and contactName must be set on the profile before calling this method; both throw [IllegalStateException] if absent.
      */
     private fun createClientLink(association: AssociationProfile, user: User): String {
         val contactEmail = association.contactEmail
             ?: throw IllegalStateException("Contact email is not set for association ${association.id}")
-        val contactName = association.contactName ?: user.displayName ?: user.email
+        val contactName = association.contactName
+            ?: throw IllegalStateException("Contact name is not set for association ${association.id}")
         val spaceIdx = contactName.indexOf(' ')
         val givenName = if (spaceIdx > 0) contactName.substring(0, spaceIdx) else contactName
         val familyName = if (spaceIdx > 0) contactName.substring(spaceIdx + 1) else contactName
@@ -365,7 +433,7 @@ class MollieConnectService(
         // Phase 2 — HTTP calls (no transaction open)
         val tokenResponse = exchangeCode(code)
         val organizationId = fetchOrganizationId(tokenResponse.accessToken)
-        val onboardingResponse = fetchOnboardingStatus(tokenResponse.accessToken)
+        val snapshot = fetchCapabilities(tokenResponse.accessToken).toOnboardingSnapshot()
 
         // Phase 3 — persist
         val existingForOrg = connectionRepo.findByMollieOrganizationId(organizationId)
@@ -391,10 +459,10 @@ class MollieConnectService(
         connection.refreshToken = tokenResponse.refreshToken
         connection.expiresAt = Instant.now().plusSeconds(tokenResponse.expiresIn.toLong())
         connection.state = MollieConnectionState.ACTIVE
-        connection.onboardingStatus = MollieOnboardingStatus.fromMollie(onboardingResponse.status)
-        connection.canReceivePayments = onboardingResponse.canReceivePayments
-        connection.canReceiveSettlements = onboardingResponse.canReceiveSettlements
-        connection.onboardingDashboardUrl = onboardingResponse.dashboardUrl
+        connection.onboardingStatus = snapshot.onboardingStatus
+        connection.canReceivePayments = snapshot.canReceivePayments
+        connection.canReceiveSettlements = snapshot.canReceiveSettlements
+        connection.onboardingDashboardUrl = snapshot.dashboardUrl
         connection.mollieOrganizationId = organizationId
         connection.lastSyncedAt = Instant.now()
         connectionRepo.save(connection)
@@ -402,7 +470,7 @@ class MollieConnectService(
         stateRepo.deleteById(state)
         logger.info(
             "Mollie Connect callback successful for association {}, status={}",
-            associationId, onboardingResponse.status,
+            associationId, snapshot.onboardingStatus,
         )
     }
 
@@ -423,9 +491,10 @@ class MollieConnectService(
 
     /**
      * Returns the Mollie KYC status for the given user's association. If a non-COMPLETED
-     * connection is stale (last sync > 5 minutes ago), triggers a throttled re-fetch from Mollie
-     * before returning — this is how in-review → completed transitions surface without webhooks
-     * (Mollie has no onboarding webhook; see sprint decision 6).
+     * connection is stale (last sync > 5 minutes ago), triggers a throttled re-fetch via the
+     * Mollie Capabilities API (`GET /v2/capabilities`) before returning — this is how transitions
+     * surface without webhooks (Mollie has no onboarding webhook). On a status change, a
+     * [MollieOnboardingStatusChangedEvent] is published for async email delivery.
      *
      * @param userId UUID of the authenticating user.
      */
@@ -511,21 +580,31 @@ class MollieConnectService(
         if (connection.lastSyncedAt?.isAfter(fiveMinutesAgo) == true) return null
 
         val associationId = connection.association.id!!
+        val previousStatus = connection.onboardingStatus
         return try {
             val token = tokenManager.getValidAccessToken(associationId)
-            val onboarding = fetchOnboardingStatus(token)
+            val snapshot = fetchCapabilities(token).toOnboardingSnapshot()
             // Re-fetch to avoid overwriting token updates that tokenManager committed above
             val updated = connectionRepo.findByAssociationId(associationId) ?: return null
-            updated.onboardingStatus = MollieOnboardingStatus.fromMollie(onboarding.status)
-            updated.canReceivePayments = onboarding.canReceivePayments
-            updated.canReceiveSettlements = onboarding.canReceiveSettlements
-            updated.onboardingDashboardUrl = onboarding.dashboardUrl
+            updated.onboardingStatus = snapshot.onboardingStatus
+            updated.canReceivePayments = snapshot.canReceivePayments
+            updated.canReceiveSettlements = snapshot.canReceiveSettlements
+            updated.onboardingDashboardUrl = snapshot.dashboardUrl
             updated.lastSyncedAt = Instant.now()
             connectionRepo.save(updated)
             logger.info(
                 "Refreshed Mollie onboarding status for association {}: {}",
-                associationId, onboarding.status,
+                associationId, updated.onboardingStatus,
             )
+            if (updated.onboardingStatus != previousStatus) {
+                eventPublisher.publishEvent(
+                    MollieOnboardingStatusChangedEvent(
+                        associationId = associationId,
+                        previousStatus = previousStatus,
+                        newStatus = updated.onboardingStatus,
+                    )
+                )
+            }
             updated
         } catch (ex: Exception) {
             logger.warn(
@@ -568,15 +647,15 @@ class MollieConnectService(
             ?: throw IllegalStateException("Mollie organizations/me returned no organization id")
     }
 
-    private fun fetchOnboardingStatus(accessToken: String): OnboardingResponse {
+    private fun fetchCapabilities(accessToken: String): CapabilitiesResponse {
         val headers = HttpHeaders().apply { setBearerAuth(accessToken) }
         val response = restTemplate.exchange(
-            "${mollieApiBaseUrl}/v2/onboarding/me",
+            "${mollieApiBaseUrl}/v2/capabilities",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
-            OnboardingResponse::class.java,
+            CapabilitiesResponse::class.java,
         )
         return response.body
-            ?: throw IllegalStateException("Mollie onboarding/me returned empty response")
+            ?: throw IllegalStateException("Mollie capabilities returned empty response")
     }
 }

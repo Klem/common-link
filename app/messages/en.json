@@ -308,6 +308,8 @@
     "mollieConnected": "Mollie account connected.",
     "mollieError": "Mollie connection failed. Please try again.",
     "mollieErrorFetch": "Failed to get Mollie authentication URL. Please try again.",
+    "mollieErrorMissingContactEmail": "Please fill in your contact email in the Infos tab before connecting Mollie.",
+    "mollieErrorMissingContactName": "Please fill in your contact name in the Infos tab before connecting Mollie.",
     "moneriumConnected": "Wallet connected successfully.",
     "moneriumError": "Wallet connection failed. Please try again.",
     "moneriumErrorFetch": "Failed to get authentication URL. Please try again.",
@@ -533,6 +535,10 @@
         },
         "signerName": "Authorised signer name",
         "signerNamePlaceholder": "Jean MARTIN",
+        "readOnly": {
+          "mollieCompleted": "Locked — submitted to Mollie during KYC",
+          "verified": "Locked after verification"
+        },
         "signerRole": "Signer role / title",
         "signerRolePlaceholder": "Treasurer",
         "siren": "SIREN",
@@ -1242,6 +1248,7 @@
         "connect": "Connect",
         "description": "You will be redirected to Mollie to authorize the connection.",
         "missingContactEmail": "A contact email is required to start the Mollie onboarding. Please fill in the Contact Email field in the Infos tab and save first.",
+        "missingContactName": "A contact name is required to start the Mollie onboarding. Please fill in the Contact Name field in the Infos tab and save first.",
         "title": "Connect Mollie",
         "waiting": "Waiting for authorization…"
       },

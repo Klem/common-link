@@ -24,7 +24,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
+import org.commonlink.event.MollieOnboardingStatusChangedEvent
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.event.ApplicationEvents
+import org.springframework.test.context.event.RecordApplicationEvents
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
@@ -59,6 +62,7 @@ import java.util.UUID
  */
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
+@RecordApplicationEvents
 @ActiveProfiles("test")
 @TestPropertySource(properties = [
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
@@ -237,7 +241,7 @@ class MollieConnectServiceTest {
         mockServer.expect(requestTo("https://api.mollie.com/v2/organizations/me"))
             .andExpect(method(HttpMethod.GET))
             .andRespond(withSuccess("""{"id":"org_taken"}""", MediaType.APPLICATION_JSON))
-        stubOnboardingStatus()
+        stubCapabilities()
 
         val ex = assertThrows<IllegalStateException> {
             mollieConnectService.handleCallback("code123", stateId)
@@ -258,7 +262,7 @@ class MollieConnectServiceTest {
         mockServer.expect(requestTo("https://api.mollie.com/v2/organizations/me"))
             .andExpect(method(HttpMethod.GET))
             .andRespond(withSuccess("""{"id":"org_xyz"}""", MediaType.APPLICATION_JSON))
-        stubOnboardingStatus()
+        stubCapabilities()
 
         mollieConnectService.handleCallback("code123", stateId)
 
@@ -266,7 +270,7 @@ class MollieConnectServiceTest {
         assertNotNull(conn)
         assertEquals(MollieConnectionState.ACTIVE, conn!!.state)
         assertEquals(MollieOnboardingStatus.IN_REVIEW, conn.onboardingStatus)
-        assertEquals("https://my.mollie.com/dashboard/org_test/onboarding", conn.onboardingDashboardUrl)
+        assertNull(conn.onboardingDashboardUrl)
         assertEquals("org_xyz", conn.mollieOrganizationId)
         assertFalse(mollieOAuthStateRepository.existsById(stateId))
     }
@@ -285,7 +289,7 @@ class MollieConnectServiceTest {
     }
 
     @Test
-    fun `getConnectionStatus - re-fetches onboarding when sync is stale and returns updated status`() {
+    fun `getConnectionStatus - re-fetches capabilities when sync is stale and returns updated status`() {
         mollieConnectionRepository.save(MollieConnection(
             association = association,
             accessToken = "valid_token",
@@ -295,13 +299,8 @@ class MollieConnectServiceTest {
             lastSyncedAt = Instant.now().minusSeconds(600),  // 10 min ago → stale
         ))
 
-        // Only onboarding is fetched; token is fresh so no oauth2/tokens call
-        mockServer.expect(requestTo("https://api.mollie.com/v2/onboarding/me"))
-            .andExpect(method(HttpMethod.GET))
-            .andRespond(withSuccess(
-                """{"status":"completed","canReceivePayments":true,"canReceiveSettlements":true}""",
-                MediaType.APPLICATION_JSON,
-            ))
+        // Token is fresh; only capabilities is fetched
+        stubCapabilities(paymentsStatus = "enabled", settlementsStatus = "enabled")
 
         val dto = mollieConnectService.getConnectionStatus(userId)
 
@@ -321,15 +320,11 @@ class MollieConnectServiceTest {
             lastSyncedAt = Instant.now().minusSeconds(600),  // stale → re-fetch
         ))
 
-        mockServer.expect(requestTo("https://api.mollie.com/v2/onboarding/me"))
-            .andExpect(method(HttpMethod.GET))
-            .andRespond(withSuccess(
-                """
-                {"status":"needs-data","canReceivePayments":false,"canReceiveSettlements":false,
-                 "_links":{"dashboard":{"href":"https://my.mollie.com/dashboard/org_test/onboarding","type":"text/html"}}}
-                """.trimIndent(),
-                MediaType.APPLICATION_JSON,
-            ))
+        stubCapabilities(
+            paymentsStatus = "pending",
+            statusReason = "onboarding-information-needed",
+            dashboardHref = "https://my.mollie.com/dashboard/org_test/onboarding",
+        )
 
         val dto = mollieConnectService.getConnectionStatus(userId)
 
@@ -456,15 +451,76 @@ class MollieConnectServiceTest {
             ))
     }
 
-    private fun stubOnboardingStatus() {
-        mockServer.expect(requestTo("https://api.mollie.com/v2/onboarding/me"))
+    /**
+     * Stubs GET /v2/capabilities. Defaults to IN_REVIEW (pending, no requirements currently-due).
+     * Pass paymentsStatus="enabled" for COMPLETED, or statusReason + dashboardHref for NEEDS_DATA.
+     */
+    private fun stubCapabilities(
+        paymentsStatus: String = "pending",
+        settlementsStatus: String = "pending",
+        statusReason: String? = null,
+        dashboardHref: String? = null,
+    ) {
+        val reasonJson = if (statusReason != null) """"statusReason":"$statusReason",""" else ""
+        val reqBody = if (dashboardHref != null)
+            """[{"id":"needs-data","status":"currently-due","_links":{"dashboard":{"href":"$dashboardHref","type":"text/html"}}}]"""
+        else "[]"
+        mockServer.expect(requestTo("https://api.mollie.com/v2/capabilities"))
             .andExpect(method(HttpMethod.GET))
             .andRespond(withSuccess(
-                """
-                {"status":"in-review","canReceivePayments":false,"canReceiveSettlements":false,
-                 "_links":{"dashboard":{"href":"https://my.mollie.com/dashboard/org_test/onboarding","type":"text/html"}}}
-                """.trimIndent(),
+                """{"count":2,"_embedded":{"capabilities":[
+                  {"name":"payments","status":"$paymentsStatus",${reasonJson}"requirements":$reqBody},
+                  {"name":"settlements","status":"$settlementsStatus","requirements":[]}
+                ]}}""",
                 MediaType.APPLICATION_JSON,
             ))
+    }
+
+    // ── Status transition detection ───────────────────────────────────────────
+
+    @Test
+    fun `getConnectionStatus - publishes event exactly once on status transition`(events: ApplicationEvents) {
+        mollieConnectionRepository.save(MollieConnection(
+            association = association,
+            accessToken = "valid_token",
+            refreshToken = "ref",
+            expiresAt = Instant.now().plusSeconds(3600),
+            onboardingStatus = MollieOnboardingStatus.IN_REVIEW,
+            lastSyncedAt = Instant.now().minusSeconds(600),
+        ))
+
+        // Mollie now says information is required → transition IN_REVIEW → NEEDS_DATA
+        stubCapabilities(
+            paymentsStatus = "pending",
+            statusReason = "onboarding-information-needed",
+            dashboardHref = "https://my.mollie.com/dashboard/org_test/onboarding",
+        )
+
+        mollieConnectService.getConnectionStatus(userId)
+
+        val emitted = events.stream(MollieOnboardingStatusChangedEvent::class.java).toList()
+        assertEquals(1, emitted.size)
+        assertEquals(MollieOnboardingStatus.IN_REVIEW, emitted[0].previousStatus)
+        assertEquals(MollieOnboardingStatus.NEEDS_DATA, emitted[0].newStatus)
+        assertEquals(associationId, emitted[0].associationId)
+    }
+
+    @Test
+    fun `getConnectionStatus - publishes no event when status is unchanged`(events: ApplicationEvents) {
+        mollieConnectionRepository.save(MollieConnection(
+            association = association,
+            accessToken = "valid_token",
+            refreshToken = "ref",
+            expiresAt = Instant.now().plusSeconds(3600),
+            onboardingStatus = MollieOnboardingStatus.IN_REVIEW,
+            lastSyncedAt = Instant.now().minusSeconds(600),
+        ))
+
+        // Mollie still returns IN_REVIEW (pending, no requirements currently-due)
+        stubCapabilities(paymentsStatus = "pending")
+
+        mollieConnectService.getConnectionStatus(userId)
+
+        assertEquals(0, events.stream(MollieOnboardingStatusChangedEvent::class.java).count())
     }
 }

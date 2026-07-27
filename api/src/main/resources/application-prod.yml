@@ -33,7 +33,7 @@ spring:
             enable: true
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -77,21 +77,21 @@ app:
   recherche-entreprises:
     base-url: ${RECHERCHE_ENTREPRISES_BASE_URL:https://recherche-entreprises.api.gouv.fr}
   vop:
-    demo-mode: true
+    demo-mode: false
     api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}
     api-token: ${VOP_API_TOKEN:}
   monerium:
-    client-id: ${MONERIUM_CLIENT_ID:}
-    base-url: ${MONERIUM_BASE_URL:}
-    redirect-uri: ${MONERIUM_REDIRECT_URI:}
-    skip-kyc: true
-    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
+    client-id: ${MONERIUM_CLIENT_ID}
+    base-url: ${MONERIUM_BASE_URL}
+    redirect-uri: ${MONERIUM_REDIRECT_URI}
+    skip-kyc: false
+    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY}
   mollie:
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID:}
-      client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET:}
-      advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN:}
-      redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI:}
+      client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}
+      advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN}
+      redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI}
       api-base-url: ${MOLLIE_CONNECT_API_BASE_URL:https://api.mollie.com}
       scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
       mock: false

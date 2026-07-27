@@ -69,8 +69,8 @@ class MollieConnectController(
      * Returns the Mollie KYC connection status for the authenticated association.
      *
      * If a non-COMPLETED connection is stale (last sync > 5 minutes), the backend
-     * re-fetches `GET /v2/onboarding/me` from Mollie before responding — this is how
-     * `in-review` → `completed` transitions surface without webhooks (Mollie has none).
+     * re-fetches `GET /v2/capabilities` from Mollie before responding — this is how
+     * transitions surface without webhooks (Mollie has none for KYC).
      *
      * @param principal Authenticated user — must be an association profile.
      * @return [MollieKycStatusDto] with connection and onboarding details.

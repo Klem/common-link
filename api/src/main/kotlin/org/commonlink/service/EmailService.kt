@@ -54,6 +54,30 @@ interface EmailService {
     fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String)
 
     /**
+     * Notifies the association that Mollie requires additional information to continue KYC.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     */
+    fun sendMollieOnboardingNeedsData(associationName: String, recipientEmail: String)
+
+    /**
+     * Notifies the association that its Mollie KYC dossier is under review.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     */
+    fun sendMollieOnboardingInReview(associationName: String, recipientEmail: String)
+
+    /**
+     * Notifies the association that its Mollie KYC is complete and payments are enabled.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     */
+    fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String)
+
+    /**
      * Sends the Cerfa 2041-RD fiscal receipt PDF to the donor after on-chain confirmation.
      *
      * @param donorEmail      Donor's email address.

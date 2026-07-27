@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -44,6 +45,33 @@ class OnboardingGateService(
         if (activeMandate == null) {
             throw ConflictException("A signed fiscal mandate is required before connecting a bank account")
         }
+    }
+
+    /**
+     * Returns true if the association's Mollie Connect account can receive payments.
+     * Mirrors the predicate used by [requireBankReady] without throwing — for use in
+     * read-path guards where a boolean check is more appropriate than a thrown exception.
+     */
+    @Transactional(readOnly = true)
+    fun isBankReady(userId: UUID): Boolean {
+        val associationId = resolveAssociationId(userId)
+        val connection = mollieConnectionRepository.findByAssociationId(associationId)
+        return connection != null && connection.canReceivePayments
+    }
+
+    /**
+     * Returns true if Mollie KYC is fully completed for this association.
+     *
+     * Used to lock contact-identity fields ([org.commonlink.entity.AssociationProfile.contactName]
+     * and [org.commonlink.entity.AssociationProfile.contactEmail]) that were submitted to Mollie
+     * during client-link creation. Changing them after KYC completion would create inconsistency
+     * with Mollie's records.
+     */
+    @Transactional(readOnly = true)
+    fun isMollieKycCompleted(userId: UUID): Boolean {
+        val associationId = resolveAssociationId(userId)
+        val connection = mollieConnectionRepository.findByAssociationId(associationId)
+        return connection?.onboardingStatus == MollieOnboardingStatus.COMPLETED
     }
 
     /**

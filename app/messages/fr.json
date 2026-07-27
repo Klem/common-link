@@ -308,6 +308,8 @@
     "mollieConnected": "Compte Mollie connecté.",
     "mollieError": "Connexion Mollie échouée. Veuillez réessayer.",
     "mollieErrorFetch": "Impossible d'obtenir l'URL Mollie. Veuillez réessayer.",
+    "mollieErrorMissingContactEmail": "Renseignez l'email de contact dans l'onglet Informations avant de connecter Mollie.",
+    "mollieErrorMissingContactName": "Renseignez le nom du contact dans l'onglet Informations avant de connecter Mollie.",
     "moneriumConnected": "Portefeuille connecté avec succès.",
     "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
     "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
@@ -533,6 +535,10 @@
         },
         "signerName": "Nom du signataire habilité",
         "signerNamePlaceholder": "Jean MARTIN",
+        "readOnly": {
+          "mollieCompleted": "Verrouillé — transmis à Mollie lors du KYC",
+          "verified": "Verrouillé après vérification"
+        },
         "signerRole": "Fonction du signataire",
         "signerRolePlaceholder": "Trésorier",
         "siren": "SIREN",
@@ -1242,6 +1248,7 @@
         "connect": "Connecter",
         "description": "Vous allez être redirigé vers Mollie pour autoriser la connexion.",
         "missingContactEmail": "Un email de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Email de contact dans l'onglet Informations et enregistrer.",
+        "missingContactName": "Un nom de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Nom du contact dans l'onglet Informations et enregistrer.",
         "title": "Connecter Mollie",
         "waiting": "En attente d'autorisation…"
       },

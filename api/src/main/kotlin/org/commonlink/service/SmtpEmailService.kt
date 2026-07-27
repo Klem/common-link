@@ -104,6 +104,60 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendMollieOnboardingNeedsData(associationName: String, recipientEmail: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Des informations sont requises pour votre compte Mollie — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Mollie a besoin d'informations complémentaires pour finaliser la vérification du compte de l'association <strong>$associationName</strong>.</p>
+            <p>Connectez-vous à votre espace CommonLink, puis accédez à l'onglet <strong>Compte bancaire</strong> et cliquez sur le bouton <em>Compléter mon dossier</em> pour accéder au tableau de bord Mollie et soumettre les documents requis.</p>
+            <p>Cordialement,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
+    override fun sendMollieOnboardingInReview(associationName: String, recipientEmail: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Votre dossier Mollie est en cours d'examen — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Bonne nouvelle ! Le dossier de vérification Mollie de l'association <strong>$associationName</strong> a bien été soumis et est <strong>en cours d'examen</strong> par les équipes Mollie.</p>
+            <p>Ce processus prend généralement quelques jours ouvrés. Vous serez notifié dès que la vérification sera finalisée.</p>
+            <p>Cordialement,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
+    override fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Votre compte Mollie est activé — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Félicitations ! La vérification KYC Mollie de l'association <strong>$associationName</strong> est <strong>terminée</strong> et votre compte est désormais activé pour recevoir des paiements.</p>
+            <p>Vous pouvez dès à présent publier vos campagnes de dons et recevoir des contributions certifiées sur CommonLink.</p>
+            <p>Merci pour votre confiance,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendDonationReceipt(
         donorEmail: String,
         donorName: String,

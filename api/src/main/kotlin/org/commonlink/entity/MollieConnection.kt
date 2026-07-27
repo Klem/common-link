@@ -55,7 +55,7 @@ class MollieConnection(
     var state: MollieConnectionState = MollieConnectionState.ACTIVE,
 
     /**
-     * KYC onboarding status as reported by Mollie's GET /v2/onboarding/me.
+     * KYC onboarding status derived from Mollie's GET /v2/capabilities.
      * Refreshed throttled on status reads when not yet COMPLETED.
      */
     @Enumerated(EnumType.STRING)
@@ -82,7 +82,7 @@ class MollieConnection(
     var lastSyncedAt: Instant? = null,
 
     /**
-     * Deep link to the Mollie hosted onboarding wizard (_links.dashboard of GET /v2/onboarding/me).
+     * Deep link to the Mollie hosted onboarding wizard (from requirements[].links.dashboard via GET /v2/capabilities).
      * Mollie only returns it while onboarding is incomplete; synced alongside [onboardingStatus].
      * The frontend opens it in a new tab when the status is NEEDS_DATA.
      */

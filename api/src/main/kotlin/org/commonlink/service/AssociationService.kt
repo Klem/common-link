@@ -5,6 +5,7 @@ import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.dto.toDto
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.VerificationStatus
+import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import java.time.Instant
 import org.commonlink.exception.UserNotFoundException
@@ -77,6 +78,23 @@ class AssociationService(
     fun updateProfile(userId: UUID, req: UpdateAssociationProfileRequest): AssociationProfileDto {
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        // SIREN and creation year are immutable once the association is VERIFIED (legal identifiers).
+        // Guard triggers only when a *different* value is submitted — resending the stored value is a no-op.
+        if (profile.verificationStatus == VerificationStatus.VERIFIED &&
+            ((req.siren != null && req.siren != profile.siren) ||
+             (req.creationYear != null && req.creationYear != profile.creationYear))) {
+            throw ConflictException("SIREN and creation year cannot be modified once the association is verified")
+        }
+        // Contact name and email are immutable once Mollie KYC is COMPLETED — they were submitted
+        // to Mollie during client-link creation and changing them after completion would create inconsistency.
+        // Guard triggers only when a *different* value is submitted — resending the stored value is a no-op.
+        if (onboardingGate.isMollieKycCompleted(userId) &&
+            ((req.contactName != null && req.contactName != profile.contactName) ||
+             (req.contactEmail != null && req.contactEmail != profile.contactEmail))) {
+            throw ConflictException("Contact name and email cannot be modified once Mollie is connected")
+        }
+
         req.contactName?.let { profile.contactName = it }
         req.city?.let { profile.city = it }
         req.postalCode?.let { profile.postalCode = it }

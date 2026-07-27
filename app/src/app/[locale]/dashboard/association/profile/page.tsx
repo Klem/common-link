@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
 import { useMoneriumStatus } from '@/hooks/monerium/useMoneriumStatus';
 import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
@@ -26,6 +27,10 @@ import { useMandate } from '@/hooks/dashboard/useMandate';
 const CURRENT_YEAR = new Date().getFullYear();
 
 const profileSchema = z.object({
+  contactName: z
+    .string()
+    .optional()
+    .refine((v) => !v || v.length >= 2, 'dashboard.association.profile.errors.contactNameMin'),
   siren: z
     .string()
     .optional()
@@ -71,6 +76,7 @@ export default function AssociationProfilePage() {
   const tM = useTranslations('settings');
   const user = useAuthStore((s) => s.user);
   const { profile, isLoading, updateProfile, refreshProfile } = useAssociationProfile();
+  const { addToast } = useToastStore();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
   const [verifStatus, setVerifStatus] = useState<string | null>(null);
@@ -150,6 +156,7 @@ export default function AssociationProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     values: {
+      contactName: profile?.contactName ?? '',
       siren: profile?.siren ?? '',
       creationYear: profile?.creationYear ?? undefined,
       contactEmail: profile?.contactEmail ?? '',
@@ -163,6 +170,7 @@ export default function AssociationProfilePage() {
 
   const onSubmit = handleSubmit(async (data) => {
     await updateProfile({
+      contactName: data.contactName || undefined,
       siren: data.siren || undefined,
       creationYear: data.creationYear,
       contactEmail: data.contactEmail || undefined,
@@ -295,8 +303,12 @@ export default function AssociationProfilePage() {
                         type="text"
                         className="fi"
                         placeholder="123456789"
+                        disabled={verifDone}
                         {...register('siren')}
                       />
+                      {verifDone && (
+                        <p className="fhint">{t('association.profile.readOnly.verified')}</p>
+                      )}
                       {errors.siren && (
                         <p className="fhint error">{t(errors.siren.message as Parameters<typeof t>[0])}</p>
                       )}
@@ -319,30 +331,61 @@ export default function AssociationProfilePage() {
                         className="fi"
                         min={1800}
                         max={CURRENT_YEAR}
+                        disabled={verifDone}
                         {...register('creationYear', { valueAsNumber: true })}
                       />
+                      {verifDone && (
+                        <p className="fhint">{t('association.profile.readOnly.verified')}</p>
+                      )}
                       {errors.creationYear && (
                         <p className="fhint error">{t(errors.creationYear.message as Parameters<typeof t>[0])}</p>
                       )}
                     </div>
                   </div>
 
-                  {/* Ligne 3 : Email de contact | Téléphone */}
+                  {/* Ligne 3 : Nom du contact * | Email de contact * */}
                   <div className="frow">
                     <div className="fg">
+                      <label htmlFor="contactName" className="fl">
+                        {t('association.profile.contactName')}<span className="text-red-500 ml-0.5">*</span>
+                      </label>
+                      <input
+                        id="contactName"
+                        type="text"
+                        className="fi"
+                        placeholder={t('association.profile.contactNamePlaceholder')}
+                        disabled={onboardingStatus === 'COMPLETED'}
+                        {...register('contactName')}
+                      />
+                      {onboardingStatus === 'COMPLETED' && (
+                        <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
+                      )}
+                      {errors.contactName && (
+                        <p className="fhint error">{t(errors.contactName.message as Parameters<typeof t>[0])}</p>
+                      )}
+                    </div>
+                    <div className="fg">
                       <label htmlFor="contactEmail" className="fl">
-                        {t('association.profile.contactEmail')}
+                        {t('association.profile.contactEmail')}<span className="text-red-500 ml-0.5">*</span>
                       </label>
                       <input
                         id="contactEmail"
                         type="email"
                         className="fi"
+                        disabled={onboardingStatus === 'COMPLETED'}
                         {...register('contactEmail')}
                       />
+                      {onboardingStatus === 'COMPLETED' && (
+                        <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
+                      )}
                       {errors.contactEmail && (
                         <p className="fhint error">{t(errors.contactEmail.message as Parameters<typeof t>[0])}</p>
                       )}
                     </div>
+                  </div>
+
+                  {/* Ligne 4 : Téléphone */}
+                  <div className="frow">
                     <div className="fg">
                       <label htmlFor="phone" className="fl">
                         {t('association.profile.phone')}
@@ -555,7 +598,17 @@ export default function AssociationProfilePage() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setShowMollieModal(true)}
+                  onClick={() => {
+                    if (!profile?.contactEmail) {
+                      addToast('error', 'mollieErrorMissingContactEmail');
+                      return;
+                    }
+                    if (!profile?.contactName) {
+                      addToast('error', 'mollieErrorMissingContactName');
+                      return;
+                    }
+                    setShowMollieModal(true);
+                  }}
                   className="btn btn-primary btn-sm"
                 >
                   {tM('mollie.connect')}
@@ -665,6 +718,7 @@ export default function AssociationProfilePage() {
         }}
         onPopupClosed={handleMolliePopupClosed}
         contactEmail={profile?.contactEmail}
+        contactName={profile?.contactName}
       />
     </div>
   );
