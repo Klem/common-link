@@ -25,7 +25,7 @@ DO $$
     DECLARE
         -- ── UUID d'utilisateurs à EXCLURE de la purge (table users.id) ──
         -- Exemple : ARRAY['a0000000-0000-0000-0000-000000000001']::UUID[]
-        v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c']::UUID[];
+        v_keep_user_ids UUID[] := ARRAY['952192a6-376c-4087-a72f-cc4fd599cf48', 'a0000000-0000-0000-0000-000000000001']::UUID[];
 --         v_keep_user_ids UUID[] := ARRAY[]::UUID[];
 
         -- Profils dérivés des users gardés (calculés automatiquement)
@@ -121,8 +121,14 @@ DO $$
 
         -- ════════════════════════════════════════════════════════════
         -- 5b. REGISTRY CHECKS  (V36 — pas de CASCADE ; dépendance circulaire via
-        --     decision_registry_check_id sur association_profiles → nullifier d'abord)
+        --     decision_registry_check_id sur association_profiles → nullifier d'abord ;
+        --     checked_by FK → users doit aussi être nullifié avant DELETE users)
         -- ════════════════════════════════════════════════════════════
+        UPDATE association_registry_check
+        SET checked_by = NULL
+        WHERE checked_by IS NOT NULL
+          AND checked_by <> ALL(v_keep_user_ids);
+
         UPDATE association_profiles ap
         SET decision_registry_check_id = NULL
         WHERE decision_registry_check_id IS NOT NULL
