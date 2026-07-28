@@ -18,7 +18,7 @@ data class MollieKycStatusDto(
     /** Whether Mollie has authorized this merchant to receive payments, null when not connected. */
     val canReceivePayments: Boolean?,
     /**
-     * Deep link to the Mollie hosted onboarding wizard (_links.dashboard of GET /v2/onboarding/me).
+     * Deep link to the Mollie hosted onboarding wizard, sourced from the configured onboarding API.
      * Null when not connected or once onboarding is complete. The frontend opens it in a new tab
      * while the status is NEEDS_DATA.
      */

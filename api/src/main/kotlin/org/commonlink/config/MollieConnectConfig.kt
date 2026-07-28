@@ -2,6 +2,14 @@ package org.commonlink.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
+/** Which Mollie API to poll for KYC onboarding status. */
+enum class OnboardingApi {
+    /** Deprecated `GET /v2/onboarding/me` — works today, simple status + canReceivePayments. */
+    LEGACY,
+    /** Beta `GET /v2/capabilities` — requires Mollie feature-flag; 403 until enabled. */
+    CAPABILITIES,
+}
+
 /**
  * Mollie Connect OAuth2 configuration, bound from the `app.mollie.connect` prefix.
  *
@@ -23,6 +31,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *                            MUST stay false in production. When false the mock controller bean is
  *                            not registered (`@ConditionalOnProperty havingValue="true"`), so the
  *                            route returns 404. `application-prod.yml` sets it false explicitly.
+ * @param onboardingApi Which Mollie API to use for KYC status polling. Defaults to [OnboardingApi.LEGACY]
+ *                      (`GET /v2/onboarding/me`) which works today. Switch to [OnboardingApi.CAPABILITIES]
+ *                      (`GET /v2/capabilities`) once Mollie enables the feature flag for this org.
  */
 @ConfigurationProperties(prefix = "app.mollie.connect")
 data class MollieConnectConfig(
@@ -33,9 +44,11 @@ data class MollieConnectConfig(
     val advancedToken: String = "",
     val mock: Boolean = false,
     val allowFakeCompletion: Boolean = false,
+    val onboardingApi: OnboardingApi = OnboardingApi.LEGACY,
 ) {
     /** Redacts [clientSecret] and [advancedToken] (Bearer with clients.write) so they never leak via logs. */
     override fun toString(): String =
         "MollieConnectConfig(clientId=$clientId, clientSecret=***, redirectUri=$redirectUri, " +
-        "scopes=$scopes, advancedToken=***, mock=$mock, allowFakeCompletion=$allowFakeCompletion)"
+        "scopes=$scopes, advancedToken=***, mock=$mock, allowFakeCompletion=$allowFakeCompletion, " +
+        "onboardingApi=$onboardingApi)"
 }

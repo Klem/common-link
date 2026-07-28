@@ -78,6 +78,9 @@ import java.util.UUID
     // independent of the app-wide default (which is true). The enabled path lives in
     // MollieConnectForceCompleteTest.
     "app.mollie.connect.allow-fake-completion=false",
+    // All tests here stub /v2/capabilities. Pin to CAPABILITIES so the default LEGACY does
+    // not break these stubs if the production default changes.
+    "app.mollie.connect.onboarding-api=CAPABILITIES",
 ])
 @Transactional
 class MollieConnectServiceTest {

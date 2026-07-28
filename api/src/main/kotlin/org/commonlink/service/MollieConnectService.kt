@@ -3,6 +3,7 @@ package org.commonlink.service
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MollieConnectConfig
+import org.commonlink.config.OnboardingApi
 import org.commonlink.dto.MollieKycStatusDto
 import org.commonlink.event.MollieOnboardingStatusChangedEvent
 import org.commonlink.entity.AssociationProfile
@@ -78,6 +79,7 @@ private data class CapabilitiesResponse(
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class ReqLinks(val dashboard: Href? = null)
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Href(val href: String)
 }
 
@@ -126,6 +128,35 @@ private fun CapabilitiesResponse.toOnboardingSnapshot(): OnboardingSnapshot {
         ?: payments?.requirements?.firstNotNullOfOrNull { it.links?.dashboard?.href }
 
     return OnboardingSnapshot(onboardingStatus, canReceivePayments, canReceiveSettlements, dashboardUrl)
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class OnboardingMeResponse(
+    val status: String,
+    val canReceivePayments: Boolean = false,
+    val canReceiveSettlements: Boolean = false,
+    @field:JsonProperty("_links") val links: OnboardingMeLinks? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class OnboardingMeLinks(val dashboard: Href? = null)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Href(val href: String)
+}
+
+/** Maps a legacy `/v2/onboarding/me` response to the 4-field snapshot used internally. */
+private fun OnboardingMeResponse.toOnboardingSnapshot(): OnboardingSnapshot {
+    val onboardingStatus = when (status) {
+        "completed"  -> MollieOnboardingStatus.COMPLETED
+        "in-review"  -> MollieOnboardingStatus.IN_REVIEW
+        else         -> MollieOnboardingStatus.NEEDS_DATA
+    }
+    return OnboardingSnapshot(
+        onboardingStatus = onboardingStatus,
+        canReceivePayments = canReceivePayments,
+        canReceiveSettlements = canReceiveSettlements,
+        dashboardUrl = links?.dashboard?.href,
+    )
 }
 
 /**
@@ -433,7 +464,7 @@ class MollieConnectService(
         // Phase 2 — HTTP calls (no transaction open)
         val tokenResponse = exchangeCode(code)
         val organizationId = fetchOrganizationId(tokenResponse.accessToken)
-        val snapshot = fetchCapabilities(tokenResponse.accessToken).toOnboardingSnapshot()
+        val snapshot = fetchOnboardingSnapshot(tokenResponse.accessToken)
 
         // Phase 3 — persist
         val existingForOrg = connectionRepo.findByMollieOrganizationId(organizationId)
@@ -492,8 +523,8 @@ class MollieConnectService(
     /**
      * Returns the Mollie KYC status for the given user's association. If a non-COMPLETED
      * connection is stale (last sync > 5 minutes ago), triggers a throttled re-fetch via the
-     * Mollie Capabilities API (`GET /v2/capabilities`) before returning — this is how transitions
-     * surface without webhooks (Mollie has no onboarding webhook). On a status change, a
+     * configured onboarding API (see [org.commonlink.config.MollieConnectConfig.onboardingApi])
+     * before returning — this is how transitions surface without webhooks (Mollie has no onboarding webhook). On a status change, a
      * [MollieOnboardingStatusChangedEvent] is published for async email delivery.
      *
      * @param userId UUID of the authenticating user.
@@ -523,8 +554,8 @@ class MollieConnectService(
      * DEV/STAGING ONLY — simulates Mollie validating the association's KYC.
      *
      * Flips an EXISTING real connection to COMPLETED with canReceivePayments/canReceiveSettlements
-     * true, exactly as [refreshOnboardingStatusIfStale] would after Mollie returns
-     * status="completed" on GET /v2/onboarding/me. The real OAuth popup + client-link creation are
+     * true, exactly as [refreshOnboardingStatusIfStale] would after the configured onboarding API
+     * reports the KYC as validated. The real OAuth popup + client-link creation are
      * left untouched — this only fakes the final validation step Mollie has no dashboard button for.
      *
      * No runtime flag guard here: access is gated declaratively by [org.commonlink.controller.MollieConnectMockController],
@@ -583,7 +614,7 @@ class MollieConnectService(
         val previousStatus = connection.onboardingStatus
         return try {
             val token = tokenManager.getValidAccessToken(associationId)
-            val snapshot = fetchCapabilities(token).toOnboardingSnapshot()
+            val snapshot = fetchOnboardingSnapshot(token)
             // Re-fetch to avoid overwriting token updates that tokenManager committed above
             val updated = connectionRepo.findByAssociationId(associationId) ?: return null
             updated.onboardingStatus = snapshot.onboardingStatus
@@ -608,8 +639,8 @@ class MollieConnectService(
             updated
         } catch (ex: Exception) {
             logger.warn(
-                "Failed to refresh Mollie onboarding status for association {}: {}",
-                associationId, ex.message,
+                "Failed to refresh Mollie onboarding status for association {} via {} API: {}",
+                associationId, config.onboardingApi, ex.message,
             )
             null
         }
@@ -645,6 +676,23 @@ class MollieConnectService(
         )
         return response.body?.id
             ?: throw IllegalStateException("Mollie organizations/me returned no organization id")
+    }
+
+    private fun fetchOnboardingSnapshot(accessToken: String): OnboardingSnapshot = when (config.onboardingApi) {
+        OnboardingApi.LEGACY        -> fetchOnboardingMe(accessToken).toOnboardingSnapshot()
+        OnboardingApi.CAPABILITIES  -> fetchCapabilities(accessToken).toOnboardingSnapshot()
+    }
+
+    private fun fetchOnboardingMe(accessToken: String): OnboardingMeResponse {
+        val headers = HttpHeaders().apply { setBearerAuth(accessToken) }
+        val response = restTemplate.exchange(
+            "${mollieApiBaseUrl}/v2/onboarding/me",
+            HttpMethod.GET,
+            HttpEntity<Void>(headers),
+            OnboardingMeResponse::class.java,
+        )
+        return response.body
+            ?: throw IllegalStateException("Mollie onboarding/me returned empty response")
     }
 
     private fun fetchCapabilities(accessToken: String): CapabilitiesResponse {
