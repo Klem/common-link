@@ -499,6 +499,7 @@ class AuthService(
                     city = dto.ville,
                     postalCode = dto.codePostal,
                     contactName = dto.contact,
+                    contactEmail = user.email,
                     description = dto.description
                 )
             )
@@ -572,7 +573,7 @@ class AuthService(
                             identifier = assocReq.identifier,
                             city = assocReq.city,
                             postalCode = assocReq.postalCode,
-                            contactName = user.email,
+                            contactEmail = user.email,
                             description = assocReq.description
                         )
                     )

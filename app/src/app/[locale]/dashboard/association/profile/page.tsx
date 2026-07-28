@@ -293,6 +293,7 @@ export default function AssociationProfilePage() {
                     <div className="fg">
                       <label className="fl">{t('association.profile.name')}</label>
                       <input className="fi" type="text" value={profile?.name ?? ''} disabled />
+                      <p className="fhint">{t('association.profile.readOnly.permanent')}</p>
                     </div>
                     <div className="fg">
                       <label htmlFor="siren" className="fl">
@@ -320,6 +321,7 @@ export default function AssociationProfilePage() {
                     <div className="fg">
                       <label className="fl">{t('association.profile.identifier')}</label>
                       <input className="fi" type="text" value={profile?.identifier ?? ''} disabled />
+                      <p className="fhint">{t('association.profile.readOnly.permanent')}</p>
                     </div>
                     <div className="fg">
                       <label htmlFor="creationYear" className="fl">

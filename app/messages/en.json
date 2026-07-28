@@ -113,6 +113,11 @@
       "title": "Verifications"
     }
   },
+  "association": {
+    "profile": {
+      "readOnly": {}
+    }
+  },
   "auth": {
     "assoSearch": {
       "apiUnavailable": "The directory is temporarily unavailable. Please try again later.",
@@ -523,6 +528,11 @@
         "pending": "Pending verification",
         "phone": "Phone",
         "postalCode": "Postal code",
+        "readOnly": {
+          "mollieCompleted": "Locked — submitted to Mollie during KYC",
+          "permanent": "Non modifiable",
+          "verified": "Locked after verification"
+        },
         "rna": "RNA number",
         "save": "Save",
         "security": {
@@ -535,10 +545,6 @@
         },
         "signerName": "Authorised signer name",
         "signerNamePlaceholder": "Jean MARTIN",
-        "readOnly": {
-          "mollieCompleted": "Locked — submitted to Mollie during KYC",
-          "verified": "Locked after verification"
-        },
         "signerRole": "Signer role / title",
         "signerRolePlaceholder": "Treasurer",
         "siren": "SIREN",

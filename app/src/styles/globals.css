@@ -2142,6 +2142,7 @@ tbody tr:last-child td { border-bottom: none; }
 .fl { display: block; font-size: 13px; font-weight: 700; color: var(--ink-navy); margin-bottom: 6px; }
 .fl .req { color: var(--warm-coral); }
 .fi { width: 100%; padding: 12px 16px; border: 2px solid var(--mist-lavender); border-radius: var(--radius-md); font-size: 14px; font-family: 'Inter'; color: var(--ink-navy); background: var(--white); transition: border-color .2s,box-shadow .2s; }
+.fi:disabled { background: var(--soft-cream); cursor: not-allowed; opacity: 0.65; }
 .fi:focus { outline: none; border-color: var(--bright-teal); box-shadow: 0 0 0 3px rgba(78,205,196,.12); }
 .fi::placeholder { color: rgba(98,98,125,.4); }
 textarea.fi { resize: vertical; min-height: 100px; }

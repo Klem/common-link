@@ -113,6 +113,11 @@
       "title": "Vérifications"
     }
   },
+  "association": {
+    "profile": {
+      "readOnly": {}
+    }
+  },
   "auth": {
     "assoSearch": {
       "apiUnavailable": "Le répertoire est temporairement indisponible. Veuillez réessayer plus tard.",
@@ -523,6 +528,11 @@
         "pending": "En attente de vérification",
         "phone": "Téléphone",
         "postalCode": "Code postal",
+        "readOnly": {
+          "mollieCompleted": "Verrouillé — transmis à Mollie lors du KYC",
+          "permanent": "Non modifiable",
+          "verified": "Verrouillé après vérification"
+        },
         "rna": "N° RNA",
         "save": "Enregistrer",
         "security": {
@@ -535,10 +545,6 @@
         },
         "signerName": "Nom du signataire habilité",
         "signerNamePlaceholder": "Jean MARTIN",
-        "readOnly": {
-          "mollieCompleted": "Verrouillé — transmis à Mollie lors du KYC",
-          "verified": "Verrouillé après vérification"
-        },
         "signerRole": "Fonction du signataire",
         "signerRolePlaceholder": "Trésorier",
         "siren": "SIREN",
