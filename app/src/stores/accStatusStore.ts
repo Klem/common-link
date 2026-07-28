@@ -7,7 +7,7 @@ interface AccStatusState {
   total: number;
   /** True when the association's KYC dossier is verified. */
   verified: boolean;
-  /** True when a Monerium bank account is connected (required for publishing). */
+  /** True when Mollie KYC is complete and the association can receive payments (required for publishing). */
   bank: boolean;
   /** Called by the association dashboard page when both status fetches resolve. */
   setAccStatus: (done: number, total: number, verified: boolean, bank: boolean) => void;

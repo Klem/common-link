@@ -25,6 +25,7 @@ import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetSectionRepository
 import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
+import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -50,6 +51,7 @@ class CampaignService(
     private val campaignBudgetSectionRepository: CampaignBudgetSectionRepository,
     private val campaignMilestoneRepository: CampaignMilestoneRepository,
     private val associationProfileRepository: AssociationProfileRepository,
+    private val mollieConnectionRepository: MollieConnectionRepository,
     private val moneriumConnectionRepository: MoneriumConnectionRepository,
     private val budgetHasher: CampaignBudgetHasher,
     private val outbox: OnchainOutboxService,
@@ -543,13 +545,12 @@ class CampaignService(
         if (campaign.goal <= BigDecimal.ZERO) {
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
         }
-        val walletAddress = moneriumConnectionRepository.findByAssociationId(associationId)?.walletAddress
-            ?: throw UnprocessableEntityException("Association must connect Monerium before going live")
+        val canReceivePayments = mollieConnectionRepository.findByAssociationId(associationId)?.canReceivePayments == true
+        if (!canReceivePayments) {
+            throw UnprocessableEntityException("Association must complete Mollie KYC before going live")
+        }
         campaign.budgetHash = budgetHasher.hash(campaign)
-        logger.debug(
-            "Publish prepared: campaignId={}, walletAddress={}, budgetHash={}",
-            campaign.id, walletAddress, campaign.budgetHash,
-        )
+        logger.debug("Publish prepared: campaignId={}, budgetHash={}", campaign.id, campaign.budgetHash)
     }
 
     /**
@@ -562,24 +563,28 @@ class CampaignService(
             from == CampaignStatus.DRAFT && to == CampaignStatus.LIVE -> {
                 val walletAddress = moneriumConnectionRepository.findByAssociationId(
                     campaign.association.id!!
-                )!!.walletAddress!!
-                outbox.enqueue(
-                    OnchainJobAction.CREATE_CAMPAIGN,
-                    CreateCampaignPayload(
-                        campaignId     = id,
-                        association    = walletAddress,
-                        goalCents      = org.commonlink.onchain.OnchainCodec.eurToCents(campaign.goal),
-                        milestoneCount = campaign.milestones.size,
-                        budgetHashHex  = campaign.budgetHash!!,
-                    ),
-                    correlationKey = "CREATE_CAMPAIGN:$id",
-                )
-                outbox.enqueue(
-                    OnchainJobAction.PUBLISH_CAMPAIGN,
-                    CampaignIdPayload(id),
-                    correlationKey = "PUBLISH_CAMPAIGN:$id",
-                )
-                logger.info("CREATE_CAMPAIGN + PUBLISH_CAMPAIGN enqueued: campaignId={}", id)
+                )?.walletAddress
+                if (walletAddress != null) {
+                    outbox.enqueue(
+                        OnchainJobAction.CREATE_CAMPAIGN,
+                        CreateCampaignPayload(
+                            campaignId     = id,
+                            association    = walletAddress,
+                            goalCents      = org.commonlink.onchain.OnchainCodec.eurToCents(campaign.goal),
+                            milestoneCount = campaign.milestones.size,
+                            budgetHashHex  = campaign.budgetHash!!,
+                        ),
+                        correlationKey = "CREATE_CAMPAIGN:$id",
+                    )
+                    outbox.enqueue(
+                        OnchainJobAction.PUBLISH_CAMPAIGN,
+                        CampaignIdPayload(id),
+                        correlationKey = "PUBLISH_CAMPAIGN:$id",
+                    )
+                    logger.info("CREATE_CAMPAIGN + PUBLISH_CAMPAIGN enqueued: campaignId={}", id)
+                } else {
+                    logger.info("Monerium wallet not linked — skipping on-chain jobs for campaignId={}", id)
+                }
             }
             to == CampaignStatus.PAUSED ->
                 outbox.enqueue(OnchainJobAction.PAUSE_CAMPAIGN, CampaignIdPayload(id), null)

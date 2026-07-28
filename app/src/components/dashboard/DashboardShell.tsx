@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
-import { AuthProvider } from '@/types/auth';
+import { AuthProvider, UserRole } from '@/types/auth';
 import { ROUTES } from '@/lib/routes';
 import { Sidebar } from './Sidebar';
 import { SetPasswordModal } from './SetPasswordModal';
 import { SidebarToggleContext } from './SidebarContext';
+import { AssociationStatusSync } from './AssociationStatusSync';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -59,6 +60,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <SidebarToggleContext.Provider value={openSidebar}>
+      {user.role === UserRole.ASSOCIATION && <AssociationStatusSync />}
       <div className="app-shell">
         <Sidebar user={user} currentPath={pathname} isOpen={sidebarOpen} onClose={closeSidebar} />
         {sidebarOpen && (
