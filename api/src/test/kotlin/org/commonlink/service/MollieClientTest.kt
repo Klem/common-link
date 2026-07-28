@@ -177,6 +177,43 @@ class MollieClientTest {
     }
 
     @Test
+    fun `createPayment uses bearerToken override when provided`() {
+        server.expect(requestTo("https://api.mollie.com/v2/payments"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(header("Authorization", "Bearer assoc_token_xyz"))
+            .andRespond(withSuccess(createPaymentResponse("tr_assoc", "open"), MediaType.APPLICATION_JSON))
+
+        mollieClient.createPayment(
+            amount = BigDecimal("10.00"),
+            description = "Test",
+            redirectUrl = "http://r",
+            webhookUrl = "http://w",
+            metadata = emptyMap(),
+            bearerToken = "assoc_token_xyz"
+        )
+
+        server.verify()
+    }
+
+    @Test
+    fun `createPayment uses platform apiKey when bearerToken is null`() {
+        server.expect(requestTo("https://api.mollie.com/v2/payments"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(header("Authorization", "Bearer test_key"))
+            .andRespond(withSuccess(createPaymentResponse("tr_platform", "open"), MediaType.APPLICATION_JSON))
+
+        mollieClient.createPayment(
+            amount = BigDecimal("10.00"),
+            description = "Test",
+            redirectUrl = "http://r",
+            webhookUrl = "http://w",
+            metadata = emptyMap()
+        )
+
+        server.verify()
+    }
+
+    @Test
     fun `createPayment throws MolliePaymentException on 5xx`() {
         server.expect(requestTo("https://api.mollie.com/v2/payments"))
             .andRespond(withServerError())

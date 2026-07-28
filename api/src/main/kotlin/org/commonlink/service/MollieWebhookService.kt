@@ -5,7 +5,6 @@ import org.commonlink.repository.DonationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.UUID
 
 /**
  * Processes Mollie payment webhook notifications.
@@ -21,6 +20,7 @@ class MollieWebhookService(
     private val mollieClient: MollieClient,
     private val donationService: DonationService,
     private val donationRepository: DonationRepository,
+    private val mollieConnectTokenManager: MollieConnectTokenManager,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -31,14 +31,25 @@ class MollieWebhookService(
      */
     @Transactional
     fun handleWebhook(molliePaymentId: String) {
-        val payment = mollieClient.getPayment(molliePaymentId)
         val providerRef = "mollie:$molliePaymentId"
+        val pending = donationRepository.findByProviderRef(providerRef)
+        if (pending == null) {
+            logger.error("Cannot resolve association token for webhook {} — no pending donation found", molliePaymentId)
+            throw NotFoundException("No pending donation for payment $molliePaymentId")
+        }
+        val associationId = pending.campaign.association.id!!
+        val assocToken = try {
+            mollieConnectTokenManager.getValidAccessToken(associationId)
+        } catch (e: IllegalStateException) {
+            logger.error("Mollie connection BROKEN for association {} — webhook {} cannot be processed", associationId, molliePaymentId)
+            throw e
+        }
+        val payment = mollieClient.getPayment(molliePaymentId, bearerToken = assocToken)
 
         when {
             payment.status.isConfirmed -> {
                 logger.info("Mollie webhook PAID for {}", molliePaymentId)
-                val (donorProfileId, campaignId, amount) = resolveParams(providerRef, payment)
-                donationService.recordPayment(providerRef, donorProfileId, campaignId, amount)
+                donationService.recordPayment(providerRef, pending.donor.id!!, pending.campaign.id!!, pending.amount)
             }
             payment.status.isFailed -> {
                 logger.info("Mollie webhook {} for {} — no-op", payment.status, molliePaymentId)
@@ -47,28 +58,5 @@ class MollieWebhookService(
                 logger.debug("Mollie webhook {} for {} — still pending", payment.status, molliePaymentId)
             }
         }
-    }
-
-    /**
-     * Resolves donorProfileId, campaignId, and amount from the existing pending donation row,
-     * falling back to Mollie payment metadata if the row does not exist (edge case).
-     */
-    private fun resolveParams(
-        providerRef: String,
-        payment: MolliePayment,
-    ): Triple<UUID, UUID, java.math.BigDecimal> {
-        val pending = donationRepository.findByProviderRef(providerRef)
-        if (pending != null) {
-            return Triple(pending.donor.id!!, pending.campaign.id!!, pending.amount)
-        }
-
-        logger.warn("No pending donation found for {} — falling back to Mollie metadata", providerRef)
-        val donorProfileId = payment.metadata["donorProfileId"]
-            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-            ?: throw NotFoundException("donorProfileId missing from Mollie metadata for $providerRef")
-        val campaignId = payment.metadata["campaignId"]
-            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-            ?: throw NotFoundException("campaignId missing from Mollie metadata for $providerRef")
-        return Triple(donorProfileId, campaignId, payment.amount)
     }
 }

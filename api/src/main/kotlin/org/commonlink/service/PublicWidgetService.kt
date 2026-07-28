@@ -15,6 +15,7 @@ import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.MollieConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -36,6 +37,8 @@ class PublicWidgetService(
     private val mollieClient: MollieClient,
     private val mollieProperties: MollieProperties,
     private val donationService: DonationService,
+    private val mollieConnectionRepository: MollieConnectionRepository,
+    private val mollieConnectTokenManager: MollieConnectTokenManager,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -66,6 +69,9 @@ class PublicWidgetService(
      */
     fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
         val (association, campaign) = resolveWidget(widgetToken)
+
+        val assocToken = resolveMollieToken(association)
+        val assocProfileId = mollieClient.getFirstProfileId(assocToken)
 
         // Provision guest donor (idempotent by email)
         val donorProfile = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
@@ -106,6 +112,8 @@ class PublicWidgetService(
                 "widgetToken" to widgetToken,
             ),
             idempotencyKey = idempotencyKey,
+            bearerToken = assocToken,
+            profileId = assocProfileId,
         )
 
         val identity = DonorIdentitySnapshot(
@@ -149,6 +157,18 @@ class PublicWidgetService(
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    private fun resolveMollieToken(association: AssociationProfile): String {
+        val connection = mollieConnectionRepository.findByAssociationId(association.id!!)
+            ?: throw ConflictException("L'association n'a pas de connexion Mollie")
+        if (!connection.canReceivePayments)
+            throw ConflictException("L'association ne peut pas encore recevoir de paiements")
+        return try {
+            mollieConnectTokenManager.getValidAccessToken(association.id!!)
+        } catch (e: IllegalStateException) {
+            throw ConflictException("Connexion Mollie de l'association interrompue")
+        }
+    }
 
     private fun resolveWidget(widgetToken: String): Pair<AssociationProfile, Campaign> {
         val association = associationProfileRepository.findByWidgetToken(widgetToken)

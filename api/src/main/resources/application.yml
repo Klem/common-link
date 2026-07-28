@@ -64,12 +64,13 @@ app:
     base-url: ${MONERIUM_BASE_URL:https://api.monerium.dev}
     redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/public/webhooks/monerium}
     skip-kyc: true
-    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
+    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:} # also encrypt Mollie tokens
   mollie:
     api-key: ${MOLLIE_API_KEY:}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}
+    test-mode: ${MOLLIE_TEST_MODE:true}
     # api-key ci-dessus = clé de PAIEMENT, ne sert PAS au Connect (incapable d'appeler /v2/client-links)
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID}
@@ -78,6 +79,8 @@ app:
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI:}
       api-base-url: ${MOLLIE_CONNECT_API_BASE_URL:https://api.mollie.com}
       scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
+      #switch between /onboarding/me (LEGACY) and the new /capabilities (CAPABILITIES)
+      onboarding-api: LEGACY
       #Mock the entire mollie process
       mock: ${MOLLIE_CONNECT_MOCK:false}
       #Force the Onboarding / KYC to "true"

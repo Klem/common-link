@@ -18,5 +18,7 @@ data class MollieProperties(
     val apiKey: String = "",
     val apiBaseUrl: String = "https://api.mollie.com/v2",
     val redirectBaseUrl: String = "http://localhost:3000",
-    val webhookUrl: String = ""
+    val webhookUrl: String = "",
+    /** true = Mollie test mode (required when using OAuth/Connect access tokens in sandbox). */
+    val testMode: Boolean = false,
 )

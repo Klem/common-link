@@ -89,6 +89,12 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `mollie test-mode is false in prod`() {
+        // T1: base defaults test-mode true for local Connect sandbox; prod must pin false or live donations route to Mollie test mode
+        assertEquals(false, prop("app.mollie.test-mode"))
+    }
+
+    @Test
     fun `mollie api-key does not inherit the committed test key in prod`() {
         // M1: base hardcodes a Mollie test key as the default; prod must require MOLLIE_API_KEY.
         val apiKey = prop("app.mollie.api-key") as? String ?: ""

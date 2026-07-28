@@ -64,6 +64,17 @@ private data class MolliePaymentResponseJson(
     @JsonProperty("_links") val links: MollieLinksJson?
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class MollieProfileJson(val id: String)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class MollieProfilesEmbeddedJson(val profiles: List<MollieProfileJson>)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class MollieProfilesResponseJson(
+    @JsonProperty("_embedded") val embedded: MollieProfilesEmbeddedJson
+)
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 private data class MollieCreatePaymentRequestJson(
     val description: String,
@@ -71,7 +82,9 @@ private data class MollieCreatePaymentRequestJson(
     val redirectUrl: String,
     val cancelUrl: String?,
     val webhookUrl: String?,
-    val metadata: Map<String, String>
+    val metadata: Map<String, String>,
+    val profileId: String? = null,
+    val testmode: Boolean? = null,
 )
 
 // ── Client ───────────────────────────────────────────────────────────────────
@@ -95,7 +108,6 @@ class MollieClient(
 
     private val restClient: RestClient = restClientBuilder
         .baseUrl(properties.apiBaseUrl)
-        .defaultHeader("Authorization", "Bearer ${properties.apiKey}")
         .build()
 
     /**
@@ -110,6 +122,26 @@ class MollieClient(
      * @param metadata Arbitrary key-value pairs stored on the Mollie payment (e.g. campaignId, donorProfileId).
      * @param idempotencyKey If non-null, sent as the `Idempotency-Key` request header.
      */
+    fun getFirstProfileId(bearerToken: String): String {
+        log.debug("Fetching Mollie profiles for Connect account")
+        val testmodeParam = if (properties.testMode) "&testmode=true" else ""
+        try {
+            val response = restClient.get()
+                .uri("/profiles?limit=1$testmodeParam")
+                .header("Authorization", "Bearer $bearerToken")
+                .retrieve()
+                .body(MollieProfilesResponseJson::class.java)
+                ?: throw MolliePaymentException("Mollie returned empty response for GET /profiles")
+            return response.embedded.profiles.firstOrNull()?.id
+                ?: throw MolliePaymentException("No Mollie profile found for this account")
+        } catch (ex: MolliePaymentException) {
+            throw ex
+        } catch (ex: RestClientException) {
+            log.error("Mollie getProfiles failed: {}", ex.message)
+            throw MolliePaymentException("Mollie getProfiles failed: ${ex.message}", ex)
+        }
+    }
+
     fun createPayment(
         amount: BigDecimal,
         currency: String = "EUR",
@@ -118,7 +150,9 @@ class MollieClient(
         cancelUrl: String? = null,
         webhookUrl: String? = null,
         metadata: Map<String, String>,
-        idempotencyKey: String? = null
+        idempotencyKey: String? = null,
+        bearerToken: String? = null,
+        profileId: String? = null,
     ): MolliePayment {
         val amountJson = MollieAmountJson(
             currency = currency,
@@ -130,12 +164,15 @@ class MollieClient(
             redirectUrl = redirectUrl,
             cancelUrl = cancelUrl,
             webhookUrl = webhookUrl?.takeIf { it.isNotBlank() },
-            metadata = metadata
+            metadata = metadata,
+            profileId = profileId,
+            testmode = if (properties.testMode) true else null,
         )
         log.debug("Creating Mollie payment: {} {} — '{}'", amountJson.value, currency, body.description)
         try {
             val response = restClient.post()
                 .uri("/payments")
+                .header("Authorization", "Bearer ${bearerToken ?: properties.apiKey}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .run { if (idempotencyKey != null) header("Idempotency-Key", idempotencyKey) else this }
@@ -158,11 +195,13 @@ class MollieClient(
      *
      * @param paymentId Mollie payment identifier, e.g. `tr_xxx`.
      */
-    fun getPayment(paymentId: String): MolliePayment {
+    fun getPayment(paymentId: String, bearerToken: String? = null): MolliePayment {
         log.debug("Fetching Mollie payment: {}", paymentId)
+        val testmodeParam = if (properties.testMode && bearerToken != null) "?testmode=true" else ""
         try {
             val response = restClient.get()
-                .uri("/payments/{id}", paymentId)
+                .uri("/payments/{id}$testmodeParam", paymentId)
+                .header("Authorization", "Bearer ${bearerToken ?: properties.apiKey}")
                 .retrieve()
                 .body(MolliePaymentResponseJson::class.java)
                 ?: throw MolliePaymentException("Mollie returned empty response for getPayment($paymentId)")
