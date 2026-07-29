@@ -44,6 +44,7 @@ app:
   frontend-url: ${COMMON_LINK_FRONTEND_URL:http://localhost:3000}
   cookies:
     secure: ${APP_COOKIES_SECURE:true}
+    same-site: Strict
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:

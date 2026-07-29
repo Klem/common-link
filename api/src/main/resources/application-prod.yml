@@ -64,6 +64,9 @@ app:
     secret: ${COMMON_LINK_SECRET}
     access-token-expiration: PT30M
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
+  cookies:
+    secure: true
+    same-site: None
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:

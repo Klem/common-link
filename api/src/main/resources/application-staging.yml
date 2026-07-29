@@ -63,6 +63,7 @@ app:
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
   cookies:
     secure: true
+    same-site: None #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
