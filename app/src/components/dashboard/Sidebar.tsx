@@ -79,7 +79,7 @@ export function Sidebar({ user, currentPath, isOpen = false }: SidebarProps) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const logout = useAuthStore((s) => s.logout);
-  const { done, total } = useAccStatusStore();
+  const { hydrated, done, total } = useAccStatusStore();
   const campaignCount = useCampaignCountStore((s) => s.count);
 
   const isAssociation = user.role === UserRole.ASSOCIATION;
@@ -141,7 +141,7 @@ export function Sidebar({ user, currentPath, isOpen = false }: SidebarProps) {
               ? t('nav.orgType' as Parameters<typeof t>[0])
               : t('roles.donor' as Parameters<typeof t>[0])}
           </div>
-          {isAssociation && done < total && (
+          {isAssociation && hydrated && done < total && (
             <button type="button" className={`acc-mini ${accPillClass}`} title={accPillLabel}>
               <span className="acc-mini-dot" />
               <span>{accPillLabel}</span>

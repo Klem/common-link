@@ -4,25 +4,30 @@ import { useEffect } from 'react';
 import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
 import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { useAccStatusStore } from '@/stores/accStatusStore';
+import { deriveBankSetupStatus } from '@/lib/bankSetupStatus';
 
 /**
- * Headless component that keeps `accStatusStore` in sync with Mollie KYC status.
- * Rendered once inside DashboardShell for association users so the Sidebar pill
- * and PrePublishModal are accurate on every association page, not just the home page.
+ * Headless component that keeps `accStatusStore` in sync with the association profile and the
+ * Mollie KYC status. Rendered once inside DashboardShell for association users so the Sidebar
+ * pill, the completion card and PrePublishModal are accurate on every association page.
+ *
+ * The profile alone is enough to hydrate the store: an association that never connected Mollie
+ * has a null Mollie status, and must still see its own verification state correctly.
  */
 export function AssociationStatusSync() {
   const { profile } = useAssociationProfile();
-  const { canReceivePayments } = useMollieKycStatus();
+  const { connected, broken, onboardingStatus, dashboardUrl } = useMollieKycStatus();
   const setAccStatus = useAccStatusStore((s) => s.setAccStatus);
 
   useEffect(() => {
-    if (profile !== null && canReceivePayments !== null) {
-      const verified = profile.verificationStatus === 'VERIFIED';
-      const bankConnected = canReceivePayments === true;
-      const done = (verified ? 1 : 0) + (bankConnected ? 1 : 0);
-      setAccStatus(done, 2, verified, bankConnected);
-    }
-  }, [profile, canReceivePayments, setAccStatus]);
+    if (profile === null) return;
+    setAccStatus({
+      verificationStatus: profile.verificationStatus,
+      bankStatus: deriveBankSetupStatus({ connected, broken, onboardingStatus }),
+      rejectionReason: profile.verificationRejectionReason,
+      mollieDashboardUrl: dashboardUrl,
+    });
+  }, [profile, connected, broken, onboardingStatus, dashboardUrl, setAccStatus]);
 
   return null;
 }

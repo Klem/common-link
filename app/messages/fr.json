@@ -348,23 +348,53 @@
         "accCard": {
           "checks": {
             "bank": {
-              "cta": "Connecter mon compte →",
-              "desc": "Pour recevoir les dons en euros, via notre partenaire Mollie",
-              "eta": "2-3 jours",
+              "BROKEN": {
+                "cta": "Reconnecter mon compte →",
+                "desc": "La connexion à votre compte Mollie a été interrompue, les dons ne peuvent plus être encaissés"
+              },
+              "COMPLETED": {
+                "desc": "Vos dons en euros sont versés sur votre compte bancaire"
+              },
+              "IN_REVIEW": {
+                "desc": "Mollie examine votre dossier, aucune action de votre part n'est requise",
+                "eta": "2-3 jours"
+              },
+              "NEEDS_DATA": {
+                "cta": "Compléter mon dossier →",
+                "desc": "Mollie a besoin d'informations complémentaires pour finaliser votre compte"
+              },
+              "NOT_CONNECTED": {
+                "cta": "Connecter mon compte →",
+                "desc": "Pour recevoir les dons en euros, via notre partenaire Mollie"
+              },
               "title": "Compte bancaire (IBAN dédié)"
             },
             "kyc": {
-              "cta": "Vérifier →",
-              "desc": "Soumettez vos justificatifs pour publier publiquement",
-              "eta": "24-48h",
+              "PENDING": {
+                "desc": "Vos justificatifs sont en cours d'examen par notre équipe",
+                "eta": "24-48h"
+              },
+              "REJECTED": {
+                "cta": "Corriger mes documents →",
+                "desc": "Votre dossier de vérification a été refusé"
+              },
+              "UNVERIFIED": {
+                "cta": "Vérifier →",
+                "desc": "Soumettez vos justificatifs pour publier publiquement"
+              },
+              "VERIFIED": {
+                "desc": "Votre association est vérifiée, vous pouvez publier publiquement"
+              },
               "title": "Vérification de l'association"
             },
             "validated": "✓ Validée"
           },
           "dismiss": "Masquer",
           "sub": {
+            "allDone": "Votre compte est complet : votre association est vérifiée et votre compte bancaire est opérationnel.",
             "bankOnly": "Votre association est vérifiée ! Finalisez la connexion de votre compte bancaire pour pouvoir recevoir des dons.",
-            "notVerified": "En attendant la validation de votre association, vous pouvez créer et publier vos campagnes en mode privé (lien direct uniquement)."
+            "notVerified": "En attendant la validation de votre association, vous pouvez créer et publier vos campagnes en mode privé (lien direct uniquement).",
+            "rejected": "Votre dossier de vérification a été refusé. Corrigez vos documents pour pouvoir publier publiquement."
           },
           "title": "⚙️ Finalisez votre compte CommonLink"
         },

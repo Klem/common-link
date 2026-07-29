@@ -1461,15 +1461,17 @@ textarea.form-input {
   border: 1px solid rgba(230, 228, 244, 0.6);
   transition: all 0.2s;
 }
-.acc-check.done    { background: rgba(78, 205, 196, 0.06); border-color: rgba(78, 205, 196, 0.2); }
-.acc-check.pending { background: rgba(255, 179, 71, 0.06); border-color: rgba(255, 179, 71, 0.22); }
+.acc-check.done     { background: rgba(78, 205, 196, 0.06); border-color: rgba(78, 205, 196, 0.2); }
+.acc-check.pending  { background: rgba(255, 179, 71, 0.06); border-color: rgba(255, 179, 71, 0.22); }
+.acc-check.rejected { background: rgba(230, 90, 90, 0.06); border-color: rgba(230, 90, 90, 0.24); }
 
 .acc-check-ic {
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; flex-shrink: 0; font-weight: 700;
 }
-.acc-check.done    .acc-check-ic { background: #4ECDC4; color: var(--white); }
+.acc-check.done     .acc-check-ic { background: #4ECDC4; color: var(--white); }
+.acc-check.rejected .acc-check-ic { background: var(--error-red); color: var(--white); }
 .acc-check.pending .acc-check-ic { background: var(--soft-amber); color: var(--white); }
 .acc-check.todo    .acc-check-ic { background: var(--mist-lavender); color: var(--slate-lavender); }
 
@@ -1485,6 +1487,13 @@ textarea.form-input {
 }
 .acc-check-cta:hover { background: rgba(78, 205, 196, 0.1); }
 .acc-check-eta { font-size: 11px; color: var(--slate-lavender); font-style: italic; flex-shrink: 0; }
+.acc-check-ok  { font-size: 12px; font-weight: 700; color: var(--teal-dark); flex-shrink: 0; }
+.acc-check.rejected .acc-check-title { color: var(--error-red); }
+.acc-check-reason {
+  font-size: 11.5px; color: var(--error-red); margin-top: 4px;
+  padding: 6px 8px; border-radius: var(--radius-sm);
+  background: rgba(230, 90, 90, 0.08); line-height: 1.4;
+}
 
 /* ── Sidebar account-status pill ─────────────────────────────────────────── */
 

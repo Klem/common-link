@@ -22,7 +22,7 @@ export default function AssociationDashboardPage() {
 
   const { profile } = useAssociationProfile();
   const { stats, isLoading, error } = useAssociationDashboard();
-  const { verified, bank: bankConnected } = useAccStatusStore();
+  const { hydrated, verificationStatus, bankStatus, rejectionReason, mollieDashboardUrl } = useAccStatusStore();
 
   const greeting = profile ? t('greeting', { name: profile.name }) : t('greeting', { name: '…' });
 
@@ -43,7 +43,15 @@ export default function AssociationDashboardPage() {
 
   return (
     <div className = "page">
-      <AccountCompletionCard verified={verified} bankConnected={bankConnected} />
+      {/* Rendered only once the profile is loaded: the store defaults would show a false "0/2". */}
+      {hydrated && (
+      <AccountCompletionCard
+        verificationStatus={verificationStatus}
+        bankStatus={bankStatus}
+        rejectionReason={rejectionReason}
+        mollieDashboardUrl={mollieDashboardUrl}
+      />
+      )}
 
       <div className="page-head">
         <div>
