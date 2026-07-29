@@ -107,7 +107,7 @@ class MollieClient(
     private val log = LoggerFactory.getLogger(MollieClient::class.java)
 
     private val restClient: RestClient = restClientBuilder
-        .baseUrl(properties.apiBaseUrl)
+        .baseUrl("${properties.apiBaseUrl}/v2")
         .build()
 
     /**

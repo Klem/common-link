@@ -3,6 +3,7 @@ package org.commonlink.service
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.MollieConnectConfig
+import org.commonlink.config.MollieProperties
 import org.commonlink.config.OnboardingApi
 import org.commonlink.dto.MollieKycStatusDto
 import org.commonlink.event.MollieOnboardingStatusChangedEvent
@@ -172,7 +173,7 @@ class MollieConnectTokenManager(
     private val connectionRepo: MollieConnectionRepository,
     private val restTemplate: RestTemplate,
     private val config: MollieConnectConfig,
-    @Value("\${app.mollie.connect.api-base-url}") private val mollieApiBaseUrl: String,
+    private val mollieProperties: MollieProperties,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -233,7 +234,7 @@ class MollieConnectTokenManager(
 
         val tokenResponse = try {
             restTemplate.postForEntity(
-                "${mollieApiBaseUrl}/oauth2/tokens",
+                "${mollieProperties.apiBaseUrl}/oauth2/tokens",
                 HttpEntity(body, headers),
                 TokenResponse::class.java,
             ).body ?: throw IllegalStateException("Empty refresh response from Mollie")
@@ -281,7 +282,7 @@ class MollieConnectService(
     private val onboardingGate: OnboardingGateService,
     private val eventPublisher: ApplicationEventPublisher,
     @Value("\${app.frontend-url}") private val frontendUrl: String,
-    @Value("\${app.mollie.connect.api-base-url}") private val mollieApiBaseUrl: String,
+    private val mollieProperties: MollieProperties,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -424,7 +425,7 @@ class MollieConnectService(
 
         val response = try {
             restTemplate.postForEntity<ClientLinkResponse>(
-                "${mollieApiBaseUrl}/v2/client-links",
+                "${mollieProperties.apiBaseUrl}/v2/client-links",
                 HttpEntity(requestBody, headers),
             )
         } catch (ex: HttpStatusCodeException) {
@@ -659,7 +660,7 @@ class MollieConnectService(
             add("redirect_uri", config.redirectUri)
         }
         val response = restTemplate.postForEntity(
-            "${mollieApiBaseUrl}/oauth2/tokens",
+            "${mollieProperties.apiBaseUrl}/oauth2/tokens",
             HttpEntity(body, headers),
             TokenResponse::class.java,
         )
@@ -669,7 +670,7 @@ class MollieConnectService(
     private fun fetchOrganizationId(accessToken: String): String {
         val headers = HttpHeaders().apply { setBearerAuth(accessToken) }
         val response = restTemplate.exchange(
-            "${mollieApiBaseUrl}/v2/organizations/me",
+            "${mollieProperties.apiBaseUrl}/v2/organizations/me",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
             OrganizationResponse::class.java,
@@ -686,7 +687,7 @@ class MollieConnectService(
     private fun fetchOnboardingMe(accessToken: String): OnboardingMeResponse {
         val headers = HttpHeaders().apply { setBearerAuth(accessToken) }
         val response = restTemplate.exchange(
-            "${mollieApiBaseUrl}/v2/onboarding/me",
+            "${mollieProperties.apiBaseUrl}/v2/onboarding/me",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
             OnboardingMeResponse::class.java,
@@ -698,7 +699,7 @@ class MollieConnectService(
     private fun fetchCapabilities(accessToken: String): CapabilitiesResponse {
         val headers = HttpHeaders().apply { setBearerAuth(accessToken) }
         val response = restTemplate.exchange(
-            "${mollieApiBaseUrl}/v2/capabilities",
+            "${mollieProperties.apiBaseUrl}/v2/capabilities",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
             CapabilitiesResponse::class.java,

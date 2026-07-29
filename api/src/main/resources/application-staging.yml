@@ -87,7 +87,7 @@ app:
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY} # also encrypt Mollie tokens
   mollie:
     api-key: ${MOLLIE_API_KEY}
-    api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
+    api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}
     test-mode: true
@@ -97,7 +97,6 @@ app:
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}
       advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN}
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI}
-      api-base-url: ${MOLLIE_CONNECT_API_BASE_URL:https://api.mollie.com}
       scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
       #switch between /onboarding/me (LEGACY) and the new /capabilities (CAPABILITIES)
       onboarding-api: LEGACY

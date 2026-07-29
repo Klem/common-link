@@ -93,7 +93,6 @@ app:
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}
       advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN}
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI}
-      api-base-url: ${MOLLIE_CONNECT_API_BASE_URL:https://api.mollie.com}
       scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
       mock: false
       allow-fake-completion: false

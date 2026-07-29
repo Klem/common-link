@@ -23,7 +23,7 @@ class MollieClientTest {
 
     private val properties = MollieProperties(
         apiKey = "test_key",
-        apiBaseUrl = "https://api.mollie.com/v2",
+        apiBaseUrl = "https://api.mollie.com",
         redirectBaseUrl = "http://localhost:3000",
         webhookUrl = "http://localhost:8080/api/public/webhooks/mollie"
     )
