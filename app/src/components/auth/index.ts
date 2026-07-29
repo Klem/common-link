@@ -1,5 +1,3 @@
-export { AssoProfileForm } from './AssoProfileForm';
-export type { AssoProfileData } from './AssoProfileForm';
 export { AssoSearch } from './AssoSearch';
 export type { AssoResult } from './AssoSearch';
 export { AuthCard } from './AuthCard';

@@ -141,7 +141,7 @@ export function Sidebar({ user, currentPath, isOpen = false }: SidebarProps) {
               ? t('nav.orgType' as Parameters<typeof t>[0])
               : t('roles.donor' as Parameters<typeof t>[0])}
           </div>
-          {isAssociation && (
+          {isAssociation && done < total && (
             <button type="button" className={`acc-mini ${accPillClass}`} title={accPillLabel}>
               <span className="acc-mini-dot" />
               <span>{accPillLabel}</span>

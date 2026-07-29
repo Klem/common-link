@@ -37,21 +37,18 @@ export function AccountCompletionCard({ verified, bankConnected }: AccountComple
     { key: 'bank', done: bankConnected },
   ];
   const done = checks.filter((c) => c.done).length;
-  const total = checks.length;
 
-  if (done === total || dismissed) return null;
+  const pendingChecks = checks
+    .map((c, i) => ({ ...c, originalIndex: i }))
+    .filter((c) => !c.done);
+
+  if (pendingChecks.length === 0 || dismissed) return null;
 
   const isPartial = done >= 1;
 
   const subText = !verified
     ? t('sub.notVerified')
     : t('sub.bankOnly');
-
-  function getCheckState(check: CheckItem, index: number): 'done' | 'pending' | 'todo' {
-    if (check.done) return 'done';
-    const prevDone = index === 0 ? true : checks[index - 1].done;
-    return prevDone ? 'pending' : 'todo';
-  }
 
   function handleCta(key: 'kyc' | 'bank') {
     const tab = key === 'kyc' ? 'verif' : 'bank';
@@ -75,9 +72,9 @@ export function AccountCompletionCard({ verified, bankConnected }: AccountComple
         </button>
       </div>
       <div className="acc-checks">
-        {checks.map((check, i) => {
-          const state = getCheckState(check, i);
-          const icLabel = state === 'done' ? '✓' : state === 'pending' ? '⏳' : String(i + 1);
+        {pendingChecks.map((check, i) => {
+          const state: 'pending' | 'todo' = i === 0 ? 'pending' : 'todo';
+          const icLabel = state === 'pending' ? '⏳' : String(check.originalIndex + 1);
           return (
             <div key={check.key} className={`acc-check ${state}`}>
               <div className="acc-check-ic">{icLabel}</div>
@@ -88,9 +85,6 @@ export function AccountCompletionCard({ verified, bankConnected }: AccountComple
                 </div>
                 <div className="acc-check-desc">{t(`checks.${check.key}.desc`)}</div>
               </div>
-              {state === 'done' && (
-                <span className="acc-check-eta">{t('checks.validated')}</span>
-              )}
               {state === 'pending' && (
                 <button className="acc-check-cta" onClick={() => handleCta(check.key)}>
                   {t(`checks.${check.key}.cta`)}

@@ -36,10 +36,11 @@ describe('AccountCompletionCard', () => {
 
   it('marks KYC done when verified=true', () => {
     render(<AccountCompletionCard verified={true} bankConnected={false} />);
-    const doneItems = document.querySelectorAll('.acc-check.done');
-    expect(doneItems).toHaveLength(1);
-    const pendingItems = document.querySelectorAll('.acc-check.pending');
-    expect(pendingItems).toHaveLength(1);
+    // kyc row is removed; only bank row remains as pending
+    expect(screen.queryByText('checks.kyc.title')).not.toBeInTheDocument();
+    expect(screen.getByText('checks.bank.title')).toBeInTheDocument();
+    expect(document.querySelectorAll('.acc-check.done')).toHaveLength(0);
+    expect(document.querySelectorAll('.acc-check.pending')).toHaveLength(1);
   });
 
   it('renders nothing when both are done (2/2)', () => {

@@ -21,6 +21,7 @@ import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
 import { WidgetTab } from '@/components/settings/WidgetTab';
 import { useMandate } from '@/hooks/dashboard/useMandate';
+import { VerificationStatus } from '@/types/association';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ export default function AssociationProfilePage() {
   const { addToast } = useToastStore();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
-  const [verifStatus, setVerifStatus] = useState<string | null>(null);
+  const [verifStatus, setVerifStatus] = useState<VerificationStatus | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMoneriumModal, setShowMoneriumModal] = useState(false);
   const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
@@ -104,13 +105,13 @@ export default function AssociationProfilePage() {
   // ─── Verrouillage séquentiel des onglets ───────────────────────────────────
   // Chaque onglet se débloque quand son prérequis DIRECT est terminé (= condition
   // du badge "ok" du prérequis, pour que lock et badge ne divergent jamais).
-  const verifDone = (verifStatus ?? profile?.verificationStatus) === 'VERIFIED';
+  const verifDone = (verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED;
   const mandateDone = mandateState?.signed === true;
   const bankDone = Boolean(mollieConnected && canReceivePayments);
   const tabUnlocked: Record<SettingsTab, boolean> = {
     infos: true,
     verif: true,
-    mandate: verifDone,
+    mandate: verifDone || (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING,
     bank: mandateDone,
     widget: bankDone,
   };
@@ -216,14 +217,14 @@ export default function AssociationProfilePage() {
         >
           ✓ {t('association.profile.tabs.verif')}{' '}
           <span className={`set-tab-badge${
-            (verifStatus ?? profile?.verificationStatus) === 'VERIFIED' ? ' ok' :
-            (verifStatus ?? profile?.verificationStatus) === 'PENDING' ? ' pending' : ''
+            (verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED ? ' ok' :
+            (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING ? ' pending' : ''
           }`}>
-            {(verifStatus ?? profile?.verificationStatus) === 'VERIFIED'
+            {(verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED
               ? t('association.profile.tabs.verifBadge.ok')
-              : (verifStatus ?? profile?.verificationStatus) === 'PENDING'
+              : (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING
               ? t('association.profile.tabs.verifBadge.pending')
-              : (verifStatus ?? profile?.verificationStatus) === 'REJECTED'
+              : (verifStatus ?? profile?.verificationStatus) === VerificationStatus.REJECTED
               ? t('association.profile.tabs.verifBadge.rejected')
               : t('association.profile.tabs.verifBadge.todo')}
           </span>
@@ -493,7 +494,10 @@ export default function AssociationProfilePage() {
         <div className="set-tab-content active">
           <VerificationTab
             onGoToVerif={() => setActiveTab('verif')}
-            onVerificationSubmitted={() => setVerifStatus('PENDING')}
+            onVerificationSubmitted={() => {
+              setVerifStatus(VerificationStatus.PENDING);
+              setActiveTab('mandate');
+            }}
           />
         </div>
       )}
@@ -663,7 +667,7 @@ export default function AssociationProfilePage() {
             onGoToVerif={() => setActiveTab('verif')}
             onUploadDoc={uploadDoc}
             onDeleteDoc={deleteDoc}
-            onSign={sign}
+            onSign={async (request) => { await sign(request); setActiveTab('bank'); }}
             onRevoke={revoke}
             onDownloadPdf={downloadPdf}
           />
@@ -714,9 +718,10 @@ export default function AssociationProfilePage() {
       <MollieOnboardModal
         isOpen={showMollieModal}
         onClose={() => setShowMollieModal(false)}
-        onConnected={() => {
+        onConnected={async () => {
           setMollieInterrupted(false);
-          refreshMollie();
+          await refreshMollie();
+          setActiveTab('widget');
         }}
         onPopupClosed={handleMolliePopupClosed}
         contactEmail={profile?.contactEmail}
