@@ -23,6 +23,15 @@ vi.mock('next/navigation', () => ({
 const USER_A = 'aaaaaaaa-0000-0000-0000-000000000001';
 const USER_B = 'bbbbbbbb-0000-0000-0000-000000000002';
 
+/** Dismissal key for the default status pair used by `renderCard`. */
+function dismissKey(
+  userId: string,
+  verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED,
+  bankStatus: BankSetupStatus = BankSetupStatus.NOT_CONNECTED,
+): string {
+  return `cl-acc-card-dismissed:${userId}:${verificationStatus}:${bankStatus}`;
+}
+
 /** Logs a user in so the card can scope its dismissal key. */
 function signIn(id: string) {
   useAuthStore.setState({
@@ -93,17 +102,33 @@ describe('AccountCompletionCard — layout', () => {
     expect(screen.getByText('sub.allDone')).toBeInTheDocument();
   });
 
-  it('hides on dismiss and persists the choice under a user-scoped key', () => {
+  it('hides on dismiss and persists the choice under a user- and status-scoped key', () => {
     renderCard();
     fireEvent.click(screen.getByTitle('dismiss'));
-    expect(mockLocalStorage[`cl-acc-card-dismissed:${USER_A}`]).toBe('1');
+    expect(mockLocalStorage[dismissKey(USER_A)]).toBe('1');
     expect(screen.queryByText('title')).not.toBeInTheDocument();
   });
 
-  it('stays hidden for the same user across sessions', () => {
-    mockLocalStorage[`cl-acc-card-dismissed:${USER_A}`] = '1';
+  it('stays hidden for the same user and the same statuses across sessions', () => {
+    mockLocalStorage[dismissKey(USER_A)] = '1';
     renderCard();
     expect(screen.queryByText('title')).not.toBeInTheDocument();
+  });
+
+  /**
+   * A dismissal must not outlive the situation it was made for: an association that hid the card
+   * while unverified has to see it again when its dossier is rejected, or when Mollie moves on.
+   */
+  it('reappears when a status changes after the dismissal', () => {
+    mockLocalStorage[dismissKey(USER_A)] = '1';
+    renderCard({ verificationStatus: VerificationStatus.REJECTED });
+    expect(screen.getByText('title')).toBeInTheDocument();
+  });
+
+  it('reappears when only the bank status changes after the dismissal', () => {
+    mockLocalStorage[dismissKey(USER_A)] = '1';
+    renderCard({ bankStatus: BankSetupStatus.IN_REVIEW });
+    expect(screen.getByText('title')).toBeInTheDocument();
   });
 
   /**
@@ -118,7 +143,7 @@ describe('AccountCompletionCard — layout', () => {
     signIn(USER_B);
     renderCard();
     expect(screen.getByText('title')).toBeInTheDocument();
-    expect(mockLocalStorage[`cl-acc-card-dismissed:${USER_B}`]).toBeUndefined();
+    expect(mockLocalStorage[dismissKey(USER_B)]).toBeUndefined();
   });
 });
 

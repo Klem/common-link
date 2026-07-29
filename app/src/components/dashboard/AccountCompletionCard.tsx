@@ -9,12 +9,16 @@ import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
 
 /**
- * Builds the per-user dismissal key. `localStorage` is scoped to the browser, not to the account:
- * without the user id, dismissing the card as one association would also hide it for every other
- * account logged in from the same browser.
+ * Builds the dismissal key, scoped by user **and** by the status pair it was dismissed for.
+ *
+ * The user id is required because `localStorage` is scoped to the browser, not to the account:
+ * without it, dismissing the card as one association would hide it for every other account on
+ * the same browser. The statuses are part of the key so that any onboarding progression — or a
+ * regression such as a rejected dossier — re-arms the card instead of leaving the association
+ * with a permanently hidden banner.
  */
-function dismissedKey(userId: string): string {
-  return `cl-acc-card-dismissed:${userId}`;
+function dismissedKey(userId: string, verificationStatus: VerificationStatus, bankStatus: BankSetupStatus): string {
+  return `cl-acc-card-dismissed:${userId}:${verificationStatus}:${bankStatus}`;
 }
 
 /** Visual variant of a check row, mapped 1:1 to the `.acc-check.*` CSS modifiers. */
@@ -63,8 +67,8 @@ interface AccountCompletionCardProps {
  *
  * Renders one row per setup step, each rendered according to its own status (four for KYC
  * verification, five for the bank account). Rows stay visible once complete — they turn green —
- * so the card doubles as a recap; only the user's × dismisses it, permanently for that account
- * on that browser.
+ * so the card doubles as a recap. Only the user's × dismisses it — for that account, on that
+ * browser, and only as long as both statuses stay unchanged.
  */
 export function AccountCompletionCard({
   verificationStatus,
@@ -80,8 +84,8 @@ export function AccountCompletionCard({
 
   useEffect(() => {
     if (userId === null) return;
-    setDismissed(localStorage.getItem(dismissedKey(userId)) === '1');
-  }, [userId]);
+    setDismissed(localStorage.getItem(dismissedKey(userId, verificationStatus, bankStatus)) === '1');
+  }, [userId, verificationStatus, bankStatus]);
 
   if (dismissed) return null;
 
@@ -110,7 +114,7 @@ export function AccountCompletionCard({
   }
 
   function handleDismiss() {
-    if (userId !== null) localStorage.setItem(dismissedKey(userId), '1');
+    if (userId !== null) localStorage.setItem(dismissedKey(userId, verificationStatus, bankStatus), '1');
     setDismissed(true);
   }
 
