@@ -349,7 +349,7 @@
           "checks": {
             "bank": {
               "cta": "Connect my account →",
-              "desc": "To receive donations in euros via our Monerium partner",
+              "desc": "To receive donations in euros via our Mollie partner",
               "eta": "2-3 days",
               "title": "Dedicated bank account (IBAN)"
             },
