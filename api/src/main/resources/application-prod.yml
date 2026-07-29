@@ -62,6 +62,7 @@ management:
 app:
   jwt:
     secret: ${COMMON_LINK_SECRET}
+    access-token-expiration: PT30M
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.lang.reflect.Field
+import java.time.Duration
 import java.util.Date
 import java.util.UUID
 import io.jsonwebtoken.Jwts
@@ -17,7 +18,7 @@ import io.jsonwebtoken.security.Keys
 class JwtServiceTest {
 
     private val secret = "test-secret-key-must-be-at-least-32-chars!!"
-    private val jwtService = JwtService(secret)
+    private val jwtService = JwtService(secret, Duration.ofMinutes(15))
 
     private val user = User(
         id = UUID.randomUUID(),
@@ -99,18 +100,18 @@ class JwtServiceTest {
 
     @Test
     fun `startup validation rejects blank secret`() {
-        assertThrows<IllegalArgumentException> { JwtService("") }
+        assertThrows<IllegalArgumentException> { JwtService("", Duration.ofMinutes(15)) }
     }
 
     @Test
     fun `startup validation rejects secret shorter than 32 bytes`() {
-        assertThrows<IllegalArgumentException> { JwtService("too-short") }
+        assertThrows<IllegalArgumentException> { JwtService("too-short", Duration.ofMinutes(15)) }
     }
 
     @Test
     fun `startup validation rejects known insecure dev default`() {
         assertThrows<IllegalArgumentException> {
-            JwtService("commonlink-dev-secret-key-must-be-at-least-32-chars-long")
+            JwtService("commonlink-dev-secret-key-must-be-at-least-32-chars-long", Duration.ofMinutes(15))
         }
     }
 }

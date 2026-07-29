@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.env.YamlPropertySourceLoader
 import org.springframework.core.env.EnumerablePropertySource
 import org.springframework.core.io.ClassPathResource
+import java.time.Duration
 
 class ProdConfigSecurityTest {
 
@@ -106,5 +107,13 @@ class ProdConfigSecurityTest {
     fun `monerium token-enc-key is required with no plaintext-inheriting default in prod`() {
         // H4: base/staging default this empty (→ plaintext tokens); prod must require the key.
         assertEquals("\${MONERIUM_TOKEN_ENC_KEY}", prop("app.monerium.token-enc-key"))
+    }
+
+    @Test
+    fun `access-token-expiration is at most 1 hour in prod`() {
+        val raw = prop("app.jwt.access-token-expiration") as? String ?: ""
+        val duration = Duration.parse(raw)
+        assertTrue(duration <= Duration.ofHours(1),
+            "app.jwt.access-token-expiration must be ≤ PT1H in prod, was: $raw")
     }
 }

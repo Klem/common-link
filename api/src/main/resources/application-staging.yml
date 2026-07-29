@@ -59,6 +59,7 @@ management:
 app:
   jwt:
     secret: ${COMMON_LINK_SECRET}
+    access-token-expiration: P3650D
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
   cookies:
     secure: true
