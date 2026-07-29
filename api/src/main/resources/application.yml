@@ -10,6 +10,7 @@ spring:
     password: ${COMMON_LINK_DB_PASSWORD:commonlink}
     driver-class-name: org.postgresql.Driver
   jpa:
+    open-in-view: true  # TODO: refactor to set to "false" safe once all read service methods are @Transactional(readOnly=true)
     hibernate:
       ddl-auto: validate
     properties:

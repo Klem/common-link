@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — create_db.sql
--- Schéma consolidé : état final équivalent aux migrations V1 → V45.
+-- Schéma consolidé : état final équivalent aux migrations V1 → V46.
 --
 -- Ce script remplace l'exécution séquentielle des migrations Flyway
 -- par les formes finales : les ALTER / RENAME / DROP INDEX intermédiaires
@@ -592,7 +592,8 @@ CREATE TABLE mollie_connections (
                                     can_receive_payments    BOOLEAN      NOT NULL DEFAULT FALSE,
                                     can_receive_settlements BOOLEAN      NOT NULL DEFAULT FALSE,
                                     mollie_organization_id  VARCHAR(255),
-                                    last_synced_at          TIMESTAMPTZ
+                                    last_synced_at          TIMESTAMPTZ,
+                                    onboarding_dashboard_url TEXT
 );
 CREATE UNIQUE INDEX uq_mollie_connections_organization
     ON mollie_connections (mollie_organization_id)
