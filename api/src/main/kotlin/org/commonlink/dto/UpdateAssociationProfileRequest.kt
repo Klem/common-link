@@ -19,7 +19,7 @@ import java.util.UUID
  * @param city City of the association's headquarters.
  * @param postalCode French postal code (exactly 5 digits when provided).
  * @param description Public description of the association's mission.
- * @param siren French SIREN number (9 digits).
+ * @param siren French SIREN number (exactly 9 alphanumeric characters when provided).
  * @param creationYear Year the association was founded (1800–2100).
  * @param contactEmail Association contact email address.
  * @param phone Association phone number (6–20 chars, digits/spaces/+/parens/dots/hyphens).
@@ -38,7 +38,10 @@ data class UpdateAssociationProfileRequest(
     @field:Size(max = 1000)
     val description: String?,
 
-    @field:Pattern(regexp = "^[0-9]{9}$", message = "SIREN must be exactly 9 digits")
+    @field:Pattern(
+        regexp = "^[A-Za-z0-9]{9}$",
+        message = "SIREN must be exactly 9 alphanumeric characters",
+    )
     val siren: String?,
 
     @field:Min(1800)

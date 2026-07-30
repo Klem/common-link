@@ -35,7 +35,9 @@ const profileSchema = z.object({
   siren: z
     .string()
     .optional()
-    .refine((v) => !v || /^\d{9}$/.test(v), 'dashboard.association.profile.errors.sirenFormat'),
+    // 9 caractères alphanumériques — miroir du @Pattern côté back (Mollie refuse
+    // le client-link en 422 si le registrationNumber n'a pas ce format).
+    .refine((v) => !v || /^[A-Za-z0-9]{9}$/.test(v), 'dashboard.association.profile.errors.sirenFormat'),
   creationYear: z
     .number()
     .int()

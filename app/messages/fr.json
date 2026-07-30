@@ -441,7 +441,7 @@
           "phoneFormat": "Veuillez saisir un numéro de téléphone valide (6–20 caractères).",
           "postalCodeFormat": "Le code postal doit contenir 5 chiffres.",
           "rnaFormat": "Le N° RNA doit être au format W suivi de 9 chiffres (ex. W123456789).",
-          "sirenFormat": "Le SIREN doit contenir exactement 9 chiffres."
+          "sirenFormat": "Le SIREN doit contenir exactement 9 caractères alphanumériques."
         },
         "identifier": "N° RNA",
         "infos": {
