@@ -854,7 +854,12 @@
         "cancel": "Cancel",
         "continue": "Continue as draft",
         "hint": "Start writing now to save time.",
-        "notVerified": "Your association is not yet verified.",
+        "status": {
+          "UNVERIFIED": "Your association is not yet verified.",
+          "PENDING": "Your verification dossier is under review.",
+          "REJECTED": "Your verification dossier was rejected.",
+          "VERIFIED": "Your association is verified."
+        },
         "title": "📋 Before creating your campaign",
         "verify": "📋 Verify my dossier"
       },
@@ -927,10 +932,23 @@
       },
       "publish": {
         "account": {
+          "bank": {
+            "NOT_CONNECTED": "No bank account connected — required to publish",
+            "NEEDS_DATA": "Incomplete Mollie dossier — more information required to publish",
+            "IN_REVIEW": "Mollie dossier under review — required to publish",
+            "COMPLETED": "Mollie bank account connected",
+            "BROKEN": "Mollie connection interrupted — reconnect to publish"
+          },
           "complete": "Account complete — ready to publish",
-          "noBank": "No bank account connected — required to publish",
-          "notVerified": "Your dossier is not yet verified (you can still publish)",
-          "section": "Account status"
+          "completeBank": "Complete",
+          "loading": "Checking your account status…",
+          "section": "Account status",
+          "verif": {
+            "UNVERIFIED": "Your dossier is not yet verified (you can still publish)",
+            "PENDING": "Your dossier is being verified (you can still publish)",
+            "REJECTED": "Your verification dossier was rejected (you can still publish)",
+            "VERIFIED": "Your association is verified"
+          }
         },
         "add": "Add",
         "complete": "Complete required fields",

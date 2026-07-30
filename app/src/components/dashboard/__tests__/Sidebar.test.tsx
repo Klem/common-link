@@ -91,6 +91,7 @@ describe('Sidebar', () => {
       bankStatus: BankSetupStatus.NOT_CONNECTED,
       rejectionReason: null,
       mollieDashboardUrl: null,
+      mollieResolved: true,
     });
     render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
     expect(document.querySelector('.acc-mini')).toBeInTheDocument();

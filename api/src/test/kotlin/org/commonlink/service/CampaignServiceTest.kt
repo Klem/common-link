@@ -11,12 +11,16 @@ import org.commonlink.dto.UpdateMilestoneRequest
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.entity.MollieConnection
+import org.commonlink.entity.MollieConnectionState
+import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.MoneriumConnection
 import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestFixtures
@@ -68,6 +72,9 @@ class CampaignServiceTest {
     private lateinit var moneriumConnectionRepository: MoneriumConnectionRepository
 
     @Autowired
+    private lateinit var mollieConnectionRepository: MollieConnectionRepository
+
+    @Autowired
     private lateinit var onchainJobRepository: OnchainJobRepository
 
     @Autowired
@@ -88,6 +95,29 @@ class CampaignServiceTest {
         val otherUser = userRepository.save(TestFixtures.associationUser(email = "other@example.com"))
         associationProfileRepository.save(TestFixtures.associationProfile(otherUser, identifier = "123456789"))
         otherUserId = otherUser.id!!
+    }
+
+    /**
+     * Links a Mollie connection to the association. Defaults satisfy the publish-time bank gate
+     * (ACTIVE + COMPLETED + canReceivePayments); each parameter can be relaxed to exercise one
+     * failing condition at a time.
+     */
+    private fun linkMollie(
+        ownerId: UUID,
+        state: MollieConnectionState = MollieConnectionState.ACTIVE,
+        onboardingStatus: MollieOnboardingStatus = MollieOnboardingStatus.COMPLETED,
+        canReceivePayments: Boolean = true,
+    ) {
+        val assoc = associationProfileRepository.findByUserId(ownerId).get()
+        mollieConnectionRepository.save(MollieConnection(
+            association        = assoc,
+            accessToken        = "tok",
+            refreshToken       = "ref",
+            expiresAt          = java.time.Instant.now().plusSeconds(3600),
+            state              = state,
+            onboardingStatus   = onboardingStatus,
+            canReceivePayments = canReceivePayments,
+        ))
     }
 
     /** Links an ACTIVE Monerium wallet to the association, satisfying the publish-time gate. */
@@ -238,6 +268,7 @@ class CampaignServiceTest {
     @Test
     fun `updateCampaign - updates name and status`() {
         linkMonerium(userId)
+        linkMollie(userId)
         val created = campaignService.createCampaign(
             userId,
             CreateCampaignRequest(name = "Old Name", goal = BigDecimal("10000"))
@@ -257,6 +288,7 @@ class CampaignServiceTest {
     fun `updateCampaign - invalid status transition LIVE to DRAFT throws 422`() {
         // LIVE → DRAFT is invalid (only LIVE → ENDED is allowed)
         linkMonerium(userId)
+        linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign", goal = BigDecimal("10000")))
         campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
@@ -326,6 +358,7 @@ class CampaignServiceTest {
     @Test
     fun `deleteCampaign - throws when campaign is not DRAFT`() {
         linkMonerium(userId)
+        linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Live Campaign", goal = BigDecimal("10000")))
         campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
@@ -607,10 +640,80 @@ class CampaignServiceTest {
 
     // ── on-chain publish ──────────────────────────────────────────────────────
 
+    /**
+     * A missing Monerium wallet does not block publication — `enqueueForTransition` simply skips the
+     * on-chain jobs. (This test used to assert a 422; the exception it observed actually came from
+     * the Mollie gate, which it never satisfied. That condition is covered on its own below.)
+     */
     @Test
-    fun `publish - no Monerium wallet returns 422 and enqueues no job`() {
+    fun `publish - no Monerium wallet publishes off-chain and enqueues no job`() {
+        linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("10000"))
+        )
+
+        val result = campaignService.updateCampaign(
+            userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE)
+        )
+
+        assertEquals(CampaignStatus.LIVE, result.status)
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    // ── publish-time bank gate (mirrors BankSetupStatus.COMPLETED in the frontend) ─────────────
+
+    @Test
+    fun `publish - no Mollie connection returns 422 and enqueues no job`() {
+        linkMonerium(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No Mollie", goal = BigDecimal("10000"))
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    @Test
+    fun `publish - BROKEN Mollie connection returns 422 even when KYC was completed`() {
+        linkMonerium(userId)
+        linkMollie(userId, state = MollieConnectionState.BROKEN)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Broken Mollie", goal = BigDecimal("10000"))
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    /**
+     * Discriminating case: the publish button in `PrePublishModal` only unlocks on
+     * `BankSetupStatus.COMPLETED`, i.e. on `onboardingStatus`. An association still under Mollie
+     * review must therefore be refused here too, whatever `canReceivePayments` says.
+     */
+    @Test
+    fun `publish - Mollie onboarding still IN_REVIEW returns 422`() {
+        linkMonerium(userId)
+        linkMollie(userId, onboardingStatus = MollieOnboardingStatus.IN_REVIEW)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "In review", goal = BigDecimal("10000"))
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    @Test
+    fun `publish - Mollie completed but not authorized to receive payments returns 422`() {
+        linkMonerium(userId)
+        linkMollie(userId, canReceivePayments = false)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No payments", goal = BigDecimal("10000"))
         )
 
         assertThrows<UnprocessableEntityException> {
@@ -622,6 +725,7 @@ class CampaignServiceTest {
     @Test
     fun `publish - valid campaign enqueues CREATE then PUBLISH, republish is no-op`() {
         linkMonerium(userId)
+        linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("5000"))
         )
@@ -647,6 +751,7 @@ class CampaignServiceTest {
     @Test
     fun `saveBudget - LIVE campaign with changed budget enqueues UPDATE_CAMPAIGN_BUDGET, identical budget enqueues nothing`() {
         linkMonerium(userId)
+        linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Budget test", goal = BigDecimal("5000"))
         )

@@ -76,7 +76,8 @@ class PublicWidgetServiceIntegrationTest {
         assoc.widgetDestinationCampaign = campaign
         associationProfileRepository.save(assoc)
 
-        val mockConnection = mockk<MollieConnection> { every { canReceivePayments } returns true }
+        // Fully onboarded connection: KYC completed, payments authorised, link not broken.
+        val mockConnection = mockk<MollieConnection> { every { canCollectDonations() } returns true }
         every { mollieConnectionRepository.findByAssociationId(any()) } returns mockConnection
         every { mollieConnectTokenManager.getValidAccessToken(any()) } returns "test_assoc_token"
 

@@ -8,6 +8,7 @@ import { CampaignCard, NewCampaignWarningModal } from '@/components/campaign';
 import { useCampaigns } from '@/hooks/campaign/useCampaigns';
 import { createCampaign } from '@/lib/api/campaign';
 import { useAccStatusStore } from '@/stores/accStatusStore';
+import { VerificationStatus } from '@/types/association';
 import { ROUTES } from '@/lib/routes';
 
 type Filter = '' | 'LIVE' | 'ENDED' | 'DRAFT';
@@ -17,7 +18,7 @@ export default function CampaignsPage() {
   const locale = useLocale();
   const t = useTranslations('dashboard');
   const { campaigns, isLoading, removeCampaign } = useCampaigns();
-  const { verified } = useAccStatusStore();
+  const { hydrated, verificationStatus } = useAccStatusStore();
   const [activeFilter, setActiveFilter] = useState<Filter>('');
   const [showWarnModal, setShowWarnModal] = useState(false);
 
@@ -30,8 +31,14 @@ export default function CampaignsPage() {
     router.push(`/${locale}${ROUTES.ASSOCIATION_CAMPAIGNS}/${newCampaign.id}`);
   };
 
+  /**
+   * The warning is driven by `verificationStatus`, and only once the profile is loaded: before
+   * that the store still holds the default UNVERIFIED, which would warn an already-verified
+   * association. The modal is purely informational — both of its branches create the draft — so an
+   * un-hydrated store simply skips it rather than blocking the creation.
+   */
   const handleCreate = () => {
-    if (!verified) {
+    if (hydrated && verificationStatus !== VerificationStatus.VERIFIED) {
       setShowWarnModal(true);
     } else {
       doCreate();
@@ -94,6 +101,7 @@ export default function CampaignsPage() {
 
       {showWarnModal && (
         <NewCampaignWarningModal
+          verificationStatus={verificationStatus}
           onClose={() => setShowWarnModal(false)}
           onContinue={() => { setShowWarnModal(false); doCreate(); }}
           onGoVerify={() => { setShowWarnModal(false); router.push(`/${locale}${ROUTES.ASSOCIATION_PROFILE}`); }}

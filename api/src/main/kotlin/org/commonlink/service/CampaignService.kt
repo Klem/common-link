@@ -17,6 +17,8 @@ import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.entity.MollieConnectionState
+import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
@@ -540,13 +542,23 @@ class CampaignService(
     /**
      * Pre-save checks and preparation for the DRAFT→LIVE publish transition.
      * Sets [Campaign.budgetHash] on the campaign instance (persisted by the caller's save).
+     *
+     * The bank-account guard delegates to [MollieConnection.canCollectDonations], which mirrors the
+     * `BankSetupStatus.COMPLETED` condition the frontend uses to enable the publish button (see
+     * `app/src/lib/bankSetupStatus.ts`). The two preceding checks only exist to give a specific
+     * message — "not connected" and "broken link" call for different user actions than
+     * "KYC incomplete".
      */
     private fun preparePublish(campaign: Campaign, associationId: UUID) {
         if (campaign.goal <= BigDecimal.ZERO) {
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
         }
-        val canReceivePayments = mollieConnectionRepository.findByAssociationId(associationId)?.canReceivePayments == true
-        if (!canReceivePayments) {
+        val connection = mollieConnectionRepository.findByAssociationId(associationId)
+            ?: throw UnprocessableEntityException("Association must connect a Mollie account before going live")
+        if (connection.state == MollieConnectionState.BROKEN) {
+            throw UnprocessableEntityException("Mollie connection is broken — re-authorization required before going live")
+        }
+        if (!connection.canCollectDonations()) {
             throw UnprocessableEntityException("Association must complete Mollie KYC before going live")
         }
         campaign.budgetHash = budgetHasher.hash(campaign)

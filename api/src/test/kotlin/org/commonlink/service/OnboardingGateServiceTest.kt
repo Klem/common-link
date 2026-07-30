@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MollieConnection
+import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.UserNotFoundException
@@ -113,15 +114,27 @@ class OnboardingGateServiceTest {
         assertThrows<ConflictException> { onboardingGate.requireBankReady(userId) }
     }
 
+    /**
+     * Discriminating case: a widget cannot work on an unpublished campaign, and publication requires
+     * completed Mollie KYC. The widget gate must therefore be at least as strict — IN_REVIEW is
+     * refused even when Mollie already allows payments.
+     */
     @Test
-    fun `requireBankReady - passes when payments allowed even if onboarding not COMPLETED (mirrors frontend)`() {
-        // Discriminating case: the frontend unlocks the widget on (connected && canReceivePayments),
-        // NOT on onboardingStatus. The gate must agree, so IN_REVIEW + canReceivePayments must pass.
+    fun `requireBankReady - throws when onboarding is still IN_REVIEW despite payments allowed`() {
         mollieConnectionRepository.save(
             completedConnection(canReceivePayments = true)
                 .apply { onboardingStatus = MollieOnboardingStatus.IN_REVIEW }
         )
-        assertDoesNotThrow { onboardingGate.requireBankReady(userId) }
+        assertThrows<ConflictException> { onboardingGate.requireBankReady(userId) }
+    }
+
+    @Test
+    fun `requireBankReady - throws when the connection is BROKEN`() {
+        mollieConnectionRepository.save(
+            completedConnection(canReceivePayments = true)
+                .apply { state = MollieConnectionState.BROKEN }
+        )
+        assertThrows<ConflictException> { onboardingGate.requireBankReady(userId) }
     }
 
     @Test

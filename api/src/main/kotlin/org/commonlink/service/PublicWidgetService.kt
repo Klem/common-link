@@ -161,7 +161,8 @@ class PublicWidgetService(
     private fun resolveMollieToken(association: AssociationProfile): String {
         val connection = mollieConnectionRepository.findByAssociationId(association.id!!)
             ?: throw ConflictException("L'association n'a pas de connexion Mollie")
-        if (!connection.canReceivePayments)
+        // Same predicate as the publish and widget-enable gates — see MollieConnection.canCollectDonations.
+        if (!connection.canCollectDonations())
             throw ConflictException("L'association ne peut pas encore recevoir de paiements")
         return try {
             mollieConnectTokenManager.getValidAccessToken(association.id!!)

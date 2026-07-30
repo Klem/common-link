@@ -48,15 +48,14 @@ class OnboardingGateService(
     }
 
     /**
-     * Returns true if the association's Mollie Connect account can receive payments.
+     * Returns true if the association's Mollie Connect account can collect donations.
      * Mirrors the predicate used by [requireBankReady] without throwing — for use in
      * read-path guards where a boolean check is more appropriate than a thrown exception.
      */
     @Transactional(readOnly = true)
     fun isBankReady(userId: UUID): Boolean {
         val associationId = resolveAssociationId(userId)
-        val connection = mollieConnectionRepository.findByAssociationId(associationId)
-        return connection != null && connection.canReceivePayments
+        return mollieConnectionRepository.findByAssociationId(associationId)?.canCollectDonations() == true
     }
 
     /**
@@ -75,24 +74,22 @@ class OnboardingGateService(
     }
 
     /**
-     * Requires the association's Mollie Connect account to be able to receive payments.
+     * Requires the association's Mollie Connect account to be able to collect donations.
      *
      * Direct prerequisite for enabling the donation widget (token generation, widget config, and
      * setting a destination campaign).
      *
-     * Mirrors the frontend widget-unlock predicate EXACTLY — `bankDone = mollieConnected && canReceivePayments`
-     * (`connected` in [org.commonlink.dto.MollieKycStatusDto] is simply "a connection exists"). Deliberately
-     * NOT keyed on `onboardingStatus`: Mollie sets `canReceivePayments` independently of the status, so keying
-     * on COMPLETED here could reject a user whose tab the frontend shows as unlocked.
+     * Uses [org.commonlink.entity.MollieConnection.canCollectDonations] — the same predicate that
+     * gates campaign publication. A widget cannot work on an unpublished campaign, so this gate must
+     * never be laxer than the publish gate: completed Mollie KYC **and** `canReceivePayments`.
      *
-     * @throws ConflictException if there is no Mollie connection, or Mollie does not authorise payments yet.
+     * @throws ConflictException if there is no Mollie connection, or Mollie KYC does not yet authorise payments.
      */
     @Transactional(readOnly = true)
     fun requireBankReady(userId: UUID) {
         val associationId = resolveAssociationId(userId)
         val connection = mollieConnectionRepository.findByAssociationId(associationId)
-        val ready = connection != null && connection.canReceivePayments
-        if (!ready) {
+        if (connection?.canCollectDonations() != true) {
             throw ConflictException("A bank account (Mollie) authorised to receive payments is required before enabling the donation widget")
         }
     }

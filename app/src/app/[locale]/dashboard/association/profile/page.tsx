@@ -16,6 +16,7 @@ import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
 import { forceCompleteMollieOnboarding } from '@/lib/api/mollie-connect';
+import { MollieOnboardingStatus } from '@/types/mollie-connect';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
@@ -109,7 +110,12 @@ export default function AssociationProfilePage() {
   // du badge "ok" du prérequis, pour que lock et badge ne divergent jamais).
   const verifDone = (verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED;
   const mandateDone = mandateState?.signed === true;
-  const bankDone = Boolean(mollieConnected && canReceivePayments);
+  // Même prédicat que le gate backend (`MollieConnection.canCollectDonations`) et que
+  // `BankSetupStatus.COMPLETED` : un widget ne peut pas fonctionner sur une campagne non publiée,
+  // donc le déverrouillage du widget ne doit jamais être plus permissif que la publication.
+  const bankDone = Boolean(
+    mollieConnected && !mollieBroken && onboardingStatus === MollieOnboardingStatus.COMPLETED && canReceivePayments,
+  );
   const tabUnlocked: Record<SettingsTab, boolean> = {
     infos: true,
     verif: true,
@@ -261,8 +267,8 @@ export default function AssociationProfilePage() {
           title={tabUnlocked.bank ? undefined : t('association.profile.tabs.locked')}
         >
           {tabUnlocked.bank ? '🏦' : '🔒'} {t('association.profile.tabs.bank')}{' '}
-          <span className={`set-tab-badge${(mollieConnected && canReceivePayments) ? ' ok' : ''}`}>
-            {(mollieConnected && canReceivePayments)
+          <span className={`set-tab-badge${bankDone ? ' ok' : ''}`}>
+            {bankDone
               ? t('association.profile.tabs.bankBadge.connected')
               : t('association.profile.tabs.bankBadge.notConnected')}
           </span>
@@ -561,7 +567,7 @@ export default function AssociationProfilePage() {
               <p className="monerium-desc">{tM('mollie.description')}</p>
               {mollieLoading ? (
                 <div className="monerium-spinner" />
-              ) : mollieConnected && !mollieBroken && onboardingStatus === 'COMPLETED' && canReceivePayments ? (
+              ) : bankDone ? (
                 <span className="badge badge-active">{tM('mollie.status.completed')}</span>
               ) : mollieBroken ? (
                 <div className="flex items-center gap-3">

@@ -88,4 +88,20 @@ class MollieConnection(
      */
     @Column(name = "onboarding_dashboard_url", columnDefinition = "TEXT")
     var onboardingDashboardUrl: String? = null,
-)
+) {
+
+    /**
+     * True when the association can actually collect donations: the link is usable, Mollie reports
+     * the KYC as complete, and the merchant is authorized to receive payments.
+     *
+     * Single source of truth for every "is the bank account ready?" guard — publishing a campaign,
+     * enabling the donation widget, and creating a payment. A widget cannot work on an unpublished
+     * campaign, so the widget gate must never be laxer than the publish gate; keeping one predicate
+     * makes that impossible to drift. It mirrors `BankSetupStatus.COMPLETED` on the frontend
+     * (`app/src/lib/bankSetupStatus.ts`).
+     */
+    fun canCollectDonations(): Boolean =
+        state == MollieConnectionState.ACTIVE &&
+            onboardingStatus == MollieOnboardingStatus.COMPLETED &&
+            canReceivePayments
+}

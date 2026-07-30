@@ -44,7 +44,7 @@ export default function CampaignEditorPage() {
     useCampaign(campaignId);
   const payments = usePayments(campaignId);
   const { donorsPage } = useCampaignDonors(campaignId);
-  const { verified, bank: bankConnected } = useAccStatusStore();
+  const { verificationStatus, bankStatus, mollieResolved, mollieDashboardUrl } = useAccStatusStore();
   const { addToast } = useToastStore();
 
   const [activeTab, setActiveTab] = useState('info');
@@ -196,8 +196,10 @@ export default function CampaignEditorPage() {
       {showPublishModal && (
         <PrePublishModal
           campaign={campaign}
-          verified={verified}
-          bankConnected={bankConnected}
+          verificationStatus={verificationStatus}
+          bankStatus={bankStatus}
+          mollieResolved={mollieResolved}
+          mollieDashboardUrl={mollieDashboardUrl}
           onClose={() => setShowPublishModal(false)}
           onConfirm={handleConfirmPublish}
         />
