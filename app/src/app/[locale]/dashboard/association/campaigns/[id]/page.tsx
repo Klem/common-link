@@ -160,6 +160,7 @@ export default function CampaignEditorPage() {
           <CampaignInfoTab
             campaign={campaign}
             onSave={updateCampaignInfo}
+            onCoverChange={setCampaign}
             isSaving={isSaving}
           />
         )}

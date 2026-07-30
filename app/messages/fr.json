@@ -750,9 +750,14 @@
             "label": "Catégorie"
           },
           "coverImage": {
-            "hint": "JPG, PNG — 5 Mo max · 1200×600 recommandé",
+            "errorSize": "Image trop volumineuse. 5 Mo maximum.",
+            "errorType": "Format non pris en charge. Acceptés : JPG, PNG, WebP.",
+            "errorUpload": "Échec de l'envoi. Merci de réessayer.",
+            "hint": "JPG, PNG, WebP — 5 Mo max · 1200×600 recommandé",
             "label": "Image de couverture",
-            "uploadPrompt": "Glissez une image ou parcourir"
+            "remove": "Retirer",
+            "uploadPrompt": "Glissez une image ou parcourir",
+            "uploading": "Envoi en cours..."
           },
           "dateError": "La date de fin doit être au moins 7 jours après le début",
           "description": {
@@ -855,9 +860,9 @@
         "continue": "Continuer en brouillon",
         "hint": "Vous gagnerez du temps en commençant la rédaction dès maintenant.",
         "status": {
-          "UNVERIFIED": "Votre association n'est pas encore vérifiée.",
           "PENDING": "Votre dossier de vérification est en cours d'examen.",
           "REJECTED": "Votre dossier de vérification a été refusé.",
+          "UNVERIFIED": "Votre association n'est pas encore vérifiée.",
           "VERIFIED": "Votre association est vérifiée."
         },
         "title": "📋 Avant de créer votre campagne",
@@ -933,20 +938,20 @@
       "publish": {
         "account": {
           "bank": {
-            "NOT_CONNECTED": "Compte bancaire non connecté — requis pour publier",
-            "NEEDS_DATA": "Dossier Mollie incomplet — informations complémentaires requises pour publier",
-            "IN_REVIEW": "Dossier Mollie en cours d'examen par Mollie — requis pour publier",
+            "BROKEN": "Connexion Mollie interrompue — à reconnecter pour publier",
             "COMPLETED": "Compte bancaire Mollie connecté",
-            "BROKEN": "Connexion Mollie interrompue — à reconnecter pour publier"
+            "IN_REVIEW": "Dossier Mollie en cours d'examen par Mollie — requis pour publier",
+            "NEEDS_DATA": "Dossier Mollie incomplet — informations complémentaires requises pour publier",
+            "NOT_CONNECTED": "Compte bancaire non connecté — requis pour publier"
           },
           "complete": "Compte complet — prêt pour la publication",
           "completeBank": "Compléter",
           "loading": "Vérification du statut de votre compte…",
           "section": "Statut du compte",
           "verif": {
-            "UNVERIFIED": "Votre dossier n'est pas encore vérifié (vous pouvez quand même publier)",
             "PENDING": "Votre dossier est en cours de vérification (vous pouvez quand même publier)",
             "REJECTED": "Votre dossier de vérification a été refusé (vous pouvez quand même publier)",
+            "UNVERIFIED": "Votre dossier n'est pas encore vérifié (vous pouvez quand même publier)",
             "VERIFIED": "Votre association est vérifiée"
           }
         },

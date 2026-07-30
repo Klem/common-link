@@ -13,6 +13,7 @@ import org.commonlink.dto.toDto
 import org.commonlink.dto.toSummaryDto
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignBudgetItem
+import org.commonlink.entity.CampaignCoverImage
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
@@ -25,6 +26,7 @@ import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetSectionRepository
+import org.commonlink.repository.CampaignCoverImageRepository
 import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.MollieConnectionRepository
@@ -32,11 +34,21 @@ import org.commonlink.repository.MoneriumConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 import org.web3j.crypto.Hash
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
+
+/** Maximum accepted cover image size — mirrored in the frontend upload zone (rule 8). */
+private const val MAX_COVER_IMAGE_SIZE = 5L * 1024 * 1024
+
+/** Accepted cover image MIME types — mirrored in the frontend upload zone (rule 8). */
+private val COVER_IMAGE_ALLOWED_MIME = setOf("image/jpeg", "image/png", "image/webp")
+
+/** Public serving path of a campaign cover image; stored in [Campaign.coverImage]. */
+private fun coverImagePath(campaignId: UUID): String = "/api/public/campaigns/$campaignId/cover"
 
 /**
  * Business logic for managing fundraising campaigns of an association.
@@ -52,6 +64,7 @@ class CampaignService(
     private val campaignRepository: CampaignRepository,
     private val campaignBudgetSectionRepository: CampaignBudgetSectionRepository,
     private val campaignMilestoneRepository: CampaignMilestoneRepository,
+    private val campaignCoverImageRepository: CampaignCoverImageRepository,
     private val associationProfileRepository: AssociationProfileRepository,
     private val mollieConnectionRepository: MollieConnectionRepository,
     private val moneriumConnectionRepository: MoneriumConnectionRepository,
@@ -210,6 +223,110 @@ class CampaignService(
 
         logger.debug("Campaign updated: id={}, associationId={}", campaignId, associationId)
         return resolveCampaignWithDetails(campaignId, associationId).toDto()
+    }
+
+    /**
+     * Stores (or replaces) the cover image of a campaign.
+     *
+     * Mirror of the frontend validation in `CampaignInfoTab` (rule 8): only JPEG, PNG and WebP
+     * are accepted, up to [MAX_COVER_IMAGE_SIZE]. On success, [Campaign.coverImage] is set to the
+     * public serving path of the image so every consumer (dashboard, widget, minisite) resolves
+     * it the same way.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @param campaignId UUID of the campaign.
+     * @param file Uploaded image.
+     * @return Updated [CampaignDto].
+     * @throws UserNotFoundException if no association profile exists for this user.
+     * @throws NotFoundException if the campaign is not found under this association.
+     * @throws UnprocessableEntityException if the file is empty, too large, or not an accepted image type.
+     */
+    @Transactional
+    fun uploadCoverImage(userId: UUID, campaignId: UUID, file: MultipartFile): CampaignDto {
+        val associationId = resolveAssociationId(userId)
+        val campaign = resolveCampaign(campaignId, associationId)
+        validateCoverImage(file)
+
+        // Shared primary key: saving over an existing row replaces the previous image.
+        campaignCoverImageRepository.save(
+            CampaignCoverImage(
+                campaignId = campaignId,
+                data = file.bytes,
+                contentType = file.contentType!!,
+                sizeBytes = file.size,
+                uploadedAt = Instant.now(),
+            )
+        )
+        campaign.coverImage = coverImagePath(campaignId)
+        campaign.updatedAt = Instant.now()
+        campaignRepository.save(campaign)
+
+        logger.info(
+            "Campaign cover image uploaded: campaignId={}, associationId={}, size={}",
+            campaignId, associationId, file.size,
+        )
+        return resolveCampaignWithDetails(campaignId, associationId).toDto()
+    }
+
+    /**
+     * Removes the cover image of a campaign. No-op if the campaign has no image.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @param campaignId UUID of the campaign.
+     * @return Updated [CampaignDto] with a null `coverImage`.
+     * @throws UserNotFoundException if no association profile exists for this user.
+     * @throws NotFoundException if the campaign is not found under this association.
+     */
+    @Transactional
+    fun deleteCoverImage(userId: UUID, campaignId: UUID): CampaignDto {
+        val associationId = resolveAssociationId(userId)
+        val campaign = resolveCampaign(campaignId, associationId)
+
+        campaignCoverImageRepository.deleteById(campaignId)
+        campaign.coverImage = null
+        campaign.updatedAt = Instant.now()
+        campaignRepository.save(campaign)
+
+        logger.info("Campaign cover image deleted: campaignId={}, associationId={}", campaignId, associationId)
+        return resolveCampaignWithDetails(campaignId, associationId).toDto()
+    }
+
+    /**
+     * Returns the raw cover image of a campaign, for the unauthenticated serving endpoint.
+     *
+     * Deliberately not scoped to an association and not gated on [CampaignStatus]: an `<img>` tag
+     * cannot carry a Bearer token, so the same URL must work for the owner's draft preview and for
+     * the public widget. A cover image carries no confidential data and the campaign UUID is not
+     * enumerable.
+     *
+     * The bytes are read inside the transaction and returned as a plain pair, so the caller never
+     * touches the lazily-mapped `data` field outside the persistence context.
+     *
+     * @param campaignId UUID of the campaign.
+     * @return MIME type and raw bytes of the image.
+     * @throws NotFoundException if the campaign has no cover image.
+     */
+    @Transactional(readOnly = true)
+    fun getCoverImage(campaignId: UUID): Pair<String, ByteArray> {
+        val image = campaignCoverImageRepository.findById(campaignId)
+            .orElseThrow { NotFoundException("No cover image for campaign $campaignId") }
+        return image.contentType to image.data
+    }
+
+    /** Rejects empty files, oversized files and non-image MIME types. */
+    private fun validateCoverImage(file: MultipartFile) {
+        if (file.isEmpty) {
+            throw UnprocessableEntityException("Cover image file is empty")
+        }
+        if (file.size > MAX_COVER_IMAGE_SIZE) {
+            throw UnprocessableEntityException("Cover image exceeds the maximum allowed size of 5 MB")
+        }
+        val mime = file.contentType ?: ""
+        if (mime !in COVER_IMAGE_ALLOWED_MIME) {
+            throw UnprocessableEntityException(
+                "Unsupported cover image type '$mime'; allowed types: ${COVER_IMAGE_ALLOWED_MIME.joinToString(", ")}"
+            )
+        }
     }
 
     /**

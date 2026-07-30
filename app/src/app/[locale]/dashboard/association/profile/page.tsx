@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import type { Path, RegisterOptions } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
@@ -22,7 +23,12 @@ import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
 import { WidgetTab } from '@/components/settings/WidgetTab';
 import { useMandate } from '@/hooks/dashboard/useMandate';
+import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
 import { VerificationStatus } from '@/types/association';
+import type {
+  AssociationProfileDto,
+  UpdateAssociationProfileRequest,
+} from '@/types/association';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +67,34 @@ const profileSchema = z.object({
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
+
+/** Formulaire vide — baseline avant l'arrivée du profil. */
+const EMPTY_PROFILE_FORM: ProfileFormData = {
+  contactName: '',
+  siren: '',
+  creationYear: undefined,
+  contactEmail: '',
+  phone: '',
+  addressLine1: '',
+  legalObject: '',
+  signerName: '',
+  signerRole: '',
+};
+
+/** Projette le profil serveur sur les champs du formulaire. */
+function toFormData(profile: AssociationProfileDto): ProfileFormData {
+  return {
+    contactName: profile.contactName ?? '',
+    siren: profile.siren ?? '',
+    creationYear: profile.creationYear ?? undefined,
+    contactEmail: profile.contactEmail ?? '',
+    phone: profile.phone ?? '',
+    addressLine1: profile.addressLine1 ?? '',
+    legalObject: profile.legalObject ?? '',
+    signerName: profile.signerName ?? '',
+    signerRole: profile.signerRole ?? '',
+  };
+}
 
 type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget';
 
@@ -161,23 +195,68 @@ export default function AssociationProfilePage() {
     register,
     handleSubmit,
     reset,
+    trigger,
+    getValues,
     formState: { isDirty, isSubmitting, errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    values: {
-      contactName: profile?.contactName ?? '',
-      siren: profile?.siren ?? '',
-      creationYear: profile?.creationYear ?? undefined,
-      contactEmail: profile?.contactEmail ?? '',
-      phone: profile?.phone ?? '',
-      addressLine1: profile?.addressLine1 ?? '',
-      legalObject: profile?.legalObject ?? '',
-      signerName: profile?.signerName ?? '',
-      signerRole: profile?.signerRole ?? '',
-    },
+    // `defaultValues` (et non `values`) : une re-sync réactive sur `profile`
+    // écraserait les caractères tapés pendant un autosave en vol. Le formulaire
+    // est hydraté une seule fois, au premier profil reçu.
+    defaultValues: EMPTY_PROFILE_FORM,
   });
 
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (!profile || hydrated.current) return;
+    hydrated.current = true;
+    reset(toFormData(profile));
+  }, [profile, reset]);
+
+  /**
+   * Autosave debouncé (800 ms) — même contrat que `CampaignInfoTab` :
+   * patchs fusionnés, envoi silencieux (pas de toast), flush au démontage.
+   * `reset(getValues())` remet la baseline de `isDirty` sur les valeurs courantes sans toucher à
+   * la saisie en cours — mais seulement si le formulaire est entièrement valide. Rebaser alors
+   * qu'un autre champ est invalide effacerait son message d'erreur et installerait sa valeur
+   * invalide comme référence : `isDirty` retomberait à faux, le bouton Enregistrer s'éteindrait
+   * et la saisie fautive ne partirait jamais.
+   */
+  const errorsRef = useRef(errors);
+  errorsRef.current = errors;
+
+  const { schedule, cancel } = useDebouncedPatchSave<UpdateAssociationProfileRequest>(
+    async (patch) => {
+      await updateProfile(patch, true);
+      if (Object.keys(errorsRef.current).length === 0) reset(getValues());
+    },
+  );
+
+  /**
+   * Wrappe `register` pour planifier un autosave après chaque frappe.
+   * Le patch n'est planifié que si le champ passe sa validation zod : un SIREN
+   * à moitié tapé ne doit pas partir en PATCH (le back le refuserait en 422).
+   */
+  const autosave = <K extends Path<ProfileFormData>>(
+    name: K,
+    options?: RegisterOptions<ProfileFormData, K>,
+  ) => {
+    const registered = register(name, options);
+    return {
+      ...registered,
+      onChange: async (event: Parameters<typeof registered.onChange>[0]) => {
+        await registered.onChange(event);
+        if (!(await trigger(name))) return;
+        const value = getValues(name);
+        const normalized =
+          value === '' || (typeof value === 'number' && Number.isNaN(value)) ? undefined : value;
+        schedule({ [name]: normalized } as Partial<UpdateAssociationProfileRequest>);
+      },
+    };
+  };
+
   const onSubmit = handleSubmit(async (data) => {
+    cancel();
     await updateProfile({
       contactName: data.contactName || undefined,
       siren: data.siren || undefined,
@@ -314,7 +393,7 @@ export default function AssociationProfilePage() {
                         className="fi"
                         placeholder="123456789"
                         disabled={verifDone}
-                        {...register('siren')}
+                        {...autosave('siren')}
                       />
                       {verifDone && (
                         <p className="fhint">{t('association.profile.readOnly.verified')}</p>
@@ -343,7 +422,7 @@ export default function AssociationProfilePage() {
                         min={1800}
                         max={CURRENT_YEAR}
                         disabled={verifDone}
-                        {...register('creationYear', { valueAsNumber: true })}
+                        {...autosave('creationYear', { valueAsNumber: true })}
                       />
                       {verifDone && (
                         <p className="fhint">{t('association.profile.readOnly.verified')}</p>
@@ -366,7 +445,7 @@ export default function AssociationProfilePage() {
                         className="fi"
                         placeholder={t('association.profile.contactNamePlaceholder')}
                         disabled={onboardingStatus === 'COMPLETED'}
-                        {...register('contactName')}
+                        {...autosave('contactName')}
                       />
                       {onboardingStatus === 'COMPLETED' && (
                         <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
@@ -384,7 +463,7 @@ export default function AssociationProfilePage() {
                         type="email"
                         className="fi"
                         disabled={onboardingStatus === 'COMPLETED'}
-                        {...register('contactEmail')}
+                        {...autosave('contactEmail')}
                       />
                       {onboardingStatus === 'COMPLETED' && (
                         <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
@@ -405,7 +484,7 @@ export default function AssociationProfilePage() {
                         id="phone"
                         type="tel"
                         className="fi"
-                        {...register('phone')}
+                        {...autosave('phone')}
                       />
                       {errors.phone && (
                         <p className="fhint error">{t(errors.phone.message as Parameters<typeof t>[0])}</p>
@@ -424,7 +503,7 @@ export default function AssociationProfilePage() {
                         type="text"
                         className="fi"
                         placeholder={t('association.profile.addressLine1Placeholder')}
-                        {...register('addressLine1')}
+                        {...autosave('addressLine1')}
                       />
                     </div>
                   </div>
@@ -440,7 +519,7 @@ export default function AssociationProfilePage() {
                         type="text"
                         className="fi"
                         placeholder={t('association.profile.legalObjectPlaceholder')}
-                        {...register('legalObject')}
+                        {...autosave('legalObject')}
                       />
                     </div>
                   </div>
@@ -456,7 +535,7 @@ export default function AssociationProfilePage() {
                         type="text"
                         className="fi"
                         placeholder={t('association.profile.signerNamePlaceholder')}
-                        {...register('signerName')}
+                        {...autosave('signerName')}
                       />
                     </div>
                     <div className="fg">
@@ -468,7 +547,7 @@ export default function AssociationProfilePage() {
                         type="text"
                         className="fi"
                         placeholder={t('association.profile.signerRolePlaceholder')}
-                        {...register('signerRole')}
+                        {...autosave('signerRole')}
                       />
                     </div>
                   </div>

@@ -9,7 +9,7 @@
 --
 -- What is deleted for each targeted association:
 --   payouts, donations (to its campaigns), related onchain_jobs,
---   campaigns + milestones + budgets, payees, IBANs,
+--   campaigns + milestones + budgets + cover images, payees, IBANs,
 --   Monerium/Mollie connections (cascade from association_profiles),
 --   fiscal mandates, KYC documents, registry checks,
 --   magic_link_tokens, refresh_tokens, email_verification_tokens,
@@ -107,7 +107,7 @@ DO $$
 
         -- ════════════════════════════════════════════════════════════
         -- 4. CAMPAIGNS  (cascade → milestones, budget_sections,
-        --    budget_items)
+        --    budget_items, cover_images (V47))
         -- ════════════════════════════════════════════════════════════
         DELETE FROM campaigns c
         WHERE c.association_id = ANY(v_target_assoc_ids);

@@ -1,17 +1,30 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
+import {
+  uploadCampaignCover,
+  deleteCampaignCover,
+  campaignCoverUrl,
+} from '@/lib/api/campaign';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
+
+/** Types MIME acceptés pour la couverture — miroir de `COVER_IMAGE_ALLOWED_MIME` côté back (règle 8). */
+const COVER_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+
+/** Taille maximale de la couverture — miroir de `MAX_COVER_IMAGE_SIZE` côté back (règle 8). */
+const COVER_MAX_SIZE = 5 * 1024 * 1024;
 
 interface CampaignInfoTabProps {
   campaign: CampaignDto;
   onSave: (data: UpdateCampaignRequest, silent?: boolean) => void;
+  /** Appelé avec le DTO retourné après ajout ou retrait de la couverture. */
+  onCoverChange: (updated: CampaignDto) => void;
   isSaving: boolean;
 }
 
-export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabProps) {
+export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: CampaignInfoTabProps) {
   const t = useTranslations('dashboard.campaigns');
 
   const [name, setName] = useState(campaign.name);
@@ -56,6 +69,56 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
   const handleDescriptionChange = (v: string) => { setDescription(v); schedule({ description: v }); };
   const handleReasonChange = (v: string) => { setReason(v); schedule({ reason: v || undefined }); };
   const handleImpactGoalsChange = (v: string) => { setImpactGoals(v); schedule({ impactGoals: v || undefined }); };
+
+  /* ── Image de couverture ─────────────────────────────────────────────── */
+
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
+  const [coverError, setCoverError] = useState('');
+
+  /**
+   * Valide le fichier côté client (mêmes règles que le back) puis l'envoie.
+   * Un fichier refusé ne déclenche aucun appel réseau.
+   */
+  const uploadCover = async (file: File) => {
+    if (!COVER_ALLOWED_MIME.includes(file.type)) {
+      setCoverError(t('editor.info.coverImage.errorType'));
+      return;
+    }
+    if (file.size > COVER_MAX_SIZE) {
+      setCoverError(t('editor.info.coverImage.errorSize'));
+      return;
+    }
+    setCoverError('');
+    setCoverBusy(true);
+    try {
+      onCoverChange(await uploadCampaignCover(campaign.id, file));
+    } catch {
+      setCoverError(t('editor.info.coverImage.errorUpload'));
+    } finally {
+      setCoverBusy(false);
+    }
+  };
+
+  const handleCoverDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadCover(file);
+  };
+
+  const handleCoverRemove = async () => {
+    setCoverError('');
+    setCoverBusy(true);
+    try {
+      onCoverChange(await deleteCampaignCover(campaign.id));
+    } catch {
+      setCoverError(t('editor.info.coverImage.errorUpload'));
+    } finally {
+      setCoverBusy(false);
+    }
+  };
 
   const isDirty =
     name !== campaign.name ||
@@ -104,6 +167,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
             <span className="tip" data-tip={t('editor.info.goal.tip')}>?</span>
           </label>
           <input
+            id="info-goal"
             className="cm-fi"
             type="number"
             value={goal}
@@ -119,6 +183,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
         <div>
           <label className="cm-label">{t('editor.info.startDate.label')}</label>
           <input
+            id="info-start"
             className="cm-fi"
             type="date"
             value={startDate}
@@ -163,6 +228,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
       <div className="mb-14">
         <label className="cm-label">{t('editor.info.description.label')}</label>
         <textarea
+          id="info-desc"
           className="cm-fi cm-fi-h90"
           value={description}
           onChange={(e) => handleDescriptionChange(e.target.value)}
@@ -177,6 +243,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
           <span className="tip" data-tip={t('editor.info.reason.tip')}>?</span>
         </label>
         <textarea
+          id="info-reason"
           className="cm-fi cm-fi-h70"
           value={reason}
           onChange={(e) => handleReasonChange(e.target.value)}
@@ -191,6 +258,7 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
           <span className="tip" data-tip={t('editor.info.impactGoals.tip')}>?</span>
         </label>
         <textarea
+          id="info-impact-goals"
           className="cm-fi cm-fi-h90"
           value={impactGoals}
           onChange={(e) => handleImpactGoalsChange(e.target.value)}
@@ -201,11 +269,53 @@ export function CampaignInfoTab({ campaign, onSave, isSaving }: CampaignInfoTabP
       {/* Image de couverture */}
       <div className="mt-14">
         <label className="cm-label">{t('editor.info.coverImage.label')}</label>
-        <div className="upload">
-          <div className="upload-icon">🖼️</div>
-          <p>{t('editor.info.coverImage.uploadPrompt')}</p>
-          <small>{t('editor.info.coverImage.hint')}</small>
-        </div>
+        {campaign.coverImage ? (
+          <div className="upload-preview">
+            {/* eslint-disable-next-line @next/next/no-img-element -- served by the API, not by Next */}
+            <img
+              src={campaignCoverUrl(campaign.coverImage, campaign.updatedAt)}
+              alt={t('editor.info.coverImage.label')}
+            />
+            <button
+              type="button"
+              className="upload-preview-remove"
+              onClick={handleCoverRemove}
+              disabled={coverBusy}
+            >
+              {coverBusy ? '⏳' : t('editor.info.coverImage.remove')}
+            </button>
+          </div>
+        ) : (
+          <div
+            className={`upload${dragOver ? ' dragover' : ''}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => coverInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') coverInputRef.current?.click();
+            }}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleCoverDrop}
+          >
+            <div className="upload-icon">🖼️</div>
+            <p>{coverBusy ? t('editor.info.coverImage.uploading') : t('editor.info.coverImage.uploadPrompt')}</p>
+            <small>{t('editor.info.coverImage.hint')}</small>
+          </div>
+        )}
+        <input
+          ref={coverInputRef}
+          type="file"
+          hidden
+          accept={COVER_ALLOWED_MIME.join(',')}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            // Réinitialise l'input pour que re-sélectionner le même fichier redéclenche onChange.
+            e.target.value = '';
+            if (file) uploadCover(file);
+          }}
+        />
+        {coverError && <div className="upload-error">⚠ {coverError}</div>}
       </div>
 
       {/* Enregistrer */}

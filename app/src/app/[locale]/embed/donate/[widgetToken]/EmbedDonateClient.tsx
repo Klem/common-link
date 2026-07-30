@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { apiUrl } from '@/lib/api';
 import { getWidget, createGuestDonation } from '@/lib/api/public';
 import type { PublicWidgetDto } from '@/lib/api/public';
 
@@ -118,7 +119,7 @@ export function EmbedDonateClient({ widgetToken, sourceSite, locale }: Props) {
       {/* Campaign header */}
       {widget.campaignCoverImage && (
         <img
-          src={widget.campaignCoverImage}
+          src={apiUrl(widget.campaignCoverImage)}
           alt={widget.campaignName}
           style={styles.cover}
         />

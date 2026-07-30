@@ -100,9 +100,11 @@ DO $$
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'onchain_jobs supprimés : %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
-        -- 4. CAMPAGNES  (cascade → milestones, budget_sections → budget_items)
+        -- 4. CAMPAGNES  (cascade → milestones, budget_sections → budget_items,
+        --    cover_images)
         --    Gardées si l'association est conservée. Les sections/lignes de budget
-        --    sont supprimées automatiquement via ON DELETE CASCADE.
+        --    et les images de couverture (V47) sont supprimées automatiquement via
+        --    ON DELETE CASCADE.
         --    payees / payee_ibans cascadent depuis association_profiles (étape 6).
         -- ════════════════════════════════════════════════════════════
         DELETE FROM campaigns c
@@ -200,6 +202,7 @@ DO $$
 -- TRUNCATE TABLE
 --   payouts, onchain_jobs, donation_receipts, donations,
 --   campaign_budget_items, campaign_budget_sections, campaign_milestones,
+--   campaign_cover_images,
 --   campaigns, payee_ibans, payees,
 --   monerium_oauth_states, monerium_connections,
 --   association_registry_check,

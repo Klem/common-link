@@ -101,9 +101,20 @@ function buildCompletionSteps(campaign: CampaignDto): CompStep[] {
       cls: msAllComplete ? 'done' : msSomeIncomplete ? 'warn' : 'boost',
       tab: 'milestones',
     },
-    // reason + impact: Step 6 fields not yet in DTO → always boost
-    { key: 'reason', labelKey: 'editor.completion.reason', cls: 'boost', tab: 'info', fieldId: 'info-reason' },
-    { key: 'impact', labelKey: 'editor.completion.impact', cls: 'boost', tab: 'info', fieldId: 'info-impact-goals' },
+    {
+      key: 'reason',
+      labelKey: 'editor.completion.reason',
+      cls: (campaign.reason ?? '').trim().length > 0 ? 'done' : 'boost',
+      tab: 'info',
+      fieldId: 'info-reason',
+    },
+    {
+      key: 'impact',
+      labelKey: 'editor.completion.impact',
+      cls: (campaign.impactGoals ?? '').trim().length > 0 ? 'done' : 'boost',
+      tab: 'info',
+      fieldId: 'info-impact-goals',
+    },
   ];
 
   return [...required, ...boosters];

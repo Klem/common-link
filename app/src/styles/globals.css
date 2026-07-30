@@ -2185,7 +2185,15 @@ label.cm-label { display: block; font-size: 11.5px; font-weight: 600; color: var
 .upload p { font-size: 14px; color: var(--slate-lavender); }
 .upload p b { color: var(--bright-teal); font-weight: 600; }
 .upload small { font-size: 12px; color: var(--slate-lavender); display: block; margin-top: 4px; }
-#info-date-error { display: none; margin-top: 5px; font-size: 11.5px; color: var(--warm-coral); align-items: center; gap: 5px; }
+/* Rendu conditionnel côté React : la maquette basculait `display` en JS, ici la
+   présence du noeud suffit — sinon le message de date resterait invisible. */
+#info-date-error { display: flex; margin-top: 5px; font-size: 11.5px; color: var(--warm-coral); align-items: center; gap: 5px; }
+.upload.dragover { border-color: var(--bright-teal); background: rgba(78,205,196,.06); }
+.upload-preview { position: relative; border-radius: var(--radius-md); overflow: hidden; }
+.upload-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+.upload-preview-remove { position: absolute; top: 8px; right: 8px; border: none; border-radius: var(--radius-sm); padding: 6px 10px; font-family: 'Inter'; font-size: 12px; font-weight: 600; color: #fff; background: rgba(26,32,68,.72); cursor: pointer; }
+.upload-preview-remove:hover { background: var(--warm-coral); }
+.upload-error { margin-top: 5px; font-size: 11.5px; color: var(--warm-coral); }
 
 /* ── Simple tabs ──────────────────────────────────────────────────────────── */
 

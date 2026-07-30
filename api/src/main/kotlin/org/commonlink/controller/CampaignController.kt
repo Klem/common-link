@@ -19,6 +19,7 @@ import org.commonlink.dto.UpdateCampaignRequest
 import org.commonlink.dto.UpdateMilestoneRequest
 import org.commonlink.service.CampaignService
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -29,7 +30,9 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 import java.util.UUID
 
 @RestController
@@ -178,6 +181,64 @@ class CampaignController(
         campaignService.deleteCampaign(UUID.fromString(principal.username), id)
         return ResponseEntity.noContent().build()
     }
+
+    /**
+     * Uploads (or replaces) the cover image of a campaign.
+     *
+     * Accepted types: JPEG, PNG, WebP. Max size: 5 MB — same limits as the frontend upload zone.
+     * On success the returned DTO carries the public serving path in `coverImage`.
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the campaign.
+     * @param file Multipart image part named `file`.
+     * @return 200 with the updated campaign DTO.
+     */
+    @PutMapping("/{id}/cover", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @Operation(
+        summary = "Upload campaign cover image",
+        description = "Uploads or replaces the campaign cover image. Accepted types: JPEG, PNG, WebP. Max size: 5 MB."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Cover image stored",
+            content = [Content(schema = Schema(implementation = CampaignDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Empty file, invalid type, or size above 5 MB", content = [Content()])
+    )
+    fun uploadCoverImage(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+        @RequestParam("file") file: MultipartFile
+    ): ResponseEntity<CampaignDto> =
+        ResponseEntity.ok(campaignService.uploadCoverImage(UUID.fromString(principal.username), id, file))
+
+    /**
+     * Removes the cover image of a campaign. Idempotent — succeeds even if no image was set.
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the campaign.
+     * @return 200 with the updated campaign DTO (`coverImage` null).
+     */
+    @DeleteMapping("/{id}/cover")
+    @Operation(
+        summary = "Delete campaign cover image",
+        description = "Removes the campaign cover image. Idempotent."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Cover image removed",
+            content = [Content(schema = Schema(implementation = CampaignDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()])
+    )
+    fun deleteCoverImage(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID
+    ): ResponseEntity<CampaignDto> =
+        ResponseEntity.ok(campaignService.deleteCoverImage(UUID.fromString(principal.username), id))
 
     /**
      * Replaces the entire budget structure for a campaign in a single atomic operation.

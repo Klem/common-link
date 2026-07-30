@@ -35,8 +35,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
 import java.util.UUID
 import jakarta.persistence.EntityManager
@@ -341,6 +343,107 @@ class CampaignServiceTest {
         assertEquals("Education", updated.category)
         assertEquals("Rénover les écoles", updated.reason)
         assertEquals("450 élèves bénéficiaires", updated.impactGoals)
+    }
+
+    // ── cover image ───────────────────────────────────────────────────────────
+
+    /** Builds a fake multipart image part. */
+    private fun imagePart(
+        contentType: String = "image/png",
+        bytes: ByteArray = byteArrayOf(1, 2, 3, 4),
+    ): MultipartFile = MockMultipartFile("file", "cover.png", contentType, bytes)
+
+    @Test
+    fun `uploadCoverImage - stores the bytes and sets the public serving path`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "With Cover"))
+
+        val updated = campaignService.uploadCoverImage(userId, created.id, imagePart())
+
+        assertEquals("/api/public/campaigns/${created.id}/cover", updated.coverImage)
+        val (contentType, data) = campaignService.getCoverImage(created.id)
+        assertEquals("image/png", contentType)
+        assertArrayEquals(byteArrayOf(1, 2, 3, 4), data)
+    }
+
+    @Test
+    fun `uploadCoverImage - replaces a previously stored image`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "With Cover"))
+        campaignService.uploadCoverImage(userId, created.id, imagePart())
+
+        campaignService.uploadCoverImage(
+            userId, created.id,
+            imagePart(contentType = "image/webp", bytes = byteArrayOf(9, 9)),
+        )
+
+        val (contentType, data) = campaignService.getCoverImage(created.id)
+        assertEquals("image/webp", contentType)
+        assertArrayEquals(byteArrayOf(9, 9), data)
+    }
+
+    @Test
+    fun `uploadCoverImage - rejects an unsupported MIME type`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "With Cover"))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.uploadCoverImage(userId, created.id, imagePart(contentType = "application/pdf"))
+        }
+    }
+
+    @Test
+    fun `uploadCoverImage - rejects a file above 5 MB`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "With Cover"))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.uploadCoverImage(
+                userId, created.id,
+                imagePart(bytes = ByteArray(5 * 1024 * 1024 + 1)),
+            )
+        }
+    }
+
+    @Test
+    fun `uploadCoverImage - rejects an empty file`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "With Cover"))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.uploadCoverImage(userId, created.id, imagePart(bytes = ByteArray(0)))
+        }
+    }
+
+    @Test
+    fun `uploadCoverImage - rejects a campaign owned by another association`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "With Cover"))
+
+        assertThrows<NotFoundException> {
+            campaignService.uploadCoverImage(otherUserId, created.id, imagePart())
+        }
+    }
+
+    @Test
+    fun `deleteCoverImage - clears the path and the stored bytes`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "With Cover"))
+        campaignService.uploadCoverImage(userId, created.id, imagePart())
+
+        val updated = campaignService.deleteCoverImage(userId, created.id)
+
+        assertNull(updated.coverImage)
+        assertThrows<NotFoundException> { campaignService.getCoverImage(created.id) }
+    }
+
+    @Test
+    fun `deleteCoverImage - is a no-op when no image was stored`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "No Cover"))
+
+        val updated = campaignService.deleteCoverImage(userId, created.id)
+
+        assertNull(updated.coverImage)
+    }
+
+    @Test
+    fun `getCoverImage - throws when the campaign has no cover image`() {
+        val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "No Cover"))
+
+        assertThrows<NotFoundException> { campaignService.getCoverImage(created.id) }
     }
 
     // ── deleteCampaign ────────────────────────────────────────────────────────

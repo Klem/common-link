@@ -32,6 +32,19 @@ const api = axios.create({
   withCredentials: true,
 });
 
+/**
+ * Resolves an API-relative path into an absolute URL against the API origin.
+ *
+ * Needed wherever the browser fetches a resource itself rather than through this Axios
+ * instance — typically an `<img src>` pointing at a public API endpoint, which would
+ * otherwise resolve against the frontend origin.
+ *
+ * @param path - API-relative path (`/api/...`) or an already absolute URL.
+ * @returns Absolute URL.
+ */
+export const apiUrl = (path: string): string =>
+  path.startsWith('http') ? path : `${apiBaseURL}${path}`;
+
 // ─── Request interceptor — attach access token ────────────────────────────────
 
 api.interceptors.request.use((config) => {

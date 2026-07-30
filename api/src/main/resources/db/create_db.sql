@@ -279,6 +279,17 @@ CREATE TABLE campaign_milestones
 -- V24 : composite (campaign_id, sort_order).
 CREATE INDEX idx_milestones_campaign_sort ON campaign_milestones (campaign_id, sort_order);
 
+-- V47 : binaire de l'image de couverture, table dédiée (PK partagée avec campaigns) pour que
+-- charger une campagne ne charge jamais les octets. campaigns.cover_image garde le chemin public.
+CREATE TABLE campaign_cover_images
+(
+    campaign_id  UUID         PRIMARY KEY REFERENCES campaigns(id) ON DELETE CASCADE,
+    data         BYTEA        NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    size_bytes   BIGINT       NOT NULL,
+    uploaded_at  TIMESTAMPTZ  NOT NULL
+);
+
 -- =============================================================
 -- 5. DONATIONS  (V20 ; unique provider_ref en V23 ; index V27 ; type_code V28)
 -- =============================================================
@@ -570,7 +581,6 @@ CREATE TABLE receipt_seq
     CONSTRAINT pk_receipt_seq PRIMARY KEY (association_id, year)
 );
 -- Mollie states and connections (V45)
-
 CREATE TABLE mollie_oauth_states (
                                      state          VARCHAR(255) PRIMARY KEY,
                                      association_id UUID         NOT NULL REFERENCES association_profiles (id) ON DELETE CASCADE,
@@ -598,3 +608,4 @@ CREATE TABLE mollie_connections (
 CREATE UNIQUE INDEX uq_mollie_connections_organization
     ON mollie_connections (mollie_organization_id)
     WHERE mollie_organization_id IS NOT NULL;
+

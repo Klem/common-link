@@ -750,9 +750,14 @@
             "label": "Category"
           },
           "coverImage": {
-            "hint": "JPG, PNG — 5 MB max · 1200×600 recommended",
+            "errorSize": "Image too large. Maximum 5 MB.",
+            "errorType": "Unsupported format. Accepted: JPG, PNG, WebP.",
+            "errorUpload": "Upload failed. Please try again.",
+            "hint": "JPG, PNG, WebP — 5 MB max · 1200×600 recommended",
             "label": "Cover image",
-            "uploadPrompt": "Drag an image or browse"
+            "remove": "Remove",
+            "uploadPrompt": "Drag an image or browse",
+            "uploading": "Uploading..."
           },
           "dateError": "End date must be at least 7 days after start date",
           "description": {
@@ -855,9 +860,9 @@
         "continue": "Continue as draft",
         "hint": "Start writing now to save time.",
         "status": {
-          "UNVERIFIED": "Your association is not yet verified.",
           "PENDING": "Your verification dossier is under review.",
           "REJECTED": "Your verification dossier was rejected.",
+          "UNVERIFIED": "Your association is not yet verified.",
           "VERIFIED": "Your association is verified."
         },
         "title": "📋 Before creating your campaign",
@@ -933,20 +938,20 @@
       "publish": {
         "account": {
           "bank": {
-            "NOT_CONNECTED": "No bank account connected — required to publish",
-            "NEEDS_DATA": "Incomplete Mollie dossier — more information required to publish",
-            "IN_REVIEW": "Mollie dossier under review — required to publish",
+            "BROKEN": "Mollie connection interrupted — reconnect to publish",
             "COMPLETED": "Mollie bank account connected",
-            "BROKEN": "Mollie connection interrupted — reconnect to publish"
+            "IN_REVIEW": "Mollie dossier under review — required to publish",
+            "NEEDS_DATA": "Incomplete Mollie dossier — more information required to publish",
+            "NOT_CONNECTED": "No bank account connected — required to publish"
           },
           "complete": "Account complete — ready to publish",
           "completeBank": "Complete",
           "loading": "Checking your account status…",
           "section": "Account status",
           "verif": {
-            "UNVERIFIED": "Your dossier is not yet verified (you can still publish)",
             "PENDING": "Your dossier is being verified (you can still publish)",
             "REJECTED": "Your verification dossier was rejected (you can still publish)",
+            "UNVERIFIED": "Your dossier is not yet verified (you can still publish)",
             "VERIFIED": "Your association is verified"
           }
         },
