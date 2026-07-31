@@ -428,8 +428,10 @@
         "cancel": "Annuler",
         "city": "Ville",
         "contactEmail": "Email de contact",
+        "contactEmailTip": "Email qui sera lié au compte bancaire.",
         "contactName": "Nom du contact",
         "contactNamePlaceholder": "Votre nom complet",
+        "contactNameTip": "Nom de la personne qui sera liée au compte bancaire.",
         "creationYear": "Année de création",
         "description": "Description",
         "descriptionPlaceholder": "Décrivez la mission de votre association",
@@ -522,6 +524,12 @@
             "sub": "Les reçus fiscaux sont émis automatiquement pour chaque don éligible reçu via CommonLink.",
             "title": "Mandat actif"
           },
+          "signerWarning": {
+            "close": "Fermer",
+            "missingSignerName": "Un nom de signataire habilité est requis pour signer le mandat fiscal : il apparaît sur chaque reçu fiscal. Veuillez d'abord renseigner le champ Nom du signataire habilité dans l'onglet Informations et enregistrer.",
+            "missingSignerRole": "Une fonction du signataire est requise pour signer le mandat fiscal : elle apparaît sur chaque reçu fiscal. Veuillez d'abord renseigner le champ Fonction du signataire dans l'onglet Informations et enregistrer.",
+            "title": "Signataire habilité requis"
+          },
           "step1": {
             "declared": "Déclaré",
             "intro": "Seuls les organismes d'intérêt général (OIG) ou d'utilité publique peuvent faire émettre des reçus fiscaux ouvrant droit à réduction d'impôt.",
@@ -575,8 +583,10 @@
         },
         "signerName": "Nom du signataire habilité",
         "signerNamePlaceholder": "Jean MARTIN",
+        "signerNameTip": "Nom de la personne qui apparaîtra sur les reçus fiscaux.",
         "signerRole": "Fonction du signataire",
         "signerRolePlaceholder": "Trésorier",
+        "signerRoleTip": "Fonction de la personne qui apparaîtra sur les reçus fiscaux.",
         "siren": "SIREN",
         "subtitle": "Gérez les informations et la vérification de votre association.",
         "success": "Profil mis à jour.",

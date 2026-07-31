@@ -1,13 +1,14 @@
 package org.commonlink.service
 
-import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.MollieConnectionRepository
+import org.commonlink.repository.MollieOAuthStateRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -27,6 +28,7 @@ class OnboardingGateService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val fiscalMandateRepository: FiscalMandateRepository,
     private val mollieConnectionRepository: MollieConnectionRepository,
+    private val mollieOAuthStateRepository: MollieOAuthStateRepository,
 ) {
 
     /**
@@ -59,18 +61,29 @@ class OnboardingGateService(
     }
 
     /**
-     * Returns true if Mollie KYC is fully completed for this association.
+     * Returns true once the Mollie KYC flow has been *initiated* for this association — not merely
+     * once it is completed.
      *
      * Used to lock contact-identity fields ([org.commonlink.entity.AssociationProfile.contactName]
-     * and [org.commonlink.entity.AssociationProfile.contactEmail]) that were submitted to Mollie
-     * during client-link creation. Changing them after KYC completion would create inconsistency
-     * with Mollie's records.
+     * and [org.commonlink.entity.AssociationProfile.contactEmail]): they are submitted to Mollie
+     * when the client-link is created, which happens in `MollieConnectService.buildAuthorizationUrl`
+     * — *before* the OAuth callback persists the [org.commonlink.entity.MollieConnection] row.
+     * Editing them mid-flow would desynchronise CommonLink from Mollie's records.
+     *
+     * Two signals, because the flow spans two persistence steps:
+     *  - a non-expired [org.commonlink.entity.MollieOAuthState] → the client-link was just created
+     *    and the hosted wizard is open (or was abandoned less than the state TTL ago);
+     *  - an existing [org.commonlink.entity.MollieConnection] → the callback has run.
+     *
+     * When a flow is abandoned and its OAuth state expires, the lock lifts on purpose: the next
+     * attempt creates a fresh client-link carrying whatever contact data is current, so no
+     * inconsistency can arise.
      */
     @Transactional(readOnly = true)
-    fun isMollieKycCompleted(userId: UUID): Boolean {
+    fun isMollieKycStarted(userId: UUID): Boolean {
         val associationId = resolveAssociationId(userId)
-        val connection = mollieConnectionRepository.findByAssociationId(associationId)
-        return connection?.onboardingStatus == MollieOnboardingStatus.COMPLETED
+        if (mollieConnectionRepository.findByAssociationId(associationId) != null) return true
+        return mollieOAuthStateRepository.existsByAssociationIdAndExpiresAtAfter(associationId, Instant.now())
     }
 
     /**

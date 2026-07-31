@@ -428,8 +428,10 @@
         "cancel": "Cancel",
         "city": "City",
         "contactEmail": "Contact email",
+        "contactEmailTip": "Email address that will be linked to the bank account.",
         "contactName": "Contact name",
         "contactNamePlaceholder": "Your full name",
+        "contactNameTip": "Name of the person who will be linked to the bank account.",
         "creationYear": "Year founded",
         "description": "Description",
         "descriptionPlaceholder": "Describe your association's mission",
@@ -522,6 +524,12 @@
             "sub": "Tax receipts are automatically issued for each eligible donation received via CommonLink.",
             "title": "Mandate active"
           },
+          "signerWarning": {
+            "close": "Close",
+            "missingSignerName": "An authorised signer name is required to sign the fiscal mandate: it appears on every tax receipt. Please fill in the Authorised signer name field in the Information tab and save.",
+            "missingSignerRole": "An authorised signer role is required to sign the fiscal mandate: it appears on every tax receipt. Please fill in the Signer role field in the Information tab and save.",
+            "title": "Authorised signer required"
+          },
           "step1": {
             "declared": "Declared",
             "intro": "Only organisations of general interest (OIG) or of public utility can have tax receipts issued entitling donors to tax reduction.",
@@ -575,8 +583,10 @@
         },
         "signerName": "Authorised signer name",
         "signerNamePlaceholder": "Jean MARTIN",
+        "signerNameTip": "Name of the person who will appear on tax receipts.",
         "signerRole": "Signer role / title",
         "signerRolePlaceholder": "Treasurer",
+        "signerRoleTip": "Role of the person who will appear on tax receipts.",
         "siren": "SIREN",
         "subtitle": "Manage your association's information and verification.",
         "success": "Profile updated.",

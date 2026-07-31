@@ -86,13 +86,15 @@ class AssociationService(
              (req.creationYear != null && req.creationYear != profile.creationYear))) {
             throw ConflictException("SIREN and creation year cannot be modified once the association is verified")
         }
-        // Contact name and email are immutable once Mollie KYC is COMPLETED — they were submitted
-        // to Mollie during client-link creation and changing them after completion would create inconsistency.
-        // Guard triggers only when a *different* value is submitted — resending the stored value is a no-op.
-        if (onboardingGate.isMollieKycCompleted(userId) &&
+        // Contact name and email are immutable once the Mollie KYC flow has been *started* — they are
+        // submitted to Mollie when the client-link is created, before the OAuth callback, so waiting for
+        // completion would leave a window where CommonLink and Mollie disagree.
+        // Guard triggers only when a *different* value is submitted — resending the stored value is a no-op,
+        // which matters because the infos form autosaves and may PATCH unchanged fields.
+        if (onboardingGate.isMollieKycStarted(userId) &&
             ((req.contactName != null && req.contactName != profile.contactName) ||
              (req.contactEmail != null && req.contactEmail != profile.contactEmail))) {
-            throw ConflictException("Contact name and email cannot be modified once Mollie is connected")
+            throw ConflictException("Contact name and email cannot be modified once the Mollie KYC flow has started")
         }
 
         req.contactName?.let { profile.contactName = it }

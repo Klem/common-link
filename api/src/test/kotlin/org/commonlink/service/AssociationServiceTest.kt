@@ -201,12 +201,12 @@ class AssociationServiceTest {
     }
 
     @Test
-    fun `updateProfile - contactName cannot be modified once Mollie KYC completed`() {
+    fun `updateProfile - contactName cannot be modified once Mollie KYC started`() {
         val userId = UUID.randomUUID()
         val profile = mockk<AssociationProfile>(relaxed = true)
         every { profile.verificationStatus } returns VerificationStatus.UNVERIFIED
         every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
-        every { onboardingGate.isMollieKycCompleted(userId) } returns true
+        every { onboardingGate.isMollieKycStarted(userId) } returns true
 
         val req = UpdateAssociationProfileRequest(
             contactName = "Jean Martin", city = null, postalCode = null, description = null,
@@ -218,12 +218,12 @@ class AssociationServiceTest {
     }
 
     @Test
-    fun `updateProfile - contactEmail cannot be modified once Mollie KYC completed`() {
+    fun `updateProfile - contactEmail cannot be modified once Mollie KYC started`() {
         val userId = UUID.randomUUID()
         val profile = mockk<AssociationProfile>(relaxed = true)
         every { profile.verificationStatus } returns VerificationStatus.UNVERIFIED
         every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
-        every { onboardingGate.isMollieKycCompleted(userId) } returns true
+        every { onboardingGate.isMollieKycStarted(userId) } returns true
 
         val req = UpdateAssociationProfileRequest(
             contactName = null, city = null, postalCode = null, description = null,
@@ -254,13 +254,13 @@ class AssociationServiceTest {
     }
 
     @Test
-    fun `updateProfile - contactName same value is allowed when Mollie KYC completed`() {
+    fun `updateProfile - contactName same value is allowed when Mollie KYC started`() {
         val userId = UUID.randomUUID()
         val profile = mockk<AssociationProfile>(relaxed = true)
         every { profile.verificationStatus } returns VerificationStatus.UNVERIFIED
         every { profile.contactName } returns "Jean Martin"
         every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
-        every { onboardingGate.isMollieKycCompleted(userId) } returns true
+        every { onboardingGate.isMollieKycStarted(userId) } returns true
         every { associationRepo.save(profile) } returns profile
 
         val req = UpdateAssociationProfileRequest(

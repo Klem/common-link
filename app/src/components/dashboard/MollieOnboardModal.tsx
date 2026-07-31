@@ -108,12 +108,12 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
         <div className="modal-body">
           <p className="text-sm text-text-2 leading-relaxed mb-6">{t('mollie.modal.description')}</p>
           {!contactEmail && (
-            <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded p-3 leading-relaxed mb-2">
+            <p className="alert alert-warning alert-spaced">
               {t('mollie.modal.missingContactEmail')}
             </p>
           )}
           {!contactName && (
-            <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded p-3 leading-relaxed">
+            <p className="alert alert-warning">
               {t('mollie.modal.missingContactName')}
             </p>
           )}

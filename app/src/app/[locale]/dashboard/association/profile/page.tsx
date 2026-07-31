@@ -144,6 +144,10 @@ export default function AssociationProfilePage() {
   // du badge "ok" du prérequis, pour que lock et badge ne divergent jamais).
   const verifDone = (verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED;
   const mandateDone = mandateState?.signed === true;
+  // Nom et email de contact sont figés dès que le KYC Mollie est *lancé* — ils partent chez Mollie
+  // à la création du client-link, avant le callback OAuth (qui seul crée la MollieConnection). Un état
+  // OAuth encore vivant (`pending`) suffit donc à verrouiller. Miroir de `OnboardingGateService.isMollieKycStarted`.
+  const contactLocked = mollieConnected === true || molliePending === true;
   // Même prédicat que le gate backend (`MollieConnection.canCollectDonations`) et que
   // `BankSetupStatus.COMPLETED` : un widget ne peut pas fonctionner sur une campagne non publiée,
   // donc le déverrouillage du widget ne doit jamais être plus permissif que la publication.
@@ -437,17 +441,18 @@ export default function AssociationProfilePage() {
                   <div className="frow">
                     <div className="fg">
                       <label htmlFor="contactName" className="fl">
-                        {t('association.profile.contactName')}<span className="text-red-500 ml-0.5">*</span>
+                        {t('association.profile.contactName')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                        <span className="tip" data-tip={t('association.profile.contactNameTip')}>?</span>
                       </label>
                       <input
                         id="contactName"
                         type="text"
                         className="fi"
                         placeholder={t('association.profile.contactNamePlaceholder')}
-                        disabled={onboardingStatus === 'COMPLETED'}
+                        disabled={contactLocked}
                         {...autosave('contactName')}
                       />
-                      {onboardingStatus === 'COMPLETED' && (
+                      {contactLocked && (
                         <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
                       )}
                       {errors.contactName && (
@@ -456,16 +461,17 @@ export default function AssociationProfilePage() {
                     </div>
                     <div className="fg">
                       <label htmlFor="contactEmail" className="fl">
-                        {t('association.profile.contactEmail')}<span className="text-red-500 ml-0.5">*</span>
+                        {t('association.profile.contactEmail')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                        <span className="tip" data-tip={t('association.profile.contactEmailTip')}>?</span>
                       </label>
                       <input
                         id="contactEmail"
                         type="email"
                         className="fi"
-                        disabled={onboardingStatus === 'COMPLETED'}
+                        disabled={contactLocked}
                         {...autosave('contactEmail')}
                       />
-                      {onboardingStatus === 'COMPLETED' && (
+                      {contactLocked && (
                         <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
                       )}
                       {errors.contactEmail && (
@@ -528,7 +534,8 @@ export default function AssociationProfilePage() {
                   <div className="frow">
                     <div className="fg">
                       <label htmlFor="signerName" className="fl">
-                        {t('association.profile.signerName')}
+                        {t('association.profile.signerName')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                        <span className="tip" data-tip={t('association.profile.signerNameTip')}>?</span>
                       </label>
                       <input
                         id="signerName"
@@ -540,7 +547,8 @@ export default function AssociationProfilePage() {
                     </div>
                     <div className="fg">
                       <label htmlFor="signerRole" className="fl">
-                        {t('association.profile.signerRole')}
+                        {t('association.profile.signerRole')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                        <span className="tip" data-tip={t('association.profile.signerRoleTip')}>?</span>
                       </label>
                       <input
                         id="signerRole"
@@ -755,6 +763,8 @@ export default function AssociationProfilePage() {
             onUploadDoc={uploadDoc}
             onDeleteDoc={deleteDoc}
             onSign={async (request) => { await sign(request); setActiveTab('bank'); }}
+            signerName={profile?.signerName}
+            signerRole={profile?.signerRole}
             onRevoke={revoke}
             onDownloadPdf={downloadPdf}
           />

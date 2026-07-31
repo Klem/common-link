@@ -53,6 +53,10 @@ function makeProps(state: MandateStateDto, overrides = {}) {
     onSign: vi.fn().mockResolvedValue(undefined),
     onRevoke: vi.fn().mockResolvedValue(undefined),
     onDownloadPdf: vi.fn().mockResolvedValue(undefined),
+    // Signataire habilité renseigné par défaut : sans lui la signature ouvre la modale d'alerte
+    // au lieu d'appeler onSign (voir le describe « garde signataire habilité »).
+    signerName: 'Marie Dupont',
+    signerRole: 'Présidente',
     ...overrides,
   };
 }
@@ -145,6 +149,36 @@ describe('MandateTab — non signé', () => {
     await waitFor(() =>
       expect(props.onSign).toHaveBeenCalledWith({ eligibility: 'OIG_66', accepted: true })
     );
+  });
+
+  // ── Garde signataire habilité ──────────────────────────────────────────────
+
+  /** Prépare une signature valide (éligibilité + acceptation) puis clique sur « Signer ». */
+  async function attemptSign() {
+    fireEvent.click(screen.getAllByRole('radio')[0]);
+    fireEvent.click(screen.getByRole('checkbox'));
+    const signBtn = screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
+    await act(async () => { fireEvent.click(signBtn); });
+  }
+
+  it('ouvre la modale d\'alerte et n\'appelle pas onSign si le nom du signataire manque', async () => {
+    const props = makeProps(unSignedWithDocs, { signerName: null });
+    render(<MandateTab {...props} />);
+    await attemptSign();
+    expect(
+      screen.getByText('association.profile.mandate.signerWarning.missingSignerName')
+    ).toBeInTheDocument();
+    expect(props.onSign).not.toHaveBeenCalled();
+  });
+
+  it('ouvre la modale d\'alerte et n\'appelle pas onSign si la fonction du signataire manque', async () => {
+    const props = makeProps(unSignedWithDocs, { signerRole: '   ' });
+    render(<MandateTab {...props} />);
+    await attemptSign();
+    expect(
+      screen.getByText('association.profile.mandate.signerWarning.missingSignerRole')
+    ).toBeInTheDocument();
+    expect(props.onSign).not.toHaveBeenCalled();
   });
 
   // NOTE: the "Pièces justificatives" card (upload/delete UI + filename display) is hidden while

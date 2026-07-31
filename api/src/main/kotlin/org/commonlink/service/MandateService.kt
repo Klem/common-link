@@ -111,9 +111,13 @@ class MandateService(
     /**
      * Signs a new fiscal mandate.
      *
-     * Guards (in order): accepted == true, verificationStatus == VERIFIED, no active mandate exists.
-     * The mandate-documents precondition is temporarily disabled (see the body and MandateTab
-     * SHOW_MANDATE_DOCS on the frontend).
+     * Guards (in order): accepted == true, verificationStatus == VERIFIED, authorised signer identity
+     * present, no active mandate exists. The mandate-documents precondition is temporarily disabled
+     * (see the body and MandateTab SHOW_MANDATE_DOCS on the frontend).
+     *
+     * @throws UnprocessableEntityException if the terms are not accepted, or if
+     *   [AssociationProfile.signerName] / [AssociationProfile.signerRole] is missing — both are printed
+     *   on the tax receipts the mandate authorises, so the mandate cannot be signed without them.
      */
     @Transactional
     fun signMandate(userId: UUID, request: SignMandateRequest): MandateStateDto {
@@ -123,6 +127,13 @@ class MandateService(
             throw UnprocessableEntityException("You must accept the mandate terms")
         }
         requireVerified(profile)
+        // The authorised signer's name and role are printed on every tax receipt issued under this
+        // mandate — mirrors the frontend warning modal in MandateTab.
+        if (profile.signerName.isNullOrBlank() || profile.signerRole.isNullOrBlank()) {
+            throw UnprocessableEntityException(
+                "The authorised signer name and role must be set before signing the fiscal mandate"
+            )
+        }
         if (fiscalMandateRepository.findByAssociationIdAndRevokedAtIsNull(profile.id!!) != null) {
             throw ConflictException("An active mandate already exists; revoke it before re-signing")
         }

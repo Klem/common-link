@@ -92,6 +92,7 @@ app:
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY} # also encrypt Mollie tokens
   mollie:
     test-mode: false   # base defaults true for local sandbox; prod must pin false or live donations silently route to Mollie test mode
+    api-key: ${MOLLIE_API_KEY}   # base defaults empty; prod must require the variable (no silent start without a key)
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID:}
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}

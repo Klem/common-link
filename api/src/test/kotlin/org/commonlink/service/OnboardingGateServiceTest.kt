@@ -3,16 +3,20 @@ package org.commonlink.service
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MollieConnection
 import org.commonlink.entity.MollieConnectionState
+import org.commonlink.entity.MollieOAuthState
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.MollieConnectionRepository
+import org.commonlink.repository.MollieOAuthStateRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -52,6 +56,7 @@ class OnboardingGateServiceTest {
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
     @Autowired private lateinit var fiscalMandateRepository: FiscalMandateRepository
     @Autowired private lateinit var mollieConnectionRepository: MollieConnectionRepository
+    @Autowired private lateinit var mollieOAuthStateRepository: MollieOAuthStateRepository
 
     private lateinit var association: AssociationProfile
     private lateinit var userId: UUID
@@ -141,5 +146,52 @@ class OnboardingGateServiceTest {
     fun `requireBankReady - passes when connected and can receive payments`() {
         mollieConnectionRepository.save(completedConnection(canReceivePayments = true))
         assertDoesNotThrow { onboardingGate.requireBankReady(userId) }
+    }
+
+    // ── isMollieKycStarted ────────────────────────────────────────────────────
+
+    @Test
+    fun `isMollieKycStarted - false when the association never launched the flow`() {
+        assertFalse(onboardingGate.isMollieKycStarted(userId))
+    }
+
+    /**
+     * Discriminating case for the contact-field lock: the client-link carrying contactName /
+     * contactEmail is created *before* the OAuth callback, so a live OAuth state alone must lock
+     * the fields — waiting for a MollieConnection row would leave an editable window.
+     */
+    @Test
+    fun `isMollieKycStarted - true while an OAuth state is still alive and no connection exists`() {
+        mollieOAuthStateRepository.save(
+            MollieOAuthState(
+                state = UUID.randomUUID().toString(),
+                association = association,
+                expiresAt = Instant.now().plusSeconds(600),
+            )
+        )
+        assertTrue(onboardingGate.isMollieKycStarted(userId))
+    }
+
+    /** An abandoned flow releases the lock: the next attempt re-sends whatever contact data is current. */
+    @Test
+    fun `isMollieKycStarted - false when the OAuth state has expired`() {
+        mollieOAuthStateRepository.save(
+            MollieOAuthState(
+                state = UUID.randomUUID().toString(),
+                association = association,
+                expiresAt = Instant.now().minusSeconds(60),
+            )
+        )
+        assertFalse(onboardingGate.isMollieKycStarted(userId))
+    }
+
+    /** The lock must not wait for COMPLETED — NEEDS_DATA is already "started". */
+    @Test
+    fun `isMollieKycStarted - true when the connection exists but KYC is not completed`() {
+        mollieConnectionRepository.save(
+            completedConnection(canReceivePayments = false)
+                .apply { onboardingStatus = MollieOnboardingStatus.NEEDS_DATA }
+        )
+        assertTrue(onboardingGate.isMollieKycStarted(userId))
     }
 }

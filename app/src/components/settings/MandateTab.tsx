@@ -69,6 +69,10 @@ interface MandateTabProps {
   onSign: (request: SignMandateRequest) => Promise<void>;
   onRevoke: () => Promise<void>;
   onDownloadPdf: () => Promise<void>;
+  /** Nom du signataire habilité — imprimé sur les reçus fiscaux. Absent ⇒ signature bloquée. */
+  signerName?: string | null;
+  /** Fonction du signataire habilité — imprimée sur les reçus fiscaux. Absente ⇒ signature bloquée. */
+  signerRole?: string | null;
 }
 
 export function MandateTab({
@@ -80,6 +84,8 @@ export function MandateTab({
   onSign,
   onRevoke,
   onDownloadPdf,
+  signerName,
+  signerRole,
 }: MandateTabProps) {
   const t = useTranslations('dashboard');
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -87,6 +93,7 @@ export function MandateTab({
   const [selectedEligibility, setSelectedEligibility] = useState<MandateEligibility | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [showSignerWarning, setShowSignerWarning] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
 
@@ -110,8 +117,19 @@ export function MandateTab({
     return opt ? t(opt.labelKey as Parameters<typeof t>[0]) : '—';
   };
 
+  const missingSignerName = !signerName?.trim();
+  const missingSignerRole = !signerRole?.trim();
+
   const handleSign = async () => {
     if (!canSign || !selectedEligibility) return;
+    // Le mandat autorise CommonLink à émettre des reçus fiscaux au nom du signataire habilité :
+    // sans nom ni fonction, les reçus seraient invalides. Garde volontairement placée ici et non
+    // dans `canSign` — un bouton `disabled` ne pourrait pas ouvrir la modale d'alerte.
+    // Miroir de la garde backend dans `MandateService.signMandate`.
+    if (missingSignerName || missingSignerRole) {
+      setShowSignerWarning(true);
+      return;
+    }
     setIsSigning(true);
     await onSign({ eligibility: selectedEligibility, accepted: true });
     setIsSigning(false);
@@ -445,6 +463,38 @@ export function MandateTab({
             </button>
           </div>
         </>
+      )}
+
+      {/* ── Modal d'alerte : signataire habilité manquant ─────────────────── */}
+      {showSignerWarning && (
+        <div className="ov" onClick={() => setShowSignerWarning(false)}>
+          <div className="mod" onClick={(e) => e.stopPropagation()}>
+            <div className="mod-h">
+              <h3>{t('association.profile.mandate.signerWarning.title')}</h3>
+              <button className="mod-x" onClick={() => setShowSignerWarning(false)}>✕</button>
+            </div>
+            <div className="mod-b">
+              {missingSignerName && (
+                <p className="alert alert-warning alert-spaced">
+                  {t('association.profile.mandate.signerWarning.missingSignerName')}
+                </p>
+              )}
+              {missingSignerRole && (
+                <p className="alert alert-warning alert-spaced">
+                  {t('association.profile.mandate.signerWarning.missingSignerRole')}
+                </p>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowSignerWarning(false)}
+                >
+                  {t('association.profile.mandate.signerWarning.close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Modal de confirmation de révocation ──────────────────────────── */}
