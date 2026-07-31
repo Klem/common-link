@@ -10,6 +10,7 @@ spring:
     password: ${COMMON_LINK_DB_PASSWORD:commonlink}
     driver-class-name: org.postgresql.Driver
   jpa:
+    open-in-view: true  # TODO: refactor to set to "false" safe once all read service methods are @Transactional(readOnly=true)
     hibernate:
       ddl-auto: validate
     properties:
@@ -39,14 +40,15 @@ management:
 app:
   jwt:
     secret: ${COMMON_LINK_SECRET}
+    access-token-expiration: P3650D
   frontend-url: ${COMMON_LINK_FRONTEND_URL:http://localhost:3000}
   cookies:
     secure: ${APP_COOKIES_SECURE:true}
+    same-site: Strict
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
     from: ${MAIL_FROM:noreply@commonlink.org}
-    verification-review-to: ${MAIL_VERIFICATION_REVIEW_TO:review@commonlink.org}
   insee:
     api-key: ${INSEE_API_KEY:default-key}
     base-url: ${INSEE_BASE_URL:https://api.insee.fr/api-sirene/3.11}
@@ -65,12 +67,26 @@ app:
     base-url: ${MONERIUM_BASE_URL:https://api.monerium.dev}
     redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/public/webhooks/monerium}
     skip-kyc: true
-    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:}
+    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:} # also encrypt Mollie tokens
   mollie:
-    api-key: ${MOLLIE_API_KEY:test_hBpdFb3fmHBaNN5Nvdg5r9cC4psU59}
-    api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com/v2}
+    api-key: ${MOLLIE_API_KEY:}
+    api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}
+    test-mode: ${MOLLIE_TEST_MODE:true}
+    # api-key ci-dessus = clé de PAIEMENT, ne sert PAS au Connect (incapable d'appeler /v2/client-links)
+    connect:
+      client-id: ${MOLLIE_CONNECT_CLIENT_ID}
+      client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET:}
+      advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN:}
+      redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI:}
+      scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
+      #switch between /onboarding/me (LEGACY) and the new /capabilities (CAPABILITIES)
+      onboarding-api: LEGACY
+      #Mock the entire mollie process
+      mock: ${MOLLIE_CONNECT_MOCK:false}
+      #Force the Onboarding / KYC to "true"
+      allow-fake-completion: ${MOLLIE_CONNECT_ALLOW_FAKE_COMPLETION:true}
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:

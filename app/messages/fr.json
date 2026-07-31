@@ -113,6 +113,11 @@
       "title": "Vérifications"
     }
   },
+  "association": {
+    "profile": {
+      "readOnly": {}
+    }
+  },
   "auth": {
     "assoSearch": {
       "apiUnavailable": "Le répertoire est temporairement indisponible. Veuillez réessayer plus tard.",
@@ -127,6 +132,7 @@
     "errors": {
       "accountExists": "Un compte existe déjà avec cet email.",
       "emailInvalid": "Adresse email invalide.",
+      "emailNotVerified": "Email non vérifié. Consultez votre boîte mail pour activer votre compte.",
       "emailRequired": "L'email est requis.",
       "genericError": "Une erreur est survenue. Veuillez réessayer.",
       "invalidCredentials": "Email ou mot de passe invalide.",
@@ -297,9 +303,18 @@
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
     "loading": "Chargement...",
+    "mandateDocDeleted": "Document supprimé.",
+    "mandateDocUploaded": "Document téléversé.",
+    "mandateRevoked": "Mandat révoqué.",
+    "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement.",
     "milestoneCreated": "Milestone ajouté.",
     "milestoneDeleted": "Milestone supprimé.",
     "milestoneSaved": "Milestone mis à jour.",
+    "mollieConnected": "Compte Mollie connecté.",
+    "mollieError": "Connexion Mollie échouée. Veuillez réessayer.",
+    "mollieErrorFetch": "Impossible d'obtenir l'URL Mollie. Veuillez réessayer.",
+    "mollieErrorMissingContactEmail": "Renseignez l'email de contact dans l'onglet Informations avant de connecter Mollie.",
+    "mollieErrorMissingContactName": "Renseignez le nom du contact dans l'onglet Informations avant de connecter Mollie.",
     "moneriumConnected": "Portefeuille connecté avec succès.",
     "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
     "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
@@ -333,23 +348,53 @@
         "accCard": {
           "checks": {
             "bank": {
-              "cta": "Connecter mon compte →",
-              "desc": "Pour recevoir les dons en euros, via notre partenaire Monerium",
-              "eta": "2-3 jours",
+              "BROKEN": {
+                "cta": "Reconnecter mon compte →",
+                "desc": "La connexion à votre compte Mollie a été interrompue, les dons ne peuvent plus être encaissés"
+              },
+              "COMPLETED": {
+                "desc": "Vos dons en euros sont versés sur votre compte bancaire"
+              },
+              "IN_REVIEW": {
+                "desc": "Mollie examine votre dossier, aucune action de votre part n'est requise",
+                "eta": "2-3 jours"
+              },
+              "NEEDS_DATA": {
+                "cta": "Compléter mon dossier →",
+                "desc": "Mollie a besoin d'informations complémentaires pour finaliser votre compte"
+              },
+              "NOT_CONNECTED": {
+                "cta": "Connecter mon compte →",
+                "desc": "Pour recevoir les dons en euros, via notre partenaire Mollie"
+              },
               "title": "Compte bancaire (IBAN dédié)"
             },
             "kyc": {
-              "cta": "Vérifier →",
-              "desc": "Soumettez vos justificatifs pour publier publiquement",
-              "eta": "24-48h",
+              "PENDING": {
+                "desc": "Vos justificatifs sont en cours d'examen par notre équipe",
+                "eta": "24-48h"
+              },
+              "REJECTED": {
+                "cta": "Corriger mes documents →",
+                "desc": "Votre dossier de vérification a été refusé"
+              },
+              "UNVERIFIED": {
+                "cta": "Vérifier →",
+                "desc": "Soumettez vos justificatifs pour publier publiquement"
+              },
+              "VERIFIED": {
+                "desc": "Votre association est vérifiée, vous pouvez publier publiquement"
+              },
               "title": "Vérification de l'association"
             },
             "validated": "✓ Validée"
           },
           "dismiss": "Masquer",
           "sub": {
+            "allDone": "Votre compte est complet : votre association est vérifiée et votre compte bancaire est opérationnel.",
             "bankOnly": "Votre association est vérifiée ! Finalisez la connexion de votre compte bancaire pour pouvoir recevoir des dons.",
-            "notVerified": "En attendant la validation de votre association, vous pouvez créer et publier vos campagnes en mode privé (lien direct uniquement)."
+            "notVerified": "En attendant la validation de votre association, vous pouvez créer et publier vos campagnes en mode privé (lien direct uniquement).",
+            "rejected": "Votre dossier de vérification a été refusé. Corrigez vos documents pour pouvoir publier publiquement."
           },
           "title": "⚙️ Finalisez votre compte CommonLink"
         },
@@ -383,8 +428,10 @@
         "cancel": "Annuler",
         "city": "Ville",
         "contactEmail": "Email de contact",
+        "contactEmailTip": "Email qui sera lié au compte bancaire.",
         "contactName": "Nom du contact",
         "contactNamePlaceholder": "Votre nom complet",
+        "contactNameTip": "Nom de la personne qui sera liée au compte bancaire.",
         "creationYear": "Année de création",
         "description": "Description",
         "descriptionPlaceholder": "Décrivez la mission de votre association",
@@ -396,7 +443,7 @@
           "phoneFormat": "Veuillez saisir un numéro de téléphone valide (6–20 caractères).",
           "postalCodeFormat": "Le code postal doit contenir 5 chiffres.",
           "rnaFormat": "Le N° RNA doit être au format W suivi de 9 chiffres (ex. W123456789).",
-          "sirenFormat": "Le SIREN doit contenir exactement 9 chiffres."
+          "sirenFormat": "Le SIREN doit contenir exactement 9 caractères alphanumériques."
         },
         "identifier": "N° RNA",
         "infos": {
@@ -477,6 +524,12 @@
             "sub": "Les reçus fiscaux sont émis automatiquement pour chaque don éligible reçu via CommonLink.",
             "title": "Mandat actif"
           },
+          "signerWarning": {
+            "close": "Fermer",
+            "missingSignerName": "Un nom de signataire habilité est requis pour signer le mandat fiscal : il apparaît sur chaque reçu fiscal. Veuillez d'abord renseigner le champ Nom du signataire habilité dans l'onglet Informations et enregistrer.",
+            "missingSignerRole": "Une fonction du signataire est requise pour signer le mandat fiscal : elle apparaît sur chaque reçu fiscal. Veuillez d'abord renseigner le champ Fonction du signataire dans l'onglet Informations et enregistrer.",
+            "title": "Signataire habilité requis"
+          },
           "step1": {
             "declared": "Déclaré",
             "intro": "Seuls les organismes d'intérêt général (OIG) ou d'utilité publique peuvent faire émettre des reçus fiscaux ouvrant droit à réduction d'impôt.",
@@ -491,7 +544,7 @@
             "acceptLabel": "J'atteste sur l'honneur de l'exactitude des informations fournies et accepte les termes du mandat ci-dessus.",
             "signBtn": "Signer le mandat",
             "timestampNote": "Signature électronique horodatée",
-            "title": "3. Signature du mandat"
+            "title": "2. Signature du mandat"
           }
         },
         "memberSince": "Membre depuis {date}",
@@ -513,6 +566,11 @@
         "pending": "En attente de vérification",
         "phone": "Téléphone",
         "postalCode": "Code postal",
+        "readOnly": {
+          "mollieCompleted": "Verrouillé — transmis à Mollie lors du KYC",
+          "permanent": "Non modifiable",
+          "verified": "Verrouillé après vérification"
+        },
         "rna": "N° RNA",
         "save": "Enregistrer",
         "security": {
@@ -525,8 +583,10 @@
         },
         "signerName": "Nom du signataire habilité",
         "signerNamePlaceholder": "Jean MARTIN",
+        "signerNameTip": "Nom de la personne qui apparaîtra sur les reçus fiscaux.",
         "signerRole": "Fonction du signataire",
         "signerRolePlaceholder": "Trésorier",
+        "signerRoleTip": "Fonction de la personne qui apparaîtra sur les reçus fiscaux.",
         "siren": "SIREN",
         "subtitle": "Gérez les informations et la vérification de votre association.",
         "success": "Profil mis à jour.",
@@ -537,6 +597,7 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
+          "locked": "Terminez d'abord l'étape précédente",
           "mandate": "Mandat fiscal",
           "mandateBadge": {
             "active": "✓ Actif",
@@ -699,9 +760,14 @@
             "label": "Catégorie"
           },
           "coverImage": {
-            "hint": "JPG, PNG — 5 Mo max · 1200×600 recommandé",
+            "errorSize": "Image trop volumineuse. 5 Mo maximum.",
+            "errorType": "Format non pris en charge. Acceptés : JPG, PNG, WebP.",
+            "errorUpload": "Échec de l'envoi. Merci de réessayer.",
+            "hint": "JPG, PNG, WebP — 5 Mo max · 1200×600 recommandé",
             "label": "Image de couverture",
-            "uploadPrompt": "Glissez une image ou parcourir"
+            "remove": "Retirer",
+            "uploadPrompt": "Glissez une image ou parcourir",
+            "uploading": "Envoi en cours..."
           },
           "dateError": "La date de fin doit être au moins 7 jours après le début",
           "description": {
@@ -803,7 +869,12 @@
         "cancel": "Annuler",
         "continue": "Continuer en brouillon",
         "hint": "Vous gagnerez du temps en commençant la rédaction dès maintenant.",
-        "notVerified": "Votre association n'est pas encore vérifiée.",
+        "status": {
+          "PENDING": "Votre dossier de vérification est en cours d'examen.",
+          "REJECTED": "Votre dossier de vérification a été refusé.",
+          "UNVERIFIED": "Votre association n'est pas encore vérifiée.",
+          "VERIFIED": "Votre association est vérifiée."
+        },
         "title": "📋 Avant de créer votre campagne",
         "verify": "📋 Vérifier mon dossier"
       },
@@ -876,10 +947,23 @@
       },
       "publish": {
         "account": {
+          "bank": {
+            "BROKEN": "Connexion Mollie interrompue — à reconnecter pour publier",
+            "COMPLETED": "Compte bancaire Mollie connecté",
+            "IN_REVIEW": "Dossier Mollie en cours d'examen par Mollie — requis pour publier",
+            "NEEDS_DATA": "Dossier Mollie incomplet — informations complémentaires requises pour publier",
+            "NOT_CONNECTED": "Compte bancaire non connecté — requis pour publier"
+          },
           "complete": "Compte complet — prêt pour la publication",
-          "noBank": "Compte bancaire non connecté — requis pour publier",
-          "notVerified": "Votre dossier n'est pas encore vérifié (vous pouvez quand même publier)",
-          "section": "Statut du compte"
+          "completeBank": "Compléter",
+          "loading": "Vérification du statut de votre compte…",
+          "section": "Statut du compte",
+          "verif": {
+            "PENDING": "Votre dossier est en cours de vérification (vous pouvez quand même publier)",
+            "REJECTED": "Votre dossier de vérification a été refusé (vous pouvez quand même publier)",
+            "UNVERIFIED": "Votre dossier n'est pas encore vérifié (vous pouvez quand même publier)",
+            "VERIFIED": "Votre association est vérifiée"
+          }
         },
         "add": "Ajouter",
         "complete": "Complétez les champs requis",
@@ -958,6 +1042,16 @@
       }
     },
     "greeting": "Bonjour, {name} 👋",
+    "molliePopup": {
+      "error": {
+        "retry": "Veuillez réessayer depuis la page profil.",
+        "title": "Connexion échouée"
+      },
+      "success": {
+        "closing": "Fermeture de la fenêtre…",
+        "title": "Mollie connecté"
+      }
+    },
     "moneriumPopup": {
       "callback": {
         "closing": "Finalisation du KYC… cette fenêtre va se fermer.",
@@ -1212,11 +1306,32 @@
     },
     "welcome": "Bienvenue"
   },
-  "mandateDocDeleted": "Document supprimé.",
-  "mandateDocUploaded": "Document téléversé.",
-  "mandateRevoked": "Mandat révoqué.",
-  "mandateSigned": "✓ Mandat signé. Les reçus fiscaux seront émis automatiquement.",
   "settings": {
+    "mollie": {
+      "completeOnboarding": "Compléter mon dossier",
+      "connect": "Connecter Mollie",
+      "description": "Connectez votre compte Mollie pour recevoir des dons.",
+      "devForceComplete": "Simuler la validation KYC (dev)",
+      "modal": {
+        "cancel": "Annuler",
+        "connect": "Connecter",
+        "description": "Vous allez être redirigé vers Mollie pour autoriser la connexion.",
+        "missingContactEmail": "Un email de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Email de contact dans l'onglet Informations et enregistrer.",
+        "missingContactName": "Un nom de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Nom du contact dans l'onglet Informations et enregistrer.",
+        "title": "Connecter Mollie",
+        "waiting": "En attente d'autorisation…"
+      },
+      "reconnect": "Reconnecter",
+      "status": {
+        "broken": "Reconnexion requise",
+        "completed": "Actif",
+        "inReview": "En cours de vérification",
+        "needsData": "Onboarding requis",
+        "pending": "En attente"
+      },
+      "title": "Paiements Mollie",
+      "tryAgain": "Réessayer"
+    },
     "widget": {
       "destination": {
         "error": "Erreur lors de la mise à jour",

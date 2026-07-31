@@ -1461,15 +1461,17 @@ textarea.form-input {
   border: 1px solid rgba(230, 228, 244, 0.6);
   transition: all 0.2s;
 }
-.acc-check.done    { background: rgba(78, 205, 196, 0.06); border-color: rgba(78, 205, 196, 0.2); }
-.acc-check.pending { background: rgba(255, 179, 71, 0.06); border-color: rgba(255, 179, 71, 0.22); }
+.acc-check.done     { background: rgba(78, 205, 196, 0.06); border-color: rgba(78, 205, 196, 0.2); }
+.acc-check.pending  { background: rgba(255, 179, 71, 0.06); border-color: rgba(255, 179, 71, 0.22); }
+.acc-check.rejected { background: rgba(230, 90, 90, 0.06); border-color: rgba(230, 90, 90, 0.24); }
 
 .acc-check-ic {
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; flex-shrink: 0; font-weight: 700;
 }
-.acc-check.done    .acc-check-ic { background: #4ECDC4; color: var(--white); }
+.acc-check.done     .acc-check-ic { background: #4ECDC4; color: var(--white); }
+.acc-check.rejected .acc-check-ic { background: var(--error-red); color: var(--white); }
 .acc-check.pending .acc-check-ic { background: var(--soft-amber); color: var(--white); }
 .acc-check.todo    .acc-check-ic { background: var(--mist-lavender); color: var(--slate-lavender); }
 
@@ -1485,6 +1487,13 @@ textarea.form-input {
 }
 .acc-check-cta:hover { background: rgba(78, 205, 196, 0.1); }
 .acc-check-eta { font-size: 11px; color: var(--slate-lavender); font-style: italic; flex-shrink: 0; }
+.acc-check-ok  { font-size: 12px; font-weight: 700; color: var(--teal-dark); flex-shrink: 0; }
+.acc-check.rejected .acc-check-title { color: var(--error-red); }
+.acc-check-reason {
+  font-size: 11.5px; color: var(--error-red); margin-top: 4px;
+  padding: 6px 8px; border-radius: var(--radius-sm);
+  background: rgba(230, 90, 90, 0.08); line-height: 1.4;
+}
 
 /* ── Sidebar account-status pill ─────────────────────────────────────────── */
 
@@ -1775,6 +1784,8 @@ textarea.form-input {
 .set-tab { padding: 10px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; color: var(--slate-lavender); cursor: pointer; transition: all .2s; white-space: nowrap; border: none; background: none; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
 .set-tab:hover { color: var(--ink-navy); background: rgba(78,205,196,.06); }
 .set-tab.active { background: var(--soft-cream); color: var(--ink-navy); box-shadow: 0 2px 8px rgba(23,23,68,.08); }
+.set-tab:disabled, .set-tab.locked { opacity: .45; cursor: not-allowed; }
+.set-tab:disabled:hover, .set-tab.locked:hover { color: var(--slate-lavender); background: none; }
 .set-tab-badge { font-size: 10px; background: var(--mist-lavender); padding: 2px 7px; border-radius: 10px; font-weight: 700; font-family: 'Syne', sans-serif; }
 .set-tab-badge.ok { background: rgba(78,205,196,.18); color: var(--teal-dark); }
 .set-tab-badge.pending { background: rgba(255,179,71,.2); color: #9a6a14; }
@@ -2140,6 +2151,7 @@ tbody tr:last-child td { border-bottom: none; }
 .fl { display: block; font-size: 13px; font-weight: 700; color: var(--ink-navy); margin-bottom: 6px; }
 .fl .req { color: var(--warm-coral); }
 .fi { width: 100%; padding: 12px 16px; border: 2px solid var(--mist-lavender); border-radius: var(--radius-md); font-size: 14px; font-family: 'Inter'; color: var(--ink-navy); background: var(--white); transition: border-color .2s,box-shadow .2s; }
+.fi:disabled { background: var(--soft-cream); cursor: not-allowed; opacity: 0.65; }
 .fi:focus { outline: none; border-color: var(--bright-teal); box-shadow: 0 0 0 3px rgba(78,205,196,.12); }
 .fi::placeholder { color: rgba(98,98,125,.4); }
 textarea.fi { resize: vertical; min-height: 100px; }
@@ -2173,7 +2185,15 @@ label.cm-label { display: block; font-size: 11.5px; font-weight: 600; color: var
 .upload p { font-size: 14px; color: var(--slate-lavender); }
 .upload p b { color: var(--bright-teal); font-weight: 600; }
 .upload small { font-size: 12px; color: var(--slate-lavender); display: block; margin-top: 4px; }
-#info-date-error { display: none; margin-top: 5px; font-size: 11.5px; color: var(--warm-coral); align-items: center; gap: 5px; }
+/* Rendu conditionnel côté React : la maquette basculait `display` en JS, ici la
+   présence du noeud suffit — sinon le message de date resterait invisible. */
+#info-date-error { display: flex; margin-top: 5px; font-size: 11.5px; color: var(--warm-coral); align-items: center; gap: 5px; }
+.upload.dragover { border-color: var(--bright-teal); background: rgba(78,205,196,.06); }
+.upload-preview { position: relative; border-radius: var(--radius-md); overflow: hidden; }
+.upload-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+.upload-preview-remove { position: absolute; top: 8px; right: 8px; border: none; border-radius: var(--radius-sm); padding: 6px 10px; font-family: 'Inter'; font-size: 12px; font-weight: 600; color: #fff; background: rgba(26,32,68,.72); cursor: pointer; }
+.upload-preview-remove:hover { background: var(--warm-coral); }
+.upload-error { margin-top: 5px; font-size: 11.5px; color: var(--warm-coral); }
 
 /* ── Simple tabs ──────────────────────────────────────────────────────────── */
 

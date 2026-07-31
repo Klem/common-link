@@ -5,6 +5,7 @@ import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.dto.toDto
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.VerificationStatus
+import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import java.time.Instant
 import org.commonlink.exception.UserNotFoundException
@@ -33,6 +34,7 @@ class AssociationService(
     private val campaignRepository: CampaignRepository,
     private val connectionRepo: MoneriumConnectionRepository,
     private val outbox: OnchainOutboxService,
+    private val onboardingGate: OnboardingGateService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -76,6 +78,25 @@ class AssociationService(
     fun updateProfile(userId: UUID, req: UpdateAssociationProfileRequest): AssociationProfileDto {
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+
+        // SIREN and creation year are immutable once the association is VERIFIED (legal identifiers).
+        // Guard triggers only when a *different* value is submitted — resending the stored value is a no-op.
+        if (profile.verificationStatus == VerificationStatus.VERIFIED &&
+            ((req.siren != null && req.siren != profile.siren) ||
+             (req.creationYear != null && req.creationYear != profile.creationYear))) {
+            throw ConflictException("SIREN and creation year cannot be modified once the association is verified")
+        }
+        // Contact name and email are immutable once the Mollie KYC flow has been *started* — they are
+        // submitted to Mollie when the client-link is created, before the OAuth callback, so waiting for
+        // completion would leave a window where CommonLink and Mollie disagree.
+        // Guard triggers only when a *different* value is submitted — resending the stored value is a no-op,
+        // which matters because the infos form autosaves and may PATCH unchanged fields.
+        if (onboardingGate.isMollieKycStarted(userId) &&
+            ((req.contactName != null && req.contactName != profile.contactName) ||
+             (req.contactEmail != null && req.contactEmail != profile.contactEmail))) {
+            throw ConflictException("Contact name and email cannot be modified once the Mollie KYC flow has started")
+        }
+
         req.contactName?.let { profile.contactName = it }
         req.city?.let { profile.city = it }
         req.postalCode?.let { profile.postalCode = it }
@@ -85,6 +106,10 @@ class AssociationService(
         req.contactEmail?.let { profile.contactEmail = it }
         req.phone?.let { profile.phone = it }
         req.widgetDestinationCampaignId?.let { campaignId ->
+            // Chain guard: a destination campaign is a widget setting — the bank account (Mollie)
+            // must be completed first. Only enforced when a destination is actually being set,
+            // so the general profile edit (infos tab) is unaffected.
+            onboardingGate.requireBankReady(userId)
             val campaign = campaignRepository.findByIdAndAssociationId(campaignId, profile.id!!)
                 .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
             profile.widgetDestinationCampaign = campaign
@@ -106,9 +131,11 @@ class AssociationService(
      * @param userId UUID of the authenticated association user.
      * @return The newly generated widget token.
      * @throws UserNotFoundException if no profile exists for this user.
+     * @throws org.commonlink.exception.ConflictException if the bank account (Mollie) is not completed.
      */
     @Transactional
     fun generateWidgetToken(userId: UUID): String {
+        onboardingGate.requireBankReady(userId)
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
         val bytes = ByteArray(24).also { SecureRandom().nextBytes(it) }
@@ -126,9 +153,11 @@ class AssociationService(
      * @param userId UUID of the authenticated association user.
      * @param widgetAllowedOrigin Raw origin URL supplied by the association. Normalized to scheme+host.
      * @throws UserNotFoundException if no profile exists for this user.
+     * @throws org.commonlink.exception.ConflictException if the bank account (Mollie) is not completed.
      */
     @Transactional
     fun updateWidgetConfig(userId: UUID, widgetAllowedOrigin: String?) {
+        onboardingGate.requireBankReady(userId)
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
         profile.widgetAllowedOrigin = normalizeOrigin(widgetAllowedOrigin)

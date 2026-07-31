@@ -214,6 +214,20 @@ enum class MandateEligibility {
     PUBLIC_UTILITY_66,
 }
 
+/**
+ * Operational state of a Mollie Connect connection.
+ *
+ * BROKEN means the stored refresh token has been rejected by Mollie (rotated, revoked, or
+ * expired) and no automated recovery is possible; the frontend must re-trigger the OAuth flow.
+ * Stored as a string column so future states can be added without a migration.
+ */
+enum class MollieConnectionState {
+    /** Connection is healthy; access token can be refreshed silently. */
+    ACTIVE,
+    /** Refresh token was rejected by Mollie; the association must reconnect. */
+    BROKEN,
+}
+
 /** High-level categorisation of a [org.commonlink.entity.Payout]: personnel vs operational expense. */
 enum class PayoutKind { REMUNERATION, EXPENSE }
 

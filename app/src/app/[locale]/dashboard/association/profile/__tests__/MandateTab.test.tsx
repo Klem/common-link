@@ -53,6 +53,10 @@ function makeProps(state: MandateStateDto, overrides = {}) {
     onSign: vi.fn().mockResolvedValue(undefined),
     onRevoke: vi.fn().mockResolvedValue(undefined),
     onDownloadPdf: vi.fn().mockResolvedValue(undefined),
+    // Signataire habilité renseigné par défaut : sans lui la signature ouvre la modale d'alerte
+    // au lieu d'appeler onSign (voir le describe « garde signataire habilité »).
+    signerName: 'Marie Dupont',
+    signerRole: 'Présidente',
     ...overrides,
   };
 }
@@ -92,27 +96,27 @@ describe('MandateTab — bloqué', () => {
 // ── Non signé : activation progressive ───────────────────────────────────────
 
 describe('MandateTab — non signé', () => {
-  it('affiche les 3 étapes quand non bloqué', () => {
+  it('affiche les étapes visibles, la carte docs étant masquée (SHOW_MANDATE_DOCS=false)', () => {
     render(<MandateTab {...makeProps(unSignedState)} />);
     expect(screen.getByText('association.profile.mandate.step1.title')).toBeInTheDocument();
-    expect(screen.getByText('association.profile.mandate.step2.title')).toBeInTheDocument();
+    expect(screen.queryByText('association.profile.mandate.step2.title')).not.toBeInTheDocument();
     expect(screen.getByText('association.profile.mandate.step3.title')).toBeInTheDocument();
   });
 
-  it('bouton signer désactivé sans radio, sans docs et sans checkbox', () => {
+  it('bouton signer désactivé sans radio et sans checkbox', () => {
     render(<MandateTab {...makeProps(unSignedState)} />);
     const signBtn = screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
     expect(signBtn).toBeDisabled();
   });
 
-  it('bouton signer désactivé si radio sélectionné mais pas de docs', () => {
+  it('bouton signer actif avec radio + checkbox, sans docs (docs non requis)', () => {
     render(<MandateTab {...makeProps(unSignedState)} />);
     const radio = screen.getAllByRole('radio')[0];
     fireEvent.click(radio);
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox);
     const signBtn = screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
-    expect(signBtn).toBeDisabled();
+    expect(signBtn).not.toBeDisabled();
   });
 
   it('bouton signer actif si radio + 2 docs + checkbox', () => {
@@ -147,18 +151,39 @@ describe('MandateTab — non signé', () => {
     );
   });
 
-  it('appelle onDeleteDoc au clic Supprimer sur un slot uploadé', async () => {
-    const props = makeProps(unSignedWithDocs);
+  // ── Garde signataire habilité ──────────────────────────────────────────────
+
+  /** Prépare une signature valide (éligibilité + acceptation) puis clique sur « Signer ». */
+  async function attemptSign() {
+    fireEvent.click(screen.getAllByRole('radio')[0]);
+    fireEvent.click(screen.getByRole('checkbox'));
+    const signBtn = screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
+    await act(async () => { fireEvent.click(signBtn); });
+  }
+
+  it('ouvre la modale d\'alerte et n\'appelle pas onSign si le nom du signataire manque', async () => {
+    const props = makeProps(unSignedWithDocs, { signerName: null });
     render(<MandateTab {...props} />);
-    const delBtns = screen.getAllByRole('button', { name: /association\.profile\.mandate\.docs\.delete/i });
-    await act(async () => { fireEvent.click(delBtns[0]); });
-    await waitFor(() => expect(props.onDeleteDoc).toHaveBeenCalledWith('MANDATE_STATUTS'));
+    await attemptSign();
+    expect(
+      screen.getByText('association.profile.mandate.signerWarning.missingSignerName')
+    ).toBeInTheDocument();
+    expect(props.onSign).not.toHaveBeenCalled();
   });
 
-  it('affiche le nom de fichier pour un slot uploadé', () => {
-    render(<MandateTab {...makeProps(unSignedWithDocs)} />);
-    expect(screen.getByText(/statuts\.pdf/)).toBeInTheDocument();
+  it('ouvre la modale d\'alerte et n\'appelle pas onSign si la fonction du signataire manque', async () => {
+    const props = makeProps(unSignedWithDocs, { signerRole: '   ' });
+    render(<MandateTab {...props} />);
+    await attemptSign();
+    expect(
+      screen.getByText('association.profile.mandate.signerWarning.missingSignerRole')
+    ).toBeInTheDocument();
+    expect(props.onSign).not.toHaveBeenCalled();
   });
+
+  // NOTE: the "Pièces justificatives" card (upload/delete UI + filename display) is hidden while
+  // SHOW_MANDATE_DOCS=false. Tests covering onDeleteDoc and the uploaded-filename display were
+  // removed with it and should be restored (git history) when the docs step comes back.
 });
 
 // ── Vue signée ────────────────────────────────────────────────────────────────

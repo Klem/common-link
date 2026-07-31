@@ -458,14 +458,14 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `loginWithEmail - unverified email throws AuthException`() {
+    fun `loginWithEmail - unverified email throws EmailNotVerifiedException`() {
         val unverifiedUser = User(
             id = donorUser.id, email = "donor@example.com", role = UserRole.DONOR,
             provider = AuthProvider.EMAIL, passwordHash = "hashed", emailVerified = false
         )
         every { userRepository.findByEmail("donor@example.com") } returns Optional.of(unverifiedUser)
 
-        assertThrows<AuthException> {
+        assertThrows<EmailNotVerifiedException> {
             authService.loginWithEmail("donor@example.com", "password123")
         }
     }

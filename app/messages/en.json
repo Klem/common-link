@@ -113,6 +113,11 @@
       "title": "Verifications"
     }
   },
+  "association": {
+    "profile": {
+      "readOnly": {}
+    }
+  },
   "auth": {
     "assoSearch": {
       "apiUnavailable": "The directory is temporarily unavailable. Please try again later.",
@@ -127,6 +132,7 @@
     "errors": {
       "accountExists": "An account already exists with this email.",
       "emailInvalid": "Invalid email address.",
+      "emailNotVerified": "Email not verified. Check your inbox to activate your account.",
       "emailRequired": "Email is required.",
       "genericError": "An error occurred. Please try again.",
       "invalidCredentials": "Invalid email or password.",
@@ -297,9 +303,18 @@
       "sessionExpired": "Your session has expired. Please log in again."
     },
     "loading": "Loading...",
+    "mandateDocDeleted": "Document deleted.",
+    "mandateDocUploaded": "Document uploaded.",
+    "mandateRevoked": "Mandate revoked.",
+    "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically.",
     "milestoneCreated": "Milestone added.",
     "milestoneDeleted": "Milestone deleted.",
     "milestoneSaved": "Milestone updated.",
+    "mollieConnected": "Mollie account connected.",
+    "mollieError": "Mollie connection failed. Please try again.",
+    "mollieErrorFetch": "Failed to get Mollie authentication URL. Please try again.",
+    "mollieErrorMissingContactEmail": "Please fill in your contact email in the Infos tab before connecting Mollie.",
+    "mollieErrorMissingContactName": "Please fill in your contact name in the Infos tab before connecting Mollie.",
     "moneriumConnected": "Wallet connected successfully.",
     "moneriumError": "Wallet connection failed. Please try again.",
     "moneriumErrorFetch": "Failed to get authentication URL. Please try again.",
@@ -333,23 +348,53 @@
         "accCard": {
           "checks": {
             "bank": {
-              "cta": "Connect my account →",
-              "desc": "To receive donations in euros via our Monerium partner",
-              "eta": "2-3 days",
+              "BROKEN": {
+                "cta": "Reconnect my account →",
+                "desc": "The connection to your Mollie account was interrupted, donations can no longer be collected"
+              },
+              "COMPLETED": {
+                "desc": "Your donations in euros are paid out to your bank account"
+              },
+              "IN_REVIEW": {
+                "desc": "Mollie is reviewing your file, no action is required on your side",
+                "eta": "2-3 days"
+              },
+              "NEEDS_DATA": {
+                "cta": "Complete my file →",
+                "desc": "Mollie needs additional information to finalise your account"
+              },
+              "NOT_CONNECTED": {
+                "cta": "Connect my account →",
+                "desc": "To receive donations in euros via our Mollie partner"
+              },
               "title": "Dedicated bank account (IBAN)"
             },
             "kyc": {
-              "cta": "Verify →",
-              "desc": "Submit your documents to publish publicly",
-              "eta": "24-48h",
+              "PENDING": {
+                "desc": "Your documents are being reviewed by our team",
+                "eta": "24-48h"
+              },
+              "REJECTED": {
+                "cta": "Fix my documents →",
+                "desc": "Your verification file was rejected"
+              },
+              "UNVERIFIED": {
+                "cta": "Verify →",
+                "desc": "Submit your documents to publish publicly"
+              },
+              "VERIFIED": {
+                "desc": "Your association is verified, you can publish publicly"
+              },
               "title": "Association verification"
             },
             "validated": "✓ Validated"
           },
           "dismiss": "Hide",
           "sub": {
+            "allDone": "Your account is complete: your association is verified and your bank account is operational.",
             "bankOnly": "Your association is verified! Complete the bank account connection to receive donations.",
-            "notVerified": "While your association is being validated, you can create and publish campaigns in private mode (direct link only)."
+            "notVerified": "While your association is being validated, you can create and publish campaigns in private mode (direct link only).",
+            "rejected": "Your verification file was rejected. Fix your documents to publish publicly."
           },
           "title": "⚙️ Complete your CommonLink account"
         },
@@ -383,8 +428,10 @@
         "cancel": "Cancel",
         "city": "City",
         "contactEmail": "Contact email",
+        "contactEmailTip": "Email address that will be linked to the bank account.",
         "contactName": "Contact name",
         "contactNamePlaceholder": "Your full name",
+        "contactNameTip": "Name of the person who will be linked to the bank account.",
         "creationYear": "Year founded",
         "description": "Description",
         "descriptionPlaceholder": "Describe your association's mission",
@@ -396,7 +443,7 @@
           "phoneFormat": "Please enter a valid phone number (6–20 characters).",
           "postalCodeFormat": "Postal code must be 5 digits.",
           "rnaFormat": "RNA must be W followed by 9 digits (e.g. W123456789).",
-          "sirenFormat": "SIREN must be exactly 9 digits."
+          "sirenFormat": "SIREN must be exactly 9 alphanumeric characters."
         },
         "identifier": "N° RNA",
         "infos": {
@@ -477,6 +524,12 @@
             "sub": "Tax receipts are automatically issued for each eligible donation received via CommonLink.",
             "title": "Mandate active"
           },
+          "signerWarning": {
+            "close": "Close",
+            "missingSignerName": "An authorised signer name is required to sign the fiscal mandate: it appears on every tax receipt. Please fill in the Authorised signer name field in the Information tab and save.",
+            "missingSignerRole": "An authorised signer role is required to sign the fiscal mandate: it appears on every tax receipt. Please fill in the Signer role field in the Information tab and save.",
+            "title": "Authorised signer required"
+          },
           "step1": {
             "declared": "Declared",
             "intro": "Only organisations of general interest (OIG) or of public utility can have tax receipts issued entitling donors to tax reduction.",
@@ -491,7 +544,7 @@
             "acceptLabel": "I certify the accuracy of the information provided and accept the terms of the mandate above.",
             "signBtn": "Sign the mandate",
             "timestampNote": "Timestamped electronic signature",
-            "title": "3. Mandate Signature"
+            "title": "2. Mandate Signature"
           }
         },
         "memberSince": "Member since {date}",
@@ -513,6 +566,11 @@
         "pending": "Pending verification",
         "phone": "Phone",
         "postalCode": "Postal code",
+        "readOnly": {
+          "mollieCompleted": "Locked — submitted to Mollie during KYC",
+          "permanent": "Non modifiable",
+          "verified": "Locked after verification"
+        },
         "rna": "RNA number",
         "save": "Save",
         "security": {
@@ -525,8 +583,10 @@
         },
         "signerName": "Authorised signer name",
         "signerNamePlaceholder": "Jean MARTIN",
+        "signerNameTip": "Name of the person who will appear on tax receipts.",
         "signerRole": "Signer role / title",
         "signerRolePlaceholder": "Treasurer",
+        "signerRoleTip": "Role of the person who will appear on tax receipts.",
         "siren": "SIREN",
         "subtitle": "Manage your association's information and verification.",
         "success": "Profile updated.",
@@ -537,6 +597,7 @@
             "notConnected": "Not connected"
           },
           "infos": "Informations",
+          "locked": "Complete the previous step first",
           "mandate": "Fiscal Mandate",
           "mandateBadge": {
             "active": "✓ Active",
@@ -699,9 +760,14 @@
             "label": "Category"
           },
           "coverImage": {
-            "hint": "JPG, PNG — 5 MB max · 1200×600 recommended",
+            "errorSize": "Image too large. Maximum 5 MB.",
+            "errorType": "Unsupported format. Accepted: JPG, PNG, WebP.",
+            "errorUpload": "Upload failed. Please try again.",
+            "hint": "JPG, PNG, WebP — 5 MB max · 1200×600 recommended",
             "label": "Cover image",
-            "uploadPrompt": "Drag an image or browse"
+            "remove": "Remove",
+            "uploadPrompt": "Drag an image or browse",
+            "uploading": "Uploading..."
           },
           "dateError": "End date must be at least 7 days after start date",
           "description": {
@@ -803,7 +869,12 @@
         "cancel": "Cancel",
         "continue": "Continue as draft",
         "hint": "Start writing now to save time.",
-        "notVerified": "Your association is not yet verified.",
+        "status": {
+          "PENDING": "Your verification dossier is under review.",
+          "REJECTED": "Your verification dossier was rejected.",
+          "UNVERIFIED": "Your association is not yet verified.",
+          "VERIFIED": "Your association is verified."
+        },
         "title": "📋 Before creating your campaign",
         "verify": "📋 Verify my dossier"
       },
@@ -876,10 +947,23 @@
       },
       "publish": {
         "account": {
+          "bank": {
+            "BROKEN": "Mollie connection interrupted — reconnect to publish",
+            "COMPLETED": "Mollie bank account connected",
+            "IN_REVIEW": "Mollie dossier under review — required to publish",
+            "NEEDS_DATA": "Incomplete Mollie dossier — more information required to publish",
+            "NOT_CONNECTED": "No bank account connected — required to publish"
+          },
           "complete": "Account complete — ready to publish",
-          "noBank": "No bank account connected — required to publish",
-          "notVerified": "Your dossier is not yet verified (you can still publish)",
-          "section": "Account status"
+          "completeBank": "Complete",
+          "loading": "Checking your account status…",
+          "section": "Account status",
+          "verif": {
+            "PENDING": "Your dossier is being verified (you can still publish)",
+            "REJECTED": "Your verification dossier was rejected (you can still publish)",
+            "UNVERIFIED": "Your dossier is not yet verified (you can still publish)",
+            "VERIFIED": "Your association is verified"
+          }
         },
         "add": "Add",
         "complete": "Complete required fields",
@@ -958,6 +1042,16 @@
       }
     },
     "greeting": "Hello, {name} 👋",
+    "molliePopup": {
+      "error": {
+        "retry": "Please try again from the profile page.",
+        "title": "Connection failed"
+      },
+      "success": {
+        "closing": "Closing window…",
+        "title": "Mollie connected"
+      }
+    },
     "moneriumPopup": {
       "callback": {
         "closing": "Completing KYC… this window will close.",
@@ -1212,11 +1306,32 @@
     },
     "welcome": "Welcome"
   },
-  "mandateDocDeleted": "Document deleted.",
-  "mandateDocUploaded": "Document uploaded.",
-  "mandateRevoked": "Mandate revoked.",
-  "mandateSigned": "✓ Mandate signed. Tax receipts will be issued automatically.",
   "settings": {
+    "mollie": {
+      "completeOnboarding": "Complete my onboarding",
+      "connect": "Connect Mollie",
+      "description": "Connect your Mollie account to receive donations.",
+      "devForceComplete": "Simulate KYC validation (dev)",
+      "modal": {
+        "cancel": "Cancel",
+        "connect": "Connect",
+        "description": "You will be redirected to Mollie to authorize the connection.",
+        "missingContactEmail": "A contact email is required to start the Mollie onboarding. Please fill in the Contact Email field in the Infos tab and save first.",
+        "missingContactName": "A contact name is required to start the Mollie onboarding. Please fill in the Contact Name field in the Infos tab and save first.",
+        "title": "Connect Mollie",
+        "waiting": "Waiting for authorization…"
+      },
+      "reconnect": "Reconnect",
+      "status": {
+        "broken": "Reconnect required",
+        "completed": "Active",
+        "inReview": "In review",
+        "needsData": "Onboarding required",
+        "pending": "Pending"
+      },
+      "title": "Mollie Payments",
+      "tryAgain": "Try again"
+    },
     "widget": {
       "destination": {
         "error": "Failed to update destination",

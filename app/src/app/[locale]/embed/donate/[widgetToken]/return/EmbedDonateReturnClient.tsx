@@ -24,16 +24,30 @@ export function EmbedDonateReturnClient({ widgetToken, locale, cancelled, source
     const run = async () => {
       try {
         const widget = await getWidget(widgetToken);
-        if (!widget.widgetAllowedOrigin) return;
+        if (!widget.widgetAllowedOrigin) {
+          console.warn(
+            `[CommonLink widget/return] redirect blocked: this association has no widgetAllowedOrigin configured. Set it to the exact origin (scheme+host+port) of the embedding page.`,
+          );
+          return;
+        }
 
         let sourceOrigin: string;
         try {
           sourceOrigin = new URL(source).origin;
         } catch {
+          console.warn(`[CommonLink widget/return] redirect blocked: source is not a valid URL:`, source);
           return;
         }
 
-        if (sourceOrigin !== widget.widgetAllowedOrigin) return;
+        // Compare by origin, tolerating a trailing slash on the stored allowlist value
+        // (URL.origin never carries one; a manually-set widgetAllowedOrigin might).
+        const allowedOrigin = widget.widgetAllowedOrigin.replace(/\/+$/, '');
+        if (sourceOrigin !== allowedOrigin) {
+          console.warn(
+            `[CommonLink widget/return] redirect blocked: source origin "${sourceOrigin}" !== widgetAllowedOrigin "${allowedOrigin}". They must match exactly (scheme + host + port).`,
+          );
+          return;
+        }
 
         setValidatedSource(source);
 
@@ -45,8 +59,9 @@ export function EmbedDonateReturnClient({ widgetToken, locale, cancelled, source
         } else {
           setTimeout(() => { top.location.href = source; }, SUCCESS_REDIRECT_DELAY_MS);
         }
-      } catch {
-        // getWidget failed — can't validate, no redirect
+      } catch (e) {
+        // getWidget failed (network/CORS/404) — can't validate, no redirect
+        console.warn(`[CommonLink widget/return] redirect blocked: could not fetch widget config for validation.`, e);
       }
     };
 

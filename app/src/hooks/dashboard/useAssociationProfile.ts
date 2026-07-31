@@ -18,8 +18,11 @@ interface UseAssociationProfileReturn {
   /**
    * Sends a `PATCH /api/association/me` request and updates local state on success.
    * Enqueues a success or error toast via `useToastStore`.
+   *
+   * @param data - Partial profile update payload.
+   * @param silent - If true, suppresses the success toast (used for autosave).
    */
-  updateProfile: (data: UpdateAssociationProfileRequest) => Promise<void>;
+  updateProfile: (data: UpdateAssociationProfileRequest, silent?: boolean) => Promise<void>;
   /** Re-fetches the profile from the server and updates local state. */
   refreshProfile: () => Promise<void>;
 }
@@ -57,13 +60,16 @@ export function useAssociationProfile(): UseAssociationProfileReturn {
     };
   }, []);
 
-  const updateProfile = async (data: UpdateAssociationProfileRequest): Promise<void> => {
+  const updateProfile = async (
+    data: UpdateAssociationProfileRequest,
+    silent = false,
+  ): Promise<void> => {
     setIsSuccess(false);
     try {
       const updated = await updateAssociationProfile(data);
       setProfile(updated);
       setIsSuccess(true);
-      addToast('success', 'profileUpdated');
+      if (!silent) addToast('success', 'profileUpdated');
     } catch {
       addToast('error', 'errors.serverError');
     }

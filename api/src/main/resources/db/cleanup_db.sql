@@ -25,7 +25,7 @@ DO $$
     DECLARE
         -- ── UUID d'utilisateurs à EXCLURE de la purge (table users.id) ──
         -- Exemple : ARRAY['a0000000-0000-0000-0000-000000000001']::UUID[]
-        v_keep_user_ids UUID[] := ARRAY['22d7e09f-1c5d-4595-bc27-fcbe2ffd079c']::UUID[];
+        v_keep_user_ids UUID[] := ARRAY['952192a6-376c-4087-a72f-cc4fd599cf48', 'a0000000-0000-0000-0000-000000000001']::UUID[];
 --         v_keep_user_ids UUID[] := ARRAY[]::UUID[];
 
         -- Profils dérivés des users gardés (calculés automatiquement)
@@ -100,9 +100,11 @@ DO $$
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'onchain_jobs supprimés : %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
-        -- 4. CAMPAGNES  (cascade → milestones, budget_sections → budget_items)
+        -- 4. CAMPAGNES  (cascade → milestones, budget_sections → budget_items,
+        --    cover_images)
         --    Gardées si l'association est conservée. Les sections/lignes de budget
-        --    sont supprimées automatiquement via ON DELETE CASCADE.
+        --    et les images de couverture (V47) sont supprimées automatiquement via
+        --    ON DELETE CASCADE.
         --    payees / payee_ibans cascadent depuis association_profiles (étape 6).
         -- ════════════════════════════════════════════════════════════
         DELETE FROM campaigns c
@@ -121,8 +123,14 @@ DO $$
 
         -- ════════════════════════════════════════════════════════════
         -- 5b. REGISTRY CHECKS  (V36 — pas de CASCADE ; dépendance circulaire via
-        --     decision_registry_check_id sur association_profiles → nullifier d'abord)
+        --     decision_registry_check_id sur association_profiles → nullifier d'abord ;
+        --     checked_by FK → users doit aussi être nullifié avant DELETE users)
         -- ════════════════════════════════════════════════════════════
+        UPDATE association_registry_check
+        SET checked_by = NULL
+        WHERE checked_by IS NOT NULL
+          AND checked_by <> ALL(v_keep_user_ids);
+
         UPDATE association_profiles ap
         SET decision_registry_check_id = NULL
         WHERE decision_registry_check_id IS NOT NULL
@@ -194,6 +202,7 @@ DO $$
 -- TRUNCATE TABLE
 --   payouts, onchain_jobs, donation_receipts, donations,
 --   campaign_budget_items, campaign_budget_sections, campaign_milestones,
+--   campaign_cover_images,
 --   campaigns, payee_ibans, payees,
 --   monerium_oauth_states, monerium_connections,
 --   association_registry_check,

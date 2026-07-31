@@ -3,13 +3,17 @@ package org.commonlink.security
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.springframework.mock.env.MockEnvironment
 import java.util.Base64
 
 class MoneriumTokenConverterTest {
 
+    // No active profiles → not prod, so a blank key is a no-op rather than a hard failure.
+    private val nonProdEnv = MockEnvironment()
+
     // 32 zero bytes encoded as Base64 — valid 256-bit key
     private val validKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-    private val converter = MoneriumTokenConverter(validKey)
+    private val converter = MoneriumTokenConverter(validKey, nonProdEnv)
 
     @Test
     fun `round-trip preserves plaintext`() {
@@ -43,21 +47,21 @@ class MoneriumTokenConverterTest {
     @Test
     fun `short key (less than 32 bytes after decode) is rejected`() {
         val shortKey = Base64.getEncoder().encodeToString(ByteArray(16)) // 128-bit — too short
-        assertThatThrownBy { MoneriumTokenConverter(shortKey) }
+        assertThatThrownBy { MoneriumTokenConverter(shortKey, nonProdEnv) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("32 bytes")
     }
 
     @Test
     fun `invalid Base64 key is rejected`() {
-        assertThatThrownBy { MoneriumTokenConverter("not-valid-base64!!!") }
+        assertThatThrownBy { MoneriumTokenConverter("not-valid-base64!!!", nonProdEnv) }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("not valid Base64")
     }
 
     // ── no-op mode (dev/staging — no key configured) ──────────────────────────
 
-    private val noOpConverter = MoneriumTokenConverter("")
+    private val noOpConverter = MoneriumTokenConverter("", nonProdEnv)
 
     @Test
     fun `no-op mode - write returns plaintext unchanged`() {
@@ -71,6 +75,14 @@ class MoneriumTokenConverterTest {
 
     @Test
     fun `no-op mode - blank key does not throw at construction`() {
-        MoneriumTokenConverter("   ") // whitespace-only key also disabled
+        MoneriumTokenConverter("   ", nonProdEnv) // whitespace-only key also disabled
+    }
+
+    @Test
+    fun `blank key under prod profile throws at construction`() {
+        val prodEnv = MockEnvironment().apply { setActiveProfiles("prod") }
+        assertThatThrownBy { MoneriumTokenConverter("", prodEnv) }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("prod")
     }
 }

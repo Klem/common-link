@@ -8,7 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.commonlink.dto.CampaignDonorDto
 import org.commonlink.dto.DonationDto
 import org.commonlink.service.DonorAggregateService
-import org.springframework.data.domain.Page
+import org.commonlink.dto.PageResponse
+import org.commonlink.dto.toPageResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -42,9 +43,9 @@ class CampaignDonorController(private val donorAggregateService: DonorAggregateS
         @RequestParam(required = false) search: String?,
         @RequestParam(defaultValue = "amount") sort: String,
         @AuthenticationPrincipal principal: UserDetails,
-    ): ResponseEntity<Page<CampaignDonorDto>> {
+    ): ResponseEntity<PageResponse<CampaignDonorDto>> {
         val associationId = UUID.fromString(principal.username)
-        return ResponseEntity.ok(donorAggregateService.listDonors(campaignId, associationId, search, sort, page, size))
+        return ResponseEntity.ok(donorAggregateService.listDonors(campaignId, associationId, search, sort, page, size).toPageResponse())
     }
 
     @GetMapping("/donors/{donorId}/donations")
@@ -63,10 +64,10 @@ class CampaignDonorController(private val donorAggregateService: DonorAggregateS
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @AuthenticationPrincipal principal: UserDetails,
-    ): ResponseEntity<Page<DonationDto>> {
+    ): ResponseEntity<PageResponse<DonationDto>> {
         val associationId = UUID.fromString(principal.username)
         return ResponseEntity.ok(
-            donorAggregateService.listDonorDonations(campaignId, donorId, associationId, page, size),
+            donorAggregateService.listDonorDonations(campaignId, donorId, associationId, page, size).toPageResponse(),
         )
     }
 

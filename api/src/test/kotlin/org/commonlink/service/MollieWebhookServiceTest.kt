@@ -1,7 +1,7 @@
 package org.commonlink.service
 
 import com.ninjasquad.springmockk.MockkBean
-import io.mockk.every
+import io.mockk.*
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.event.DonationConfirmedEvent
 import org.commonlink.repository.AssociationProfileRepository
@@ -60,6 +60,9 @@ class MollieWebhookServiceTest {
     @MockkBean
     private lateinit var mollieClient: MollieClient
 
+    @MockkBean
+    private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
+
     private lateinit var donorProfileId: UUID
     private lateinit var campaignId: UUID
 
@@ -73,6 +76,8 @@ class MollieWebhookServiceTest {
         val assoc = associationProfileRepository.save(TestFixtures.associationProfile(assocUser))
         val campaign = campaignRepository.save(TestFixtures.campaign(assoc, status = CampaignStatus.LIVE))
         campaignId = campaign.id!!
+
+        every { mollieConnectTokenManager.getValidAccessToken(any()) } returns "test_assoc_token"
     }
 
     // ── T1 : idempotence webhook ─────────────────────────────────────────────
@@ -83,7 +88,7 @@ class MollieWebhookServiceTest {
         val providerRef = "mollie:$mollieId"
         createPendingDonation(providerRef)
 
-        every { mollieClient.getPayment(mollieId) } returns paidPayment(mollieId)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId)
 
         mollieWebhookService.handleWebhook(mollieId)
         mollieWebhookService.handleWebhook(mollieId)
@@ -103,7 +108,7 @@ class MollieWebhookServiceTest {
         val mollieId = "tr_canceled_${UUID.randomUUID()}"
         val providerRef = "mollie:$mollieId"
         createPendingDonation(providerRef)
-        every { mollieClient.getPayment(mollieId) } returns fakePayment(mollieId, MolliePaymentStatus.CANCELED)
+        every { mollieClient.getPayment(mollieId, any()) } returns fakePayment(mollieId, MolliePaymentStatus.CANCELED)
 
         mollieWebhookService.handleWebhook(mollieId)
 
@@ -116,7 +121,7 @@ class MollieWebhookServiceTest {
         val mollieId = "tr_failed_${UUID.randomUUID()}"
         val providerRef = "mollie:$mollieId"
         createPendingDonation(providerRef)
-        every { mollieClient.getPayment(mollieId) } returns fakePayment(mollieId, MolliePaymentStatus.FAILED)
+        every { mollieClient.getPayment(mollieId, any()) } returns fakePayment(mollieId, MolliePaymentStatus.FAILED)
 
         mollieWebhookService.handleWebhook(mollieId)
 
@@ -128,7 +133,7 @@ class MollieWebhookServiceTest {
         val mollieId = "tr_auth_${UUID.randomUUID()}"
         val providerRef = "mollie:$mollieId"
         createPendingDonation(providerRef)
-        every { mollieClient.getPayment(mollieId) } returns fakePayment(mollieId, MolliePaymentStatus.AUTHORIZED)
+        every { mollieClient.getPayment(mollieId, any()) } returns fakePayment(mollieId, MolliePaymentStatus.AUTHORIZED)
 
         mollieWebhookService.handleWebhook(mollieId)
 
@@ -147,7 +152,7 @@ class MollieWebhookServiceTest {
         assertNull(guestDonor.walletAddress, "No wallet address before first donation")
         createPendingDonation(providerRef)
 
-        every { mollieClient.getPayment(mollieId) } returns paidPayment(mollieId)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId)
 
         mollieWebhookService.handleWebhook(mollieId)
 

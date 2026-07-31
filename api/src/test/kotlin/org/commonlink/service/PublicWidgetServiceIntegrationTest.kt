@@ -1,13 +1,15 @@
 package org.commonlink.service
 
 import com.ninjasquad.springmockk.MockkBean
-import io.mockk.every
+import io.mockk.*
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.MollieConnection
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
@@ -56,6 +58,12 @@ class PublicWidgetServiceIntegrationTest {
     @MockkBean
     private lateinit var mollieClient: MollieClient
 
+    @MockkBean
+    private lateinit var mollieConnectionRepository: MollieConnectionRepository
+
+    @MockkBean
+    private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
+
     private val widgetToken = "clk_integ_test"
 
     @BeforeEach
@@ -68,7 +76,13 @@ class PublicWidgetServiceIntegrationTest {
         assoc.widgetDestinationCampaign = campaign
         associationProfileRepository.save(assoc)
 
-        every { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        // Fully onboarded connection: KYC completed, payments authorised, link not broken.
+        val mockConnection = mockk<MollieConnection> { every { canCollectDonations() } returns true }
+        every { mollieConnectionRepository.findByAssociationId(any()) } returns mockConnection
+        every { mollieConnectTokenManager.getValidAccessToken(any()) } returns "test_assoc_token"
+
+        every { mollieClient.getFirstProfileId(any()) } returns "pfl_test"
+        every { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
             MolliePayment(
                 id = "tr_integ_${System.nanoTime()}",
                 status = MolliePaymentStatus.OPEN,

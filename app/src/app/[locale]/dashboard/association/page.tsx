@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
-import { useMoneriumStatus } from '@/hooks/monerium/useMoneriumStatus';
 import { useAssociationDashboard } from '@/hooks/dashboard/useAssociationDashboard';
 import { useAccStatusStore } from '@/stores/accStatusStore';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -23,19 +21,8 @@ export default function AssociationDashboardPage() {
   const router = useRouter();
 
   const { profile } = useAssociationProfile();
-  const { connected } = useMoneriumStatus();
   const { stats, isLoading, error } = useAssociationDashboard();
-  const setAccStatus = useAccStatusStore((s) => s.setAccStatus);
-
-  const verified = profile?.verificationStatus === 'VERIFIED';
-  const bankConnected = connected === true;
-
-  useEffect(() => {
-    if (profile !== null && connected !== null) {
-      const done = (verified ? 1 : 0) + (bankConnected ? 1 : 0);
-      setAccStatus(done, 2, verified, bankConnected);
-    }
-  }, [profile, connected, verified, bankConnected, setAccStatus]);
+  const { hydrated, verificationStatus, bankStatus, rejectionReason, mollieDashboardUrl } = useAccStatusStore();
 
   const greeting = profile ? t('greeting', { name: profile.name }) : t('greeting', { name: '…' });
 
@@ -56,7 +43,15 @@ export default function AssociationDashboardPage() {
 
   return (
     <div className = "page">
-      <AccountCompletionCard verified={verified} bankConnected={bankConnected} />
+      {/* Rendered only once the profile is loaded: the store defaults would show a false "0/2". */}
+      {hydrated && (
+      <AccountCompletionCard
+        verificationStatus={verificationStatus}
+        bankStatus={bankStatus}
+        rejectionReason={rejectionReason}
+        mollieDashboardUrl={mollieDashboardUrl}
+      />
+      )}
 
       <div className="page-head">
         <div>

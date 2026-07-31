@@ -39,6 +39,13 @@ const ELIGIBILITY_OPTIONS: { value: MandateEligibility; labelKey: string; descKe
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.docx';
 
+// Temporarily hides the mandate "Pièces justificatives" (supporting documents) step and drops
+// the doc-upload precondition for signing. Set back to true to restore the step.
+// NOTE: when restoring, also revert the step3 title number "2." → "3." in messages/{fr,en}.json
+// (association.profile.mandate.step3.title). The backend doc guard in MandateService.signMandate
+// was removed in the same change and must be restored alongside this flag.
+const SHOW_MANDATE_DOCS = false;
+
 function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} Mo`;
   return `${Math.round(bytes / 1024)} Ko`;
@@ -62,6 +69,10 @@ interface MandateTabProps {
   onSign: (request: SignMandateRequest) => Promise<void>;
   onRevoke: () => Promise<void>;
   onDownloadPdf: () => Promise<void>;
+  /** Nom du signataire habilité — imprimé sur les reçus fiscaux. Absent ⇒ signature bloquée. */
+  signerName?: string | null;
+  /** Fonction du signataire habilité — imprimée sur les reçus fiscaux. Absente ⇒ signature bloquée. */
+  signerRole?: string | null;
 }
 
 export function MandateTab({
@@ -73,6 +84,8 @@ export function MandateTab({
   onSign,
   onRevoke,
   onDownloadPdf,
+  signerName,
+  signerRole,
 }: MandateTabProps) {
   const t = useTranslations('dashboard');
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -80,6 +93,7 @@ export function MandateTab({
   const [selectedEligibility, setSelectedEligibility] = useState<MandateEligibility | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [showSignerWarning, setShowSignerWarning] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
 
@@ -94,7 +108,8 @@ export function MandateTab({
   }
 
   const uploadedCount = state.mandateDocs.filter((d) => d.uploaded).length;
-  const canSign = selectedEligibility !== null && uploadedCount === 2 && accepted && !state.signed;
+  const canSign =
+    selectedEligibility !== null && (!SHOW_MANDATE_DOCS || uploadedCount === 2) && accepted && !state.signed;
   const canUpload = !state.signed;
 
   const eligibilityLabel = (e: MandateEligibility | null | undefined): string => {
@@ -102,8 +117,19 @@ export function MandateTab({
     return opt ? t(opt.labelKey as Parameters<typeof t>[0]) : '—';
   };
 
+  const missingSignerName = !signerName?.trim();
+  const missingSignerRole = !signerRole?.trim();
+
   const handleSign = async () => {
     if (!canSign || !selectedEligibility) return;
+    // Le mandat autorise CommonLink à émettre des reçus fiscaux au nom du signataire habilité :
+    // sans nom ni fonction, les reçus seraient invalides. Garde volontairement placée ici et non
+    // dans `canSign` — un bouton `disabled` ne pourrait pas ouvrir la modale d'alerte.
+    // Miroir de la garde backend dans `MandateService.signMandate`.
+    if (missingSignerName || missingSignerRole) {
+      setShowSignerWarning(true);
+      return;
+    }
     setIsSigning(true);
     await onSign({ eligibility: selectedEligibility, accepted: true });
     setIsSigning(false);
@@ -209,7 +235,8 @@ export function MandateTab({
             </div>
           </div>
 
-          {/* Étape 2 — Pièces justificatives */}
+          {/* Étape 2 — Pièces justificatives (masquée temporairement — voir SHOW_MANDATE_DOCS) */}
+          {SHOW_MANDATE_DOCS && (
           <div className="card no-hover" style={{ marginBottom: 16 }}>
             <div className="card-h">
               <h3>{t('association.profile.mandate.step2.title')}</h3>
@@ -301,6 +328,7 @@ export function MandateTab({
               })}
             </div>
           </div>
+          )}
 
           {/* Étape 3 — Signature */}
           <div className="card no-hover" style={{ marginBottom: 16 }}>
@@ -435,6 +463,38 @@ export function MandateTab({
             </button>
           </div>
         </>
+      )}
+
+      {/* ── Modal d'alerte : signataire habilité manquant ─────────────────── */}
+      {showSignerWarning && (
+        <div className="ov" onClick={() => setShowSignerWarning(false)}>
+          <div className="mod" onClick={(e) => e.stopPropagation()}>
+            <div className="mod-h">
+              <h3>{t('association.profile.mandate.signerWarning.title')}</h3>
+              <button className="mod-x" onClick={() => setShowSignerWarning(false)}>✕</button>
+            </div>
+            <div className="mod-b">
+              {missingSignerName && (
+                <p className="alert alert-warning alert-spaced">
+                  {t('association.profile.mandate.signerWarning.missingSignerName')}
+                </p>
+              )}
+              {missingSignerRole && (
+                <p className="alert alert-warning alert-spaced">
+                  {t('association.profile.mandate.signerWarning.missingSignerRole')}
+                </p>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowSignerWarning(false)}
+                >
+                  {t('association.profile.mandate.signerWarning.close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Modal de confirmation de révocation ──────────────────────────── */}

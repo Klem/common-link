@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { useAccStatusStore } from '@/stores/accStatusStore';
+import { VerificationStatus } from '@/types/association';
+import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { Sidebar } from '../Sidebar';
 import type { UserDto } from '@/types/auth';
 import { UserRole, AuthProvider } from '@/types/auth';
@@ -82,9 +85,22 @@ describe('Sidebar', () => {
     expect(overviewLink).toHaveClass('active');
   });
 
-  it('renders acc-mini pill for association users', () => {
+  it('renders acc-mini pill for association users once the account status is hydrated', () => {
+    useAccStatusStore.getState().setAccStatus({
+      verificationStatus: VerificationStatus.UNVERIFIED,
+      bankStatus: BankSetupStatus.NOT_CONNECTED,
+      rejectionReason: null,
+      mollieDashboardUrl: null,
+      mollieResolved: true,
+    });
     render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
     expect(document.querySelector('.acc-mini')).toBeInTheDocument();
+  });
+
+  it('does not render acc-mini pill before the account status is hydrated', () => {
+    useAccStatusStore.setState({ hydrated: false, done: 0, total: 2 });
+    render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
+    expect(document.querySelector('.acc-mini')).not.toBeInTheDocument();
   });
 
   it('does not render acc-mini pill for donor users', () => {

@@ -11,6 +11,7 @@ import org.commonlink.exception.InvalidTokenException
 import org.commonlink.exception.TokenExpiredException
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.util.Date
 import java.util.UUID
 import javax.crypto.SecretKey
@@ -18,13 +19,14 @@ import javax.crypto.SecretKey
 /**
  * Handles generation and validation of JWT access tokens.
  *
- * Access tokens are short-lived (15 minutes), signed with HS256 using the secret
- * configured in `app.jwt.secret`, and carry the user's id, email, and role as claims.
+ * Access token lifetime is controlled by `app.jwt.access-token-expiration` (ISO-8601 duration).
+ * Tokens are signed with HS256 using the secret configured in `app.jwt.secret`.
  * The raw token is sent to clients; only hashed refresh tokens are persisted in the DB.
  */
 @Service
 class JwtService(
-    @Value("\${app.jwt.secret}") private val secret: String
+    @Value("\${app.jwt.secret}") private val secret: String,
+    @Value("\${app.jwt.access-token-expiration:PT15M}") private val accessTokenExpiration: Duration
 ) {
     companion object {
         private const val KNOWN_INSECURE_DEFAULT = "commonlink-dev-secret-key-must-be-at-least-32-chars-long"
@@ -47,8 +49,6 @@ class JwtService(
         Keys.hmacShaKeyFor(secret.toByteArray(Charsets.UTF_8))
     }
 
-    private val accessTokenExpirationMs = 15L * 60 * 1000 // 15 minutes
-
     /**
      * Generates a signed JWT access token for the given user.
      *
@@ -64,7 +64,7 @@ class JwtService(
             .claim("email", user.email)
             .claim("role", user.role.name)
             .issuedAt(now)
-            .expiration(Date(now.time + accessTokenExpirationMs))
+            .expiration(Date(now.time + accessTokenExpiration.toMillis()))
             .signWith(signingKey)
             .compact()
     }

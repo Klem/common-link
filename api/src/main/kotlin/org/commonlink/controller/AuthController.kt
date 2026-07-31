@@ -39,7 +39,8 @@ import java.util.UUID
 class AuthController(
     private val authService: AuthService,
     private val authRateLimiter: AuthRateLimiter,
-    @Value("\${app.cookies.secure:true}") private val cookiesSecure: Boolean
+    @Value("\${app.cookies.secure:true}") private val cookiesSecure: Boolean,
+    @Value("\${app.cookies.same-site:Strict}") private val cookiesSameSite: String
 ) {
 
     private fun HttpServletRequest.clientIp(): String =
@@ -50,7 +51,7 @@ class AuthController(
         ResponseCookie.from("cl-refresh", token)
             .httpOnly(true)
             .secure(cookiesSecure)
-            .sameSite("Strict")
+            .sameSite(cookiesSameSite)
             .path("/api/auth")
             .maxAge(Duration.ofDays(30))
             .build()
@@ -59,7 +60,7 @@ class AuthController(
         ResponseCookie.from("cl-refresh", "")
             .httpOnly(true)
             .secure(cookiesSecure)
-            .sameSite("Strict")
+            .sameSite(cookiesSameSite)
             .path("/api/auth")
             .maxAge(Duration.ZERO)
             .build()

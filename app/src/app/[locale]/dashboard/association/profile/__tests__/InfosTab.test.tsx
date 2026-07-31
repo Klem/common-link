@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import AssociationProfilePage from '../page';
 import type { AssociationProfileDto } from '@/types/association';
@@ -132,6 +132,81 @@ describe('Onglet Informations — profile/page.tsx', () => {
           phone: '06 12 34 56 78',
         }),
       );
+    });
+  });
+
+  // ── Autosave debouncé ──────────────────────────────────────────────────────
+
+  describe('autosave', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    /**
+     * Saisit une valeur puis laisse la validation zod (asynchrone) se résoudre.
+     * Sans ce flush, le timer avancerait avant même que le patch soit planifié.
+     */
+    const type = async (currentValue: string, next: string) => {
+      fireEvent.change(screen.getByDisplayValue(currentValue), { target: { value: next } });
+      await act(async () => {});
+    };
+
+    it("n'enregistre pas immédiatement à la frappe", async () => {
+      render(<AssociationProfilePage />);
+      await type('01 23 45 67 89', '06 12 34 56 78');
+      expect(mockUpdateProfile).not.toHaveBeenCalled();
+    });
+
+    it('envoie un patch silencieux du seul champ modifié après 800 ms', async () => {
+      render(<AssociationProfilePage />);
+      await type('01 23 45 67 89', '06 12 34 56 78');
+
+      await act(async () => { vi.advanceTimersByTime(800); });
+
+      expect(mockUpdateProfile).toHaveBeenCalledTimes(1);
+      expect(mockUpdateProfile).toHaveBeenCalledWith({ phone: '06 12 34 56 78' }, true);
+    });
+
+    it('fusionne plusieurs champs modifiés dans la même fenêtre de debounce', async () => {
+      render(<AssociationProfilePage />);
+      await type('01 23 45 67 89', '06 12 34 56 78');
+      await act(async () => { vi.advanceTimersByTime(300); });
+      await type('contact@asso.org', 'new@asso.org');
+
+      await act(async () => { vi.advanceTimersByTime(800); });
+
+      expect(mockUpdateProfile).toHaveBeenCalledTimes(1);
+      expect(mockUpdateProfile).toHaveBeenCalledWith(
+        { phone: '06 12 34 56 78', contactEmail: 'new@asso.org' },
+        true,
+      );
+    });
+
+    it("n'envoie rien tant que le champ est invalide", async () => {
+      render(<AssociationProfilePage />);
+      await type('123456789', 'INVALID');
+
+      await act(async () => { vi.advanceTimersByTime(800); });
+
+      expect(mockUpdateProfile).not.toHaveBeenCalled();
+    });
+
+    it("l'autosave d'un champ valide ne masque pas l'erreur d'un autre champ", async () => {
+      render(<AssociationProfilePage />);
+      await type('123456789', 'INVALID');
+      await type('01 23 45 67 89', '06 12 34 56 78');
+
+      await act(async () => { vi.advanceTimersByTime(800); });
+
+      expect(mockUpdateProfile).toHaveBeenCalledWith({ phone: '06 12 34 56 78' }, true);
+      expect(
+        screen.getByText('dashboard.association.profile.errors.sirenFormat'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /association\.profile\.save/i })).not.toBeDisabled();
     });
   });
 });

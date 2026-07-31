@@ -44,6 +44,10 @@ class CuratorBootstrap(
                 role = UserRole.CURATOR,
                 provider = AuthProvider.EMAIL,
                 passwordHash = passwordEncoder.encode(password),
+                // Curators are provisioned out-of-band and have no inbox verification step,
+                // so they must be created pre-verified — otherwise loginWithEmail rejects them
+                // on the emailVerified guard before ever checking the password.
+                emailVerified = true,
             )
         )
         logger.info("Curator user created: {}", email)

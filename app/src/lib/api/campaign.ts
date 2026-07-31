@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+import api, { apiUrl } from '@/lib/api';
 import type {
   CampaignDto,
   CampaignSummaryDto,
@@ -59,6 +59,52 @@ export const updateCampaign = (id: string, data: UpdateCampaignRequest): Promise
  */
 export const deleteCampaign = (id: string): Promise<void> =>
   api.delete(`/api/association/campaigns/${id}`);
+
+/**
+ * Uploads (or replaces) the campaign cover image.
+ * Calls `PUT /api/association/campaigns/:id/cover` as multipart form data.
+ *
+ * Accepted types and size limit are mirrored from the backend (JPEG/PNG/WebP, 5 MB max) and
+ * checked client-side before the call — the backend still re-validates (rule 8).
+ *
+ * @param id - UUID of the campaign.
+ * @param file - Image file to upload.
+ * @returns The updated campaign DTO, with `coverImage` set to the public serving path.
+ */
+export const uploadCampaignCover = (id: string, file: File): Promise<CampaignDto> => {
+  const form = new FormData();
+  form.append('file', file);
+  return api
+    .put<CampaignDto>(`/api/association/campaigns/${id}/cover`, form)
+    .then((r) => r.data);
+};
+
+/**
+ * Removes the campaign cover image.
+ * Calls `DELETE /api/association/campaigns/:id/cover`.
+ *
+ * @param id - UUID of the campaign.
+ * @returns The updated campaign DTO, with `coverImage` null.
+ */
+export const deleteCampaignCover = (id: string): Promise<CampaignDto> =>
+  api.delete<CampaignDto>(`/api/association/campaigns/${id}/cover`).then((r) => r.data);
+
+/**
+ * Resolves the API-relative `coverImage` path of a campaign into an absolute URL usable
+ * in an `<img src>`. The serving endpoint is public, so no token is needed.
+ *
+ * The serving path is stable across replacements (it only carries the campaign id), so a
+ * `version` must be appended — otherwise neither React nor the browser cache would notice that
+ * the image behind the URL changed. Pass `CampaignDto.updatedAt`, bumped by every upload.
+ *
+ * @param coverImage - Path stored in `CampaignDto.coverImage`, or an already absolute URL.
+ * @param version - Cache-busting token, typically the campaign's `updatedAt`.
+ * @returns Absolute URL of the cover image.
+ */
+export const campaignCoverUrl = (coverImage: string, version?: string): string => {
+  const absolute = apiUrl(coverImage);
+  return version ? `${absolute}?v=${encodeURIComponent(version)}` : absolute;
+};
 
 /**
  * Replaces the full budget for a campaign.

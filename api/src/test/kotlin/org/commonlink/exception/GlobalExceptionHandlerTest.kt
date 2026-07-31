@@ -92,6 +92,20 @@ class GlobalExceptionHandlerTest {
     }
 
     // -------------------------------------------------------------------------
+    // EmailNotVerifiedException → 401 + code: EMAIL_NOT_VERIFIED
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `EmailNotVerifiedException returns 401 with code EMAIL_NOT_VERIFIED`() {
+        every { authService.loginWithEmail(any(), any()) } throws EmailNotVerifiedException()
+
+        mockMvc.perform(loginEndpoint)
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.status").value(401))
+            .andExpect(jsonPath("$.code").value("EMAIL_NOT_VERIFIED"))
+    }
+
+    // -------------------------------------------------------------------------
     // TokenExpiredException → 401 + code: TOKEN_EXPIRED
     // -------------------------------------------------------------------------
 

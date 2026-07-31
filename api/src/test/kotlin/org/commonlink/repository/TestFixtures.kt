@@ -98,6 +98,7 @@ object TestFixtures {
         city: String? = "Paris",
         postalCode: String? = "75001",
         contactName: String? = "Jean Martin",
+        contactEmail: String? = "contact@restos-du-coeur.org",
         description: String? = "Aide alimentaire et insertion sociale.",
         verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED,
     ) = AssociationProfile(
@@ -107,6 +108,7 @@ object TestFixtures {
         city = city,
         postalCode = postalCode,
         contactName = contactName,
+        contactEmail = contactEmail,
         description = description,
         verificationStatus = verificationStatus,
     )

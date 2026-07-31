@@ -10,6 +10,7 @@ import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.dto.UpdateAssociationProfileRequest
+import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
@@ -29,8 +30,10 @@ class AssociationServiceTest {
     private val campaignRepo: CampaignRepository = mockk()
     private val connectionRepo: MoneriumConnectionRepository = mockk()
     private val outbox: OnchainOutboxService = mockk()
+    // Relaxed: chain guards are no-ops here; dedicated gate behaviour is covered in OnboardingGateService tests.
+    private val onboardingGate: OnboardingGateService = mockk(relaxed = true)
 
-    private val service = AssociationService(associationRepo, campaignRepo, connectionRepo, outbox)
+    private val service = AssociationService(associationRepo, campaignRepo, connectionRepo, outbox, onboardingGate)
 
     private val associationId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
@@ -161,6 +164,113 @@ class AssociationServiceTest {
         service.restoreAssociation(associationId)
 
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+    }
+
+    // ── updateProfile guards ──────────────────────────────────────────────────
+
+    @Test
+    fun `updateProfile - siren cannot be modified once VERIFIED`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.VERIFIED
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = "123456789", creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        assertThrows<ConflictException> { service.updateProfile(userId, req) }
+    }
+
+    @Test
+    fun `updateProfile - creationYear cannot be modified once VERIFIED`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.VERIFIED
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = null, creationYear = 2020, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        assertThrows<ConflictException> { service.updateProfile(userId, req) }
+    }
+
+    @Test
+    fun `updateProfile - contactName cannot be modified once Mollie KYC started`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.UNVERIFIED
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { onboardingGate.isMollieKycStarted(userId) } returns true
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = "Jean Martin", city = null, postalCode = null, description = null,
+            siren = null, creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        assertThrows<ConflictException> { service.updateProfile(userId, req) }
+    }
+
+    @Test
+    fun `updateProfile - contactEmail cannot be modified once Mollie KYC started`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.UNVERIFIED
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { onboardingGate.isMollieKycStarted(userId) } returns true
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = null, creationYear = null, contactEmail = "new@example.com", phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        assertThrows<ConflictException> { service.updateProfile(userId, req) }
+    }
+
+    @Test
+    fun `updateProfile - siren same value is allowed when VERIFIED`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.VERIFIED
+        every { profile.siren } returns "123456789"
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = "123456789", creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        // Resending the stored value is not a modification — must not throw
+        service.updateProfile(userId, req)
+    }
+
+    @Test
+    fun `updateProfile - contactName same value is allowed when Mollie KYC started`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.UNVERIFIED
+        every { profile.contactName } returns "Jean Martin"
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { onboardingGate.isMollieKycStarted(userId) } returns true
+        every { associationRepo.save(profile) } returns profile
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = "Jean Martin", city = null, postalCode = null, description = null,
+            siren = null, creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        // Resending the stored value is not a modification — must not throw
+        service.updateProfile(userId, req)
     }
 
     // ── T6 : multi-tenant isolation ───────────────────────────────────────────

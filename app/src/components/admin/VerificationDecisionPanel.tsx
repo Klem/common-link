@@ -72,7 +72,7 @@ export function VerificationDecisionPanel({
     setIsSubmitting(true);
     try {
       await approveVerification(associationId);
-      onDecisionMade(VerificationStatus.VERIFIED);
+      onDecisionMade(VerificationStatus.VERIFIED, undefined);
       addToast('success', 'admin.decision.approved');
     } catch (err: unknown) {
       const status =

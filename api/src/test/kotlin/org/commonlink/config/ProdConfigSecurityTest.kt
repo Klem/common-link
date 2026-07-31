@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.env.YamlPropertySourceLoader
 import org.springframework.core.env.EnumerablePropertySource
 import org.springframework.core.io.ClassPathResource
+import java.time.Duration
 
 class ProdConfigSecurityTest {
 
@@ -74,5 +75,45 @@ class ProdConfigSecurityTest {
         val mock = prop("onchain.mock")
         assertTrue(mock == null || mock == false,
             "onchain.mock must be absent or false in prod, was: $mock")
+    }
+
+    @Test
+    fun `mollie allow-fake-completion is false in prod`() {
+        // C1: base defaults this true; prod must override it explicitly or the self-service
+        // fake-KYC route ships active in production.
+        assertEquals(false, prop("app.mollie.connect.allow-fake-completion"))
+    }
+
+    @Test
+    fun `mollie connect mock is false in prod`() {
+        assertEquals(false, prop("app.mollie.connect.mock"))
+    }
+
+    @Test
+    fun `mollie test-mode is false in prod`() {
+        // T1: base defaults test-mode true for local Connect sandbox; prod must pin false or live donations route to Mollie test mode
+        assertEquals(false, prop("app.mollie.test-mode"))
+    }
+
+    @Test
+    fun `mollie api-key does not inherit the committed test key in prod`() {
+        // M1: base hardcodes a Mollie test key as the default; prod must require MOLLIE_API_KEY.
+        val apiKey = prop("app.mollie.api-key") as? String ?: ""
+        assertFalse(apiKey.contains("test_"), "prod must not inherit the base test key, was: $apiKey")
+        assertEquals("\${MOLLIE_API_KEY}", apiKey)
+    }
+
+    @Test
+    fun `monerium token-enc-key is required with no plaintext-inheriting default in prod`() {
+        // H4: base/staging default this empty (→ plaintext tokens); prod must require the key.
+        assertEquals("\${MONERIUM_TOKEN_ENC_KEY}", prop("app.monerium.token-enc-key"))
+    }
+
+    @Test
+    fun `access-token-expiration is at most 1 hour in prod`() {
+        val raw = prop("app.jwt.access-token-expiration") as? String ?: ""
+        val duration = Duration.parse(raw)
+        assertTrue(duration <= Duration.ofHours(1),
+            "app.jwt.access-token-expiration must be ≤ PT1H in prod, was: $raw")
     }
 }

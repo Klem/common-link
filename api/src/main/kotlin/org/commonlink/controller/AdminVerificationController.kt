@@ -14,8 +14,9 @@ import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.dto.RejectVerificationRequest
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.service.AssociationRegistryCheckService
+import org.commonlink.dto.PageResponse
+import org.commonlink.dto.toPageResponse
 import org.commonlink.service.VerificationService
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.ContentDisposition
@@ -60,8 +61,8 @@ class AdminVerificationController(
         @Parameter(description = "Filter by verification status (default: PENDING)")
         @RequestParam(defaultValue = "PENDING") status: VerificationStatus,
         @PageableDefault(size = 20, sort = ["verificationSubmittedAt"]) pageable: Pageable,
-    ): ResponseEntity<Page<AdminVerificationSummaryDto>> =
-        ResponseEntity.ok(verificationService.adminListVerifications(status, pageable))
+    ): ResponseEntity<PageResponse<AdminVerificationSummaryDto>> =
+        ResponseEntity.ok(verificationService.adminListVerifications(status, pageable).toPageResponse())
 
     @GetMapping("/{associationId}")
     @Operation(

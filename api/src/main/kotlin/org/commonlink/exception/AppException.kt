@@ -20,6 +20,16 @@ abstract class AppException(
 class AuthException(message: String = "Authentication required") :
     AppException(message, HttpStatus.UNAUTHORIZED)
 
+/**
+ * Thrown during email/password login when the account exists but its email is not yet verified.
+ *
+ * Returns HTTP 401 with a `code: EMAIL_NOT_VERIFIED` property so the frontend can surface a
+ * distinct "verify your email" message instead of the generic "wrong credentials" one.
+ */
+class EmailNotVerifiedException(
+    message: String = "Email non vérifié. Consultez votre boîte mail."
+) : AppException(message, HttpStatus.UNAUTHORIZED)
+
 /** Thrown when a requested user cannot be found in the database (HTTP 404). */
 class UserNotFoundException(message: String = "User not found") :
     AppException(message, HttpStatus.NOT_FOUND)

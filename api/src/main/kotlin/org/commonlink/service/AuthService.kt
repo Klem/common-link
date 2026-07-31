@@ -16,6 +16,7 @@ import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.AuthException
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.EmailNotVerifiedException
 import org.commonlink.exception.InvalidTokenException
 import org.commonlink.exception.PasswordNotSetException
 import org.commonlink.exception.RateLimitException
@@ -375,10 +376,11 @@ class AuthService(
         val user = userRepository.findByEmail(email)
             .orElseThrow { AuthException("Identifiants incorrects") }
 
-        // Accounts created via Google or magic link have no password hash.
-        // Return a specific error code so the frontend can guide the user.
+        // Reject unverified accounts before the password check, with a specific error code
+        // so the frontend can prompt the user to verify their email rather than mislabel it
+        // as a wrong password.
         if (!user.emailVerified) {
-            throw AuthException("Email non vérifié. Consultez votre boîte mail.")
+            throw EmailNotVerifiedException()
         }
         if (user.passwordHash == null) {
             throw PasswordNotSetException()
@@ -497,6 +499,7 @@ class AuthService(
                     city = dto.ville,
                     postalCode = dto.codePostal,
                     contactName = dto.contact,
+                    contactEmail = user.email,
                     description = dto.description
                 )
             )
@@ -570,7 +573,7 @@ class AuthService(
                             identifier = assocReq.identifier,
                             city = assocReq.city,
                             postalCode = assocReq.postalCode,
-                            contactName = user.email,
+                            contactEmail = user.email,
                             description = assocReq.description
                         )
                     )

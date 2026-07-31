@@ -42,8 +42,9 @@ private const val MAX_MANDATE_FILE_SIZE = 10L * 1024 * 1024
  *
  * State machine: mandate is absent (not signed) → SIGNED (active) → REVOKED (revokedAt set).
  * Re-signing after revocation creates a new row; history is preserved.
- * Signing is gated on [VerificationStatus.VERIFIED]. Document uploads/deletes are blocked
- * while an active (non-revoked) mandate exists.
+ * The whole mandate step requires [VerificationStatus.VERIFIED]: signing, uploads, and deletes are
+ * all gated on it (mirrors the frontend tab lock). Uploads/deletes are additionally blocked while an
+ * active (non-revoked) mandate exists.
  */
 @Service
 class MandateService(
@@ -64,11 +65,12 @@ class MandateService(
 
     /**
      * Uploads or replaces a mandate document (MANDATE_STATUTS or MANDATE_RESCRIT).
-     * Blocked when an active mandate exists.
+     * Requires the association to be VERIFIED; blocked when an active mandate exists.
      */
     @Transactional
     fun uploadMandateDocument(userId: UUID, docType: AssociationDocumentType, file: MultipartFile) {
         val profile = resolveProfile(userId)
+        requireVerified(profile)
         requireMandateDocType(docType)
         validateFile(file)
         requireNoActiveMandate(profile.id!!, "Cannot replace mandate documents while an active mandate is signed")
@@ -90,11 +92,12 @@ class MandateService(
     }
 
     /**
-     * Deletes a mandate document slot. Blocked when an active mandate exists.
+     * Deletes a mandate document slot. Requires the association to be VERIFIED; blocked when an active mandate exists.
      */
     @Transactional
     fun deleteMandateDocument(userId: UUID, docType: AssociationDocumentType) {
         val profile = resolveProfile(userId)
+        requireVerified(profile)
         requireMandateDocType(docType)
         requireNoActiveMandate(profile.id!!, "Cannot delete mandate documents while an active mandate is signed")
 
@@ -108,8 +111,13 @@ class MandateService(
     /**
      * Signs a new fiscal mandate.
      *
-     * Guards (in order): accepted == true, verificationStatus == VERIFIED, no active mandate exists,
-     * both mandate documents are present.
+     * Guards (in order): accepted == true, verificationStatus == VERIFIED, authorised signer identity
+     * present, no active mandate exists. The mandate-documents precondition is temporarily disabled
+     * (see the body and MandateTab SHOW_MANDATE_DOCS on the frontend).
+     *
+     * @throws UnprocessableEntityException if the terms are not accepted, or if
+     *   [AssociationProfile.signerName] / [AssociationProfile.signerRole] is missing — both are printed
+     *   on the tax receipts the mandate authorises, so the mandate cannot be signed without them.
      */
     @Transactional
     fun signMandate(userId: UUID, request: SignMandateRequest): MandateStateDto {
@@ -118,18 +126,20 @@ class MandateService(
         if (!request.accepted) {
             throw UnprocessableEntityException("You must accept the mandate terms")
         }
-        if (profile.verificationStatus != VerificationStatus.VERIFIED) {
-            throw ConflictException("Association must be VERIFIED before signing a mandate")
+        requireVerified(profile)
+        // The authorised signer's name and role are printed on every tax receipt issued under this
+        // mandate — mirrors the frontend warning modal in MandateTab.
+        if (profile.signerName.isNullOrBlank() || profile.signerRole.isNullOrBlank()) {
+            throw UnprocessableEntityException(
+                "The authorised signer name and role must be set before signing the fiscal mandate"
+            )
         }
         if (fiscalMandateRepository.findByAssociationIdAndRevokedAtIsNull(profile.id!!) != null) {
             throw ConflictException("An active mandate already exists; revoke it before re-signing")
         }
-        val allDocsPresent = MANDATE_DOC_TYPES.all {
-            documentRepository.existsByAssociationIdAndDocType(profile.id!!, it)
-        }
-        if (!allDocsPresent) {
-            throw ConflictException("Both mandate documents (statuts + rescrit) must be uploaded before signing")
-        }
+        // Mandate documents (statuts + rescrit) are temporarily NOT required to sign: the upload
+        // UI is hidden on the frontend (see MandateTab SHOW_MANDATE_DOCS). This guard is intentionally
+        // disabled and must be restored alongside that flag when the documents step comes back.
 
         val seq = fiscalMandateRepository.nextSequenceValue()
         val year = ZonedDateTime.now(ZoneId.of("Europe/Paris")).year
@@ -188,6 +198,16 @@ class MandateService(
     private fun requireNoActiveMandate(associationId: UUID, message: String) {
         if (fiscalMandateRepository.findByAssociationIdAndRevokedAtIsNull(associationId) != null) {
             throw ConflictException(message)
+        }
+    }
+
+    /**
+     * Chain guard: the whole fiscal-mandate tab is locked until the association is VERIFIED,
+     * so every mandate action (upload, delete, sign) must re-check it server-side.
+     */
+    private fun requireVerified(profile: AssociationProfile) {
+        if (profile.verificationStatus != VerificationStatus.VERIFIED) {
+            throw ConflictException("Association must be VERIFIED before managing the fiscal mandate")
         }
     }
 

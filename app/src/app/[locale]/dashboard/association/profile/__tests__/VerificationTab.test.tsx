@@ -138,8 +138,9 @@ describe('VerificationTab — document slots', () => {
   it('PENDING : boutons replace/delete désactivés', () => {
     mockState = { status: 'PENDING', requiredDocuments: fullSlots };
     render(<VerificationTab />);
-    screen.getAllByRole('button', { name: /verification\.requiredDocs\.replace/i })
-      .forEach((btn) => expect(btn).toBeDisabled());
+    expect(screen.queryByRole('button', { name: /verification\.requiredDocs\.replace/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /verification\.requiredDocs\.delete/i })).toBeNull();
+    expect(document.querySelectorAll('.vd-locked')).toHaveLength(3);
   });
 
   it('appelle deleteRequired au clic Supprimer sur un slot', async () => {

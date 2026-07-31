@@ -3,11 +3,50 @@
 import { useTranslations } from 'next-intl';
 import type { CampaignDto, BudgetSectionDto } from '@/types/campaign';
 import { BudgetSide } from '@/types/campaign';
+import { VerificationStatus } from '@/types/association';
+import { BankSetupStatus } from '@/lib/bankSetupStatus';
+
+/** Visual variant of an account-status row, mapped to the `.pp-row.*` CSS modifiers. */
+interface StatusRowSpec {
+  /** `missing` blocks publication, `boost` is informational, `ok` is satisfied. */
+  cls: 'missing' | 'boost' | 'ok';
+  icon: string;
+}
+
+/**
+ * One row per Mollie-derived bank status. Only `COMPLETED` allows publishing, but the other four
+ * must stay distinguishable: an association in review is not an association that never connected.
+ */
+const BANK_ROWS: Record<BankSetupStatus, StatusRowSpec> = {
+  [BankSetupStatus.NOT_CONNECTED]: { cls: 'missing', icon: '!' },
+  [BankSetupStatus.NEEDS_DATA]: { cls: 'missing', icon: '!' },
+  [BankSetupStatus.IN_REVIEW]: { cls: 'missing', icon: '⏳' },
+  [BankSetupStatus.COMPLETED]: { cls: 'ok', icon: '✓' },
+  [BankSetupStatus.BROKEN]: { cls: 'missing', icon: '!' },
+};
+
+/** One row per KYC status. None of them blocks publication — the dossier only gates public listing. */
+const VERIF_ROWS: Record<VerificationStatus, StatusRowSpec> = {
+  [VerificationStatus.UNVERIFIED]: { cls: 'boost', icon: 'i' },
+  [VerificationStatus.PENDING]: { cls: 'boost', icon: '⏳' },
+  [VerificationStatus.REJECTED]: { cls: 'boost', icon: '!' },
+  [VerificationStatus.VERIFIED]: { cls: 'ok', icon: '✓' },
+};
 
 interface PrePublishModalProps {
   campaign: CampaignDto;
-  verified: boolean;
-  bankConnected: boolean;
+  /** KYC lifecycle state of the association profile (`association_profiles.verification_status`). */
+  verificationStatus: VerificationStatus;
+  /** Bank-setup state derived from the Mollie KYC DTO. */
+  bankStatus: BankSetupStatus;
+  /**
+   * False while the Mollie request is still in flight. `bankStatus` then defaults to
+   * `NOT_CONNECTED`, so the modal shows a neutral loading row instead of claiming a fully
+   * onboarded association has no bank account.
+   */
+  mollieResolved: boolean;
+  /** Mollie hosted-onboarding deep link, used by the `NEEDS_DATA` call-to-action. */
+  mollieDashboardUrl: string | null;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -21,8 +60,10 @@ function sumSide(sections: BudgetSectionDto[], side: BudgetSide): number {
 
 export function PrePublishModal({
   campaign,
-  verified,
-  bankConnected,
+  verificationStatus,
+  bankStatus,
+  mollieResolved,
+  mollieDashboardUrl,
   onClose,
   onConfirm,
 }: PrePublishModalProps) {
@@ -64,7 +105,9 @@ export function PrePublishModal({
   ];
 
   const allReqOk = blockers.every((b) => b.ok);
-  const canPublish = allReqOk && bankConnected;
+  const bankReady = mollieResolved && bankStatus === BankSetupStatus.COMPLETED;
+  const canPublish = allReqOk && bankReady;
+  const accountComplete = bankReady && verificationStatus === VerificationStatus.VERIFIED;
 
   return (
     <div className="ov on" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -122,21 +165,39 @@ export function PrePublishModal({
           {/* — Statut compte — */}
           <div className="pp-section">
             <div className="pp-section-title">{t('account.section')}</div>
-            {!bankConnected ? (
-              <div className="pp-row missing">
-                <div className="pp-row-ic">!</div>
-                <div className="pp-row-lbl">{t('account.noBank')}</div>
-              </div>
-            ) : !verified ? (
-              <div className="pp-row boost">
-                <div className="pp-row-ic">i</div>
-                <div className="pp-row-lbl">{t('account.notVerified')}</div>
-              </div>
-            ) : (
+            {accountComplete ? (
               <div className="pp-row ok">
                 <div className="pp-row-ic">🚀</div>
                 <div className="pp-row-lbl">{t('account.complete')}</div>
               </div>
+            ) : (
+              <>
+                {!mollieResolved ? (
+                  <div className="pp-row boost">
+                    <div className="pp-row-ic">⏳</div>
+                    <div className="pp-row-lbl">{t('account.loading')}</div>
+                  </div>
+                ) : (
+                  <div className={`pp-row ${BANK_ROWS[bankStatus].cls}`}>
+                    <div className="pp-row-ic">{BANK_ROWS[bankStatus].icon}</div>
+                    <div className="pp-row-lbl">{t(`account.bank.${bankStatus}`)}</div>
+                    {bankStatus === BankSetupStatus.NEEDS_DATA && mollieDashboardUrl !== null && (
+                      <a
+                        className="pp-row-link"
+                        href={mollieDashboardUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {t('account.completeBank')}
+                      </a>
+                    )}
+                  </div>
+                )}
+                <div className={`pp-row ${VERIF_ROWS[verificationStatus].cls}`}>
+                  <div className="pp-row-ic">{VERIF_ROWS[verificationStatus].icon}</div>
+                  <div className="pp-row-lbl">{t(`account.verif.${verificationStatus}`)}</div>
+                </div>
+              </>
             )}
           </div>
         </div>

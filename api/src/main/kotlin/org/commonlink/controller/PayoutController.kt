@@ -11,8 +11,9 @@ import org.commonlink.dto.CreatePayoutRequest
 import org.commonlink.dto.PayoutBlockingReasonsDto
 import org.commonlink.dto.PayoutDto
 import org.commonlink.dto.PayoutSummaryDto
+import org.commonlink.dto.PageResponse
+import org.commonlink.dto.toPageResponse
 import org.commonlink.service.PayoutService
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
@@ -80,9 +81,9 @@ class PayoutController(private val payoutService: PayoutService) {
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @AuthenticationPrincipal principal: UserDetails,
-    ): ResponseEntity<Page<PayoutDto>> {
+    ): ResponseEntity<PageResponse<PayoutDto>> {
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-        return ResponseEntity.ok(payoutService.list(campaignId, UUID.fromString(principal.username), pageable))
+        return ResponseEntity.ok(payoutService.list(campaignId, UUID.fromString(principal.username), pageable).toPageResponse())
     }
 
     @GetMapping("/{payoutId}")

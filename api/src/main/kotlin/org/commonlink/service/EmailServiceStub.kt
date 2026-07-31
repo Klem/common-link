@@ -28,8 +28,8 @@ class EmailServiceStub : EmailService {
     }
 
     /** Logs the verification submission notification instead of sending an email. */
-    override fun sendVerificationSubmittedToAdmin(associationName: String) {
-        logger.info("Verification dossier submitted by association: $associationName")
+    override fun sendVerificationSubmittedToAdmin(associationName: String, recipientEmail: String) {
+        logger.info("Verification dossier submitted by '$associationName' — would notify CURATOR at $recipientEmail")
     }
 
     /** Logs the approval notification instead of sending an email. */
@@ -40,6 +40,18 @@ class EmailServiceStub : EmailService {
     /** Logs the rejection notification instead of sending an email. */
     override fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String) {
         logger.info("Verification rejected for '$associationName' — would notify $recipientEmail (reason: $reason)")
+    }
+
+    override fun sendMollieOnboardingNeedsData(associationName: String, recipientEmail: String) {
+        logger.info("Mollie KYC needs-data for '$associationName' — would notify $recipientEmail")
+    }
+
+    override fun sendMollieOnboardingInReview(associationName: String, recipientEmail: String) {
+        logger.info("Mollie KYC in-review for '$associationName' — would notify $recipientEmail")
+    }
+
+    override fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String) {
+        logger.info("Mollie KYC completed for '$associationName' — would notify $recipientEmail")
     }
 
     /** Logs the donation receipt details instead of sending an email with attachment. */

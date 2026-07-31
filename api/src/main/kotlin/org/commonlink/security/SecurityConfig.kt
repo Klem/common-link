@@ -70,6 +70,11 @@ class SecurityConfig(
                 auth.requestMatchers("/api/admin/verifications/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
                 auth.requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
+                auth.requestMatchers("/api/mollie/**").hasRole(UserRole.ASSOCIATION.toString())
+                // Campaign sub-resources (payouts, reporting, donor aggregates) are all
+                // association-owned; explicit gate so a ROLE_DONOR token can't reach them —
+                // previously fell through to authenticated() (security audit 2026-07-24, L1).
+                auth.requestMatchers("/api/campaigns/**").hasRole(UserRole.ASSOCIATION.toString())
                 auth.requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())
                 auth.anyRequest().authenticated()
             }

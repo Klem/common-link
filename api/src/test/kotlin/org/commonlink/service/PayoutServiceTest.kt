@@ -2,7 +2,6 @@ package org.commonlink.service
 
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.dto.CreatePayoutRequest
@@ -28,8 +27,6 @@ import org.commonlink.repository.PayeeRepository
 import org.commonlink.repository.PayoutRepository
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import java.math.BigDecimal
 import java.util.Optional
 import java.util.UUID
@@ -72,14 +69,20 @@ class PayoutServiceTest {
     private val pendingPayout = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
         amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel", status = PayoutStatus.PENDING)
 
+    /** Stubs the confirmed + pending payout sums used by the balance calculations. */
+    private fun stubBalance(confirmed: String, pending: String = "0", raised: String) {
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal(confirmed)
+        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING) } returns BigDecimal(pending)
+        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal(raised)
+    }
+
     @Test
     fun `create - happy path returns PayoutDto`() {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
         every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+        stubBalance(confirmed = "0", raised = "1000")
         every { payoutRepository.save(any()) } returnsArgument 0
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
@@ -95,11 +98,10 @@ class PayoutServiceTest {
             .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
 
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
         every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(unverifiedIban)
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+        stubBalance(confirmed = "0", raised = "1000")
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
         assertThrows<ConflictException> { service.create(campaignId, request, userId) }
@@ -108,11 +110,24 @@ class PayoutServiceTest {
     @Test
     fun `create - amount exceeds available balance throws ConflictException`() {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
         every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("900")
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+        stubBalance(confirmed = "900", raised = "1000")
+
+        val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
+        assertThrows<ConflictException> { service.create(campaignId, request, userId) }
+    }
+
+    @Test
+    fun `create - PENDING payouts are reserved against available balance (H2)`() {
+        // Raised 1000, none confirmed, but 600 already reserved by a PENDING payout → only 400 free.
+        // A second 500 payout must be blocked; before the fix it saw the full 1000 and was allowed.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        stubBalance(confirmed = "0", pending = "600", raised = "1000")
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
         assertThrows<ConflictException> { service.create(campaignId, request, userId) }
@@ -125,7 +140,7 @@ class PayoutServiceTest {
         val wrongAssoc   = AssociationProfile(user = assocUser, name = "Other", identifier = "999999999")
             .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, wrongAssocId) }
         every { associationProfileRepository.findByUserId(wrongUserId) } returns Optional.of(wrongAssoc)
-        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
 
         val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Motif test create wrong")
         assertThrows<NotFoundException> { service.create(campaignId, request, wrongUserId) }
@@ -139,7 +154,7 @@ class PayoutServiceTest {
             .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
 
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
         every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(ibanFromOtherPayee)
 
@@ -153,7 +168,10 @@ class PayoutServiceTest {
             amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel", status = PayoutStatus.CONFIRMED)
 
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
         every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        stubBalance(confirmed = "0", raised = "1000")
         every { confirmer.confirmAndEnqueue(pendingPayout) } returns confirmedPayout
 
         val result = service.confirm(campaignId, payoutId, userId)
@@ -168,6 +186,7 @@ class PayoutServiceTest {
             amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Done", status = PayoutStatus.CONFIRMED)
 
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
         every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns alreadyConfirmed
 
         assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
@@ -176,27 +195,51 @@ class PayoutServiceTest {
     @Test
     fun `confirm - not found throws NotFoundException`() {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
         every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns null
 
         assertThrows<NotFoundException> { service.confirm(campaignId, payoutId, userId) }
     }
 
     @Test
-    fun `getSummary - returns correct aggregates`() {
+    fun `confirm - IBAN downgraded after create throws ConflictException (H2)`() {
+        val downgradedIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.NO_MATCH)
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
+
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(downgradedIban)
+
+        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
+    }
+
+    @Test
+    fun `confirm - balance consumed by other confirmed payouts throws ConflictException (H2)`() {
+        // 500 payout, but only 100 confirmable (raised 1000 − 900 already confirmed) → over-withdrawal blocked at confirm.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        stubBalance(confirmed = "900", raised = "1000")
+
+        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
+    }
+
+    @Test
+    fun `getSummary - returns correct aggregates with PENDING reserved`() {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("1000")
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING) } returns BigDecimal("200")
+        stubBalance(confirmed = "1000", pending = "200", raised = "5000")
         every { payoutRepository.countByCampaignId(campaignId) } returns 5L
         every { payoutRepository.countByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns 3L
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("5000")
 
         val summary = service.getSummary(campaignId, userId)
 
         assertThat(summary.confirmedAmount).isEqualByComparingTo("1000")
         assertThat(summary.pendingAmount).isEqualByComparingTo("200")
         assertThat(summary.txTotal).isEqualTo(5L)
-        assertThat(summary.availableBalance).isEqualByComparingTo("4000") // 5000 - 1000
+        assertThat(summary.availableBalance).isEqualByComparingTo("3800") // 5000 - 1000 confirmed - 200 pending
     }
 
     @Test
@@ -204,8 +247,7 @@ class PayoutServiceTest {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+        stubBalance(confirmed = "0", raised = "1000")
 
         val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "Achat matériel pédagogique", userId)
 
@@ -220,8 +262,7 @@ class PayoutServiceTest {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(unverifiedIban)
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("900")
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+        stubBalance(confirmed = "900", raised = "1000")
 
         val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "Achat matériel pédagogique", userId)
 
@@ -236,8 +277,7 @@ class PayoutServiceTest {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
-        every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("0")
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal("1000")
+        stubBalance(confirmed = "0", raised = "1000")
 
         val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "trop court", userId)
 

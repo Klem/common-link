@@ -27,12 +27,12 @@ interface EmailService {
     fun sendEmailVerification(email: String, verificationUrl: String)
 
     /**
-     * Notifies the review team that an association has submitted its verification dossier.
-     * The recipient is configured via `app.mail.verification-review-to`.
+     * Notifies a curator that an association has submitted its verification dossier.
      *
      * @param associationName Official name of the association that submitted.
+     * @param recipientEmail  Email address of the curator to notify.
      */
-    fun sendVerificationSubmittedToAdmin(associationName: String)
+    fun sendVerificationSubmittedToAdmin(associationName: String, recipientEmail: String)
 
     /**
      * Notifies the association that its KYC dossier has been approved.
@@ -52,6 +52,30 @@ interface EmailService {
      * @param reason          The rejection reason provided by the curator.
      */
     fun sendVerificationRejectedToAssociation(associationName: String, recipientEmail: String, reason: String)
+
+    /**
+     * Notifies the association that Mollie requires additional information to continue KYC.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     */
+    fun sendMollieOnboardingNeedsData(associationName: String, recipientEmail: String)
+
+    /**
+     * Notifies the association that its Mollie KYC dossier is under review.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     */
+    fun sendMollieOnboardingInReview(associationName: String, recipientEmail: String)
+
+    /**
+     * Notifies the association that its Mollie KYC is complete and payments are enabled.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     */
+    fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String)
 
     /**
      * Sends the Cerfa 2041-RD fiscal receipt PDF to the donor after on-chain confirmation.
