@@ -4,6 +4,7 @@ import { getLanding, type PublicLandingDto } from '@/lib/api/public';
 import { LandingHeader } from './LandingHeader';
 import { LandingHero } from './LandingHero';
 import { ProjectSection } from './ProjectSection';
+import { TransparencySection } from './TransparencySection';
 import './landing.css';
 
 interface Props {
@@ -93,7 +94,11 @@ export default async function LandingPage({ params }: Props) {
             campaignDescription={data.campaignDescription}
             campaignImpactGoals={data.campaignImpactGoals}
           />
-          {/* Prompt 9 — TransparencySection */}
+          <TransparencySection
+            budget={data.budget}
+            budgetHash={data.budgetHash}
+            milestones={data.milestones}
+          />
           {/* Prompt 10 — TrustSection */}
         </main>
         <aside className="lp-sidebar">

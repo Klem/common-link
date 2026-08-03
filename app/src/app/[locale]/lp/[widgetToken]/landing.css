@@ -153,6 +153,84 @@
   margin-bottom: 12px;
 }
 
+/* ── Transparency section ────────────────────────────────────────────── */
+.lp-budget-list {
+  margin-bottom: 20px;
+}
+
+.lp-budget-item {
+  margin-bottom: 16px;
+}
+
+.lp-budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: .95rem;
+}
+
+.lp-budget-pct {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lp-bar-track {
+  height: 10px;
+  background: #EFEAE3;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 1.1s ease-out;
+}
+
+.lp-transparency-note {
+  font-size: .85rem;
+  color: var(--lp-text-mute);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.lp-budget-hash {
+  font-size: .85rem;
+  color: var(--lp-text-mute);
+  margin: 0 0 24px;
+}
+
+.lp-budget-hash-value {
+  font-family: monospace;
+  color: var(--lp-text);
+}
+
+.lp-commitments {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--lp-border);
+}
+
+.lp-commitments-title {
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.lp-commitments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-commitment-item {
+  font-size: .95rem;
+  line-height: 1.55;
+}
+
 /* ── Shared section helpers ──────────────────────────────────────────── */
 .lp-section-title {
   font-size: 1.6rem;
