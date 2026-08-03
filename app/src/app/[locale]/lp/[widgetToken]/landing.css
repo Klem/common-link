@@ -445,6 +445,59 @@
   margin: 10px 0 0;
 }
 
+/* ── Sticky mobile bar ───────────────────────────────────────────────── */
+.lp-sticky-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid var(--lp-border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, .06);
+  transform: translateY(120%);
+  transition: transform .25s ease;
+}
+
+.lp-sticky-bar--visible {
+  transform: translateY(0);
+}
+
+.lp-sticky-bar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lp-sticky-bar-label {
+  font-weight: 700;
+  font-size: .88rem;
+}
+
+.lp-sticky-bar-campaign {
+  font-size: .78rem;
+  color: var(--lp-text-mute);
+}
+
+.lp-sticky-bar-btn {
+  background: var(--lp-primary);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: .9rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lp-sticky-bar-btn:hover {
+  background: var(--lp-primary-dark);
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 960px) {
   .lp-layout {
@@ -481,5 +534,11 @@
 
   .lp-trust-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 961px) {
+  .lp-sticky-bar {
+    display: none;
   }
 }

@@ -7,6 +7,7 @@ import { ProjectSection } from './ProjectSection';
 import { TransparencySection } from './TransparencySection';
 import { TrustSection } from './TrustSection';
 import { DonationPanel } from './DonationPanel';
+import { StickyBar } from './StickyBar';
 import './landing.css';
 
 interface Props {
@@ -113,7 +114,7 @@ export default async function LandingPage({ params }: Props) {
           </div>
         </aside>
       </div>
-      {/* Prompt 12 — StickyBar */}
+      <StickyBar campaignName={data.campaignName} selectedAmount={undefined} />
       {/* Prompt 13 — Footer */}
     </div>
   );
