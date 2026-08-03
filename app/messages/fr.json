@@ -1306,6 +1306,57 @@
     },
     "welcome": "Bienvenue"
   },
+  "landing": {
+    "donate": {
+      "eyebrow": "Faire un don",
+      "secured": "Paiement sécurisé — technologie propulsée par CommonLink",
+      "submitWithAmount": "Je donne {amount}€ maintenant",
+      "title": "Soutenez le programme"
+    },
+    "error": {
+      "notFound": "Cette page de don n'est pas disponible.",
+      "notLive": "Cette campagne n'accepte pas de dons pour le moment."
+    },
+    "footer": {
+      "object": "Objet :",
+      "taxMention": "Les dons ouvrent droit à une réduction d'impôt de {rate}% dans les conditions prévues par la loi. Un reçu fiscal est délivré pour tout don."
+    },
+    "hero": {
+      "cta": "Je fais un don maintenant →",
+      "trust": {
+        "receipt": "🧾 Reçu fiscal immédiat (–{rate}%)",
+        "rna": "📍 RNA {rna}",
+        "secure": "🔒 Paiement 100% sécurisé"
+      }
+    },
+    "project": {
+      "eyebrow": "À quoi sert ce don",
+      "impactTitle": "Objectifs d'impact"
+    },
+    "sticky": {
+      "cta": "Je donne {amount}€ →",
+      "label": "Faire un don"
+    },
+    "transparency": {
+      "budgetHash": "Empreinte du budget ancrée on-chain :",
+      "commitmentsTitle": "Nos engagements de transparence",
+      "eyebrow": "Transparence",
+      "note": "Répartition indicative sur l'exercice en cours, actualisée chaque trimestre. Chaque don est traçable jusqu'à son utilisation réelle sur le terrain.",
+      "title": "Où va concrètement votre don"
+    },
+    "trust": {
+      "eyebrow": "Pourquoi nous faire confiance",
+      "receipt": {
+        "body": "{rate}% de votre don déduit de vos impôts, dans la limite de 20% de votre revenu imposable. Reçu envoyé par email sous 48h.",
+        "title": "Reçu fiscal automatique"
+      },
+      "title": "Votre don, en toute confiance",
+      "traceability": {
+        "body": "Chaque euro versé est suivi jusqu'à sa dépense réelle par l'association — vous pouvez consulter l'utilisation de votre don.",
+        "title": "Traçabilité garantie"
+      }
+    }
+  },
   "settings": {
     "mollie": {
       "completeOnboarding": "Compléter mon dossier",

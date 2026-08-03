@@ -1306,6 +1306,57 @@
     },
     "welcome": "Welcome"
   },
+  "landing": {
+    "donate": {
+      "eyebrow": "Donate",
+      "secured": "Secure payment — powered by CommonLink",
+      "submitWithAmount": "Donate €{amount} now",
+      "title": "Support this programme"
+    },
+    "error": {
+      "notFound": "This donation page is not available.",
+      "notLive": "This campaign is not accepting donations at the moment."
+    },
+    "footer": {
+      "object": "Purpose:",
+      "taxMention": "Donations qualify for a {rate}% tax reduction under the conditions provided by law. A tax receipt is issued for every donation."
+    },
+    "hero": {
+      "cta": "Donate now →",
+      "trust": {
+        "receipt": "🧾 Instant tax receipt (–{rate}%)",
+        "rna": "📍 RNA {rna}",
+        "secure": "🔒 100% secure payment"
+      }
+    },
+    "project": {
+      "eyebrow": "What your donation funds",
+      "impactTitle": "Impact goals"
+    },
+    "sticky": {
+      "cta": "Donate €{amount} →",
+      "label": "Donate"
+    },
+    "transparency": {
+      "budgetHash": "Budget fingerprint anchored on-chain:",
+      "commitmentsTitle": "Our transparency commitments",
+      "eyebrow": "Transparency",
+      "note": "Indicative breakdown for the current financial year, updated quarterly. Every donation can be traced through to how it is actually spent on the ground.",
+      "title": "Where your donation actually goes"
+    },
+    "trust": {
+      "eyebrow": "Why trust us",
+      "receipt": {
+        "body": "{rate}% of your donation is deductible from your income tax, up to 20% of your taxable income. Receipt sent by email within 48 hours.",
+        "title": "Automatic tax receipt"
+      },
+      "title": "Your donation, with confidence",
+      "traceability": {
+        "body": "Every euro given is tracked through to how the organisation actually spends it — you can check how your donation was used.",
+        "title": "Guaranteed traceability"
+      }
+    }
+  },
   "settings": {
     "mollie": {
       "completeOnboarding": "Complete my onboarding",
