@@ -9,8 +9,8 @@ const cspDirectives = [
   "default-src 'self'",
   // Next.js dev + prod inline scripts
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/",
+  "font-src 'self'",
   // Google OAuth frames + API
   "frame-src https://accounts.google.com/",
   `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com`,
