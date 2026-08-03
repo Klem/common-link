@@ -65,3 +65,46 @@ export const getDonationStatus = (paymentId: string): Promise<DonationStatusResp
   publicApi
     .get<DonationStatusResponse>(`/api/public/widget/donations/${paymentId}/status`)
     .then((r) => r.data);
+
+export interface LandingBudgetPostDto {
+  label: string;
+  amount: number;
+  percentage: number;
+}
+
+export interface MilestoneDto {
+  id: string;
+  title: string;
+  transparencyCommitment: string | null;
+  status: 'LOCKED' | 'CURRENT' | 'REACHED';
+  sortOrder: number;
+}
+
+export interface PublicLandingDto {
+  associationName: string;
+  associationRna: string;
+  addressLine1: string | null;
+  city: string | null;
+  postalCode: string | null;
+  legalObject: string | null;
+  creationYear: number | null;
+  taxReductionRate: number;
+  campaignId: string;
+  campaignName: string;
+  campaignEmoji: string;
+  campaignDescription: string | null;
+  campaignReason: string | null;
+  campaignImpactGoals: string | null;
+  campaignCategory: string | null;
+  goal: number;
+  raised: number;
+  currency: string;
+  coverImage: string | null;
+  budget: LandingBudgetPostDto[];
+  budgetHash: string | null;
+  milestones: MilestoneDto[];
+  widgetAllowedOrigin: string | null;
+}
+
+export const getLanding = (token: string): Promise<PublicLandingDto> =>
+  publicApi.get<PublicLandingDto>(`/api/public/landing/${token}`).then((r) => r.data);

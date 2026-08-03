@@ -4,7 +4,7 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { AuthProvider } from '@/providers/AuthProvider';
-import { GoogleOAuthProvider } from '@/providers/GoogleOAuthProvider';
+import { ConditionalGoogleOAuth } from '@/providers/ConditionalGoogleOAuth';
 import { Toast } from '@/components/ui';
 import { Nunito_Sans, Lora, Inter, Syne, DM_Sans } from 'next/font/google';
 import '@/styles/globals.css';
@@ -63,12 +63,12 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <html lang={locale} className={`${nunitoSans.variable} ${lora.variable} ${inter.variable} ${syne.variable} ${dmSans.variable}`}>
       <body>
         <NextIntlClientProvider messages={messages}>
-          <GoogleOAuthProvider>
+          <ConditionalGoogleOAuth>
             <AuthProvider>
               {children}
               <Toast />
             </AuthProvider>
-          </GoogleOAuthProvider>
+          </ConditionalGoogleOAuth>
         </NextIntlClientProvider>
       </body>
     </html>
