@@ -6,6 +6,7 @@ import { LandingHero } from './LandingHero';
 import { ProjectSection } from './ProjectSection';
 import { TransparencySection } from './TransparencySection';
 import { TrustSection } from './TrustSection';
+import { DonationPanel } from './DonationPanel';
 import './landing.css';
 
 interface Props {
@@ -104,7 +105,11 @@ export default async function LandingPage({ params }: Props) {
         </main>
         <aside className="lp-sidebar">
           <div className="lp-sidebar-sticky">
-            {/* Prompt 11 — DonationPanel */}
+            <DonationPanel
+              widgetToken={widgetToken}
+              sourceSite={data.widgetAllowedOrigin ?? null}
+              locale={locale}
+            />
           </div>
         </aside>
       </div>

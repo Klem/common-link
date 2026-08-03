@@ -407,6 +407,44 @@
   margin: 0;
 }
 
+/* ── Donation panel ──────────────────────────────────────────────────── */
+.lp-donation-panel {
+  background: #fff;
+  border: 1px solid var(--lp-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--lp-shadow-soft);
+}
+
+.lp-donation-panel-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+.lp-payment-methods {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.lp-payment-pill {
+  border: 1px solid var(--lp-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--lp-text-mute);
+}
+
+.lp-donation-secured {
+  font-size: .72rem;
+  color: #9AA0AA;
+  text-align: center;
+  margin: 10px 0 0;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 960px) {
   .lp-layout {
