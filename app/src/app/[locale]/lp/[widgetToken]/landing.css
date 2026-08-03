@@ -153,6 +153,38 @@
   margin-bottom: 12px;
 }
 
+/* ── Shared section helpers ──────────────────────────────────────────── */
+.lp-section-title {
+  font-size: 1.6rem;
+  line-height: 1.25;
+  margin: 0 0 16px;
+}
+
+/* ── Project section ─────────────────────────────────────────────────── */
+.lp-project-description {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--lp-text);
+  margin: 0 0 24px;
+}
+
+.lp-impact-box {
+  background: var(--lp-secondary-soft);
+  border-radius: var(--lp-radius);
+  padding: 28px;
+}
+
+.lp-impact-title {
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.lp-impact-content {
+  margin: 0;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
 /* ── Header ──────────────────────────────────────────────────────────── */
 .lp-header-bar {
   border-bottom: 1px solid var(--lp-border);

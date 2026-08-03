@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { getLanding, type PublicLandingDto } from '@/lib/api/public';
 import { LandingHeader } from './LandingHeader';
 import { LandingHero } from './LandingHero';
+import { ProjectSection } from './ProjectSection';
 import './landing.css';
 
 interface Props {
@@ -87,7 +88,11 @@ export default async function LandingPage({ params }: Props) {
       />
       <div className="lp-layout">
         <main className="lp-main">
-          {/* Prompt 8 — ProjectSection */}
+          <ProjectSection
+            campaignName={data.campaignName}
+            campaignDescription={data.campaignDescription}
+            campaignImpactGoals={data.campaignImpactGoals}
+          />
           {/* Prompt 9 — TransparencySection */}
           {/* Prompt 10 — TrustSection */}
         </main>
