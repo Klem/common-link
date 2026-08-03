@@ -445,6 +445,24 @@
   margin: 10px 0 0;
 }
 
+/* ── Legal footer ────────────────────────────────────────────────────── */
+.lp-footer {
+  background: #F7F4F0;
+  padding: 32px 0 90px;
+  font-size: .78rem;
+  color: var(--lp-text-mute);
+  line-height: 1.7;
+}
+
+.lp-footer-name {
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.lp-footer p {
+  margin: 0 0 4px;
+}
+
 /* ── Sticky mobile bar ───────────────────────────────────────────────── */
 .lp-sticky-bar {
   position: fixed;

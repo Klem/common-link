@@ -8,6 +8,7 @@ import { TransparencySection } from './TransparencySection';
 import { TrustSection } from './TrustSection';
 import { DonationPanel } from './DonationPanel';
 import { StickyBar } from './StickyBar';
+import { LegalFooter } from './LegalFooter';
 import './landing.css';
 
 interface Props {
@@ -115,7 +116,15 @@ export default async function LandingPage({ params }: Props) {
         </aside>
       </div>
       <StickyBar campaignName={data.campaignName} selectedAmount={undefined} />
-      {/* Prompt 13 — Footer */}
+      <LegalFooter
+        associationName={data.associationName}
+        addressLine1={data.addressLine1}
+        postalCode={data.postalCode}
+        city={data.city}
+        associationRna={data.associationRna}
+        legalObject={data.legalObject}
+        taxReductionRate={data.taxReductionRate}
+      />
     </div>
   );
 }
