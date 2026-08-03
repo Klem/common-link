@@ -5,7 +5,10 @@ import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.DonationPublicStatus
 import org.commonlink.dto.DonationStatusDto
+import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
+import org.commonlink.dto.buildBudgetProjection
+import org.commonlink.dto.toDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
@@ -18,6 +21,7 @@ import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URI
@@ -39,6 +43,7 @@ class PublicWidgetService(
     private val donationService: DonationService,
     private val mollieConnectionRepository: MollieConnectionRepository,
     private val mollieConnectTokenManager: MollieConnectTokenManager,
+    private val taxRateService: TaxRateService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -139,6 +144,50 @@ class PublicWidgetService(
 
         logger.info("Pending donation created — mollieId={} campaign={}", molliePayment.id, campaign.id)
         return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id)
+    }
+
+    /**
+     * Returns the full landing page data for an association's active widget campaign.
+     *
+     * Exposes association identity, campaign details, expense budget projection, milestones,
+     * and the applicable fiscal tax reduction rate. No internal IDs or sensitive fields.
+     *
+     * @param widgetToken Opaque public token identifying the association's widget.
+     * @return [PublicLandingDto] with all donor-safe campaign and association data.
+     * @throws [NotFoundException] if the token is unknown or no destination campaign is configured.
+     * @throws [ConflictException] if the destination campaign is not LIVE.
+     */
+    @Transactional(readOnly = true)
+    fun getLanding(widgetToken: String): PublicLandingDto {
+        val (association, campaign) = resolveWidget(widgetToken)
+        val budget = buildBudgetProjection(campaign.budgetSections)
+        val milestones = campaign.milestones
+            .sortedBy { it.sortOrder }
+            .map { it.toDto() }
+        return PublicLandingDto(
+            associationName = association.name,
+            associationRna = association.identifier,
+            addressLine1 = association.addressLine1,
+            city = association.city,
+            postalCode = association.postalCode,
+            legalObject = association.legalObject,
+            creationYear = association.creationYear,
+            taxReductionRate = taxRateService.taxReductionRate(association),
+            campaignId = campaign.id!!,
+            campaignName = campaign.name,
+            campaignEmoji = campaign.emoji,
+            campaignDescription = campaign.description,
+            campaignReason = campaign.reason,
+            campaignImpactGoals = campaign.impactGoals,
+            campaignCategory = campaign.category,
+            goal = campaign.goal,
+            raised = campaign.raised,
+            coverImage = campaign.coverImage,
+            budget = budget,
+            budgetHash = campaign.budgetHash,
+            milestones = milestones,
+            widgetAllowedOrigin = association.widgetAllowedOrigin,
+        )
     }
 
     /**
