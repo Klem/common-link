@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getLanding, type PublicLandingDto } from '@/lib/api/public';
+import { LandingHeader } from './LandingHeader';
+import { LandingHero } from './LandingHero';
 import './landing.css';
 
 interface Props {
@@ -72,8 +74,17 @@ export default async function LandingPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
-      {/* Prompt 6 — Header */}
-      {/* Prompt 7 — Hero */}
+      <LandingHeader associationName={data.associationName} />
+      <LandingHero
+        campaignName={data.campaignName}
+        campaignCategory={data.campaignCategory}
+        campaignReason={data.campaignReason}
+        campaignDescription={data.campaignDescription}
+        associationRna={data.associationRna}
+        taxReductionRate={data.taxReductionRate}
+        campaignId={data.campaignId}
+        coverImage={data.coverImage}
+      />
       <div className="lp-layout">
         <main className="lp-main">
           {/* Prompt 8 — ProjectSection */}
