@@ -1400,6 +1400,7 @@
       "emailRequired": "L'e-mail est requis",
       "fieldRequired": "Ce champ est obligatoire",
       "fieldTooLong": "Ce champ est trop long",
+      "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
       "submitFailed": "Une erreur est survenue. Veuillez réessayer."
     },
     "identity": {

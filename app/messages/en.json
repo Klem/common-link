@@ -1400,6 +1400,7 @@
       "emailRequired": "Email is required",
       "fieldRequired": "This field is required",
       "fieldTooLong": "This field is too long",
+      "notCollecting": "This organisation cannot receive online donations yet. Please try again later.",
       "submitFailed": "An error occurred. Please try again."
     },
     "identity": {

@@ -182,6 +182,16 @@ body {
   background: rgba(50,50,125,0.04);
 }
 
+.btn-outline {
+  background: transparent;
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
+}
+.btn-outline:hover {
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
+}
+
 .btn-tertiary {
   background: transparent;
   color: var(--color-indigo);
