@@ -5,6 +5,7 @@ import { LandingHeader } from './LandingHeader';
 import { LandingHero } from './LandingHero';
 import { ProjectSection } from './ProjectSection';
 import { TransparencySection } from './TransparencySection';
+import { TrustSection } from './TrustSection';
 import './landing.css';
 
 interface Props {
@@ -99,7 +100,7 @@ export default async function LandingPage({ params }: Props) {
             budgetHash={data.budgetHash}
             milestones={data.milestones}
           />
-          {/* Prompt 10 — TrustSection */}
+          <TrustSection taxReductionRate={data.taxReductionRate} />
         </main>
         <aside className="lp-sidebar">
           <div className="lp-sidebar-sticky">
