@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { DonationForm } from '@/components/donation/DonationForm';
 
@@ -13,12 +12,6 @@ interface Props {
 
 export function DonationPanel({ widgetToken, sourceSite, locale, onAmountChange }: Props) {
   const t = useTranslations('landing');
-  const [selectedAmount, setSelectedAmount] = useState<number | undefined>(undefined);
-
-  function handleAmountChange(amount: number | undefined) {
-    setSelectedAmount(amount);
-    onAmountChange?.(amount);
-  }
 
   return (
     <div id="don" className="lp-donation-panel">
@@ -30,7 +23,7 @@ export function DonationPanel({ widgetToken, sourceSite, locale, onAmountChange 
         sourceSite={sourceSite}
         locale={locale}
         submitLabel={(amount) => (amount ? t('donate.submitWithAmount', { amount }) : undefined)}
-        onAmountChange={handleAmountChange}
+        onAmountChange={onAmountChange}
       />
       <div className="lp-payment-methods">
         <span className="lp-payment-pill">CB</span>

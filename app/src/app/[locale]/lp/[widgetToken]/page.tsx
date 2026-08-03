@@ -6,8 +6,7 @@ import { LandingHero } from './LandingHero';
 import { ProjectSection } from './ProjectSection';
 import { TransparencySection } from './TransparencySection';
 import { TrustSection } from './TrustSection';
-import { DonationPanel } from './DonationPanel';
-import { StickyBar } from './StickyBar';
+import { LandingClient } from './LandingClient';
 import { LegalFooter } from './LegalFooter';
 import './landing.css';
 
@@ -91,31 +90,24 @@ export default async function LandingPage({ params }: Props) {
         campaignId={data.campaignId}
         coverImage={data.coverImage}
       />
-      <div className="lp-layout">
-        <main className="lp-main">
-          <ProjectSection
-            campaignName={data.campaignName}
-            campaignDescription={data.campaignDescription}
-            campaignImpactGoals={data.campaignImpactGoals}
-          />
-          <TransparencySection
-            budget={data.budget}
-            budgetHash={data.budgetHash}
-            milestones={data.milestones}
-          />
-          <TrustSection taxReductionRate={data.taxReductionRate} />
-        </main>
-        <aside className="lp-sidebar">
-          <div className="lp-sidebar-sticky">
-            <DonationPanel
-              widgetToken={widgetToken}
-              sourceSite={data.widgetAllowedOrigin ?? null}
-              locale={locale}
-            />
-          </div>
-        </aside>
-      </div>
-      <StickyBar campaignName={data.campaignName} selectedAmount={undefined} />
+      <LandingClient
+        widgetToken={widgetToken}
+        sourceSite={data.widgetAllowedOrigin ?? null}
+        locale={locale}
+        campaignName={data.campaignName}
+      >
+        <ProjectSection
+          campaignName={data.campaignName}
+          campaignDescription={data.campaignDescription}
+          campaignImpactGoals={data.campaignImpactGoals}
+        />
+        <TransparencySection
+          budget={data.budget}
+          budgetHash={data.budgetHash}
+          milestones={data.milestones}
+        />
+        <TrustSection taxReductionRate={data.taxReductionRate} />
+      </LandingClient>
       <LegalFooter
         associationName={data.associationName}
         addressLine1={data.addressLine1}
