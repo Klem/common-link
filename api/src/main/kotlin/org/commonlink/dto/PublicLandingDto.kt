@@ -2,6 +2,7 @@ package org.commonlink.dto
 
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignBudgetSection
+import org.commonlink.entity.LandingTheme
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.UUID
@@ -16,6 +17,11 @@ import java.util.UUID
  * @param taxReductionRate Applicable fiscal reduction rate (66 or 75) per [org.commonlink.service.TaxRateService].
  * @param budget EXPENSE budget items with percentages, sorted by amount descending. Empty when total is zero.
  * @param budgetHash Integrity hash of the published budget, null when no budget has been published.
+ * @param landingTheme Visual palette chosen by the association. Drives the `--lp-*` token overrides.
+ * @param landingLogo Public serving path of the association logo, null when none was uploaded.
+ * @param showProject Whether the "what this donation funds" section must be rendered.
+ * @param showTransparency Whether the budget / milestones section must be rendered.
+ * @param showTrust Whether the "donate with confidence" section must be rendered.
  */
 data class PublicLandingDto(
     val associationName: String,
@@ -41,6 +47,11 @@ data class PublicLandingDto(
     val budgetHash: String?,
     val milestones: List<MilestoneDto>,
     val widgetAllowedOrigin: String? = null,
+    val landingTheme: LandingTheme = LandingTheme.DEFAULT,
+    val landingLogo: String? = null,
+    val showProject: Boolean = true,
+    val showTransparency: Boolean = true,
+    val showTrust: Boolean = true,
 )
 
 /**

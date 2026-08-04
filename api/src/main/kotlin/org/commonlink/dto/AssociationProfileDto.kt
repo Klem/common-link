@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.LandingTheme
 import org.commonlink.entity.VerificationStatus
 import java.time.Instant
 import java.util.UUID
@@ -35,6 +36,16 @@ data class AssociationProfileDto(
     val signerName: String?,
     /** Role/title of the authorised signer. Null if not yet filled. */
     val signerRole: String?,
+    /** Visual palette of the donation landing page. */
+    val landingTheme: LandingTheme,
+    /** Public serving path of the landing logo. Null if no logo has been uploaded. */
+    val landingLogo: String?,
+    /** Whether the landing page shows the "what this donation funds" section. */
+    val landingShowProject: Boolean,
+    /** Whether the landing page shows the transparency section. */
+    val landingShowTransparency: Boolean,
+    /** Whether the landing page shows the "donate with confidence" section. */
+    val landingShowTrust: Boolean,
 )
 
 fun AssociationProfile.toDto() = AssociationProfileDto(
@@ -60,4 +71,9 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     legalObject = legalObject,
     signerName = signerName,
     signerRole = signerRole,
+    landingTheme = landingTheme,
+    landingLogo = landingLogo,
+    landingShowProject = landingShowProject,
+    landingShowTransparency = landingShowTransparency,
+    landingShowTrust = landingShowTrust,
 )

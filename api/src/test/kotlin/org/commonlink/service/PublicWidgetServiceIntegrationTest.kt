@@ -9,6 +9,8 @@ import org.commonlink.entity.CampaignBudgetItem
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MollieConnection
+import org.commonlink.exception.ConflictException
+import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetItemRepository
 import org.commonlink.repository.CampaignBudgetSectionRepository
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
@@ -34,6 +37,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.util.UUID
 
 /**
  * Integration tests for [PublicWidgetService.createDonation] — T4 and T5 invariants:
@@ -66,6 +70,7 @@ class PublicWidgetServiceIntegrationTest {
     @Autowired private lateinit var itemRepository: CampaignBudgetItemRepository
     @Autowired private lateinit var milestoneRepository: CampaignMilestoneRepository
     @Autowired private lateinit var entityManager: EntityManager
+    @Autowired private lateinit var landingPreviewTokenService: LandingPreviewTokenService
 
     @MockkBean
     private lateinit var mollieClient: MollieClient
@@ -221,6 +226,75 @@ class PublicWidgetServiceIntegrationTest {
         assertFalse(dto.budget.any { it.label == "Subvention" }, "Revenue items must not appear in budget")
         assertEquals(1, dto.milestones.size)
         assertEquals(66, dto.taxReductionRate)
+    }
+
+    // ── Landing preview : contournement du gate LIVE ─────────────────────────
+
+    @Test
+    fun `getLanding - non-LIVE campaign without preview token is refused`() {
+        setCampaignStatus(CampaignStatus.DRAFT)
+
+        assertThrows<ConflictException> { publicWidgetService.getLanding(widgetToken) }
+    }
+
+    @Test
+    fun `getLanding - non-LIVE campaign with a valid preview token is served`() {
+        val assocId = associationProfileRepository.findByWidgetToken(widgetToken).get().id!!
+        setCampaignStatus(CampaignStatus.DRAFT)
+        val (preview, _) = landingPreviewTokenService.issue(assocId)
+
+        val dto = publicWidgetService.getLanding(widgetToken, preview)
+
+        assertNotNull(dto.campaignName)
+    }
+
+    @Test
+    fun `getLanding - preview token of another association is refused`() {
+        setCampaignStatus(CampaignStatus.DRAFT)
+        val (foreignPreview, _) = landingPreviewTokenService.issue(UUID.randomUUID())
+
+        assertThrows<ConflictException> { publicWidgetService.getLanding(widgetToken, foreignPreview) }
+    }
+
+    @Test
+    fun `getLanding - forged preview token is refused`() {
+        setCampaignStatus(CampaignStatus.DRAFT)
+
+        assertThrows<ConflictException> { publicWidgetService.getLanding(widgetToken, "not-a-jwt") }
+    }
+
+    @Test
+    fun `getLanding - unknown widget token stays a 404 even with a valid preview token`() {
+        val assocId = associationProfileRepository.findByWidgetToken(widgetToken).get().id!!
+        val (preview, _) = landingPreviewTokenService.issue(assocId)
+
+        // A preview relaxes the LIVE check only — it never conjures a widget into existence.
+        assertThrows<NotFoundException> { publicWidgetService.getLanding("clk_does_not_exist", preview) }
+    }
+
+    @Test
+    fun `getLanding - LIVE campaign ignores an invalid preview token`() {
+        val dto = publicWidgetService.getLanding(widgetToken, "garbage")
+
+        assertNotNull(dto.campaignName)
+    }
+
+    @Test
+    fun `createDonation - a preview token cannot unlock donations on a non-LIVE campaign`() {
+        // The donation path resolves the widget through resolveWidget, which knows nothing about previews.
+        setCampaignStatus(CampaignStatus.DRAFT)
+
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+    }
+
+    /** Flips the destination campaign status and makes the change visible to the service. */
+    private fun setCampaignStatus(status: CampaignStatus) {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        val campaign = assoc.widgetDestinationCampaign!!
+        campaign.status = status
+        campaignRepository.save(campaign)
+        entityManager.flush()
+        entityManager.clear()
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

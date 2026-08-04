@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -120,21 +121,28 @@ class PublicWidgetController(
      * No internal IDs, contact details, or sensitive fields are exposed.
      *
      * @param widgetToken Opaque public token identifying the association's widget.
+     * @param preview Optional preview token issued to the owning association; lifts the LIVE
+     *   requirement on the destination campaign, and nothing else. Ignored when it does not belong
+     *   to the association owning [widgetToken].
      * @return [PublicLandingDto] with all donor-safe association and campaign data.
      */
     @GetMapping("/landing/{widgetToken}")
     @Operation(
         summary = "Get landing page data",
-        description = "Returns full association and campaign data for the landing page. Includes budget projection and milestones. No authentication required."
+        description = "Returns full association and campaign data for the landing page. Includes budget projection and milestones. " +
+            "No authentication required. A `preview` token issued to the owning association allows rendering a non-LIVE campaign."
     )
     @ApiResponses(
         ApiResponse(
-            responseCode = "200", description = "Landing data resolved - campaign is live",
+            responseCode = "200", description = "Landing data resolved - campaign is live, or a valid preview token was supplied",
             content = [Content(schema = Schema(implementation = PublicLandingDto::class))]
         ),
         ApiResponse(responseCode = "404", description = "Unknown token or no destination campaign configured", content = [Content()]),
-        ApiResponse(responseCode = "409", description = "Destination campaign exists but is not LIVE", content = [Content()])
+        ApiResponse(responseCode = "409", description = "Destination campaign exists but is not LIVE and no valid preview token was supplied", content = [Content()])
     )
-    fun getLanding(@PathVariable widgetToken: String): ResponseEntity<PublicLandingDto> =
-        ResponseEntity.ok(publicWidgetService.getLanding(widgetToken))
+    fun getLanding(
+        @PathVariable widgetToken: String,
+        @RequestParam(required = false) preview: String?,
+    ): ResponseEntity<PublicLandingDto> =
+        ResponseEntity.ok(publicWidgetService.getLanding(widgetToken, preview))
 }
