@@ -597,6 +597,7 @@
             "notConnected": "Not connected"
           },
           "infos": "Informations",
+          "landing": "Landing page",
           "locked": "Complete the previous step first",
           "mandate": "Fiscal Mandate",
           "mandateBadge": {
@@ -1358,6 +1359,33 @@
     }
   },
   "settings": {
+    "landing": {
+      "iframeTitle": "Donate",
+      "prereq": {
+        "campaign": "Destination campaign",
+        "campaignNone": "No campaign selected",
+        "campaignNotLive": "This campaign is not published: the landing page will stay unavailable until it goes live.",
+        "goToWidget": "Configure in the Widget tab",
+        "hint": "Your landing page reuses the widget's diffusion token and destination campaign. Change them from the Widget tab.",
+        "title": "Prerequisites",
+        "token": "Diffusion token",
+        "tokenActive": "Active",
+        "tokenInactive": "Inactive"
+      },
+      "snippet": {
+        "copied": "Copied",
+        "copy": "Copy",
+        "iframe": "Embedding without JavaScript",
+        "iframeHelp": "Fallback when scripts are not allowed: the height is fixed and has to be adjusted by hand.",
+        "noLiveCampaign": "Select a published campaign in the Widget tab to activate your landing page.",
+        "noToken": "Generate a diffusion token in the Widget tab to get your landing page.",
+        "script": "Snippet to embed (recommended)",
+        "scriptHelp": "Paste this code into a blank page of your website: the landing page renders full width and its height adjusts automatically.",
+        "title": "Your landing page",
+        "url": "Direct link",
+        "urlHelp": "Use it as the destination URL of your ads, or share it as is."
+      }
+    },
     "mollie": {
       "completeOnboarding": "Complete my onboarding",
       "connect": "Connect Mollie",
@@ -1412,14 +1440,14 @@
       "token": {
         "active": "Active",
         "disable": "Disable",
-        "disableWarning": "Disabling the widget will immediately break all existing integrations.",
+        "disableWarning": "Disabling immediately breaks all existing widget integrations and your landing page.",
         "error": "Failed to generate token",
         "generate": "Generate link",
         "generated": "Token generated successfully",
         "inactive": "Inactive",
         "label": "Widget token",
         "regenerate": "Regenerate link",
-        "regenerateWarning": "Regenerating revokes the current token and breaks existing integrations."
+        "regenerateWarning": "Regenerating revokes the current token: existing widget integrations AND your landing page stop working."
       }
     }
   },

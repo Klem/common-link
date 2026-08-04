@@ -2558,6 +2558,18 @@ label.cm-label { display: block; font-size: 11.5px; font-weight: 600; color: var
 .security-row { display: flex; align-items: center; justify-content: space-between; }
 .security-value { font-size: 14px; }
 
+/* Copyable snippet box (settings › widget, landing page) */
+.copyable-code { position: relative; }
+.copyable-code-box { font-family: monospace; font-size: 12px; display: block; overflow-x: auto; padding-right: 40px; white-space: pre; }
+.copyable-code-btn { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; color: var(--slate-lavender); }
+
+/* Landing page tab */
+.lt-prereq-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--mist-lavender); }
+.lt-prereq-row:last-of-type { border-bottom: none; }
+.lt-prereq-label { font-size: 13px; color: var(--slate-lavender); font-weight: 600; }
+.lt-prereq-value { font-size: 14px; font-weight: 600; }
+.lt-token { font-family: monospace; font-size: 12px; word-break: break-all; }
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 
 @media(max-width:1200px) {

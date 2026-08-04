@@ -597,6 +597,7 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
+          "landing": "Landing page",
           "locked": "Terminez d'abord l'étape précédente",
           "mandate": "Mandat fiscal",
           "mandateBadge": {
@@ -1358,6 +1359,33 @@
     }
   },
   "settings": {
+    "landing": {
+      "iframeTitle": "Faire un don",
+      "prereq": {
+        "campaign": "Campagne de destination",
+        "campaignNone": "Aucune campagne sélectionnée",
+        "campaignNotLive": "Cette campagne n'est pas publiée : la landing page restera indisponible jusqu'à sa mise en ligne.",
+        "goToWidget": "Configurer dans l'onglet Widget",
+        "hint": "Votre landing page réutilise le token de diffusion et la campagne de destination du widget. Modifiez-les depuis l'onglet Widget.",
+        "title": "Prérequis",
+        "token": "Token de diffusion",
+        "tokenActive": "Actif",
+        "tokenInactive": "Inactif"
+      },
+      "snippet": {
+        "copied": "Copié",
+        "copy": "Copier",
+        "iframe": "Intégration sans JavaScript",
+        "iframeHelp": "Solution de repli si les scripts sont interdits : la hauteur est fixe et devra être ajustée à la main.",
+        "noLiveCampaign": "Sélectionnez une campagne publiée dans l'onglet Widget pour activer votre landing page.",
+        "noToken": "Générez un token de diffusion dans l'onglet Widget pour obtenir votre landing page.",
+        "script": "Snippet à intégrer (recommandé)",
+        "scriptHelp": "Collez ce code dans une page vide de votre site : la landing page s'affiche en pleine largeur et sa hauteur s'ajuste automatiquement.",
+        "title": "Votre landing page",
+        "url": "Lien direct",
+        "urlHelp": "À utiliser comme URL de destination de vos annonces, ou à partager telle quelle."
+      }
+    },
     "mollie": {
       "completeOnboarding": "Compléter mon dossier",
       "connect": "Connecter Mollie",
@@ -1412,14 +1440,14 @@
       "token": {
         "active": "Actif",
         "disable": "Désactiver",
-        "disableWarning": "Désactiver le widget cassera immédiatement toutes les intégrations existantes.",
+        "disableWarning": "Désactiver casse immédiatement toutes les intégrations existantes du widget et votre landing page.",
         "error": "Erreur lors de la génération du token",
         "generate": "Générer le lien",
         "generated": "Token généré avec succès",
         "inactive": "Inactif",
         "label": "Token du widget",
         "regenerate": "Régénérer le lien",
-        "regenerateWarning": "Régénérer révoque le token actuel et casse les intégrations existantes."
+        "regenerateWarning": "Régénérer révoque le token actuel : les intégrations existantes du widget ET votre landing page cessent de fonctionner."
       }
     }
   },

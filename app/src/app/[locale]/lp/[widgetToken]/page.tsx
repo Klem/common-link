@@ -8,10 +8,29 @@ import { TransparencySection } from './TransparencySection';
 import { TrustSection } from './TrustSection';
 import { LandingClient } from './LandingClient';
 import { LegalFooter } from './LegalFooter';
+import { EmbedHeightReporter } from './EmbedHeightReporter';
 import './landing.css';
 
 interface Props {
   params: Promise<{ locale: string; widgetToken: string }>;
+  searchParams: Promise<{ parentOrigin?: string }>;
+}
+
+/**
+ * Validates the `parentOrigin` query parameter injected by `public/landing.js`.
+ *
+ * Returns the canonical origin when the value is a bare http(s) origin, `null` otherwise —
+ * an unvalidated value would end up as a `postMessage` target origin.
+ */
+function resolveParentOrigin(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.origin === raw ? url.origin : null;
+  } catch {
+    return null;
+  }
 }
 
 function truncateDescription(text: string): string {
@@ -35,8 +54,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function LandingPage({ params }: Props) {
+export default async function LandingPage({ params, searchParams }: Props) {
   const { locale, widgetToken } = await params;
+  const parentOrigin = resolveParentOrigin((await searchParams).parentOrigin);
   const t = await getTranslations({ locale, namespace: 'landing' });
 
   let data: PublicLandingDto | null = null;
@@ -54,6 +74,7 @@ export default async function LandingPage({ params }: Props) {
   if (errorKey || !data) {
     return (
       <div className="lp-root">
+        {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
         <div className="lp-error">
           <p>{t(errorKey ?? 'error.notFound')}</p>
         </div>
@@ -75,6 +96,7 @@ export default async function LandingPage({ params }: Props) {
 
   return (
     <div className="lp-root">
+      {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}

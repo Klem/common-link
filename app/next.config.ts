@@ -42,6 +42,18 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Landing pages: same exception as the embed routes. `public/landing.js` and the
+        // JavaScript-free iframe fallback both frame this route from the association's own
+        // domain, so the default `frame-ancestors 'self'` would break the published snippet.
+        source: '/:locale/lp/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [...cspDirectives, 'frame-ancestors *'].join('; '),
+          },
+        ],
+      },
     ];
   },
 };
