@@ -10,7 +10,7 @@
 -- What is deleted for each targeted association:
 --   payouts, donations (to its campaigns), related onchain_jobs,
 --   campaigns + milestones + budgets + cover images, payees, IBANs,
---   Monerium/Mollie connections (cascade from association_profiles),
+--   Monerium/Mollie connections, association_logos (cascade from association_profiles),
 --   fiscal mandates, KYC documents, registry checks,
 --   magic_link_tokens, refresh_tokens, email_verification_tokens,
 --   the association_profiles row and the users account.

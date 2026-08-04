@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — Dev Seed Data
--- Run once on a clean (migrated) database (through V44).
+-- Run once on a clean (migrated) database (through V49).
 -- =============================================================
 -- Hashes below are real BCrypt ($2a, cost 12) — no edit needed.
 --   Test1234!  -> association

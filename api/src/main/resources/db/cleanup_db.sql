@@ -207,7 +207,7 @@ DO $$
 --   monerium_oauth_states, monerium_connections,
 --   association_registry_check,
 --   fiscal_mandate, association_document, receipt_seq,
---   association_profiles, donor_profiles,
+--   association_logos, association_profiles, donor_profiles,
 --   magic_link_tokens, email_verification_tokens, refresh_tokens,
 --   users
 -- RESTART IDENTITY CASCADE;
