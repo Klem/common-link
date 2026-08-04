@@ -246,6 +246,8 @@ class PublicWidgetServiceIntegrationTest {
         val dto = publicWidgetService.getLanding(widgetToken, preview)
 
         assertNotNull(dto.campaignName)
+        // The form must be rendered disabled: createDonation would refuse this campaign.
+        assertFalse(dto.donationsEnabled)
     }
 
     @Test
@@ -277,6 +279,7 @@ class PublicWidgetServiceIntegrationTest {
         val dto = publicWidgetService.getLanding(widgetToken, "garbage")
 
         assertNotNull(dto.campaignName)
+        assertTrue(dto.donationsEnabled)
     }
 
     @Test

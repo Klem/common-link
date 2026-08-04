@@ -201,6 +201,8 @@ class PublicWidgetService(
             showProject = association.landingShowProject,
             showTransparency = association.landingShowTransparency,
             showTrust = association.landingShowTrust,
+            // Only ever false behind a valid preview token: resolveLanding would have thrown otherwise.
+            donationsEnabled = campaign.status == CampaignStatus.LIVE,
         )
     }
 

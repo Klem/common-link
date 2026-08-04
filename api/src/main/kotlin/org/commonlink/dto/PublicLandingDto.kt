@@ -22,6 +22,10 @@ import java.util.UUID
  * @param showProject Whether the "what this donation funds" section must be rendered.
  * @param showTransparency Whether the budget / milestones section must be rendered.
  * @param showTrust Whether the "donate with confidence" section must be rendered.
+ * @param donationsEnabled False only in preview mode on a campaign that is not LIVE: the donation
+ *   endpoint would refuse the payment, so the form must be rendered disabled instead of failing on
+ *   submit. Always true on a normally served landing page, so nothing about the campaign lifecycle
+ *   leaks to donors.
  */
 data class PublicLandingDto(
     val associationName: String,
@@ -52,6 +56,7 @@ data class PublicLandingDto(
     val showProject: Boolean = true,
     val showTransparency: Boolean = true,
     val showTrust: Boolean = true,
+    val donationsEnabled: Boolean = true,
 )
 
 /**

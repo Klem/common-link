@@ -3,9 +3,8 @@ package org.commonlink.controller
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.ninjasquad.springmockk.MockkBean
-import io.mockk.captureNullable
 import io.mockk.every
-import io.mockk.slot
+import io.mockk.verify
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.DonationPublicStatus
@@ -20,8 +19,6 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.PublicWidgetService
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -327,24 +324,25 @@ class PublicWidgetControllerTest {
 
     @Test
     fun `getLanding - preview parameter is forwarded to the service`() {
-        val preview = slot<String?>()
-        every { publicWidgetService.getLanding("clk_abc", capture(preview)) } returns sampleLanding
+        // Stubbed on the exact expected value: a mangled or dropped parameter leaves the call unstubbed.
+        every { publicWidgetService.getLanding("clk_abc", "prev_jwt") } returns sampleLanding
 
         mockMvc.perform(get("/api/public/landing/clk_abc?preview=prev_jwt"))
             .andExpect(status().isOk)
+            .andExpect(jsonPath("$.campaignName").value("Campagne Test"))
 
-        assertEquals("prev_jwt", preview.captured)
+        verify(exactly = 1) { publicWidgetService.getLanding("clk_abc", "prev_jwt") }
     }
 
     @Test
     fun `getLanding - absent preview parameter forwards null`() {
-        val preview = slot<String?>()
-        every { publicWidgetService.getLanding("clk_abc", captureNullable(preview)) } returns sampleLanding
+        // Stubbed on the exact null argument: any other value would leave the call unstubbed and fail.
+        every { publicWidgetService.getLanding("clk_abc", null) } returns sampleLanding
 
         mockMvc.perform(get("/api/public/landing/clk_abc"))
             .andExpect(status().isOk)
 
-        assertNull(preview.captured)
+        verify(exactly = 1) { publicWidgetService.getLanding("clk_abc", null) }
     }
 
     @Test
