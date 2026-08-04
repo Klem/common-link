@@ -10,6 +10,8 @@ export const donationSchema = z.object({
     .refine((v) => Number(v.toFixed(2)) === v, 'errors.amountDecimals'),
   donorEmail: z.string().min(1, 'errors.emailRequired').email('errors.emailInvalid'),
   donorFullName: z.string().min(1, 'errors.fieldRequired').max(255, 'errors.fieldTooLong'),
+  donorBirthDate: z.string().min(1, 'errors.fieldRequired'),
+  donorBirthCity: z.string().min(1, 'errors.fieldRequired').max(128, 'errors.fieldTooLong'),
   donorAddressLine1: z.string().min(1, 'errors.fieldRequired').max(255, 'errors.fieldTooLong'),
   donorAddressLine2: z
     .string()

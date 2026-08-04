@@ -302,6 +302,10 @@
       "serverError": "An error occurred. Please try again.",
       "sessionExpired": "Your session has expired. Please log in again."
     },
+    "landingConfigSaved": "Landing page updated.",
+    "landingLogoSaved": "Logo saved.",
+    "landingLogoSize": "This image is too large. Maximum size: 2 MB.",
+    "landingLogoType": "Unsupported format. Use a JPEG, PNG or WebP image.",
     "loading": "Loading...",
     "mandateDocDeleted": "Document deleted.",
     "mandateDocUploaded": "Document uploaded.",
@@ -1365,6 +1369,22 @@
   },
   "settings": {
     "landing": {
+      "appearance": {
+        "logo": "Logo",
+        "logoHint": "Shown at the top of your donation page, next to your name. JPEG, PNG or WebP, 2 MB max.",
+        "logoNone": "No logo yet: your initials are shown instead.",
+        "logoRemove": "Remove",
+        "theme": "Colour palette",
+        "themeHint": "Pick a palette: it applies to your whole donation page. Every palette is checked for readability.",
+        "themes": {
+          "DEFAULT": "Original",
+          "NATURE": "Nature",
+          "SOBER": "Understated",
+          "TRUST": "Confidence",
+          "WARM": "Warm"
+        },
+        "title": "Appearance"
+      },
       "iframeTitle": "Donate",
       "prereq": {
         "campaign": "Destination campaign",
@@ -1376,6 +1396,24 @@
         "token": "Diffusion token",
         "tokenActive": "Active",
         "tokenInactive": "Inactive"
+      },
+      "preview": {
+        "close": "Close",
+        "desktop": "Computer",
+        "failed": "The preview could not be loaded. Please try again.",
+        "loading": "Loading the preview…",
+        "mobile": "Phone",
+        "open": "Preview",
+        "reload": "Refresh",
+        "title": "Preview of your donation page"
+      },
+      "sections": {
+        "donationLocked": "The donation form is always shown: it is the purpose of the page.",
+        "hint": "Choose what your donation page shows. Changes are saved immediately.",
+        "showProject": "What the donation funds",
+        "showTransparency": "Budget transparency",
+        "showTrust": "Donate with confidence",
+        "title": "Page sections"
       },
       "snippet": {
         "copied": "Copied",
@@ -1492,6 +1530,10 @@
       "addressLine1Placeholder": "Street and number",
       "addressLine2": "Address (line 2)",
       "addressLine2Placeholder": "Apartment, building, etc. (optional)",
+      "birthCity": "City of birth",
+      "birthCityPlaceholder": "City...",
+      "birthDate": "Date of birth",
+      "birthDatePlaceholder": "YYYY-MM-DD",
       "city": "City",
       "country": "Country",
       "email": "Email",

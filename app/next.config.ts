@@ -12,9 +12,9 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/",
   "font-src 'self'",
   // Google OAuth frames + API
-  "frame-src https://accounts.google.com/",
+  "frame-src 'self' https://accounts.google.com/",
   `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com`,
-  "img-src 'self' data: https:",
+  `img-src 'self' data: https: ${apiUrl}`,
 ];
 
 const nextConfig: NextConfig = {

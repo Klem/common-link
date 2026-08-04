@@ -3,6 +3,7 @@ package org.commonlink.entity
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -72,4 +73,12 @@ class Donation(
     /** Snapshot d'identité — code pays ISO-3166 sur 2 lettres (ex. "FR"). */
     @Column(name = "donor_country", length = 2)
     val donorCountry: String? = null,
+
+    /** Snapshot d'identité — date de naissance, requis pour le reçu fiscal Cerfa 2041-RD. */
+    @Column(name = "donor_birth_date")
+    val donorBirthDate: LocalDate? = null,
+
+    /** Snapshot d'identité — ville de naissance. */
+    @Column(name = "donor_birth_city", length = 128)
+    val donorBirthCity: String? = null,
 )

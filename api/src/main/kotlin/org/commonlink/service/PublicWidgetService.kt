@@ -129,6 +129,8 @@ class PublicWidgetService(
             postalCode = request.donorPostalCode,
             city = request.donorCity,
             country = request.donorCountry,
+            birthDate = request.donorBirthDate,
+            birthCity = request.donorBirthCity,
         )
 
         donationService.initiatePendingDonation(

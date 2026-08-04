@@ -8,6 +8,31 @@ export const VerificationStatus = {
 export type VerificationStatus = typeof VerificationStatus[keyof typeof VerificationStatus];
 
 /**
+ * Visual palette of an association's donation landing page.
+ *
+ * Single source of truth for both surfaces: the settings tab and the public landing page
+ * (`@/lib/api/public` re-exports this). Entries mirror the Kotlin `LandingTheme` enum and the
+ * `chk_association_landing_theme` CHECK constraint.
+ */
+export const LandingTheme = {
+  DEFAULT: 'DEFAULT',
+  WARM: 'WARM',
+  TRUST: 'TRUST',
+  NATURE: 'NATURE',
+  SOBER: 'SOBER',
+} as const;
+export type LandingTheme = (typeof LandingTheme)[keyof typeof LandingTheme];
+
+/** Every palette, in the order shown in the settings tab. */
+export const LANDING_THEMES: readonly LandingTheme[] = [
+  LandingTheme.DEFAULT,
+  LandingTheme.WARM,
+  LandingTheme.TRUST,
+  LandingTheme.NATURE,
+  LandingTheme.SOBER,
+];
+
+/**
  * Read model for an association's profile as returned by `GET /api/association/me`.
  */
 export interface AssociationProfileDto {
@@ -43,6 +68,34 @@ export interface AssociationProfileDto {
   signerName: string | null;
   /** Role/title of the authorised signer. Null if not yet filled. */
   signerRole: string | null;
+  /** Visual palette of the donation landing page. */
+  landingTheme: LandingTheme;
+  /** Public serving path of the landing logo, null if none was uploaded. */
+  landingLogo: string | null;
+  /** Whether the landing page shows the "what this donation funds" section. */
+  landingShowProject: boolean;
+  /** Whether the landing page shows the transparency section. */
+  landingShowTransparency: boolean;
+  /** Whether the landing page shows the "donate with confidence" section. */
+  landingShowTrust: boolean;
+}
+
+/**
+ * Payload for `PATCH /api/association/me/landing`.
+ * Every field is optional — an omitted field leaves the stored value untouched.
+ */
+export interface UpdateLandingConfigRequest {
+  theme?: LandingTheme;
+  showProject?: boolean;
+  showTransparency?: boolean;
+  showTrust?: boolean;
+}
+
+/** Response shape for `POST /api/association/me/landing/preview-session`. */
+export interface LandingPreviewToken {
+  previewToken: string;
+  /** ISO instant at which the token stops working. */
+  expiresAt: string;
 }
 
 /**

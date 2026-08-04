@@ -802,6 +802,7 @@ export default function AssociationProfilePage() {
           <LandingTab
             profile={profile}
             onGoToWidget={() => setActiveTab('widget')}
+            onConfigChanged={refreshProfile}
           />
         </div>
       )}

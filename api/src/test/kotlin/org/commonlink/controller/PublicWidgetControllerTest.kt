@@ -77,6 +77,8 @@ class PublicWidgetControllerTest {
         amount = BigDecimal("25.00"),
         donorEmail = "donor@example.com",
         donorFullName = "Jean Dupont",
+        donorBirthDate = java.time.LocalDate.of(1985, 6, 15),
+        donorBirthCity = "Lyon",
         donorAddressLine1 = "12 rue de la Paix",
         donorAddressLine2 = null,
         donorPostalCode = "75001",

@@ -305,6 +305,8 @@ class PublicWidgetServiceIntegrationTest {
     private fun validRequest(
         donorEmail: String = "anon@example.com",
         donorFullName: String = "Jean Dupont",
+        donorBirthDate: java.time.LocalDate = java.time.LocalDate.of(1985, 6, 15),
+        donorBirthCity: String = "Lyon",
         donorAddressLine1: String = "12 rue de la Paix",
         donorAddressLine2: String? = null,
         donorPostalCode: String = "75001",
@@ -316,6 +318,8 @@ class PublicWidgetServiceIntegrationTest {
         amount            = BigDecimal("25.00"),
         donorEmail        = donorEmail,
         donorFullName     = donorFullName,
+        donorBirthDate    = donorBirthDate,
+        donorBirthCity    = donorBirthCity,
         donorAddressLine1 = donorAddressLine1,
         donorAddressLine2 = donorAddressLine2,
         donorPostalCode   = donorPostalCode,

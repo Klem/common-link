@@ -302,6 +302,10 @@
       "serverError": "Une erreur est survenue. Veuillez réessayer.",
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
+    "landingConfigSaved": "Landing page mise à jour.",
+    "landingLogoSaved": "Logo enregistré.",
+    "landingLogoSize": "Cette image est trop lourde. Taille maximale : 2 Mo.",
+    "landingLogoType": "Format non pris en charge. Utilisez une image JPEG, PNG ou WebP.",
     "loading": "Chargement...",
     "mandateDocDeleted": "Document supprimé.",
     "mandateDocUploaded": "Document téléversé.",
@@ -1365,6 +1369,22 @@
   },
   "settings": {
     "landing": {
+      "appearance": {
+        "logo": "Logo",
+        "logoHint": "Affiché en haut de votre page de don, à côté de votre nom. JPEG, PNG ou WebP, 2 Mo maximum.",
+        "logoNone": "Aucun logo pour le moment : vos initiales sont affichées à la place.",
+        "logoRemove": "Retirer",
+        "theme": "Palette de couleurs",
+        "themeHint": "Choisissez une palette : elle s'applique à toute votre page de don. Chaque palette est vérifiée pour rester lisible.",
+        "themes": {
+          "DEFAULT": "Originale",
+          "NATURE": "Nature",
+          "SOBER": "Sobre",
+          "TRUST": "Confiance",
+          "WARM": "Chaleureuse"
+        },
+        "title": "Apparence"
+      },
       "iframeTitle": "Faire un don",
       "prereq": {
         "campaign": "Campagne de destination",
@@ -1376,6 +1396,24 @@
         "token": "Token de diffusion",
         "tokenActive": "Actif",
         "tokenInactive": "Inactif"
+      },
+      "preview": {
+        "close": "Fermer",
+        "desktop": "Ordinateur",
+        "failed": "L'aperçu n'a pas pu être chargé. Veuillez réessayer.",
+        "loading": "Chargement de l'aperçu…",
+        "mobile": "Téléphone",
+        "open": "Prévisualiser",
+        "reload": "Rafraîchir",
+        "title": "Aperçu de votre page de don"
+      },
+      "sections": {
+        "donationLocked": "Le formulaire de don est toujours affiché : c'est l'objet de la page.",
+        "hint": "Choisissez ce qu'affiche votre page de don. Les modifications sont enregistrées immédiatement.",
+        "showProject": "À quoi sert le don",
+        "showTransparency": "Transparence budgétaire",
+        "showTrust": "Votre don en toute confiance",
+        "title": "Sections de la page"
       },
       "snippet": {
         "copied": "Copié",
@@ -1492,6 +1530,10 @@
       "addressLine1Placeholder": "Numéro et rue",
       "addressLine2": "Adresse (ligne 2)",
       "addressLine2Placeholder": "Appartement, bâtiment, etc. (facultatif)",
+      "birthCity": "Ville de naissance",
+      "birthCityPlaceholder": "Ville...",
+      "birthDate": "Date de naissance",
+      "birthDatePlaceholder": "JJ/MM/AAAA",
       "city": "Ville",
       "country": "Pays",
       "email": "E-mail",

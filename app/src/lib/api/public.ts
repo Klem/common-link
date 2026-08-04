@@ -23,6 +23,8 @@ export interface CreateGuestDonationRequest {
   amount: number;
   donorEmail: string;
   donorFullName: string;
+  donorBirthDate: string;
+  donorBirthCity: string;
   donorAddressLine1: string;
   donorAddressLine2?: string;
   donorPostalCode: string;
@@ -80,15 +82,9 @@ export interface MilestoneDto {
   sortOrder: number;
 }
 
-/** Visual palette of a landing page. Mirrors the Kotlin `LandingTheme` enum. */
-export const LandingTheme = {
-  DEFAULT: 'DEFAULT',
-  WARM: 'WARM',
-  TRUST: 'TRUST',
-  NATURE: 'NATURE',
-  SOBER: 'SOBER',
-} as const;
-export type LandingTheme = (typeof LandingTheme)[keyof typeof LandingTheme];
+// Palette enum defined once in the domain types — the settings tab writes it, the landing reads it.
+export { LandingTheme } from '@/types/association';
+import type { LandingTheme } from '@/types/association';
 
 export interface PublicLandingDto {
   associationName: string;
