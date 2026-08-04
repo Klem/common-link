@@ -1,11 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getCampaigns } from '@/lib/api/campaign';
+import {
+  updateLandingConfig,
+  uploadLandingLogo,
+  deleteLandingLogo,
+} from '@/lib/api/association';
+import { useToastStore } from '@/stores/toastStore';
 import { CampaignStatus } from '@/types/campaign';
+import { LandingTheme, LANDING_THEMES } from '@/types/association';
+import { apiUrl } from '@/lib/api';
 import { CopyableCode } from './CopyableCode';
-import type { AssociationProfileDto } from '@/types/association';
+import { LandingPreviewModal } from './LandingPreviewModal';
+import type { AssociationProfileDto, UpdateLandingConfigRequest } from '@/types/association';
 import type { CampaignSummaryDto } from '@/types/campaign';
 
 interface LandingTabProps {
@@ -15,7 +24,28 @@ interface LandingTabProps {
    * campaign — this tab never mutates them.
    */
   onGoToWidget: () => void;
+  /** Called after the landing configuration changed so the parent hook re-fetches the profile. */
+  onConfigChanged: () => Promise<void>;
 }
+
+/** Mirrored from the backend (`AssociationLandingService`) — rule 8: same limits both sides. */
+const MAX_LOGO_SIZE = 2 * 1024 * 1024;
+const LOGO_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * The three toggleable landing sections, in page order.
+ *
+ * Typed against both DTOs on purpose: a renamed or mistyped key fails to compile instead of
+ * silently sending a field the backend ignores.
+ */
+const SECTIONS: readonly {
+  key: keyof UpdateLandingConfigRequest & `show${string}`;
+  field: keyof AssociationProfileDto & `landingShow${string}`;
+}[] = [
+  { key: 'showProject', field: 'landingShowProject' },
+  { key: 'showTransparency', field: 'landingShowTransparency' },
+  { key: 'showTrust', field: 'landingShowTrust' },
+];
 
 /**
  * Fixed height of the JavaScript-free fallback snippet: without `landing.js` there is no
@@ -31,14 +61,71 @@ const IFRAME_FALLBACK_HEIGHT = 2600;
  * two editable copies of one field would let an association regenerate the token from this
  * tab and silently break its live widget embed.
  */
-export function LandingTab({ profile, onGoToWidget }: LandingTabProps) {
+export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTabProps) {
   const t = useTranslations('settings.landing');
+  const { addToast } = useToastStore();
 
   const [campaigns, setCampaigns] = useState<CampaignSummaryDto[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getCampaigns().then(setCampaigns).catch(() => {});
   }, []);
+
+  /**
+   * Sends one field per interaction and refreshes the profile — no Save button to understand.
+   * The backend leaves every field it did not receive untouched.
+   */
+  const patchConfig = async (data: UpdateLandingConfigRequest) => {
+    setIsSaving(true);
+    try {
+      await updateLandingConfig(data);
+      await onConfigChanged();
+      addToast('success', 'landingConfigSaved');
+    } catch {
+      addToast('error', 'errors.serverError');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogoSelected = async (file: File | undefined) => {
+    if (!file) return;
+    // Mirror of the backend validation so the association gets an instant, explicit reason.
+    if (!LOGO_ALLOWED_MIME.includes(file.type)) {
+      addToast('error', 'landingLogoType');
+      return;
+    }
+    if (file.size > MAX_LOGO_SIZE) {
+      addToast('error', 'landingLogoSize');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await uploadLandingLogo(file);
+      await onConfigChanged();
+      addToast('success', 'landingLogoSaved');
+    } catch {
+      addToast('error', 'errors.serverError');
+    } finally {
+      setIsSaving(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    setIsSaving(true);
+    try {
+      await deleteLandingLogo();
+      await onConfigChanged();
+    } catch {
+      addToast('error', 'errors.serverError');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const widgetToken = profile?.widgetToken ?? null;
   const campaign = campaigns.find((c) => c.id === profile?.widgetDestinationCampaignId) ?? null;
@@ -59,6 +146,7 @@ export function LandingTab({ profile, onGoToWidget }: LandingTabProps) {
 
   const copyLabel = t('snippet.copy');
   const copiedLabel = t('snippet.copied');
+  const currentTheme = profile?.landingTheme ?? LandingTheme.DEFAULT;
 
   return (
     <div>
@@ -98,10 +186,110 @@ export function LandingTab({ profile, onGoToWidget }: LandingTabProps) {
         </div>
       </div>
 
+      {/* ── Apparence ─────────────────────────────────────────────────── */}
+      <div className="card no-hover" style={{ marginBottom: 24 }}>
+        <div className="card-h">
+          <h3>{t('appearance.title')}</h3>
+        </div>
+        <div className="card-b">
+          <div className="fg" style={{ marginBottom: 24 }}>
+            <label className="fl">{t('appearance.theme')}</label>
+            <p className="fhint" style={{ marginBottom: 10 }}>{t('appearance.themeHint')}</p>
+            <div className="lt-theme-grid">
+              {LANDING_THEMES.map((theme) => (
+                <button
+                  key={theme}
+                  type="button"
+                  className={`lt-theme-card${currentTheme === theme ? ' active' : ''}`}
+                  data-theme={theme}
+                  onClick={() => patchConfig({ theme })}
+                  disabled={isSaving}
+                  aria-pressed={currentTheme === theme}
+                >
+                  <span className="lt-theme-swatches" aria-hidden="true">
+                    <span className="lt-swatch lt-swatch-primary" />
+                    <span className="lt-swatch lt-swatch-secondary" />
+                    <span className="lt-swatch lt-swatch-soft" />
+                  </span>
+                  <span className="lt-theme-name">{t(`appearance.themes.${theme}`)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="fg">
+            <label className="fl">{t('appearance.logo')}</label>
+            <p className="fhint" style={{ marginBottom: 10 }}>{t('appearance.logoHint')}</p>
+            {profile?.landingLogo ? (
+              <div className="lt-logo-row">
+                {/* eslint-disable-next-line @next/next/no-img-element -- served by the API, not /public */}
+                <img
+                  className="lt-logo-preview"
+                  src={apiUrl(profile.landingLogo)}
+                  alt={profile.name}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleLogoDelete}
+                  disabled={isSaving}
+                >
+                  {t('appearance.logoRemove')}
+                </button>
+              </div>
+            ) : (
+              <p className="fhint">{t('appearance.logoNone')}</p>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={LOGO_ALLOWED_MIME.join(',')}
+              className="lt-logo-input"
+              onChange={(e) => handleLogoSelected(e.target.files?.[0])}
+              disabled={isSaving}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Sections ──────────────────────────────────────────────────── */}
+      <div className="card no-hover" style={{ marginBottom: 24 }}>
+        <div className="card-h">
+          <h3>{t('sections.title')}</h3>
+        </div>
+        <div className="card-b">
+          <p className="fhint" style={{ marginBottom: 12 }}>{t('sections.hint')}</p>
+          {SECTIONS.map(({ key, field }) => (
+            <div key={key} className="lt-prereq-row">
+              <span className="lt-prereq-value">{t(`sections.${key}`)}</span>
+              <label className="lt-switch">
+                <input
+                  type="checkbox"
+                  checked={profile?.[field] ?? true}
+                  onChange={(e) => patchConfig({ [key]: e.target.checked })}
+                  disabled={isSaving}
+                />
+                <span className="lt-switch-track" aria-hidden="true" />
+              </label>
+            </div>
+          ))}
+          <p className="fhint" style={{ marginTop: 12 }}>{t('sections.donationLocked')}</p>
+        </div>
+      </div>
+
       {/* ── Landing page ──────────────────────────────────────────────── */}
       <div className="card no-hover">
         <div className="card-h">
           <h3>{t('snippet.title')}</h3>
+          {widgetToken && (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => setShowPreview(true)}
+            >
+              {t('preview.open')}
+            </button>
+          )}
         </div>
         <div className="card-b">
           {!widgetToken && <p className="fhint">{t('snippet.noToken')}</p>}
@@ -129,6 +317,10 @@ export function LandingTab({ profile, onGoToWidget }: LandingTabProps) {
           )}
         </div>
       </div>
+
+      {showPreview && widgetToken && (
+        <LandingPreviewModal widgetToken={widgetToken} onClose={() => setShowPreview(false)} />
+      )}
     </div>
   );
 }

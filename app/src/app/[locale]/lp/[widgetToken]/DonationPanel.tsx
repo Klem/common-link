@@ -7,10 +7,12 @@ interface Props {
   widgetToken: string;
   sourceSite: string | null;
   locale: string;
+  /** Renders every field and the submit button disabled — preview on an unpublished campaign. */
+  disabled?: boolean;
   onAmountChange?: (amount: number | undefined) => void;
 }
 
-export function DonationPanel({ widgetToken, sourceSite, locale, onAmountChange }: Props) {
+export function DonationPanel({ widgetToken, sourceSite, locale, disabled, onAmountChange }: Props) {
   const t = useTranslations('landing');
 
   return (
@@ -23,6 +25,7 @@ export function DonationPanel({ widgetToken, sourceSite, locale, onAmountChange 
         sourceSite={sourceSite}
         locale={locale}
         submitLabel={(amount) => (amount ? t('donate.submitWithAmount', { amount }) : undefined)}
+        disabled={disabled}
         onAmountChange={onAmountChange}
       />
       <div className="lp-payment-methods">

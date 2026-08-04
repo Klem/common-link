@@ -9,11 +9,12 @@ import { TrustSection } from './TrustSection';
 import { LandingClient } from './LandingClient';
 import { LegalFooter } from './LegalFooter';
 import { EmbedHeightReporter } from './EmbedHeightReporter';
+import { PreviewBanner } from './PreviewBanner';
 import './landing.css';
 
 interface Props {
   params: Promise<{ locale: string; widgetToken: string }>;
-  searchParams: Promise<{ parentOrigin?: string }>;
+  searchParams: Promise<{ parentOrigin?: string; preview?: string }>;
 }
 
 /**
@@ -56,14 +57,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LandingPage({ params, searchParams }: Props) {
   const { locale, widgetToken } = await params;
-  const parentOrigin = resolveParentOrigin((await searchParams).parentOrigin);
+  const query = await searchParams;
+  const parentOrigin = resolveParentOrigin(query.parentOrigin);
+  // Kept for the render, not only for the fetch: the preview banner and the disabled form both
+  // depend on it.
+  const previewToken = query.preview ?? null;
   const t = await getTranslations({ locale, namespace: 'landing' });
 
   let data: PublicLandingDto | null = null;
   let errorKey: 'error.notFound' | 'error.notLive' | null = null;
 
   try {
-    data = await getLanding(widgetToken);
+    data = await getLanding(widgetToken, previewToken);
   } catch (err: unknown) {
     const status = (err as { response?: { status: number } }).response?.status;
     if (status === 404) errorKey = 'error.notFound';
@@ -95,13 +100,19 @@ export default async function LandingPage({ params, searchParams }: Props) {
   };
 
   return (
-    <div className="lp-root">
+    <div className="lp-root" data-theme={data.landingTheme}>
       {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
-      <LandingHeader associationName={data.associationName} />
+      {previewToken && (
+        <PreviewBanner locale={locale} donationsEnabled={data.donationsEnabled} />
+      )}
+      <LandingHeader
+        associationName={data.associationName}
+        landingLogo={data.landingLogo}
+      />
       <LandingHero
         campaignName={data.campaignName}
         campaignCategory={data.campaignCategory}
@@ -117,18 +128,23 @@ export default async function LandingPage({ params, searchParams }: Props) {
         sourceSite={data.widgetAllowedOrigin ?? null}
         locale={locale}
         campaignName={data.campaignName}
+        donationsEnabled={data.donationsEnabled}
       >
-        <ProjectSection
-          campaignName={data.campaignName}
-          campaignDescription={data.campaignDescription}
-          campaignImpactGoals={data.campaignImpactGoals}
-        />
-        <TransparencySection
-          budget={data.budget}
-          budgetHash={data.budgetHash}
-          milestones={data.milestones}
-        />
-        <TrustSection taxReductionRate={data.taxReductionRate} />
+        {data.showProject && (
+          <ProjectSection
+            campaignName={data.campaignName}
+            campaignDescription={data.campaignDescription}
+            campaignImpactGoals={data.campaignImpactGoals}
+          />
+        )}
+        {data.showTransparency && (
+          <TransparencySection
+            budget={data.budget}
+            budgetHash={data.budgetHash}
+            milestones={data.milestones}
+          />
+        )}
+        {data.showTrust && <TrustSection taxReductionRate={data.taxReductionRate} />}
       </LandingClient>
       <LegalFooter
         associationName={data.associationName}

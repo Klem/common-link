@@ -16,10 +16,93 @@
   --lp-radius: 14px;
   --lp-shadow-soft: 0 8px 24px rgba(31, 36, 48, .08);
 
+  /* Palette overrides live in the [data-theme] blocks below — nothing else in this file
+     hardcodes a brand colour, so a new palette is one block and no component change. */
+
   /* Explicit system font stack — prevents inheriting app globals */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: var(--lp-text);
   background: var(--lp-bg);
+}
+
+/* ── Palettes ────────────────────────────────────────────────────────────
+   One block per LandingTheme entry (Kotlin enum + CHECK constraint V48).
+   `DEFAULT` needs no block: it is the base declaration above.
+   Associations pick from this closed list — free colour input is never offered,
+   so every palette keeps a text/background contrast ratio above AA (4.5:1) by
+   construction. Any new palette must be checked the same way before shipping.
+   ──────────────────────────────────────────────────────────────────────── */
+.lp-root[data-theme='WARM'] {
+  --lp-primary: #BE123C;        /* 6.0:1 on white */
+  --lp-primary-dark: #9F1239;
+  --lp-primary-soft: #FFF1F2;
+  --lp-secondary: #B45309;      /* 4.6:1 on white */
+  --lp-secondary-soft: #FFFBEB;
+  --lp-border: #EFE0E3;
+  --lp-bg: #FFFDFD;
+}
+
+.lp-root[data-theme='TRUST'] {
+  --lp-primary: #1D4ED8;        /* 6.3:1 on white */
+  --lp-primary-dark: #1E3A8A;
+  --lp-primary-soft: #EFF6FF;
+  --lp-secondary: #0F766E;      /* 4.8:1 on white */
+  --lp-secondary-soft: #ECFDF9;
+  --lp-border: #E2E6F0;
+  --lp-bg: #FDFDFF;
+}
+
+.lp-root[data-theme='NATURE'] {
+  --lp-primary: #15803D;        /* 4.9:1 on white */
+  --lp-primary-dark: #14532D;
+  --lp-primary-soft: #F0FDF4;
+  --lp-secondary: #0369A1;      /* 5.4:1 on white */
+  --lp-secondary-soft: #F0F9FF;
+  --lp-border: #E2EBE4;
+  --lp-bg: #FCFEFC;
+}
+
+.lp-root[data-theme='SOBER'] {
+  --lp-primary: #334155;        /* 9.6:1 on white */
+  --lp-primary-dark: #1E293B;
+  --lp-primary-soft: #F1F5F9;
+  --lp-secondary: #4F46E5;      /* 4.8:1 on white */
+  --lp-secondary-soft: #EEF2FF;
+  --lp-border: #E2E8F0;
+  --lp-bg: #FFFFFF;
+}
+
+/* ── Preview banner ──────────────────────────────────────────────────────
+   Shown whenever the page is rendered behind a preview token, published campaign
+   or not — the association must never mistake a preview for its public page.
+   ──────────────────────────────────────────────────────────────────────── */
+.lp-preview-banner {
+  background: var(--lp-secondary-soft);
+  border-bottom: 2px solid var(--lp-secondary);
+  color: var(--lp-text);
+  padding: 10px 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.lp-preview-banner strong {
+  font-weight: 700;
+}
+
+.lp-preview-banner-warning {
+  display: block;
+  color: var(--lp-primary-dark);
+  font-weight: 600;
+}
+
+/* ── Header logo ─────────────────────────────────────────────────────────── */
+.lp-header-logo {
+  height: 32px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  display: block;
 }
 
 /* ── Hero ────────────────────────────────────────────────────────────── */

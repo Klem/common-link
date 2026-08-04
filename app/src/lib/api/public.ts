@@ -80,6 +80,16 @@ export interface MilestoneDto {
   sortOrder: number;
 }
 
+/** Visual palette of a landing page. Mirrors the Kotlin `LandingTheme` enum. */
+export const LandingTheme = {
+  DEFAULT: 'DEFAULT',
+  WARM: 'WARM',
+  TRUST: 'TRUST',
+  NATURE: 'NATURE',
+  SOBER: 'SOBER',
+} as const;
+export type LandingTheme = (typeof LandingTheme)[keyof typeof LandingTheme];
+
 export interface PublicLandingDto {
   associationName: string;
   associationRna: string;
@@ -104,7 +114,30 @@ export interface PublicLandingDto {
   budgetHash: string | null;
   milestones: MilestoneDto[];
   widgetAllowedOrigin: string | null;
+  /** Palette chosen by the association; drives the `--lp-*` token overrides. */
+  landingTheme: LandingTheme;
+  /** Public serving path of the association logo, null when none was uploaded. */
+  landingLogo: string | null;
+  showProject: boolean;
+  showTransparency: boolean;
+  showTrust: boolean;
+  /**
+   * False only in preview mode on a campaign that is not LIVE: the donation endpoint would refuse
+   * the payment, so the form must be rendered disabled rather than fail on submit.
+   */
+  donationsEnabled: boolean;
 }
 
-export const getLanding = (token: string): Promise<PublicLandingDto> =>
-  publicApi.get<PublicLandingDto>(`/api/public/landing/${token}`).then((r) => r.data);
+/**
+ * Fetches landing page data.
+ *
+ * @param token Public widget token.
+ * @param preview Optional preview token; lets the owning association render a campaign that is not
+ *   yet LIVE. Ignored by the backend when it does not belong to that association.
+ */
+export const getLanding = (token: string, preview?: string | null): Promise<PublicLandingDto> =>
+  publicApi
+    .get<PublicLandingDto>(`/api/public/landing/${token}`, {
+      params: preview ? { preview } : undefined,
+    })
+    .then((r) => r.data);

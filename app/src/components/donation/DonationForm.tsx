@@ -41,6 +41,12 @@ interface DonationFormProps {
   locale: string;
   skin?: Skin;
   submitLabel?: (amount: number | undefined) => string | undefined;
+  /**
+   * Renders the whole form inert. Used by the landing page preview when the destination campaign is
+   * not published: the donation endpoint would refuse the payment, and an association clicking a live
+   * button only to hit an error would conclude its page is broken.
+   */
+  disabled?: boolean;
   onAmountChange?: (amount: number | undefined) => void;
 }
 
@@ -50,6 +56,7 @@ export function DonationForm({
   locale,
   skin = 'default',
   submitLabel,
+  disabled = false,
   onAmountChange,
 }: DonationFormProps) {
   const t = useTranslations('widget');
@@ -57,6 +64,10 @@ export function DonationForm({
 
   const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked } =
     useGuestDonation({ widgetToken, sourceSite, locale });
+
+  // `blocked` comes from the submission lifecycle; `disabled` is the caller's decision. Both make
+  // every control inert, so the rest of the form reads a single flag.
+  const inert = blocked || disabled;
 
   const amountValue = watch('amount');
 
@@ -79,7 +90,7 @@ export function DonationForm({
               type="button"
               className={amountValue === preset ? s.amountBtnActive : s.amountBtn}
               onClick={() => handleAmountSelect(preset)}
-              disabled={blocked}
+              disabled={inert}
             >
               {preset} €
             </button>
@@ -97,7 +108,7 @@ export function DonationForm({
             max="10000"
             className={s.input}
             placeholder={t('amounts.customPlaceholder')}
-            disabled={blocked}
+            disabled={inert}
             {...register('amount', {
               valueAsNumber: true,
               onChange: (e) => onAmountChange?.(e.target.valueAsNumber || undefined),
@@ -126,7 +137,7 @@ export function DonationForm({
             autoComplete="email"
             placeholder={t('identity.emailPlaceholder')}
             className={s.input}
-            disabled={blocked}
+            disabled={inert}
             {...register('donorEmail')}
           />
           {errors.donorEmail && (
@@ -146,7 +157,7 @@ export function DonationForm({
             autoComplete="name"
             placeholder={t('identity.fullNamePlaceholder')}
             className={s.input}
-            disabled={blocked}
+            disabled={inert}
             {...register('donorFullName')}
           />
           {errors.donorFullName && (
@@ -166,7 +177,7 @@ export function DonationForm({
             autoComplete="address-line1"
             placeholder={t('identity.addressLine1Placeholder')}
             className={s.input}
-            disabled={blocked}
+            disabled={inert}
             {...register('donorAddressLine1')}
           />
           {errors.donorAddressLine1 && (
@@ -186,7 +197,7 @@ export function DonationForm({
             autoComplete="address-line2"
             placeholder={t('identity.addressLine2Placeholder')}
             className={s.input}
-            disabled={blocked}
+            disabled={inert}
             {...register('donorAddressLine2')}
           />
         </div>
@@ -201,7 +212,7 @@ export function DonationForm({
               type="text"
               autoComplete="postal-code"
               className={s.input}
-              disabled={blocked}
+              disabled={inert}
               {...register('donorPostalCode')}
             />
             {errors.donorPostalCode && (
@@ -219,7 +230,7 @@ export function DonationForm({
               type="text"
               autoComplete="address-level2"
               className={s.input}
-              disabled={blocked}
+              disabled={inert}
               {...register('donorCity')}
             />
             {errors.donorCity && (
@@ -241,7 +252,7 @@ export function DonationForm({
             maxLength={2}
             className={s.input}
             style={{ textTransform: 'uppercase', maxWidth: 80 }}
-            disabled={blocked}
+            disabled={inert}
             {...register('donorCountry')}
           />
           {errors.donorCountry && (
@@ -258,7 +269,7 @@ export function DonationForm({
           <input
             id="anonymousDisplay"
             type="checkbox"
-            disabled={blocked}
+            disabled={inert}
             {...register('anonymousDisplay')}
           />
           <div>
@@ -273,7 +284,7 @@ export function DonationForm({
           <input
             id="consent"
             type="checkbox"
-            disabled={blocked}
+            disabled={inert}
             {...register('consent')}
           />
           <label htmlFor="consent" style={styles.checkLabel}>
@@ -295,7 +306,7 @@ export function DonationForm({
 
       <button
         type="submit"
-        disabled={isSubmitting || blocked}
+        disabled={isSubmitting || inert}
         className={s.submit}
       >
         {isSubmitting

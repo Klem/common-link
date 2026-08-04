@@ -1330,6 +1330,11 @@
         "secure": "🔒 Paiement 100% sécurisé"
       }
     },
+    "preview": {
+      "donationsDisabled": "Votre campagne n'est pas encore publiée : les dons sont désactivés dans cet aperçu.",
+      "hint": "Voici à quoi ressemblera votre page de don. Vous seul voyez cet aperçu.",
+      "label": "Aperçu"
+    },
     "project": {
       "eyebrow": "À quoi sert ce don",
       "impactTitle": "Objectifs d'impact"

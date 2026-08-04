@@ -9,10 +9,19 @@ interface Props {
   sourceSite: string | null;
   locale: string;
   campaignName: string;
+  /** False in preview mode on an unpublished campaign — the form is then rendered disabled. */
+  donationsEnabled?: boolean;
   children: ReactNode;
 }
 
-export function LandingClient({ widgetToken, sourceSite, locale, campaignName, children }: Props) {
+export function LandingClient({
+  widgetToken,
+  sourceSite,
+  locale,
+  campaignName,
+  donationsEnabled = true,
+  children,
+}: Props) {
   const [selectedAmount, setSelectedAmount] = useState<number | undefined>(undefined);
 
   return (
@@ -25,6 +34,7 @@ export function LandingClient({ widgetToken, sourceSite, locale, campaignName, c
               widgetToken={widgetToken}
               sourceSite={sourceSite}
               locale={locale}
+              disabled={!donationsEnabled}
               onAmountChange={setSelectedAmount}
             />
           </div>

@@ -1330,6 +1330,11 @@
         "secure": "🔒 100% secure payment"
       }
     },
+    "preview": {
+      "donationsDisabled": "Your campaign is not published yet, so donations are disabled in this preview.",
+      "hint": "This is what your donation page will look like. Only you can see this view.",
+      "label": "Preview"
+    },
     "project": {
       "eyebrow": "What your donation funds",
       "impactTitle": "Impact goals"

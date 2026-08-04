@@ -175,3 +175,41 @@ describe('DonationForm — submitLabel prop', () => {
     expect(screen.getByRole('button', { name: 'submit' })).toBeInTheDocument();
   });
 });
+
+describe('DonationForm — disabled prop (landing preview)', () => {
+  /** Every control a donor can touch. */
+  function controls(): HTMLElement[] {
+    return [
+      ...screen.getAllByRole('button'),
+      ...screen.getAllByRole('textbox'),
+      ...screen.getAllByRole('checkbox'),
+      screen.getByLabelText(/amounts.custom/i),
+    ];
+  }
+
+  it('leaves every control enabled by default', () => {
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" />);
+
+    expect(controls().every((el) => !(el as HTMLInputElement).disabled)).toBe(true);
+  });
+
+  it('disables every control when disabled is set', () => {
+    // Preview of an unpublished campaign: the backend refuses the payment (409), so nothing in the
+    // form may be clickable — an association clicking a live button would think its page is broken.
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" disabled />,
+    );
+
+    expect(controls().every((el) => (el as HTMLInputElement).disabled)).toBe(true);
+  });
+
+  it('keeps the skin classes while disabled', () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" disabled />,
+    );
+
+    const btn = screen.getByRole('button', { name: 'submit' });
+    expect(btn.className).toContain('lp-submit-btn');
+    expect(btn).toBeDisabled();
+  });
+});
