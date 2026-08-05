@@ -47,3 +47,4 @@ temp/
 
 abi/
 frontend/abi/
+.claudeignore
