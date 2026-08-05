@@ -1,7 +1,6 @@
 package org.commonlink.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.verify
@@ -44,7 +43,7 @@ class PublicWidgetControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    private val objectMapper = ObjectMapper().registerKotlinModule()
+    private val objectMapper = ObjectMapper().findAndRegisterModules()
 
     @MockkBean
     private lateinit var publicWidgetService: PublicWidgetService

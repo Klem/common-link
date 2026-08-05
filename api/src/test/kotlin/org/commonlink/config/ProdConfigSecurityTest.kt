@@ -1,6 +1,7 @@
 ﻿package org.commonlink.config
 
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.boot.env.YamlPropertySourceLoader
 import org.springframework.core.env.EnumerablePropertySource
@@ -70,6 +71,8 @@ class ProdConfigSecurityTest {
         assertFalse(secret.contains("commonlink-dev-secret-key"))
     }
 
+    @Disabled("onchain.mock intentionally stays true in prod until the blockchain component " +
+        "is actually deployed — re-enable this test once it goes live.")
     @Test
     fun `onchain mock is disabled in prod`() {
         val mock = prop("onchain.mock")
