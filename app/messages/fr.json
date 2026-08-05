@@ -302,6 +302,10 @@
       "serverError": "Une erreur est survenue. Veuillez réessayer.",
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
+    "landingConfigSaved": "Landing page mise à jour.",
+    "landingLogoSaved": "Logo enregistré.",
+    "landingLogoSize": "Cette image est trop lourde. Taille maximale : 2 Mo.",
+    "landingLogoType": "Format non pris en charge. Utilisez une image JPEG, PNG ou WebP.",
     "loading": "Chargement...",
     "mandateDocDeleted": "Document supprimé.",
     "mandateDocUploaded": "Document téléversé.",
@@ -597,6 +601,7 @@
             "notConnected": "Non connecté"
           },
           "infos": "Informations",
+          "landing": "Landing page",
           "locked": "Terminez d'abord l'étape précédente",
           "mandate": "Mandat fiscal",
           "mandateBadge": {
@@ -1306,7 +1311,124 @@
     },
     "welcome": "Bienvenue"
   },
+  "landing": {
+    "donate": {
+      "eyebrow": "Faire un don",
+      "secured": "Paiement sécurisé — technologie propulsée par CommonLink",
+      "submitWithAmount": "Je donne {amount}€ maintenant",
+      "title": "Soutenez le programme"
+    },
+    "error": {
+      "notFound": "Cette page de don n'est pas disponible.",
+      "notLive": "Cette campagne n'accepte pas de dons pour le moment."
+    },
+    "footer": {
+      "object": "Objet :",
+      "taxMention": "Les dons ouvrent droit à une réduction d'impôt de {rate}% dans les conditions prévues par la loi. Un reçu fiscal est délivré pour tout don."
+    },
+    "hero": {
+      "cta": "Je fais un don maintenant →",
+      "trust": {
+        "receipt": "🧾 Reçu fiscal immédiat (–{rate}%)",
+        "rna": "📍 RNA {rna}",
+        "secure": "🔒 Paiement 100% sécurisé"
+      }
+    },
+    "preview": {
+      "donationsDisabled": "Votre campagne n'est pas encore publiée : les dons sont désactivés dans cet aperçu.",
+      "hint": "Voici à quoi ressemblera votre page de don. Vous seul voyez cet aperçu.",
+      "label": "Aperçu"
+    },
+    "project": {
+      "eyebrow": "À quoi sert ce don",
+      "impactTitle": "Objectifs d'impact"
+    },
+    "sticky": {
+      "cta": "Je donne {amount}€ →",
+      "label": "Faire un don"
+    },
+    "transparency": {
+      "budgetHash": "Empreinte du budget ancrée on-chain :",
+      "commitmentsTitle": "Nos engagements de transparence",
+      "eyebrow": "Transparence",
+      "note": "Répartition indicative sur l'exercice en cours, actualisée chaque trimestre. Chaque don est traçable jusqu'à son utilisation réelle sur le terrain.",
+      "title": "Où va concrètement votre don"
+    },
+    "trust": {
+      "eyebrow": "Pourquoi nous faire confiance",
+      "receipt": {
+        "body": "{rate}% de votre don déduit de vos impôts, dans la limite de 20% de votre revenu imposable. Reçu envoyé par email sous 48h.",
+        "title": "Reçu fiscal automatique"
+      },
+      "title": "Votre don, en toute confiance",
+      "traceability": {
+        "body": "Chaque euro versé est suivi jusqu'à sa dépense réelle par l'association — vous pouvez consulter l'utilisation de votre don.",
+        "title": "Traçabilité garantie"
+      }
+    }
+  },
   "settings": {
+    "landing": {
+      "appearance": {
+        "logo": "Logo",
+        "logoHint": "Affiché en haut de votre page de don, à côté de votre nom. JPEG, PNG ou WebP, 2 Mo maximum.",
+        "logoNone": "Aucun logo pour le moment : vos initiales sont affichées à la place.",
+        "logoRemove": "Retirer",
+        "theme": "Palette de couleurs",
+        "themeHint": "Choisissez une palette : elle s'applique à toute votre page de don. Chaque palette est vérifiée pour rester lisible.",
+        "themes": {
+          "DEFAULT": "Originale",
+          "NATURE": "Nature",
+          "SOBER": "Sobre",
+          "TRUST": "Confiance",
+          "WARM": "Chaleureuse"
+        },
+        "title": "Apparence"
+      },
+      "iframeTitle": "Faire un don",
+      "prereq": {
+        "campaign": "Campagne de destination",
+        "campaignNone": "Aucune campagne sélectionnée",
+        "campaignNotLive": "Cette campagne n'est pas publiée : la landing page restera indisponible jusqu'à sa mise en ligne.",
+        "goToWidget": "Configurer dans l'onglet Widget",
+        "hint": "Votre landing page réutilise le token de diffusion et la campagne de destination du widget. Modifiez-les depuis l'onglet Widget.",
+        "title": "Prérequis",
+        "token": "Token de diffusion",
+        "tokenActive": "Actif",
+        "tokenInactive": "Inactif"
+      },
+      "preview": {
+        "close": "Fermer",
+        "desktop": "Ordinateur",
+        "failed": "L'aperçu n'a pas pu être chargé. Veuillez réessayer.",
+        "loading": "Chargement de l'aperçu…",
+        "mobile": "Téléphone",
+        "open": "Prévisualiser",
+        "reload": "Rafraîchir",
+        "title": "Aperçu de votre page de don"
+      },
+      "sections": {
+        "donationLocked": "Le formulaire de don est toujours affiché : c'est l'objet de la page.",
+        "hint": "Choisissez ce qu'affiche votre page de don. Les modifications sont enregistrées immédiatement.",
+        "showProject": "À quoi sert le don",
+        "showTransparency": "Transparence budgétaire",
+        "showTrust": "Votre don en toute confiance",
+        "title": "Sections de la page"
+      },
+      "snippet": {
+        "copied": "Copié",
+        "copy": "Copier",
+        "iframe": "Intégration sans JavaScript",
+        "iframeHelp": "Solution de repli si les scripts sont interdits : la hauteur est fixe et devra être ajustée à la main.",
+        "noLiveCampaign": "Sélectionnez une campagne publiée dans l'onglet Widget pour activer votre landing page.",
+        "noToken": "Générez un token de diffusion dans l'onglet Widget pour obtenir votre landing page.",
+        "script": "Snippet à intégrer (recommandé)",
+        "scriptHelp": "Collez ce code dans une page vide de votre site : la landing page s'affiche en pleine largeur et sa hauteur s'ajuste automatiquement.",
+        "title": "Votre landing page",
+        "url": "Lien direct",
+        "urlHelp": "À utiliser comme URL de destination de vos annonces, ou à partager telle quelle."
+      }
+    },
     "mollie": {
       "completeOnboarding": "Compléter mon dossier",
       "connect": "Connecter Mollie",
@@ -1361,14 +1483,14 @@
       "token": {
         "active": "Actif",
         "disable": "Désactiver",
-        "disableWarning": "Désactiver le widget cassera immédiatement toutes les intégrations existantes.",
+        "disableWarning": "Désactiver casse immédiatement toutes les intégrations existantes du widget et votre landing page.",
         "error": "Erreur lors de la génération du token",
         "generate": "Générer le lien",
         "generated": "Token généré avec succès",
         "inactive": "Inactif",
         "label": "Token du widget",
         "regenerate": "Régénérer le lien",
-        "regenerateWarning": "Régénérer révoque le token actuel et casse les intégrations existantes."
+        "regenerateWarning": "Régénérer révoque le token actuel : les intégrations existantes du widget ET votre landing page cessent de fonctionner."
       }
     }
   },
@@ -1400,6 +1522,7 @@
       "emailRequired": "L'e-mail est requis",
       "fieldRequired": "Ce champ est obligatoire",
       "fieldTooLong": "Ce champ est trop long",
+      "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
       "submitFailed": "Une erreur est survenue. Veuillez réessayer."
     },
     "identity": {
@@ -1407,6 +1530,10 @@
       "addressLine1Placeholder": "Numéro et rue",
       "addressLine2": "Adresse (ligne 2)",
       "addressLine2Placeholder": "Appartement, bâtiment, etc. (facultatif)",
+      "birthCity": "Ville de naissance",
+      "birthCityPlaceholder": "Ville...",
+      "birthDate": "Date de naissance",
+      "birthDatePlaceholder": "JJ/MM/AAAA",
       "city": "Ville",
       "country": "Pays",
       "email": "E-mail",

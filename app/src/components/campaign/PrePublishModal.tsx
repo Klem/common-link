@@ -25,11 +25,15 @@ const BANK_ROWS: Record<BankSetupStatus, StatusRowSpec> = {
   [BankSetupStatus.BROKEN]: { cls: 'missing', icon: '!' },
 };
 
-/** One row per KYC status. None of them blocks publication — the dossier only gates public listing. */
+/**
+ * One row per KYC status. Only `VERIFIED` allows publishing: LCB-FT forbids a campaign from
+ * collecting donations before the association's KYB dossier is validated, and the backend
+ * enforces the same rule in `CampaignService.preparePublish` (rule 8 — every click is replayable).
+ */
 const VERIF_ROWS: Record<VerificationStatus, StatusRowSpec> = {
-  [VerificationStatus.UNVERIFIED]: { cls: 'boost', icon: 'i' },
-  [VerificationStatus.PENDING]: { cls: 'boost', icon: '⏳' },
-  [VerificationStatus.REJECTED]: { cls: 'boost', icon: '!' },
+  [VerificationStatus.UNVERIFIED]: { cls: 'missing', icon: '!' },
+  [VerificationStatus.PENDING]: { cls: 'missing', icon: '⏳' },
+  [VerificationStatus.REJECTED]: { cls: 'missing', icon: '!' },
   [VerificationStatus.VERIFIED]: { cls: 'ok', icon: '✓' },
 };
 
@@ -106,8 +110,9 @@ export function PrePublishModal({
 
   const allReqOk = blockers.every((b) => b.ok);
   const bankReady = mollieResolved && bankStatus === BankSetupStatus.COMPLETED;
-  const canPublish = allReqOk && bankReady;
-  const accountComplete = bankReady && verificationStatus === VerificationStatus.VERIFIED;
+  const kybReady = verificationStatus === VerificationStatus.VERIFIED;
+  const canPublish = allReqOk && bankReady && kybReady;
+  const accountComplete = bankReady && kybReady;
 
   return (
     <div className="ov on" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>

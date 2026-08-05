@@ -23,6 +23,8 @@ export interface CreateGuestDonationRequest {
   amount: number;
   donorEmail: string;
   donorFullName: string;
+  donorBirthDate: string;
+  donorBirthCity: string;
   donorAddressLine1: string;
   donorAddressLine2?: string;
   donorPostalCode: string;
@@ -64,4 +66,74 @@ export interface DonationStatusResponse {
 export const getDonationStatus = (paymentId: string): Promise<DonationStatusResponse> =>
   publicApi
     .get<DonationStatusResponse>(`/api/public/widget/donations/${paymentId}/status`)
+    .then((r) => r.data);
+
+export interface LandingBudgetPostDto {
+  label: string;
+  amount: number;
+  percentage: number;
+}
+
+export interface MilestoneDto {
+  id: string;
+  title: string;
+  transparencyCommitment: string | null;
+  status: 'LOCKED' | 'CURRENT' | 'REACHED';
+  sortOrder: number;
+}
+
+// Palette enum defined once in the domain types — the settings tab writes it, the landing reads it.
+export { LandingTheme } from '@/types/association';
+import type { LandingTheme } from '@/types/association';
+
+export interface PublicLandingDto {
+  associationName: string;
+  associationRna: string;
+  addressLine1: string | null;
+  city: string | null;
+  postalCode: string | null;
+  legalObject: string | null;
+  creationYear: number | null;
+  taxReductionRate: number;
+  campaignId: string;
+  campaignName: string;
+  campaignEmoji: string;
+  campaignDescription: string | null;
+  campaignReason: string | null;
+  campaignImpactGoals: string | null;
+  campaignCategory: string | null;
+  goal: number;
+  raised: number;
+  currency: string;
+  coverImage: string | null;
+  budget: LandingBudgetPostDto[];
+  budgetHash: string | null;
+  milestones: MilestoneDto[];
+  widgetAllowedOrigin: string | null;
+  /** Palette chosen by the association; drives the `--lp-*` token overrides. */
+  landingTheme: LandingTheme;
+  /** Public serving path of the association logo, null when none was uploaded. */
+  landingLogo: string | null;
+  showProject: boolean;
+  showTransparency: boolean;
+  showTrust: boolean;
+  /**
+   * False only in preview mode on a campaign that is not LIVE: the donation endpoint would refuse
+   * the payment, so the form must be rendered disabled rather than fail on submit.
+   */
+  donationsEnabled: boolean;
+}
+
+/**
+ * Fetches landing page data.
+ *
+ * @param token Public widget token.
+ * @param preview Optional preview token; lets the owning association render a campaign that is not
+ *   yet LIVE. Ignored by the backend when it does not belong to that association.
+ */
+export const getLanding = (token: string, preview?: string | null): Promise<PublicLandingDto> =>
+  publicApi
+    .get<PublicLandingDto>(`/api/public/landing/${token}`, {
+      params: preview ? { preview } : undefined,
+    })
     .then((r) => r.data);

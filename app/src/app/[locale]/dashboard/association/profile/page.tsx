@@ -22,6 +22,7 @@ import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
 import { WidgetTab } from '@/components/settings/WidgetTab';
+import { LandingTab } from '@/components/settings/LandingTab';
 import { useMandate } from '@/hooks/dashboard/useMandate';
 import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
 import { VerificationStatus } from '@/types/association';
@@ -96,7 +97,7 @@ function toFormData(profile: AssociationProfileDto): ProfileFormData {
   };
 }
 
-type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget';
+type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget' | 'landing';
 
 const PROVIDER_KEYS = {
   GOOGLE: 'association.profile.security.google',
@@ -160,6 +161,9 @@ export default function AssociationProfilePage() {
     mandate: verifDone || (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING,
     bank: mandateDone,
     widget: bankDone,
+    // Même prérequis que le widget : la landing page sert le même formulaire de don, sur la
+    // même campagne publiée. Un gate plus permissif afficherait un lien renvoyant un 409.
+    landing: bankDone,
   };
 
   // Deep-link ?tab= : n'active l'onglet demandé que s'il est déverrouillé, et
@@ -168,7 +172,10 @@ export default function AssociationProfilePage() {
   useEffect(() => {
     if (isLoading || mandateLoading || mollieLoading) return;
     const tab = searchParams.get('tab');
-    if (tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' || tab === 'widget') {
+    if (
+      tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' ||
+      tab === 'widget' || tab === 'landing'
+    ) {
       setActiveTab(tabUnlocked[tab] ? tab : 'infos');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -363,6 +370,14 @@ export default function AssociationProfilePage() {
           title={tabUnlocked.widget ? undefined : t('association.profile.tabs.locked')}
         >
           {tabUnlocked.widget ? '🎁' : '🔒'} {t('association.profile.tabs.widget')}
+        </button>
+        <button
+          className={`set-tab${activeTab === 'landing' ? ' active' : ''}${tabUnlocked.landing ? '' : ' locked'}`}
+          onClick={() => tabUnlocked.landing && setActiveTab('landing')}
+          disabled={!tabUnlocked.landing}
+          title={tabUnlocked.landing ? undefined : t('association.profile.tabs.locked')}
+        >
+          {tabUnlocked.landing ? '🌐' : '🔒'} {t('association.profile.tabs.landing')}
         </button>
       </div>
 
@@ -777,6 +792,17 @@ export default function AssociationProfilePage() {
           <WidgetTab
             profile={profile}
             onTokenChanged={refreshProfile}
+          />
+        </div>
+      )}
+
+      {/* ══ Onglet : Landing page ════════════════════════════════════════ */}
+      {activeTab === 'landing' && (
+        <div className="set-tab-content active">
+          <LandingTab
+            profile={profile}
+            onGoToWidget={() => setActiveTab('widget')}
+            onConfigChanged={refreshProfile}
           />
         </div>
       )}

@@ -32,6 +32,15 @@ const mockProfile: AssociationProfileDto = {
   widgetToken: null,
   widgetDestinationCampaignId: null,
   widgetAllowedOrigin: null,
+  addressLine1: null,
+  legalObject: null,
+  signerName: null,
+  signerRole: null,
+  landingTheme: 'DEFAULT',
+  landingLogo: null,
+  landingShowProject: true,
+  landingShowTransparency: true,
+  landingShowTrust: true,
 };
 
 vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({

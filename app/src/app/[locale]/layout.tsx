@@ -4,9 +4,41 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { AuthProvider } from '@/providers/AuthProvider';
-import { GoogleOAuthProvider } from '@/providers/GoogleOAuthProvider';
+import { ConditionalGoogleOAuth } from '@/providers/ConditionalGoogleOAuth';
 import { Toast } from '@/components/ui';
+import { Nunito_Sans, Lora, Inter, Syne, DM_Sans } from 'next/font/google';
 import '@/styles/globals.css';
+
+const nunitoSans = Nunito_Sans({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800', '900'],
+  variable: '--font-nunito-sans',
+});
+
+const lora = Lora({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  style: ['italic'],
+  variable: '--font-lora',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-inter',
+});
+
+const syne = Syne({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-syne',
+});
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-dm-sans',
+});
 
 export const metadata: Metadata = {
   title: 'CommonLink',
@@ -28,15 +60,15 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${nunitoSans.variable} ${lora.variable} ${inter.variable} ${syne.variable} ${dmSans.variable}`}>
       <body>
         <NextIntlClientProvider messages={messages}>
-          <GoogleOAuthProvider>
+          <ConditionalGoogleOAuth>
             <AuthProvider>
               {children}
               <Toast />
             </AuthProvider>
-          </GoogleOAuthProvider>
+          </ConditionalGoogleOAuth>
         </NextIntlClientProvider>
       </body>
     </html>

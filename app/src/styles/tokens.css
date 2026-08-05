@@ -40,9 +40,9 @@
   --color-error:         var(--error-red);
 
   /* Typographie */
-  --font-display:     'Nunito Sans', sans-serif;
-  --font-body:        'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-italic:      'Lora', serif;
+  --font-display:     var(--font-nunito-sans), sans-serif;
+  --font-body:        var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-italic:      var(--font-lora), serif;
 
   /* Rayons */
   --radius-sm:        8px;

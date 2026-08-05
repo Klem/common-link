@@ -2,10 +2,19 @@ package org.commonlink.service
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.*
+import jakarta.persistence.EntityManager
 import org.commonlink.dto.CreateGuestDonationRequest
+import org.commonlink.entity.BudgetSide
+import org.commonlink.entity.CampaignBudgetItem
+import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MollieConnection
+import org.commonlink.exception.ConflictException
+import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.CampaignBudgetItemRepository
+import org.commonlink.repository.CampaignBudgetSectionRepository
+import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
@@ -14,11 +23,13 @@ import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
@@ -26,6 +37,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.util.UUID
 
 /**
  * Integration tests for [PublicWidgetService.createDonation] — T4 and T5 invariants:
@@ -54,6 +66,11 @@ class PublicWidgetServiceIntegrationTest {
     @Autowired private lateinit var userRepository: UserRepository
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
     @Autowired private lateinit var campaignRepository: CampaignRepository
+    @Autowired private lateinit var sectionRepository: CampaignBudgetSectionRepository
+    @Autowired private lateinit var itemRepository: CampaignBudgetItemRepository
+    @Autowired private lateinit var milestoneRepository: CampaignMilestoneRepository
+    @Autowired private lateinit var entityManager: EntityManager
+    @Autowired private lateinit var landingPreviewTokenService: LandingPreviewTokenService
 
     @MockkBean
     private lateinit var mollieClient: MollieClient
@@ -174,11 +191,122 @@ class PublicWidgetServiceIntegrationTest {
         assertNull(donation!!.sourceSite)
     }
 
+    // ── getLanding : budget projection and lazy loading ───────────────────────
+
+    @Test
+    fun `getLanding returns expense budget projection and milestone, revenue items excluded`() {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        val campaign = assoc.widgetDestinationCampaign!!
+
+        val expenseSection = sectionRepository.save(
+            CampaignBudgetSection(campaign = campaign, side = BudgetSide.EXPENSE, code = "CHARGES", name = "Charges")
+        )
+        itemRepository.saveAll(listOf(
+            CampaignBudgetItem(section = expenseSection, label = "Gros poste", amount = BigDecimal("700")),
+            CampaignBudgetItem(section = expenseSection, label = "Petit poste", amount = BigDecimal("300")),
+        ))
+
+        val revenueSection = sectionRepository.save(
+            CampaignBudgetSection(campaign = campaign, side = BudgetSide.REVENUE, code = "PRODUITS", name = "Produits")
+        )
+        itemRepository.save(CampaignBudgetItem(section = revenueSection, label = "Subvention", amount = BigDecimal("500")))
+
+        milestoneRepository.save(TestFixtures.milestone(campaign, sortOrder = 0))
+
+        entityManager.flush()
+        entityManager.clear()
+
+        val dto = publicWidgetService.getLanding(widgetToken)
+
+        assertEquals(2, dto.budget.size)
+        assertEquals("Gros poste", dto.budget[0].label)
+        assertEquals(70, dto.budget[0].percentage)
+        assertEquals("Petit poste", dto.budget[1].label)
+        assertEquals(30, dto.budget[1].percentage)
+        assertFalse(dto.budget.any { it.label == "Subvention" }, "Revenue items must not appear in budget")
+        assertEquals(1, dto.milestones.size)
+        assertEquals(66, dto.taxReductionRate)
+    }
+
+    // ── Landing preview : contournement du gate LIVE ─────────────────────────
+
+    @Test
+    fun `getLanding - non-LIVE campaign without preview token is refused`() {
+        setCampaignStatus(CampaignStatus.DRAFT)
+
+        assertThrows<ConflictException> { publicWidgetService.getLanding(widgetToken) }
+    }
+
+    @Test
+    fun `getLanding - non-LIVE campaign with a valid preview token is served`() {
+        val assocId = associationProfileRepository.findByWidgetToken(widgetToken).get().id!!
+        setCampaignStatus(CampaignStatus.DRAFT)
+        val (preview, _) = landingPreviewTokenService.issue(assocId)
+
+        val dto = publicWidgetService.getLanding(widgetToken, preview)
+
+        assertNotNull(dto.campaignName)
+        // The form must be rendered disabled: createDonation would refuse this campaign.
+        assertFalse(dto.donationsEnabled)
+    }
+
+    @Test
+    fun `getLanding - preview token of another association is refused`() {
+        setCampaignStatus(CampaignStatus.DRAFT)
+        val (foreignPreview, _) = landingPreviewTokenService.issue(UUID.randomUUID())
+
+        assertThrows<ConflictException> { publicWidgetService.getLanding(widgetToken, foreignPreview) }
+    }
+
+    @Test
+    fun `getLanding - forged preview token is refused`() {
+        setCampaignStatus(CampaignStatus.DRAFT)
+
+        assertThrows<ConflictException> { publicWidgetService.getLanding(widgetToken, "not-a-jwt") }
+    }
+
+    @Test
+    fun `getLanding - unknown widget token stays a 404 even with a valid preview token`() {
+        val assocId = associationProfileRepository.findByWidgetToken(widgetToken).get().id!!
+        val (preview, _) = landingPreviewTokenService.issue(assocId)
+
+        // A preview relaxes the LIVE check only — it never conjures a widget into existence.
+        assertThrows<NotFoundException> { publicWidgetService.getLanding("clk_does_not_exist", preview) }
+    }
+
+    @Test
+    fun `getLanding - LIVE campaign ignores an invalid preview token`() {
+        val dto = publicWidgetService.getLanding(widgetToken, "garbage")
+
+        assertNotNull(dto.campaignName)
+        assertTrue(dto.donationsEnabled)
+    }
+
+    @Test
+    fun `createDonation - a preview token cannot unlock donations on a non-LIVE campaign`() {
+        // The donation path resolves the widget through resolveWidget, which knows nothing about previews.
+        setCampaignStatus(CampaignStatus.DRAFT)
+
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+    }
+
+    /** Flips the destination campaign status and makes the change visible to the service. */
+    private fun setCampaignStatus(status: CampaignStatus) {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        val campaign = assoc.widgetDestinationCampaign!!
+        campaign.status = status
+        campaignRepository.save(campaign)
+        entityManager.flush()
+        entityManager.clear()
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private fun validRequest(
         donorEmail: String = "anon@example.com",
         donorFullName: String = "Jean Dupont",
+        donorBirthDate: java.time.LocalDate = java.time.LocalDate.of(1985, 6, 15),
+        donorBirthCity: String = "Lyon",
         donorAddressLine1: String = "12 rue de la Paix",
         donorAddressLine2: String? = null,
         donorPostalCode: String = "75001",
@@ -190,6 +318,8 @@ class PublicWidgetServiceIntegrationTest {
         amount            = BigDecimal("25.00"),
         donorEmail        = donorEmail,
         donorFullName     = donorFullName,
+        donorBirthDate    = donorBirthDate,
+        donorBirthCity    = donorBirthCity,
         donorAddressLine1 = donorAddressLine1,
         donorAddressLine2 = donorAddressLine2,
         donorPostalCode   = donorPostalCode,

@@ -1,13 +1,14 @@
 package org.commonlink.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.verify
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.DonationPublicStatus
 import org.commonlink.dto.DonationStatusDto
+import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -42,7 +43,7 @@ class PublicWidgetControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    private val objectMapper = ObjectMapper().registerKotlinModule()
+    private val objectMapper = ObjectMapper().findAndRegisterModules()
 
     @MockkBean
     private lateinit var publicWidgetService: PublicWidgetService
@@ -75,6 +76,8 @@ class PublicWidgetControllerTest {
         amount = BigDecimal("25.00"),
         donorEmail = "donor@example.com",
         donorFullName = "Jean Dupont",
+        donorBirthDate = java.time.LocalDate.of(1985, 6, 15),
+        donorBirthCity = "Lyon",
         donorAddressLine1 = "12 rue de la Paix",
         donorAddressLine2 = null,
         donorPostalCode = "75001",
@@ -290,5 +293,65 @@ class PublicWidgetControllerTest {
 
         mockMvc.perform(get("/api/public/widget/donations/tr_unknown/status"))
             .andExpect(status().isNotFound)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/public/landing/{widgetToken} — preview query parameter
+    // -------------------------------------------------------------------------
+
+    private val sampleLanding = PublicLandingDto(
+        associationName = "Asso Test",
+        associationRna = "W123456789",
+        addressLine1 = null,
+        city = null,
+        postalCode = null,
+        legalObject = null,
+        creationYear = null,
+        taxReductionRate = 66,
+        campaignId = UUID.fromString("00000000-0000-0000-0000-000000000003"),
+        campaignName = "Campagne Test",
+        campaignEmoji = "🎗",
+        campaignDescription = null,
+        campaignReason = null,
+        campaignImpactGoals = null,
+        campaignCategory = null,
+        goal = BigDecimal("1000.00"),
+        raised = BigDecimal("250.00"),
+        coverImage = null,
+        budget = emptyList(),
+        budgetHash = null,
+        milestones = emptyList(),
+    )
+
+    @Test
+    fun `getLanding - preview parameter is forwarded to the service`() {
+        // Stubbed on the exact expected value: a mangled or dropped parameter leaves the call unstubbed.
+        every { publicWidgetService.getLanding("clk_abc", "prev_jwt") } returns sampleLanding
+
+        mockMvc.perform(get("/api/public/landing/clk_abc?preview=prev_jwt"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.campaignName").value("Campagne Test"))
+
+        verify(exactly = 1) { publicWidgetService.getLanding("clk_abc", "prev_jwt") }
+    }
+
+    @Test
+    fun `getLanding - absent preview parameter forwards null`() {
+        // Stubbed on the exact null argument: any other value would leave the call unstubbed and fail.
+        every { publicWidgetService.getLanding("clk_abc", null) } returns sampleLanding
+
+        mockMvc.perform(get("/api/public/landing/clk_abc"))
+            .andExpect(status().isOk)
+
+        verify(exactly = 1) { publicWidgetService.getLanding("clk_abc", null) }
+    }
+
+    @Test
+    fun `getLanding - 409 when the campaign is not LIVE and no valid preview token is supplied`() {
+        every { publicWidgetService.getLanding("clk_abc", any()) } throws
+            ConflictException("Campaign is not accepting donations")
+
+        mockMvc.perform(get("/api/public/landing/clk_abc?preview=expired"))
+            .andExpect(status().isConflict)
     }
 }

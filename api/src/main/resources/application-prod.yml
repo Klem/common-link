@@ -40,6 +40,19 @@ spring:
         format_sql: false
     show-sql: false
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 49
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+
+
 management:
   endpoints:
     web:
@@ -91,16 +104,26 @@ app:
     skip-kyc: false
     token-enc-key: ${MONERIUM_TOKEN_ENC_KEY} # also encrypt Mollie tokens
   mollie:
-    test-mode: false   # base defaults true for local sandbox; prod must pin false or live donations silently route to Mollie test mode
-    api-key: ${MOLLIE_API_KEY}   # base defaults empty; prod must require the variable (no silent start without a key)
+    api-key: ${MOLLIE_API_KEY}
+    api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
+    redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL}
+    webhook-url: ${MOLLIE_WEBHOOK_URL}
+    test-mode: false
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID:}
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}
       advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN}
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI}
       scopes: "onboarding.read onboarding.write organizations.read payments.read payments.write profiles.read profiles.write"
+      #switch between /onboarding/me (LEGACY) and the new /capabilities (CAPABILITIES)
+      onboarding-api: LEGACY
+      #Mock the entire mollie process
       mock: false
       allow-fake-completion: false
+
+  curator:
+    email: ${APP_CURATOR_EMAIL:}
+    password: ${APP_CURATOR_PASSWORD:}
 
 springdoc:
   api-docs:
@@ -109,7 +132,7 @@ springdoc:
     enabled: false
 
 onchain:
-  mock: false
+  mock: true
   rpc-url: ${ONCHAIN_RPC_URL}
   chain-id: ${ONCHAIN_CHAIN_ID}
   # Dev-only defaults — safe because OnchainRegistryClient is inactive when mock=true.

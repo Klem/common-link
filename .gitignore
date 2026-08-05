@@ -1,4 +1,5 @@
 .claude
+*.claudeignore
 .idea
 .stories
 .tasks
@@ -6,3 +7,4 @@
 *.md
 landing-page
 .http
+.mcp.json

@@ -131,4 +131,29 @@ class AssociationProfile(
     /** Role/title of the authorised signer (e.g. "Trésorier"). */
     @Column(name = "signer_role", length = 100)
     var signerRole: String? = null,
+
+    /** Visual palette of the donation landing page. [LandingTheme.DEFAULT] reproduces the original design. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "landing_theme", nullable = false, length = 20)
+    var landingTheme: LandingTheme = LandingTheme.DEFAULT,
+
+    /**
+     * Public serving path of the landing page logo (`/api/public/associations/{id}/logo`).
+     * Null means no logo has been uploaded; the landing header then shows the name alone.
+     * The bytes live in [AssociationLogo], never here.
+     */
+    @Column(name = "landing_logo", length = 255)
+    var landingLogo: String? = null,
+
+    /** Show the "what this donation funds" section on the landing page. */
+    @Column(name = "landing_show_project", nullable = false)
+    var landingShowProject: Boolean = true,
+
+    /** Show the budget / milestones transparency section on the landing page. */
+    @Column(name = "landing_show_transparency", nullable = false)
+    var landingShowTransparency: Boolean = true,
+
+    /** Show the "donate with confidence" section on the landing page. */
+    @Column(name = "landing_show_trust", nullable = false)
+    var landingShowTrust: Boolean = true,
 )

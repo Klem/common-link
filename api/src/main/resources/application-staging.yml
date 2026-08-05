@@ -37,6 +37,19 @@ spring:
         format_sql: false
     show-sql: false
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 49
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+
+
 management:
   endpoints:
     web:

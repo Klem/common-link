@@ -112,4 +112,19 @@ describe('PrePublishModal — account status', () => {
 
     expect(screen.getByText('complete').closest('button')).toBeDisabled();
   });
+
+  /**
+   * LCB-FT: a campaign must not go live before the KYB dossier is validated. The KYC rows used to
+   * be informational only, so an unverified association could publish. Mirrored server-side in
+   * `CampaignService.preparePublish` (rule 8).
+   */
+  it.each([
+    VerificationStatus.UNVERIFIED,
+    VerificationStatus.PENDING,
+    VerificationStatus.REJECTED,
+  ])('blocks publishing when the KYB dossier is %s', (verificationStatus) => {
+    renderWith({ verificationStatus });
+
+    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+  });
 });

@@ -3,9 +3,17 @@ package org.commonlink.controller
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
+import io.mockk.slot
+import org.commonlink.exception.UnprocessableEntityException
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.springframework.http.HttpMethod
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.commonlink.dto.ActivityItemDto
 import org.commonlink.dto.ActivityType
 import org.commonlink.dto.AssociationProfileDto
+import org.commonlink.entity.LandingTheme
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.dto.DashboardStatsDto
 import org.commonlink.dto.MonthlyPointDto
@@ -14,7 +22,10 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.dto.LandingPreviewTokenDto
+import org.commonlink.dto.UpdateLandingConfigRequest
 import org.commonlink.service.AssociationDashboardService
+import org.commonlink.service.AssociationLandingService
 import org.commonlink.service.AssociationService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,6 +63,9 @@ class AssociationControllerTest {
     private lateinit var dashboardService: AssociationDashboardService
 
     @MockkBean
+    private lateinit var landingService: AssociationLandingService
+
+    @MockkBean
     private lateinit var jwtService: JwtService
 
     @MockkBean
@@ -86,6 +100,11 @@ class AssociationControllerTest {
         legalObject = null,
         signerName = null,
         signerRole = null,
+        landingTheme = LandingTheme.DEFAULT,
+        landingLogo = null,
+        landingShowProject = true,
+        landingShowTransparency = true,
+        landingShowTrust = true,
     )
 
     // -------------------------------------------------------------------------
@@ -321,6 +340,153 @@ class AssociationControllerTest {
     @Test
     fun `getDashboard - 401 when not authenticated`() {
         mockMvc.perform(get("/api/association/dashboard"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // PATCH /api/association/me/landing
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `updateLandingConfig - 200 returns the updated profile`() {
+        val updated = sampleProfile.copy(landingTheme = LandingTheme.NATURE, landingShowTrust = false)
+        every { landingService.updateLandingConfig(userId, any()) } returns updated
+
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"theme":"NATURE","showTrust":false}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.landingTheme").value("NATURE"))
+            .andExpect(jsonPath("$.landingShowTrust").value(false))
+    }
+
+    @Test
+    fun `updateLandingConfig - forwards only the provided fields`() {
+        val slot = slot<UpdateLandingConfigRequest>()
+        every { landingService.updateLandingConfig(userId, capture(slot)) } returns sampleProfile
+
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"showProject":false}""")
+        )
+            .andExpect(status().isOk)
+
+        // Absent fields must stay null so the service leaves the stored values untouched.
+        assertEquals(false, slot.captured.showProject)
+        assertNull(slot.captured.theme)
+        assertNull(slot.captured.showTransparency)
+        assertNull(slot.captured.showTrust)
+    }
+
+    @Test
+    fun `updateLandingConfig - 400 on unknown theme value`() {
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"theme":"RAINBOW"}""")
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `updateLandingConfig - 401 when not authenticated`() {
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"theme":"WARM"}""")
+        )
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // PUT / DELETE /api/association/me/landing/logo
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `uploadLandingLogo - 200 returns the profile carrying the serving path`() {
+        val path = "/api/public/associations/$profileId/logo"
+        every { landingService.uploadLogo(userId, any()) } returns sampleProfile.copy(landingLogo = path)
+
+        val file = MockMultipartFile("file", "logo.png", "image/png", ByteArray(16))
+
+        mockMvc.perform(
+            multipart(HttpMethod.PUT, "/api/association/me/landing/logo")
+                .file(file)
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.landingLogo").value(path))
+    }
+
+    @Test
+    fun `uploadLandingLogo - 422 when the service rejects the file`() {
+        every { landingService.uploadLogo(userId, any()) } throws
+            UnprocessableEntityException("Unsupported logo type 'image/svg+xml'")
+
+        val file = MockMultipartFile("file", "logo.svg", "image/svg+xml", "<svg/>".toByteArray())
+
+        mockMvc.perform(
+            multipart(HttpMethod.PUT, "/api/association/me/landing/logo")
+                .file(file)
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isUnprocessableEntity)
+    }
+
+    @Test
+    fun `uploadLandingLogo - 401 when not authenticated`() {
+        val file = MockMultipartFile("file", "logo.png", "image/png", ByteArray(16))
+
+        mockMvc.perform(multipart(HttpMethod.PUT, "/api/association/me/landing/logo").file(file))
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `deleteLandingLogo - 200 returns the profile without a logo`() {
+        every { landingService.deleteLogo(userId) } returns sampleProfile
+
+        mockMvc.perform(
+            delete("/api/association/me/landing/logo")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.landingLogo").doesNotExist())
+    }
+
+    @Test
+    fun `deleteLandingLogo - 401 when not authenticated`() {
+        mockMvc.perform(delete("/api/association/me/landing/logo"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/association/me/landing/preview-session
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `issueLandingPreviewToken - 200 returns the token and its expiry`() {
+        val expiresAt = Instant.parse("2026-08-04T12:00:00Z")
+        every { landingService.issuePreviewToken(userId) } returns
+            LandingPreviewTokenDto(previewToken = "prev_jwt", expiresAt = expiresAt)
+
+        mockMvc.perform(
+            post("/api/association/me/landing/preview-session")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.previewToken").value("prev_jwt"))
+            .andExpect(jsonPath("$.expiresAt").exists())
+    }
+
+    @Test
+    fun `issueLandingPreviewToken - 401 when not authenticated`() {
+        mockMvc.perform(post("/api/association/me/landing/preview-session"))
             .andExpect(status().isUnauthorized)
     }
 }

@@ -37,6 +37,12 @@ function fillValidForm() {
   fireEvent.change(screen.getByLabelText(/identity.fullName/i), {
     target: { value: 'Jean Dupont' },
   });
+  fireEvent.change(screen.getByLabelText(/identity.birthDate/i), {
+    target: { value: '1990-01-15' },
+  });
+  fireEvent.change(screen.getByLabelText(/identity.birthCity/i), {
+    target: { value: 'Lyon' },
+  });
   fireEvent.change(screen.getByLabelText(/identity.addressLine1/i), {
     target: { value: '12 rue de la Paix' },
   });

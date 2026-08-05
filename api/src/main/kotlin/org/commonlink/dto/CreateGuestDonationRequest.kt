@@ -6,9 +6,11 @@ import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Digits
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
+import java.time.LocalDate
 
 /**
  * Body for POST /api/public/widget/{widgetToken}/donations.
@@ -54,6 +56,15 @@ data class CreateGuestDonationRequest(
 
     @field:AssertTrue(message = "RGPD consent is required")
     val consent: Boolean,
+
+    /** Date de naissance — snapshot pour le reçu fiscal Cerfa 2041-RD. */
+    @field:NotNull(message = "must not be null")
+    val donorBirthDate: LocalDate,
+
+    /** Ville de naissance — snapshot pour le reçu fiscal Cerfa 2041-RD. */
+    @field:NotBlank(message = "must not be blank")
+    @field:Size(max = 128, message = "must not exceed 128 characters")
+    val donorBirthCity: String,
 
     /** Origin site auto-declared by the widget snippet. Sanitised server-side; treat as untrusted. */
     val sourceSite: String? = null,

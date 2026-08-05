@@ -31,8 +31,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-mail")
-    // TODO make sure flyway works
-//    implementation("org.springframework.boot:spring-boot-starter-flyway:4.0.1")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -45,6 +44,9 @@ dependencies {
     // needs the Jackson 2.x kotlin module or Kotlin data classes fail with
     // "no Creators, like default constructor, exist".
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // Same classic ObjectMapper also needs this for java.time types (e.g. Donation.donorBirthDate)
+    // — without it, serialization throws InvalidDefinitionException on any LocalDate field.
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Database
     runtimeOnly("org.postgresql:postgresql")

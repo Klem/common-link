@@ -17,6 +17,7 @@ import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.MoneriumConnection
 import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
@@ -103,14 +104,23 @@ class CampaignServiceTest {
      * Links a Mollie connection to the association. Defaults satisfy the publish-time bank gate
      * (ACTIVE + COMPLETED + canReceivePayments); each parameter can be relaxed to exercise one
      * failing condition at a time.
+     *
+     * Also marks the KYB dossier VERIFIED, because that is the production invariant: connecting
+     * Mollie requires a signed mandate, which requires VERIFIED. Tests that need a bank-ready but
+     * unverified association (revoked dossier) pass `verifyKyb = false`.
      */
     private fun linkMollie(
         ownerId: UUID,
         state: MollieConnectionState = MollieConnectionState.ACTIVE,
         onboardingStatus: MollieOnboardingStatus = MollieOnboardingStatus.COMPLETED,
         canReceivePayments: Boolean = true,
+        verifyKyb: Boolean = true,
     ) {
         val assoc = associationProfileRepository.findByUserId(ownerId).get()
+        if (verifyKyb) {
+            assoc.verificationStatus = VerificationStatus.VERIFIED
+            associationProfileRepository.save(assoc)
+        }
         mollieConnectionRepository.save(MollieConnection(
             association        = assoc,
             accessToken        = "tok",
@@ -760,6 +770,44 @@ class CampaignServiceTest {
         )
 
         assertEquals(CampaignStatus.LIVE, result.status)
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    // ── publish-time KYB gate (LCB-FT — mirrors PrePublishModal's kybReady) ────────────────────
+
+    /**
+     * A bank-ready association whose KYB dossier is not VERIFIED must not publish. The onboarding
+     * chain implies VERIFIED transitively, but only at the time each step was taken — a dossier
+     * revoked afterwards left the campaign publishable, which LCB-FT forbids.
+     */
+    @Test
+    fun `publish - unverified KYB returns 422 even when the bank is ready`() {
+        linkMonerium(userId)
+        linkMollie(userId, verifyKyb = false)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Unverified KYB", goal = BigDecimal("10000"))
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    @Test
+    fun `publish - REJECTED KYB returns 422 even when the bank is ready`() {
+        linkMonerium(userId)
+        linkMollie(userId, verifyKyb = false)
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        assoc.verificationStatus = VerificationStatus.REJECTED
+        associationProfileRepository.save(assoc)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Rejected KYB", goal = BigDecimal("10000"))
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 

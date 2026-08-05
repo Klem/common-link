@@ -1,5 +1,11 @@
 import api from '@/lib/api';
-import type { AssociationProfileDto, UpdateAssociationProfileRequest, DashboardStats } from '@/types/association';
+import type {
+  AssociationProfileDto,
+  UpdateAssociationProfileRequest,
+  UpdateLandingConfigRequest,
+  LandingPreviewToken,
+  DashboardStats,
+} from '@/types/association';
 
 /**
  * Fetches the current association's profile from `GET /api/association/me`.
@@ -54,3 +60,54 @@ export const deleteWidgetToken = (): Promise<void> =>
  */
 export const updateWidgetConfig = (data: { widgetAllowedOrigin?: string | null }): Promise<void> =>
   api.patch('/api/association/me/widget', data);
+
+/**
+ * Updates the landing page configuration via `PATCH /api/association/me/landing`.
+ * Only the provided fields are modified — send one field per user interaction.
+ *
+ * @param data - Theme and/or section visibility flags.
+ * @returns The updated association profile DTO.
+ */
+export const updateLandingConfig = (
+  data: UpdateLandingConfigRequest,
+): Promise<AssociationProfileDto> =>
+  api.patch<AssociationProfileDto>('/api/association/me/landing', data).then((r) => r.data);
+
+/**
+ * Uploads (or replaces) the landing page logo.
+ * Calls `PUT /api/association/me/landing/logo` as multipart form data.
+ *
+ * Accepted types and size limit are mirrored from the backend (JPEG/PNG/WebP, 2 MB max) and
+ * checked client-side before the call — the backend still re-validates (rule 8).
+ *
+ * @param file - Image file to upload.
+ * @returns The updated profile, with `landingLogo` set to the public serving path.
+ */
+export const uploadLandingLogo = (file: File): Promise<AssociationProfileDto> => {
+  const form = new FormData();
+  form.append('file', file);
+  return api
+    .put<AssociationProfileDto>('/api/association/me/landing/logo', form)
+    .then((r) => r.data);
+};
+
+/**
+ * Removes the landing page logo.
+ * Calls `DELETE /api/association/me/landing/logo`.
+ *
+ * @returns The updated profile, with `landingLogo` set to null.
+ */
+export const deleteLandingLogo = (): Promise<AssociationProfileDto> =>
+  api.delete<AssociationProfileDto>('/api/association/me/landing/logo').then((r) => r.data);
+
+/**
+ * Requests a short-lived landing page preview token.
+ * Calls `POST /api/association/me/landing/preview-session`.
+ *
+ * Must be called before every preview load: the token lives 10 minutes, and a cached one would
+ * eventually render an error page indistinguishable from a real failure.
+ */
+export const createLandingPreviewSession = (): Promise<LandingPreviewToken> =>
+  api
+    .post<LandingPreviewToken>('/api/association/me/landing/preview-session')
+    .then((r) => r.data);

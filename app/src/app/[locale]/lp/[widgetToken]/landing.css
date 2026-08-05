@@ -1,0 +1,645 @@
+/* ── Design tokens ─────────────────────────────────────────────────────
+   Declared on .lp-root, never on :root — keeps landing styles isolated
+   from the app design system (--color-*, --font-*, --radius-* untouched).
+   Future: inject per-association overrides by replacing this block.
+   ──────────────────────────────────────────────────────────────────── */
+.lp-root {
+  --lp-primary: #C2410C;
+  --lp-primary-dark: #9A3412;
+  --lp-primary-soft: #FFF3EA;
+  --lp-secondary: #0F766E;
+  --lp-secondary-soft: #ECFDF9;
+  --lp-text: #1F2430;
+  --lp-text-mute: #5B6270;
+  --lp-border: #E7E2DC;
+  --lp-bg: #FFFEFC;
+  --lp-radius: 14px;
+  --lp-shadow-soft: 0 8px 24px rgba(31, 36, 48, .08);
+
+  /* Palette overrides live in the [data-theme] blocks below — nothing else in this file
+     hardcodes a brand colour, so a new palette is one block and no component change. */
+
+  /* Explicit system font stack — prevents inheriting app globals */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--lp-text);
+  background: var(--lp-bg);
+}
+
+/* ── Palettes ────────────────────────────────────────────────────────────
+   One block per LandingTheme entry (Kotlin enum + CHECK constraint V48).
+   `DEFAULT` needs no block: it is the base declaration above.
+   Associations pick from this closed list — free colour input is never offered,
+   so every palette keeps a text/background contrast ratio above AA (4.5:1) by
+   construction. Any new palette must be checked the same way before shipping.
+   ──────────────────────────────────────────────────────────────────────── */
+.lp-root[data-theme='WARM'] {
+  --lp-primary: #BE123C;        /* 6.0:1 on white */
+  --lp-primary-dark: #9F1239;
+  --lp-primary-soft: #FFF1F2;
+  --lp-secondary: #B45309;      /* 4.6:1 on white */
+  --lp-secondary-soft: #FFFBEB;
+  --lp-border: #EFE0E3;
+  --lp-bg: #FFFDFD;
+}
+
+.lp-root[data-theme='TRUST'] {
+  --lp-primary: #1D4ED8;        /* 6.3:1 on white */
+  --lp-primary-dark: #1E3A8A;
+  --lp-primary-soft: #EFF6FF;
+  --lp-secondary: #0F766E;      /* 4.8:1 on white */
+  --lp-secondary-soft: #ECFDF9;
+  --lp-border: #E2E6F0;
+  --lp-bg: #FDFDFF;
+}
+
+.lp-root[data-theme='NATURE'] {
+  --lp-primary: #15803D;        /* 4.9:1 on white */
+  --lp-primary-dark: #14532D;
+  --lp-primary-soft: #F0FDF4;
+  --lp-secondary: #0369A1;      /* 5.4:1 on white */
+  --lp-secondary-soft: #F0F9FF;
+  --lp-border: #E2EBE4;
+  --lp-bg: #FCFEFC;
+}
+
+.lp-root[data-theme='SOBER'] {
+  --lp-primary: #334155;        /* 9.6:1 on white */
+  --lp-primary-dark: #1E293B;
+  --lp-primary-soft: #F1F5F9;
+  --lp-secondary: #4F46E5;      /* 4.8:1 on white */
+  --lp-secondary-soft: #EEF2FF;
+  --lp-border: #E2E8F0;
+  --lp-bg: #FFFFFF;
+}
+
+/* ── Preview banner ──────────────────────────────────────────────────────
+   Shown whenever the page is rendered behind a preview token, published campaign
+   or not — the association must never mistake a preview for its public page.
+   ──────────────────────────────────────────────────────────────────────── */
+.lp-preview-banner {
+  background: var(--lp-secondary-soft);
+  border-bottom: 2px solid var(--lp-secondary);
+  color: var(--lp-text);
+  padding: 10px 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.lp-preview-banner strong {
+  font-weight: 700;
+}
+
+.lp-preview-banner-warning {
+  display: block;
+  color: var(--lp-primary-dark);
+  font-weight: 600;
+}
+
+/* ── Header logo ─────────────────────────────────────────────────────────── */
+.lp-header-logo {
+  height: 32px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────── */
+.lp-hero {
+  background: linear-gradient(180deg, var(--lp-primary-soft) 0%, var(--lp-bg) 100%);
+  padding: 48px 0 56px;
+}
+
+.lp-hero-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  gap: 48px;
+  align-items: center;
+}
+
+.lp-hero-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.lp-hero-title {
+  font-size: 2.15rem;
+  max-width: 16ch;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+
+.lp-hero-tagline {
+  color: var(--lp-text-mute);
+  font-size: 1.1rem;
+  max-width: 46ch;
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.lp-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  background: var(--lp-primary);
+  color: #fff;
+  padding: 15px 28px;
+  font-weight: 700;
+  border-radius: 999px;
+  box-shadow: var(--lp-shadow-soft);
+  text-decoration: none;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.lp-hero-cta:hover {
+  background: var(--lp-primary-dark);
+  transform: translateY(-1px);
+}
+
+.lp-hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: .85rem;
+  color: var(--lp-text-mute);
+  margin-top: 20px;
+}
+
+.lp-hero-visual {
+  flex-shrink: 0;
+  width: 320px;
+}
+
+.lp-hero-cover {
+  width: 100%;
+  height: 260px;
+  border-radius: var(--lp-radius);
+  box-shadow: var(--lp-shadow-soft);
+  object-fit: cover;
+  display: block;
+}
+
+.lp-hero-cover--gradient {
+  background: linear-gradient(135deg, var(--lp-primary) 0%, var(--lp-secondary) 100%);
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+.lp-layout {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.lp-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.lp-sidebar {
+  width: 360px;
+  flex-shrink: 0;
+}
+
+.lp-sidebar-sticky {
+  position: sticky;
+  top: 28px;
+}
+
+/* Single-column content container (sections inside .lp-main) */
+.lp-container {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── Section spacing ─────────────────────────────────────────────────── */
+.lp-section {
+  padding: 56px 0;
+}
+
+/* ── Eyebrow label ───────────────────────────────────────────────────── */
+.lp-eyebrow {
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: .75rem;
+  font-weight: 700;
+  background: var(--lp-primary-soft);
+  color: var(--lp-primary);
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin-bottom: 12px;
+}
+
+/* ── Transparency section ────────────────────────────────────────────── */
+.lp-budget-list {
+  margin-bottom: 20px;
+}
+
+.lp-budget-item {
+  margin-bottom: 16px;
+}
+
+.lp-budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: .95rem;
+}
+
+.lp-budget-pct {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lp-bar-track {
+  height: 10px;
+  background: #EFEAE3;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 1.1s ease-out;
+}
+
+.lp-transparency-note {
+  font-size: .85rem;
+  color: var(--lp-text-mute);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.lp-budget-hash {
+  font-size: .85rem;
+  color: var(--lp-text-mute);
+  margin: 0 0 24px;
+}
+
+.lp-budget-hash-value {
+  font-family: monospace;
+  color: var(--lp-text);
+}
+
+.lp-commitments {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--lp-border);
+}
+
+.lp-commitments-title {
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.lp-commitments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-commitment-item {
+  font-size: .95rem;
+  line-height: 1.55;
+}
+
+/* ── Shared section helpers ──────────────────────────────────────────── */
+.lp-section-title {
+  font-size: 1.6rem;
+  line-height: 1.25;
+  margin: 0 0 16px;
+}
+
+/* ── Project section ─────────────────────────────────────────────────── */
+.lp-project-description {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--lp-text);
+  margin: 0 0 24px;
+}
+
+.lp-impact-box {
+  background: var(--lp-secondary-soft);
+  border-radius: var(--lp-radius);
+  padding: 28px;
+}
+
+.lp-impact-title {
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.lp-impact-content {
+  margin: 0;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.lp-header-bar {
+  border-bottom: 1px solid var(--lp-border);
+  padding: 20px 0;
+}
+
+.lp-header-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lp-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--lp-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: .9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lp-header-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+/* ── Error state ─────────────────────────────────────────────────────── */
+.lp-error {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--lp-text-mute);
+  font-size: 1.1rem;
+}
+
+/* ── DonationForm skin: landing ─────────────────────────────────────── */
+.lp-amount-btn {
+  border: 2px solid var(--lp-border);
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 6px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--lp-text);
+}
+
+.lp-amount-btn--active {
+  border-color: var(--lp-primary);
+  background: var(--lp-primary-soft);
+  color: var(--lp-primary-dark);
+}
+
+.lp-field {
+  margin-bottom: 14px;
+}
+
+.lp-field-label {
+  display: block;
+  font-size: .85rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.lp-field-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--lp-border);
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.lp-field-input:focus {
+  outline: 2px solid var(--lp-primary);
+  outline-offset: 1px;
+}
+
+.lp-submit-btn {
+  width: 100%;
+  background: var(--lp-primary);
+  color: #fff;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lp-submit-btn:hover {
+  background: var(--lp-primary-dark);
+}
+
+/* ── Trust section ───────────────────────────────────────────────────── */
+.lp-trust-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.lp-trust-card {
+  background: #fff;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius);
+  padding: 20px;
+}
+
+.lp-trust-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--lp-secondary-soft);
+  color: var(--lp-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  margin-bottom: 14px;
+}
+
+.lp-trust-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.lp-trust-card-body {
+  font-size: .9rem;
+  line-height: 1.6;
+  color: var(--lp-text-mute);
+  margin: 0;
+}
+
+/* ── Donation panel ──────────────────────────────────────────────────── */
+.lp-donation-panel {
+  background: #fff;
+  border: 1px solid var(--lp-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--lp-shadow-soft);
+}
+
+.lp-donation-panel-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+.lp-payment-methods {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.lp-payment-pill {
+  border: 1px solid var(--lp-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--lp-text-mute);
+}
+
+.lp-donation-secured {
+  font-size: .72rem;
+  color: #9AA0AA;
+  text-align: center;
+  margin: 10px 0 0;
+}
+
+/* ── Legal footer ────────────────────────────────────────────────────── */
+.lp-footer {
+  background: #F7F4F0;
+  padding: 32px 0 90px;
+  font-size: .78rem;
+  color: var(--lp-text-mute);
+  line-height: 1.7;
+}
+
+.lp-footer-name {
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.lp-footer p {
+  margin: 0 0 4px;
+}
+
+/* ── Sticky mobile bar ───────────────────────────────────────────────── */
+.lp-sticky-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid var(--lp-border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, .06);
+  transform: translateY(120%);
+  transition: transform .25s ease;
+}
+
+.lp-sticky-bar--visible {
+  transform: translateY(0);
+}
+
+.lp-sticky-bar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lp-sticky-bar-label {
+  font-weight: 700;
+  font-size: .88rem;
+}
+
+.lp-sticky-bar-campaign {
+  font-size: .78rem;
+  color: var(--lp-text-mute);
+}
+
+.lp-sticky-bar-btn {
+  background: var(--lp-primary);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: .9rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lp-sticky-bar-btn:hover {
+  background: var(--lp-primary-dark);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .lp-layout {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .lp-sidebar {
+    width: 100%;
+  }
+
+  .lp-sidebar-sticky {
+    position: static;
+  }
+
+  .lp-hero-inner {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .lp-hero-visual {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .lp-section {
+    padding: 40px 0;
+  }
+
+  .lp-hero-title {
+    font-size: 1.65rem;
+  }
+
+  .lp-trust-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 961px) {
+  .lp-sticky-bar {
+    display: none;
+  }
+}

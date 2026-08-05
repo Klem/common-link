@@ -302,6 +302,10 @@
       "serverError": "An error occurred. Please try again.",
       "sessionExpired": "Your session has expired. Please log in again."
     },
+    "landingConfigSaved": "Landing page updated.",
+    "landingLogoSaved": "Logo saved.",
+    "landingLogoSize": "This image is too large. Maximum size: 2 MB.",
+    "landingLogoType": "Unsupported format. Use a JPEG, PNG or WebP image.",
     "loading": "Loading...",
     "mandateDocDeleted": "Document deleted.",
     "mandateDocUploaded": "Document uploaded.",
@@ -597,6 +601,7 @@
             "notConnected": "Not connected"
           },
           "infos": "Informations",
+          "landing": "Landing page",
           "locked": "Complete the previous step first",
           "mandate": "Fiscal Mandate",
           "mandateBadge": {
@@ -1306,7 +1311,124 @@
     },
     "welcome": "Welcome"
   },
+  "landing": {
+    "donate": {
+      "eyebrow": "Donate",
+      "secured": "Secure payment — powered by CommonLink",
+      "submitWithAmount": "Donate €{amount} now",
+      "title": "Support this programme"
+    },
+    "error": {
+      "notFound": "This donation page is not available.",
+      "notLive": "This campaign is not accepting donations at the moment."
+    },
+    "footer": {
+      "object": "Purpose:",
+      "taxMention": "Donations qualify for a {rate}% tax reduction under the conditions provided by law. A tax receipt is issued for every donation."
+    },
+    "hero": {
+      "cta": "Donate now →",
+      "trust": {
+        "receipt": "🧾 Instant tax receipt (–{rate}%)",
+        "rna": "📍 RNA {rna}",
+        "secure": "🔒 100% secure payment"
+      }
+    },
+    "preview": {
+      "donationsDisabled": "Your campaign is not published yet, so donations are disabled in this preview.",
+      "hint": "This is what your donation page will look like. Only you can see this view.",
+      "label": "Preview"
+    },
+    "project": {
+      "eyebrow": "What your donation funds",
+      "impactTitle": "Impact goals"
+    },
+    "sticky": {
+      "cta": "Donate €{amount} →",
+      "label": "Donate"
+    },
+    "transparency": {
+      "budgetHash": "Budget fingerprint anchored on-chain:",
+      "commitmentsTitle": "Our transparency commitments",
+      "eyebrow": "Transparency",
+      "note": "Indicative breakdown for the current financial year, updated quarterly. Every donation can be traced through to how it is actually spent on the ground.",
+      "title": "Where your donation actually goes"
+    },
+    "trust": {
+      "eyebrow": "Why trust us",
+      "receipt": {
+        "body": "{rate}% of your donation is deductible from your income tax, up to 20% of your taxable income. Receipt sent by email within 48 hours.",
+        "title": "Automatic tax receipt"
+      },
+      "title": "Your donation, with confidence",
+      "traceability": {
+        "body": "Every euro given is tracked through to how the organisation actually spends it — you can check how your donation was used.",
+        "title": "Guaranteed traceability"
+      }
+    }
+  },
   "settings": {
+    "landing": {
+      "appearance": {
+        "logo": "Logo",
+        "logoHint": "Shown at the top of your donation page, next to your name. JPEG, PNG or WebP, 2 MB max.",
+        "logoNone": "No logo yet: your initials are shown instead.",
+        "logoRemove": "Remove",
+        "theme": "Colour palette",
+        "themeHint": "Pick a palette: it applies to your whole donation page. Every palette is checked for readability.",
+        "themes": {
+          "DEFAULT": "Original",
+          "NATURE": "Nature",
+          "SOBER": "Understated",
+          "TRUST": "Confidence",
+          "WARM": "Warm"
+        },
+        "title": "Appearance"
+      },
+      "iframeTitle": "Donate",
+      "prereq": {
+        "campaign": "Destination campaign",
+        "campaignNone": "No campaign selected",
+        "campaignNotLive": "This campaign is not published: the landing page will stay unavailable until it goes live.",
+        "goToWidget": "Configure in the Widget tab",
+        "hint": "Your landing page reuses the widget's diffusion token and destination campaign. Change them from the Widget tab.",
+        "title": "Prerequisites",
+        "token": "Diffusion token",
+        "tokenActive": "Active",
+        "tokenInactive": "Inactive"
+      },
+      "preview": {
+        "close": "Close",
+        "desktop": "Computer",
+        "failed": "The preview could not be loaded. Please try again.",
+        "loading": "Loading the preview…",
+        "mobile": "Phone",
+        "open": "Preview",
+        "reload": "Refresh",
+        "title": "Preview of your donation page"
+      },
+      "sections": {
+        "donationLocked": "The donation form is always shown: it is the purpose of the page.",
+        "hint": "Choose what your donation page shows. Changes are saved immediately.",
+        "showProject": "What the donation funds",
+        "showTransparency": "Budget transparency",
+        "showTrust": "Donate with confidence",
+        "title": "Page sections"
+      },
+      "snippet": {
+        "copied": "Copied",
+        "copy": "Copy",
+        "iframe": "Embedding without JavaScript",
+        "iframeHelp": "Fallback when scripts are not allowed: the height is fixed and has to be adjusted by hand.",
+        "noLiveCampaign": "Select a published campaign in the Widget tab to activate your landing page.",
+        "noToken": "Generate a diffusion token in the Widget tab to get your landing page.",
+        "script": "Snippet to embed (recommended)",
+        "scriptHelp": "Paste this code into a blank page of your website: the landing page renders full width and its height adjusts automatically.",
+        "title": "Your landing page",
+        "url": "Direct link",
+        "urlHelp": "Use it as the destination URL of your ads, or share it as is."
+      }
+    },
     "mollie": {
       "completeOnboarding": "Complete my onboarding",
       "connect": "Connect Mollie",
@@ -1361,14 +1483,14 @@
       "token": {
         "active": "Active",
         "disable": "Disable",
-        "disableWarning": "Disabling the widget will immediately break all existing integrations.",
+        "disableWarning": "Disabling immediately breaks all existing widget integrations and your landing page.",
         "error": "Failed to generate token",
         "generate": "Generate link",
         "generated": "Token generated successfully",
         "inactive": "Inactive",
         "label": "Widget token",
         "regenerate": "Regenerate link",
-        "regenerateWarning": "Regenerating revokes the current token and breaks existing integrations."
+        "regenerateWarning": "Regenerating revokes the current token: existing widget integrations AND your landing page stop working."
       }
     }
   },
@@ -1400,6 +1522,7 @@
       "emailRequired": "Email is required",
       "fieldRequired": "This field is required",
       "fieldTooLong": "This field is too long",
+      "notCollecting": "This organisation cannot receive online donations yet. Please try again later.",
       "submitFailed": "An error occurred. Please try again."
     },
     "identity": {
@@ -1407,6 +1530,10 @@
       "addressLine1Placeholder": "Street and number",
       "addressLine2": "Address (line 2)",
       "addressLine2Placeholder": "Apartment, building, etc. (optional)",
+      "birthCity": "City of birth",
+      "birthCityPlaceholder": "City...",
+      "birthDate": "Date of birth",
+      "birthDatePlaceholder": "YYYY-MM-DD",
       "city": "City",
       "country": "Country",
       "email": "Email",

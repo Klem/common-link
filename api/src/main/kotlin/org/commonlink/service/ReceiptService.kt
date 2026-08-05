@@ -25,7 +25,10 @@ import java.time.format.DateTimeFormatter
  * Uses OpenPDF (LGPL/MPL — not iText AGPL).
  */
 @Service
-class ReceiptService(private val mandateRepository: FiscalMandateRepository) {
+class ReceiptService(
+    private val mandateRepository: FiscalMandateRepository,
+    private val taxRateService: TaxRateService,
+) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -231,7 +234,7 @@ class ReceiptService(private val mandateRepository: FiscalMandateRepository) {
         doc.add(Paragraph(
             "Le donateur atteste que ce versement, effectué sans contrepartie, relève d'une intention libérale. " +
             "Il ouvre droit à la réduction d'impôt prévue à l'article 200 du CGI " +
-            "(${taxReductionRate(d.campaign.association)} % du montant).",
+            "(${taxRateService.taxReductionRate(d.campaign.association)} % du montant).",
             smallFont,
         ).apply { spacingAfter = 6f })
     }
@@ -359,11 +362,4 @@ class ReceiptService(private val mandateRepository: FiscalMandateRepository) {
             "Reconnu d'utilité publique — décret en Conseil d'État"
     }
 
-    private fun taxReductionRate(a: AssociationProfile): Int {
-        val mandate = mandateRepository.findByAssociationIdAndRevokedAtIsNull(a.id!!) ?: return 66
-        return when (mandate.eligibility) {
-            MandateEligibility.OIG_75_COLUCHE -> 75
-            else -> 66
-        }
-    }
 }

@@ -7,6 +7,7 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationDashboardService
+import org.commonlink.service.AssociationLandingService
 import org.commonlink.service.MollieWebhookService
 import org.commonlink.service.PublicWidgetService
 import org.commonlink.service.AssociationRegistryCheckService
@@ -56,6 +57,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var moneriumService: MoneriumService
     @MockkBean private lateinit var onchainOutboxService: OnchainOutboxService
     @MockkBean private lateinit var dashboardService: AssociationDashboardService
+    @MockkBean private lateinit var associationLandingService: AssociationLandingService
     @MockkBean private lateinit var authRateLimiter: AuthRateLimiter
     @MockkBean private lateinit var donorAggregateService: DonorAggregateService
     @MockkBean private lateinit var payoutService: PayoutService

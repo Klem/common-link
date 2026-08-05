@@ -10,6 +10,7 @@ import jakarta.validation.Valid
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.DonationStatusDto
+import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.service.PublicWidgetService
 import org.springframework.http.ResponseEntity
@@ -18,16 +19,17 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * Public (unauthenticated) widget endpoints.
+ * Public (unauthenticated) widget and landing page endpoints.
  *
  * Accessible without a JWT - whitelisted in [org.commonlink.security.SecurityConfig]
  * under /api/public/. Exposes only donor-safe data; no internal IDs or sensitive fields.
  */
 @RestController
-@RequestMapping("/api/public/widget")
+@RequestMapping("/api/public")
 @Tag(name = "Public Widget", description = "Public donation widget endpoints (no authentication required)")
 class PublicWidgetController(
     private val publicWidgetService: PublicWidgetService,
@@ -41,7 +43,7 @@ class PublicWidgetController(
      * @param widgetToken Opaque public token identifying the association's widget (e.g. clk_...).
      * @return [PublicWidgetDto] with association name, campaign info, and fundraising progress.
      */
-    @GetMapping("/{widgetToken}")
+    @GetMapping("/widget/{widgetToken}")
     @Operation(
         summary = "Get widget campaign info",
         description = "Resolves a widget token to the campaign details needed for the donation iframe. No authentication required."
@@ -68,7 +70,7 @@ class PublicWidgetController(
      * @param request Donation body including amount, donor identity and RGPD consent.
      * @return [CreateGuestDonationResponse] with the Mollie checkout URL and payment ID.
      */
-    @PostMapping("/{widgetToken}/donations")
+    @PostMapping("/widget/{widgetToken}/donations")
     @Operation(
         summary = "Create guest donation",
         description = "Initiates a guest donation for the widget campaign. Returns a Mollie checkout URL. No authentication required."
@@ -96,7 +98,7 @@ class PublicWidgetController(
      *
      * @param paymentId Mollie payment ID (tr_…), without the "mollie:" prefix.
      */
-    @GetMapping("/donations/{paymentId}/status")
+    @GetMapping("/widget/donations/{paymentId}/status")
     @Operation(
         summary = "Get donation payment status",
         description = "Returns CONFIRMED when the Mollie webhook has confirmed the payment, PENDING otherwise. No authentication required."
@@ -110,4 +112,37 @@ class PublicWidgetController(
     )
     fun getDonationStatus(@PathVariable paymentId: String): ResponseEntity<DonationStatusDto> =
         ResponseEntity.ok(publicWidgetService.getDonationStatus(paymentId))
+
+    /**
+     * Returns the full landing page data for the association campaign associated with this widget token.
+     *
+     * Includes association identity, campaign details, expense budget projection with percentages,
+     * milestones, and the applicable fiscal tax reduction rate.
+     * No internal IDs, contact details, or sensitive fields are exposed.
+     *
+     * @param widgetToken Opaque public token identifying the association's widget.
+     * @param preview Optional preview token issued to the owning association; lifts the LIVE
+     *   requirement on the destination campaign, and nothing else. Ignored when it does not belong
+     *   to the association owning [widgetToken].
+     * @return [PublicLandingDto] with all donor-safe association and campaign data.
+     */
+    @GetMapping("/landing/{widgetToken}")
+    @Operation(
+        summary = "Get landing page data",
+        description = "Returns full association and campaign data for the landing page. Includes budget projection and milestones. " +
+            "No authentication required. A `preview` token issued to the owning association allows rendering a non-LIVE campaign."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Landing data resolved - campaign is live, or a valid preview token was supplied",
+            content = [Content(schema = Schema(implementation = PublicLandingDto::class))]
+        ),
+        ApiResponse(responseCode = "404", description = "Unknown token or no destination campaign configured", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Destination campaign exists but is not LIVE and no valid preview token was supplied", content = [Content()])
+    )
+    fun getLanding(
+        @PathVariable widgetToken: String,
+        @RequestParam(required = false) preview: String?,
+    ): ResponseEntity<PublicLandingDto> =
+        ResponseEntity.ok(publicWidgetService.getLanding(widgetToken, preview))
 }

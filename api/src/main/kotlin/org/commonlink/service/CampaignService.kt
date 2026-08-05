@@ -21,6 +21,7 @@ import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
@@ -660,6 +661,12 @@ class CampaignService(
      * Pre-save checks and preparation for the DRAFT→LIVE publish transition.
      * Sets [Campaign.budgetHash] on the campaign instance (persisted by the caller's save).
      *
+     * The KYB guard re-checks [org.commonlink.entity.AssociationProfile.verificationStatus] at publish
+     * time. The onboarding chain already implies it transitively (a signed mandate requires VERIFIED,
+     * and a Mollie connection requires a signed mandate), but only *at the time each step was taken* —
+     * a dossier revoked afterwards would otherwise still publish. LCB-FT requires the gate to hold at
+     * the moment of publication, so the check is explicit and independent of the Mollie state.
+     *
      * The bank-account guard delegates to [MollieConnection.canCollectDonations], which mirrors the
      * `BankSetupStatus.COMPLETED` condition the frontend uses to enable the publish button (see
      * `app/src/lib/bankSetupStatus.ts`). The two preceding checks only exist to give a specific
@@ -669,6 +676,11 @@ class CampaignService(
     private fun preparePublish(campaign: Campaign, associationId: UUID) {
         if (campaign.goal <= BigDecimal.ZERO) {
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
+        }
+        val profile = associationProfileRepository.findById(associationId)
+            .orElseThrow { UserNotFoundException("Association profile not found: $associationId") }
+        if (profile.verificationStatus != VerificationStatus.VERIFIED) {
+            throw UnprocessableEntityException("Association KYB must be verified before going live")
         }
         val connection = mollieConnectionRepository.findByAssociationId(associationId)
             ?: throw UnprocessableEntityException("Association must connect a Mollie account before going live")

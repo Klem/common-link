@@ -111,7 +111,7 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutPr
             y="90"
             textAnchor="middle"
             dominantBaseline="middle"
-            fontFamily="'Nunito Sans', sans-serif"
+            style={{ fontFamily: 'var(--font-display)' }}
             fontWeight="900"
             fontSize="15"
             fill={active ? active.color : 'var(--color-text)'}
@@ -123,7 +123,7 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutPr
             y="107"
             textAnchor="middle"
             dominantBaseline="middle"
-            fontFamily="'Inter', sans-serif"
+            style={{ fontFamily: 'var(--font-body)' }}
             fontSize="9"
             fill="var(--color-text-2)"
           >

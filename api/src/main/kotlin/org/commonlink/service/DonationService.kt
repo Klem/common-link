@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -27,6 +28,8 @@ data class DonorIdentitySnapshot(
     val postalCode: String,
     val city: String,
     val country: String,
+    val birthDate: LocalDate,
+    val birthCity: String,
 )
 
 /**
@@ -167,6 +170,8 @@ class DonationService(
                 donorPostalCode = identity.postalCode,
                 donorCity = identity.city,
                 donorCountry = identity.country,
+                donorBirthDate = identity.birthDate,
+                donorBirthCity = identity.birthCity,
             )
         ).also { logger.info("Created pending donation id={} providerRef={}", it.id, providerRef) }
     }

@@ -9,12 +9,12 @@ const cspDirectives = [
   "default-src 'self'",
   // Next.js dev + prod inline scripts
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/",
+  "font-src 'self'",
   // Google OAuth frames + API
-  "frame-src https://accounts.google.com/",
+  "frame-src 'self' https://accounts.google.com/",
   `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com`,
-  "img-src 'self' data: https:",
+  `img-src 'self' data: https: ${apiUrl}`,
 ];
 
 const nextConfig: NextConfig = {
@@ -35,6 +35,18 @@ const nextConfig: NextConfig = {
         // frame-ancestors * is intentional — the widget must be embeddable on partner sites.
         // X-Frame-Options is NOT set here: it does not support wildcards and would conflict.
         source: '/:locale/embed/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [...cspDirectives, 'frame-ancestors *'].join('; '),
+          },
+        ],
+      },
+      {
+        // Landing pages: same exception as the embed routes. `public/landing.js` and the
+        // JavaScript-free iframe fallback both frame this route from the association's own
+        // domain, so the default `frame-ancestors 'self'` would break the published snippet.
+        source: '/:locale/lp/:path*',
         headers: [
           {
             key: 'Content-Security-Policy',

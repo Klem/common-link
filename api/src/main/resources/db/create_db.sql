@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — create_db.sql
--- Schéma consolidé : état final équivalent aux migrations V1 → V46.
+-- Schéma consolidé : état final équivalent aux migrations V1 → V49.
 --
 -- Ce script remplace l'exécution séquentielle des migrations Flyway
 -- par les formes finales : les ALTER / RENAME / DROP INDEX intermédiaires
@@ -125,7 +125,8 @@ CREATE TABLE donor_profiles
 CREATE UNIQUE INDEX idx_donor_wallet_address
     ON donor_profiles (wallet_address) WHERE wallet_address IS NOT NULL;
 
--- association_profiles  (V4 ; settings fields + KYC status V35 ; identifier→RNA + siren swap V37)
+-- association_profiles  (V4 ; settings fields + KYC status V35 ; identifier→RNA + siren swap V37 ;
+--                        landing config V48)
 CREATE TABLE association_profiles
 (
     id                              uuid         NOT NULL DEFAULT gen_random_uuid(),
@@ -146,10 +147,27 @@ CREATE TABLE association_profiles
     verification_rejection_reason   text,
     verification_submitted_at       timestamptz,
     verified_at                     timestamptz,
+    landing_theme                   varchar(20)  NOT NULL DEFAULT 'DEFAULT'        -- V48
+        CONSTRAINT chk_association_landing_theme
+            CHECK (landing_theme IN ('DEFAULT', 'WARM', 'TRUST', 'NATURE', 'SOBER')),
+    landing_logo                    varchar(255),                                   -- V48
+    landing_show_project            boolean      NOT NULL DEFAULT TRUE,             -- V48
+    landing_show_transparency       boolean      NOT NULL DEFAULT TRUE,             -- V48
+    landing_show_trust              boolean      NOT NULL DEFAULT TRUE,             -- V48
 
     CONSTRAINT association_profiles_pkey PRIMARY KEY (id),
     CONSTRAINT association_profiles_user_id_unique UNIQUE (user_id),
     CONSTRAINT association_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- association_logos  (V48) : binary logo storage, separate table so bytes are never loaded on profile fetch.
+-- landing_logo on association_profiles keeps the public serving path.
+CREATE TABLE association_logos (
+    association_id uuid         PRIMARY KEY REFERENCES association_profiles (id) ON DELETE CASCADE,
+    data           bytea        NOT NULL,
+    content_type   varchar(100) NOT NULL,
+    size_bytes     bigint       NOT NULL,
+    uploaded_at    timestamptz  NOT NULL
 );
 
 CREATE INDEX association_profiles_siren_idx ON association_profiles (identifier);
@@ -310,6 +328,8 @@ CREATE TABLE donations
     donor_postal_code    VARCHAR(16),                             -- V40
     donor_city           VARCHAR(128),                            -- V40
     donor_country        VARCHAR(2),                              -- V40
+    donor_birth_date     DATE,                                    -- V49 : snapshot fiscal — date de naissance
+    donor_birth_city     VARCHAR(128),                            -- V49 : snapshot fiscal — ville de naissance
     created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
     CONSTRAINT donations_provider_ref_unique UNIQUE (provider_ref)
