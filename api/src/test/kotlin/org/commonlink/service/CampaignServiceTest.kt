@@ -796,13 +796,27 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - REJECTED KYB returns 422 even when the bank is ready`() {
+        assertPublishRefusedForKyb(VerificationStatus.REJECTED, "Rejected KYB")
+    }
+
+    @Test
+    fun `publish - PENDING KYB returns 422 even when the bank is ready`() {
+        assertPublishRefusedForKyb(VerificationStatus.PENDING, "Pending KYB")
+    }
+
+    /**
+     * Publishes a bank-ready campaign whose association sits in [status] and asserts the KYB gate
+     * refuses it. Keeps the three non-VERIFIED states covered symmetrically with the frontend,
+     * so the proof matrix in `docs/legal/E3-verrou-verification-avant-collecte.md` holds at both layers.
+     */
+    private fun assertPublishRefusedForKyb(status: VerificationStatus, campaignName: String) {
         linkMonerium(userId)
         linkMollie(userId, verifyKyb = false)
         val assoc = associationProfileRepository.findByUserId(userId).get()
-        assoc.verificationStatus = VerificationStatus.REJECTED
+        assoc.verificationStatus = status
         associationProfileRepository.save(assoc)
         val campaign = campaignService.createCampaign(
-            userId, CreateCampaignRequest(name = "Rejected KYB", goal = BigDecimal("10000"))
+            userId, CreateCampaignRequest(name = campaignName, goal = BigDecimal("10000"))
         )
 
         assertThrows<UnprocessableEntityException> {
