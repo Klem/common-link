@@ -629,3 +629,44 @@ CREATE UNIQUE INDEX uq_mollie_connections_organization
     ON mollie_connections (mollie_organization_id)
     WHERE mollie_organization_id IS NOT NULL;
 
+-- Journal d'audit LCB-FT append-only, chaîné par hash SHA-256 (V51)
+CREATE SEQUENCE compliance_audit_log_seq;
+
+CREATE TABLE compliance_audit_log_lock
+(
+    id SMALLINT NOT NULL PRIMARY KEY
+);
+INSERT INTO compliance_audit_log_lock (id) VALUES (1);
+
+CREATE TABLE compliance_audit_log
+(
+    id             UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    sequence_no    BIGINT      NOT NULL UNIQUE,
+    event_type     VARCHAR(64) NOT NULL,
+    subject_type   VARCHAR(32) NOT NULL
+        CHECK (subject_type IN ('ASSOCIATION', 'DONATION', 'CAMPAIGN', 'ALERT')),
+    subject_id     UUID,
+    payload        TEXT        NOT NULL,
+    actor_user_id  UUID,
+    occurred_at    TIMESTAMPTZ NOT NULL,
+    prev_hash      CHAR(64),
+    row_hash       CHAR(64)    NOT NULL
+);
+
+CREATE INDEX idx_compliance_audit_log_subject ON compliance_audit_log (subject_type, subject_id);
+CREATE INDEX idx_compliance_audit_log_event_type ON compliance_audit_log (event_type);
+
+REVOKE UPDATE, DELETE, TRUNCATE ON compliance_audit_log FROM CURRENT_USER;
+
+CREATE FUNCTION compliance_audit_log_immutable() RETURNS TRIGGER AS
+$$
+BEGIN
+    RAISE EXCEPTION 'compliance_audit_log is append-only: % is not permitted', TG_OP;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_compliance_audit_log_immutable
+    BEFORE UPDATE OR DELETE
+    ON compliance_audit_log
+    FOR EACH ROW
+EXECUTE FUNCTION compliance_audit_log_immutable();
