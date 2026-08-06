@@ -130,6 +130,13 @@ app:
     email: ${APP_COMPLIANCE_OFFICER_EMAIL}
     password: ${APP_COMPLIANCE_OFFICER_PASSWORD}
 
+commonlink:
+  compliance:
+    # AES-256-GCM key for LCB-FT sensitive fields (ComplianceCryptoConverter), Base64/32 bytes.
+    # Absent here → converter is a no-op (plaintext), same as app.monerium.token-enc-key. Prod
+    # requires COMPLIANCE_ENCRYPTION_KEY and refuses to start without it.
+    encryption-key: ${COMPLIANCE_ENCRYPTION_KEY:}
+
 springdoc:
   api-docs:
     enabled: true

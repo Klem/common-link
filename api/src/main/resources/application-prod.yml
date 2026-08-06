@@ -130,6 +130,13 @@ app:
     email: ${APP_COMPLIANCE_OFFICER_EMAIL}
     password: ${APP_COMPLIANCE_OFFICER_PASSWORD}
 
+commonlink:
+  compliance:
+    # No default (unlike base/staging): an absent COMPLIANCE_ENCRYPTION_KEY fails placeholder
+    # resolution outright. ComplianceCryptoConverter's own init{} guard is the second line of
+    # defense if this property is ever redefined with a blank fallback.
+    encryption-key: ${COMPLIANCE_ENCRYPTION_KEY}
+
 springdoc:
   api-docs:
     enabled: false

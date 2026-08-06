@@ -133,6 +133,11 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `compliance encryption-key is required with no blank-fallback default in prod`() {
+        assertEquals("\${COMPLIANCE_ENCRYPTION_KEY}", prop("commonlink.compliance.encryption-key"))
+    }
+
+    @Test
     fun `access-token-expiration is at most 1 hour in prod`() {
         val raw = prop("app.jwt.access-token-expiration") as? String ?: ""
         val duration = Duration.parse(raw)
