@@ -15,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.access.intercept.AuthorizationFilter
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
@@ -66,6 +67,7 @@ class SecurityConfig(
                 if (docsEnabled) auth.requestMatchers("/api/docs/**").permitAll()
                 // Public widget and webhook endpoints — no JWT required
                 auth.requestMatchers("/api/public/**").permitAll()
+                auth.requestMatchers("/api/compliance/**").hasRole(UserRole.COMPLIANCE_OFFICER.name)
                 auth.requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/admin/verifications/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
@@ -79,6 +81,7 @@ class SecurityConfig(
                 auth.anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterAfter(ComplianceAccessLogFilter(), AuthorizationFilter::class.java)
 
             // === This is the key addition for clean 401 vs 403 ===
             .exceptionHandling { exceptions ->

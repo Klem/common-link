@@ -93,6 +93,26 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `curator email is required with no empty default in prod`() {
+        assertEquals("\${APP_CURATOR_EMAIL}", prop("app.curator.email"))
+    }
+
+    @Test
+    fun `curator password is required with no empty default in prod`() {
+        assertEquals("\${APP_CURATOR_PASSWORD}", prop("app.curator.password"))
+    }
+
+    @Test
+    fun `compliance officer email is required with no empty default in prod`() {
+        assertEquals("\${APP_COMPLIANCE_OFFICER_EMAIL}", prop("app.compliance-officer.email"))
+    }
+
+    @Test
+    fun `compliance officer password is required with no empty default in prod`() {
+        assertEquals("\${APP_COMPLIANCE_OFFICER_PASSWORD}", prop("app.compliance-officer.password"))
+    }
+
+    @Test
     fun `mollie test-mode is false in prod`() {
         // T1: base defaults test-mode true for local Connect sandbox; prod must pin false or live donations route to Mollie test mode
         assertEquals(false, prop("app.mollie.test-mode"))

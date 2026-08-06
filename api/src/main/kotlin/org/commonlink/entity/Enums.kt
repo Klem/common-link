@@ -15,6 +15,12 @@ enum class UserRole {
     ASSOCIATION,
     /** A platform curator who can perform on-chain moderation actions (verify, pause, etc.). */
     CURATOR,
+    /**
+     * The AML/CFT compliance officer responsible for reviewing alerts and suspicious-activity
+     * reports (SARs). Grants exclusive access to the compliance back-office (/api/compliance/)
+     * and nothing else — in particular, no curator moderation actions and no association data.
+     */
+    COMPLIANCE_OFFICER,
 }
 
 /**

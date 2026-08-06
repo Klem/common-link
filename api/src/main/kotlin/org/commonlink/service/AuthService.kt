@@ -580,6 +580,7 @@ class AuthService(
                 }
             }
             UserRole.CURATOR -> { /* curator accounts have no associated profile */ }
+            UserRole.COMPLIANCE_OFFICER -> { /* compliance officer accounts have no associated profile */ }
         }
     }
 

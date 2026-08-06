@@ -122,8 +122,13 @@ app:
       allow-fake-completion: false
 
   curator:
-    email: ${APP_CURATOR_EMAIL:}
-    password: ${APP_CURATOR_PASSWORD:}
+    email: ${APP_CURATOR_EMAIL}
+    password: ${APP_CURATOR_PASSWORD}
+  # Compliance officer bootstrap — set both env vars to provision the LCB-FT compliance officer account.
+  # The bean is absent when APP_COMPLIANCE_OFFICER_EMAIL is unset; no runtime cost in normal operation.
+  compliance-officer:
+    email: ${APP_COMPLIANCE_OFFICER_EMAIL}
+    password: ${APP_COMPLIANCE_OFFICER_PASSWORD}
 
 springdoc:
   api-docs:

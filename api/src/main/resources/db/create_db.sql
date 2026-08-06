@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- 1. UTILISATEURS & AUTHENTIFICATION
 -- =============================================================
 
--- users  (V1 ; role étendu CURATOR en V21)
+-- users  (V1 ; role étendu CURATOR en V21, COMPLIANCE_OFFICER en V50)
 CREATE TABLE users
 (
     id             uuid         NOT NULL DEFAULT gen_random_uuid(),
@@ -36,7 +36,7 @@ CREATE TABLE users
 
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_email_unique UNIQUE (email),
-    CONSTRAINT users_role_check CHECK (role IN ('DONOR', 'ASSOCIATION', 'CURATOR')),
+    CONSTRAINT users_role_check CHECK (role IN ('DONOR', 'ASSOCIATION', 'CURATOR', 'COMPLIANCE_OFFICER')),
     CONSTRAINT users_provider_check CHECK (provider IN ('EMAIL', 'GOOGLE', 'MAGIC_LINK', 'GUEST'))
 );
 
