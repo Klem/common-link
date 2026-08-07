@@ -1,0 +1,132 @@
+# Document de classification des risques — CommonLink
+#
+# Version  : 2026-08-v1
+# Approuvé : 7 août 2026
+#
+# Ce fichier est la transcription opérationnelle des exigences réglementaires
+# LCB-FT applicables à CommonLink en tant qu'IFP (intermédiaire en financement
+# participatif), conformément aux articles L.561-5, L.561-6, L.561-9, L.561-10
+# et R.561-5, R.561-5-1, R.561-12, R.561-14-1, R.561-20 du Code monétaire et
+# financier, aux lignes directrices révisées de l'ACPR sur l'identification et
+# la connaissance client (2022), ainsi qu'aux ordonnances n° 2016-1635 et
+# n° 2020-115 transposant les 4e et 5e directives LCB-FT.
+#
+# Les fréquences de réexamen (LOW : 3 ans, STANDARD : 2 ans, HIGH : 1 an) sont
+# des choix de politique interne de CommonLink fondés sur le principe de
+# proportionnalité (art. L.561-6 CMF) ; elles ne sont pas imposées mot pour mot
+# par la réglementation mais doivent rester justifiables devant l'ACPR.
+#
+# Traçabilité : toute modification de ce fichier doit incrémenter le champ
+# 'version', mettre à jour 'approved-on' après validation par le conseil, et
+# faire l'objet d'un commit distinct dans l'historique git. Il n'existe
+# intentionnellement aucun écran d'administration permettant de modifier ce
+# mapping à chaud (décision architecturale D6).
+
+risk-classification:
+  version: "2026-08-v1"
+  approved-on: "2026-08-07"
+
+  measures:
+
+    # ─────────────────────────────────────────────────────────────────
+    # RISQUE FAIBLE — Vigilance simplifiée
+    # Base légale : art. L.561-9, R.561-14-1 CMF
+    # Conditions : association à structure simple, objet non lucratif
+    # clairement délimité, dirigeants identifiables, montants modestes,
+    # aucune exposition internationale significative, aucun indice de soupçon.
+    # La vigilance simplifiée n'exonère pas de l'identification ; elle permet
+    # d'en adapter la fréquence et l'étendue (R.561-14-1 al. 1er).
+    # ─────────────────────────────────────────────────────────────────
+    LOW:
+      description: >
+        Vérification de l'identité de l'association et de ses représentants légaux
+        avant l'entrée en relation. Collecte d'informations sur l'objet, l'activité
+        et les opérations attendues. Surveillance allégée de la cohérence des
+        opérations pendant la durée de la relation, proportionnellement au faible
+        risque identifié (art. R.561-14-1 CMF). Tout indice de soupçon entraîne
+        le reclassement immédiat vers la vigilance standard ou renforcée.
+      review-frequency: >
+        Réexamen complet tous les trois ans, ou immédiatement en cas d'événement
+        significatif : changement de dirigeants, modification statutaire, opération
+        atypique, ou reclassification du profil de risque.
+      required-documents:
+        - "Publication au Journal officiel ou récépissé de déclaration en préfecture portant le numéro RNA"
+        - "Statuts en vigueur de l'association"
+        - "Liste des dirigeants et représentants légaux en exercice"
+        - "Pièce d'identité officielle en cours de validité de chaque dirigeant et représentant légal"
+        - "Description de l'objet de l'association et de la nature des collectes envisagées"
+
+    # ─────────────────────────────────────────────────────────────────
+    # RISQUE STANDARD — Vigilance standard
+    # Base légale : art. L.561-5, L.561-5-1, L.561-6, R.561-5, R.561-5-1 CMF
+    # Niveau de référence, applicable en l'absence de critère permettant
+    # de qualifier le risque de faible ou d'élevé.
+    # ─────────────────────────────────────────────────────────────────
+    STANDARD:
+      description: >
+        Identification complète de l'association et vérification de son identité
+        sur pièces datées de moins de trois mois. Identification et vérification
+        de l'identité de chaque dirigeant et représentant légal. Identification du
+        bénéficiaire effectif (art. L.561-5-1 CMF). Recueil d'informations sur
+        l'objet, l'activité, les zones géographiques, la nature et le volume des
+        opérations attendues, et les sources de fonds (art. L.561-6 CMF).
+        Surveillance continue de la cohérence des opérations avec mise à jour
+        périodique des éléments de connaissance client.
+      review-frequency: >
+        Réexamen complet tous les deux ans, ou immédiatement en cas d'événement
+        significatif : changement de dirigeants, modification statutaire,
+        dépassement des volumes attendus, opération atypique, ou évolution du
+        contexte réglementaire affectant la catégorie de risque.
+      required-documents:
+        - "Publication au Journal officiel ou récépissé de déclaration en préfecture portant le numéro RNA"
+        - "Statuts en vigueur de l'association, datés et signés"
+        - "Procès-verbal de la dernière assemblée générale désignant les dirigeants en exercice"
+        - "Liste des dirigeants, mandataires et représentants légaux avec leurs fonctions"
+        - "Numéro SIRET si l'association en dispose"
+        - "Pièce d'identité officielle en cours de validité de chaque dirigeant et représentant légal"
+        - "Justificatif de domicile récent (moins de trois mois) pour chaque dirigeant"
+        - "Déclaration des bénéficiaires effectifs ou attestation d'absence de bénéficiaire effectif au sens de l'art. L.561-5-1 CMF"
+        - "Description de l'objet associatif, de la nature et du périmètre géographique des collectes envisagées"
+        - "Estimation du volume annuel de dons attendu et de la provenance des fonds"
+
+    # ─────────────────────────────────────────────────────────────────
+    # RISQUE ÉLEVÉ — Vigilance renforcée
+    # Base légale : art. L.561-10, L.561-10-2 (PPE), R.561-20 CMF
+    # Déclencheurs notamment : structure de contrôle opaque ou complexe,
+    # dirigeants politiquement exposés (PPE), opérations vers ou depuis des
+    # pays à risque identifiés par le GAFI ou l'UE, volumes ou nature atypiques,
+    # indice de soupçon non encore qualifié en déclaration.
+    # ─────────────────────────────────────────────────────────────────
+    HIGH:
+      description: >
+        Toutes les mesures du niveau standard, complétées par des diligences
+        renforcées. Collecte d'informations supplémentaires sur l'origine des
+        fonds et la justification économique des opérations (art. R.561-20 CMF).
+        Vérification approfondie de la chaîne de contrôle de l'association.
+        Lorsqu'un dirigeant est une personne politiquement exposée (PPE),
+        application des obligations spécifiques de l'art. L.561-10-2 CMF :
+        autorisation de la direction, enquête sur l'origine du patrimoine et des
+        fonds, surveillance renforcée de l'ensemble des opérations. Surveillance
+        transactionnelle intensifiée avec examen documenté de toute opération
+        dépassant les seuils définis dans la cartographie des risques.
+      review-frequency: >
+        Réexamen complet tous les ans. Examen intermédiaire à six mois si un
+        indice de soupçon a été relevé sans avoir donné lieu à déclaration.
+        Réexamen immédiat en cas d'événement significatif ou d'opération
+        nécessitant une analyse individuelle documentée.
+      required-documents:
+        - "Publication au Journal officiel ou récépissé de déclaration en préfecture portant le numéro RNA"
+        - "Statuts en vigueur de l'association, datés et signés"
+        - "Procès-verbal de la dernière assemblée générale désignant les dirigeants en exercice"
+        - "Liste des dirigeants, mandataires et représentants légaux avec leurs fonctions"
+        - "Numéro SIRET si l'association en dispose"
+        - "Pièce d'identité officielle en cours de validité de chaque dirigeant et représentant légal"
+        - "Justificatif de domicile récent (moins de trois mois) pour chaque dirigeant"
+        - "Déclaration des bénéficiaires effectifs ou attestation d'absence de bénéficiaire effectif au sens de l'art. L.561-5-1 CMF"
+        - "Description de l'objet associatif, de la nature et du périmètre géographique des collectes envisagées"
+        - "Estimation du volume annuel de dons attendu et de la provenance des fonds"
+        - "Justificatif de l'origine des fonds apportés à la collecte (relevés, conventions de mécénat, actes de donation)"
+        - "Description détaillée et justification économique de chaque opération d'un montant ou d'une nature inhabituels"
+        - "Attestation ou questionnaire PPE renseigné par chaque dirigeant"
+        - "Document d'autorisation hiérarchique interne validant l'entrée ou le maintien en relation (si PPE confirmée)"
+        - "Rapport d'analyse individuelle documentée pour toute opération ayant déclenché une alerte de surveillance"

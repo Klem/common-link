@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: commonlink-api
+  config:
+    import: "classpath:compliance/risk-classification.yml"
   datasource:
     url: ${COMMON_LINK_DB_URL:jdbc:postgresql://localhost:5432/commonlink}
     username: ${COMMON_LINK_DB_USER:commonlink}
