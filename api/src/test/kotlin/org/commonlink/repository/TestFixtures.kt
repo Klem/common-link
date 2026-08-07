@@ -14,6 +14,7 @@ import org.commonlink.entity.MagicLinkToken
 import org.commonlink.entity.MandateEligibility
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.Payee
+import org.commonlink.entity.RiskLevel
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
@@ -101,6 +102,7 @@ object TestFixtures {
         contactEmail: String? = "contact@restos-du-coeur.org",
         description: String? = "Aide alimentaire et insertion sociale.",
         verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED,
+        riskLevel: RiskLevel = RiskLevel.STANDARD,
     ) = AssociationProfile(
         user = user,
         name = name,
@@ -111,6 +113,7 @@ object TestFixtures {
         contactEmail = contactEmail,
         description = description,
         verificationStatus = verificationStatus,
+        riskLevel = riskLevel,
     )
 
     // ── Tokens ───────────────────────────────────────────────────────────────
@@ -220,6 +223,7 @@ object TestFixtures {
         providerRef: String = "test:${UUID.randomUUID()}",
         confirmedAt: Instant? = Instant.now(),
         typeCode: String = "74",
+        riskLevel: RiskLevel = RiskLevel.STANDARD,
     ) = Donation(
         donor = donor,
         campaign = campaign,
@@ -227,6 +231,7 @@ object TestFixtures {
         providerRef = providerRef,
         confirmedAt = confirmedAt,
         typeCode = typeCode,
+        riskLevel = riskLevel,
     )
 
     // ── Mandates ─────────────────────────────────────────────────────────────

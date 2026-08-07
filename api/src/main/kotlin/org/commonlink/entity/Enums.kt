@@ -252,3 +252,20 @@ enum class PayoutBlockingReason {
     /** The payout label/justification is shorter than 16 characters once trimmed. */
     DESCRIPTION_TOO_SHORT,
 }
+
+/**
+ * AML/CFT (LCB-FT) risk level assigned to an association or a donation.
+ *
+ * Capturing the level without the associated [AssociationProfile.riskClassificationVersion]
+ * renders a past assessment uninterpretable once the classification document is revised.
+ * The mapping from a risk level to the corresponding due-diligence measures (simplified,
+ * standard, or enhanced) is defined in a versioned classification document, not in this code.
+ */
+enum class RiskLevel {
+    /** Low risk — simplified due diligence may apply per the current classification. */
+    LOW,
+    /** Standard risk — baseline due diligence applies. Default for all new records. */
+    STANDARD,
+    /** High risk — enhanced due diligence required per the current classification. */
+    HIGH,
+}

@@ -81,4 +81,9 @@ class Donation(
     /** Snapshot d'identité — ville de naissance. */
     @Column(name = "donor_birth_city", length = 128)
     val donorBirthCity: String? = null,
+
+    /** AML/CFT risk level recorded at donation time. Defaults to STANDARD. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "risk_level", nullable = false, length = 20)
+    val riskLevel: RiskLevel = RiskLevel.STANDARD,
 )

@@ -1,6 +1,6 @@
 -- =============================================================
 -- CommonLink — create_db.sql
--- Schéma consolidé : état final équivalent aux migrations V1 → V49.
+-- Schéma consolidé : état final équivalent aux migrations V1 → V53.
 --
 -- Ce script remplace l'exécution séquentielle des migrations Flyway
 -- par les formes finales : les ALTER / RENAME / DROP INDEX intermédiaires
@@ -154,6 +154,11 @@ CREATE TABLE association_profiles
     landing_show_project            boolean      NOT NULL DEFAULT TRUE,             -- V48
     landing_show_transparency       boolean      NOT NULL DEFAULT TRUE,             -- V48
     landing_show_trust              boolean      NOT NULL DEFAULT TRUE,             -- V48
+    risk_level                      varchar(20)  NOT NULL DEFAULT 'STANDARD'        -- V53 LCB-FT
+        CONSTRAINT chk_association_profiles_risk_level
+            CHECK (risk_level IN ('LOW', 'STANDARD', 'HIGH')),
+    risk_level_assessed_at          timestamptz,                                    -- V53 LCB-FT
+    risk_classification_version     varchar(32),                                    -- V53 LCB-FT
 
     CONSTRAINT association_profiles_pkey PRIMARY KEY (id),
     CONSTRAINT association_profiles_user_id_unique UNIQUE (user_id),
@@ -330,6 +335,9 @@ CREATE TABLE donations
     donor_country        VARCHAR(2),                              -- V40
     donor_birth_date     DATE,                                    -- V49 : snapshot fiscal — date de naissance
     donor_birth_city     VARCHAR(128),                            -- V49 : snapshot fiscal — ville de naissance
+    risk_level           VARCHAR(20)   NOT NULL DEFAULT 'STANDARD'                 -- V53 LCB-FT
+        CONSTRAINT chk_donations_risk_level
+            CHECK (risk_level IN ('LOW', 'STANDARD', 'HIGH')),
     created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
     CONSTRAINT donations_provider_ref_unique UNIQUE (provider_ref)
