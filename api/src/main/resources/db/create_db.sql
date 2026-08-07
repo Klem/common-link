@@ -644,7 +644,7 @@ CREATE TABLE compliance_audit_log
     sequence_no    BIGINT      NOT NULL UNIQUE,
     event_type     VARCHAR(64) NOT NULL,
     subject_type   VARCHAR(32) NOT NULL
-        CHECK (subject_type IN ('ASSOCIATION', 'DONATION', 'CAMPAIGN', 'ALERT')),
+        CHECK (subject_type IN ('ASSOCIATION', 'DONATION', 'CAMPAIGN', 'ALERT', 'DECLARANT')),
     subject_id     UUID,
     payload        TEXT        NOT NULL,
     actor_user_id  UUID,
@@ -670,3 +670,15 @@ CREATE TRIGGER trg_compliance_audit_log_immutable
     ON compliance_audit_log
     FOR EACH ROW
 EXECUTE FUNCTION compliance_audit_log_immutable();
+
+-- Référentiel des déclarants TRACFIN (V52)
+CREATE TABLE compliance_declarant
+(
+    id                   UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id              UUID        NOT NULL UNIQUE REFERENCES users (id),
+    teledeclarant_number TEXT        NOT NULL,
+    full_name            TEXT        NOT NULL,
+    designated_at        DATE        NOT NULL,
+    revoked_at           DATE,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
