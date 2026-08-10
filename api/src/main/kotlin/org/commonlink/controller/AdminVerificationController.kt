@@ -171,7 +171,7 @@ class AdminVerificationController(
     @PostMapping("/{associationId}/registry-precheck")
     @Operation(
         summary = "Run a registry pre-check scan",
-        description = "Queries French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC) " +
+        description = "Queries French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC, RNA/DJEPVA) " +
                 "to check the legal existence of the association, then persists the result as a new immutable " +
                 "scan (append-only audit trail). Informational only — never auto-approves or rejects. " +
                 "Each source degrades gracefully: failures are reported as warnings, not errors."

@@ -64,6 +64,15 @@ class AssociationRegistryCheck(
     @Column(name = "warnings", nullable = false, columnDefinition = "text")
     val warnings: List<String> = emptyList(),
 
+    /** Representatives of the association collected from consulted registries (name only, no title), stored as a JSON array. */
+    @Convert(converter = StringListJsonConverter::class)
+    @Column(name = "officers", nullable = false, columnDefinition = "text")
+    val officers: List<String> = emptyList(),
+
+    /** Whether the association is active according to the RNA (DJEPVA). Null if the source was unavailable or not applicable. */
+    @Column(name = "rna_active")
+    val rnaActive: Boolean? = null,
+
     /** UUID of the curator ([User.id]) who triggered this scan. */
     @Column(name = "checked_by", updatable = false)
     val checkedBy: UUID? = null,

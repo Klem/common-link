@@ -532,6 +532,10 @@ CREATE TABLE association_registry_check (
     -- Échecs non-bloquants par source (JSON array via StringListJsonConverter)
     warnings                TEXT        NOT NULL DEFAULT '[]',
 
+    -- RNA / DJEPVA : représentants (JSON array) et statut actif (V54)
+    officers                TEXT        NOT NULL DEFAULT '[]',
+    rna_active              BOOLEAN,
+
     -- Curateur ayant déclenché le scan
     checked_by              UUID        REFERENCES users(id),
     checked_at              TIMESTAMPTZ NOT NULL DEFAULT now()

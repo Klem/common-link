@@ -40,6 +40,7 @@ class AssociationRegistryCheckServiceTest {
         joafeBaseUrl = "https://journal-officiel.example",
         bodaccBaseUrl = "https://bodacc.example",
         rechercheEntreprisesBaseUrl = "https://recherche-entreprises.api.gouv.fr",
+        rnaBaseUrl = "https://rna.example",
     )
 
     private val associationId = UUID.randomUUID()
@@ -63,6 +64,9 @@ class AssociationRegistryCheckServiceTest {
 
     private val rechercheOk =
         """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220"}]}"""
+    private val rechercheWithOfficers =
+        """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220","dirigeants":[{"nom":"DUPONT","prenoms":"Jean","qualite":"Président"},{"nom":"MARTIN","prenoms":"Marie","qualite":"Trésorière"}]}]}"""
+    private val rnaOk = """{"active":true}"""
     private val inseeOk =
         """{"uniteLegale":{"etatAdministratifUniteLegale":"A"}}"""
     private val joafeCreation =
@@ -85,9 +89,14 @@ class AssociationRegistryCheckServiceTest {
         } returns ResponseEntity.ok(body)
     }
 
+    private fun stubRna(body: String = rnaOk) {
+        every { restTemplate.getForObject(match<String> { it.contains("rna.example") }, String::class.java) } returns body
+    }
+
     @BeforeEach
     fun setup() {
         every { repository.findById(associationId) } returns Optional.of(profileWithRna)
+        stubRna()
         // save() assigns an id, mirroring the DB default — returns a persisted clone.
         every { registryCheckRepository.save(any<AssociationRegistryCheck>()) } answers {
             val c = firstArg<AssociationRegistryCheck>()
@@ -102,6 +111,8 @@ class AssociationRegistryCheckServiceTest {
                 dissolutionDetected = c.dissolutionDetected,
                 bodaccProcedureFound = c.bodaccProcedureFound,
                 warnings = c.warnings,
+                officers = c.officers,
+                rnaActive = c.rnaActive,
                 checkedBy = c.checkedBy,
                 checkedAt = c.checkedAt,
             )
@@ -297,5 +308,82 @@ class AssociationRegistryCheckServiceTest {
         assertThat(result.siren).isEqualTo("123456789")
         assertThat(result.warnings).containsExactly("insee-sirene: timeout")
         // No restTemplate interaction is stubbed — a call would fail the test.
+    }
+
+    @Test
+    fun `scan persists rnaActive from RNA registry`() {
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        stubRna("""{"active":true}""")
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.rnaActive).isTrue()
+        assertThat(result.warnings).isEmpty()
+    }
+
+    @Test
+    fun `scan adds warning and continues when RNA fails`() {
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+        every { restTemplate.getForObject(match<String> { it.contains("rna.example") }, String::class.java) } throws RuntimeException("503 RNA unavailable")
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.rnaActive).isNull()
+        assertThat(result.warnings).anyMatch { it.startsWith("rna:") }
+        assertThat(result.associationExists).isTrue()
+    }
+
+    @Test
+    fun `officers and rnaActive stored in scan row are readable via latest()`() {
+        val stored = AssociationRegistryCheck(
+            id = UUID.randomUUID(),
+            associationId = associationId,
+            associationExists = true,
+            siren = "123456789",
+            rna = "W123456789",
+            officers = listOf("Jean DUPONT", "Marie MARTIN"),
+            rnaActive = true,
+            checkedBy = curatorId,
+            checkedAt = Instant.now(),
+        )
+        every { registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns stored
+
+        val result = service.latest(associationId)!!
+
+        assertThat(result.officers).containsExactlyInAnyOrder("Jean DUPONT", "Marie MARTIN")
+        assertThat(result.rnaActive).isTrue()
+        // No restTemplate interaction is stubbed — a call would fail the test.
+    }
+
+    @Test
+    fun `scan extracts officers from Recherche d'entreprises dirigeants`() {
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheWithOfficers
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.officers).containsExactlyInAnyOrder("Jean DUPONT", "Marie MARTIN")
+    }
+
+    @Test
+    fun `each scan creates a new append-only row`() {
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+
+        val result1 = service.scan(associationId, curatorId)
+        val result2 = service.scan(associationId, curatorId)
+
+        verify(exactly = 2) { registryCheckRepository.save(match<AssociationRegistryCheck> { it.id == null }) }
+        assertThat(result1.id).isNotEqualTo(result2.id)
     }
 }

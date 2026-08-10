@@ -205,6 +205,8 @@ class AdminVerificationControllerTest {
         bodaccProcedureFound = false,
         checkedAt = now,
         warnings = emptyList(),
+        officers = emptyList(),
+        rnaActive = null,
     )
 
     @Test

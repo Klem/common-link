@@ -45,4 +45,10 @@ data class RegistryPreCheckDto(
 
     @Schema(description = "Non-fatal warnings from individual source failures (e.g. timeout, HTTP error).")
     val warnings: List<String>,
+
+    @Schema(description = "Representatives of the association collected from consulted public registries (names only).")
+    val officers: List<String>,
+
+    @Schema(description = "Whether the association is active according to the RNA (DJEPVA). Null if the source was unavailable or not applicable.")
+    val rnaActive: Boolean?,
 )
