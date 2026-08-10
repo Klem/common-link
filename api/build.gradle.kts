@@ -74,6 +74,9 @@ dependencies {
     implementation("org.web3j:crypto:4.12.2")
     implementation("org.web3j:utils:4.12.2")
 
+    // Fuzzy name matching — JaroWinkler for LCB-FT sanctions screening (not managed by Spring BOM)
+    implementation("org.apache.commons:commons-text:1.12.0")
+
     // Web3j codegen — only used by generateRegistryWrapper task, not deployed
     web3jCodegen("org.web3j:codegen:4.12.2")
 

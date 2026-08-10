@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Fixture de test pour le service de screening LCB-FT.
+  TOUTES les personnes et entités ci-dessous sont entièrement fictives.
+  Aucune correspondance avec des personnes réelles n'est intentionnelle.
+-->
+<Publications>
+  <DatePublication>2024-01-15T00:00:00</DatePublication>
+
+  <!-- Personne physique fictive — utilisée pour tester les variantes de nom -->
+  <PublicationDetail>
+    <IdRegistre>1</IdRegistre>
+    <Nature>Personne physique</Nature>
+    <Nom>FICTIVUS</Nom>
+    <RegistreDetail>
+      <TypeChamp>PRENOM</TypeChamp>
+      <Valeur><Prenom>Alexius</Prenom></Valeur>
+    </RegistreDetail>
+    <RegistreDetail>
+      <TypeChamp>DATE_DE_NAISSANCE</TypeChamp>
+      <Valeur>
+        <Jour>1</Jour>
+        <Mois>1</Mois>
+        <Annee>1970</Annee>
+      </Valeur>
+    </RegistreDetail>
+    <RegistreDetail>
+      <!-- Alias fictif pour tester le rapprochement via alias -->
+      <TypeChamp>ALIAS</TypeChamp>
+      <Valeur><Alias>FELIX Alexis</Alias></Valeur>
+    </RegistreDetail>
+    <RegistreDetail>
+      <TypeChamp>FONDEMENT_JURIDIQUE</TypeChamp>
+      <Valeur>
+        <FondementJuridique>1</FondementJuridique>
+        <FondementJuridiqueLabel>Décision fictive de test n°001/2024</FondementJuridiqueLabel>
+      </Valeur>
+    </RegistreDetail>
+  </PublicationDetail>
+
+  <!-- Personne morale fictive — utilisée pour tester le filtre par nature -->
+  <PublicationDetail>
+    <IdRegistre>2</IdRegistre>
+    <Nature>Personne morale</Nature>
+    <Nom>ZORBAL INDUSTRIES SA</Nom>
+    <RegistreDetail>
+      <TypeChamp>REFERENCE_UE</TypeChamp>
+      <Valeur><ReferenceUe>EU-FICTIF-2024-002</ReferenceUe></Valeur>
+    </RegistreDetail>
+  </PublicationDetail>
+
+  <!-- Personne physique fictive avec particule — utilisée pour tester l'absence de particule -->
+  <PublicationDetail>
+    <IdRegistre>3</IdRegistre>
+    <Nature>Personne physique</Nature>
+    <Nom>DE EXEMPLA</Nom>
+    <RegistreDetail>
+      <TypeChamp>PRENOM</TypeChamp>
+      <Valeur><Prenom>Janus</Prenom></Valeur>
+    </RegistreDetail>
+    <RegistreDetail>
+      <TypeChamp>DATE_DE_NAISSANCE</TypeChamp>
+      <Valeur>
+        <Mois>6</Mois>
+        <Annee>1985</Annee>
+      </Valeur>
+    </RegistreDetail>
+  </PublicationDetail>
+
+</Publications>

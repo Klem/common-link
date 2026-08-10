@@ -144,4 +144,11 @@ class ProdConfigSecurityTest {
         assertTrue(duration <= Duration.ofHours(1),
             "app.jwt.access-token-expiration must be ≤ PT1H in prod, was: $raw")
     }
+
+    @Test
+    fun `sanctions use-test-data is false in prod`() {
+        // S1: test data mode routes ingestion to a bundled fixture bypassing the live DG Trésor registry.
+        // Shipping it active in production would mean the register is never checked — a legal violation.
+        assertEquals(false, prop("commonlink.sanctions.screening.use-test-data"))
+    }
 }

@@ -138,6 +138,12 @@ commonlink:
     # resolution outright. ComplianceCryptoConverter's own init{} guard is the second line of
     # defense if this property is ever redefined with a blank fallback.
     encryption-key: ${COMPLIANCE_ENCRYPTION_KEY}
+  sanctions:
+    screening:
+      score-threshold: 0.85
+      # S1: test data must never be active in production — enforced by ProdConfigSecurityTest.
+      use-test-data: false
+      registry-url: https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-fichier-xml
 
 springdoc:
   api-docs:

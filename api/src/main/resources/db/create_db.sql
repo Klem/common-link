@@ -715,3 +715,25 @@ CREATE TABLE beneficial_owner
 );
 
 CREATE INDEX idx_beneficial_owner_association ON beneficial_owner (association_id);
+
+-- =============================================================
+-- V57 — Registre national des mesures de gel des avoirs (DG Trésor, épique E4)
+-- Source unique : DG Trésor consolide les mesures nationales, EU et ONU applicables en France.
+-- Upsert sur id_registre à chaque ingestion ; suppression des entrées levées.
+-- =============================================================
+CREATE TABLE sanctioned_entity
+(
+    id               UUID         NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    id_registre      INTEGER      NOT NULL,
+    nature           VARCHAR(32)  NOT NULL,
+    nom              VARCHAR(512) NOT NULL,
+    normalized_names TEXT         NOT NULL,
+    date_of_birth    VARCHAR(32),
+    legal_reference  VARCHAR(256),
+    publication_date DATE         NOT NULL,
+    ingested_at      TIMESTAMPTZ  NOT NULL,
+
+    CONSTRAINT uq_sanctioned_entity_id_registre UNIQUE (id_registre)
+);
+
+CREATE INDEX idx_sanctioned_entity_nature ON sanctioned_entity (nature);

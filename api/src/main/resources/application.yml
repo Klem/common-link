@@ -110,6 +110,13 @@ commonlink:
     # Absent here → converter is a no-op (plaintext), same as app.monerium.token-enc-key. Prod
     # requires COMPLIANCE_ENCRYPTION_KEY and refuses to start without it.
     encryption-key: ${COMPLIANCE_ENCRYPTION_KEY:}
+  sanctions:
+    screening:
+      score-threshold: 0.85
+      # use-test-data=true loads the bundled fixture instead of the live DG Trésor registry.
+      # Safe for local dev and CI. Must be false in staging and production — enforced by ProdConfigSecurityTest.
+      use-test-data: false
+      registry-url: https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-fichier-xml
 
 springdoc:
   api-docs:

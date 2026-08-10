@@ -5,6 +5,7 @@ import org.commonlink.config.MollieProperties
 import org.commonlink.config.MoneriumConfig
 import org.commonlink.config.OnchainConfig
 import org.commonlink.config.RiskClassificationProperties
+import org.commonlink.config.SanctionsProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
@@ -16,6 +17,7 @@ import org.springframework.boot.runApplication
     MollieProperties::class,
     MollieConnectConfig::class,
     RiskClassificationProperties::class,
+    SanctionsProperties::class,
 )
 class CommonLinkApplication
 
