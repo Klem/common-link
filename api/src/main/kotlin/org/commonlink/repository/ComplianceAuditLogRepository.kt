@@ -37,4 +37,14 @@ interface ComplianceAuditLogRepository : JpaRepository<ComplianceAuditLog, UUID>
 
     /** Every row in chain order, oldest first — used by [ComplianceAuditLogService.verifyChain]. */
     fun findAllByOrderBySequenceNoAsc(): List<ComplianceAuditLog>
+
+    /**
+     * Compliance audit events for a given subject, filtered to a subset of event types, oldest
+     * first. Used by [ComplianceAuditLogService.findFreezeScreeningHistory] to reconstruct the
+     * per-subject freeze-screening trace for auditor review and the curator UI (prompt 17).
+     */
+    fun findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(
+        subjectId: UUID,
+        eventTypes: Collection<String>,
+    ): List<ComplianceAuditLog>
 }

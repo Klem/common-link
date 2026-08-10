@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.security.MessageDigest
 import java.time.Instant
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
@@ -54,6 +55,15 @@ class ComplianceAuditLogService(
     private val repo: ComplianceAuditLogRepository,
     private val objectMapper: ObjectMapper,
 ) {
+
+    companion object {
+        const val FREEZE_SCREENING_CLEAR = "FREEZE_SCREENING_CLEAR"
+        const val FREEZE_SCREENING_HIT = "FREEZE_SCREENING_HIT"
+        const val FREEZE_SCREENING_UNAVAILABLE = "FREEZE_SCREENING_UNAVAILABLE"
+
+        /** All event types written by the freeze-screening journal helpers, for use in queries. */
+        val FREEZE_SCREENING_EVENT_TYPES = listOf(FREEZE_SCREENING_CLEAR, FREEZE_SCREENING_HIT, FREEZE_SCREENING_UNAVAILABLE)
+    }
 
     /**
      * Appends one event to the journal and returns the persisted row.
@@ -130,6 +140,124 @@ class ComplianceAuditLogService(
             payload = mapOf("reason" to "no confirmed beneficial owner"),
         )
     }
+
+    // -----------------------------------------------------------------------------------------
+    // Freeze-screening journal helpers
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     * Records that a freeze screening ran and found **no match** above the configured threshold.
+     * Committed in a **new, independent transaction** ([Propagation.REQUIRES_NEW]) so the journal
+     * entry survives even if the caller's transaction is subsequently rolled back — and to avoid
+     * holding the write lock across a caller transaction that may later call [appendFreezeScreeningHit]
+     * (both methods take the same row lock; mixing REQUIRED and REQUIRES_NEW on the same lock in one
+     * caller transaction causes a deadlock).
+     *
+     * **Callers must ensure the register is not empty before calling this method.** An empty register
+     * means no check was actually performed — use [appendFreezeScreeningUnavailable] instead
+     * (e.g. `reason = "register empty — ingestion not yet run"`). Recording a clear result against
+     * an empty register would be a false negative.
+     *
+     * @param registryPublicationDate Publication date of the register snapshot consulted, as
+     *   returned by `SanctionedEntityRepository.findMaxPublicationDate()`. A null value indicates
+     *   the register is empty, which is an [appendFreezeScreeningUnavailable] case — see above.
+     * @param scoreThreshold The JaroWinkler threshold applied during the check.
+     * @param nature Optional nature filter applied (e.g. PHYSICAL_PERSON), or null for the full
+     *   register.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendFreezeScreeningClear(
+        subjectType: ComplianceAuditSubjectType,
+        subjectId: UUID,
+        registryPublicationDate: LocalDate?,
+        scoreThreshold: Double,
+        nature: String? = null,
+    ): ComplianceAuditLog = append(
+        eventType = FREEZE_SCREENING_CLEAR,
+        subjectType = subjectType,
+        subjectId = subjectId,
+        payload = mapOf(
+            "registryPublicationDate" to registryPublicationDate?.toString(),
+            "scoreThreshold" to scoreThreshold,
+            "matchCount" to 0,
+            "nature" to nature,
+        ),
+    )
+
+    /**
+     * Records that a freeze screening ran and found **one or more matches** above the threshold.
+     * Committed in a **new, independent transaction** ([Propagation.REQUIRES_NEW]) so the journal
+     * entry survives even if the caller subsequently rolls back after raising a block or alert.
+     *
+     * **Never pass a matched name in any parameter** — [idRegistre] in the caller's `ScreeningMatch`
+     * is the correct reference to include in the payload; `ScreeningMatch.nom` must not be passed
+     * here.
+     *
+     * @param matchCount  Number of register entries above the threshold.
+     * @param topScore    Highest JaroWinkler score among the matches.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendFreezeScreeningHit(
+        subjectType: ComplianceAuditSubjectType,
+        subjectId: UUID,
+        registryPublicationDate: LocalDate?,
+        scoreThreshold: Double,
+        matchCount: Int,
+        topScore: Double,
+        nature: String? = null,
+    ): ComplianceAuditLog = append(
+        eventType = FREEZE_SCREENING_HIT,
+        subjectType = subjectType,
+        subjectId = subjectId,
+        payload = mapOf(
+            "registryPublicationDate" to registryPublicationDate?.toString(),
+            "scoreThreshold" to scoreThreshold,
+            "matchCount" to matchCount,
+            "topScore" to topScore,
+            "nature" to nature,
+        ),
+    )
+
+    /**
+     * Records that a freeze screening **could not be completed** (register unavailable, ingestion
+     * not yet run, network failure, etc.). Committed in a **new, independent transaction**
+     * ([Propagation.REQUIRES_NEW]) so the journal entry survives even if the caller's transaction
+     * is already marked for rollback when this method is called (typical pattern: catch the
+     * exception, call this method, re-throw).
+     *
+     * A screening that cannot be completed is **not a silent absence** in the journal — recording
+     * the failure is the only way to demonstrate later that the platform attempted the check at the
+     * required moment.
+     *
+     * @param subjectId Null is acceptable when the failure occurs before the subject is known
+     *   (e.g. registry download failed before any individual check started).
+     * @param reason Short description of the failure cause. Must not contain any subject name or
+     *   personal data — technical details only (exception class, HTTP status, etc.).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendFreezeScreeningUnavailable(
+        subjectType: ComplianceAuditSubjectType,
+        subjectId: UUID? = null,
+        reason: String,
+    ): ComplianceAuditLog = append(
+        eventType = FREEZE_SCREENING_UNAVAILABLE,
+        subjectType = subjectType,
+        subjectId = subjectId,
+        payload = mapOf("reason" to reason),
+    )
+
+    /**
+     * Returns the freeze-screening history for a given subject (association, donation, …), in
+     * chronological order. Covers all three outcomes: clear, hit, and unavailable.
+     *
+     * Intended for auditor review and the curator UI (prompt 17). Read-only — never write through
+     * this method.
+     */
+    @Transactional(readOnly = true)
+    fun findFreezeScreeningHistory(subjectId: UUID): List<ComplianceAuditLog> =
+        repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(subjectId, FREEZE_SCREENING_EVENT_TYPES)
+
+    // -----------------------------------------------------------------------------------------
 
     /**
      * Re-reads the whole chain in `sequence_no` order, recomputes every `row_hash` from each
