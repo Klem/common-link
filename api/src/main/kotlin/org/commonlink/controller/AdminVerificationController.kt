@@ -15,6 +15,7 @@ import org.commonlink.dto.BeneficialOwnerDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.dto.RejectVerificationRequest
+import org.commonlink.dto.VigilanceMeasuresDto
 import org.commonlink.dto.toPageResponse
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.service.AssociationRegistryCheckService
@@ -86,6 +87,26 @@ class AdminVerificationController(
         @PathVariable associationId: UUID,
     ): ResponseEntity<AdminVerificationDetailDto> =
         ResponseEntity.ok(verificationService.adminGetDetail(associationId))
+
+    @GetMapping("/{associationId}/vigilance")
+    @Operation(
+        summary = "Vigilance measures for a dossier",
+        description = "Returns the vigilance measures applicable to the association's current risk level, " +
+                "read from the versioned risk-classification config. Never exposes raw YAML."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Vigilance measures returned",
+            content = [Content(schema = Schema(implementation = VigilanceMeasuresDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+    )
+    fun getVigilanceMeasures(
+        @PathVariable associationId: UUID,
+    ): ResponseEntity<VigilanceMeasuresDto> =
+        ResponseEntity.ok(verificationService.adminGetVigilanceMeasures(associationId))
 
     @GetMapping("/{associationId}/documents/{docId}/content")
     @Operation(

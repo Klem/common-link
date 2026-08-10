@@ -2,6 +2,7 @@ package org.commonlink.dto
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import org.commonlink.entity.RiskLevel
 import org.commonlink.entity.VerificationStatus
 import java.time.Instant
 import java.util.UUID
@@ -36,6 +37,7 @@ data class AdminVerificationDetailDto(
     val submittedAt: Instant?,
     val verifiedAt: Instant?,
     val docCount: Int,
+    val riskLevel: RiskLevel,
     val requiredDocuments: List<DocumentSlotDto>,
     val optionalDocuments: List<OptionalDocumentDto>,
 )
@@ -45,6 +47,19 @@ data class AdminVerificationDetailDto(
  *
  * @param reason Admin-provided rejection reason shown to the association.
  */
+/**
+ * Vigilance measures applicable to a dossier, derived from the versioned risk classification config.
+ */
+data class VigilanceMeasuresDto(
+    val riskLevel: RiskLevel,
+    val classificationVersion: String,
+    /** Human-readable description of the vigilance level. */
+    val description: String,
+    /** Mandatory review frequency for this risk level. */
+    val reviewFrequency: String,
+    val requiredDocuments: List<String>,
+)
+
 data class RejectVerificationRequest(
     @field:NotBlank
     @field:Size(max = 1000)

@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
+import org.commonlink.config.RiskClassificationProperties
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.entity.ScopeVerdict
@@ -33,8 +34,9 @@ class VerificationServiceTest {
     private val userRepository: UserRepository = mockk()
     private val complianceAuditLogService: ComplianceAuditLogService = mockk(relaxed = true)
     private val beneficialOwnerRepo: BeneficialOwnerRepository = mockk()
+    private val riskClassificationProperties: RiskClassificationProperties = mockk(relaxed = true)
 
-    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService, beneficialOwnerRepo)
+    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService, beneficialOwnerRepo, riskClassificationProperties)
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000042")
     private val userId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")

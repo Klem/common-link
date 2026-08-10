@@ -340,6 +340,74 @@
     "widgetDestinationSaved": "Destination campaign saved.",
     "widgetTokenGenerated": "Widget token generated."
   },
+  "curator": {
+    "dossier": {
+      "approval": {
+        "blockedNoUbo": "Approval blocked: no beneficial owner has been retained.",
+        "blockedScope": "Approval blocked: the association is out of loi 1901 scope."
+      },
+      "registry": {
+        "officers": {
+          "empty": "No officers collected",
+          "title": "Officers"
+        },
+        "rnaActive": {
+          "false": "RNA inactive",
+          "true": "RNA active",
+          "unknown": "RNA status unknown"
+        },
+        "scopeVerdict": {
+          "IN_SCOPE": "In scope",
+          "OUT_OF_SCOPE": "Out of scope",
+          "UNDETERMINED": "Undetermined",
+          "outOfScopeWarning": "Approval is blocked: the association is out of loi 1901 scope.",
+          "title": "Loi 1901 scope"
+        }
+      },
+      "risk": {
+        "HIGH": "High",
+        "LOW": "Low",
+        "STANDARD": "Standard",
+        "title": "AML/CFT Risk Level"
+      },
+      "ubo": {
+        "add": {
+          "dateOfBirth": "Date of birth",
+          "name": "Full name (required)",
+          "nameRequired": "Name is required.",
+          "nameTooLong": "Maximum 200 characters.",
+          "role": "Role / function",
+          "submit": "Add",
+          "title": "Add a beneficial owner"
+        },
+        "discard": "Discard",
+        "discardConfirm": "Confirm discard?",
+        "discarded": "Discarded",
+        "error": "Failed to load beneficial owners.",
+        "loading": "Loading...",
+        "noRetained": "No retained beneficial owner — approval is blocked.",
+        "officers": {
+          "addHint": "Add as beneficial owner",
+          "title": "Registry officers (suggested starting points)"
+        },
+        "origin": {
+          "DECLARED": "Declared",
+          "REGISTRY": "Registry",
+          "STATUTS": "Statutes"
+        },
+        "retained": "Retained",
+        "title": "Beneficial Owners"
+      },
+      "vigilance": {
+        "error": "Failed to load vigilance measures.",
+        "loading": "Loading measures...",
+        "requiredDocuments": "Required documents:",
+        "reviewFrequency": "Review frequency:",
+        "title": "Applicable vigilance measures",
+        "version": "Classification"
+      }
+    }
+  },
   "dashboard": {
     "association": {
       "empty": {

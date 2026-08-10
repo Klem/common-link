@@ -340,6 +340,74 @@
     "widgetDestinationSaved": "Campagne de destination enregistrée.",
     "widgetTokenGenerated": "Token widget généré."
   },
+  "curator": {
+    "dossier": {
+      "approval": {
+        "blockedNoUbo": "Approbation bloquée : aucun bénéficiaire effectif n'est retenu.",
+        "blockedScope": "Approbation bloquée : l'association est hors périmètre loi 1901."
+      },
+      "registry": {
+        "officers": {
+          "empty": "Aucun représentant collecté",
+          "title": "Représentants"
+        },
+        "rnaActive": {
+          "false": "RNA inactif",
+          "true": "RNA actif",
+          "unknown": "Statut RNA non renseigné"
+        },
+        "scopeVerdict": {
+          "IN_SCOPE": "Dans le périmètre",
+          "OUT_OF_SCOPE": "Hors périmètre",
+          "UNDETERMINED": "Indéterminé",
+          "outOfScopeWarning": "L'approbation est bloquée : l'association est hors périmètre loi 1901.",
+          "title": "Périmètre loi 1901"
+        }
+      },
+      "risk": {
+        "HIGH": "Élevé",
+        "LOW": "Faible",
+        "STANDARD": "Standard",
+        "title": "Niveau de risque LCB-FT"
+      },
+      "ubo": {
+        "add": {
+          "dateOfBirth": "Date de naissance",
+          "name": "Nom complet (obligatoire)",
+          "nameRequired": "Le nom est obligatoire.",
+          "nameTooLong": "Maximum 200 caractères.",
+          "role": "Rôle / fonction",
+          "submit": "Ajouter",
+          "title": "Ajouter un bénéficiaire effectif"
+        },
+        "discard": "Écarter",
+        "discardConfirm": "Confirmer l'exclusion ?",
+        "discarded": "Écarté",
+        "error": "Impossible de charger les bénéficiaires effectifs.",
+        "loading": "Chargement...",
+        "noRetained": "Aucun bénéficiaire effectif retenu — l'approbation est bloquée.",
+        "officers": {
+          "addHint": "Ajouter comme bénéficiaire effectif",
+          "title": "Représentants des registres (points de départ suggérés)"
+        },
+        "origin": {
+          "DECLARED": "Déclaré",
+          "REGISTRY": "Registre",
+          "STATUTS": "Statuts"
+        },
+        "retained": "Retenu",
+        "title": "Bénéficiaires effectifs"
+      },
+      "vigilance": {
+        "error": "Impossible de charger les mesures de vigilance.",
+        "loading": "Chargement des mesures...",
+        "requiredDocuments": "Documents requis :",
+        "reviewFrequency": "Fréquence de contrôle :",
+        "title": "Mesures de vigilance applicables",
+        "version": "Référentiel"
+      }
+    }
+  },
   "dashboard": {
     "association": {
       "empty": {

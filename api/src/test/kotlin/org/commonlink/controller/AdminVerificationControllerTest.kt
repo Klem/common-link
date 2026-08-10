@@ -6,9 +6,11 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
 import org.commonlink.dto.AdminVerificationDetailDto
+import org.commonlink.entity.RiskLevel
 import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.DocumentSlotDto
 import org.commonlink.dto.RegistryPreCheckDto
+import org.commonlink.dto.VigilanceMeasuresDto
 import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.VerificationStatus
@@ -81,6 +83,7 @@ class AdminVerificationControllerTest {
         submittedAt = now,
         verifiedAt = null,
         docCount = 2,
+        riskLevel = RiskLevel.STANDARD,
         requiredDocuments = listOf(
             DocumentSlotDto(AssociationDocumentType.VERIF_STATUTS, true, docId, "statuts.pdf", 12345L, now),
             DocumentSlotDto(AssociationDocumentType.VERIF_RNA_RECEIPT, true, UUID.randomUUID(), "rna.pdf", 9876L, now),
@@ -345,6 +348,41 @@ class AdminVerificationControllerTest {
                 .with(user("assoc").roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(mapOf("reason" to "reason")))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/admin/verifications/{associationId}/vigilance
+    // -------------------------------------------------------------------------
+
+    private val sampleVigilance = VigilanceMeasuresDto(
+        riskLevel = RiskLevel.STANDARD,
+        classificationVersion = "2024-A",
+        description = "Standard due diligence.",
+        reviewFrequency = "Every 2 years",
+        requiredDocuments = listOf("Statuts", "Relevé d'identité bancaire"),
+    )
+
+    @Test
+    fun `getVigilanceMeasures - 200 with CURATOR role`() {
+        every { verificationService.adminGetVigilanceMeasures(associationId) } returns sampleVigilance
+
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/vigilance")
+                .with(user("curator").roles("CURATOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.riskLevel").value("STANDARD"))
+            .andExpect(jsonPath("$.classificationVersion").value("2024-A"))
+            .andExpect(jsonPath("$.requiredDocuments").isArray)
+    }
+
+    @Test
+    fun `getVigilanceMeasures - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/vigilance")
+                .with(user("assoc").roles("ASSOCIATION"))
         )
             .andExpect(status().isForbidden)
     }

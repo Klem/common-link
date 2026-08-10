@@ -1,10 +1,12 @@
 package org.commonlink.service
 
+import org.commonlink.config.RiskClassificationProperties
 import org.commonlink.dto.AdminVerificationDetailDto
 import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.DocumentSlotDto
 import org.commonlink.dto.OptionalDocumentDto
 import org.commonlink.dto.VerificationStateDto
+import org.commonlink.dto.VigilanceMeasuresDto
 import org.commonlink.entity.AssociationDocument
 import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.ScopeVerdict
@@ -67,6 +69,7 @@ class VerificationService(
     private val userRepository: UserRepository,
     private val complianceAuditLogService: ComplianceAuditLogService,
     private val beneficialOwnerRepository: BeneficialOwnerRepository,
+    private val riskClassificationProperties: RiskClassificationProperties,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -331,8 +334,24 @@ class VerificationService(
             submittedAt = profile.verificationSubmittedAt,
             verifiedAt = profile.verifiedAt,
             docCount = slots.count { it.uploaded },
+            riskLevel = profile.riskLevel,
             requiredDocuments = slots,
             optionalDocuments = optionalDocs,
+        )
+    }
+
+    fun adminGetVigilanceMeasures(associationId: UUID): VigilanceMeasuresDto {
+        val profile = associationProfileRepository.findById(associationId)
+            .orElseThrow { NotFoundException("Association $associationId not found") }
+        val riskLevel = profile.riskLevel
+        val measures = riskClassificationProperties.measures[riskLevel.name]
+            ?: throw NotFoundException("No vigilance measures configured for risk level $riskLevel")
+        return VigilanceMeasuresDto(
+            riskLevel = riskLevel,
+            classificationVersion = riskClassificationProperties.version,
+            description = measures.description,
+            reviewFrequency = measures.reviewFrequency,
+            requiredDocuments = measures.requiredDocuments,
         )
     }
 

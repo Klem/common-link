@@ -33,8 +33,8 @@ CREATE TABLE compliance_audit_log
     payload        TEXT        NOT NULL,
     actor_user_id  UUID,
     occurred_at    TIMESTAMPTZ NOT NULL,
-    prev_hash      CHAR(64),
-    row_hash       CHAR(64)    NOT NULL
+    prev_hash      VARCHAR(64),
+    row_hash       VARCHAR(64) NOT NULL
 );
 
 CREATE INDEX idx_compliance_audit_log_subject ON compliance_audit_log (subject_type, subject_id);
