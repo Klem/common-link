@@ -144,6 +144,10 @@ commonlink:
       # S1: test data must never be active in production — enforced by ProdConfigSecurityTest.
       use-test-data: false
       registry-url: https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-fichier-xml
+    sync:
+      # S2: sync frequency must not exceed 24 h in production. A stale register is a latent LCB-FT breach.
+      fixed-delay-ms: 86400000
+      initial-delay-ms: 60000
 
 springdoc:
   api-docs:

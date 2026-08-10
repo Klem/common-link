@@ -117,6 +117,13 @@ commonlink:
       # Safe for local dev and CI. Must be false in staging and production — enforced by ProdConfigSecurityTest.
       use-test-data: false
       registry-url: https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-fichier-xml
+    sync:
+      # Interval between end of one sync and start of the next (fixedDelay semantics).
+      # Default: 86 400 000 ms = 24 h. A stale register is a latent LCB-FT compliance gap.
+      # Operators must keep this value at 24 h or below in all environments.
+      fixed-delay-ms: 86400000
+      # Delay before first execution after startup. Default: 60 000 ms = 1 min.
+      initial-delay-ms: 60000
 
 springdoc:
   api-docs:

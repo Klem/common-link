@@ -63,6 +63,8 @@ class ComplianceAuditLogService(
 
         /** All event types written by the freeze-screening journal helpers, for use in queries. */
         val FREEZE_SCREENING_EVENT_TYPES = listOf(FREEZE_SCREENING_CLEAR, FREEZE_SCREENING_HIT, FREEZE_SCREENING_UNAVAILABLE)
+
+        const val SANCTION_SYNC_FAILURE = "SANCTION_SYNC_FAILURE"
     }
 
     /**
@@ -256,6 +258,36 @@ class ComplianceAuditLogService(
     @Transactional(readOnly = true)
     fun findFreezeScreeningHistory(subjectId: UUID): List<ComplianceAuditLog> =
         repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(subjectId, FREEZE_SCREENING_EVENT_TYPES)
+
+    // -----------------------------------------------------------------------------------------
+    // Scheduled sync journal helper
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     * Records that a scheduled synchronisation of the asset-freeze register **failed**.
+     * Committed in a **new, independent transaction** ([Propagation.REQUIRES_NEW]) so the
+     * journal entry is committed even if the caller's transaction rolls back (typical usage:
+     * called from the `catch` block of [org.commonlink.service.SanctionSyncExecutor.execute]).
+     *
+     * **Failure does not stop screening.** The compliance audit log records the failure so the
+     * platform can demonstrate that the control attempted a check at the required moment, even
+     * when the registry was temporarily unavailable.
+     *
+     * @param reason Short technical description of the failure cause. Must not contain any
+     *   subject name or personal data — exception class and message only.
+     * @param lastSuccessAt Timestamp of the last successful synchronisation, or null if the
+     *   register has never been successfully synced. Included in the payload so auditors can
+     *   assess how stale the register was at the time of the failure.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendSyncFailure(reason: String, lastSuccessAt: Instant?): ComplianceAuditLog = append(
+        eventType = SANCTION_SYNC_FAILURE,
+        subjectType = ComplianceAuditSubjectType.SYSTEM,
+        payload = mapOf(
+            "reason" to reason,
+            "lastSuccessAt" to lastSuccessAt?.toString(),
+        ),
+    )
 
     // -----------------------------------------------------------------------------------------
 

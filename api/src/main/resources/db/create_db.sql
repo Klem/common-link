@@ -657,7 +657,7 @@ CREATE TABLE compliance_audit_log
     sequence_no    BIGINT      NOT NULL UNIQUE,
     event_type     VARCHAR(64) NOT NULL,
     subject_type   VARCHAR(32) NOT NULL
-        CHECK (subject_type IN ('ASSOCIATION', 'DONATION', 'CAMPAIGN', 'ALERT', 'DECLARANT')),
+        CHECK (subject_type IN ('ASSOCIATION', 'DONATION', 'CAMPAIGN', 'ALERT', 'DECLARANT', 'SYSTEM')),
     subject_id     UUID,
     payload        TEXT        NOT NULL,
     actor_user_id  UUID,
@@ -737,3 +737,20 @@ CREATE TABLE sanctioned_entity
 );
 
 CREATE INDEX idx_sanctioned_entity_nature ON sanctioned_entity (nature);
+
+-- =============================================================
+-- V58 — État de synchronisation planifiée du registre de gel (E4)
+-- Ligne unique (id = 1). Sert de cible de verrou FOR UPDATE pour sérialiser les
+-- tentatives de synchronisation entre instances applicatives (même patron que
+-- compliance_audit_log_lock). last_success_at est la date de référence pour évaluer
+-- l'ancienneté du registre utilisé par les contrôles de gel.
+-- =============================================================
+CREATE TABLE sanctions_sync_state
+(
+    id                    SMALLINT    NOT NULL PRIMARY KEY,
+    last_attempt_at       TIMESTAMPTZ,
+    last_success_at       TIMESTAMPTZ,
+    last_publication_date DATE
+);
+
+INSERT INTO sanctions_sync_state (id) VALUES (1);

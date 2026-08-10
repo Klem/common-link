@@ -143,6 +143,9 @@ commonlink:
       score-threshold: 0.85
       use-test-data: false  # must not use fixture in staging — ingest from live DG Trésor registry
       registry-url: https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-fichier-xml
+    sync:
+      fixed-delay-ms: 86400000   # 24 h — minimum compliant frequency
+      initial-delay-ms: 60000
 springdoc:
   api-docs:
     enabled: true
