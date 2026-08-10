@@ -21,6 +21,7 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationRegistryCheckService
+import org.commonlink.service.BeneficialOwnerService
 import org.commonlink.service.VerificationService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -53,6 +54,7 @@ class AdminVerificationControllerTest {
 
     @MockkBean private lateinit var verificationService: VerificationService
     @MockkBean private lateinit var registryCheckService: AssociationRegistryCheckService
+    @MockkBean private lateinit var beneficialOwnerService: BeneficialOwnerService
     @MockkBean private lateinit var jwtService: JwtService
     @MockkBean private lateinit var userDetailsService: UserDetailsServiceImpl
     @MockkBean private lateinit var userRepository: UserRepository
@@ -343,6 +345,40 @@ class AdminVerificationControllerTest {
                 .with(user("assoc").roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(mapOf("reason" to "reason")))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET/POST /api/admin/verifications/{associationId}/beneficial-owners
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `listBeneficialOwners - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/beneficial-owners")
+                .with(user("assoc").roles("ASSOCIATION"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `addBeneficialOwner - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            post("/api/admin/verifications/$associationId/beneficial-owners")
+                .with(user("assoc").roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mapOf("name" to "Jean Martin", "origin" to "REGISTRY")))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `discardBeneficialOwner - 403 with ASSOCIATION role`() {
+        val ownerId = UUID.fromString("00000000-0000-0000-0000-000000000099")
+        mockMvc.perform(
+            post("/api/admin/verifications/$associationId/beneficial-owners/$ownerId/discard")
+                .with(user("assoc").roles("ASSOCIATION"))
         )
             .andExpect(status().isForbidden)
     }

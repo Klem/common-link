@@ -695,3 +695,23 @@ CREATE TABLE compliance_declarant
     revoked_at           DATE,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Bénéficiaires effectifs — identification LCB-FT (V56)
+-- name et date_of_birth sont chiffrés AES-256-GCM (ComplianceCryptoConverter).
+-- discarded = true : bénéficiaire écarté, ligne conservée pour l'audit trail.
+CREATE TABLE beneficial_owner
+(
+    id             UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    association_id UUID        NOT NULL REFERENCES association_profiles (id),
+    name           TEXT        NOT NULL,
+    role           VARCHAR(200),
+    date_of_birth  TEXT,
+    origin         VARCHAR(20) NOT NULL CHECK (origin IN ('DECLARED', 'REGISTRY', 'STATUTS')),
+    collected_at   TIMESTAMPTZ NOT NULL,
+    confirmed_by   UUID        REFERENCES users (id),
+    discarded      BOOLEAN     NOT NULL DEFAULT FALSE,
+    discarded_by   UUID        REFERENCES users (id),
+    discarded_at   TIMESTAMPTZ
+);
+
+CREATE INDEX idx_beneficial_owner_association ON beneficial_owner (association_id);

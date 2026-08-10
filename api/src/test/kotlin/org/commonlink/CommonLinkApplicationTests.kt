@@ -12,6 +12,7 @@ import org.commonlink.service.MollieWebhookService
 import org.commonlink.service.PublicWidgetService
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.AssociationService
+import org.commonlink.service.BeneficialOwnerService
 import org.commonlink.service.AuthService
 import org.commonlink.service.VerificationService
 import org.commonlink.service.PayeeService
@@ -66,6 +67,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var mandateService: MandateService
     @MockkBean private lateinit var mandatePdfService: MandatePdfService
     @MockkBean private lateinit var associationRegistryCheckService: AssociationRegistryCheckService
+    @MockkBean private lateinit var beneficialOwnerService: BeneficialOwnerService
     @MockkBean private lateinit var publicWidgetService: PublicWidgetService
     @MockkBean private lateinit var mollieWebhookService: MollieWebhookService
     @MockkBean private lateinit var mollieConnectService: MollieConnectService

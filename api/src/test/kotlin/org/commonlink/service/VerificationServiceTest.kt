@@ -14,6 +14,7 @@ import org.commonlink.exception.ConflictException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -31,8 +32,9 @@ class VerificationServiceTest {
     private val emailService: EmailService = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk()
     private val complianceAuditLogService: ComplianceAuditLogService = mockk(relaxed = true)
+    private val beneficialOwnerRepo: BeneficialOwnerRepository = mockk()
 
-    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService)
+    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService, beneficialOwnerRepo)
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000042")
     private val userId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
@@ -54,7 +56,11 @@ class VerificationServiceTest {
         return profile
     }
 
-    private fun mockPendingProfile(contactEmail: String? = "contact@assoc.fr", userEmail: String = "user@assoc.fr"): AssociationProfile {
+    private fun mockPendingProfile(
+        contactEmail: String? = "contact@assoc.fr",
+        userEmail: String = "user@assoc.fr",
+        hasUbo: Boolean = true,
+    ): AssociationProfile {
         val user: User = mockk(relaxed = true)
         every { user.email } returns userEmail
 
@@ -67,6 +73,7 @@ class VerificationServiceTest {
 
         every { associationRepo.findById(associationId) } returns Optional.of(profile)
         every { associationRepo.save(profile) } returns profile
+        every { beneficialOwnerRepo.existsByAssociationIdAndDiscardedFalse(associationId) } returns hasUbo
 
         return profile
     }
@@ -275,6 +282,29 @@ class VerificationServiceTest {
         service.adminApprove(associationId)
 
         verify(exactly = 0) { complianceAuditLogService.appendOutOfScopeRefusal(any(), any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    // ─── UBO check ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `adminApprove throws ConflictException when no beneficial owner has been confirmed`() {
+        mockPendingProfile(hasUbo = false)
+
+        assertThrows(ConflictException::class.java) {
+            service.adminApprove(associationId)
+        }
+        verify(exactly = 1) { complianceAuditLogService.appendNoUboRefusal(associationId) }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `adminApprove succeeds when at least one beneficial owner is confirmed`() {
+        val profile = mockPendingProfile(hasUbo = true)
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendNoUboRefusal(any()) }
         verify(exactly = 1) { associationRepo.save(profile) }
     }
 }

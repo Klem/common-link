@@ -114,6 +114,24 @@ class ComplianceAuditLogService(
     }
 
     /**
+     * Logs a "no beneficial owner" approval refusal in a **new, independent transaction** so the
+     * journal entry is committed even if the caller's transaction rolls back (the caller throws
+     * [org.commonlink.exception.ConflictException] after this method returns).
+     *
+     * Called from [org.commonlink.service.VerificationService.adminApprove] when no confirmed
+     * beneficial owner exists for the association.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendNoUboRefusal(associationId: UUID) {
+        append(
+            eventType = "NO_UBO_APPROVAL_REFUSED",
+            subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+            subjectId = associationId,
+            payload = mapOf("reason" to "no confirmed beneficial owner"),
+        )
+    }
+
+    /**
      * Re-reads the whole chain in `sequence_no` order, recomputes every `row_hash` from each
      * row's own stored fields, and checks both that the recomputed hash matches the stored one
      * and that the stored `prev_hash` matches the actual previous row's hash.

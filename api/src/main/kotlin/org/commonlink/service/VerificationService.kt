@@ -21,6 +21,7 @@ import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
 import org.commonlink.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
@@ -65,6 +66,7 @@ class VerificationService(
     private val emailService: EmailService,
     private val userRepository: UserRepository,
     private val complianceAuditLogService: ComplianceAuditLogService,
+    private val beneficialOwnerRepository: BeneficialOwnerRepository,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -370,6 +372,16 @@ class VerificationService(
             throw ConflictException(
                 "Cannot approve: association legal category '${latestCheck.legalCategory}' is outside platform scope" +
                     " — only loi 1901 associations (category 9220) are accepted"
+            )
+        }
+
+        // UBO check: block approval when no retained beneficial owner exists.
+        // An association with no confirmed beneficial owner cannot enter into a business relationship (LCB-FT).
+        // REQUIRES_NEW propagation ensures the log entry is committed even when this method throws.
+        if (!beneficialOwnerRepository.existsByAssociationIdAndDiscardedFalse(associationId)) {
+            complianceAuditLogService.appendNoUboRefusal(associationId)
+            throw ConflictException(
+                "Cannot approve: no beneficial owner has been confirmed for this association"
             )
         }
 
