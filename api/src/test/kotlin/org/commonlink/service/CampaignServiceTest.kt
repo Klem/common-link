@@ -788,9 +788,10 @@ class CampaignServiceTest {
             userId, CreateCampaignRequest(name = "Unverified KYB", goal = BigDecimal("10000"))
         )
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association KYB must be verified before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -819,9 +820,10 @@ class CampaignServiceTest {
             userId, CreateCampaignRequest(name = campaignName, goal = BigDecimal("10000"))
         )
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association KYB must be verified before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -830,13 +832,17 @@ class CampaignServiceTest {
     @Test
     fun `publish - no Mollie connection returns 422 and enqueues no job`() {
         linkMonerium(userId)
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        assoc.verificationStatus = VerificationStatus.VERIFIED
+        associationProfileRepository.save(assoc)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No Mollie", goal = BigDecimal("10000"))
         )
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association must connect a Mollie account before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -848,9 +854,10 @@ class CampaignServiceTest {
             userId, CreateCampaignRequest(name = "Broken Mollie", goal = BigDecimal("10000"))
         )
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Mollie connection is broken — re-authorization required before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -867,9 +874,10 @@ class CampaignServiceTest {
             userId, CreateCampaignRequest(name = "In review", goal = BigDecimal("10000"))
         )
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association must complete Mollie KYC before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -881,9 +889,10 @@ class CampaignServiceTest {
             userId, CreateCampaignRequest(name = "No payments", goal = BigDecimal("10000"))
         )
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association must complete Mollie KYC before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 

@@ -448,6 +448,14 @@ class MollieConnectService(
      * - Phase 2: HTTP — token exchange, org fetch, onboarding status fetch (no transaction open)
      * - Phase 3: DB writes — uniqueness guard, persist connection, delete consumed state
      *
+     * LCB-FT boundary: this method writes exclusively to [MollieConnection] — access token,
+     * refresh token, expiry, connection state, onboarding status, canReceivePayments,
+     * canReceiveSettlements, onboardingDashboardUrl, mollieOrganizationId, lastSyncedAt.
+     * No field of [org.commonlink.entity.AssociationProfile] is written here. Mollie's onboarding
+     * validation is conducted by Mollie for its own regulatory purposes and does not constitute a
+     * CommonLink due-diligence act; CommonLink's KYB dossier is validated independently by
+     * [VerificationService]. The two validations are cumulative — neither substitutes for the other.
+     *
      * @throws IllegalStateException on invalid/expired state, Mollie error, or org already linked.
      */
     fun handleCallback(code: String, state: String) {
