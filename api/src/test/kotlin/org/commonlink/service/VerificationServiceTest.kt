@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
+import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.entity.VerificationStatus
@@ -29,8 +30,9 @@ class VerificationServiceTest {
     private val registryCheckRepo: AssociationRegistryCheckRepository = mockk(relaxed = true)
     private val emailService: EmailService = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk()
+    private val complianceAuditLogService: ComplianceAuditLogService = mockk(relaxed = true)
 
-    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository)
+    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService)
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000042")
     private val userId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
@@ -144,6 +146,7 @@ class VerificationServiceTest {
         val checkId = UUID.randomUUID()
         val latest: AssociationRegistryCheck = mockk()
         every { latest.id } returns checkId
+        every { latest.scopeVerdict } returns ScopeVerdict.IN_SCOPE
         every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns latest
 
         service.adminApprove(associationId)
@@ -219,5 +222,59 @@ class VerificationServiceTest {
             service.adminReject(associationId, "Motif.")
         }
         verify(exactly = 0) { emailService.sendVerificationRejectedToAssociation(any(), any(), any()) }
+    }
+
+    // ─── scope check (catégorie 9220) ────────────────────────────────────────
+
+    @Test
+    fun `adminApprove succeeds when latest scan is IN_SCOPE`() {
+        val profile = mockPendingProfile()
+        val inScopeCheck: AssociationRegistryCheck = mockk(relaxed = true)
+        every { inScopeCheck.scopeVerdict } returns ScopeVerdict.IN_SCOPE
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns inScopeCheck
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendOutOfScopeRefusal(any(), any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove blocks and logs when latest scan is OUT_OF_SCOPE`() {
+        mockPendingProfile()
+        val outOfScopeCheck: AssociationRegistryCheck = mockk(relaxed = true)
+        every { outOfScopeCheck.scopeVerdict } returns ScopeVerdict.OUT_OF_SCOPE
+        every { outOfScopeCheck.legalCategory } returns "9230"
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns outOfScopeCheck
+
+        assertThrows(ConflictException::class.java) {
+            service.adminApprove(associationId)
+        }
+        verify(exactly = 1) { complianceAuditLogService.appendOutOfScopeRefusal(associationId, "9230") }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `adminApprove does not block when latest scan is UNDETERMINED`() {
+        val profile = mockPendingProfile()
+        val undeterminedCheck: AssociationRegistryCheck = mockk(relaxed = true)
+        every { undeterminedCheck.scopeVerdict } returns ScopeVerdict.UNDETERMINED
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns undeterminedCheck
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendOutOfScopeRefusal(any(), any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove does not block when no scan exists`() {
+        val profile = mockPendingProfile()
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns null
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendOutOfScopeRefusal(any(), any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
     }
 }

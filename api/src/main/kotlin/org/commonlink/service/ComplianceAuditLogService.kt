@@ -5,6 +5,7 @@ import org.commonlink.entity.ComplianceAuditLog
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.repository.ComplianceAuditLogRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.security.MessageDigest
 import java.time.Instant
@@ -90,6 +91,25 @@ class ComplianceAuditLogService(
                 prevHash = prevHash,
                 rowHash = rowHash,
             ),
+        )
+    }
+
+    /**
+     * Logs an out-of-scope perimeter refusal in a **new, independent transaction** so the journal
+     * entry is committed even if the caller's transaction is subsequently rolled back (e.g. because
+     * the caller throws [org.commonlink.exception.ConflictException] after this method returns).
+     *
+     * Called from [org.commonlink.service.VerificationService.adminApprove] when the latest
+     * registry scan reveals a legal category outside the accepted scope. The method returns normally;
+     * the caller is responsible for throwing the user-facing exception.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendOutOfScopeRefusal(associationId: UUID, legalCategory: String) {
+        append(
+            eventType = "SCOPE_VERDICT_UNFAVORABLE",
+            subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+            subjectId = associationId,
+            payload = mapOf("legalCategory" to legalCategory, "verdict" to "OUT_OF_SCOPE"),
         )
     }
 

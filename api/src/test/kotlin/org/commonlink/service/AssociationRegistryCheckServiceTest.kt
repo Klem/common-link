@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
+import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.User
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
@@ -64,6 +65,8 @@ class AssociationRegistryCheckServiceTest {
 
     private val rechercheOk =
         """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220"}]}"""
+    private val rechercheOutOfScope =
+        """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":false},"nature_juridique":"9230"}]}"""
     private val rechercheWithOfficers =
         """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220","dirigeants":[{"nom":"DUPONT","prenoms":"Jean","qualite":"Président"},{"nom":"MARTIN","prenoms":"Marie","qualite":"Trésorière"}]}]}"""
     private val rnaOk = """{"active":true}"""
@@ -106,6 +109,7 @@ class AssociationRegistryCheckServiceTest {
                 associationExists = c.associationExists,
                 siren = c.siren,
                 rna = c.rna,
+                legalCategory = c.legalCategory,
                 etatAdministratif = c.etatAdministratif,
                 joafeDeclarationFound = c.joafeDeclarationFound,
                 dissolutionDetected = c.dissolutionDetected,
@@ -371,6 +375,45 @@ class AssociationRegistryCheckServiceTest {
         val result = service.scan(associationId, curatorId)
 
         assertThat(result.officers).containsExactlyInAnyOrder("Jean DUPONT", "Marie MARTIN")
+    }
+
+    @Test
+    fun `scan persists legalCategory 9220 and scopeVerdict IN_SCOPE for an in-scope association`() {
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOk
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.legalCategory).isEqualTo("9220")
+        assertThat(result.scopeVerdict).isEqualTo(ScopeVerdict.IN_SCOPE)
+    }
+
+    @Test
+    fun `scan persists non-9220 legalCategory and scopeVerdict OUT_OF_SCOPE for an out-of-scope association`() {
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheOutOfScope
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.legalCategory).isEqualTo("9230")
+        assertThat(result.scopeVerdict).isEqualTo(ScopeVerdict.OUT_OF_SCOPE)
+    }
+
+    @Test
+    fun `scan produces UNDETERMINED scopeVerdict when Recherche d'entreprises is unavailable`() {
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } throws RuntimeException("503 unavailable")
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.legalCategory).isNull()
+        assertThat(result.scopeVerdict).isEqualTo(ScopeVerdict.UNDETERMINED)
     }
 
     @Test

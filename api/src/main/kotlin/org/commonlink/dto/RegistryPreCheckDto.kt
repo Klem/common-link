@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
+import org.commonlink.entity.ScopeVerdict
 import java.time.Instant
 import java.util.UUID
 
@@ -27,6 +28,12 @@ data class RegistryPreCheckDto(
 
     @Schema(description = "RNA number (W + 9 digits), if found.")
     val rna: String?,
+
+    @Schema(description = "INSEE legal category (nature_juridique) from Recherche d'entreprises. Null if source unavailable or no SIREN.")
+    val legalCategory: String?,
+
+    @Schema(description = "Computed perimeter verdict: IN_SCOPE (9220), OUT_OF_SCOPE (other category), UNDETERMINED (source unavailable). UNDETERMINED never blocks approval.")
+    val scopeVerdict: ScopeVerdict,
 
     @Schema(description = "INSEE administrative status: 'A' = active, 'C' = ceased. Null if no SIREN or INSEE call failed.")
     val etatAdministratif: String?,

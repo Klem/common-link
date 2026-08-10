@@ -518,6 +518,7 @@ CREATE TABLE association_registry_check (
     association_exists      BOOLEAN,
     siren                   VARCHAR(9),
     rna                     VARCHAR(20),
+    legal_category          VARCHAR(10),
 
     -- INSEE Sirene : 'A' = active, 'C' = ceased
     etat_administratif      VARCHAR(1)  CHECK (etat_administratif IN ('A', 'C')),

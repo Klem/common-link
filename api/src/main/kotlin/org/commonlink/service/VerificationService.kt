@@ -7,6 +7,7 @@ import org.commonlink.dto.OptionalDocumentDto
 import org.commonlink.dto.VerificationStateDto
 import org.commonlink.entity.AssociationDocument
 import org.commonlink.entity.AssociationDocumentType
+import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.AssociationDocumentType.OPTIONAL
 import org.commonlink.entity.AssociationDocumentType.VERIF_RNA_RECEIPT
 import org.commonlink.entity.AssociationDocumentType.VERIF_REPRESENTATIVE_ID
@@ -63,6 +64,7 @@ class VerificationService(
     private val registryCheckRepository: AssociationRegistryCheckRepository,
     private val emailService: EmailService,
     private val userRepository: UserRepository,
+    private val complianceAuditLogService: ComplianceAuditLogService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -358,6 +360,19 @@ class VerificationService(
         if (profile.verificationStatus != VerificationStatus.PENDING) {
             throw ConflictException("Cannot approve: status is ${profile.verificationStatus}, expected PENDING")
         }
+
+        // Scope check: block approval when the latest scan shows a non-9220 legal category.
+        // UNDETERMINED (null category / no scan) does not block — a registry outage must not
+        // disqualify an association. Log is committed in its own transaction before throwing.
+        val latestCheck = registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId)
+        if (latestCheck?.scopeVerdict == ScopeVerdict.OUT_OF_SCOPE) {
+            complianceAuditLogService.appendOutOfScopeRefusal(associationId, latestCheck.legalCategory!!)
+            throw ConflictException(
+                "Cannot approve: association legal category '${latestCheck.legalCategory}' is outside platform scope" +
+                    " — only loi 1901 associations (category 9220) are accepted"
+            )
+        }
+
         profile.verificationStatus = VerificationStatus.VERIFIED
         profile.verifiedAt = Instant.now()
         // Freeze the registry pre-check that informed this decision (LCB-FT audit trail; null if never scanned)

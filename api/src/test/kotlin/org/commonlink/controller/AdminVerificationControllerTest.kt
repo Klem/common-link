@@ -10,6 +10,7 @@ import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.DocumentSlotDto
 import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.entity.AssociationDocumentType
+import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -207,6 +208,8 @@ class AdminVerificationControllerTest {
         warnings = emptyList(),
         officers = emptyList(),
         rnaActive = null,
+        legalCategory = "9220",
+        scopeVerdict = ScopeVerdict.IN_SCOPE,
     )
 
     @Test

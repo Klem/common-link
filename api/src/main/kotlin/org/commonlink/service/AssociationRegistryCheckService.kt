@@ -3,6 +3,7 @@ package org.commonlink.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.dto.RegistryPreCheckDto
+import org.commonlink.entity.ACCEPTED_LEGAL_CATEGORY
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.repository.AssociationProfileRepository
@@ -87,6 +88,7 @@ class AssociationRegistryCheckService(
         // ── Step 1: Recherche d'entreprises (searched by SIREN, the mandatory identifier) ─────
         var associationExists: Boolean? = null
         var rnaFromSearch: String? = null
+        var legalCategory: String? = null
 
         if (siren != null) {
             try {
@@ -96,8 +98,9 @@ class AssociationRegistryCheckService(
                     if (results.isArray && results.size() > 0) {
                         val first: JsonNode = results[0]
                         val estAssociation = first.path("complements").path("est_association").asBoolean(false)
-                        val natureJuridique = first.path("nature_juridique").asText("")
-                        associationExists = estAssociation || natureJuridique == "9220"
+                        val natureJuridique = first.path("nature_juridique").asText("").takeIf { it.isNotBlank() }
+                        legalCategory = natureJuridique
+                        associationExists = estAssociation || natureJuridique == ACCEPTED_LEGAL_CATEGORY
                         rnaFromSearch = first.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
                         val dirigeants: JsonNode = first.path("dirigeants")
                         if (dirigeants.isArray) {
@@ -253,6 +256,7 @@ class AssociationRegistryCheckService(
             associationExists = associationExists,
             siren = siren,
             rna = rna,
+            legalCategory = legalCategory,
             etatAdministratif = etatAdministratif,
             joafeDeclarationFound = joafeDeclarationFound,
             dissolutionDetected = dissolutionDetected,
@@ -269,6 +273,8 @@ class AssociationRegistryCheckService(
         associationExists = associationExists,
         siren = siren,
         rna = rna,
+        legalCategory = legalCategory,
+        scopeVerdict = scopeVerdict,
         etatAdministratif = etatAdministratif,
         joafeDeclarationFound = joafeDeclarationFound,
         dissolutionDetected = dissolutionDetected,
