@@ -32,13 +32,14 @@ interface FreezeHitAlertPort {
  * - ASSOCIATION → [org.commonlink.entity.AssociationProfile.id]
  * - REPRESENTATIVE → [org.commonlink.entity.AssociationProfile.id] (no separate entity for the signer)
  * - BENEFICIAL_OWNER → [org.commonlink.entity.BeneficialOwner.id]
+ * - DONOR → [org.commonlink.entity.DonorProfile.id]
  */
 data class FreezeHitTarget(
     val role: FreezeHitRole,
     val subjectId: UUID,
 )
 
-enum class FreezeHitRole { ASSOCIATION, REPRESENTATIVE, BENEFICIAL_OWNER }
+enum class FreezeHitRole { ASSOCIATION, REPRESENTATIVE, BENEFICIAL_OWNER, DONOR }
 
 /**
  * No-op placeholder until prompt 16 implements the compliance alert model.

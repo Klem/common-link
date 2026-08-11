@@ -45,6 +45,7 @@ class PublicWidgetService(
     private val mollieConnectTokenManager: MollieConnectTokenManager,
     private val taxRateService: TaxRateService,
     private val landingPreviewTokenService: LandingPreviewTokenService,
+    private val freezeScreeningDonationService: FreezeScreeningDonationService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -76,9 +77,6 @@ class PublicWidgetService(
     fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
         val (association, campaign) = resolveWidget(widgetToken)
 
-        val assocToken = resolveMollieToken(association)
-        val assocProfileId = mollieClient.getFirstProfileId(assocToken)
-
         // Provision guest donor (idempotent by email)
         val donorProfile = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
 
@@ -88,6 +86,31 @@ class PublicWidgetService(
             donorProfile.displayName = request.donorFullName
             donorProfileRepository.save(donorProfile)
         }
+
+        // Build identity snapshot before freeze check — required to screen the donor
+        val identity = DonorIdentitySnapshot(
+            fullName = request.donorFullName,
+            addressLine1 = request.donorAddressLine1,
+            addressLine2 = request.donorAddressLine2,
+            postalCode = request.donorPostalCode,
+            city = request.donorCity,
+            country = request.donorCountry,
+            birthDate = request.donorBirthDate,
+            birthCity = request.donorBirthCity,
+        )
+
+        // LCB-FT art. L.561-5 — screen donor against asset-freeze register before any payment
+        val freezeOutcome = freezeScreeningDonationService.runFreezeCheck(
+            associationId = association.id!!,
+            donorProfileId = donorProfile.id!!,
+            identity = identity,
+        )
+        if (freezeOutcome != ScreeningOutcome.CLEAR) {
+            throw ConflictException(FREEZE_BLOCK_MESSAGE)
+        }
+
+        val assocToken = resolveMollieToken(association)
+        val assocProfileId = mollieClient.getFirstProfileId(assocToken)
 
         val cleanSourceSite = sanitizeSourceSite(request.sourceSite)
         val safeLocale = request.locale?.takeIf { it.matches(Regex("[a-z]{2}")) } ?: "fr"
@@ -122,17 +145,6 @@ class PublicWidgetService(
             profileId = assocProfileId,
         )
 
-        val identity = DonorIdentitySnapshot(
-            fullName = request.donorFullName,
-            addressLine1 = request.donorAddressLine1,
-            addressLine2 = request.donorAddressLine2,
-            postalCode = request.donorPostalCode,
-            city = request.donorCity,
-            country = request.donorCountry,
-            birthDate = request.donorBirthDate,
-            birthCity = request.donorBirthCity,
-        )
-
         donationService.initiatePendingDonation(
             providerRef = "mollie:${molliePayment.id}",
             donorProfileId = donorProfile.id,
@@ -147,6 +159,12 @@ class PublicWidgetService(
 
         logger.info("Pending donation created — mollieId={} campaign={}", molliePayment.id, campaign.id)
         return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id)
+    }
+
+    companion object {
+        // Indiscernability constraint (LCB-FT): HIT and UNAVAILABLE throw the same exception with
+        // the same message — callers and tests may assert equality on this constant.
+        internal const val FREEZE_BLOCK_MESSAGE = "Le service est temporairement indisponible."
     }
 
     /**

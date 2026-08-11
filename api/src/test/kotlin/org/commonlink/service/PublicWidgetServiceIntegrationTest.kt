@@ -81,6 +81,9 @@ class PublicWidgetServiceIntegrationTest {
     @MockkBean
     private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
 
+    @MockkBean
+    private lateinit var freezeScreeningDonationService: FreezeScreeningDonationService
+
     private val widgetToken = "clk_integ_test"
 
     @BeforeEach
@@ -107,6 +110,9 @@ class PublicWidgetServiceIntegrationTest {
                 checkoutUrl = "https://checkout.mollie.com/pay/tr_integ",
                 metadata = emptyMap(),
             )
+
+        // Default: freeze check passes — individual tests override for blocking scenarios.
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.CLEAR
     }
 
     // ── T4 : identity snapshot ────────────────────────────────────────────────
@@ -288,6 +294,51 @@ class PublicWidgetServiceIntegrationTest {
         setCampaignStatus(CampaignStatus.DRAFT)
 
         assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+    }
+
+    // ── Freeze screening — LCB-FT art. L.561-5 ───────────────────────────────
+
+    @Test
+    fun `createDonation - listed donor triggers ConflictException and Mollie payment is never created`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.HIT
+
+        val countBefore = donationRepository.count()
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertEquals(countBefore, donationRepository.count(), "Donation count must not increase on a freeze HIT")
+    }
+
+    @Test
+    fun `createDonation - small-amount listed donor is refused identically (no amount threshold)`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.HIT
+        val smallAmountRequest = validRequest().copy(amount = BigDecimal("1.00"))
+
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, smallAmountRequest) }
+
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - screening unavailable blocks donation and Mollie is never called`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.UNAVAILABLE
+
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - freeze HIT and UNAVAILABLE produce identical ConflictException messages`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.HIT
+        val hitEx = assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.UNAVAILABLE
+        val unavailableEx = assertThrows<ConflictException> {
+            publicWidgetService.createDonation(widgetToken, validRequest(donorEmail = "other@example.com"))
+        }
+
+        assertEquals(hitEx.message, unavailableEx.message, "Freeze HIT and UNAVAILABLE must produce identical messages")
     }
 
     /** Flips the destination campaign status and makes the change visible to the service. */

@@ -68,4 +68,4 @@ class ComplianceAuditLog(
 )
 
 /** Closed set of business object kinds a compliance audit event can target. */
-enum class ComplianceAuditSubjectType { ASSOCIATION, DONATION, CAMPAIGN, ALERT, DECLARANT, SYSTEM, BENEFICIAL_OWNER }
+enum class ComplianceAuditSubjectType { ASSOCIATION, DONATION, CAMPAIGN, ALERT, DECLARANT, SYSTEM, BENEFICIAL_OWNER, DONOR }
