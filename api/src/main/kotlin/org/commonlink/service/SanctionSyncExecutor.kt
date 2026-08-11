@@ -1,5 +1,8 @@
 package org.commonlink.service
 
+import org.commonlink.entity.ComplianceAlertOrigin
+import org.commonlink.entity.ComplianceAlertSeverity
+import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.repository.SanctionedEntityRepository
 import org.commonlink.repository.SanctionSyncStateRepository
@@ -40,6 +43,7 @@ class SanctionSyncExecutor(
     private val runner: SanctionIngestionRunner,
     private val sanctionedEntityRepo: SanctionedEntityRepository,
     private val auditLog: ComplianceAuditLogService,
+    private val alertService: ComplianceAlertService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -73,16 +77,16 @@ class SanctionSyncExecutor(
     }
 
     private fun notifySyncFailure(ex: Exception, lastSuccessAt: Instant?) {
-        auditLog.appendSyncFailure(
+        val auditEntry = auditLog.appendSyncFailure(
             reason = "${ex.javaClass.simpleName}: ${ex.message?.take(500) ?: "no message"}",
             lastSuccessAt = lastSuccessAt,
         )
-
-        // ── EXTENSION POINT — prompt 16 : alertService.notifySyncFailure(ex) ──────────────
-        // When the alert service is implemented, wire it here. Until then the ERROR log above
-        // and the compliance audit journal entry (appendSyncFailure) are the sole notifications.
-        // The alert must carry the lastSuccessAt timestamp so the on-call operator can assess
-        // how stale the register is and whether an emergency manual sync is required.
-        // ─────────────────────────────────────────────────────────────────────────────────────
+        alertService.createOrIgnore(
+            origin = ComplianceAlertOrigin.SYNC_FAILURE,
+            subjectType = ComplianceAlertSubjectType.SYSTEM,
+            subjectId = null,
+            severity = ComplianceAlertSeverity.MEDIUM,
+            auditLogSeqRef = auditEntry.sequenceNo,
+        )
     }
 }

@@ -43,10 +43,10 @@ enum class ScreeningOutcome { CLEAR, HIT, UNAVAILABLE }
  * Screened names are never written to application logs. Per-screening traces belong
  * exclusively in the compliance audit journal ([ComplianceAuditLogService]).
  *
- * ### Alert extension point
+ * ### Alerts
  * On a hit, [FreezeHitAlertPort.onFreezeHit] is called before returning [ScreeningOutcome.HIT].
- * The no-op implementation [NoOpFreezeHitAlertPort] is active until prompt 16 provides
- * the compliance alert model.
+ * [FreezeHitAlertAdapter] creates a [org.commonlink.entity.ComplianceAlert] via
+ * [ComplianceAlertService], idempotent on (origin, subject).
  */
 @Service
 class FreezeScreeningOnboardingService(

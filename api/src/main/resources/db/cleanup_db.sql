@@ -177,6 +177,21 @@ DO $$
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'donor_profiles supprimés : %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
+        -- 6b. COMPLIANCE ALERTS  (V61 — subject_id is polymorphic, no FK
+        --     cascade from any parent table; taken_in_charge_by FK → users
+        --     must be released before step 7 to avoid constraint violation)
+        -- ════════════════════════════════════════════════════════════
+        DELETE FROM compliance_alert
+        WHERE (subject_type = 'ASSOCIATION' AND subject_id <> ALL(v_keep_assoc_ids))
+           OR subject_type IN ('BENEFICIAL_OWNER', 'DONOR', 'SYSTEM');
+        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'compliance_alert supprimées : %', v_deleted;
+
+        UPDATE compliance_alert
+        SET taken_in_charge_by = NULL
+        WHERE taken_in_charge_by IS NOT NULL
+          AND taken_in_charge_by <> ALL(v_keep_user_ids);
+
+        -- ════════════════════════════════════════════════════════════
         -- 7. USERS  (cascade → refresh_tokens, email_verification_tokens,
         --    et profils déjà traités)
         -- ════════════════════════════════════════════════════════════
@@ -200,6 +215,7 @@ DO $$
 -- Décommenter pour un reset total et instantané du schéma.
 -- =============================================================
 -- TRUNCATE TABLE
+--   compliance_alert,
 --   payouts, onchain_jobs, donation_receipts, donations,
 --   campaign_budget_items, campaign_budget_sections, campaign_milestones,
 --   campaign_cover_images,

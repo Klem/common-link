@@ -3,8 +3,10 @@ package org.commonlink.service
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.verify
+import org.commonlink.repository.ComplianceAlertRepository
 import org.commonlink.repository.ComplianceAuditLogRepository
 import org.commonlink.repository.SanctionSyncStateRepository
+import org.commonlink.service.ComplianceAuditLogService.Companion.ALERT_OPENED
 import org.commonlink.service.ComplianceAuditLogService.Companion.SANCTION_SYNC_FAILURE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -55,6 +57,7 @@ class SanctionSyncExecutorFailureTest {
     @Autowired private lateinit var executor: SanctionSyncExecutor
     @Autowired private lateinit var stateRepo: SanctionSyncStateRepository
     @Autowired private lateinit var auditRepo: ComplianceAuditLogRepository
+    @Autowired private lateinit var alertRepo: ComplianceAlertRepository
     @Autowired private lateinit var screeningService: SanctionScreeningService
     @Autowired private lateinit var txManager: PlatformTransactionManager
 
@@ -89,13 +92,18 @@ class SanctionSyncExecutorFailureTest {
 
         val newEntries = auditRepo.findAllByOrderBySequenceNoAsc()
             .drop(auditCountBefore.toInt())
-        assertEquals(1, newEntries.size, "exactly one audit entry must be written for the failure")
-        assertEquals(SANCTION_SYNC_FAILURE, newEntries.single().eventType)
+        // Sync failure writes two audit entries: the sync-failure event + the alert-opened event
+        assertEquals(2, newEntries.size, "exactly two audit entries (sync failure + alert) must be written")
+        assertEquals(1, newEntries.count { it.eventType == SANCTION_SYNC_FAILURE }, "one SANCTION_SYNC_FAILURE entry")
+        assertEquals(1, newEntries.count { it.eventType == ALERT_OPENED }, "one ALERT_OPENED entry")
 
         verify(exactly = 1) { runner.run() }
 
-        // Cleanup
-        requiresNewTx.execute { auditRepo.deleteAllById(newEntries.map { it.id }) }
+        // Cleanup — audit entries and the alert created by the failure
+        requiresNewTx.execute {
+            auditRepo.deleteAllById(newEntries.map { it.id })
+            alertRepo.deleteAll()
+        }
     }
 
     @Test
@@ -118,8 +126,11 @@ class SanctionSyncExecutorFailureTest {
         val result = assertDoesNotThrow { screeningService.screen("Jean Dupont") }
         assertNotNull(result, "screen() must return a non-null list even when the last sync failed")
 
-        // Cleanup audit entry written by the failure
+        // Cleanup audit entries and alert written by the failure
         val newEntries = auditRepo.findAllByOrderBySequenceNoAsc().drop(auditCountBefore.toInt())
-        requiresNewTx.execute { auditRepo.deleteAllById(newEntries.map { it.id }) }
+        requiresNewTx.execute {
+            auditRepo.deleteAllById(newEntries.map { it.id })
+            alertRepo.deleteAll()
+        }
     }
 }

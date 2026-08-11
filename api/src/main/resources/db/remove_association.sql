@@ -151,6 +151,19 @@ DO $$
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'association_document deleted: %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
+        -- 7b. COMPLIANCE ALERTS  (V61 — subject_id is polymorphic,
+        --     no FK cascade from association_profiles; taken_in_charge_by
+        --     FK → users released first to avoid constraint violation)
+        -- ════════════════════════════════════════════════════════════
+        UPDATE compliance_alert
+        SET taken_in_charge_by = NULL
+        WHERE taken_in_charge_by = ANY(v_target_user_ids);
+
+        DELETE FROM compliance_alert
+        WHERE subject_id = ANY(v_target_assoc_ids);
+        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'compliance_alert deleted: %', v_deleted;
+
+        -- ════════════════════════════════════════════════════════════
         -- 8. ASSOCIATION PROFILES  (cascade → payees, payee_ibans,
         --    monerium_connections, monerium_oauth_states, Mollie rows)
         -- ════════════════════════════════════════════════════════════

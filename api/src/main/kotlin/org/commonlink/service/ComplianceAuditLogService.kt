@@ -67,6 +67,10 @@ class ComplianceAuditLogService(
         val FREEZE_SCREENING_EVENT_TYPES = listOf(FREEZE_SCREENING_CLEAR, FREEZE_SCREENING_HIT, FREEZE_SCREENING_UNAVAILABLE)
 
         const val SANCTION_SYNC_FAILURE = "SANCTION_SYNC_FAILURE"
+
+        const val ALERT_OPENED = "ALERT_OPENED"
+        const val ALERT_IN_REVIEW = "ALERT_IN_REVIEW"
+        const val ALERT_CLOSED = "ALERT_CLOSED"
     }
 
     /**

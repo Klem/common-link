@@ -29,9 +29,9 @@ import java.util.UUID
  * Donor names are never written to application logs. Per-screening traces belong exclusively in the
  * compliance audit journal ([ComplianceAuditLogService]).
  *
- * ### Alert extension point
+ * ### Alerts
  * On a HIT, [FreezeHitAlertPort.onFreezeHit] is called with [FreezeHitRole.DONOR] before returning
- * [ScreeningOutcome.HIT]. [NoOpFreezeHitAlertPort] is active until prompt 16.
+ * [ScreeningOutcome.HIT]. [FreezeHitAlertAdapter] raises a [org.commonlink.entity.ComplianceAlert].
  */
 @Service
 class FreezeScreeningDonationService(
