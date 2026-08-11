@@ -70,6 +70,7 @@ class VerificationService(
     private val complianceAuditLogService: ComplianceAuditLogService,
     private val beneficialOwnerRepository: BeneficialOwnerRepository,
     private val riskClassificationProperties: RiskClassificationProperties,
+    private val freezeScreeningOnboardingService: FreezeScreeningOnboardingService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -402,6 +403,20 @@ class VerificationService(
             throw ConflictException(
                 "Cannot approve: no beneficial owner has been confirmed for this association"
             )
+        }
+
+        // Freeze screening: mandatory three-party check (association, representative, beneficial owners).
+        // An impossible check (UNAVAILABLE) is not a favorable check — it blocks approval identically to a HIT.
+        // The audit log entries are committed in REQUIRES_NEW transactions inside the screening service
+        // and survive even if this method throws afterward.
+        when (freezeScreeningOnboardingService.runFreezeCheck(associationId, profile.name)) {
+            ScreeningOutcome.HIT -> throw ConflictException(
+                "Cannot approve: a match was found in the asset-freeze register — review compliance audit log"
+            )
+            ScreeningOutcome.UNAVAILABLE -> throw ConflictException(
+                "Cannot approve: freeze screening could not be completed — see compliance audit log for details"
+            )
+            ScreeningOutcome.CLEAR -> Unit
         }
 
         profile.verificationStatus = VerificationStatus.VERIFIED

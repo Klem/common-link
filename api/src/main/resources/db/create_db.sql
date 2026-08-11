@@ -657,7 +657,7 @@ CREATE TABLE compliance_audit_log
     sequence_no    BIGINT      NOT NULL UNIQUE,
     event_type     VARCHAR(64) NOT NULL,
     subject_type   VARCHAR(32) NOT NULL
-        CHECK (subject_type IN ('ASSOCIATION', 'DONATION', 'CAMPAIGN', 'ALERT', 'DECLARANT', 'SYSTEM')),
+        CHECK (subject_type IN ('ASSOCIATION', 'DONATION', 'CAMPAIGN', 'ALERT', 'DECLARANT', 'SYSTEM', 'BENEFICIAL_OWNER')),
     subject_id     UUID,
     payload        TEXT        NOT NULL,
     actor_user_id  UUID,

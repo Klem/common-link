@@ -17,6 +17,7 @@ import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.repository.BeneficialOwnerRepository
 import org.commonlink.repository.UserRepository
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.util.Optional
@@ -35,8 +36,9 @@ class VerificationServiceTest {
     private val complianceAuditLogService: ComplianceAuditLogService = mockk(relaxed = true)
     private val beneficialOwnerRepo: BeneficialOwnerRepository = mockk()
     private val riskClassificationProperties: RiskClassificationProperties = mockk(relaxed = true)
+    private val freezeScreeningOnboardingService: FreezeScreeningOnboardingService = mockk()
 
-    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService, beneficialOwnerRepo, riskClassificationProperties)
+    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService, beneficialOwnerRepo, riskClassificationProperties, freezeScreeningOnboardingService)
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000042")
     private val userId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
@@ -76,6 +78,7 @@ class VerificationServiceTest {
         every { associationRepo.findById(associationId) } returns Optional.of(profile)
         every { associationRepo.save(profile) } returns profile
         every { beneficialOwnerRepo.existsByAssociationIdAndDiscardedFalse(associationId) } returns hasUbo
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.CLEAR
 
         return profile
     }
@@ -308,5 +311,41 @@ class VerificationServiceTest {
 
         verify(exactly = 0) { complianceAuditLogService.appendNoUboRefusal(any()) }
         verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    // ─── freeze screening ────────────────────────────────────────────────────
+
+    @Test
+    fun `adminApprove succeeds when freeze screening is clear`() {
+        val profile = mockPendingProfile()
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.CLEAR
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove throws ConflictException and does not save when freeze screening has a hit`() {
+        mockPendingProfile()
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.HIT
+
+        val ex = assertThrows(ConflictException::class.java) { service.adminApprove(associationId) }
+
+        assertEquals("Cannot approve: a match was found in the asset-freeze register — review compliance audit log", ex.message)
+        verify(exactly = 0) { associationRepo.save(any()) }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `adminApprove throws ConflictException and does not save when freeze screening is unavailable`() {
+        mockPendingProfile()
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.UNAVAILABLE
+
+        val ex = assertThrows(ConflictException::class.java) { service.adminApprove(associationId) }
+
+        assertEquals("Cannot approve: freeze screening could not be completed — see compliance audit log for details", ex.message)
+        verify(exactly = 0) { associationRepo.save(any()) }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
     }
 }
