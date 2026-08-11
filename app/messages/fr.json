@@ -1645,5 +1645,109 @@
     "submit": "Faire un don",
     "submitting": "Traitement en cours...",
     "unavailable": "Ce widget n'est pas disponible."
+  },
+  "compliance": {
+    "shell": {
+      "title": "Conformité LCB-FT",
+      "navLabel": "Navigation",
+      "logout": "Déconnexion"
+    },
+    "nav": {
+      "alerts": "Alertes de gel"
+    },
+    "alerts": {
+      "title": "Alertes de gel",
+      "loading": "Chargement des alertes…",
+      "error": "Erreur lors du chargement des alertes.",
+      "empty": "Aucune alerte de gel.",
+      "col": {
+        "origin": "Origine",
+        "severity": "Criticité",
+        "status": "Statut",
+        "age": "Ancienneté",
+        "actions": "Actions"
+      },
+      "origin": {
+        "FREEZE_HIT_ONBOARDING": "Gel — Adhésion",
+        "FREEZE_HIT_DONATION": "Gel — Don"
+      },
+      "severity": {
+        "HIGH": "Élevée",
+        "MEDIUM": "Modérée",
+        "LOW": "Faible"
+      },
+      "status": {
+        "PENDING": "En attente",
+        "IN_REVIEW": "En cours d'examen",
+        "CLOSED": "Clôturée"
+      },
+      "actions": {
+        "view": "Consulter"
+      },
+      "pagination": {
+        "pageOf": "Page {current} / {total}"
+      },
+      "ageFormat": {
+        "daysHours": "{days}j {hours}h",
+        "hoursMinutes": "{hours}h {minutes}min",
+        "minutes": "{minutes}min"
+      }
+    },
+    "detail": {
+      "loading": "Chargement de l'alerte…",
+      "error": "Erreur lors du chargement de l'alerte.",
+      "backToList": "Retour à la liste",
+      "title": "Détail de l'alerte",
+      "metadata": "Informations",
+      "origin": "Origine",
+      "severity": "Criticité",
+      "status": "Statut",
+      "createdAt": "Détectée le",
+      "age": "Ancienneté",
+      "takenInChargeAt": "Prise en charge le",
+      "submitting": "Enregistrement…",
+      "history": {
+        "title": "Historique du contrôle de gel",
+        "empty": "Aucun historique disponible.",
+        "col": {
+          "seq": "N° séquence",
+          "event": "Événement",
+          "date": "Date"
+        }
+      },
+      "takeInCharge": {
+        "title": "Prise en charge",
+        "description": "Prenez cette alerte en charge pour commencer l'examen.",
+        "button": "Prendre en charge"
+      },
+      "decision": {
+        "title": "Décision de clôture",
+        "label": "Décision",
+        "placeholder": "Sélectionner une décision…",
+        "LEGITIMATE": "Correspondance non avérée — situation légitime",
+        "SUSPICIOUS": "Correspondance avérée",
+        "FALSE_POSITIVE": "Faux positif — erreur d'identification"
+      },
+      "rationale": {
+        "label": "Motivation (obligatoire)",
+        "placeholder": "Exposez les éléments qui fondent cette décision."
+      },
+      "treasury": {
+        "section": "Traçabilité de la notification à la Direction générale du Trésor",
+        "note": "La notification à la Direction générale du Trésor est un geste humain accompli hors application. Aucune transmission automatique n'existe ni n'est prévue. Ces champs conservent uniquement la preuve de ce geste.",
+        "notifiedAt": "Date de notification",
+        "method": "Moyen utilisé",
+        "methodPlaceholder": "Ex. : courriel sécurisé, courrier recommandé",
+        "ref": "Référence de la notification",
+        "refPlaceholder": "Numéro ou identifiant attribué à l'envoi",
+        "requiredForSuspicious": "Ces trois champs sont obligatoires pour une décision de correspondance avérée."
+      },
+      "submit": "Enregistrer la décision",
+      "closed": {
+        "title": "Décision enregistrée",
+        "decision": "Décision",
+        "rationale": "Motivation"
+      }
+    }
   }
 }

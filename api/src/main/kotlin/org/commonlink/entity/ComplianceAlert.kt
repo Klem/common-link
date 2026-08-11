@@ -91,4 +91,16 @@ class ComplianceAlert(
     /** sequence_no of the compliance_audit_log entry that triggered this alert, or null if unknown. */
     @Column(name = "audit_log_seq_ref", updatable = false)
     val auditLogSeqRef: Long? = null,
+
+    /** Date and time the DG Trésor was notified — human action, recorded as proof only. */
+    @Column(name = "treasury_notified_at")
+    var treasuryNotifiedAt: Instant? = null,
+
+    /** Channel used for DG Trésor notification (e.g. "courriel sécurisé", "courrier recommandé"). */
+    @Column(name = "treasury_notification_method", length = 128)
+    var treasuryNotificationMethod: String? = null,
+
+    /** Reference or identifier assigned to the DG Trésor notification (e.g. email ID, letter number). */
+    @Column(name = "treasury_notification_ref", length = 256)
+    var treasuryNotificationRef: String? = null,
 )

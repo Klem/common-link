@@ -789,8 +789,11 @@ CREATE TABLE compliance_alert
     decision           VARCHAR(16)
         CONSTRAINT compliance_alert_decision_check
             CHECK (decision IS NULL OR decision IN ('LEGITIMATE', 'SUSPICIOUS', 'FALSE_POSITIVE')),
-    decision_rationale TEXT,
-    audit_log_seq_ref  BIGINT
+    decision_rationale           TEXT,
+    audit_log_seq_ref            BIGINT,
+    treasury_notified_at         TIMESTAMPTZ,
+    treasury_notification_method VARCHAR(128),
+    treasury_notification_ref    VARCHAR(256)
 );
 
 CREATE UNIQUE INDEX compliance_alert_pending_dedup_uq

@@ -22,6 +22,11 @@ export const ROUTES = {
     verifications: '/admin/verifications',
     verificationDetail: (id: string) => `/admin/verifications/${id}`,
   },
+  compliance: {
+    root: '/compliance',
+    alerts: '/compliance/alerts',
+    alertDetail: (id: string) => `/compliance/alerts/${id}`,
+  },
 } as const;
 
 /**
@@ -30,5 +35,6 @@ export const ROUTES = {
  */
 export function getHomePath(locale: string, role: string): string {
   if (role === 'CURATOR') return `/${locale}${ROUTES.admin.root}`;
+  if (role === 'COMPLIANCE_OFFICER') return `/${locale}${ROUTES.compliance.root}`;
   return `/${locale}/dashboard/${role.toLowerCase()}`;
 }

@@ -10,6 +10,8 @@ import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.ComplianceAlertRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -47,7 +49,23 @@ class ComplianceAlertService(
 
     companion object {
         private val OPEN_STATUSES = listOf(ComplianceAlertStatus.PENDING, ComplianceAlertStatus.IN_REVIEW)
+        val FREEZE_HIT_ORIGINS = listOf(ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING, ComplianceAlertOrigin.FREEZE_HIT_DONATION)
     }
+
+    /**
+     * Returns a paginated list of freeze-hit alerts (FREEZE_HIT_ONBOARDING and FREEZE_HIT_DONATION),
+     * ordered by the provided [pageable]. Intended for the compliance officer list screen (prompt 17).
+     */
+    @Transactional(readOnly = true)
+    fun listFreezeHitAlerts(pageable: Pageable): Page<ComplianceAlert> =
+        repo.findByOriginIn(FREEZE_HIT_ORIGINS, pageable)
+
+    /**
+     * Returns a single alert by id or throws [NotFoundException].
+     */
+    @Transactional(readOnly = true)
+    fun findById(alertId: UUID): ComplianceAlert =
+        repo.findById(alertId).orElseThrow { NotFoundException("Alerte $alertId introuvable") }
 
     /**
      * Creates a new alert for the given (origin, subject) pair, or returns the existing open alert
@@ -132,18 +150,39 @@ class ComplianceAlertService(
      *
      * @param decision the compliance outcome (LEGITIMATE / SUSPICIOUS / FALSE_POSITIVE).
      * @param rationale mandatory justification for the decision; must not be blank.
+     * @param treasuryNotifiedAt when the DG Trésor was notified (human gesture, proof only).
+     *   Required when [decision] is [ComplianceAlertDecision.SUSPICIOUS].
+     * @param treasuryNotificationMethod channel used for notification; required when [decision] is SUSPICIOUS.
+     * @param treasuryNotificationRef reference assigned to the notification; required when [decision] is SUSPICIOUS.
      * @throws NotFoundException if the alert does not exist.
-     * @throws UnprocessableEntityException if the current status does not allow this transition.
+     * @throws UnprocessableEntityException if the current status does not allow this transition,
+     *   if [rationale] is blank, or if treasury fields are missing for a SUSPICIOUS decision.
      */
     @Transactional
-    fun close(alertId: UUID, complianceOfficerUserId: UUID, decision: ComplianceAlertDecision, rationale: String): ComplianceAlert {
+    fun close(
+        alertId: UUID,
+        complianceOfficerUserId: UUID,
+        decision: ComplianceAlertDecision,
+        rationale: String,
+        treasuryNotifiedAt: Instant? = null,
+        treasuryNotificationMethod: String? = null,
+        treasuryNotificationRef: String? = null,
+    ): ComplianceAlert {
         if (rationale.isBlank()) throw UnprocessableEntityException("La motivation de la décision est obligatoire")
+        if (decision == ComplianceAlertDecision.SUSPICIOUS &&
+            (treasuryNotifiedAt == null || treasuryNotificationMethod.isNullOrBlank() || treasuryNotificationRef.isNullOrBlank())
+        ) {
+            throw UnprocessableEntityException("La traçabilité de la notification à la DG Trésor est obligatoire pour une décision de correspondance avérée")
+        }
         val alert = repo.findById(alertId).orElseThrow { NotFoundException("Alerte $alertId introuvable") }
         validateStatusTransition(alert.status, ComplianceAlertStatus.CLOSED)
 
         alert.status = ComplianceAlertStatus.CLOSED
         alert.decision = decision
         alert.decisionRationale = rationale
+        alert.treasuryNotifiedAt = treasuryNotifiedAt
+        alert.treasuryNotificationMethod = treasuryNotificationMethod
+        alert.treasuryNotificationRef = treasuryNotificationRef
 
         val saved = repo.save(alert)
 
@@ -152,7 +191,10 @@ class ComplianceAlertService(
             subjectType = ComplianceAuditSubjectType.ALERT,
             subjectId = alertId,
             actorUserId = complianceOfficerUserId,
-            payload = mapOf("decision" to decision.name),
+            payload = mapOf(
+                "decision" to decision.name,
+                "treasuryNotified" to (treasuryNotifiedAt != null),
+            ),
         )
 
         return saved

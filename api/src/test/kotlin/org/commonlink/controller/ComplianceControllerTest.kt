@@ -11,6 +11,8 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.ComplianceAlertService
+import org.commonlink.service.ComplianceAuditLogService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,6 +44,12 @@ class ComplianceControllerTest {
 
     @MockkBean
     lateinit var userDetailsService: UserDetailsServiceImpl
+
+    @MockkBean
+    private lateinit var alertService: ComplianceAlertService
+
+    @MockkBean
+    private lateinit var auditLogService: ComplianceAuditLogService
 
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
 

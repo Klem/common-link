@@ -178,6 +178,33 @@ class ComplianceAlertServiceTest {
         verify(exactly = 0) { repo.findById(any()) }
     }
 
+    @Test
+    fun `close rejects SUSPICIOUS decision without treasury fields`() {
+        assertThrows<UnprocessableEntityException> {
+            service.close(alertId, officerId, ComplianceAlertDecision.SUSPICIOUS, "Match confirmé")
+        }
+        verify(exactly = 0) { repo.findById(any()) }
+    }
+
+    @Test
+    fun `close with SUSPICIOUS decision and all treasury fields succeeds and persists fields`() {
+        val alert = savedAlert(status = ComplianceAlertStatus.IN_REVIEW)
+        every { repo.findById(alertId) } returns Optional.of(alert)
+        every { repo.save(any<ComplianceAlert>()) } answers { firstArg() }
+
+        val notifiedAt = java.time.Instant.now()
+        service.close(
+            alertId, officerId, ComplianceAlertDecision.SUSPICIOUS, "Match avéré",
+            treasuryNotifiedAt = notifiedAt,
+            treasuryNotificationMethod = "courriel sécurisé",
+            treasuryNotificationRef = "REF-001",
+        )
+
+        assertEquals(notifiedAt, alert.treasuryNotifiedAt)
+        assertEquals("courriel sécurisé", alert.treasuryNotificationMethod)
+        assertEquals("REF-001", alert.treasuryNotificationRef)
+    }
+
     // ─── validateStatusTransition ─────────────────────────────────────────────────
 
     @ParameterizedTest(name = "{0} → {1} is allowed")

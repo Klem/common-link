@@ -24,6 +24,8 @@ import org.commonlink.service.MandateService
 import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieConnectTokenManager
 import org.commonlink.service.MoneriumService
+import org.commonlink.service.ComplianceAlertService
+import org.commonlink.service.ComplianceAuditLogService
 import org.commonlink.service.FreezeScreeningOnboardingService
 import org.commonlink.service.OnboardingGateService
 import org.commonlink.service.OnchainOutboxService
@@ -75,6 +77,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
     @MockkBean private lateinit var freezeScreeningOnboardingService: FreezeScreeningOnboardingService
     @MockkBean private lateinit var onboardingGateService: OnboardingGateService
+    @MockkBean private lateinit var complianceAlertService: ComplianceAlertService
+    @MockkBean private lateinit var complianceAuditLogService: ComplianceAuditLogService
 
     @Test
     fun contextLoads() {
