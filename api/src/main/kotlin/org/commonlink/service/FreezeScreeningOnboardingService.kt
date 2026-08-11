@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.config.SanctionsProperties
+import org.commonlink.dto.FreezeScreenStatusDto
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -95,6 +96,20 @@ class FreezeScreeningOnboardingService(
             }
             ScreeningOutcome.UNAVAILABLE
         }
+    }
+
+    /**
+     * Returns the four-state indicator of the last onboarding freeze-screening run for the given
+     * association. Delegates the audit-log derivation to [ComplianceAuditLogService] and provides
+     * the beneficial-owner IDs so that BO events (stored with `subject_id = bo.id`) are included.
+     *
+     * Returns [org.commonlink.dto.FreezeScreenStatus.NOT_PERFORMED] if no screening has ever been run.
+     */
+    fun getOnboardingFreezeScreenStatus(associationId: UUID): FreezeScreenStatusDto {
+        val boIds = beneficialOwnerRepository
+            .findAllByAssociationIdOrderByCollectedAtAsc(associationId)
+            .mapNotNull { it.id }
+        return auditLogService.findLastOnboardingFreezeScreenStatus(associationId, boIds)
     }
 
     /**

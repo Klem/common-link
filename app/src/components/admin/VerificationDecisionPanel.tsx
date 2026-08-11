@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 import { approveVerification, rejectVerification } from '@/lib/api/admin';
 import { VerificationStatus } from '@/types/association';
-import { ScopeVerdict } from '@/types/admin';
+import { FreezeScreenStatus, ScopeVerdict } from '@/types/admin';
 import { STATUS_BADGE_CLASS } from '@/components/admin/adminShared';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -22,6 +22,8 @@ interface Props {
   scopeVerdict?: ScopeVerdict | null;
   /** Whether at least one beneficial owner is retained — used to label a compliance 409. */
   hasRetainedOwners?: boolean | null;
+  /** Freeze screening status — used to label a compliance 409 when the freeze gate blocks. */
+  freezeScreenStatus?: FreezeScreenStatus | null;
   onDecisionMade: (newStatus: VerificationStatus, rejectionReason?: string) => void;
   onNeedRefetch: () => void;
 }
@@ -33,11 +35,13 @@ export function VerificationDecisionPanel({
   rejectionReason,
   scopeVerdict,
   hasRetainedOwners,
+  freezeScreenStatus,
   onDecisionMade,
   onNeedRefetch,
 }: Props) {
   const t = useTranslations('admin');
   const tc = useTranslations('curator.dossier');
+  const tf = useTranslations('curator.freezeScreen');
   const addToast = useToastStore((s) => s.addToast);
 
   const [armingApprove, setArmingApprove] = useState(false);
@@ -96,6 +100,12 @@ export function VerificationDecisionPanel({
           setArmingApprove(false);
         } else if (hasRetainedOwners === false) {
           setApproveBlockedMessage(tc('approval.blockedNoUbo'));
+          setArmingApprove(false);
+        } else if (
+          freezeScreenStatus === FreezeScreenStatus.HIT ||
+          freezeScreenStatus === FreezeScreenStatus.UNAVAILABLE
+        ) {
+          setApproveBlockedMessage(tf(freezeScreenStatus));
           setArmingApprove(false);
         } else {
           // Dossier was processed concurrently — reload

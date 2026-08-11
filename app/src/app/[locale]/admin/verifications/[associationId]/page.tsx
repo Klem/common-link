@@ -6,13 +6,14 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { getVerificationDetail, getRegistryPreCheck } from '@/lib/api/admin';
 import type { AdminVerificationDetailDto } from '@/types/admin';
-import { ScopeVerdict } from '@/types/admin';
+import { FreezeScreenStatus, ScopeVerdict } from '@/types/admin';
 import { VerificationStatus } from '@/types/association';
 import { ROUTES } from '@/lib/routes';
 import { STATUS_BADGE_CLASS } from '@/components/admin/adminShared';
 import { VerificationDocumentRow } from '@/components/admin/VerificationDocumentRow';
 import { VerificationDecisionPanel } from '@/components/admin/VerificationDecisionPanel';
 import { RegistryPreCheckBanner } from '@/components/admin/RegistryPreCheckBanner';
+import { FreezeScreenStatusBanner } from '@/components/admin/FreezeScreenStatusBanner';
 import { RiskLevelBadge } from '@/components/admin/RiskLevelBadge';
 import { VigilanceMeasuresPanel } from '@/components/admin/VigilanceMeasuresPanel';
 import { BeneficialOwnersPanel } from '@/components/admin/BeneficialOwnersPanel';
@@ -33,6 +34,7 @@ export default function VerificationDetailPage({ params }: Props) {
   const [registryOfficers, setRegistryOfficers] = useState<string[]>([]);
   const [scopeVerdict, setScopeVerdict] = useState<ScopeVerdict | null>(null);
   const [retainedOwnerCount, setRetainedOwnerCount] = useState<number | null>(null);
+  const [freezeScreenStatus, setFreezeScreenStatus] = useState<FreezeScreenStatus | null>(null);
 
   const loadDetail = async () => {
     setIsLoading(true);
@@ -186,6 +188,12 @@ export default function VerificationDetailPage({ params }: Props) {
         onRetainedCountChange={setRetainedOwnerCount}
       />
 
+      {/* Freeze screen status — loads independently, informs the decision panel */}
+      <FreezeScreenStatusBanner
+        associationId={associationId}
+        onStatusLoaded={setFreezeScreenStatus}
+      />
+
       {/* Registry pre-check — informational, loads independently */}
       <RegistryPreCheckBanner associationId={associationId} />
 
@@ -244,6 +252,7 @@ export default function VerificationDetailPage({ params }: Props) {
           rejectionReason={detail.rejectionReason}
           scopeVerdict={scopeVerdict}
           hasRetainedOwners={retainedOwnerCount !== null ? retainedOwnerCount > 0 : null}
+          freezeScreenStatus={freezeScreenStatus}
           onDecisionMade={(newStatus, reason) =>
             setDetail((prev) =>
               prev

@@ -406,6 +406,13 @@
         "title": "Applicable vigilance measures",
         "version": "Classification"
       }
+    },
+    "freezeScreen": {
+      "HIT": "a match was detected — dossier awaiting compliance officer decision",
+      "NOT_PERFORMED": "no screening has been performed yet",
+      "PASSED": "screening passed on {date}",
+      "UNAVAILABLE": "screening could not be completed — approval suspended",
+      "title": "Freeze screening"
     }
   },
   "dashboard": {

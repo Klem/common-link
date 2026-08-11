@@ -107,6 +107,21 @@ export interface BeneficialOwnerDto {
   discardedAt: string | null;
 }
 
+/** Four-state indicator of the most recent onboarding freeze screening. */
+export const FreezeScreenStatus = {
+  NOT_PERFORMED: 'NOT_PERFORMED',
+  PASSED: 'PASSED',
+  HIT: 'HIT',
+  UNAVAILABLE: 'UNAVAILABLE',
+} as const;
+export type FreezeScreenStatus = typeof FreezeScreenStatus[keyof typeof FreezeScreenStatus];
+
+/** Response body for `GET /api/admin/verifications/{id}/freeze-screen-status`. */
+export interface FreezeScreenStatusDto {
+  status: FreezeScreenStatus;
+  checkedAt: string | null;
+}
+
 /** Request body for adding a beneficial owner. */
 export interface AddBeneficialOwnerRequest {
   name: string;

@@ -1,10 +1,12 @@
 package org.commonlink.service
 
+import org.commonlink.dto.FreezeScreenStatus
 import org.commonlink.entity.ComplianceAuditLog
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.repository.ComplianceAuditLogRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -176,5 +178,72 @@ class ComplianceAuditLogServiceLogicTest {
             assertEquals(predecessor.rowHash, row.prevHash)
         }
         assertEquals(20, rows.map { it.rowHash }.toSet().size, "each concurrent write must produce a distinct row_hash")
+    }
+
+    // ── findLastOnboardingFreezeScreenStatus ──────────────────────────────────────────────────
+
+    private fun appendFreeze(
+        eventType: String,
+        subjectType: ComplianceAuditSubjectType,
+        subjectId: UUID,
+    ) = service.append(
+        eventType = eventType,
+        subjectType = subjectType,
+        payload = mapOf("test" to true),
+        subjectId = subjectId,
+    )
+
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - no events returns NOT_PERFORMED`() {
+        val result = service.findLastOnboardingFreezeScreenStatus(UUID.randomUUID(), emptyList())
+        assertEquals(FreezeScreenStatus.NOT_PERFORMED, result.status)
+        assertNull(result.checkedAt)
+    }
+
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - single CLEAR run returns PASSED`() {
+        val assocId = UUID.randomUUID()
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.DECLARANT, assocId)
+
+        val result = service.findLastOnboardingFreezeScreenStatus(assocId, emptyList())
+        assertEquals(FreezeScreenStatus.PASSED, result.status)
+        assertNotNull(result.checkedAt)
+    }
+
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - run1 HIT followed by run2 CLEAR returns PASSED`() {
+        val assocId = UUID.randomUUID()
+        // Run 1 (earlier): association hit
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_HIT, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        // Run 2 (most recent): full clear — sequenceNo of this ASSOCIATION event becomes runStartSeq
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.DECLARANT, assocId)
+
+        val result = service.findLastOnboardingFreezeScreenStatus(assocId, emptyList())
+        assertEquals(FreezeScreenStatus.PASSED, result.status)
+    }
+
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - BO HIT with assoc and declarant clear returns HIT`() {
+        val assocId = UUID.randomUUID()
+        val boId = UUID.randomUUID()
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.DECLARANT, assocId)
+        // BO events use subject_id = bo.id, not associationId
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_HIT, ComplianceAuditSubjectType.BENEFICIAL_OWNER, boId)
+
+        val result = service.findLastOnboardingFreezeScreenStatus(assocId, listOf(boId))
+        assertEquals(FreezeScreenStatus.HIT, result.status)
+    }
+
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - UNAVAILABLE event returns UNAVAILABLE`() {
+        val assocId = UUID.randomUUID()
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_UNAVAILABLE, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+
+        val result = service.findLastOnboardingFreezeScreenStatus(assocId, emptyList())
+        assertEquals(FreezeScreenStatus.UNAVAILABLE, result.status)
     }
 }

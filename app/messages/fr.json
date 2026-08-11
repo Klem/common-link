@@ -406,6 +406,13 @@
         "title": "Mesures de vigilance applicables",
         "version": "Référentiel"
       }
+    },
+    "freezeScreen": {
+      "HIT": "une correspondance a été détectée — le dossier est en attente de la décision du responsable de la conformité",
+      "NOT_PERFORMED": "aucun contrôle de gel n'a encore été effectué",
+      "PASSED": "contrôle effectué le {date} — aucune correspondance",
+      "UNAVAILABLE": "le contrôle de gel n'a pas pu être effectué — l'approbation est suspendue",
+      "title": "Contrôle de gel"
     }
   },
   "dashboard": {

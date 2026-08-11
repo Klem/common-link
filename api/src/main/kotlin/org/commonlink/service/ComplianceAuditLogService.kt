@@ -1,6 +1,8 @@
 package org.commonlink.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.commonlink.dto.FreezeScreenStatus
+import org.commonlink.dto.FreezeScreenStatusDto
 import org.commonlink.entity.ComplianceAuditLog
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.repository.ComplianceAuditLogRepository
@@ -258,6 +260,57 @@ class ComplianceAuditLogService(
     @Transactional(readOnly = true)
     fun findFreezeScreeningHistory(subjectId: UUID): List<ComplianceAuditLog> =
         repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(subjectId, FREEZE_SCREENING_EVENT_TYPES)
+
+    /**
+     * Derives the four-state [FreezeScreenStatus] for the **most recent onboarding screening run**
+     * of an association, without exposing any match detail (tipping-off prevention).
+     *
+     * Identification of the run: the most recent event with `subject_type = ASSOCIATION` and
+     * `subject_id = associationId` marks the start of the last run; events with a lower
+     * `sequence_no` belong to an earlier run and are ignored.
+     *
+     * BO events use `subject_id = bo.id` (not `associationId`), so they must be queried
+     * separately: [beneficialOwnerIds] must include every BO that belongs to this association.
+     *
+     * @param associationId       The association whose last run is to be inspected.
+     * @param beneficialOwnerIds  All beneficial-owner IDs for that association (may be empty).
+     */
+    @Transactional(readOnly = true)
+    fun findLastOnboardingFreezeScreenStatus(
+        associationId: UUID,
+        beneficialOwnerIds: List<UUID>,
+    ): FreezeScreenStatusDto {
+        val assocEvents = repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(
+            associationId, FREEZE_SCREENING_EVENT_TYPES,
+        )
+
+        // The most recent ASSOCIATION-type event is the anchor of the latest run.
+        val latestAssocEvent = assocEvents
+            .lastOrNull { it.subjectType == ComplianceAuditSubjectType.ASSOCIATION }
+            ?: return FreezeScreenStatusDto(FreezeScreenStatus.NOT_PERFORMED, null)
+
+        val runStartSeq = latestAssocEvent.sequenceNo
+        val checkedAt = latestAssocEvent.occurredAt
+
+        // All association/declarant events from this run onward.
+        val runAssocEvents = assocEvents.filter { it.sequenceNo >= runStartSeq }
+
+        if (runAssocEvents.any { it.eventType == FREEZE_SCREENING_UNAVAILABLE }) {
+            return FreezeScreenStatusDto(FreezeScreenStatus.UNAVAILABLE, checkedAt)
+        }
+        if (runAssocEvents.any { it.eventType == FREEZE_SCREENING_HIT }) {
+            return FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+        }
+
+        // Check BO events — they carry subject_id = bo.id, not associationId.
+        for (boId in beneficialOwnerIds) {
+            val boHit = repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(boId, FREEZE_SCREENING_EVENT_TYPES)
+                .any { it.sequenceNo >= runStartSeq && it.eventType == FREEZE_SCREENING_HIT }
+            if (boHit) return FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+        }
+
+        return FreezeScreenStatusDto(FreezeScreenStatus.PASSED, checkedAt)
+    }
 
     // -----------------------------------------------------------------------------------------
     // Scheduled sync journal helper

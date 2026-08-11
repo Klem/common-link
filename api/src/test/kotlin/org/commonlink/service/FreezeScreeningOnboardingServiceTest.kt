@@ -5,6 +5,8 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.config.SanctionsProperties
+import org.commonlink.dto.FreezeScreenStatus
+import org.commonlink.dto.FreezeScreenStatusDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.entity.BeneficialOwner
@@ -18,6 +20,7 @@ import org.commonlink.repository.SanctionedEntityRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.time.LocalDate
 import java.util.Optional
 import java.util.UUID
@@ -375,5 +378,55 @@ class FreezeScreeningOnboardingServiceTest {
         every { associationProfileRepository.findById(associationId) } returns Optional.empty()
 
         assertThrows(NotFoundException::class.java) { service.reScreenAssociation(associationId) }
+    }
+
+    // ─── getOnboardingFreezeScreenStatus ─────────────────────────────────────
+
+    private val checkedAt: Instant = Instant.parse("2026-08-11T10:00:00Z")
+
+    @Test
+    fun `getOnboardingFreezeScreenStatus returns NOT_PERFORMED when no run exists`() {
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns emptyList()
+        every { auditLogService.findLastOnboardingFreezeScreenStatus(associationId, emptyList()) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.NOT_PERFORMED, null)
+
+        val result = service.getOnboardingFreezeScreenStatus(associationId)
+
+        assertEquals(FreezeScreenStatus.NOT_PERFORMED, result.status)
+        assertEquals(null, result.checkedAt)
+    }
+
+    @Test
+    fun `getOnboardingFreezeScreenStatus returns PASSED when last run was clear`() {
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns listOf(bo())
+        every { auditLogService.findLastOnboardingFreezeScreenStatus(associationId, listOf(boId)) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.PASSED, checkedAt)
+
+        val result = service.getOnboardingFreezeScreenStatus(associationId)
+
+        assertEquals(FreezeScreenStatus.PASSED, result.status)
+        assertEquals(checkedAt, result.checkedAt)
+    }
+
+    @Test
+    fun `getOnboardingFreezeScreenStatus returns HIT when last run had a match`() {
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns listOf(bo())
+        every { auditLogService.findLastOnboardingFreezeScreenStatus(associationId, listOf(boId)) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+
+        val result = service.getOnboardingFreezeScreenStatus(associationId)
+
+        assertEquals(FreezeScreenStatus.HIT, result.status)
+    }
+
+    @Test
+    fun `getOnboardingFreezeScreenStatus returns UNAVAILABLE when last run could not complete`() {
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns emptyList()
+        every { auditLogService.findLastOnboardingFreezeScreenStatus(associationId, emptyList()) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.UNAVAILABLE, checkedAt)
+
+        val result = service.getOnboardingFreezeScreenStatus(associationId)
+
+        assertEquals(FreezeScreenStatus.UNAVAILABLE, result.status)
     }
 }

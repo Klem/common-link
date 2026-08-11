@@ -5,6 +5,7 @@ import type {
   AdminVerificationDetailDto,
   BeneficialOwnerDto,
   AddBeneficialOwnerRequest,
+  FreezeScreenStatusDto,
   RegistryPreCheckDto,
   VigilanceMeasuresDto,
 } from '@/types/admin';
@@ -110,6 +111,16 @@ export const discardBeneficialOwner = (associationId: string, ownerId: string): 
   api
     .post(`/api/admin/verifications/${associationId}/beneficial-owners/${ownerId}/discard`)
     .then(() => undefined);
+
+/**
+ * Returns the four-state indicator of the last onboarding freeze screening for an association.
+ * `GET /api/admin/verifications/{associationId}/freeze-screen-status`
+ * Deliberately exposes no match detail (tipping-off prevention).
+ */
+export const getFreezeScreenStatus = (associationId: string): Promise<FreezeScreenStatusDto> =>
+  api
+    .get<FreezeScreenStatusDto>(`/api/admin/verifications/${associationId}/freeze-screen-status`)
+    .then((r) => r.data);
 
 /**
  * Downloads a verification document as a Blob.

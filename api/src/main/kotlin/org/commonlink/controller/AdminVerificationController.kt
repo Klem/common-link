@@ -12,6 +12,7 @@ import org.commonlink.dto.AddBeneficialOwnerRequest
 import org.commonlink.dto.AdminVerificationDetailDto
 import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.BeneficialOwnerDto
+import org.commonlink.dto.FreezeScreenStatusDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.dto.RejectVerificationRequest
@@ -20,6 +21,7 @@ import org.commonlink.dto.toPageResponse
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.BeneficialOwnerService
+import org.commonlink.service.FreezeScreeningOnboardingService
 import org.commonlink.service.VerificationService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -47,6 +49,7 @@ class AdminVerificationController(
     private val verificationService: VerificationService,
     private val registryCheckService: AssociationRegistryCheckService,
     private val beneficialOwnerService: BeneficialOwnerService,
+    private val freezeScreeningService: FreezeScreeningOnboardingService,
 ) {
 
     @GetMapping
@@ -192,6 +195,26 @@ class AdminVerificationController(
         registryCheckService.latest(associationId)
             ?.let { ResponseEntity.ok(it) }
             ?: ResponseEntity.noContent().build()
+
+    @GetMapping("/{associationId}/freeze-screen-status")
+    @Operation(
+        summary = "Onboarding freeze-screen status",
+        description = "Returns the four-state indicator of the last onboarding asset-freeze screening for this " +
+                "association. Deliberately contains no information that could identify a match " +
+                "(tipping-off prevention, art. L.561-29 CMF). Returns NOT_PERFORMED if no check has run.",
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Status returned",
+            content = [Content(schema = Schema(implementation = FreezeScreenStatusDto::class))],
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun getFreezeScreenStatus(
+        @PathVariable associationId: UUID,
+    ): ResponseEntity<FreezeScreenStatusDto> =
+        ResponseEntity.ok(freezeScreeningService.getOnboardingFreezeScreenStatus(associationId))
 
     // -------------------------------------------------------------------------
     // Beneficial owners
