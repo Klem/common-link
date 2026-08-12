@@ -1,8 +1,10 @@
 import api from '@/lib/api';
 import type { Page } from '@/types/payment';
 import type {
+  AuditLogEntryDto,
   ComplianceAlertSummaryDto,
   ComplianceAlertDetailDto,
+  ComplianceRegistryScanSummaryDto,
   CloseAlertRequest,
 } from '@/types/compliance';
 
@@ -43,3 +45,22 @@ export const closeAlert = (
   api
     .post<ComplianceAlertSummaryDto>(`/api/compliance/alerts/${alertId}/close`, request)
     .then((r) => r.data);
+
+/**
+ * Lists the latest registry scan per association, sorted by most-recent scan date descending.
+ * `GET /api/compliance/registry-scans?page=0&size=10`
+ */
+export const listRegistryScans = (
+  page = 0,
+  size = 10,
+): Promise<Page<ComplianceRegistryScanSummaryDto>> =>
+  api
+    .get<Page<ComplianceRegistryScanSummaryDto>>('/api/compliance/registry-scans', { params: { page, size } })
+    .then((r) => r.data);
+
+/**
+ * Returns the twenty most recent compliance audit journal entries.
+ * `GET /api/compliance/audit-log/recent`
+ */
+export const listAuditLog = (): Promise<AuditLogEntryDto[]> =>
+  api.get<AuditLogEntryDto[]>('/api/compliance/audit-log/recent').then((r) => r.data);

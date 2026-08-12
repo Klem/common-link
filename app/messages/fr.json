@@ -1653,7 +1653,60 @@
       "logout": "Déconnexion"
     },
     "nav": {
+      "dashboard": "Tableau de bord",
       "alerts": "Alertes de gel"
+    },
+    "dashboard": {
+      "title": "Tableau de bord",
+      "alertCount": {
+        "title": "Alertes de gel en attente",
+        "viewAll": "Voir toutes les alertes",
+        "loading": "Chargement...",
+        "error": "Erreur de chargement."
+      }
+    },
+    "registry": {
+      "title": "Derniers contrôles des registres",
+      "loading": "Chargement des contrôles...",
+      "error": "Erreur lors du chargement.",
+      "empty": "Aucun contrôle enregistré.",
+      "col": {
+        "association": "Association",
+        "verdict": "Périmètre",
+        "exists": "Existence",
+        "rna": "RNA actif",
+        "warnings": "Avertissements",
+        "date": "Date du contrôle"
+      },
+      "exists": {
+        "true": "Oui",
+        "false": "Non",
+        "null": "—"
+      },
+      "rna": {
+        "true": "Actif",
+        "false": "Inactif",
+        "null": "Non renseigné"
+      },
+      "verdict": {
+        "IN_SCOPE": "Dans le périmètre",
+        "OUT_OF_SCOPE": "Hors périmètre",
+        "UNDETERMINED": "Indéterminé"
+      },
+      "pagination": {
+        "pageOf": "Page {current} / {total}"
+      }
+    },
+    "auditLog": {
+      "title": "Journal d'audit récent",
+      "loading": "Chargement du journal...",
+      "error": "Erreur lors du chargement.",
+      "empty": "Aucune entrée.",
+      "col": {
+        "seq": "N° séquence",
+        "event": "Événement",
+        "date": "Date"
+      }
     },
     "alerts": {
       "title": "Alertes de gel",

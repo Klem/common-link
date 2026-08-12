@@ -6,11 +6,23 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import org.assertj.core.api.Assertions.assertThat
 import com.ninjasquad.springmockk.MockkBean
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import java.time.Instant
+import io.mockk.every
+import org.commonlink.dto.RegistryPreCheckDto
+import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.AuthProvider
+import org.commonlink.entity.ScopeVerdict
+import org.commonlink.entity.User
+import org.commonlink.entity.UserRole
+import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.security.ComplianceAccessLogFilter
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
 import org.junit.jupiter.api.AfterEach
@@ -50,6 +62,15 @@ class ComplianceControllerTest {
 
     @MockkBean
     private lateinit var auditLogService: ComplianceAuditLogService
+
+    @MockkBean
+    private lateinit var registryCheckService: AssociationRegistryCheckService
+
+    @MockkBean
+    private lateinit var registryCheckRepository: AssociationRegistryCheckRepository
+
+    @MockkBean
+    private lateinit var associationProfileRepository: AssociationProfileRepository
 
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
 
@@ -126,6 +147,66 @@ class ComplianceControllerTest {
         assertThat(events[0].formattedMessage)
             .contains(userId.toString())
             .contains("/api/compliance/ping")
+    }
+
+    // ── Registry scans ───────────────────────────────────────────────────────
+
+    @Test
+    fun `registry-scans - 200 for COMPLIANCE_OFFICER`() {
+        every { registryCheckRepository.findAssociationIdsWithScansOrderedByLatest() } returns emptyList()
+        mockMvc.perform(
+            get("/api/compliance/registry-scans")
+                .with(user(userId.toString()).roles("COMPLIANCE_OFFICER"))
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `registry-scans - 403 for CURATOR`() {
+        mockMvc.perform(
+            get("/api/compliance/registry-scans")
+                .with(user(userId.toString()).roles("CURATOR"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `registry-scans - maps association name and warning count`() {
+        val assocId = UUID.fromString("00000000-0000-0000-0000-000000000002")
+        val profile = AssociationProfile(
+            id = assocId,
+            user = User(email = "test@example.com", role = UserRole.ASSOCIATION, provider = AuthProvider.EMAIL),
+            name = "Assoc Test",
+            identifier = "775671356",
+        )
+        val dto = RegistryPreCheckDto(
+            id = UUID.fromString("00000000-0000-0000-0000-000000000003"),
+            associationExists = true,
+            siren = "123456789",
+            rna = null,
+            legalCategory = "9220",
+            scopeVerdict = ScopeVerdict.IN_SCOPE,
+            etatAdministratif = "A",
+            joafeDeclarationFound = true,
+            dissolutionDetected = false,
+            bodaccProcedureFound = false,
+            checkedAt = Instant.parse("2026-08-01T10:00:00Z"),
+            warnings = listOf("source-x-timeout", "source-y-timeout"),
+            officers = emptyList(),
+            rnaActive = true,
+        )
+        every { registryCheckRepository.findAssociationIdsWithScansOrderedByLatest() } returns listOf(assocId)
+        every { associationProfileRepository.findAllById(listOf(assocId)) } returns listOf(profile)
+        every { registryCheckService.latest(assocId) } returns dto
+
+        mockMvc.perform(
+            get("/api/compliance/registry-scans")
+                .with(user(userId.toString()).roles("COMPLIANCE_OFFICER"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content[0].associationName").value("Assoc Test"))
+            .andExpect(jsonPath("$.content[0].warningCount").value(2))
+            .andExpect(jsonPath("$.totalElements").value(1))
     }
 
     // ── Isolation — compliance role cannot reach other spaces ────────────────

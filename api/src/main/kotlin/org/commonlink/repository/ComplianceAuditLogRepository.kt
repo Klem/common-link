@@ -47,4 +47,7 @@ interface ComplianceAuditLogRepository : JpaRepository<ComplianceAuditLog, UUID>
         subjectId: UUID,
         eventTypes: Collection<String>,
     ): List<ComplianceAuditLog>
+
+    /** The twenty most recent journal rows in reverse sequence order — used by the compliance dashboard. */
+    fun findTop20ByOrderBySequenceNoDesc(): List<ComplianceAuditLog>
 }

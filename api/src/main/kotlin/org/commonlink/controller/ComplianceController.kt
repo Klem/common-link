@@ -8,8 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.commonlink.dto.AuditLogEntryDto
 import org.commonlink.dto.CloseAlertRequest
 import org.commonlink.dto.ComplianceAlertDetailDto
+import org.commonlink.dto.ComplianceRegistryScanSummaryDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.ComplianceAlertSummaryDto
 import org.commonlink.dto.toEntryDto
@@ -18,8 +20,12 @@ import org.commonlink.dto.toPageResponse
 import org.commonlink.dto.toSummaryDto
 import org.commonlink.entity.ComplianceAlertDecision
 import org.commonlink.exception.UnprocessableEntityException
+import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
@@ -47,7 +53,14 @@ import java.util.UUID
 class ComplianceController(
     private val alertService: ComplianceAlertService,
     private val auditLogService: ComplianceAuditLogService,
+    private val registryCheckService: AssociationRegistryCheckService,
+    private val registryCheckRepository: AssociationRegistryCheckRepository,
+    private val associationProfileRepository: AssociationProfileRepository,
 ) {
+
+    /** Health-check / role-gate probe. Used by integration tests to verify COMPLIANCE_OFFICER access. */
+    @GetMapping("/ping")
+    fun ping(): ResponseEntity<Unit> = ResponseEntity.ok().build()
 
     /**
      * Lists freeze-hit alerts (FREEZE_HIT_ONBOARDING and FREEZE_HIT_DONATION), most recent first.
@@ -185,5 +198,76 @@ class ComplianceController(
             treasuryNotificationRef = request.treasuryNotificationRef,
         )
         return ResponseEntity.ok(alert.toSummaryDto(now))
+    }
+
+    /**
+     * Returns a paginated list of the latest registry scan per association (all associations),
+     * sorted by most-recent scan date descending.
+     *
+     * Delegates to [AssociationRegistryCheckService.latest] per association to avoid duplicating
+     * service logic. N+1 is acceptable here — this endpoint is compliance-only and not on any
+     * hot path.
+     */
+    @GetMapping("/registry-scans")
+    @Operation(
+        summary = "List latest registry scans per association",
+        description = "Returns one row per association — its most recent registry scan — sorted by " +
+            "scan date descending. Enriched with the association name."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Paginated scan summaries"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun listRegistryScans(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<PageResponse<ComplianceRegistryScanSummaryDto>> {
+        val allIds = registryCheckRepository.findAssociationIdsWithScansOrderedByLatest()
+        val totalElements = allIds.size.toLong()
+        val pageIds = allIds.drop(page * size).take(size)
+        if (pageIds.isEmpty()) {
+            return ResponseEntity.ok(PageImpl(emptyList<ComplianceRegistryScanSummaryDto>(), PageRequest.of(page, size), 0L).toPageResponse())
+        }
+        val profiles = associationProfileRepository.findAllById(pageIds)
+            .filter { it.id != null }
+            .associateBy { it.id!! }
+        val content = pageIds.mapNotNull { id ->
+            val dto = registryCheckService.latest(id) ?: return@mapNotNull null
+            val profile = profiles[id] ?: return@mapNotNull null
+            ComplianceRegistryScanSummaryDto(
+                associationId = id,
+                associationName = profile.name,
+                associationExists = dto.associationExists,
+                rnaActive = dto.rnaActive,
+                scopeVerdict = dto.scopeVerdict,
+                warningCount = dto.warnings.size,
+                checkedAt = dto.checkedAt,
+                siren = dto.siren,
+                rna = dto.rna,
+            )
+        }
+        val springPage = PageImpl(content, PageRequest.of(page, size), totalElements)
+        return ResponseEntity.ok(springPage.toPageResponse())
+    }
+
+    /**
+     * Returns the twenty most recent compliance audit journal entries, most recent first.
+     * Intended for the compliance dashboard overview widget.
+     */
+    @GetMapping("/audit-log/recent")
+    @Operation(
+        summary = "Recent compliance audit log entries",
+        description = "Returns the twenty most recent entries from the hash-chained compliance journal, " +
+            "most recent first."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "List of recent audit log entries"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun listRecentAuditLog(): ResponseEntity<List<AuditLogEntryDto>> {
+        val entries = auditLogService.findRecentEntries().map { it.toEntryDto() }
+        return ResponseEntity.ok(entries)
     }
 }

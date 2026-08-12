@@ -1653,7 +1653,60 @@
       "logout": "Log out"
     },
     "nav": {
+      "dashboard": "Dashboard",
       "alerts": "Freeze alerts"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "alertCount": {
+        "title": "Pending freeze alerts",
+        "viewAll": "View all alerts",
+        "loading": "Loading...",
+        "error": "Loading error."
+      }
+    },
+    "registry": {
+      "title": "Latest registry scans",
+      "loading": "Loading scans...",
+      "error": "Error loading scans.",
+      "empty": "No scans recorded.",
+      "col": {
+        "association": "Association",
+        "verdict": "Perimeter",
+        "exists": "Existence",
+        "rna": "RNA active",
+        "warnings": "Warnings",
+        "date": "Scan date"
+      },
+      "exists": {
+        "true": "Yes",
+        "false": "No",
+        "null": "—"
+      },
+      "rna": {
+        "true": "Active",
+        "false": "Inactive",
+        "null": "Not available"
+      },
+      "verdict": {
+        "IN_SCOPE": "In scope",
+        "OUT_OF_SCOPE": "Out of scope",
+        "UNDETERMINED": "Undetermined"
+      },
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      }
+    },
+    "auditLog": {
+      "title": "Recent audit log",
+      "loading": "Loading audit log...",
+      "error": "Error loading audit log.",
+      "empty": "No entries.",
+      "col": {
+        "seq": "Sequence no.",
+        "event": "Event",
+        "date": "Date"
+      }
     },
     "alerts": {
       "title": "Freeze alerts",

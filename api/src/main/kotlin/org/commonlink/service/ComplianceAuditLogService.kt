@@ -316,6 +316,14 @@ class ComplianceAuditLogService(
         return FreezeScreenStatusDto(FreezeScreenStatus.PASSED, checkedAt)
     }
 
+    /**
+     * Returns the twenty most recent journal entries in reverse sequence order.
+     * Intended for the compliance dashboard overview widget. Read-only.
+     */
+    @Transactional(readOnly = true)
+    fun findRecentEntries(): List<ComplianceAuditLog> =
+        repo.findTop20ByOrderBySequenceNoDesc()
+
     // -----------------------------------------------------------------------------------------
     // Scheduled sync journal helper
     // -----------------------------------------------------------------------------------------

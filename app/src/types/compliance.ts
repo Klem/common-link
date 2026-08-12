@@ -63,3 +63,22 @@ export interface CloseAlertRequest {
   treasuryNotificationMethod?: string;
   treasuryNotificationRef?: string;
 }
+
+export const ScopeVerdict = {
+  IN_SCOPE: 'IN_SCOPE',
+  OUT_OF_SCOPE: 'OUT_OF_SCOPE',
+  UNDETERMINED: 'UNDETERMINED',
+} as const;
+export type ScopeVerdict = typeof ScopeVerdict[keyof typeof ScopeVerdict];
+
+export interface ComplianceRegistryScanSummaryDto {
+  associationId: string;
+  associationName: string;
+  associationExists: boolean | null;
+  rnaActive: boolean | null;
+  scopeVerdict: ScopeVerdict;
+  warningCount: number;
+  checkedAt: string;
+  siren: string | null;
+  rna: string | null;
+}
