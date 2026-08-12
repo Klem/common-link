@@ -1,6 +1,8 @@
 package org.commonlink
 
 import com.ninjasquad.springmockk.MockkBean
+import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.AuthRateLimiter
 import org.commonlink.security.JwtService
@@ -79,6 +81,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var onboardingGateService: OnboardingGateService
     @MockkBean private lateinit var complianceAlertService: ComplianceAlertService
     @MockkBean private lateinit var complianceAuditLogService: ComplianceAuditLogService
+    @MockkBean private lateinit var associationRegistryCheckRepository: AssociationRegistryCheckRepository
+    @MockkBean private lateinit var associationProfileRepository: AssociationProfileRepository
 
     @Test
     fun contextLoads() {

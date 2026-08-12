@@ -75,8 +75,8 @@ class SanctionScreeningServiceTest {
     @BeforeEach
     fun setup() {
         every { repository.findAll() } returns listOf(fictivusAlexius, zorbalIndustries, deExemplaJanus)
-        every { repository.findByNature(SanctionedNature.PHYSICAL_PERSON.name) } returns listOf(fictivusAlexius, deExemplaJanus)
-        every { repository.findByNature(SanctionedNature.LEGAL_ENTITY.name) } returns listOf(zorbalIndustries)
+        every { repository.findByNature(SanctionedNature.PHYSICAL_PERSON) } returns listOf(fictivusAlexius, deExemplaJanus)
+        every { repository.findByNature(SanctionedNature.LEGAL_ENTITY) } returns listOf(zorbalIndustries)
     }
 
     // ── Screening: exact and basic match ─────────────────────────────────────────────────────
@@ -165,7 +165,7 @@ class SanctionScreeningServiceTest {
     fun `nature filter restricts to physical persons only`() {
         val matches = screeningService.screen("FICTIVUS Alexius", nature = SanctionedNature.PHYSICAL_PERSON)
         assertTrue(matches.all { it.nature == SanctionedNature.PHYSICAL_PERSON })
-        verify { repository.findByNature(SanctionedNature.PHYSICAL_PERSON.name) }
+        verify { repository.findByNature(SanctionedNature.PHYSICAL_PERSON) }
     }
 
     @Test

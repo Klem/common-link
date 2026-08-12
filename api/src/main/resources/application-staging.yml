@@ -90,8 +90,6 @@ app:
     base-url: ${BODACC_BASE_URL:https://bodacc-datadila.opendatasoft.com/api/explore/v2.0}
   recherche-entreprises:
     base-url: ${RECHERCHE_ENTREPRISES_BASE_URL:https://recherche-entreprises.api.gouv.fr}
-  rna:
-    base-url: ${RNA_BASE_URL:https://api.asso.fr/rna}
   vop:
     demo-mode: true
     api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}

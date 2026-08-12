@@ -71,7 +71,7 @@ class SanctionScreeningService(
     fun screen(name: String, dateOfBirth: String? = null, nature: SanctionedNature? = null): List<ScreeningMatch> {
         val normalizedQuery = NameNormalizer.normalize(name)
         val candidates = if (nature != null) {
-            repository.findByNature(nature.name)
+            repository.findByNature(nature)
         } else {
             repository.findAll()
         }

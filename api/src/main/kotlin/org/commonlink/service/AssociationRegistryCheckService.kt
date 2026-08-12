@@ -23,7 +23,7 @@ import java.util.UUID
 
 /**
  * Performs a best-effort legal-existence pre-check for an association by querying
- * French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC, RNA/DJEPVA).
+ * French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC).
  *
  * All external calls degrade gracefully: a failure adds a warning to the result
  * but never blocks or influences the manual KYC review.
@@ -43,7 +43,6 @@ class AssociationRegistryCheckService(
     @Value("\${app.joafe.base-url}") private val joafeBaseUrl: String,
     @Value("\${app.bodacc.base-url}") private val bodaccBaseUrl: String,
     @Value("\${app.recherche-entreprises.base-url}") private val rechercheEntreprisesBaseUrl: String,
-    @Value("\${app.rna.base-url}") private val rnaBaseUrl: String,
 ) {
 
     private val log = LoggerFactory.getLogger(AssociationRegistryCheckService::class.java)
@@ -75,7 +74,6 @@ class AssociationRegistryCheckService(
      * (INSEE, BODACC) and the RNA-based check (JOAFE) are run independently when available — neither is skipped in favor
      * of the other.
      */
-    private val rnaRegex = Regex("W\\d{9}")
 
     private fun runLiveCheck(profile: AssociationProfile, checkedBy: UUID?): AssociationRegistryCheck {
         val warnings = mutableListOf<String>()
@@ -89,6 +87,7 @@ class AssociationRegistryCheckService(
         var associationExists: Boolean? = null
         var rnaFromSearch: String? = null
         var legalCategory: String? = null
+        var rnaActive: Boolean? = null
 
         if (siren != null) {
             try {
@@ -101,6 +100,7 @@ class AssociationRegistryCheckService(
                         val natureJuridique = first.path("nature_juridique").asText("").takeIf { it.isNotBlank() }
                         legalCategory = natureJuridique
                         associationExists = estAssociation || natureJuridique == ACCEPTED_LEGAL_CATEGORY
+                        rnaActive = estAssociation  // RNA-native: recherche-entreprises aggregates from RNA
                         rnaFromSearch = first.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
                         val dirigeants: JsonNode = first.path("dirigeants")
                         if (dirigeants.isArray) {
@@ -218,36 +218,6 @@ class AssociationRegistryCheckService(
             } catch (ex: Exception) {
                 log.warn("BODACC lookup failed for SIREN={}: {}", siren, ex.message)
                 warnings.add("bodacc: ${ex.message ?: "unavailable"}")
-            }
-        }
-
-        // ── Step 5: RNA / DJEPVA (RNA, active status and additional representatives) ────────────
-        var rnaActive: Boolean? = null
-
-        if (rna != null) {
-            if (!rnaRegex.matches(rna)) {
-                warnings.add("rna: format invalide (attendu W suivi de 9 chiffres, reçu '$rna')")
-            } else {
-                try {
-                    restTemplate.getForObject("$rnaBaseUrl/$rna", String::class.java)?.let { body ->
-                        val tree: JsonNode = objectMapper.readTree(body)
-                        val activeNode = tree.path("active")
-                        rnaActive = if (activeNode.isBoolean) activeNode.asBoolean() else null
-                        val representants: JsonNode = tree.path("representants")
-                        if (representants.isArray) {
-                            (0 until representants.size()).forEach { i ->
-                                val r = representants[i]
-                                val prenom = r.path("prenom").asText("").trim()
-                                val nom = r.path("nom").asText("").trim()
-                                val name = "$prenom $nom".trim()
-                                if (name.isNotBlank()) officers.add(name)
-                            }
-                        }
-                    }
-                } catch (ex: Exception) {
-                    log.warn("RNA lookup failed for RNA={}: {}", rna, ex.message)
-                    warnings.add("rna: ${ex.message ?: "unavailable"}")
-                }
             }
         }
 
