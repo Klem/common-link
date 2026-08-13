@@ -24,6 +24,12 @@ export const BeneficialOwnerOrigin = {
 } as const;
 export type BeneficialOwnerOrigin = typeof BeneficialOwnerOrigin[keyof typeof BeneficialOwnerOrigin];
 
+export const BeneficialOwnerType = {
+  BENEFICIAL_OWNER: 'BENEFICIAL_OWNER',
+  REPRESENTATIVE: 'REPRESENTATIVE',
+} as const;
+export type BeneficialOwnerType = typeof BeneficialOwnerType[keyof typeof BeneficialOwnerType];
+
 /** Full set of document types handled by the admin verification console. */
 export const AssociationDocumentType = {
   VERIF_STATUTS: 'VERIF_STATUTS',
@@ -93,13 +99,14 @@ export interface VigilanceMeasuresDto {
   requiredDocuments: string[];
 }
 
-/** A beneficial owner record returned by the beneficial owners API. */
+/** A beneficial owner or legal representative record returned by the API. */
 export interface BeneficialOwnerDto {
   id: string;
   name: string;
   role: string | null;
   dateOfBirth: string | null;
   origin: BeneficialOwnerOrigin;
+  type: BeneficialOwnerType;
   collectedAt: string;
   confirmedBy: string;
   discarded: boolean;
@@ -112,6 +119,8 @@ export const FreezeScreenStatus = {
   NOT_PERFORMED: 'NOT_PERFORMED',
   PASSED: 'PASSED',
   HIT: 'HIT',
+  /** Entries were found and a compliance officer ruled them false positives — no longer blocking. */
+  HIT_CLEARED: 'HIT_CLEARED',
   UNAVAILABLE: 'UNAVAILABLE',
 } as const;
 export type FreezeScreenStatus = typeof FreezeScreenStatus[keyof typeof FreezeScreenStatus];
@@ -122,10 +131,11 @@ export interface FreezeScreenStatusDto {
   checkedAt: string | null;
 }
 
-/** Request body for adding a beneficial owner. */
+/** Request body for adding a beneficial owner or legal representative. */
 export interface AddBeneficialOwnerRequest {
   name: string;
   role?: string | null;
   dateOfBirth?: string | null;
   origin: BeneficialOwnerOrigin;
+  type: BeneficialOwnerType;
 }

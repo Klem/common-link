@@ -11,7 +11,7 @@
 --   payouts, donations (to its campaigns), related onchain_jobs,
 --   campaigns + milestones + budgets + cover images, payees, IBANs,
 --   Monerium/Mollie connections, association_logos (cascade from association_profiles),
---   fiscal mandates, KYC documents, registry checks,
+--   fiscal mandates, KYC documents, registry checks, beneficial owners,
 --   magic_link_tokens, refresh_tokens, email_verification_tokens,
 --   the association_profiles row and the users account.
 --
@@ -24,7 +24,7 @@
 DO $$
     DECLARE
         -- ── UUID(s) (users.id) of the associations to fully remove ──
-        v_target_user_ids UUID[] := ARRAY[
+        v_target_user_ids UUID[] := ARRAY[ '830d4374-6660-4c11-ba2f-714271cb7182'
             -- 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
         ]::UUID[];
 
@@ -162,6 +162,14 @@ DO $$
         DELETE FROM compliance_alert
         WHERE subject_id = ANY(v_target_assoc_ids);
         GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'compliance_alert deleted: %', v_deleted;
+
+        -- ════════════════════════════════════════════════════════════
+        -- 7c. BENEFICIAL OWNERS  (V63 — FK beneficial_owner_association_id_fkey
+        --     references association_profiles; no CASCADE)
+        -- ════════════════════════════════════════════════════════════
+        DELETE FROM beneficial_owner bo
+        WHERE bo.association_id = ANY(v_target_assoc_ids);
+        GET DIAGNOSTICS v_deleted = ROW_COUNT;  RAISE NOTICE 'beneficial_owner deleted: %', v_deleted;
 
         -- ════════════════════════════════════════════════════════════
         -- 8. ASSOCIATION PROFILES  (cascade → payees, payee_ibans,

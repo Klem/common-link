@@ -3,6 +3,9 @@ package org.commonlink
 import com.ninjasquad.springmockk.MockkBean
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
+import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.FreezeScreeningMatchRepository
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.AuthRateLimiter
 import org.commonlink.security.JwtService
@@ -83,6 +86,9 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var complianceAuditLogService: ComplianceAuditLogService
     @MockkBean private lateinit var associationRegistryCheckRepository: AssociationRegistryCheckRepository
     @MockkBean private lateinit var associationProfileRepository: AssociationProfileRepository
+    @MockkBean private lateinit var beneficialOwnerRepository: BeneficialOwnerRepository
+    @MockkBean private lateinit var donorProfileRepository: DonorProfileRepository
+    @MockkBean private lateinit var freezeScreeningMatchRepository: FreezeScreeningMatchRepository
 
     @Test
     fun contextLoads() {

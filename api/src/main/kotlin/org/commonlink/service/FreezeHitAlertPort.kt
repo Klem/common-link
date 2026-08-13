@@ -22,6 +22,22 @@ interface FreezeHitAlertPort {
      *                       and the UUID of the affected entity.
      */
     fun onFreezeHit(associationId: UUID, hits: List<FreezeHitTarget>)
+
+    /**
+     * Raises an alert for a screening that could not be performed.
+     *
+     * An impossible control is not a favorable control: without this the officer never learns
+     * that a mandatory check was skipped. See [ComplianceAlertOrigin.SCREENING_UNAVAILABLE].
+     *
+     * @param subjectType Nature of the party whose screening was attempted.
+     * @param subjectId   UUID of that party, or null when the failure is system-wide.
+     * @param reason      Technical cause only — never a name. Mirrors the journal convention.
+     */
+    fun onScreeningUnavailable(
+        subjectType: ComplianceAlertSubjectType,
+        subjectId: UUID?,
+        reason: String,
+    )
 }
 
 /**
@@ -32,10 +48,16 @@ interface FreezeHitAlertPort {
  * - REPRESENTATIVE → [org.commonlink.entity.AssociationProfile.id] (no separate entity for the signer)
  * - BENEFICIAL_OWNER → [org.commonlink.entity.BeneficialOwner.id]
  * - DONOR → [org.commonlink.entity.DonorProfile.id]
+ *
+ * [auditLogSeqRef] is the `sequence_no` of the `FREEZE_SCREENING_HIT` journal entry that recorded
+ * this correspondence. It is what ties the alert to its evidence: without it
+ * `compliance_alert.audit_log_seq_ref` stays null and the chain alert → journal entry →
+ * [org.commonlink.entity.FreezeScreeningMatch] has no anchor.
  */
 data class FreezeHitTarget(
     val role: FreezeHitRole,
     val subjectId: UUID,
+    val auditLogSeqRef: Long? = null,
 )
 
 enum class FreezeHitRole { ASSOCIATION, REPRESENTATIVE, BENEFICIAL_OWNER, DONOR }
@@ -63,6 +85,7 @@ class FreezeHitAlertAdapter(
                     subjectType = subjectTypeFor(hit.role),
                     subjectId = subjectIdFor(associationId, hit),
                     severity = ComplianceAlertSeverity.HIGH,
+                    auditLogSeqRef = hit.auditLogSeqRef,
                 )
             } catch (ex: Exception) {
                 logger.error(
@@ -70,6 +93,31 @@ class FreezeHitAlertAdapter(
                     hit.role, hit.subjectId, ex.message, ex,
                 )
             }
+        }
+    }
+
+    /**
+     * Severity is MEDIUM, not HIGH: an unavailable screening means the platform does not know
+     * whether there is a match, whereas a HIT means it does. Both must be seen; only one is a
+     * suspected correspondence.
+     */
+    override fun onScreeningUnavailable(
+        subjectType: ComplianceAlertSubjectType,
+        subjectId: UUID?,
+        reason: String,
+    ) {
+        try {
+            alertService.createOrIgnore(
+                origin = ComplianceAlertOrigin.SCREENING_UNAVAILABLE,
+                subjectType = if (subjectId == null) ComplianceAlertSubjectType.SYSTEM else subjectType,
+                subjectId = subjectId,
+                severity = ComplianceAlertSeverity.MEDIUM,
+            )
+        } catch (ex: Exception) {
+            logger.error(
+                "Échec création alerte criblage indisponible — sujet {} motif {}: {}",
+                subjectId, reason, ex.message, ex,
+            )
         }
     }
 

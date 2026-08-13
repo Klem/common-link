@@ -7,6 +7,7 @@ import io.mockk.verify
 import org.commonlink.config.RiskClassificationProperties
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
+import org.commonlink.entity.BeneficialOwnerType
 import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
@@ -63,7 +64,7 @@ class VerificationServiceTest {
     private fun mockPendingProfile(
         contactEmail: String? = "contact@assoc.fr",
         userEmail: String = "user@assoc.fr",
-        hasUbo: Boolean = true,
+        hasRepresentative: Boolean = true,
     ): AssociationProfile {
         val user: User = mockk(relaxed = true)
         every { user.email } returns userEmail
@@ -77,7 +78,7 @@ class VerificationServiceTest {
 
         every { associationRepo.findById(associationId) } returns Optional.of(profile)
         every { associationRepo.save(profile) } returns profile
-        every { beneficialOwnerRepo.existsByAssociationIdAndDiscardedFalse(associationId) } returns hasUbo
+        every { beneficialOwnerRepo.existsByAssociationIdAndTypeAndDiscardedFalse(associationId, BeneficialOwnerType.REPRESENTATIVE) } returns hasRepresentative
         every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.CLEAR
 
         return profile
@@ -290,26 +291,37 @@ class VerificationServiceTest {
         verify(exactly = 1) { associationRepo.save(profile) }
     }
 
-    // ─── UBO check ───────────────────────────────────────────────────────────
+    // ─── representative check ─────────────────────────────────────────────────
 
     @Test
-    fun `adminApprove throws ConflictException when no beneficial owner has been confirmed`() {
-        mockPendingProfile(hasUbo = false)
+    fun `adminApprove throws ConflictException when no legal representative has been confirmed`() {
+        mockPendingProfile(hasRepresentative = false)
 
         assertThrows(ConflictException::class.java) {
             service.adminApprove(associationId)
         }
-        verify(exactly = 1) { complianceAuditLogService.appendNoUboRefusal(associationId) }
+        verify(exactly = 1) { complianceAuditLogService.appendNoRepresentativeRefusal(associationId) }
         verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
     }
 
     @Test
-    fun `adminApprove succeeds when at least one beneficial owner is confirmed`() {
-        val profile = mockPendingProfile(hasUbo = true)
+    fun `adminApprove proceeds when at least one legal representative is confirmed`() {
+        val profile = mockPendingProfile(hasRepresentative = true)
 
         service.adminApprove(associationId)
 
-        verify(exactly = 0) { complianceAuditLogService.appendNoUboRefusal(any()) }
+        verify(exactly = 0) { complianceAuditLogService.appendNoRepresentativeRefusal(any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove succeeds when representative is confirmed but no beneficial owners exist`() {
+        // BENEFICIAL_OWNER is optional — only REPRESENTATIVE absence blocks approval (art. R.561-3 CMF)
+        val profile = mockPendingProfile(hasRepresentative = true)
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendNoRepresentativeRefusal(any()) }
         verify(exactly = 1) { associationRepo.save(profile) }
     }
 

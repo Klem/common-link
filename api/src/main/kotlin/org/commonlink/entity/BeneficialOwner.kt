@@ -57,6 +57,11 @@ class BeneficialOwner(
     @Column(name = "origin", nullable = false, length = 20)
     val origin: BeneficialOwnerOrigin,
 
+    /** Catégorie de la personne : bénéficiaire effectif strict ou représentant légal (art. R.561-3 CMF). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 20)
+    val type: BeneficialOwnerType = BeneficialOwnerType.BENEFICIAL_OWNER,
+
     /** Horodatage de la confirmation par le curateur — identique à la date de collecte réglementaire. */
     @Column(name = "collected_at", nullable = false, updatable = false)
     val collectedAt: Instant,

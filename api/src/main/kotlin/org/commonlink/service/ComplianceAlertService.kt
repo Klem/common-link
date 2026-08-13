@@ -49,16 +49,54 @@ class ComplianceAlertService(
 
     companion object {
         private val OPEN_STATUSES = listOf(ComplianceAlertStatus.PENDING, ComplianceAlertStatus.IN_REVIEW)
-        val FREEZE_HIT_ORIGINS = listOf(ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING, ComplianceAlertOrigin.FREEZE_HIT_DONATION)
+
+        /**
+         * Origins surfaced on the compliance officer's freeze screens.
+         *
+         * [ComplianceAlertOrigin.SCREENING_UNAVAILABLE] belongs here for the same reason
+         * `docs/legal/E4-journal-controles-de-gel.md` §4.4 makes failure records mandatory: a
+         * surface that shows only the controls that succeeded cannot distinguish "no match" from
+         * "no control", and is therefore misleading.
+         */
+        val FREEZE_ORIGINS = listOf(
+            ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+            ComplianceAlertOrigin.FREEZE_HIT_DONATION,
+            ComplianceAlertOrigin.SCREENING_UNAVAILABLE,
+        )
     }
 
     /**
-     * Returns a paginated list of freeze-hit alerts (FREEZE_HIT_ONBOARDING and FREEZE_HIT_DONATION),
-     * ordered by the provided [pageable]. Intended for the compliance officer list screen (prompt 17).
+     * Returns a paginated list of freeze-related alerts (hits and unavailable screenings),
+     * ordered by the provided [pageable]. Intended for the compliance officer list screen.
      */
     @Transactional(readOnly = true)
     fun listFreezeHitAlerts(pageable: Pageable): Page<ComplianceAlert> =
-        repo.findByOriginIn(FREEZE_HIT_ORIGINS, pageable)
+        repo.findByOriginIn(FREEZE_ORIGINS, pageable)
+
+    /**
+     * Counts freeze-related alerts still awaiting treatment (PENDING or IN_REVIEW).
+     *
+     * Distinct from the total returned by [listFreezeHitAlerts]: the dashboard tile labelled
+     * "alertes en attente" must not count closed alerts, or it reports a permanently growing
+     * backlog that no amount of treatment reduces.
+     */
+    @Transactional(readOnly = true)
+    fun countOpenFreezeAlerts(): Long =
+        repo.countByOriginInAndStatusIn(FREEZE_ORIGINS, OPEN_STATUSES)
+
+    /**
+     * Returns the closed alerts previously ruled on for the same subject, most recent first.
+     *
+     * Purely informative: closure is irreversible and a fresh correspondence always raises a new
+     * alert (`docs/legal/E4-traitement-alerte-et-information-tresor.md` §4.1). Showing the prior
+     * ruling spares the officer from re-deriving an identical analysis on every donation, without
+     * suppressing anything automatically — a whitelist surviving a register change would be an
+     * LCB-FT hole.
+     */
+    @Transactional(readOnly = true)
+    fun findPriorDecisions(subjectId: UUID, excludingAlertId: UUID): List<ComplianceAlert> =
+        repo.findBySubjectIdAndStatusOrderByCreatedAtDesc(subjectId, ComplianceAlertStatus.CLOSED)
+            .filter { it.id != excludingAlertId }
 
     /**
      * Returns a single alert by id or throws [NotFoundException].

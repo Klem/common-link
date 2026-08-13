@@ -50,4 +50,16 @@ interface ComplianceAuditLogRepository : JpaRepository<ComplianceAuditLog, UUID>
 
     /** The twenty most recent journal rows in reverse sequence order — used by the compliance dashboard. */
     fun findTop20ByOrderBySequenceNoDesc(): List<ComplianceAuditLog>
+
+    /**
+     * Most recent entry of one event type for one subject.
+     *
+     * Used by [org.commonlink.service.FreezeClearanceService] to date an `ALERT_CLOSED` decision
+     * on the journal's own sequence: the clearance it grants must cover the evidence that existed
+     * when the officer ruled, and nothing recorded after it.
+     */
+    fun findTopBySubjectIdAndEventTypeOrderBySequenceNoDesc(
+        subjectId: UUID,
+        eventType: String,
+    ): ComplianceAuditLog?
 }

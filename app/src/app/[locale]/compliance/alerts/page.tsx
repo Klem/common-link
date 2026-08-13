@@ -75,9 +75,10 @@ export default function AlertsPage() {
             <p style={{ color: 'var(--color-text-2)', marginTop: 24 }}>{t('alerts.empty')}</p>
           ) : (
             <div style={{ overflowX: 'auto', marginTop: 16 }}>
-              <table>
+              <table className="cm-table">
                 <thead>
                   <tr>
+                    <th>{t('alerts.col.subject')}</th>
                     <th>{t('alerts.col.origin')}</th>
                     <th>{t('alerts.col.severity')}</th>
                     <th>{t('alerts.col.status')}</th>
@@ -88,6 +89,12 @@ export default function AlertsPage() {
                 <tbody>
                   {data.content.map((row) => (
                     <tr key={row.id}>
+                      <td>
+                        <strong>{row.subjectLabel ?? t('evidence.subjectUnresolved')}</strong>
+                        <div style={{ fontSize: 12, color: 'var(--color-text-2)' }}>
+                          {t(`alerts.subjectType.${row.subjectType}`)}
+                        </div>
+                      </td>
                       <td>
                         <span style={{ fontFamily: 'monospace', fontSize: 13 }}>
                           {t(`alerts.origin.${row.origin}`)}

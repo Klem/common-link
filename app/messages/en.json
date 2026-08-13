@@ -340,10 +340,229 @@
     "widgetDestinationSaved": "Destination campaign saved.",
     "widgetTokenGenerated": "Widget token generated."
   },
+  "compliance": {
+    "alerts": {
+      "actions": {
+        "view": "View"
+      },
+      "ageFormat": {
+        "daysHours": "{days}d {hours}h",
+        "hoursMinutes": "{hours}h {minutes}min",
+        "minutes": "{minutes}min"
+      },
+      "col": {
+        "actions": "Actions",
+        "age": "Age",
+        "origin": "Origin",
+        "severity": "Severity",
+        "status": "Status",
+        "subject": "Subject"
+      },
+      "empty": "No freeze alerts.",
+      "error": "Error loading alerts.",
+      "loading": "Loading alerts…",
+      "origin": {
+        "FREEZE_HIT_DONATION": "Freeze — Donation",
+        "FREEZE_HIT_ONBOARDING": "Freeze — Onboarding",
+        "SCREENING_UNAVAILABLE": "Screening unavailable"
+      },
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      },
+      "severity": {
+        "HIGH": "High",
+        "LOW": "Low",
+        "MEDIUM": "Medium"
+      },
+      "status": {
+        "CLOSED": "Closed",
+        "IN_REVIEW": "Under review",
+        "PENDING": "Pending"
+      },
+      "subjectType": {
+        "ASSOCIATION": "Association",
+        "BENEFICIAL_OWNER": "Beneficial owner",
+        "DECLARANT": "Officer (registry)",
+        "DONOR": "Donor",
+        "REPRESENTATIVE": "Legal representative",
+        "SYSTEM": "System"
+      },
+      "title": "Freeze alerts"
+    },
+    "auditLog": {
+      "col": {
+        "date": "Date",
+        "event": "Event",
+        "seq": "Sequence no."
+      },
+      "empty": "No entries.",
+      "error": "Error loading audit log.",
+      "loading": "Loading audit log...",
+      "title": "Recent audit log"
+    },
+    "dashboard": {
+      "alertCount": {
+        "error": "Loading error.",
+        "loading": "Loading...",
+        "title": "Pending freeze alerts",
+        "viewAll": "View all alerts"
+      },
+      "title": "Dashboard"
+    },
+    "detail": {
+      "age": "Age",
+      "backToList": "Back to list",
+      "closed": {
+        "decision": "Decision",
+        "rationale": "Rationale",
+        "title": "Decision recorded"
+      },
+      "createdAt": "Detected on",
+      "decision": {
+        "FALSE_POSITIVE": "False positive — misidentification",
+        "LEGITIMATE": "No match confirmed — legitimate situation",
+        "SUSPICIOUS": "Match confirmed",
+        "label": "Decision",
+        "placeholder": "Select a decision…",
+        "title": "Close alert"
+      },
+      "error": "Error loading alert.",
+      "history": {
+        "col": {
+          "date": "Date",
+          "event": "Event",
+          "matchCount": "Matches",
+          "reason": "Reason",
+          "registryDate": "Register version",
+          "seq": "Sequence no.",
+          "threshold": "Threshold",
+          "topScore": "Top score"
+        },
+        "empty": "No history available.",
+        "title": "Freeze-screening audit history"
+      },
+      "loading": "Loading alert…",
+      "metadata": "Information",
+      "origin": "Origin",
+      "rationale": {
+        "label": "Rationale (mandatory)",
+        "placeholder": "State the elements supporting this decision."
+      },
+      "severity": "Severity",
+      "status": "Status",
+      "subject": "Subject",
+      "subjectType": "Subject type",
+      "submit": "Record decision",
+      "submitting": "Saving…",
+      "takeInCharge": {
+        "button": "Take in charge",
+        "description": "Take this alert in charge to begin review.",
+        "title": "Take in charge"
+      },
+      "takenInChargeAt": "Taken in charge on",
+      "takenInChargeBy": "Taken in charge by",
+      "title": "Alert detail",
+      "treasury": {
+        "method": "Method used",
+        "methodPlaceholder": "E.g.: secure email, registered letter",
+        "note": "Notifying the Direction générale du Trésor is a human action performed outside the application. No automated transmission exists or will be built. These fields record proof of that action only.",
+        "notifiedAt": "Notification date",
+        "ref": "Notification reference",
+        "refPlaceholder": "Number or identifier assigned to the notification",
+        "requiredForSuspicious": "These three fields are mandatory when the decision is a confirmed match.",
+        "section": "Proof of notification to the Direction générale du Trésor"
+      }
+    },
+    "evidence": {
+      "algorithm": "Algorithm",
+      "col": {
+        "dateOfBirth": "Date of birth",
+        "idRegistre": "Register no.",
+        "legalReference": "Sanctions programme",
+        "matchedName": "Register entry",
+        "nature": "Nature",
+        "score": "Score"
+      },
+      "conditionsSide": "Screening conditions",
+      "empty": "No correspondence recorded for this alert. A screening that could not be performed produces no comparison.",
+      "matchCount": "Correspondences",
+      "nature": {
+        "LEGAL_ENTITY": "Legal entity",
+        "PHYSICAL_PERSON": "Natural person",
+        "VESSEL": "Vessel"
+      },
+      "no": "No",
+      "registryCheckedAt": "Registry checked on",
+      "registryPublicationDate": "Register version",
+      "rna": "RNA",
+      "rnaActive": "RNA active",
+      "screenedNormalized": "Value compared",
+      "screenedParty": "Screened party",
+      "screenedSide": "What was screened",
+      "siren": "SIREN",
+      "snapshotNote": "Register entries are recorded as they stood at screening time, so this evidence survives the entry being delisted.",
+      "subject": "Subject",
+      "subjectId": "Technical identifier",
+      "subjectType": "Subject type",
+      "subjectUnresolved": "Unresolved subject",
+      "threshold": "Score threshold",
+      "title": "Screening evidence",
+      "unknown": "Unknown",
+      "yes": "Yes"
+    },
+    "nav": {
+      "alerts": "Freeze alerts",
+      "dashboard": "Dashboard"
+    },
+    "priorDecisions": {
+      "date": "Date",
+      "decision": "Decision",
+      "note": "Informative only. Closing an alert is irreversible and every new correspondence raises a new alert: this one must still be examined on its own merits.",
+      "origin": "Origin",
+      "title": "Previous rulings on this subject"
+    },
+    "registry": {
+      "col": {
+        "association": "Association",
+        "date": "Scan date",
+        "exists": "Existence",
+        "rna": "RNA active",
+        "verdict": "Perimeter",
+        "warnings": "Warnings"
+      },
+      "empty": "No scans recorded.",
+      "error": "Error loading scans.",
+      "exists": {
+        "false": "No",
+        "null": "—",
+        "true": "Yes"
+      },
+      "loading": "Loading scans...",
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      },
+      "rna": {
+        "false": "Inactive",
+        "null": "Not available",
+        "true": "Active"
+      },
+      "title": "Latest registry scans",
+      "verdict": {
+        "IN_SCOPE": "In scope",
+        "OUT_OF_SCOPE": "Out of scope",
+        "UNDETERMINED": "Undetermined"
+      }
+    },
+    "shell": {
+      "logout": "Log out",
+      "navLabel": "Navigation",
+      "title": "LCB-FT Compliance"
+    }
+  },
   "curator": {
     "dossier": {
       "approval": {
-        "blockedNoUbo": "Approval blocked: no beneficial owner has been retained.",
+        "blockedNoRepresentative": "Approval blocked: no legal representative has been entered.",
         "blockedScope": "Approval blocked: the association is out of loi 1901 scope."
       },
       "registry": {
@@ -363,6 +582,13 @@
           "outOfScopeWarning": "Approval is blocked: the association is out of loi 1901 scope.",
           "title": "Loi 1901 scope"
         }
+      },
+      "representative": {
+        "add": {
+          "title": "Add a legal representative"
+        },
+        "noRetained": "No legal representative retained — approval is blocked.",
+        "title": "Legal Representatives"
       },
       "risk": {
         "HIGH": "High",
@@ -409,6 +635,7 @@
     },
     "freezeScreen": {
       "HIT": "a match was detected — dossier awaiting compliance officer decision",
+      "HIT_CLEARED": "match ruled a false positive by the compliance officer — screened on {date}",
       "NOT_PERFORMED": "no screening has been performed yet",
       "PASSED": "screening passed on {date}",
       "UNAVAILABLE": "screening could not be completed — approval suspended",
@@ -1645,162 +1872,5 @@
     "submit": "Donate",
     "submitting": "Processing...",
     "unavailable": "This widget is not available."
-  },
-  "compliance": {
-    "shell": {
-      "title": "LCB-FT Compliance",
-      "navLabel": "Navigation",
-      "logout": "Log out"
-    },
-    "nav": {
-      "dashboard": "Dashboard",
-      "alerts": "Freeze alerts"
-    },
-    "dashboard": {
-      "title": "Dashboard",
-      "alertCount": {
-        "title": "Pending freeze alerts",
-        "viewAll": "View all alerts",
-        "loading": "Loading...",
-        "error": "Loading error."
-      }
-    },
-    "registry": {
-      "title": "Latest registry scans",
-      "loading": "Loading scans...",
-      "error": "Error loading scans.",
-      "empty": "No scans recorded.",
-      "col": {
-        "association": "Association",
-        "verdict": "Perimeter",
-        "exists": "Existence",
-        "rna": "RNA active",
-        "warnings": "Warnings",
-        "date": "Scan date"
-      },
-      "exists": {
-        "true": "Yes",
-        "false": "No",
-        "null": "—"
-      },
-      "rna": {
-        "true": "Active",
-        "false": "Inactive",
-        "null": "Not available"
-      },
-      "verdict": {
-        "IN_SCOPE": "In scope",
-        "OUT_OF_SCOPE": "Out of scope",
-        "UNDETERMINED": "Undetermined"
-      },
-      "pagination": {
-        "pageOf": "Page {current} of {total}"
-      }
-    },
-    "auditLog": {
-      "title": "Recent audit log",
-      "loading": "Loading audit log...",
-      "error": "Error loading audit log.",
-      "empty": "No entries.",
-      "col": {
-        "seq": "Sequence no.",
-        "event": "Event",
-        "date": "Date"
-      }
-    },
-    "alerts": {
-      "title": "Freeze alerts",
-      "loading": "Loading alerts…",
-      "error": "Error loading alerts.",
-      "empty": "No freeze alerts.",
-      "col": {
-        "origin": "Origin",
-        "severity": "Severity",
-        "status": "Status",
-        "age": "Age",
-        "actions": "Actions"
-      },
-      "origin": {
-        "FREEZE_HIT_ONBOARDING": "Freeze — Onboarding",
-        "FREEZE_HIT_DONATION": "Freeze — Donation"
-      },
-      "severity": {
-        "HIGH": "High",
-        "MEDIUM": "Medium",
-        "LOW": "Low"
-      },
-      "status": {
-        "PENDING": "Pending",
-        "IN_REVIEW": "Under review",
-        "CLOSED": "Closed"
-      },
-      "actions": {
-        "view": "View"
-      },
-      "pagination": {
-        "pageOf": "Page {current} of {total}"
-      },
-      "ageFormat": {
-        "daysHours": "{days}d {hours}h",
-        "hoursMinutes": "{hours}h {minutes}min",
-        "minutes": "{minutes}min"
-      }
-    },
-    "detail": {
-      "loading": "Loading alert…",
-      "error": "Error loading alert.",
-      "backToList": "Back to list",
-      "title": "Alert detail",
-      "metadata": "Information",
-      "origin": "Origin",
-      "severity": "Severity",
-      "status": "Status",
-      "createdAt": "Detected on",
-      "age": "Age",
-      "takenInChargeAt": "Taken in charge on",
-      "submitting": "Saving…",
-      "history": {
-        "title": "Freeze-screening audit history",
-        "empty": "No history available.",
-        "col": {
-          "seq": "Sequence no.",
-          "event": "Event",
-          "date": "Date"
-        }
-      },
-      "takeInCharge": {
-        "title": "Take in charge",
-        "description": "Take this alert in charge to begin review.",
-        "button": "Take in charge"
-      },
-      "decision": {
-        "title": "Close alert",
-        "label": "Decision",
-        "placeholder": "Select a decision…",
-        "LEGITIMATE": "No match confirmed — legitimate situation",
-        "SUSPICIOUS": "Match confirmed",
-        "FALSE_POSITIVE": "False positive — misidentification"
-      },
-      "rationale": {
-        "label": "Rationale (mandatory)",
-        "placeholder": "State the elements supporting this decision."
-      },
-      "treasury": {
-        "section": "Proof of notification to the Direction générale du Trésor",
-        "note": "Notifying the Direction générale du Trésor is a human action performed outside the application. No automated transmission exists or will be built. These fields record proof of that action only.",
-        "notifiedAt": "Notification date",
-        "method": "Method used",
-        "methodPlaceholder": "E.g.: secure email, registered letter",
-        "ref": "Notification reference",
-        "refPlaceholder": "Number or identifier assigned to the notification",
-        "requiredForSuspicious": "These three fields are mandatory when the decision is a confirmed match."
-      },
-      "submit": "Record decision",
-      "closed": {
-        "title": "Decision recorded",
-        "decision": "Decision",
-        "rationale": "Rationale"
-      }
-    }
   }
 }

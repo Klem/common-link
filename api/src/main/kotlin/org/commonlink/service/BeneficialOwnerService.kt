@@ -57,6 +57,7 @@ class BeneficialOwnerService(
                 role = request.role,
                 dateOfBirth = request.dateOfBirth,
                 origin = request.origin,
+                type = request.type,
                 collectedAt = now,
                 confirmedBy = curatorUserId,
             )
@@ -69,6 +70,7 @@ class BeneficialOwnerService(
             payload = mapOf(
                 "beneficialOwnerId" to owner.id.toString(),
                 "origin" to owner.origin.name,
+                "type" to owner.type.name,
                 "role" to owner.role,
             ),
         )
@@ -116,6 +118,7 @@ private fun BeneficialOwner.toDto() = BeneficialOwnerDto(
     role = role,
     dateOfBirth = dateOfBirth,
     origin = origin,
+    type = type,
     collectedAt = collectedAt,
     confirmedBy = confirmedBy,
     discarded = discarded,

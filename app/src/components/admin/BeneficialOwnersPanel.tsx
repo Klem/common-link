@@ -4,18 +4,21 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { listBeneficialOwners, addBeneficialOwner, discardBeneficialOwner } from '@/lib/api/admin';
 import type { BeneficialOwnerDto } from '@/types/admin';
-import { BeneficialOwnerOrigin } from '@/types/admin';
+import { BeneficialOwnerOrigin, BeneficialOwnerType } from '@/types/admin';
 
 interface Props {
   associationId: string;
-  /** Officers collected from the latest registry scan — offered as suggestions. */
+  /** Officers collected from the latest registry scan — offered as suggestions (BENEFICIAL_OWNER panel only). */
   officers: string[];
-  /** Called whenever the retained owner count changes — used by the parent to gate approval. */
+  /** Panel type: filters which rows are shown and sent. Defaults to BENEFICIAL_OWNER. */
+  type?: BeneficialOwnerType;
+  /** Called whenever the retained count for this panel's type changes — used by the parent to gate approval. */
   onRetainedCountChange?: (count: number) => void;
 }
 
-export function BeneficialOwnersPanel({ associationId, officers, onRetainedCountChange }: Props) {
+export function BeneficialOwnersPanel({ associationId, officers, type = BeneficialOwnerType.BENEFICIAL_OWNER, onRetainedCountChange }: Props) {
   const t = useTranslations('curator.dossier');
+  const isRepresentativePanel = type === BeneficialOwnerType.REPRESENTATIVE;
 
   const [owners, setOwners] = useState<BeneficialOwnerDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +53,8 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
   // Track whether the form was triggered from a registry officer suggestion
   const [formOriginFromRegistry, setFormOriginFromRegistry] = useState(false);
 
-  const retained = owners.filter((o) => !o.discarded);
-  const discarded = owners.filter((o) => o.discarded);
+  const retained = owners.filter((o) => !o.discarded && o.type === type);
+  const discarded = owners.filter((o) => o.discarded && o.type === type);
 
   useEffect(() => {
     onRetainedCountChange?.(retained.length);
@@ -81,6 +84,7 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
         role: formRole.trim() || null,
         dateOfBirth: formDob.trim() || null,
         origin,
+        type,
       });
       setOwners((prev) => [...prev, created]);
       setShowForm(false);
@@ -120,11 +124,11 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
   return (
     <div style={containerStyle}>
       <span style={{ fontWeight: 700, fontSize: 13, display: 'block', marginBottom: 10 }}>
-        {t('ubo.title')}
+        {isRepresentativePanel ? t('representative.title') : t('ubo.title')}
       </span>
 
-      {/* Blocking warning — no retained owner */}
-      {retained.length === 0 && (
+      {/* Blocking warning — only for REPRESENTATIVE panel (required for approval) */}
+      {retained.length === 0 && isRepresentativePanel && (
         <div
           style={{
             background: 'rgba(231,76,60,0.08)',
@@ -137,7 +141,7 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
             fontSize: 13,
           }}
         >
-          {t('ubo.noRetained')}
+          {isRepresentativePanel ? t('representative.noRetained') : t('ubo.noRetained')}
         </div>
       )}
 
@@ -260,8 +264,8 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
         </div>
       )}
 
-      {/* Registry officers — suggested starting points */}
-      {officers.length > 0 && (
+      {/* Registry officers — suggested starting points (BENEFICIAL_OWNER panel only) */}
+      {!isRepresentativePanel && officers.length > 0 && (
         <div
           style={{
             marginTop: 10,
@@ -303,7 +307,7 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
             className="btn btn-secondary btn-sm"
             onClick={() => setShowForm(true)}
           >
-            + {t('ubo.add.title')}
+            + {isRepresentativePanel ? t('representative.add.title') : t('ubo.add.title')}
           </button>
         ) : (
           <div
@@ -317,7 +321,7 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
               background: 'var(--color-bg-2, var(--color-bg))',
             }}
           >
-            <span style={{ fontWeight: 600, fontSize: 13 }}>{t('ubo.add.title')}</span>
+            <span style={{ fontWeight: 600, fontSize: 13 }}>{isRepresentativePanel ? t('representative.add.title') : t('ubo.add.title')}</span>
 
             {/* Name */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -389,7 +393,9 @@ export function BeneficialOwnersPanel({ associationId, officers, onRetainedCount
                 disabled={submitting}
                 onClick={() => handleAddSubmit(
                   formName,
-                  formOriginFromRegistry ? BeneficialOwnerOrigin.REGISTRY : BeneficialOwnerOrigin.DECLARED,
+                  isRepresentativePanel
+                    ? BeneficialOwnerOrigin.DECLARED
+                    : formOriginFromRegistry ? BeneficialOwnerOrigin.REGISTRY : BeneficialOwnerOrigin.DECLARED,
                 )}
               >
                 {t('ubo.add.submit')}

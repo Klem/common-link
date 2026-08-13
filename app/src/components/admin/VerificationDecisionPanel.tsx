@@ -20,8 +20,8 @@ interface Props {
   rejectionReason?: string | null;
   /** Scope verdict from the latest registry scan — used to label a compliance 409. */
   scopeVerdict?: ScopeVerdict | null;
-  /** Whether at least one beneficial owner is retained — used to label a compliance 409. */
-  hasRetainedOwners?: boolean | null;
+  /** Whether at least one legal representative is confirmed — used to label a compliance 409. */
+  hasRepresentative?: boolean | null;
   /** Freeze screening status — used to label a compliance 409 when the freeze gate blocks. */
   freezeScreenStatus?: FreezeScreenStatus | null;
   onDecisionMade: (newStatus: VerificationStatus, rejectionReason?: string) => void;
@@ -34,7 +34,7 @@ export function VerificationDecisionPanel({
   verifiedAt,
   rejectionReason,
   scopeVerdict,
-  hasRetainedOwners,
+  hasRepresentative,
   freezeScreenStatus,
   onDecisionMade,
   onNeedRefetch,
@@ -98,8 +98,8 @@ export function VerificationDecisionPanel({
         if (scopeVerdict === ScopeVerdict.OUT_OF_SCOPE) {
           setApproveBlockedMessage(tc('approval.blockedScope'));
           setArmingApprove(false);
-        } else if (hasRetainedOwners === false) {
-          setApproveBlockedMessage(tc('approval.blockedNoUbo'));
+        } else if (hasRepresentative === false) {
+          setApproveBlockedMessage(tc('approval.blockedNoRepresentative'));
           setArmingApprove(false);
         } else if (
           freezeScreenStatus === FreezeScreenStatus.HIT ||

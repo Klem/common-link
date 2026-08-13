@@ -246,4 +246,42 @@ class ComplianceAuditLogServiceLogicTest {
         val result = service.findLastOnboardingFreezeScreenStatus(assocId, emptyList())
         assertEquals(FreezeScreenStatus.UNAVAILABLE, result.status)
     }
+
+    /**
+     * Not PASSED: entries *were* found, and a compliance officer ruled them false positives.
+     * Reporting PASSED would tell the curator the register held nothing on this dossier.
+     */
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - dismissed hit returns HIT_CLEARED`() {
+        val assocId = UUID.randomUUID()
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_HIT_CLEARED, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.DECLARANT, assocId)
+
+        val result = service.findLastOnboardingFreezeScreenStatus(assocId, emptyList())
+        assertEquals(FreezeScreenStatus.HIT_CLEARED, result.status)
+    }
+
+    /** A single undecided correspondence anywhere outranks a dismissal elsewhere. */
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - live BO hit outranks a dismissed association hit`() {
+        val assocId = UUID.randomUUID()
+        val boId = UUID.randomUUID()
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_HIT_CLEARED, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_HIT, ComplianceAuditSubjectType.BENEFICIAL_OWNER, boId)
+
+        val result = service.findLastOnboardingFreezeScreenStatus(assocId, listOf(boId))
+        assertEquals(FreezeScreenStatus.HIT, result.status)
+    }
+
+    /** A dismissal carried by a beneficial owner is read on that owner's own subject id. */
+    @Test
+    fun `findLastOnboardingFreezeScreenStatus - dismissed BO hit returns HIT_CLEARED`() {
+        val assocId = UUID.randomUUID()
+        val boId = UUID.randomUUID()
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_CLEAR, ComplianceAuditSubjectType.ASSOCIATION, assocId)
+        appendFreeze(ComplianceAuditLogService.FREEZE_SCREENING_HIT_CLEARED, ComplianceAuditSubjectType.BENEFICIAL_OWNER, boId)
+
+        val result = service.findLastOnboardingFreezeScreenStatus(assocId, listOf(boId))
+        assertEquals(FreezeScreenStatus.HIT_CLEARED, result.status)
+    }
 }

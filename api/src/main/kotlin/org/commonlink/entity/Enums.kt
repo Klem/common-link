@@ -269,3 +269,13 @@ enum class RiskLevel {
     /** High risk — enhanced due diligence required per the current classification. */
     HIGH,
 }
+
+/**
+ * Distingue les représentants légaux (REPRESENTATIVE) des bénéficiaires effectifs stricts
+ * (BENEFICIAL_OWNER) au sein de la table `beneficial_owner`.
+ *
+ * Art. R.561-3 CMF (décret n°2024-720 du 5 juillet 2024) : pour une association, tout
+ * administrateur, membre de surveillance ou dirigeant est bénéficiaire effectif. Les deux
+ * catégories sont soumises au contrôle de gel et à un gate d'approbation distinct.
+ */
+enum class BeneficialOwnerType { BENEFICIAL_OWNER, REPRESENTATIVE }

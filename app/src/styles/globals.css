@@ -2186,7 +2186,11 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .cm-accent-teal { accent-color: var(--bright-teal); }
 .form-inline-row { display: flex; gap: 8px; }
 .form-save-row { display: flex; justify-content: flex-end; margin-top: 20px; }
-label.cm-label { display: block; font-size: 11.5px; font-weight: 600; color: var(--slate-lavender); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+/* Sélecteur volontairement élargi à toute la classe : la maquette ne l'employait que sur des
+   <label> de formulaire, mais les écrans conformité s'en servent pour des paires libellé/valeur en
+   lecture seule, où un <label> sans contrôle associé n'aurait pas de sens. Restreint à
+   `label.cm-label`, la règle laissait ces libellés totalement non stylés. */
+.cm-label { display: block; font-size: 11.5px; font-weight: 600; color: var(--slate-lavender); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
 .cm-label-hint { color: var(--slate-lavender); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 10px; }
 .upload { border: 2px dashed var(--mist-lavender); border-radius: var(--radius-md); padding: 32px; text-align: center; cursor: pointer; transition: all .2s; }
 .upload:hover { border-color: var(--bright-teal); background: rgba(78,205,196,.03); }

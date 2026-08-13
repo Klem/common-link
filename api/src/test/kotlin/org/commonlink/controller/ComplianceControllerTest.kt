@@ -12,11 +12,19 @@ import io.mockk.every
 import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
+import org.commonlink.entity.ComplianceAlert
+import org.commonlink.entity.ComplianceAlertOrigin
+import org.commonlink.entity.ComplianceAlertSeverity
+import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
+import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.FreezeScreeningMatchRepository
+import org.commonlink.repository.UserRepository
 import org.commonlink.security.ComplianceAccessLogFilter
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
@@ -37,6 +45,7 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.util.Optional
 import java.util.UUID
 
 @WebMvcTest(ComplianceController::class)
@@ -71,6 +80,18 @@ class ComplianceControllerTest {
 
     @MockkBean
     private lateinit var associationProfileRepository: AssociationProfileRepository
+
+    @MockkBean
+    private lateinit var beneficialOwnerRepository: BeneficialOwnerRepository
+
+    @MockkBean
+    private lateinit var donorProfileRepository: DonorProfileRepository
+
+    @MockkBean
+    private lateinit var userRepository: UserRepository
+
+    @MockkBean
+    private lateinit var matchRepository: FreezeScreeningMatchRepository
 
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
 
@@ -207,6 +228,43 @@ class ComplianceControllerTest {
             .andExpect(jsonPath("$.content[0].associationName").value("Assoc Test"))
             .andExpect(jsonPath("$.content[0].warningCount").value(2))
             .andExpect(jsonPath("$.totalElements").value(1))
+    }
+
+    // ── Alert detail — subject resolution ────────────────────────────────────
+
+    /**
+     * A freeze hit was observed in production on an association id absent from
+     * `association_profiles`. The screening evidence and the alert survive their subject's
+     * dossier, so the detail endpoint must degrade to nulls rather than fail — an officer
+     * has to be able to open and close an alert whose dossier no longer exists.
+     */
+    @Test
+    fun `alert detail - returns 200 with null subject label when the dossier no longer resolves`() {
+        val danglingId = UUID.fromString("3b3d9ebd-0000-0000-0000-000000000000")
+        val alertId = UUID.fromString("00000000-0000-0000-0000-0000000000aa")
+        val alert = ComplianceAlert(
+            id = alertId,
+            origin = ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+            subjectType = ComplianceAlertSubjectType.ASSOCIATION,
+            subjectId = danglingId,
+            severity = ComplianceAlertSeverity.HIGH,
+            createdAt = Instant.parse("2026-08-13T08:43:06Z"),
+        )
+        every { alertService.findById(alertId) } returns alert
+        every { alertService.findPriorDecisions(danglingId, alertId) } returns emptyList()
+        every { auditLogService.findFreezeScreeningHistory(danglingId) } returns emptyList()
+        every { matchRepository.findByAssociationIdOrderByScoreDesc(danglingId) } returns emptyList()
+        every { associationProfileRepository.findById(danglingId) } returns Optional.empty()
+        every { registryCheckService.latest(danglingId) } returns null
+
+        mockMvc.perform(
+            get("/api/compliance/alerts/$alertId")
+                .with(user(userId.toString()).roles("COMPLIANCE_OFFICER"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.subjectLabel").doesNotExist())
+            .andExpect(jsonPath("$.subjectRegistry").doesNotExist())
+            .andExpect(jsonPath("$.subjectId").value(danglingId.toString()))
     }
 
     // ── Isolation — compliance role cannot reach other spaces ────────────────

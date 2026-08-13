@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.commonlink.entity.ComplianceAlert
+import org.commonlink.entity.ComplianceAlertDecision
 import org.commonlink.entity.ComplianceAlertOrigin
 import org.commonlink.entity.ComplianceAlertStatus
 import org.springframework.data.domain.Page
@@ -34,4 +35,36 @@ interface ComplianceAlertRepository : JpaRepository<ComplianceAlert, UUID> {
      * Used by the compliance officer list screen (prompt 17) — filters to freeze-hit origins only.
      */
     fun findByOriginIn(origins: Collection<ComplianceAlertOrigin>, pageable: Pageable): Page<ComplianceAlert>
+
+    /**
+     * Counts alerts still open (PENDING or IN_REVIEW) among the given origins.
+     * Backs the dashboard's "alertes en attente" tile, which must exclude closed alerts.
+     */
+    fun countByOriginInAndStatusIn(
+        origins: Collection<ComplianceAlertOrigin>,
+        statuses: Collection<ComplianceAlertStatus>,
+    ): Long
+
+    /**
+     * Alerts already ruled on for the same subject, most recent first.
+     * Backs the informative prior-decision banner on the alert detail screen.
+     */
+    fun findBySubjectIdAndStatusOrderByCreatedAtDesc(
+        subjectId: UUID,
+        status: ComplianceAlertStatus,
+    ): List<ComplianceAlert>
+
+    /**
+     * Alerts in a given status for one subject and origin, whatever the decision.
+     *
+     * Backs [org.commonlink.service.FreezeClearanceService], which must see **every** closure and
+     * not only the favorable ones: filtering on `FALSE_POSITIVE` here would hide a later
+     * `SUSPICIOUS` ruling, and a stale false positive would keep lifting a correspondence the
+     * officer has since confirmed.
+     */
+    fun findBySubjectIdAndOriginAndStatus(
+        subjectId: UUID,
+        origin: ComplianceAlertOrigin,
+        status: ComplianceAlertStatus,
+    ): List<ComplianceAlert>
 }

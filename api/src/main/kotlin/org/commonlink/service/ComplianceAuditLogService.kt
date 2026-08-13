@@ -63,8 +63,21 @@ class ComplianceAuditLogService(
         const val FREEZE_SCREENING_HIT = "FREEZE_SCREENING_HIT"
         const val FREEZE_SCREENING_UNAVAILABLE = "FREEZE_SCREENING_UNAVAILABLE"
 
+        /**
+         * A correspondence was found again, and set aside because a compliance officer had already
+         * ruled it a false positive. Distinct from [FREEZE_SCREENING_CLEAR], which states that
+         * nothing matched: conflating the two would make the journal claim a screening found
+         * nothing when it did.
+         */
+        const val FREEZE_SCREENING_HIT_CLEARED = "FREEZE_SCREENING_HIT_CLEARED"
+
         /** All event types written by the freeze-screening journal helpers, for use in queries. */
-        val FREEZE_SCREENING_EVENT_TYPES = listOf(FREEZE_SCREENING_CLEAR, FREEZE_SCREENING_HIT, FREEZE_SCREENING_UNAVAILABLE)
+        val FREEZE_SCREENING_EVENT_TYPES = listOf(
+            FREEZE_SCREENING_CLEAR,
+            FREEZE_SCREENING_HIT,
+            FREEZE_SCREENING_HIT_CLEARED,
+            FREEZE_SCREENING_UNAVAILABLE,
+        )
 
         const val SANCTION_SYNC_FAILURE = "SANCTION_SYNC_FAILURE"
 
@@ -132,20 +145,19 @@ class ComplianceAuditLogService(
     }
 
     /**
-     * Logs a "no beneficial owner" approval refusal in a **new, independent transaction** so the
-     * journal entry is committed even if the caller's transaction rolls back (the caller throws
-     * [org.commonlink.exception.ConflictException] after this method returns).
+     * Logs a "no legal representative" approval refusal in a **new, independent transaction** so the
+     * journal entry is committed even if the caller's transaction rolls back.
      *
      * Called from [org.commonlink.service.VerificationService.adminApprove] when no confirmed
-     * beneficial owner exists for the association.
+     * legal representative exists for the association (art. R.561-3 CMF, décret n°2024-720).
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun appendNoUboRefusal(associationId: UUID) {
+    fun appendNoRepresentativeRefusal(associationId: UUID) {
         append(
-            eventType = "NO_UBO_APPROVAL_REFUSED",
+            eventType = "NO_REPRESENTATIVE_APPROVAL_REFUSED",
             subjectType = ComplianceAuditSubjectType.ASSOCIATION,
             subjectId = associationId,
-            payload = mapOf("reason" to "no confirmed beneficial owner"),
+            payload = mapOf("reason" to "no confirmed legal representative"),
         )
     }
 
@@ -227,6 +239,42 @@ class ComplianceAuditLogService(
     )
 
     /**
+     * Records that a freeze screening found matches which a prior `FALSE_POSITIVE` ruling had
+     * already set aside. Committed in a **new, independent transaction**
+     * ([Propagation.REQUIRES_NEW]), like every other freeze-screening helper.
+     *
+     * Writing this entry is not optional. `docs/legal/E4-journal-controles-de-gel.md` §4.4 makes
+     * failures journalable on the ground that a journal silent on them cannot distinguish "no
+     * match" from "no control"; a correspondence dismissed in silence reintroduces exactly that
+     * ambiguity — the journal would show a screening that found nothing, when it found the same
+     * entries as before and an officer had ruled on them.
+     *
+     * @param clearedByAlertIds Alerts whose closure grants the clearance — the officer's decisions
+     *   the auditor must be able to walk back to.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendFreezeScreeningHitCleared(
+        subjectType: ComplianceAuditSubjectType,
+        subjectId: UUID,
+        registryPublicationDate: LocalDate?,
+        scoreThreshold: Double,
+        matchCount: Int,
+        topScore: Double,
+        clearedByAlertIds: List<UUID>,
+    ): ComplianceAuditLog = append(
+        eventType = FREEZE_SCREENING_HIT_CLEARED,
+        subjectType = subjectType,
+        subjectId = subjectId,
+        payload = mapOf(
+            "registryPublicationDate" to registryPublicationDate?.toString(),
+            "scoreThreshold" to scoreThreshold,
+            "matchCount" to matchCount,
+            "topScore" to topScore,
+            "clearedByAlertIds" to clearedByAlertIds.map { it.toString() },
+        ),
+    )
+
+    /**
      * Records that a freeze screening **could not be completed** (register unavailable, ingestion
      * not yet run, network failure, etc.). Committed in a **new, independent transaction**
      * ([Propagation.REQUIRES_NEW]) so the journal entry survives even if the caller's transaction
@@ -256,7 +304,8 @@ class ComplianceAuditLogService(
 
     /**
      * Returns the freeze-screening history for a given subject (association, donation, …), in
-     * chronological order. Covers all three outcomes: clear, hit, and unavailable.
+     * chronological order. Covers every outcome: clear, hit, hit set aside by a prior ruling, and
+     * unavailable.
      *
      * Intended for auditor review and the curator UI (prompt 17). Read-only — never write through
      * this method.
@@ -266,7 +315,7 @@ class ComplianceAuditLogService(
         repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(subjectId, FREEZE_SCREENING_EVENT_TYPES)
 
     /**
-     * Derives the four-state [FreezeScreenStatus] for the **most recent onboarding screening run**
+     * Derives the five-state [FreezeScreenStatus] for the **most recent onboarding screening run**
      * of an association, without exposing any match detail (tipping-off prevention).
      *
      * Identification of the run: the most recent event with `subject_type = ASSOCIATION` and
@@ -307,14 +356,35 @@ class ComplianceAuditLogService(
         }
 
         // Check BO events — they carry subject_id = bo.id, not associationId.
-        for (boId in beneficialOwnerIds) {
-            val boHit = repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(boId, FREEZE_SCREENING_EVENT_TYPES)
-                .any { it.sequenceNo >= runStartSeq && it.eventType == FREEZE_SCREENING_HIT }
-            if (boHit) return FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+        val boRunEvents = beneficialOwnerIds.flatMap { boId ->
+            repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(boId, FREEZE_SCREENING_EVENT_TYPES)
+                .filter { it.sequenceNo >= runStartSeq }
+        }
+        if (boRunEvents.any { it.eventType == FREEZE_SCREENING_HIT }) {
+            return FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+        }
+
+        // Only once no live hit remains: a party whose correspondence was ruled a false positive.
+        // Evaluated last so a single undecided hit anywhere still reports HIT.
+        if ((runAssocEvents + boRunEvents).any { it.eventType == FREEZE_SCREENING_HIT_CLEARED }) {
+            return FreezeScreenStatusDto(FreezeScreenStatus.HIT_CLEARED, checkedAt)
         }
 
         return FreezeScreenStatusDto(FreezeScreenStatus.PASSED, checkedAt)
     }
+
+    /**
+     * `sequence_no` of the event that opens the most recent onboarding screening run for an
+     * association — the same anchor [findLastOnboardingFreezeScreenStatus] derives its status from,
+     * exposed so callers can scope other records to that run.
+     *
+     * @return the anchor, or null when no screening has ever run for this association.
+     */
+    @Transactional(readOnly = true)
+    fun findLastOnboardingRunStartSeq(associationId: UUID): Long? =
+        repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(associationId, FREEZE_SCREENING_EVENT_TYPES)
+            .lastOrNull { it.subjectType == ComplianceAuditSubjectType.ASSOCIATION }
+            ?.sequenceNo
 
     /**
      * Returns the twenty most recent journal entries in reverse sequence order.

@@ -3,6 +3,7 @@ package org.commonlink.service
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.commonlink.config.SanctionsProperties
 import org.commonlink.dto.FreezeScreenStatus
@@ -10,13 +11,26 @@ import org.commonlink.dto.FreezeScreenStatusDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.entity.BeneficialOwner
+import org.commonlink.entity.BeneficialOwnerType
+import org.commonlink.entity.ComplianceAlert
+import org.commonlink.entity.ComplianceAlertDecision
+import org.commonlink.entity.ComplianceAlertOrigin
+import org.commonlink.entity.ComplianceAlertSeverity
+import org.commonlink.entity.ComplianceAlertStatus
+import org.commonlink.entity.ComplianceAlertSubjectType
+import org.commonlink.entity.ComplianceAuditLog
 import org.commonlink.entity.ComplianceAuditSubjectType
+import org.commonlink.entity.FreezeScreeningMatch
 import org.commonlink.entity.SanctionedNature
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.repository.BeneficialOwnerRepository
+import org.commonlink.repository.ComplianceAlertRepository
+import org.commonlink.repository.ComplianceAuditLogRepository
+import org.commonlink.repository.FreezeScreeningMatchRepository
 import org.commonlink.repository.SanctionedEntityRepository
+import org.commonlink.util.NameNormalizer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -47,8 +61,31 @@ class FreezeScreeningOnboardingServiceTest {
     private val beneficialOwnerRepository: BeneficialOwnerRepository = mockk()
     private val associationProfileRepository: AssociationProfileRepository = mockk()
     private val registryCheckRepository: AssociationRegistryCheckRepository = mockk()
+    private val matchRepository: FreezeScreeningMatchRepository = mockk(relaxed = true)
+    private val alertRepository: ComplianceAlertRepository = mockk(relaxed = true)
+    private val auditLogRepository: ComplianceAuditLogRepository = mockk(relaxed = true)
     private val props = SanctionsProperties(scoreThreshold = 0.85)
     private val alertPort: FreezeHitAlertPort = mockk(relaxed = true)
+
+    /**
+     * Real recorder over a mocked repository: the mapping from [ScreeningMatch] to
+     * [FreezeScreeningMatch] is what these tests assert, and stubbing the recorder would assert
+     * nothing but that the service called it. The transactional boundary the recorder exists for
+     * is out of reach of a mock and is covered by `FreezeScreeningEvidenceRecorderTest`.
+     */
+    private val evidenceRecorder = FreezeScreeningEvidenceRecorder(matchRepository, props)
+
+    /**
+     * Real clearance service over mocked repositories, for the same reason as the recorder above:
+     * what these tests assert is *which* past decisions lift *which* correspondences, and a stubbed
+     * clearance would assert only that the service asked.
+     */
+    private val clearanceService = FreezeClearanceService(
+        alertRepository,
+        auditLogRepository,
+        matchRepository,
+        beneficialOwnerRepository,
+    )
 
     private val service = FreezeScreeningOnboardingService(
         screeningService,
@@ -57,6 +94,8 @@ class FreezeScreeningOnboardingServiceTest {
         beneficialOwnerRepository,
         associationProfileRepository,
         registryCheckRepository,
+        evidenceRecorder,
+        clearanceService,
         props,
         alertPort,
     )
@@ -65,19 +104,24 @@ class FreezeScreeningOnboardingServiceTest {
     private val boId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000020")
     private val publicationDate: LocalDate = LocalDate.of(2026, 8, 11)
 
-    private fun match(score: Double = 0.92) = ScreeningMatch(
-        idRegistre = 1,
+    private fun match(score: Double = 0.92, idRegistre: Int = 1) = ScreeningMatch(
+        idRegistre = idRegistre,
         nom = "LISTED ENTITY",
         nature = SanctionedNature.PHYSICAL_PERSON,
         score = score,
         dateOfBirth = null,
     )
 
-    private fun bo(id: UUID = boId, discarded: Boolean = false): BeneficialOwner {
+    private fun bo(
+        id: UUID = boId,
+        discarded: Boolean = false,
+        type: BeneficialOwnerType = BeneficialOwnerType.BENEFICIAL_OWNER,
+    ): BeneficialOwner {
         val bo = mockk<BeneficialOwner>()
         every { bo.id } returns id
         every { bo.name } returns "Jean Dupont"
         every { bo.discarded } returns discarded
+        every { bo.type } returns type
         return bo
     }
 
@@ -319,6 +363,7 @@ class FreezeScreeningOnboardingServiceTest {
         setupRegisterAvailable()
         every { screeningService.screen("Aide aux Réfugiés") } returns emptyList()
         every { registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns null
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns emptyList()
 
         val result = service.runFreezeCheck(associationId, "Aide aux Réfugiés")
 
@@ -330,7 +375,7 @@ class FreezeScreeningOnboardingServiceTest {
             auditLogService.appendFreezeScreeningUnavailable(
                 ComplianceAuditSubjectType.DECLARANT,
                 associationId,
-                "no registry scan available or no officers listed in latest scan",
+                "no registry officers and no manual legal representative on record",
             )
         }
         verify(exactly = 0) { alertPort.onFreezeHit(any(), any()) }
@@ -428,5 +473,391 @@ class FreezeScreeningOnboardingServiceTest {
         val result = service.getOnboardingFreezeScreenStatus(associationId)
 
         assertEquals(FreezeScreenStatus.UNAVAILABLE, result.status)
+    }
+
+    // ─── Screening evidence (freeze_screening_match) ──────────────────────────
+
+    /**
+     * Stubs the journal so a HIT returns a known sequence number, which is what anchors the
+     * evidence rows and the alert to the immutable entry that recorded the correspondence.
+     */
+    private fun stubHitSequence(seqNo: Long) {
+        val entry = mockk<ComplianceAuditLog>()
+        every { entry.sequenceNo } returns seqNo
+        every {
+            auditLogService.appendFreezeScreeningHit(any(), any(), any(), any(), any(), any(), any())
+        } returns entry
+    }
+
+    @Test
+    fun `association hit persists one evidence row per match, anchored to the journal entry`() {
+        setupRegisterAvailable()
+        stubHitSequence(4242L)
+        every { screeningService.screen("TECHNO +") } returns listOf(match(0.9333), match(0.87))
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        service.runFreezeCheck(associationId, "TECHNO +")
+
+        val slot = slot<List<FreezeScreeningMatch>>()
+        verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
+        val saved = slot.captured
+        assertEquals(2, saved.size)
+        saved.forEach {
+            assertEquals(4242L, it.auditLogSeqRef)
+            assertEquals(ComplianceAuditSubjectType.ASSOCIATION, it.subjectType)
+            assertEquals(associationId, it.subjectId)
+            assertEquals(associationId, it.associationId)
+            assertEquals(publicationDate, it.registryPublicationDate)
+            assertEquals(0.85, it.scoreThreshold)
+        }
+        assertEquals(setOf(0.9333, 0.87), saved.map { it.score }.toSet())
+    }
+
+    /**
+     * The stored value must be the one that produced the score. "TECHNO +" is compared as
+     * "TECHNO"; storing the raw dossier name would leave a 0.9333 against "TECHNOLAB" unexplained
+     * on the officer's screen.
+     */
+    @Test
+    fun `evidence stores the normalized value actually compared, not the raw name`() {
+        setupRegisterAvailable()
+        stubHitSequence(1L)
+        every { screeningService.screen("TECHNO +") } returns listOf(match())
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        service.runFreezeCheck(associationId, "TECHNO +")
+
+        val slot = slot<List<FreezeScreeningMatch>>()
+        verify { matchRepository.saveAll(capture(slot)) }
+        assertEquals("TECHNO", slot.captured.first().screenedNormalizedName)
+    }
+
+    /** Register attributes are snapshots so the evidence survives the entry being delisted. */
+    @Test
+    fun `evidence snapshots the register entry attributes`() {
+        setupRegisterAvailable()
+        stubHitSequence(1L)
+        every { screeningService.screen("Aide aux Réfugiés") } returns listOf(match())
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        val slot = slot<List<FreezeScreeningMatch>>()
+        verify { matchRepository.saveAll(capture(slot)) }
+        val saved = slot.captured.first()
+        assertEquals(1, saved.sanctionedIdRegistre)
+        assertEquals("LISTED ENTITY", saved.matchedName)
+        assertEquals(SanctionedNature.PHYSICAL_PERSON, saved.matchedNature)
+    }
+
+    @Test
+    fun `clear screening persists no evidence`() {
+        setupRegisterAvailable()
+        every { screeningService.screen("Aide aux Réfugiés") } returns emptyList()
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        verify(exactly = 0) { matchRepository.saveAll(any<List<FreezeScreeningMatch>>()) }
+    }
+
+    /**
+     * Without the sequence reference on the alert, `compliance_alert.audit_log_seq_ref` stays null
+     * and nothing ties an alert to the journal entry that justified it.
+     */
+    @Test
+    fun `hit target carries the journal sequence reference`() {
+        setupRegisterAvailable()
+        stubHitSequence(77L)
+        every { screeningService.screen("Aide aux Réfugiés") } returns listOf(match())
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        val slot = slot<List<FreezeHitTarget>>()
+        verify { alertPort.onFreezeHit(associationId, capture(slot)) }
+        assertEquals(77L, slot.captured.first().auditLogSeqRef)
+    }
+
+    /**
+     * An impossible control is not a favorable one. It was journalled but surfaced nowhere, so a
+     * skipped mandatory check could go unnoticed — see fiche E4 §4.4 on why failure records exist.
+     */
+    @Test
+    fun `unavailable screening raises an alert so the officer sees the skipped control`() {
+        every { sanctionedEntityRepository.findMaxPublicationDate() } returns null
+
+        val result = service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        assertEquals(ScreeningOutcome.UNAVAILABLE, result)
+        verify(exactly = 1) {
+            alertPort.onScreeningUnavailable(
+                ComplianceAlertSubjectType.ASSOCIATION,
+                associationId,
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `unavailable screening on missing dirigeants also raises an alert`() {
+        setupRegisterAvailable()
+        every { screeningService.screen("Aide aux Réfugiés") } returns emptyList()
+        every { registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns null
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns emptyList()
+
+        val result = service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        assertEquals(ScreeningOutcome.UNAVAILABLE, result)
+        verify(exactly = 1) {
+            alertPort.onScreeningUnavailable(ComplianceAlertSubjectType.ASSOCIATION, associationId, any())
+        }
+    }
+
+    /** Evidence capture must never mask the screening outcome the caller blocks on. */
+    @Test
+    fun `evidence persistence failure does not change the HIT outcome`() {
+        setupRegisterAvailable()
+        stubHitSequence(1L)
+        every { screeningService.screen("Aide aux Réfugiés") } returns listOf(match())
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+        every { matchRepository.saveAll(any<List<FreezeScreeningMatch>>()) } throws RuntimeException("DB down")
+
+        val result = service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        assertEquals(ScreeningOutcome.HIT, result)
+    }
+
+    // ─── PRIOR RULINGS ───────────────────────────────────────────────────────
+
+    /** One evidence row as the recorder would have written it — the name already normalized. */
+    private fun evidenceRow(screenedName: String, idRegistre: Int, seqRef: Long) = FreezeScreeningMatch(
+        auditLogSeqRef = seqRef,
+        subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+        subjectId = associationId,
+        associationId = associationId,
+        screenedNormalizedName = NameNormalizer.normalize(screenedName),
+        sanctionedIdRegistre = idRegistre,
+        matchedName = "LISTED ENTITY",
+        matchedNature = SanctionedNature.PHYSICAL_PERSON,
+        score = 0.92,
+        scoreThreshold = 0.85,
+        registryPublicationDate = publicationDate,
+    )
+
+    /** Registers a `FALSE_POSITIVE` closure covering the given register entries. */
+    private fun setupFalsePositiveClosure(
+        screenedName: String,
+        idsRegistre: List<Int>,
+        closureSeq: Long = 10L,
+    ) {
+        val alert = ComplianceAlert(
+            origin = ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+            subjectType = ComplianceAlertSubjectType.ASSOCIATION,
+            subjectId = associationId,
+            severity = ComplianceAlertSeverity.HIGH,
+            status = ComplianceAlertStatus.CLOSED,
+            decision = ComplianceAlertDecision.FALSE_POSITIVE,
+            createdAt = Instant.now(),
+        )
+        every {
+            alertRepository.findBySubjectIdAndOriginAndStatus(
+                associationId,
+                ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+                ComplianceAlertStatus.CLOSED,
+            )
+        } returns listOf(alert)
+
+        val closure = mockk<ComplianceAuditLog>()
+        every { closure.sequenceNo } returns closureSeq
+        every {
+            auditLogRepository.findTopBySubjectIdAndEventTypeOrderBySequenceNoDesc(
+                alert.id, ComplianceAuditLogService.ALERT_CLOSED,
+            )
+        } returns closure
+
+        every {
+            matchRepository.findByAssociationIdAndAuditLogSeqRefLessThanEqual(associationId, closureSeq)
+        } returns idsRegistre.map { evidenceRow(screenedName, it, closureSeq - 1) }
+    }
+
+    /**
+     * The bug this whole mechanism exists for: the screening is replayed on every approval attempt,
+     * so without consulting past rulings the officer's `FALSE_POSITIVE` decision changed nothing —
+     * the dossier was refused again and a duplicate alert was opened on each retry.
+     */
+    @Test
+    fun `a correspondence already ruled a false positive no longer blocks`() {
+        setupRegisterAvailable()
+        setupFalsePositiveClosure("Aide aux Réfugiés", listOf(1))
+        every { screeningService.screen("Aide aux Réfugiés") } returns listOf(match(idRegistre = 1))
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        val result = service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        assertEquals(ScreeningOutcome.CLEAR, result)
+        verify(exactly = 0) { alertPort.onFreezeHit(any(), any()) }
+    }
+
+    /** A dismissal must leave a trace: a journal silent on it would claim nothing was found. */
+    @Test
+    fun `a dismissed correspondence is journalled, not skipped in silence`() {
+        setupRegisterAvailable()
+        setupFalsePositiveClosure("Aide aux Réfugiés", listOf(1))
+        every { screeningService.screen("Aide aux Réfugiés") } returns listOf(match(idRegistre = 1))
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        verify(exactly = 1) {
+            auditLogService.appendFreezeScreeningHitCleared(
+                subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+                subjectId = associationId,
+                registryPublicationDate = publicationDate,
+                scoreThreshold = 0.85,
+                matchCount = 1,
+                topScore = 0.92,
+                clearedByAlertIds = any(),
+            )
+        }
+        verify(exactly = 0) {
+            auditLogService.appendFreezeScreeningHit(
+                subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+                subjectId = associationId,
+                registryPublicationDate = any(),
+                scoreThreshold = any(),
+                matchCount = any(),
+                topScore = any(),
+                nature = any(),
+            )
+        }
+    }
+
+    /** A past ruling speaks only for the entries it examined — a new designation must block again. */
+    @Test
+    fun `a register entry outside the ruling blocks the dossier again`() {
+        setupRegisterAvailable()
+        stubHitSequence(1L)
+        setupFalsePositiveClosure("Aide aux Réfugiés", listOf(1))
+        every { screeningService.screen("Aide aux Réfugiés") } returns listOf(
+            match(idRegistre = 1),
+            match(score = 0.88, idRegistre = 2),
+        )
+        every { screeningService.screen("Marie Martin") } returns emptyList()
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        val result = service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        assertEquals(ScreeningOutcome.HIT, result)
+        verify(exactly = 1) { alertPort.onFreezeHit(associationId, any()) }
+    }
+
+    /**
+     * The curator must see the decision as soon as it is taken. The journal of the last run states
+     * what the screening found and cannot carry a ruling made afterwards, so the banner stayed on
+     * "awaiting the compliance officer's decision" until someone attempted an approval — invisible
+     * to the very person waiting on it.
+     */
+    @Test
+    fun `the banner reports HIT_CLEARED once the officer has ruled, without re-screening`() {
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns emptyList()
+        every { auditLogService.findLastOnboardingFreezeScreenStatus(associationId, emptyList()) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+        every { auditLogService.findLastOnboardingRunStartSeq(associationId) } returns 29L
+        setupFalsePositiveClosure("Techno +", listOf(1776, 9131), closureSeq = 28L)
+        every {
+            matchRepository.findByAssociationIdAndAuditLogSeqRefGreaterThanEqual(associationId, 29L)
+        } returns listOf(
+            evidenceRow("Techno +", 1776, 29L),
+            evidenceRow("Techno +", 9131, 29L),
+        )
+
+        val result = service.getOnboardingFreezeScreenStatus(associationId)
+
+        assertEquals(FreezeScreenStatus.HIT_CLEARED, result.status)
+        assertEquals(checkedAt, result.checkedAt)
+    }
+
+    /** One correspondence of the run outside the ruling and the dossier is still awaiting a decision. */
+    @Test
+    fun `the banner stays on HIT when the run found something the ruling did not cover`() {
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns emptyList()
+        every { auditLogService.findLastOnboardingFreezeScreenStatus(associationId, emptyList()) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+        every { auditLogService.findLastOnboardingRunStartSeq(associationId) } returns 29L
+        setupFalsePositiveClosure("Techno +", listOf(1776), closureSeq = 28L)
+        every {
+            matchRepository.findByAssociationIdAndAuditLogSeqRefGreaterThanEqual(associationId, 29L)
+        } returns listOf(
+            evidenceRow("Techno +", 1776, 29L),
+            evidenceRow("Techno +", 6766, 29L),
+        )
+
+        val result = service.getOnboardingFreezeScreenStatus(associationId)
+
+        assertEquals(FreezeScreenStatus.HIT, result.status)
+    }
+
+    /** No evidence, nothing covered: a screening whose evidence was never written is not decided. */
+    @Test
+    fun `the banner stays on HIT when the run left no evidence to rule upon`() {
+        every { beneficialOwnerRepository.findAllByAssociationIdOrderByCollectedAtAsc(associationId) } returns emptyList()
+        every { auditLogService.findLastOnboardingFreezeScreenStatus(associationId, emptyList()) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.HIT, checkedAt)
+        every { auditLogService.findLastOnboardingRunStartSeq(associationId) } returns 29L
+        setupFalsePositiveClosure("Techno +", listOf(1776), closureSeq = 28L)
+        every {
+            matchRepository.findByAssociationIdAndAuditLogSeqRefGreaterThanEqual(associationId, 29L)
+        } returns emptyList()
+
+        val result = service.getOnboardingFreezeScreenStatus(associationId)
+
+        assertEquals(FreezeScreenStatus.HIT, result.status)
+    }
+
+    /**
+     * The clearance is granted per (screened name, register entry): the same entry matched through
+     * a *different* party is a correspondence nobody has ruled on.
+     */
+    @Test
+    fun `a clearance granted on the association does not cover a dirigeant`() {
+        setupRegisterAvailable()
+        stubHitSequence(1L)
+        setupFalsePositiveClosure("Aide aux Réfugiés", listOf(1))
+        every { screeningService.screen("Aide aux Réfugiés") } returns listOf(match(idRegistre = 1))
+        every { screeningService.screen("Marie Martin") } returns listOf(match(idRegistre = 1))
+        every { screeningService.screen("Jean Dupont") } returns emptyList()
+        setupOfficers()
+        setupOneBo()
+
+        val result = service.runFreezeCheck(associationId, "Aide aux Réfugiés")
+
+        assertEquals(ScreeningOutcome.HIT, result)
     }
 }

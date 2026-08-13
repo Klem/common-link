@@ -10,11 +10,14 @@ import org.springframework.stereotype.Service
 /**
  * Result of a name screening against the asset-freeze register.
  *
- * @property idRegistre  DG Trésor registry number of the matched entry.
- * @property nom         Human-readable name from the register.
- * @property nature      Nature of the matched entry.
- * @property score       JaroWinkler similarity score (0–1). Higher = more similar.
- * @property dateOfBirth Partial date of birth, if available in the register.
+ * @property idRegistre    DG Trésor registry number of the matched entry.
+ * @property nom           Human-readable name from the register.
+ * @property nature        Nature of the matched entry.
+ * @property score         JaroWinkler similarity score (0–1). Higher = more similar.
+ * @property dateOfBirth   Partial date of birth, if available in the register.
+ * @property legalReference EU or UN measure reference of the matched entry, if any. Carried
+ *   because it is the decisive element of a false-positive ruling: it names the sanctions
+ *   programme the entry falls under, which a score alone never discriminates.
  */
 data class ScreeningMatch(
     val idRegistre: Int,
@@ -22,6 +25,7 @@ data class ScreeningMatch(
     val nature: SanctionedNature,
     val score: Double,
     val dateOfBirth: String?,
+    val legalReference: String? = null,
 )
 
 /**
@@ -88,6 +92,7 @@ class SanctionScreeningService(
                     nature = entity.nature,
                     score = maxScore,
                     dateOfBirth = entity.dateOfBirth,
+                    legalReference = entity.legalReference,
                 )
             } else null
         }.sortedByDescending { it.score }

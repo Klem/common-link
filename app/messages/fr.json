@@ -340,10 +340,229 @@
     "widgetDestinationSaved": "Campagne de destination enregistrée.",
     "widgetTokenGenerated": "Token widget généré."
   },
+  "compliance": {
+    "alerts": {
+      "actions": {
+        "view": "Consulter"
+      },
+      "ageFormat": {
+        "daysHours": "{days}j {hours}h",
+        "hoursMinutes": "{hours}h {minutes}min",
+        "minutes": "{minutes}min"
+      },
+      "col": {
+        "actions": "Actions",
+        "age": "Ancienneté",
+        "origin": "Origine",
+        "severity": "Criticité",
+        "status": "Statut",
+        "subject": "Sujet"
+      },
+      "empty": "Aucune alerte de gel.",
+      "error": "Erreur lors du chargement des alertes.",
+      "loading": "Chargement des alertes…",
+      "origin": {
+        "FREEZE_HIT_DONATION": "Gel — Don",
+        "FREEZE_HIT_ONBOARDING": "Gel — Adhésion",
+        "SCREENING_UNAVAILABLE": "Criblage indisponible"
+      },
+      "pagination": {
+        "pageOf": "Page {current} / {total}"
+      },
+      "severity": {
+        "HIGH": "Élevée",
+        "LOW": "Faible",
+        "MEDIUM": "Modérée"
+      },
+      "status": {
+        "CLOSED": "Clôturée",
+        "IN_REVIEW": "En cours d'examen",
+        "PENDING": "En attente"
+      },
+      "subjectType": {
+        "ASSOCIATION": "Association",
+        "BENEFICIAL_OWNER": "Bénéficiaire effectif",
+        "DECLARANT": "Dirigeant (registre)",
+        "DONOR": "Donateur",
+        "REPRESENTATIVE": "Représentant légal",
+        "SYSTEM": "Système"
+      },
+      "title": "Alertes de gel"
+    },
+    "auditLog": {
+      "col": {
+        "date": "Date",
+        "event": "Événement",
+        "seq": "N° séquence"
+      },
+      "empty": "Aucune entrée.",
+      "error": "Erreur lors du chargement.",
+      "loading": "Chargement du journal...",
+      "title": "Journal d'audit récent"
+    },
+    "dashboard": {
+      "alertCount": {
+        "error": "Erreur de chargement.",
+        "loading": "Chargement...",
+        "title": "Alertes de gel en attente",
+        "viewAll": "Voir toutes les alertes"
+      },
+      "title": "Tableau de bord"
+    },
+    "detail": {
+      "age": "Ancienneté",
+      "backToList": "Retour à la liste",
+      "closed": {
+        "decision": "Décision",
+        "rationale": "Motivation",
+        "title": "Décision enregistrée"
+      },
+      "createdAt": "Détectée le",
+      "decision": {
+        "FALSE_POSITIVE": "Faux positif — erreur d'identification",
+        "LEGITIMATE": "Correspondance non avérée — situation légitime",
+        "SUSPICIOUS": "Correspondance avérée",
+        "label": "Décision",
+        "placeholder": "Sélectionner une décision…",
+        "title": "Décision de clôture"
+      },
+      "error": "Erreur lors du chargement de l'alerte.",
+      "history": {
+        "col": {
+          "date": "Date",
+          "event": "Événement",
+          "matchCount": "Correspondances",
+          "reason": "Motif",
+          "registryDate": "Version du registre",
+          "seq": "N° séquence",
+          "threshold": "Seuil",
+          "topScore": "Score max"
+        },
+        "empty": "Aucun historique disponible.",
+        "title": "Historique du contrôle de gel"
+      },
+      "loading": "Chargement de l'alerte…",
+      "metadata": "Informations",
+      "origin": "Origine",
+      "rationale": {
+        "label": "Motivation (obligatoire)",
+        "placeholder": "Exposez les éléments qui fondent cette décision."
+      },
+      "severity": "Criticité",
+      "status": "Statut",
+      "subject": "Sujet",
+      "subjectType": "Type de sujet",
+      "submit": "Enregistrer la décision",
+      "submitting": "Enregistrement…",
+      "takeInCharge": {
+        "button": "Prendre en charge",
+        "description": "Prenez cette alerte en charge pour commencer l'examen.",
+        "title": "Prise en charge"
+      },
+      "takenInChargeAt": "Prise en charge le",
+      "takenInChargeBy": "Prise en charge par",
+      "title": "Détail de l'alerte",
+      "treasury": {
+        "method": "Moyen utilisé",
+        "methodPlaceholder": "Ex. : courriel sécurisé, courrier recommandé",
+        "note": "La notification à la Direction générale du Trésor est un geste humain accompli hors application. Aucune transmission automatique n'existe ni n'est prévue. Ces champs conservent uniquement la preuve de ce geste.",
+        "notifiedAt": "Date de notification",
+        "ref": "Référence de la notification",
+        "refPlaceholder": "Numéro ou identifiant attribué à l'envoi",
+        "requiredForSuspicious": "Ces trois champs sont obligatoires pour une décision de correspondance avérée.",
+        "section": "Traçabilité de la notification à la Direction générale du Trésor"
+      }
+    },
+    "evidence": {
+      "algorithm": "Algorithme",
+      "col": {
+        "dateOfBirth": "Date de naissance",
+        "idRegistre": "N° registre",
+        "legalReference": "Programme de sanction",
+        "matchedName": "Entrée du registre",
+        "nature": "Nature",
+        "score": "Score"
+      },
+      "conditionsSide": "Conditions du criblage",
+      "empty": "Aucune correspondance enregistrée pour cette alerte. Un criblage qui n'a pas pu être effectué ne produit aucune comparaison.",
+      "matchCount": "Correspondances",
+      "nature": {
+        "LEGAL_ENTITY": "Personne morale",
+        "PHYSICAL_PERSON": "Personne physique",
+        "VESSEL": "Navire"
+      },
+      "no": "Non",
+      "registryCheckedAt": "Registres vérifiés le",
+      "registryPublicationDate": "Version du registre",
+      "rna": "RNA",
+      "rnaActive": "RNA actif",
+      "screenedNormalized": "Valeur comparée",
+      "screenedParty": "Partie criblée",
+      "screenedSide": "Ce qui a été criblé",
+      "siren": "SIREN",
+      "snapshotNote": "Les entrées du registre sont figées telles qu'au moment du criblage : la preuve subsiste si l'entrée est radiée.",
+      "subject": "Sujet",
+      "subjectId": "Identifiant technique",
+      "subjectType": "Type de sujet",
+      "subjectUnresolved": "Sujet non résolu",
+      "threshold": "Seuil de score",
+      "title": "Éléments du criblage",
+      "unknown": "Inconnu",
+      "yes": "Oui"
+    },
+    "nav": {
+      "alerts": "Alertes de gel",
+      "dashboard": "Tableau de bord"
+    },
+    "priorDecisions": {
+      "date": "Date",
+      "decision": "Décision",
+      "note": "À titre informatif. La clôture d'une alerte est irréversible et toute nouvelle correspondance crée une nouvelle alerte : celle-ci doit être examinée pour elle-même.",
+      "origin": "Origine",
+      "title": "Décisions antérieures sur ce sujet"
+    },
+    "registry": {
+      "col": {
+        "association": "Association",
+        "date": "Date du contrôle",
+        "exists": "Existence",
+        "rna": "RNA actif",
+        "verdict": "Périmètre",
+        "warnings": "Avertissements"
+      },
+      "empty": "Aucun contrôle enregistré.",
+      "error": "Erreur lors du chargement.",
+      "exists": {
+        "false": "Non",
+        "null": "—",
+        "true": "Oui"
+      },
+      "loading": "Chargement des contrôles...",
+      "pagination": {
+        "pageOf": "Page {current} / {total}"
+      },
+      "rna": {
+        "false": "Inactif",
+        "null": "Non renseigné",
+        "true": "Actif"
+      },
+      "title": "Derniers contrôles des registres",
+      "verdict": {
+        "IN_SCOPE": "Dans le périmètre",
+        "OUT_OF_SCOPE": "Hors périmètre",
+        "UNDETERMINED": "Indéterminé"
+      }
+    },
+    "shell": {
+      "logout": "Déconnexion",
+      "navLabel": "Navigation",
+      "title": "Conformité LCB-FT"
+    }
+  },
   "curator": {
     "dossier": {
       "approval": {
-        "blockedNoUbo": "Approbation bloquée : aucun bénéficiaire effectif n'est retenu.",
+        "blockedNoRepresentative": "Approbation bloquée : aucun représentant légal n'est saisi.",
         "blockedScope": "Approbation bloquée : l'association est hors périmètre loi 1901."
       },
       "registry": {
@@ -363,6 +582,13 @@
           "outOfScopeWarning": "L'approbation est bloquée : l'association est hors périmètre loi 1901.",
           "title": "Périmètre loi 1901"
         }
+      },
+      "representative": {
+        "add": {
+          "title": "Ajouter un représentant légal"
+        },
+        "noRetained": "Aucun représentant légal retenu — l'approbation est bloquée.",
+        "title": "Représentants légaux"
       },
       "risk": {
         "HIGH": "Élevé",
@@ -409,6 +635,7 @@
     },
     "freezeScreen": {
       "HIT": "une correspondance a été détectée — le dossier est en attente de la décision du responsable de la conformité",
+      "HIT_CLEARED": "correspondance écartée par le responsable de la conformité — contrôle du {date}",
       "NOT_PERFORMED": "aucun contrôle de gel n'a encore été effectué",
       "PASSED": "contrôle effectué le {date} — aucune correspondance",
       "UNAVAILABLE": "le contrôle de gel n'a pas pu être effectué — l'approbation est suspendue",
@@ -1645,162 +1872,5 @@
     "submit": "Faire un don",
     "submitting": "Traitement en cours...",
     "unavailable": "Ce widget n'est pas disponible."
-  },
-  "compliance": {
-    "shell": {
-      "title": "Conformité LCB-FT",
-      "navLabel": "Navigation",
-      "logout": "Déconnexion"
-    },
-    "nav": {
-      "dashboard": "Tableau de bord",
-      "alerts": "Alertes de gel"
-    },
-    "dashboard": {
-      "title": "Tableau de bord",
-      "alertCount": {
-        "title": "Alertes de gel en attente",
-        "viewAll": "Voir toutes les alertes",
-        "loading": "Chargement...",
-        "error": "Erreur de chargement."
-      }
-    },
-    "registry": {
-      "title": "Derniers contrôles des registres",
-      "loading": "Chargement des contrôles...",
-      "error": "Erreur lors du chargement.",
-      "empty": "Aucun contrôle enregistré.",
-      "col": {
-        "association": "Association",
-        "verdict": "Périmètre",
-        "exists": "Existence",
-        "rna": "RNA actif",
-        "warnings": "Avertissements",
-        "date": "Date du contrôle"
-      },
-      "exists": {
-        "true": "Oui",
-        "false": "Non",
-        "null": "—"
-      },
-      "rna": {
-        "true": "Actif",
-        "false": "Inactif",
-        "null": "Non renseigné"
-      },
-      "verdict": {
-        "IN_SCOPE": "Dans le périmètre",
-        "OUT_OF_SCOPE": "Hors périmètre",
-        "UNDETERMINED": "Indéterminé"
-      },
-      "pagination": {
-        "pageOf": "Page {current} / {total}"
-      }
-    },
-    "auditLog": {
-      "title": "Journal d'audit récent",
-      "loading": "Chargement du journal...",
-      "error": "Erreur lors du chargement.",
-      "empty": "Aucune entrée.",
-      "col": {
-        "seq": "N° séquence",
-        "event": "Événement",
-        "date": "Date"
-      }
-    },
-    "alerts": {
-      "title": "Alertes de gel",
-      "loading": "Chargement des alertes…",
-      "error": "Erreur lors du chargement des alertes.",
-      "empty": "Aucune alerte de gel.",
-      "col": {
-        "origin": "Origine",
-        "severity": "Criticité",
-        "status": "Statut",
-        "age": "Ancienneté",
-        "actions": "Actions"
-      },
-      "origin": {
-        "FREEZE_HIT_ONBOARDING": "Gel — Adhésion",
-        "FREEZE_HIT_DONATION": "Gel — Don"
-      },
-      "severity": {
-        "HIGH": "Élevée",
-        "MEDIUM": "Modérée",
-        "LOW": "Faible"
-      },
-      "status": {
-        "PENDING": "En attente",
-        "IN_REVIEW": "En cours d'examen",
-        "CLOSED": "Clôturée"
-      },
-      "actions": {
-        "view": "Consulter"
-      },
-      "pagination": {
-        "pageOf": "Page {current} / {total}"
-      },
-      "ageFormat": {
-        "daysHours": "{days}j {hours}h",
-        "hoursMinutes": "{hours}h {minutes}min",
-        "minutes": "{minutes}min"
-      }
-    },
-    "detail": {
-      "loading": "Chargement de l'alerte…",
-      "error": "Erreur lors du chargement de l'alerte.",
-      "backToList": "Retour à la liste",
-      "title": "Détail de l'alerte",
-      "metadata": "Informations",
-      "origin": "Origine",
-      "severity": "Criticité",
-      "status": "Statut",
-      "createdAt": "Détectée le",
-      "age": "Ancienneté",
-      "takenInChargeAt": "Prise en charge le",
-      "submitting": "Enregistrement…",
-      "history": {
-        "title": "Historique du contrôle de gel",
-        "empty": "Aucun historique disponible.",
-        "col": {
-          "seq": "N° séquence",
-          "event": "Événement",
-          "date": "Date"
-        }
-      },
-      "takeInCharge": {
-        "title": "Prise en charge",
-        "description": "Prenez cette alerte en charge pour commencer l'examen.",
-        "button": "Prendre en charge"
-      },
-      "decision": {
-        "title": "Décision de clôture",
-        "label": "Décision",
-        "placeholder": "Sélectionner une décision…",
-        "LEGITIMATE": "Correspondance non avérée — situation légitime",
-        "SUSPICIOUS": "Correspondance avérée",
-        "FALSE_POSITIVE": "Faux positif — erreur d'identification"
-      },
-      "rationale": {
-        "label": "Motivation (obligatoire)",
-        "placeholder": "Exposez les éléments qui fondent cette décision."
-      },
-      "treasury": {
-        "section": "Traçabilité de la notification à la Direction générale du Trésor",
-        "note": "La notification à la Direction générale du Trésor est un geste humain accompli hors application. Aucune transmission automatique n'existe ni n'est prévue. Ces champs conservent uniquement la preuve de ce geste.",
-        "notifiedAt": "Date de notification",
-        "method": "Moyen utilisé",
-        "methodPlaceholder": "Ex. : courriel sécurisé, courrier recommandé",
-        "ref": "Référence de la notification",
-        "refPlaceholder": "Numéro ou identifiant attribué à l'envoi",
-        "requiredForSuspicious": "Ces trois champs sont obligatoires pour une décision de correspondance avérée."
-      },
-      "submit": "Enregistrer la décision",
-      "closed": {
-        "title": "Décision enregistrée",
-        "decision": "Décision",
-        "rationale": "Motivation"
-      }
-    }
   }
 }

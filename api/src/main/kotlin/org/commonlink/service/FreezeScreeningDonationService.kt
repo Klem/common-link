@@ -1,6 +1,8 @@
 package org.commonlink.service
 
 import org.commonlink.config.SanctionsProperties
+import org.commonlink.entity.ComplianceAlertOrigin
+import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.SanctionedNature
 import org.commonlink.repository.SanctionedEntityRepository
@@ -38,6 +40,7 @@ class FreezeScreeningDonationService(
     private val screeningService: SanctionScreeningService,
     private val auditLogService: ComplianceAuditLogService,
     private val sanctionedEntityRepository: SanctionedEntityRepository,
+    private val evidenceRecorder: FreezeScreeningEvidenceRecorder,
     private val props: SanctionsProperties,
     private val alertPort: FreezeHitAlertPort,
 ) {
@@ -79,6 +82,7 @@ class FreezeScreeningDonationService(
                     donorProfileId, logEx.javaClass.simpleName,
                 )
             }
+            raiseUnavailableAlert(donorProfileId, e.javaClass.simpleName)
             ScreeningOutcome.UNAVAILABLE
         }
     }
@@ -97,6 +101,7 @@ class FreezeScreeningDonationService(
                 subjectId = donorProfileId,
                 reason = "register empty — ingestion not yet run",
             )
+            raiseUnavailableAlert(donorProfileId, "register empty — ingestion not yet run")
             return ScreeningOutcome.UNAVAILABLE
         }
 
@@ -107,7 +112,7 @@ class FreezeScreeningDonationService(
         val confirmedMatches = rawMatches.filter { isConfirmedHit(it, identity.birthDate) }
 
         if (confirmedMatches.isNotEmpty()) {
-            auditLogService.appendFreezeScreeningHit(
+            val seqNo = auditLogService.appendFreezeScreeningHit(
                 subjectType = ComplianceAuditSubjectType.DONOR,
                 subjectId = donorProfileId,
                 registryPublicationDate = publicationDate,
@@ -115,11 +120,18 @@ class FreezeScreeningDonationService(
                 matchCount = confirmedMatches.size,
                 topScore = confirmedMatches.first().score,
                 nature = SanctionedNature.PHYSICAL_PERSON.name,
-            )
+            ).sequenceNo
+            recordMatches(seqNo, donorProfileId, identity.fullName, confirmedMatches, publicationDate)
             try {
                 alertPort.onFreezeHit(
                     associationId,
-                    listOf(FreezeHitTarget(role = FreezeHitRole.DONOR, subjectId = donorProfileId)),
+                    listOf(
+                        FreezeHitTarget(
+                            role = FreezeHitRole.DONOR,
+                            subjectId = donorProfileId,
+                            auditLogSeqRef = seqNo,
+                        ),
+                    ),
                 )
             } catch (e: Exception) {
                 logger.error(
@@ -138,6 +150,65 @@ class FreezeScreeningDonationService(
             nature = SanctionedNature.PHYSICAL_PERSON.name,
         )
         return ScreeningOutcome.CLEAR
+    }
+
+    /**
+     * Surfaces an impossible donor screening to the compliance officer.
+     *
+     * This is the path that failed silently in production: donor screenings erroring with
+     * `InvalidDataAccessApiUsageException` were journalled as UNAVAILABLE and never appeared on
+     * any screen, so a mandatory control was being skipped with no one able to notice. See
+     * [ComplianceAlertOrigin.SCREENING_UNAVAILABLE]. Never throws.
+     */
+    private fun raiseUnavailableAlert(donorProfileId: UUID, reason: String) {
+        try {
+            alertPort.onScreeningUnavailable(
+                subjectType = ComplianceAlertSubjectType.DONOR,
+                subjectId = donorProfileId,
+                reason = reason,
+            )
+        } catch (e: Exception) {
+            logger.error(
+                "Screening-unavailable alert handler failed for donorProfile {}: {}",
+                donorProfileId, e.javaClass.simpleName,
+            )
+        }
+    }
+
+    /**
+     * Persists the decision-grade evidence behind one donor `FREEZE_SCREENING_HIT`.
+     *
+     * See [FreezeScreeningOnboardingService.recordMatches] for the rationale: the journal holds
+     * aggregates only, so without this the officer cannot tell which register entry was matched.
+     * `associationId` is deliberately left null — a donor screening has no association context;
+     * the alert it raises is keyed on the donor profile.
+     *
+     * Never throws: evidence capture must not mask the screening outcome, which is what blocks
+     * the payment.
+     */
+    private fun recordMatches(
+        auditLogSeqRef: Long,
+        donorProfileId: UUID,
+        screenedName: String,
+        matches: List<ScreeningMatch>,
+        publicationDate: LocalDate,
+    ) {
+        try {
+            evidenceRecorder.record(
+                auditLogSeqRef = auditLogSeqRef,
+                subjectType = ComplianceAuditSubjectType.DONOR,
+                subjectId = donorProfileId,
+                associationId = null,
+                screenedName = screenedName,
+                matches = matches,
+                publicationDate = publicationDate,
+            )
+        } catch (e: Exception) {
+            logger.error(
+                "Failed to persist donor freeze screening evidence for donorProfile {} (seq {}): {}",
+                donorProfileId, auditLogSeqRef, e.javaClass.simpleName,
+            )
+        }
     }
 
     /**

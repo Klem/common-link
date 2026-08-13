@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/routes';
-import { listAlerts, listRegistryScans, listAuditLog } from '@/lib/api/compliance';
+import { countOpenAlerts, listRegistryScans, listAuditLog } from '@/lib/api/compliance';
 import type { Page } from '@/types/payment';
 import type { ComplianceRegistryScanSummaryDto, AuditLogEntryDto } from '@/types/compliance';
 
@@ -23,9 +23,12 @@ export default function ComplianceDashboardPage() {
   const [auditEntries, setAuditEntries] = useState<AuditLogEntryDto[] | null>(null);
   const [auditError, setAuditError] = useState(false);
 
+  // The tile counts alerts still awaiting treatment. It previously read totalElements from an
+  // unfiltered alert page, which also counted CLOSED alerts — a backlog figure that treatment
+  // could never bring down.
   useEffect(() => {
-    listAlerts(0, 1)
-      .then((d) => setAlertTotal(d.totalElements))
+    countOpenAlerts()
+      .then(setAlertTotal)
       .catch(() => setAlertError(true));
   }, []);
 

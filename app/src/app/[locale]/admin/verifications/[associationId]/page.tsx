@@ -17,6 +17,7 @@ import { FreezeScreenStatusBanner } from '@/components/admin/FreezeScreenStatusB
 import { RiskLevelBadge } from '@/components/admin/RiskLevelBadge';
 import { VigilanceMeasuresPanel } from '@/components/admin/VigilanceMeasuresPanel';
 import { BeneficialOwnersPanel } from '@/components/admin/BeneficialOwnersPanel';
+import { BeneficialOwnerType } from '@/types/admin';
 
 interface Props {
   params: Promise<{ associationId: string }>;
@@ -33,7 +34,7 @@ export default function VerificationDetailPage({ params }: Props) {
   const [hasError, setHasError] = useState(false);
   const [registryOfficers, setRegistryOfficers] = useState<string[]>([]);
   const [scopeVerdict, setScopeVerdict] = useState<ScopeVerdict | null>(null);
-  const [retainedOwnerCount, setRetainedOwnerCount] = useState<number | null>(null);
+  const [retainedRepresentativeCount, setRetainedRepresentativeCount] = useState<number | null>(null);
   const [freezeScreenStatus, setFreezeScreenStatus] = useState<FreezeScreenStatus | null>(null);
 
   const loadDetail = async () => {
@@ -181,11 +182,19 @@ export default function VerificationDetailPage({ params }: Props) {
       {/* Vigilance measures — derived from risk level */}
       <VigilanceMeasuresPanel associationId={associationId} />
 
-      {/* Beneficial owners — required for approval */}
+      {/* Legal representatives — required for approval (art. R.561-3 CMF) */}
+      <BeneficialOwnersPanel
+        associationId={associationId}
+        officers={[]}
+        type={BeneficialOwnerType.REPRESENTATIVE}
+        onRetainedCountChange={setRetainedRepresentativeCount}
+      />
+
+      {/* Beneficial owners — optional, screened but not required for approval */}
       <BeneficialOwnersPanel
         associationId={associationId}
         officers={registryOfficers}
-        onRetainedCountChange={setRetainedOwnerCount}
+        type={BeneficialOwnerType.BENEFICIAL_OWNER}
       />
 
       {/* Freeze screen status — loads independently, informs the decision panel */}
@@ -251,7 +260,11 @@ export default function VerificationDetailPage({ params }: Props) {
           verifiedAt={detail.verifiedAt}
           rejectionReason={detail.rejectionReason}
           scopeVerdict={scopeVerdict}
-          hasRetainedOwners={retainedOwnerCount !== null ? retainedOwnerCount > 0 : null}
+          hasRepresentative={
+            retainedRepresentativeCount !== null
+              ? retainedRepresentativeCount > 0
+              : null
+          }
           freezeScreenStatus={freezeScreenStatus}
           onDecisionMade={(newStatus, reason) =>
             setDetail((prev) =>

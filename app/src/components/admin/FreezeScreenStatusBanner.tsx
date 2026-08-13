@@ -31,6 +31,12 @@ const STYLE_BY_STATUS: Record<
     background: 'rgba(230,126,34,0.07)',
     labelColor: '#e67e22',
   },
+  // Neutral, not green: the register did match, the correspondence was simply ruled upon.
+  HIT_CLEARED: {
+    borderColor: 'var(--color-border)',
+    background: 'var(--color-bg-2, rgba(0,0,0,0.03))',
+    labelColor: 'var(--color-text-2)',
+  },
   UNAVAILABLE: {
     borderColor: 'rgba(231,76,60,0.35)',
     background: 'rgba(231,76,60,0.06)',
@@ -66,9 +72,12 @@ export function FreezeScreenStatusBanner({ associationId, onStatusLoaded }: Prop
       year: 'numeric',
     });
 
+  const datedStatus =
+    data.status === FreezeScreenStatus.PASSED || data.status === FreezeScreenStatus.HIT_CLEARED;
+
   const label =
-    data.status === FreezeScreenStatus.PASSED && data.checkedAt
-      ? tf('PASSED', { date: formatDate(data.checkedAt) })
+    datedStatus && data.checkedAt
+      ? tf(data.status, { date: formatDate(data.checkedAt) })
       : tf(data.status);
 
   return (

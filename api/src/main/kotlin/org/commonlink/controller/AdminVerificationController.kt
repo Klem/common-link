@@ -199,7 +199,7 @@ class AdminVerificationController(
     @GetMapping("/{associationId}/freeze-screen-status")
     @Operation(
         summary = "Onboarding freeze-screen status",
-        description = "Returns the four-state indicator of the last onboarding asset-freeze screening for this " +
+        description = "Returns the five-state indicator of the last onboarding asset-freeze screening for this " +
                 "association. Deliberately contains no information that could identify a match " +
                 "(tipping-off prevention, art. L.561-29 CMF). Returns NOT_PERFORMED if no check has run.",
     )

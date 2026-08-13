@@ -12,6 +12,18 @@ import java.util.UUID
 enum class ComplianceAlertOrigin {
     FREEZE_HIT_ONBOARDING,
     FREEZE_HIT_DONATION,
+
+    /**
+     * A freeze screening could not be completed — empty register, missing dirigeant data, or a
+     * technical failure. Raised alongside the `FREEZE_SCREENING_UNAVAILABLE` journal entry.
+     *
+     * `docs/legal/E4-journal-controles-de-gel.md` §4.4 makes recording failures mandatory
+     * *because a journal that is silent on failure is misleading* — it cannot distinguish a
+     * period without controls from a period of uniformly successful ones. Surfacing failures
+     * only in the journal reintroduced that silence at the alert layer: an impossible control
+     * was recorded and never seen. An UNAVAILABLE outcome is not a favorable outcome.
+     */
+    SCREENING_UNAVAILABLE,
     SYNC_FAILURE,
     SPLIT_DETECTION,
     ATYPICALITY_RULE,

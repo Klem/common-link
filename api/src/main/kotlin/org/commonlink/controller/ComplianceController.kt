@@ -14,14 +14,26 @@ import org.commonlink.dto.ComplianceAlertDetailDto
 import org.commonlink.dto.ComplianceRegistryScanSummaryDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.ComplianceAlertSummaryDto
+import org.commonlink.dto.FreezeScreeningMatchDto
+import org.commonlink.dto.OpenAlertCountDto
+import org.commonlink.dto.PriorDecisionDto
+import org.commonlink.dto.SubjectRegistryDto
+import org.commonlink.dto.toDto
 import org.commonlink.dto.toEntryDto
 import org.commonlink.dto.toDetailDto
 import org.commonlink.dto.toPageResponse
+import org.commonlink.dto.toPriorDecisionDto
 import org.commonlink.dto.toSummaryDto
+import org.commonlink.entity.ComplianceAlert
 import org.commonlink.entity.ComplianceAlertDecision
+import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
+import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.FreezeScreeningMatchRepository
+import org.commonlink.repository.UserRepository
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
@@ -56,6 +68,10 @@ class ComplianceController(
     private val registryCheckService: AssociationRegistryCheckService,
     private val registryCheckRepository: AssociationRegistryCheckRepository,
     private val associationProfileRepository: AssociationProfileRepository,
+    private val beneficialOwnerRepository: BeneficialOwnerRepository,
+    private val donorProfileRepository: DonorProfileRepository,
+    private val userRepository: UserRepository,
+    private val matchRepository: FreezeScreeningMatchRepository,
 ) {
 
     /** Health-check / role-gate probe. Used by integration tests to verify COMPLIANCE_OFFICER access. */
@@ -85,9 +101,31 @@ class ComplianceController(
     ): ResponseEntity<PageResponse<ComplianceAlertSummaryDto>> {
         val now = Instant.now()
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-        val result = alertService.listFreezeHitAlerts(pageable).map { it.toSummaryDto(now) }
+        val result = alertService.listFreezeHitAlerts(pageable)
+            .map { it.toSummaryDto(now, resolveSubjectLabel(it)) }
         return ResponseEntity.ok(result.toPageResponse())
     }
+
+    /**
+     * Returns the number of freeze-related alerts still awaiting treatment (PENDING or IN_REVIEW).
+     *
+     * The dashboard previously derived this from the total element count of an unfiltered alert
+     * page, which also counted closed alerts — the tile reported a backlog that treatment could
+     * never reduce.
+     */
+    @GetMapping("/alerts/open-count")
+    @Operation(
+        summary = "Count freeze alerts awaiting treatment",
+        description = "Returns the number of PENDING or IN_REVIEW freeze-related alerts. " +
+            "Excludes CLOSED alerts, unlike the total of the paginated list."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Open alert count"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun countOpenAlerts(): ResponseEntity<OpenAlertCountDto> =
+        ResponseEntity.ok(OpenAlertCountDto(alertService.countOpenFreezeAlerts()))
 
     /**
      * Returns the full detail of a single compliance alert, including the freeze-screening
@@ -116,13 +154,105 @@ class ComplianceController(
     ): ResponseEntity<ComplianceAlertDetailDto> {
         val now = Instant.now()
         val alert = alertService.findById(alertId)
-        val history = if (alert.subjectId != null) {
-            auditLogService.findFreezeScreeningHistory(alert.subjectId!!).map { it.toEntryDto() }
+        val subjectId = alert.subjectId
+        val history = if (subjectId != null) {
+            auditLogService.findFreezeScreeningHistory(subjectId).map { it.toEntryDto() }
         } else {
             emptyList()
         }
-        return ResponseEntity.ok(alert.toDetailDto(history, now))
+        return ResponseEntity.ok(
+            alert.toDetailDto(
+                freezeHistory = history,
+                matches = resolveMatches(alert),
+                priorDecisions = resolvePriorDecisions(alert),
+                now = now,
+                subjectLabel = resolveSubjectLabel(alert),
+                takenInChargeByLabel = alert.takenInChargeBy?.let { resolveUserLabel(it) },
+                subjectRegistry = resolveSubjectRegistry(alert),
+            ),
+        )
     }
+
+    /**
+     * Loads the subject association's public-registry identity, when it has one.
+     *
+     * This is the discriminating evidence for a false-positive ruling: the officer compares an
+     * association carrying an active RNA and a verified SIREN against a register entry designated
+     * under a foreign sanctions programme. Without it the two sides of the comparison are a name
+     * and a name, and only the score distinguishes them.
+     */
+    private fun resolveSubjectRegistry(alert: ComplianceAlert): SubjectRegistryDto? {
+        if (alert.subjectType != ComplianceAlertSubjectType.ASSOCIATION) return null
+        val subjectId = alert.subjectId ?: return null
+        val scan = registryCheckService.latest(subjectId) ?: return null
+        return SubjectRegistryDto(
+            siren = scan.siren,
+            rna = scan.rna,
+            scopeVerdict = scan.scopeVerdict.name,
+            associationExists = scan.associationExists,
+            rnaActive = scan.rnaActive,
+            checkedAt = scan.checkedAt,
+        )
+    }
+
+    /**
+     * Loads the register correspondences backing an alert.
+     *
+     * An alert raised for a representative or a beneficial owner carries the *association*'s id
+     * (see [org.commonlink.service.FreezeHitAlertAdapter]), while the correspondence itself is
+     * recorded against the screened party's own id. `associationId` is the only column that
+     * bridges the two, so an association-scoped alert must be resolved through it — querying by
+     * subject id alone would silently return nothing for exactly the representative hits the
+     * officer most needs to see.
+     */
+    private fun resolveMatches(alert: ComplianceAlert): List<FreezeScreeningMatchDto> {
+        val subjectId = alert.subjectId ?: return emptyList()
+        val matches = when (alert.subjectType) {
+            ComplianceAlertSubjectType.ASSOCIATION ->
+                matchRepository.findByAssociationIdOrderByScoreDesc(subjectId)
+            else ->
+                matchRepository.findBySubjectIdOrderByScoreDesc(subjectId)
+        }
+        return matches.map { it.toDto() }
+    }
+
+    /**
+     * Loads previous rulings on the same subject. Informative only — nothing is suppressed:
+     * closure is irreversible and every new correspondence raises a new alert, so the officer
+     * re-examines each time but is spared re-deriving an identical analysis.
+     */
+    private fun resolvePriorDecisions(alert: ComplianceAlert): List<PriorDecisionDto> {
+        val subjectId = alert.subjectId ?: return emptyList()
+        return alertService.findPriorDecisions(subjectId, alert.id).map { it.toPriorDecisionDto() }
+    }
+
+    /**
+     * Resolves a human-readable designation for the alert subject.
+     *
+     * Returns null when the subject cannot be resolved — a dossier deleted since the screening,
+     * or a SYSTEM alert with no subject. The UI renders that as an explicit "unresolved subject"
+     * state rather than a broken link.
+     */
+    private fun resolveSubjectLabel(alert: ComplianceAlert): String? {
+        val subjectId = alert.subjectId ?: return null
+        return when (alert.subjectType) {
+            ComplianceAlertSubjectType.ASSOCIATION ->
+                associationProfileRepository.findById(subjectId).orElse(null)?.name
+
+            ComplianceAlertSubjectType.BENEFICIAL_OWNER ->
+                beneficialOwnerRepository.findById(subjectId).orElse(null)?.name
+
+            ComplianceAlertSubjectType.DONOR ->
+                donorProfileRepository.findById(subjectId).orElse(null)
+                    ?.let { it.displayName ?: it.user.email }
+
+            ComplianceAlertSubjectType.SYSTEM -> null
+        }
+    }
+
+    /** Resolves the display name of the officer who took an alert in charge. */
+    private fun resolveUserLabel(userId: UUID): String? =
+        userRepository.findById(userId).orElse(null)?.let { it.displayName ?: it.email }
 
     /**
      * Transitions an alert from PENDING to IN_REVIEW, recording the officer's identity and timestamp.
@@ -148,7 +278,7 @@ class ComplianceController(
         val now = Instant.now()
         val officerId = UUID.fromString(principal.username)
         val alert = alertService.takeInCharge(alertId, officerId)
-        return ResponseEntity.ok(alert.toSummaryDto(now))
+        return ResponseEntity.ok(alert.toSummaryDto(now, resolveSubjectLabel(alert)))
     }
 
     /**
@@ -197,7 +327,7 @@ class ComplianceController(
             treasuryNotificationMethod = request.treasuryNotificationMethod,
             treasuryNotificationRef = request.treasuryNotificationRef,
         )
-        return ResponseEntity.ok(alert.toSummaryDto(now))
+        return ResponseEntity.ok(alert.toSummaryDto(now, resolveSubjectLabel(alert)))
     }
 
     /**

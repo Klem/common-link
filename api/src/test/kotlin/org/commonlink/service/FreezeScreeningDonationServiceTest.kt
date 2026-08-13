@@ -6,6 +6,7 @@ import io.mockk.verify
 import org.commonlink.config.SanctionsProperties
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.SanctionedNature
+import org.commonlink.repository.FreezeScreeningMatchRepository
 import org.commonlink.repository.SanctionedEntityRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -28,13 +29,18 @@ class FreezeScreeningDonationServiceTest {
     private val screeningService: SanctionScreeningService = mockk()
     private val auditLogService: ComplianceAuditLogService = mockk(relaxed = true)
     private val sanctionedEntityRepository: SanctionedEntityRepository = mockk()
+    private val matchRepository: FreezeScreeningMatchRepository = mockk(relaxed = true)
     private val props = SanctionsProperties(scoreThreshold = 0.85)
     private val alertPort: FreezeHitAlertPort = mockk(relaxed = true)
+
+    /** Real recorder over a mocked repository — see `FreezeScreeningOnboardingServiceTest`. */
+    private val evidenceRecorder = FreezeScreeningEvidenceRecorder(matchRepository, props)
 
     private val service = FreezeScreeningDonationService(
         screeningService,
         auditLogService,
         sanctionedEntityRepository,
+        evidenceRecorder,
         props,
         alertPort,
     )

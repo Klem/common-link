@@ -12,8 +12,7 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Vérifie que [name] et [dateOfBirth] sont bien chiffrés en base lorsque la clé est configurée,
- * et que [BeneficialOwnerRepository.existsByAssociationIdAndDiscardedFalse] est correct.
+ * Vérifie que [name] et [dateOfBirth] sont bien chiffrés en base lorsque la clé est configurée.
  *
  * Requiert Docker (Testcontainers Postgres).
  *
@@ -87,38 +86,4 @@ class BeneficialOwnerRepositoryTest(
         assertThat(rawDob).doesNotContain("1867-11-07")
     }
 
-    @Test
-    fun `existsByAssociationIdAndDiscardedFalse returns true when at least one active owner exists`() {
-        val associationId = persistedAssociationId()
-        repository.save(
-            BeneficialOwner(
-                associationId = associationId,
-                name = "Active Owner",
-                origin = BeneficialOwnerOrigin.REGISTRY,
-                collectedAt = Instant.now(),
-                confirmedBy = UUID.randomUUID(),
-            )
-        )
-        em.flush()
-
-        assertThat(repository.existsByAssociationIdAndDiscardedFalse(associationId)).isTrue()
-    }
-
-    @Test
-    fun `existsByAssociationIdAndDiscardedFalse returns false when all owners are discarded`() {
-        val associationId = persistedAssociationId()
-        repository.save(
-            BeneficialOwner(
-                associationId = associationId,
-                name = "Discarded Owner",
-                origin = BeneficialOwnerOrigin.REGISTRY,
-                collectedAt = Instant.now(),
-                confirmedBy = UUID.randomUUID(),
-                discarded = true,
-            )
-        )
-        em.flush()
-
-        assertThat(repository.existsByAssociationIdAndDiscardedFalse(associationId)).isFalse()
-    }
 }

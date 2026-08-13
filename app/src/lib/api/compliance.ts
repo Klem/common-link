@@ -18,6 +18,15 @@ export const listAlerts = (page = 0, size = 20): Promise<Page<ComplianceAlertSum
     .then((r) => r.data);
 
 /**
+ * Returns the number of alerts still awaiting treatment (PENDING or IN_REVIEW).
+ *
+ * Distinct from the total of {@link listAlerts}, which counts closed alerts too.
+ * `GET /api/compliance/alerts/open-count`
+ */
+export const countOpenAlerts = (): Promise<number> =>
+  api.get<{ count: number }>('/api/compliance/alerts/open-count').then((r) => r.data.count);
+
+/**
  * Fetches the full detail of a compliance alert, including freeze-screening history.
  * `GET /api/compliance/alerts/{alertId}`
  */

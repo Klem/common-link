@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { getAlert, takeInCharge, closeAlert } from '@/lib/api/compliance';
 import type { ComplianceAlertDetailDto } from '@/types/compliance';
 import { ComplianceAlertDecision } from '@/types/compliance';
+import { FreezeMatchEvidence } from '@/components/compliance/FreezeMatchEvidence';
+import { PriorDecisionsBanner } from '@/components/compliance/PriorDecisionsBanner';
 import { ROUTES } from '@/lib/routes';
 
 interface AlertDetailPageProps {
@@ -19,6 +21,27 @@ function formatAge(ageSeconds: number, t: (key: string, values?: Record<string, 
   if (days > 0) return t('alerts.ageFormat.daysHours', { days, hours });
   if (hours > 0) return t('alerts.ageFormat.hoursMinutes', { hours, minutes });
   return t('alerts.ageFormat.minutes', { minutes });
+}
+
+/**
+ * Reads one field out of a journal entry payload.
+ *
+ * The payload was already being sent to the browser and never rendered, so the officer saw a
+ * screening history reduced to a sequence number and an event name — the count, score, threshold
+ * and register version it carries were dropped on the floor. Shapes differ per event type
+ * (a CLEAR has no `topScore`, an UNAVAILABLE has only `reason`), hence the tolerant lookup.
+ */
+function payloadText(payload: Record<string, unknown>, key: string): string {
+  const value = payload?.[key];
+  if (value === null || value === undefined) return '—';
+  return String(value);
+}
+
+/** Same as {@link payloadText}, rounded — raw Jaro-Winkler scores carry 16 decimals. */
+function payloadScore(payload: Record<string, unknown>, key: string): string {
+  const value = payload?.[key];
+  if (typeof value !== 'number') return '—';
+  return value.toFixed(4);
 }
 
 function formatDateTime(iso: string | null, locale: string): string {
@@ -114,23 +137,31 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
       <div className="cm-card" style={{ marginBottom: 24 }}>
         <div className="cm-card-title">{t('detail.metadata')}</div>
         <div className="frow" style={{ flexWrap: 'wrap', gap: 16, marginTop: 12 }}>
-          <div className="fi">
+          <div>
+            <span className="cm-label">{t('detail.subject')}</span>
+            <strong>{alert.subjectLabel ?? t('evidence.subjectUnresolved')}</strong>
+          </div>
+          <div>
+            <span className="cm-label">{t('detail.subjectType')}</span>
+            <span>{t(`alerts.subjectType.${alert.subjectType}`)}</span>
+          </div>
+          <div>
             <span className="cm-label">{t('detail.origin')}</span>
             <span style={{ fontFamily: 'monospace' }}>{t(`alerts.origin.${alert.origin}`)}</span>
           </div>
-          <div className="fi">
+          <div>
             <span className="cm-label">{t('detail.severity')}</span>
             <span>{t(`alerts.severity.${alert.severity}`)}</span>
           </div>
-          <div className="fi">
+          <div>
             <span className="cm-label">{t('detail.status')}</span>
             <span>{t(`alerts.status.${alert.status}`)}</span>
           </div>
-          <div className="fi">
+          <div>
             <span className="cm-label">{t('detail.createdAt')}</span>
             <span>{formatDateTime(alert.createdAt, locale)}</span>
           </div>
-          <div className="fi">
+          <div>
             <span className="cm-label">{t('detail.age')}</span>
             <strong
               style={{
@@ -143,13 +174,29 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
             </strong>
           </div>
           {alert.takenInChargeAt && (
-            <div className="fi">
+            <div>
               <span className="cm-label">{t('detail.takenInChargeAt')}</span>
               <span>{formatDateTime(alert.takenInChargeAt, locale)}</span>
             </div>
           )}
+          {alert.takenInChargeByLabel && (
+            <div>
+              <span className="cm-label">{t('detail.takenInChargeBy')}</span>
+              <span>{alert.takenInChargeByLabel}</span>
+            </div>
+          )}
         </div>
       </div>
+
+      <PriorDecisionsBanner priorDecisions={alert.priorDecisions} locale={locale} />
+
+      <FreezeMatchEvidence
+        matches={alert.matches}
+        subjectLabel={alert.subjectLabel}
+        subjectId={alert.subjectId}
+        subjectRegistry={alert.subjectRegistry}
+        locale={locale}
+      />
 
       {/* Freeze-screening history */}
       <div className="cm-card" style={{ marginBottom: 24 }}>
@@ -158,11 +205,16 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
           <p style={{ color: 'var(--color-text-2)', marginTop: 12 }}>{t('detail.history.empty')}</p>
         ) : (
           <div style={{ overflowX: 'auto', marginTop: 12 }}>
-            <table>
+            <table className="cm-table">
               <thead>
                 <tr>
                   <th>{t('detail.history.col.seq')}</th>
                   <th>{t('detail.history.col.event')}</th>
+                  <th>{t('detail.history.col.matchCount')}</th>
+                  <th>{t('detail.history.col.topScore')}</th>
+                  <th>{t('detail.history.col.threshold')}</th>
+                  <th>{t('detail.history.col.registryDate')}</th>
+                  <th>{t('detail.history.col.reason')}</th>
                   <th>{t('detail.history.col.date')}</th>
                 </tr>
               </thead>
@@ -171,6 +223,11 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
                   <tr key={entry.sequenceNo}>
                     <td style={{ fontFamily: 'monospace', fontSize: 12 }}>#{entry.sequenceNo}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 13 }}>{entry.eventType}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{payloadText(entry.payload, 'matchCount')}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{payloadScore(entry.payload, 'topScore')}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{payloadText(entry.payload, 'scoreThreshold')}</td>
+                    <td>{payloadText(entry.payload, 'registryPublicationDate')}</td>
+                    <td style={{ fontSize: 12 }}>{payloadText(entry.payload, 'reason')}</td>
                     <td>{formatDateTime(entry.occurredAt, locale)}</td>
                   </tr>
                 ))}
@@ -204,11 +261,11 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
           <div className="cm-card-title">{t('detail.decision.title')}</div>
           <form onSubmit={handleClose} style={{ marginTop: 12 }}>
             {/* Decision select */}
-            <div className="fi" style={{ marginBottom: 16 }}>
+            <div className="fg">
               <label className="cm-label" htmlFor="decision">{t('detail.decision.label')}</label>
               <select
                 id="decision"
-                className="fsel"
+                className="fi"
                 value={decision}
                 onChange={(e) => setDecision(e.target.value)}
                 required
@@ -221,16 +278,16 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
             </div>
 
             {/* Rationale */}
-            <div className="fi" style={{ marginBottom: 16 }}>
+            <div className="fg">
               <label className="cm-label" htmlFor="rationale">{t('detail.rationale.label')}</label>
               <textarea
                 id="rationale"
+                className="fi"
                 rows={4}
                 value={rationale}
                 onChange={(e) => setRationale(e.target.value)}
                 placeholder={t('detail.rationale.placeholder')}
                 required
-                style={{ width: '100%', resize: 'vertical' }}
               />
             </div>
 
@@ -247,12 +304,13 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
                 </p>
               )}
 
-              <div className="fi" style={{ marginBottom: 12 }}>
+              <div className="fg">
                 <label className="cm-label" htmlFor="treasuryNotifiedAt">
                   {t('detail.treasury.notifiedAt')}{isSuspicious ? ' *' : ''}
                 </label>
                 <input
                   id="treasuryNotifiedAt"
+                  className="fi"
                   type="datetime-local"
                   value={treasuryNotifiedAt}
                   onChange={(e) => setTreasuryNotifiedAt(e.target.value)}
@@ -260,12 +318,13 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
                 />
               </div>
 
-              <div className="fi" style={{ marginBottom: 12 }}>
+              <div className="fg">
                 <label className="cm-label" htmlFor="treasuryMethod">
                   {t('detail.treasury.method')}{isSuspicious ? ' *' : ''}
                 </label>
                 <input
                   id="treasuryMethod"
+                  className="fi"
                   type="text"
                   value={treasuryMethod}
                   onChange={(e) => setTreasuryMethod(e.target.value)}
@@ -274,12 +333,13 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
                 />
               </div>
 
-              <div className="fi">
+              <div className="fg" style={{ marginBottom: 0 }}>
                 <label className="cm-label" htmlFor="treasuryRef">
                   {t('detail.treasury.ref')}{isSuspicious ? ' *' : ''}
                 </label>
                 <input
                   id="treasuryRef"
+                  className="fi"
                   type="text"
                   value={treasuryRef}
                   onChange={(e) => setTreasuryRef(e.target.value)}
@@ -308,12 +368,12 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
         <div className="cm-card">
           <div className="cm-card-title">{t('detail.closed.title')}</div>
           <div className="frow" style={{ flexWrap: 'wrap', gap: 16, marginTop: 12 }}>
-            <div className="fi">
+            <div>
               <span className="cm-label">{t('detail.closed.decision')}</span>
               <strong>{alert.decision ? t(`detail.decision.${alert.decision}`) : '—'}</strong>
             </div>
           </div>
-          <div className="fi" style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12 }}>
             <span className="cm-label">{t('detail.closed.rationale')}</span>
             <p style={{ whiteSpace: 'pre-wrap' }}>{alert.decisionRationale}</p>
           </div>
@@ -321,15 +381,15 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
             <div style={{ marginTop: 16, background: 'var(--color-bg-3)', borderRadius: 8, padding: 12 }}>
               <p className="cm-label" style={{ marginBottom: 8 }}>{t('detail.treasury.section')}</p>
               <div className="frow" style={{ flexWrap: 'wrap', gap: 12 }}>
-                <div className="fi">
+                <div>
                   <span className="cm-label">{t('detail.treasury.notifiedAt')}</span>
                   <span>{formatDateTime(alert.treasuryNotifiedAt, locale)}</span>
                 </div>
-                <div className="fi">
+                <div>
                   <span className="cm-label">{t('detail.treasury.method')}</span>
                   <span>{alert.treasuryNotificationMethod}</span>
                 </div>
-                <div className="fi">
+                <div>
                   <span className="cm-label">{t('detail.treasury.ref')}</span>
                   <span style={{ fontFamily: 'monospace' }}>{alert.treasuryNotificationRef}</span>
                 </div>

@@ -9,6 +9,7 @@ import org.commonlink.dto.VerificationStateDto
 import org.commonlink.dto.VigilanceMeasuresDto
 import org.commonlink.entity.AssociationDocument
 import org.commonlink.entity.AssociationDocumentType
+import org.commonlink.entity.BeneficialOwnerType
 import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.AssociationDocumentType.OPTIONAL
 import org.commonlink.entity.AssociationDocumentType.VERIF_RNA_RECEIPT
@@ -395,13 +396,12 @@ class VerificationService(
             )
         }
 
-        // UBO check: block approval when no retained beneficial owner exists.
-        // An association with no confirmed beneficial owner cannot enter into a business relationship (LCB-FT).
-        // REQUIRES_NEW propagation ensures the log entry is committed even when this method throws.
-        if (!beneficialOwnerRepository.existsByAssociationIdAndDiscardedFalse(associationId)) {
-            complianceAuditLogService.appendNoUboRefusal(associationId)
+        // Representative check: at least one legal representative must be confirmed before approval.
+        // Art. R.561-3 CMF (décret n°2024-720): tout dirigeant d'une association est bénéficiaire effectif.
+        if (!beneficialOwnerRepository.existsByAssociationIdAndTypeAndDiscardedFalse(associationId, BeneficialOwnerType.REPRESENTATIVE)) {
+            complianceAuditLogService.appendNoRepresentativeRefusal(associationId)
             throw ConflictException(
-                "Cannot approve: no beneficial owner has been confirmed for this association"
+                "Cannot approve: no legal representative has been confirmed for this association"
             )
         }
 
