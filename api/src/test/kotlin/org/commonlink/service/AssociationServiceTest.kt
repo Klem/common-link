@@ -295,4 +295,44 @@ class AssociationServiceTest {
 
         assertThrows<NotFoundException> { service.updateProfile(userId, req) }
     }
+
+    @Test
+    fun `updateProfile - a blank siren is stored as null, not as an empty string`() {
+        // A cleared form field arrives as "". Stored verbatim, it later reaches Recherche
+        // d'entreprises as an empty query term, which the registry rejects with a 400.
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.PENDING
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = "   ", creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        service.updateProfile(userId, req)
+
+        verify { profile.siren = null }
+    }
+
+    @Test
+    fun `updateProfile - a siren is trimmed before being stored`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.PENDING
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = " 123456789 ", creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null,
+        )
+
+        service.updateProfile(userId, req)
+
+        verify { profile.siren = "123456789" }
+    }
 }

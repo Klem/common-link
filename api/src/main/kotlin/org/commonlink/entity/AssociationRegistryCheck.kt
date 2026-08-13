@@ -74,7 +74,12 @@ class AssociationRegistryCheck(
     @Column(name = "officers", nullable = false, columnDefinition = "text")
     val officers: List<String> = emptyList(),
 
-    /** Whether the association is active according to the RNA (DJEPVA). Null if the source was unavailable or not applicable. */
+    /**
+     * Whether the association is still live according to RNA-derived data: `est_association` from
+     * Recherche d'entreprises (which aggregates the RNA), falling back to a JOAFE publication with no
+     * dissolution notice for associations absent from that registry. Null when no source could settle it —
+     * notably JOAFE silence, which is not evidence of inactivity.
+     */
     @Column(name = "rna_active")
     val rnaActive: Boolean? = null,
 
@@ -94,7 +99,7 @@ class AssociationRegistryCheck(
     val scopeVerdict: ScopeVerdict
         get() = when {
             legalCategory == null -> ScopeVerdict.UNDETERMINED
-            legalCategory == ACCEPTED_LEGAL_CATEGORY -> ScopeVerdict.IN_SCOPE
+            legalCategory in ACCEPTED_LEGAL_CATEGORIES -> ScopeVerdict.IN_SCOPE
             else -> ScopeVerdict.OUT_OF_SCOPE
         }
 }

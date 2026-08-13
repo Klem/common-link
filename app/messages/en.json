@@ -44,16 +44,17 @@
       "siren": "SIREN",
       "skipped": {
         "noRna": "RNA not found",
-        "noSiren": "SIREN not found",
+        "noSiren": "No SIREN number known",
         "title": "Not performed",
-        "unavailable": "Registry search unavailable"
+        "unavailable": "Business register unavailable"
       },
       "status": {
         "active": "Active",
         "ceased": "Ceased (INSEE)",
         "dissolved": "Dissolution detected",
         "insolvency": "Insolvency procedure",
-        "notFound": "Not found"
+        "notFound": "Not found",
+        "notListed": "Not listed (association with no SIREN number)"
       },
       "title": "Registry check",
       "warnings": "Warnings"
@@ -566,6 +567,21 @@
         "blockedScope": "Approval blocked: the association is out of loi 1901 scope."
       },
       "registry": {
+        "legalCategory": {
+          "codes": {
+            "9210": "Undeclared association",
+            "9220": "Declared association",
+            "9221": "Declared association (work integration enterprise)",
+            "9222": "Intermediary association",
+            "9223": "Employers' grouping",
+            "9230": "Declared association recognised as being of public utility",
+            "9240": "Congregation",
+            "9260": "Local-law association (Alsace-Moselle)",
+            "9300": "Foundation"
+          },
+          "title": "Legal category",
+          "unknown": "Not retrieved"
+        },
         "officers": {
           "empty": "No officers collected",
           "title": "Officers"
@@ -579,8 +595,10 @@
           "IN_SCOPE": "In scope",
           "OUT_OF_SCOPE": "Out of scope",
           "UNDETERMINED": "Undetermined",
+          "accepted": "Accepted forms: 9220 declared · 9221 work integration · 9222 intermediary · 9223 employers' grouping · 9230 public utility · 9260 local law.",
           "outOfScopeWarning": "Approval is blocked: the association is out of loi 1901 scope.",
-          "title": "Loi 1901 scope"
+          "title": "Loi 1901 scope",
+          "undeterminedHint": "Legal category not retrieved — approval is not blocked."
         }
       },
       "representative": {

@@ -56,6 +56,6 @@ data class RegistryPreCheckDto(
     @Schema(description = "Representatives of the association collected from consulted public registries (names only).")
     val officers: List<String>,
 
-    @Schema(description = "Whether the association is active according to the RNA (DJEPVA). Null if the source was unavailable or not applicable.")
+    @Schema(description = "Whether the association is still live according to RNA-derived data (Recherche d'entreprises, falling back to a JOAFE publication with no dissolution notice). Null when no source could settle it.")
     val rnaActive: Boolean?,
 )

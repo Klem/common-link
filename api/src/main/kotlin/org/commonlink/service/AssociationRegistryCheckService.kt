@@ -3,7 +3,7 @@ package org.commonlink.service
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.dto.RegistryPreCheckDto
-import org.commonlink.entity.ACCEPTED_LEGAL_CATEGORY
+import org.commonlink.entity.ACCEPTED_LEGAL_CATEGORIES
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.repository.AssociationProfileRepository
@@ -47,6 +47,11 @@ class AssociationRegistryCheckService(
 
     private val log = LoggerFactory.getLogger(AssociationRegistryCheckService::class.java)
 
+    private companion object {
+        /** Recherche d'entreprises rejects query terms shorter than this with a 400. */
+        const val MIN_SEARCH_KEY_LENGTH = 3
+    }
+
     /**
      * Runs a live registry scan, persists it as a new immutable row, and returns the result.
      * @param checkedBy UUID of the curator who triggered the scan (for the audit trail).
@@ -70,39 +75,75 @@ class AssociationRegistryCheckService(
      * Queries every registry and assembles an unsaved [AssociationRegistryCheck] row.
      *
      * [AssociationProfile.identifier] holds the RNA for JOAFE registrations or the SIREN for legacy rows.
-     * [AssociationProfile.siren] holds the SIREN when both identifiers are known. The SIREN-based checks
-     * (INSEE, BODACC) and the RNA-based check (JOAFE) are run independently when available — neither is skipped in favor
-     * of the other.
+     * [AssociationProfile.siren] holds the SIREN when both identifiers are known.
+     *
+     * **No registry check is gated on a declared SIREN.** Step 1 (Recherche d'entreprises) is searched by
+     * SIREN when one is known and by RNA otherwise; the record it returns carries the SIREN, which then
+     * unlocks the SIREN-keyed steps (INSEE, BODACC) for RNA-only associations. Step 3 (JOAFE) runs on the
+     * RNA independently, and additionally determines `rnaActive` for associations that never obtained a
+     * SIREN and are therefore absent from Recherche d'entreprises altogether.
      */
 
     private fun runLiveCheck(profile: AssociationProfile, checkedBy: UUID?): AssociationRegistryCheck {
         val warnings = mutableListOf<String>()
         val officers = mutableListOf<String>()
 
-        // identifier holds RNA for JOAFE registrations (starts with "W"), SIREN for legacy rows
-        val siren = profile.siren ?: profile.identifier.takeUnless { it.startsWith("W") }
-        val rnaFromProfile = profile.identifier.takeIf { it.startsWith("W") }
+        // identifier holds RNA for JOAFE registrations (starts with "W"), SIREN for legacy rows.
+        // Both columns are nullable *and* routinely hold an empty string when the operator left the
+        // field untouched, so blank must be read as absent — an elvis on null alone would carry ""
+        // into the query and get rejected by the registry.
+        val identifier = profile.identifier.trim()
+        val rnaFromProfile = identifier.takeIf { it.startsWith("W", ignoreCase = true) }
+        val sirenFromProfile = profile.siren?.trim()?.takeIf { it.isNotEmpty() }
+            ?: identifier.takeIf { it.isNotEmpty() && rnaFromProfile == null }
 
-        // ── Step 1: Recherche d'entreprises (searched by SIREN, the mandatory identifier) ─────
+        // ── Step 1: Recherche d'entreprises (searched by SIREN when known, by RNA otherwise) ──
         var associationExists: Boolean? = null
         var rnaFromSearch: String? = null
+        var sirenFromSearch: String? = null
         var legalCategory: String? = null
         var rnaActive: Boolean? = null
+        var rechercheEntreprisesFailed = false
 
-        if (siren != null) {
+        val searchKey = sirenFromProfile ?: rnaFromProfile
+        if (searchKey == null || searchKey.length < MIN_SEARCH_KEY_LENGTH) {
+            // `identifier` is NOT NULL in the schema but nothing stops it holding "". Absent or
+            // unusably short, no registry can be queried at all: record it as a source failure so the
+            // scan reads as inconclusive rather than as a reassuring empty result.
+            log.warn("No usable registry search key for association {}: identifier='{}'", profile.id, identifier)
+            warnings.add("recherche-entreprises: no usable identifier to query the registry")
+            rechercheEntreprisesFailed = true
+        } else {
             try {
-                val url = "$rechercheEntreprisesBaseUrl/search?q=${enc(siren)}&limit=1"
+                val url = "$rechercheEntreprisesBaseUrl/search?q=${enc(searchKey)}&per_page=10"
                 restTemplate.getForObject(url, String::class.java)?.let { body ->
                     val results: JsonNode = objectMapper.readTree(body).path("results")
-                    if (results.isArray && results.size() > 0) {
-                        val first: JsonNode = results[0]
-                        val estAssociation = first.path("complements").path("est_association").asBoolean(false)
-                        val natureJuridique = first.path("nature_juridique").asText("").takeIf { it.isNotBlank() }
+                    val candidates = if (results.isArray) (0 until results.size()).map { results[it] } else emptyList()
+                    // The endpoint is a full-text search: a W-number query is not guaranteed to rank the
+                    // right entity first, so the RNA path only accepts a record whose RNA matches exactly.
+                    // A declared SIREN is unambiguous and keeps the historical top-hit behaviour.
+                    val match: JsonNode? = if (sirenFromProfile != null) {
+                        candidates.firstOrNull()
+                    } else {
+                        candidates.firstOrNull {
+                            it.path("identifiant_association").asText("").equals(rnaFromProfile, ignoreCase = true)
+                        }
+                    }
+                    if (match != null) {
+                        val estAssociation = match.path("complements").path("est_association").asBoolean(false)
+                        val natureJuridique = match.path("nature_juridique").asText("").takeIf { it.isNotBlank() }
                         legalCategory = natureJuridique
-                        associationExists = estAssociation || natureJuridique == ACCEPTED_LEGAL_CATEGORY
+                        // Deliberately broader than the perimeter: this flag answers "was the entity
+                        // found, and does it present itself as an association?" and is informational.
+                        // Eligibility is [ScopeVerdict] alone, derived from legalCategory — it is the
+                        // only blocking signal. The two may legitimately disagree: an entity of an
+                        // excluded 92xx form shows as found *and* out of scope, which is what the
+                        // curator needs to see.
+                        associationExists = estAssociation || natureJuridique in ACCEPTED_LEGAL_CATEGORIES
                         rnaActive = estAssociation  // RNA-native: recherche-entreprises aggregates from RNA
-                        rnaFromSearch = first.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
-                        val dirigeants: JsonNode = first.path("dirigeants")
+                        rnaFromSearch = match.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
+                        sirenFromSearch = match.path("siren").asText("").takeIf { it.isNotBlank() }
+                        val dirigeants: JsonNode = match.path("dirigeants")
                         if (dirigeants.isArray) {
                             (0 until dirigeants.size()).forEach { i ->
                                 val d = dirigeants[i]
@@ -112,17 +153,23 @@ class AssociationRegistryCheckService(
                                 if (name.isNotBlank()) officers.add(name)
                             }
                         }
-                    } else {
+                    } else if (sirenFromProfile != null) {
                         associationExists = false
                     }
+                    // RNA path with no matching record: associationExists stays null. Recherche d'entreprises
+                    // only lists SIREN-bearing entities, so absence there never disproves legal existence.
                 }
             } catch (ex: Exception) {
-                log.warn("Recherche d'entreprises lookup failed for SIREN={}: {}", siren, ex.message)
+                log.warn("Recherche d'entreprises lookup failed for key={}: {}", searchKey, ex.message)
                 warnings.add("recherche-entreprises: ${ex.message ?: "unavailable"}")
+                rechercheEntreprisesFailed = true
             }
         }
 
-        // ── Step 2: INSEE Sirene (SIREN always available from the profile) ──────────────────────
+        // SIREN resolved from the registry when the profile only carries an RNA — unlocks INSEE and BODACC.
+        val siren = sirenFromProfile ?: sirenFromSearch
+
+        // ── Step 2: INSEE Sirene (SIREN declared on the profile or resolved at step 1) ─────────
         var etatAdministratif: String? = null
 
         if (siren != null) {
@@ -154,9 +201,12 @@ class AssociationRegistryCheckService(
         val rna = rnaFromProfile ?: rnaFromSearch
         rna?.let {
             try {
+                // Newest-first: a dissolution notice is the last event of an association's life, so the
+                // most recent window is the one that can hold it. An unordered window could miss it.
                 val uri = UriComponentsBuilder.fromUriString("$joafeBaseUrl/catalog/datasets/jo_associations/records")
                     .queryParam("where", "numero_rna='$rna'")
-                    .queryParam("limit", 10)
+                    .queryParam("order_by", "dateparution desc")
+                    .queryParam("limit", 20)
                     .build().encode().toUri()
                 restTemplate.getForObject(uri, String::class.java)?.let { body ->
                     val records: JsonNode = objectMapper.readTree(body).path("records")
@@ -195,6 +245,15 @@ class AssociationRegistryCheckService(
                 log.warn("JOAFE lookup failed for RNA={}: {}", rna, ex.message)
                 warnings.add("joafe: ${ex.message ?: "unavailable"}")
             }
+        }
+
+        // An association that never obtained a SIREN is absent from Recherche d'entreprises, leaving
+        // JOAFE as the only RNA source: a publication with no dissolution notice means it is still live.
+        // Two deliberate limits: JOAFE silence is not evidence of inactivity (rnaActive stays null), and
+        // an outage of the primary source stays visible as "undetermined" rather than being papered over
+        // by a weaker inference.
+        if (!rechercheEntreprisesFailed && rnaActive == null && joafeDeclarationFound == true) {
+            rnaActive = dissolutionDetected == false
         }
 
         // ── Step 4: BODACC (SIREN, insolvency filter) ───────────────────────────────────────────

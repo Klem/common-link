@@ -237,7 +237,7 @@ class VerificationServiceTest {
         verify(exactly = 0) { emailService.sendVerificationRejectedToAssociation(any(), any(), any()) }
     }
 
-    // ─── scope check (catégorie 9220) ────────────────────────────────────────
+    // ─── scope check (famille INSEE 92xx — associations loi 1901) ────────────
 
     @Test
     fun `adminApprove succeeds when latest scan is IN_SCOPE`() {
@@ -257,13 +257,13 @@ class VerificationServiceTest {
         mockPendingProfile()
         val outOfScopeCheck: AssociationRegistryCheck = mockk(relaxed = true)
         every { outOfScopeCheck.scopeVerdict } returns ScopeVerdict.OUT_OF_SCOPE
-        every { outOfScopeCheck.legalCategory } returns "9230"
+        every { outOfScopeCheck.legalCategory } returns "5710"
         every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns outOfScopeCheck
 
         assertThrows(ConflictException::class.java) {
             service.adminApprove(associationId)
         }
-        verify(exactly = 1) { complianceAuditLogService.appendOutOfScopeRefusal(associationId, "9230") }
+        verify(exactly = 1) { complianceAuditLogService.appendOutOfScopeRefusal(associationId, "5710") }
         verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
     }
 

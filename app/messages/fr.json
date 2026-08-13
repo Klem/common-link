@@ -44,16 +44,17 @@
       "siren": "SIREN",
       "skipped": {
         "noRna": "RNA non trouvé",
-        "noSiren": "SIREN non trouvé",
+        "noSiren": "Aucun numéro SIREN connu",
         "title": "Non effectué",
-        "unavailable": "Recherche registres indisponible"
+        "unavailable": "Registre des entreprises indisponible"
       },
       "status": {
         "active": "Active",
         "ceased": "Cessée (INSEE)",
         "dissolved": "Dissolution détectée",
         "insolvency": "Procédure collective",
-        "notFound": "Non trouvée"
+        "notFound": "Non trouvée",
+        "notListed": "Non répertoriée (association sans numéro SIREN)"
       },
       "title": "Vérification registres",
       "warnings": "Avertissements"
@@ -566,6 +567,21 @@
         "blockedScope": "Approbation bloquée : l'association est hors périmètre loi 1901."
       },
       "registry": {
+        "legalCategory": {
+          "codes": {
+            "9210": "Association non déclarée",
+            "9220": "Association déclarée",
+            "9221": "Association déclarée « entreprises d'insertion par l'économique »",
+            "9222": "Association intermédiaire",
+            "9223": "Groupement d'employeurs",
+            "9230": "Association déclarée reconnue d'utilité publique",
+            "9240": "Congrégation",
+            "9260": "Association de droit local (Alsace-Moselle)",
+            "9300": "Fondation"
+          },
+          "title": "Catégorie juridique",
+          "unknown": "Non récupérée"
+        },
         "officers": {
           "empty": "Aucun représentant collecté",
           "title": "Représentants"
@@ -579,8 +595,10 @@
           "IN_SCOPE": "Dans le périmètre",
           "OUT_OF_SCOPE": "Hors périmètre",
           "UNDETERMINED": "Indéterminé",
+          "accepted": "Formes acceptées : 9220 déclarée · 9221 insertion par l'économique · 9222 intermédiaire · 9223 groupement d'employeurs · 9230 reconnue d'utilité publique · 9260 droit local.",
           "outOfScopeWarning": "L'approbation est bloquée : l'association est hors périmètre loi 1901.",
-          "title": "Périmètre loi 1901"
+          "title": "Périmètre loi 1901",
+          "undeterminedHint": "Catégorie juridique non récupérée — l'approbation n'est pas bloquée."
         }
       },
       "representative": {
