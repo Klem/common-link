@@ -32,7 +32,7 @@ data class RegistryPreCheckDto(
     @Schema(description = "INSEE legal category (nature_juridique) from Recherche d'entreprises. Null if source unavailable or no SIREN.")
     val legalCategory: String?,
 
-    @Schema(description = "Computed perimeter verdict: IN_SCOPE (9220), OUT_OF_SCOPE (other category), UNDETERMINED (source unavailable). UNDETERMINED never blocks approval.")
+    @Schema(description = "Computed perimeter verdict: IN_SCOPE (a declared form of INSEE family 92 — 9220, 9221, 9222, 9223, 9230, 9260), OUT_OF_SCOPE (any other known category), UNDETERMINED (source unavailable or category not retrieved). UNDETERMINED never blocks approval.")
     val scopeVerdict: ScopeVerdict,
 
     @Schema(description = "INSEE administrative status: 'A' = active, 'C' = ceased. Null if no SIREN or INSEE call failed.")

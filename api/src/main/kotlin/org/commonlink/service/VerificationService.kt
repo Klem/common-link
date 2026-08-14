@@ -7,6 +7,7 @@ import org.commonlink.dto.DocumentSlotDto
 import org.commonlink.dto.OptionalDocumentDto
 import org.commonlink.dto.VerificationStateDto
 import org.commonlink.dto.VigilanceMeasuresDto
+import org.commonlink.entity.ACCEPTED_LEGAL_CATEGORIES
 import org.commonlink.entity.AssociationDocument
 import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.BeneficialOwnerType
@@ -384,7 +385,8 @@ class VerificationService(
             throw ConflictException("Cannot approve: status is ${profile.verificationStatus}, expected PENDING")
         }
 
-        // Scope check: block approval when the latest scan shows a non-9220 legal category.
+        // Scope check: block approval when the latest scan shows a legal category outside
+        // ACCEPTED_LEGAL_CATEGORIES (the declared forms of INSEE family 92 — see ScopeVerdict).
         // UNDETERMINED (null category / no scan) does not block — a registry outage must not
         // disqualify an association. Log is committed in its own transaction before throwing.
         val latestCheck = registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId)
@@ -392,7 +394,8 @@ class VerificationService(
             complianceAuditLogService.appendOutOfScopeRefusal(associationId, latestCheck.legalCategory!!)
             throw ConflictException(
                 "Cannot approve: association legal category '${latestCheck.legalCategory}' is outside platform scope" +
-                    " — only loi 1901 associations (category 9220) are accepted"
+                    " — accepted categories are ${ACCEPTED_LEGAL_CATEGORIES.sorted().joinToString(", ")}" +
+                    " (declared loi 1901 associations and equivalents)"
             )
         }
 
