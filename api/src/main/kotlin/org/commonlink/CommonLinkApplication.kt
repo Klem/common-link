@@ -1,5 +1,6 @@
 package org.commonlink
 
+import org.commonlink.config.DonationCapProperties
 import org.commonlink.config.MollieConnectConfig
 import org.commonlink.config.MollieProperties
 import org.commonlink.config.MoneriumConfig
@@ -20,6 +21,7 @@ import org.springframework.boot.runApplication
     RiskClassificationProperties::class,
     SanctionsProperties::class,
     SanctionsSyncProperties::class,
+    DonationCapProperties::class,
 )
 class CommonLinkApplication
 

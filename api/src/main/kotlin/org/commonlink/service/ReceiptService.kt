@@ -18,7 +18,11 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * Generates a Cerfa 2041-RD-compliant fiscal receipt PDF for a confirmed donation.
+ * Generates a fiscal receipt PDF for a confirmed donation, established after the Cerfa 2041-RD model.
+ *
+ * The wording deliberately stops short of certifying conformity or entitlement: CommonLink produces
+ * the document, it does not rule on the beneficiary's fiscal eligibility nor on the donor's own
+ * situation. See [subtitle] and [donSection].
  *
  * The output is deterministic for a given donation — the same bytes are produced on retry,
  * which keeps the keccak256 hash stored on-chain stable.
@@ -117,7 +121,7 @@ class ReceiptService(
         val small = FontFactory.getFont(FontFactory.HELVETICA, 8f)
         doc.add(Paragraph(
             "à certains organismes d'intérêt général — Articles 200, 238 bis et 978 du code général des impôts (CGI). " +
-            "Modèle conforme au Cerfa n° 11580*05.",
+            "Établi selon le modèle Cerfa n° 11580*05.",
             small,
         ).apply { spacingAfter = 8f })
     }
@@ -226,15 +230,16 @@ class ReceiptService(
         })
         natMode.addCell(borderlessCell(Phrase(""), Element.ALIGN_LEFT).apply {
             addElement(Paragraph("Mode de versement", captionFont))
-            addElement(Paragraph("Virement, prélèvement ou carte bancaire", normalFont))
+            addElement(Paragraph(paymentMethodLabel(d.paymentMethod), normalFont))
         })
         doc.add(natMode)
 
         val smallFont = FontFactory.getFont(FontFactory.HELVETICA, 8f)
         doc.add(Paragraph(
             "Le donateur atteste que ce versement, effectué sans contrepartie, relève d'une intention libérale. " +
-            "Il ouvre droit à la réduction d'impôt prévue à l'article 200 du CGI " +
-            "(${taxRateService.taxReductionRate(d.campaign.association)} % du montant).",
+            "Il est susceptible d'ouvrir droit à la réduction d'impôt prévue à l'article 200 du CGI " +
+            "(${taxRateService.taxReductionRate(d.campaign.association)} % du montant), sous réserve du respect " +
+            "des conditions légales et de la situation fiscale propre au donateur.",
             smallFont,
         ).apply { spacingAfter = 6f })
     }
@@ -289,7 +294,7 @@ class ReceiptService(
             "le montant global des dons et le nombre de reçus délivrés (article 222 bis du CGI).",
             tiny,
         ).apply { spacingAfter = 6f })
-        doc.add(Paragraph("Reçu produit avec CommonLink — commonlink (outil gratuit). Ce document ne préjuge pas de l'éligibilité fiscale du bénéficiaire.", tiny))
+        doc.add(Paragraph("Reçu produit avec CommonLink. Ce document ne préjuge pas de l'éligibilité fiscale du bénéficiaire.", tiny))
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -351,6 +356,29 @@ class ReceiptService(
         a.siren != null -> a.siren!!
         a.identifier.startsWith("W") -> a.identifier
         else -> a.identifier
+    }
+
+    /**
+     * French label for the payment method actually used, from the provider code stored on
+     * [Donation.paymentMethod].
+     *
+     * The receipt must state the mode really used, not the list of modes the platform accepts.
+     * A null code means no webhook payload was available when the donation was confirmed
+     * (reconciler path): "Non précisé" is stated rather than guessed. An unknown code is printed
+     * as-is so a new Mollie method never silently becomes a wrong statement.
+     */
+    private fun paymentMethodLabel(code: String?): String {
+        if (code.isNullOrBlank()) return "Non précisé"
+        return when (code.lowercase()) {
+            "creditcard", "debitcard" -> "Carte bancaire"
+            "banktransfer"            -> "Virement bancaire"
+            "directdebit"             -> "Prélèvement SEPA"
+            "bancontact", "ideal", "sofort", "eps", "giropay",
+            "przelewy24", "trustly", "belfius", "kbc" -> "Virement bancaire en ligne"
+            "paypal"                  -> "PayPal"
+            "applepay"                -> "Apple Pay"
+            else                      -> code
+        }
     }
 
     private fun eligibilityText(e: MandateEligibility): String = when (e) {

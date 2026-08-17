@@ -6,8 +6,10 @@ import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import java.math.BigDecimal
 import java.util.Optional
 import java.util.UUID
 
@@ -76,4 +78,22 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Campaign c WHERE c.id = :id")
     fun findByIdForUpdate(@Param("id") id: UUID): Campaign?
+
+    /**
+     * Adds [amount] to [Campaign.raised] in a single atomic statement, and returns the number of rows
+     * updated (0 = no such campaign).
+     *
+     * Deliberately a bulk update rather than a load-mutate-save: `raised` is a read-modify-write, and
+     * two donations confirmed concurrently on the same campaign would otherwise lose one increment.
+     * Doing the arithmetic in SQL removes the race without holding a pessimistic lock for the rest of
+     * the transaction.
+     *
+     * A bulk JPQL update bypasses the persistence context, so a [Campaign] already loaded there would
+     * otherwise keep a stale `raised` for the rest of the transaction — and reading it back is the
+     * natural mistake ("the campaign is now full, close it"). `clearAutomatically` evicts it instead,
+     * so the next read goes to the database and cannot be silently wrong.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Campaign c SET c.raised = c.raised + :amount WHERE c.id = :id")
+    fun addToRaised(@Param("id") id: UUID, @Param("amount") amount: BigDecimal): Int
 }

@@ -132,6 +132,30 @@ class CampaignServiceTest {
         ))
     }
 
+    /**
+     * Satisfies the two *content* gates of `preparePublish`: a balanced budget prévisionnel
+     * (expenses = revenues, both non-zero) and an expected outcome of at least 20 characters.
+     *
+     * Tests that exercise an account gate call this first, so the campaign is publishable in every
+     * respect but the one under test — otherwise they would assert on the content message instead.
+     */
+    private fun makePublishable(
+        ownerId: UUID,
+        campaignId: UUID,
+        amount: BigDecimal = BigDecimal("1000"),
+    ) {
+        campaignService.saveBudget(ownerId, campaignId, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", amount, 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", amount, 0))),
+        )))
+        campaignService.updateCampaign(
+            ownerId, campaignId,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+    }
+
     /** Links an ACTIVE Monerium wallet to the association, satisfying the publish-time gate. */
     private fun linkMonerium(ownerId: UUID) {
         val assoc = associationProfileRepository.findByUserId(ownerId).get()
@@ -285,6 +309,7 @@ class CampaignServiceTest {
             userId,
             CreateCampaignRequest(name = "Old Name", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, created.id)
 
         val result = campaignService.updateCampaign(
             userId,
@@ -302,6 +327,7 @@ class CampaignServiceTest {
         linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign", goal = BigDecimal("10000")))
+        makePublishable(userId, created.id)
         campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
         assertThrows<UnprocessableEntityException> {
@@ -473,6 +499,7 @@ class CampaignServiceTest {
         linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Live Campaign", goal = BigDecimal("10000")))
+        makePublishable(userId, created.id)
         campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
         assertThrows<UnprocessableEntityException> {
@@ -764,6 +791,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val result = campaignService.updateCampaign(
             userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE)
@@ -787,6 +815,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Unverified KYB", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -819,6 +848,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = campaignName, goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -838,6 +868,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No Mollie", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -853,6 +884,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Broken Mollie", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -873,6 +905,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "In review", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -888,6 +921,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No payments", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -903,6 +937,7 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("5000"))
         )
+        makePublishable(userId, campaign.id)
 
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
@@ -929,18 +964,27 @@ class CampaignServiceTest {
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Budget test", goal = BigDecimal("5000"))
         )
+        // Balanced: publishing now requires expenses = revenues (CampaignService.requireBalancedBudget).
         val budgetReq = SaveBudgetRequest(listOf(
             SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
-                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("500"), 0)))
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("500"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("500"), 0))),
         ))
         campaignService.saveBudget(userId, campaign.id, budgetReq)
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         val jobsAfterPublish = onchainJobRepository.findAll().size
 
         // Edit with different amount — should enqueue UPDATE_CAMPAIGN_BUDGET
         val changedBudget = SaveBudgetRequest(listOf(
             SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
-                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("999"), 0)))
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("999"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("999"), 0))),
         ))
         campaignService.saveBudget(userId, campaign.id, changedBudget)
         val jobsAfterChange = onchainJobRepository.findAll()
@@ -971,5 +1015,110 @@ class CampaignServiceTest {
         entityManager.clear()
         val updated = campaignService.getCampaign(userId, campaign.id)
         assertNotNull(updated.budgetHash)
+    }
+
+    // ── publish-time content gates (mirror PrePublishModal's blockers — rule 8) ────────────────
+
+    /**
+     * A donor is asked for money against a costed plan, so an empty or lopsided budget prévisionnel
+     * blocks publication. Both were merely "recommended" before, which let a campaign go live with
+     * no budget at all.
+     */
+    @Test
+    fun `publish - empty budget returns 422`() {
+        linkMonerium(userId)
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No budget", goal = BigDecimal("10000"))
+        )
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val ex = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(ex.message!!.contains("Budget prévisionnel must be balanced"))
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    @Test
+    fun `publish - unbalanced budget returns 422`() {
+        linkMonerium(userId)
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Unbalanced budget", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("800"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val ex = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(ex.message!!.contains("Budget prévisionnel must be balanced"))
+    }
+
+    /**
+     * Tolerance is one euro, exclusive — the same `Math.abs(revenues - expenses) < 1` the frontend
+     * uses. A stricter backend would refuse a campaign the publish button declared ready.
+     */
+    @Test
+    fun `publish - budget off by less than one euro is accepted`() {
+        linkMonerium(userId)
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Rounding budget", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000.00"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000.40"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val result = campaignService.updateCampaign(
+            userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE)
+        )
+
+        assertEquals(CampaignStatus.LIVE, result.status)
+    }
+
+    @Test
+    fun `publish - missing or too short expected outcome returns 422`() {
+        linkMonerium(userId)
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No outcome", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+
+        val whenNull = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(whenNull.message!!.contains("impactGoals"))
+
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(impactGoals = "Trop court"))
+        val whenShort = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(whenShort.message!!.contains("impactGoals"))
     }
 }

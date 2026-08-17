@@ -162,6 +162,40 @@ class MollieWebhookServiceTest {
         assertEquals(42, updatedDonor.walletAddress!!.length, "EVM address is 42 chars")
     }
 
+    // ── Payment method captured for the fiscal receipt ───────────────────────
+
+    /**
+     * The receipt states "Mode de versement", which must be the mode actually used. The method is only
+     * known once the payer picked one, so it is read off the confirmed payment and written before
+     * confirmation — the receipt PDF is rendered from the committed row.
+     */
+    @Test
+    fun `paid webhook - stores the real payment method on the donation`() {
+        val mollieId = "tr_method_${UUID.randomUUID()}"
+        val providerRef = "mollie:$mollieId"
+        createPendingDonation(providerRef)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId).copy(method = "bancontact")
+
+        mollieWebhookService.handleWebhook(mollieId)
+
+        assertEquals("bancontact", donationRepository.findByProviderRef(providerRef)?.paymentMethod)
+    }
+
+    /** Mollie may report no method; the receipt then states "Non précisé" rather than guessing. */
+    @Test
+    fun `paid webhook - a missing payment method leaves the column null`() {
+        val mollieId = "tr_nomethod_${UUID.randomUUID()}"
+        val providerRef = "mollie:$mollieId"
+        createPendingDonation(providerRef)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId).copy(method = null)
+
+        mollieWebhookService.handleWebhook(mollieId)
+
+        val donation = donationRepository.findByProviderRef(providerRef)
+        assertNotNull(donation?.confirmedAt, "Donation must still be confirmed")
+        assertNull(donation?.paymentMethod)
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private fun createPendingDonation(providerRef: String) {

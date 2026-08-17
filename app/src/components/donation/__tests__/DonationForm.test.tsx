@@ -182,6 +182,119 @@ describe('DonationForm — submitLabel prop', () => {
   });
 });
 
+/**
+ * Collection cap: a donation above what the campaign may still take must be refused *before* the
+ * payment, never refunded after. The backend is the authority (`COLLECTION_CAP_EXCEEDED`); the form
+ * only spares the donor a wasted round trip.
+ */
+describe('DonationForm — collection cap', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'top', { value: window, writable: true });
+  });
+
+  it('leaves the cap entirely to the backend when no capacity is provided', () => {
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />);
+
+    expect(screen.queryByText('amounts.remaining')).not.toBeInTheDocument();
+    expect(screen.getByText('100 €')).not.toBeDisabled();
+  });
+
+  it('disables the presets above the remaining capacity', () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="default"
+        remainingCapacity={30}
+      />,
+    );
+
+    expect(screen.getByText('25 €')).not.toBeDisabled();
+    expect(screen.getByText('50 €')).toBeDisabled();
+    expect(screen.getByText('100 €')).toBeDisabled();
+  });
+
+  it('blocks the submit and explains why when the amount exceeds the capacity', async () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="default"
+        remainingCapacity={30}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/amounts.custom/i), { target: { value: '80' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.capExceeded')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
+  it('renders a full campaign inert', () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="default"
+        remainingCapacity={0}
+      />,
+    );
+
+    expect(screen.getByText('errors.capFull')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+    expect(screen.getByText('10 €')).toBeDisabled();
+  });
+
+  /**
+   * Landing preview of an unpublished campaign: the goal may still be zero, so the capacity is zero
+   * too. Saying "this campaign has reached its cap" there would recreate the confusion the `disabled`
+   * state was introduced to prevent.
+   */
+  it('says nothing about capacity in preview mode', () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="landing"
+        disabled
+        remainingCapacity={0}
+      />,
+    );
+
+    expect(screen.queryByText('errors.capFull')).not.toBeInTheDocument();
+    expect(screen.queryByText('amounts.remaining')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
+  /**
+   * A cap refusal is not "this association cannot collect": the donor can succeed with a lower
+   * amount, so the form must stay live instead of going inert like the generic 409 does.
+   */
+  it('keeps the form live after a COLLECTION_CAP_EXCEEDED refusal', async () => {
+    mockCreateGuestDonation.mockRejectedValue({
+      response: { status: 409, data: { code: 'COLLECTION_CAP_EXCEEDED', remainingCapacity: 12 } },
+    });
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />);
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.capExceeded')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('errors.notCollecting')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).not.toBeDisabled();
+    expect(screen.getByText('25 €')).not.toBeDisabled();
+  });
+});
+
 describe('DonationForm — disabled prop (landing preview)', () => {
   /** Every control a donor can touch. */
   function controls(): HTMLElement[] {

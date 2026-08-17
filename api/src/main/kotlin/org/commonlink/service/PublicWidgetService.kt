@@ -46,6 +46,7 @@ class PublicWidgetService(
     private val taxRateService: TaxRateService,
     private val landingPreviewTokenService: LandingPreviewTokenService,
     private val freezeScreeningDonationService: FreezeScreeningDonationService,
+    private val donationCapService: DonationCapService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -61,6 +62,7 @@ class PublicWidgetService(
             raised = campaign.raised,
             campaignCoverImage = campaign.coverImage,
             widgetAllowedOrigin = association.widgetAllowedOrigin,
+            remainingCapacity = donationCapService.remainingCapacity(campaign),
         )
     }
 
@@ -76,6 +78,12 @@ class PublicWidgetService(
      */
     fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
         val (association, campaign) = resolveWidget(widgetToken)
+
+        // Collection cap — refuse before anything is created. A donation above the cap could only be
+        // refunded, and a refund after collection is precisely what must not happen: the receipt is
+        // numbered, hashed on-chain and emailed. Checked here rather than further down so a refused
+        // attempt leaves no guest profile and no screening journal entry behind.
+        donationCapService.requireWithinCap(campaign, request.amount)
 
         // Provision guest donor (idempotent by email)
         val donorProfile = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
@@ -223,6 +231,7 @@ class PublicWidgetService(
             showTrust = association.landingShowTrust,
             // Only ever false behind a valid preview token: resolveLanding would have thrown otherwise.
             donationsEnabled = campaign.status == CampaignStatus.LIVE,
+            remainingCapacity = donationCapService.remainingCapacity(campaign),
         )
     }
 

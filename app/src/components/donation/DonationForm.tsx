@@ -47,6 +47,14 @@ interface DonationFormProps {
    * button only to hit an error would conclude its page is broken.
    */
   disabled?: boolean;
+  /**
+   * Amount the campaign may still accept, from `PublicWidgetDto.remainingCapacity`. When provided,
+   * the form refuses a larger amount up front instead of letting the donor fill everything in only
+   * to be rejected on submit; `0` means the campaign is full and the form is rendered inert.
+   *
+   * Undefined leaves the cap entirely to the backend — which checks it in every case (rule 8).
+   */
+  remainingCapacity?: number;
   onAmountChange?: (amount: number | undefined) => void;
 }
 
@@ -57,6 +65,7 @@ export function DonationForm({
   skin = 'default',
   submitLabel,
   disabled = false,
+  remainingCapacity,
   onAmountChange,
 }: DonationFormProps) {
   const t = useTranslations('widget');
@@ -65,11 +74,27 @@ export function DonationForm({
   const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked } =
     useGuestDonation({ widgetToken, sourceSite, locale });
 
+  // A full campaign cannot take any amount, so there is nothing to fill in. Never in preview
+  // (`disabled`): an unpublished campaign has no meaningful capacity — its goal may still be zero —
+  // and telling an association its own draft page is "already full" is the very confusion the
+  // `disabled` state exists to avoid.
+  const campaignFull = !disabled && remainingCapacity === 0;
+
   // `blocked` comes from the submission lifecycle; `disabled` is the caller's decision. Both make
   // every control inert, so the rest of the form reads a single flag.
-  const inert = blocked || disabled;
+  const inert = blocked || disabled || campaignFull;
 
   const amountValue = watch('amount');
+
+  /**
+   * Amount above what the campaign may still collect. Blocks the submit locally; the backend
+   * refuses it too (`COLLECTION_CAP_EXCEEDED`) — this only spares the donor a wasted round trip.
+   */
+  const capExceeded =
+    remainingCapacity !== undefined &&
+    !campaignFull &&
+    Number.isFinite(amountValue) &&
+    amountValue > remainingCapacity;
 
   function handleAmountSelect(preset: number) {
     setValue('amount', preset, { shouldValidate: true });
@@ -83,6 +108,10 @@ export function DonationForm({
       {/* Amount selector */}
       <div style={styles.section}>
         <p style={styles.sectionLabel}>{t('amounts.title')}</p>
+        {campaignFull && <p className={s.error}>{t('errors.capFull')}</p>}
+        {!disabled && !campaignFull && remainingCapacity !== undefined && (
+          <p style={styles.hint}>{t('amounts.remaining', { amount: remainingCapacity })}</p>
+        )}
         <div style={styles.amountGrid}>
           {SUGGESTED_AMOUNTS.map((preset) => (
             <button
@@ -90,7 +119,7 @@ export function DonationForm({
               type="button"
               className={amountValue === preset ? s.amountBtnActive : s.amountBtn}
               onClick={() => handleAmountSelect(preset)}
-              disabled={inert}
+              disabled={inert || (remainingCapacity !== undefined && preset > remainingCapacity)}
             >
               {preset} €
             </button>
@@ -105,7 +134,7 @@ export function DonationForm({
             type="number"
             step="0.01"
             min="1"
-            max="10000"
+            max={remainingCapacity !== undefined ? Math.min(10000, remainingCapacity) : 10000}
             className={s.input}
             placeholder={t('amounts.customPlaceholder')}
             disabled={inert}
@@ -114,6 +143,9 @@ export function DonationForm({
               onChange: (e) => onAmountChange?.(e.target.valueAsNumber || undefined),
             })}
           />
+          {capExceeded && (
+            <p className={s.error}>{t('errors.capExceeded')}</p>
+          )}
           {errors.amount && (
             <p className={s.error}>
               {t(errors.amount.message as Parameters<typeof t>[0])}
@@ -343,7 +375,7 @@ export function DonationForm({
 
       <button
         type="submit"
-        disabled={isSubmitting || inert}
+        disabled={isSubmitting || inert || capExceeded}
         className={s.submit}
       >
         {isSubmitting

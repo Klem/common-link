@@ -119,6 +119,10 @@ The thematic classification of an association. Categories include: Environnement
 The default payment method for donations. Supports Visa and Mastercard via a standard card flow.
 `functional`
 
+### Collection Cap (Plafond de collecte)
+The maximum a campaign may collect: `goal × (1 + margin)`, where the margin is a platform-wide setting (`app.donation.cap.margin-percent`, default 10%). Checked at payment initiation, before the provider is called — a donation above the cap is **refused, never refunded**, since by the time a payment is captured the fiscal receipt is numbered, hashed on-chain and emailed. Amounts held by payment sessions still open count against the cap for `app.donation.cap.reservation-ttl` (default 30 min), so simultaneous checkouts cannot collectively overshoot. Exposed to the widget as `remainingCapacity`; enforced by `DonationCapService`, which raises a 409 carrying `code: COLLECTION_CAP_EXCEEDED`.
+`functional` `business` `technical`
+
 ### Certification (On-Chain)
 The act of recording a donation proof on the blockchain. This includes the amount, date, and campaign reference. Once recorded, the certification is permanent, tamper-proof, and publicly verifiable. The donor does not interact with the blockchain directly — certification happens automatically in the backend.
 `blockchain` `functional`
@@ -360,6 +364,10 @@ A cryptographically random string (32 bytes, 64 hex characters) used for Magic L
 ### Payment Method
 The means by which a donor completes a donation. Supported methods: **Card** (Visa/Mastercard), **SEPA transfer** (instant bank transfer), **Crypto Wallet** (Polygon/USDC), and **Apple Pay**.
 `functional`
+
+### Mode de versement (Payment Method on the Receipt)
+The line on the fiscal receipt stating how the donor actually paid. The provider's method code is captured when the payment is confirmed (`donations.payment_method`) and mapped to a French label — _Carte bancaire_, _Virement bancaire_, _Prélèvement SEPA_, _Virement bancaire en ligne_. An unrecognised provider code is printed verbatim rather than forced into a category, and a donation confirmed without a provider payload prints _Non précisé_. Previously the receipt printed the list of accepted methods, which was false for every individual donation. See `docs/legal/E5-recu-fiscal-mentions.md`.
+`functional` `business`
 
 ### Polygon
 A Layer 2 blockchain network used by CommonLink for on-chain certifications and wallet-based donations. Polygon offers low gas fees (~€0.08 per transaction) and fast confirmation times, making it suitable for micro-certifications.

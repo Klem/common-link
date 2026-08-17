@@ -17,6 +17,12 @@ export interface PublicWidgetDto {
   campaignCoverImage: string | null;
   currency: string;
   widgetAllowedOrigin: string | null;
+  /**
+   * Amount the campaign may still accept (collection cap minus confirmed donations minus amounts
+   * held by open payment sessions). 0 = the campaign is full. Mirror of
+   * `DonationCapService.remainingCapacity`; the backend re-checks it on submit.
+   */
+  remainingCapacity: number;
 }
 
 export interface CreateGuestDonationRequest {
@@ -122,6 +128,8 @@ export interface PublicLandingDto {
    * the payment, so the form must be rendered disabled rather than fail on submit.
    */
   donationsEnabled: boolean;
+  /** Same figure and purpose as {@link PublicWidgetDto.remainingCapacity}. */
+  remainingCapacity: number;
 }
 
 /**

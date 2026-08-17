@@ -118,9 +118,33 @@ class DonationService(
 
         donation.confirmedAt = Instant.now()
         donationRepository.save(donation)
+        creditCampaign(donation)
 
         publisher.publishEvent(DonationConfirmedEvent(donation.id!!))
         logger.info("Confirmed donation {} — receipt generation enqueued async", donation.id)
+    }
+
+    /**
+     * Adds [donation]'s amount to [org.commonlink.entity.Campaign.raised].
+     *
+     * This is the single writer of that column. It is read by every campaign projection
+     * ([org.commonlink.dto.CampaignDto], [org.commonlink.dto.PublicWidgetDto]), by the collection-cap
+     * check in [DonationCapService], and by
+     * [org.commonlink.repository.CampaignMilestoneRepository.findNextMilestoneByAssociationId] —
+     * all of which were silently reading a column nobody incremented before this.
+     *
+     * The increment is done in SQL ([CampaignRepository.addToRaised]) so two donations confirmed
+     * concurrently on the same campaign cannot lose an increment. The guard on [Donation.confirmedAt]
+     * in the caller keeps it idempotent.
+     *
+     * Note for callers of [confirmDonation]: that bulk update clears the persistence context, so any
+     * entity read before it must be re-read afterwards rather than reused.
+     */
+    private fun creditCampaign(donation: Donation) {
+        val campaignId = donation.campaign.id!!
+        val updated = campaignRepository.addToRaised(campaignId, donation.amount)
+        if (updated == 0) throw NotFoundException("Campaign not found: $campaignId")
+        logger.debug("Campaign {} credited with {}", campaignId, donation.amount)
     }
 
     /**

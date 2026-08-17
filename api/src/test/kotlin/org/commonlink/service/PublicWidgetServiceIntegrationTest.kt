@@ -9,6 +9,7 @@ import org.commonlink.entity.CampaignBudgetItem
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MollieConnection
+import org.commonlink.exception.CollectionCapExceededException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -339,6 +340,93 @@ class PublicWidgetServiceIntegrationTest {
         }
 
         assertEquals(hitEx.message, unavailableEx.message, "Freeze HIT and UNAVAILABLE must produce identical messages")
+    }
+
+    // ── Collection cap ────────────────────────────────────────────────────────
+
+    /**
+     * The cap must bite *before* Mollie is called: after that a payable checkout URL exists and the
+     * only remaining option would be a refund, which is exactly what the cap prevents.
+     */
+    @Test
+    fun `createDonation - donation above the cap is refused and Mollie is never called`() {
+        // Fixture goal is 40 000; with the default 10 % margin the cap is 44 000.
+        setCampaignRaised(BigDecimal("43990.00"))
+
+        val ex = assertThrows<CollectionCapExceededException> {
+            publicWidgetService.createDonation(widgetToken, validRequest())
+        }
+
+        assertEquals(0, BigDecimal("10.00").compareTo(ex.remainingCapacity))
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    /**
+     * A cap refusal must leave nothing behind: it happens before the guest donor is provisioned, so a
+     * refused attempt creates neither a donor profile nor a screening journal entry.
+     */
+    @Test
+    fun `createDonation - a capped refusal provisions no donor and runs no screening`() {
+        setCampaignRaised(BigDecimal("44000.00"))
+        val donorsBefore = donorProfileRepository.count()
+
+        assertThrows<CollectionCapExceededException> {
+            publicWidgetService.createDonation(widgetToken, validRequest(donorEmail = "capped@example.com"))
+        }
+
+        assertEquals(donorsBefore, donorProfileRepository.count(), "No guest donor may be provisioned")
+        verify(exactly = 0) { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - donation within the margin above the goal is accepted`() {
+        // 40 000 collected: the goal is met, but the 10 % margin leaves 4 000 of capacity.
+        setCampaignRaised(BigDecimal("40000.00"))
+
+        val response = publicWidgetService.createDonation(widgetToken, validRequest())
+
+        assertNotNull(response.checkoutUrl)
+    }
+
+    /**
+     * A payment session already open holds its amount against the cap, so two donors checking out at
+     * the same time cannot collectively overshoot.
+     */
+    @Test
+    fun `createDonation - an open payment session holds capacity against the next donor`() {
+        setCampaignRaised(BigDecimal("43950.00"))
+
+        // First donor takes 25 of the remaining 50 — the row stays pending (confirmedAt null).
+        publicWidgetService.createDonation(widgetToken, validRequest(donorEmail = "first@example.com"))
+        entityManager.flush()
+
+        // Second donor asking for 30 exceeds the 25 still free.
+        val ex = assertThrows<CollectionCapExceededException> {
+            publicWidgetService.createDonation(
+                widgetToken,
+                validRequest(donorEmail = "second@example.com").copy(amount = BigDecimal("30.00")),
+            )
+        }
+        assertEquals(0, BigDecimal("25.00").compareTo(ex.remainingCapacity))
+    }
+
+    @Test
+    fun `getWidget exposes the remaining capacity`() {
+        setCampaignRaised(BigDecimal("43000.00"))
+
+        val widget = publicWidgetService.getWidget(widgetToken)
+
+        assertEquals(0, BigDecimal("1000.00").compareTo(widget.remainingCapacity))
+    }
+
+    /** Sets the confirmed total of the destination campaign and makes it visible to the service. */
+    private fun setCampaignRaised(raised: BigDecimal) {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        val campaign = assoc.widgetDestinationCampaign!!
+        campaign.raised = raised
+        campaignRepository.save(campaign)
+        entityManager.flush()
+        entityManager.clear()
     }
 
     /** Flips the destination campaign status and makes the change visible to the service. */

@@ -83,6 +83,7 @@ export function EmbedDonateClient({ widgetToken, sourceSite, locale }: Props) {
         sourceSite={sourceSite}
         locale={locale}
         skin="default"
+        remainingCapacity={widget.remainingCapacity}
       />
     </div>
   );

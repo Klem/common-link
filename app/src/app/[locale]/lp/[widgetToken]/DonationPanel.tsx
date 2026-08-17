@@ -9,10 +9,19 @@ interface Props {
   locale: string;
   /** Renders every field and the submit button disabled — preview on an unpublished campaign. */
   disabled?: boolean;
+  /** Amount the campaign may still accept; forwarded to the form's collection-cap guard. */
+  remainingCapacity?: number;
   onAmountChange?: (amount: number | undefined) => void;
 }
 
-export function DonationPanel({ widgetToken, sourceSite, locale, disabled, onAmountChange }: Props) {
+export function DonationPanel({
+  widgetToken,
+  sourceSite,
+  locale,
+  disabled,
+  remainingCapacity,
+  onAmountChange,
+}: Props) {
   const t = useTranslations('landing');
 
   return (
@@ -26,6 +35,7 @@ export function DonationPanel({ widgetToken, sourceSite, locale, disabled, onAmo
         locale={locale}
         submitLabel={(amount) => (amount ? t('donate.submitWithAmount', { amount }) : undefined)}
         disabled={disabled}
+        remainingCapacity={remainingCapacity}
         onAmountChange={onAmountChange}
       />
       <div className="lp-payment-methods">

@@ -39,6 +39,17 @@ class Donation(
     @Column(name = "confirmed_at")
     var confirmedAt: Instant? = null,
 
+    /**
+     * Payment method actually used, as reported by the provider (e.g. `creditcard`, `banktransfer`).
+     *
+     * Written once by [org.commonlink.service.MollieWebhookService] when the payment is confirmed,
+     * and rendered as "Mode de versement" on the Cerfa receipt. Stays null for donations confirmed
+     * without a webhook payload (reconciler path) — the receipt then prints "Non précisé" rather
+     * than guessing.
+     */
+    @Column(name = "payment_method", length = 32)
+    var paymentMethod: String? = null,
+
     /** French plan comptable prefix used for budget variance reporting. Default "74" (subventions). */
     @Column(name = "type_code", nullable = false, length = 50)
     var typeCode: String = "74",

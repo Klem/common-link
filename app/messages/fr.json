@@ -1296,16 +1296,16 @@
         "continueEditing": "Continuer l'édition",
         "fill": "Compléter",
         "recommended": {
-          "budget": "Budget prévisionnel équilibré (+40% de dons)",
-          "impactGoals": "Objectifs d'impact mesurables",
           "milestones": "Jalons (augmente l'engagement des donateurs)",
           "reason": "« Pourquoi maintenant ? » (renforce la confiance)",
           "section": "Recommandé — n'empêche pas la publication"
         },
         "required": {
+          "budget": "Budget prévisionnel équilibré (charges = produits)",
           "dates": "Dates de début et de fin",
           "description": "Description (10 caractères min)",
           "goal": "Objectif de collecte",
+          "impactGoals": "Résultat attendu (20 caractères min)",
           "name": "Nom de la campagne",
           "section": "Requis pour publier"
         },
@@ -1818,6 +1818,7 @@
     "amounts": {
       "custom": "Autre montant (€)",
       "customPlaceholder": "Saisir un montant",
+      "remaining": "Cette campagne peut encore collecter {amount} €.",
       "title": "Choisissez un montant"
     },
     "anonymous": {
@@ -1836,6 +1837,8 @@
       "amountMax": "Le don maximum est de 10 000 €",
       "amountMin": "Le don minimum est de 1 €",
       "amountRequired": "Le montant est requis",
+      "capExceeded": "Ce montant dépasse ce que la campagne peut encore collecter. Merci de saisir un montant plus faible.",
+      "capFull": "Cette campagne a atteint son plafond de collecte et n'accepte plus de dons.",
       "consentRequired": "Vous devez consentir pour continuer",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide",

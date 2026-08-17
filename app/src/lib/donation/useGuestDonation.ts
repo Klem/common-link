@@ -48,11 +48,15 @@ export function useGuestDonation({ widgetToken, sourceSite, locale }: UseGuestDo
         window.location.href = response.checkoutUrl;
       }
     } catch (err) {
-      const status =
+      const response =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { status?: number } }).response?.status
+          ? (err as { response?: { status?: number; data?: { code?: string } } }).response
           : undefined;
-      if (status === 409) {
+      if (response?.status === 409 && response.data?.code === 'COLLECTION_CAP_EXCEEDED') {
+        // Refused on the collection cap, not on the association's ability to collect. The donor can
+        // succeed with a lower amount, so the form stays live — `blocked` would make it inert.
+        setSubmitError(t('errors.capExceeded'));
+      } else if (response?.status === 409) {
         setBlocked(true);
         setSubmitError(t('errors.notCollecting'));
       } else {

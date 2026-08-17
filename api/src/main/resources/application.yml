@@ -106,6 +106,18 @@ app:
     # (ComplianceAlertEmailListener). A role address, not a person: the alert must keep reaching the
     # compliance function across staff changes. Blank disables the notification and logs a warning.
     alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL:compliance@common-link.org}
+  donation:
+    # Collection cap enforced at payment initiation (DonationCapProperties). A donation beyond the
+    # cap is refused before any money moves — never refunded afterwards, since the receipt is
+    # numbered, hashed on-chain and emailed.
+    cap:
+      # Cap = goal × (1 + margin/100). 0 = strict cap at the goal; a small margin avoids rejecting
+      # the last donation of a campaign over a few euros of overshoot.
+      margin-percent: ${APP_DONATION_CAP_MARGIN_PERCENT:10}
+      # Open payment sessions are counted against the cap for this long, so simultaneous checkouts
+      # cannot collectively overshoot. Must stay above Mollie's ~15 min expiry of an untouched
+      # payment, otherwise capacity is released while it is still payable.
+      reservation-ttl: ${APP_DONATION_CAP_RESERVATION_TTL:PT30M}
 
 commonlink:
   compliance:

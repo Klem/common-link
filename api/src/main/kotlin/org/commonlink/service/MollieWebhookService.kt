@@ -11,7 +11,8 @@ import org.springframework.transaction.annotation.Transactional
  *
  * Always re-fetches the payment from Mollie (never trusts the webhook body).
  * Routes based on [MolliePaymentStatus]:
- * - [MolliePaymentStatus.PAID] → confirm the pending donation (synchronous, fast path)
+ * - [MolliePaymentStatus.PAID] → record the real payment method, then confirm the pending donation
+ *   (synchronous, fast path)
  * - [MolliePaymentStatus.isFailed] → log and no-op (donation stays unconfirmed)
  * - [MolliePaymentStatus.isPending] → no-op (wait for next webhook)
  */
@@ -48,7 +49,13 @@ class MollieWebhookService(
 
         when {
             payment.status.isConfirmed -> {
-                logger.info("Mollie webhook PAID for {}", molliePaymentId)
+                logger.info("Mollie webhook PAID for {} (method={})", molliePaymentId, payment.method)
+                // Persist the real payment method BEFORE confirming: confirmDonation publishes
+                // DonationConfirmedEvent in AFTER_COMMIT, and the receipt PDF is rendered from the
+                // committed row. Writing the method afterwards would race the flush and the receipt
+                // would print "Non précisé" for a donation whose method is known.
+                pending.paymentMethod = payment.method
+                donationRepository.save(pending)
                 donationService.recordPayment(providerRef, pending.donor.id!!, pending.campaign.id!!, pending.amount)
             }
             payment.status.isFailed -> {

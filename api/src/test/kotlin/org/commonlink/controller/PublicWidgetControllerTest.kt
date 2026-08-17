@@ -70,6 +70,7 @@ class PublicWidgetControllerTest {
         campaignCoverImage = "https://example.com/cover.jpg",
         currency = "EUR",
         widgetAllowedOrigin = "https://www.msf.fr",
+        remainingCapacity = BigDecimal("7500.00"),
     )
 
     private val validRequest = CreateGuestDonationRequest(
@@ -108,6 +109,9 @@ class PublicWidgetControllerTest {
             .andExpect(jsonPath("$.campaignDescription").value("Aide médicale d'urgence"))
             .andExpect(jsonPath("$.goal").value(10000.00))
             .andExpect(jsonPath("$.raised").value(3500.00))
+            // The form caps the amount input on this value; absent, it would let the donor fill
+            // everything in only to be refused on submit.
+            .andExpect(jsonPath("$.remainingCapacity").value(7500.00))
             .andExpect(jsonPath("$.campaignCoverImage").value("https://example.com/cover.jpg"))
             .andExpect(jsonPath("$.currency").value("EUR"))
             .andExpect(jsonPath("$.id").doesNotExist())
@@ -321,6 +325,7 @@ class PublicWidgetControllerTest {
         budget = emptyList(),
         budgetHash = null,
         milestones = emptyList(),
+        remainingCapacity = BigDecimal("850.00"),
     )
 
     @Test

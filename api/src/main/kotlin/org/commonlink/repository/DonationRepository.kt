@@ -119,6 +119,31 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 
     /**
+     * Sum of amounts held by payment sessions still in flight on a campaign: donations created after
+     * [since] whose payment has not been confirmed.
+     *
+     * Backs the collection-cap reservation (see
+     * [org.commonlink.service.PublicWidgetService.createDonation]): without it, two donors checking
+     * out at the same time would each see the full remaining capacity and collectively overshoot.
+     * There is no reservation column — a pending row *is* the reservation, and [Donation.createdAt]
+     * gives it its lifetime.
+     *
+     * Rows older than [since] are ignored: an abandoned checkout must not hold capacity for ever.
+     * Returns null when no matching rows exist; callers should treat null as zero.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(d.amount), 0)
+        FROM Donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NULL
+          AND d.createdAt >= :since
+    """)
+    fun sumPendingAmountByCampaignIdSince(
+        @Param("campaignId") campaignId: UUID,
+        @Param("since") since: Instant,
+    ): BigDecimal?
+
+    /**
      * Returns confirmed donation amounts grouped by [Donation.typeCode] for budget variance reporting.
      * Each element is [typeCode, sum].
      */

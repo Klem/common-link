@@ -11,6 +11,7 @@ import org.commonlink.dto.UpdateCampaignRequest
 import org.commonlink.dto.UpdateMilestoneRequest
 import org.commonlink.dto.toDto
 import org.commonlink.dto.toSummaryDto
+import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignBudgetItem
 import org.commonlink.entity.CampaignCoverImage
@@ -47,6 +48,12 @@ private const val MAX_COVER_IMAGE_SIZE = 5L * 1024 * 1024
 
 /** Accepted cover image MIME types — mirrored in the frontend upload zone (rule 8). */
 private val COVER_IMAGE_ALLOWED_MIME = setOf("image/jpeg", "image/png", "image/webp")
+
+/**
+ * Minimum length of the expected outcome ([Campaign.impactGoals]) required to publish.
+ * Mirrored in `PrePublishModal.tsx` (rule 8).
+ */
+private const val MIN_IMPACT_GOALS_LENGTH = 20
 
 /** Public serving path of a campaign cover image; stored in [Campaign.coverImage]. */
 private fun coverImagePath(campaignId: UUID): String = "/api/public/campaigns/$campaignId/cover"
@@ -661,6 +668,11 @@ class CampaignService(
      * Pre-save checks and preparation for the DRAFT→LIVE publish transition.
      * Sets [Campaign.budgetHash] on the campaign instance (persisted by the caller's save).
      *
+     * A balanced budget prévisionnel ([requireBalancedBudget]) and a stated expected outcome
+     * ([Campaign.impactGoals], at least [MIN_IMPACT_GOALS_LENGTH] characters) are publication
+     * blockers, not recommendations: a donor is asked for money against a costed plan and a
+     * declared result. Both predicates mirror `PrePublishModal.tsx` exactly (rule 8).
+     *
      * The KYB guard re-checks [org.commonlink.entity.AssociationProfile.verificationStatus] at publish
      * time. The onboarding chain already implies it transitively (a signed mandate requires VERIFIED,
      * and a Mollie connection requires a signed mandate), but only *at the time each step was taken* —
@@ -676,6 +688,12 @@ class CampaignService(
     private fun preparePublish(campaign: Campaign, associationId: UUID) {
         if (campaign.goal <= BigDecimal.ZERO) {
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
+        }
+        requireBalancedBudget(campaign)
+        if ((campaign.impactGoals?.trim()?.length ?: 0) < MIN_IMPACT_GOALS_LENGTH) {
+            throw UnprocessableEntityException(
+                "Expected outcome (impactGoals) must be at least $MIN_IMPACT_GOALS_LENGTH characters before publishing"
+            )
         }
         val profile = associationProfileRepository.findById(associationId)
             .orElseThrow { UserNotFoundException("Association profile not found: $associationId") }
@@ -693,6 +711,36 @@ class CampaignService(
         campaign.budgetHash = budgetHasher.hash(campaign)
         logger.debug("Publish prepared: campaignId={}, budgetHash={}", campaign.id, campaign.budgetHash)
     }
+
+    /**
+     * Rejects publication unless the budget prévisionnel is balanced.
+     *
+     * Exact mirror of the `budgetBalanced` predicate in `app/src/components/campaign/PrePublishModal.tsx`
+     * (rule 8), **tolerance included**: both sides must be non-empty and differ by strictly less than
+     * one euro. A looser backend would let the publish button enable and then answer 422; a stricter
+     * one would reject a campaign the UI declared publishable.
+     *
+     * `campaign.budgetSections` is initialised in the caller's transaction — [budgetHasher] walks the
+     * same collection right after.
+     */
+    private fun requireBalancedBudget(campaign: Campaign) {
+        val expenses = sumBudgetSide(campaign, BudgetSide.EXPENSE)
+        val revenues = sumBudgetSide(campaign, BudgetSide.REVENUE)
+        val balanced = expenses > BigDecimal.ZERO &&
+            revenues > BigDecimal.ZERO &&
+            (revenues - expenses).abs() < BigDecimal.ONE
+        if (!balanced) {
+            throw UnprocessableEntityException(
+                "Budget prévisionnel must be balanced before publishing (expenses=$expenses, revenues=$revenues)"
+            )
+        }
+    }
+
+    private fun sumBudgetSide(campaign: Campaign, side: BudgetSide): BigDecimal =
+        campaign.budgetSections
+            .filter { it.side == side }
+            .flatMap { it.items }
+            .fold(BigDecimal.ZERO) { acc, item -> acc + item.amount }
 
     /**
      * Enqueues on-chain jobs for the given status transition.

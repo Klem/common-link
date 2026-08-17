@@ -37,6 +37,7 @@ class DonationServiceIdempotencyTest {
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var donationRepository: DonationRepository
+    @Autowired private lateinit var entityManager: jakarta.persistence.EntityManager
 
     private lateinit var donorProfileId: UUID
     private lateinit var campaignId: UUID
@@ -80,5 +81,38 @@ class DonationServiceIdempotencyTest {
 
         val reloaded = donationRepository.findByProviderRef(providerRef)!!
         assertEquals(confirmedAt, reloaded.confirmedAt, "confirmedAt must not change on second call")
+    }
+
+    /**
+     * `campaigns.raised` used to be written by nobody: every reader — campaign DTOs, the widget
+     * progress bar, the next-milestone query, and now the collection cap — saw the value frozen at
+     * insert time. Confirmation is its single writer.
+     */
+    @Test
+    fun `confirming a donation credits the campaign raised amount`() {
+        val before = campaignRepository.findById(campaignId).get().raised
+
+        donationService.recordPayment("mollie:tr_${UUID.randomUUID()}", donorProfileId, campaignId, BigDecimal("40.00"))
+        donationService.recordPayment("mollie:tr_${UUID.randomUUID()}", donorProfileId, campaignId, BigDecimal("2.50"))
+        entityManager.flush()
+        entityManager.clear()
+
+        val after = campaignRepository.findById(campaignId).get().raised
+        assertEquals(0, before.add(BigDecimal("42.50")).compareTo(after), "raised must be $before + 42.50, was $after")
+    }
+
+    /** A replayed webhook must not credit the campaign twice. */
+    @Test
+    fun `replaying the same payment credits the campaign only once`() {
+        val providerRef = "mollie:tr_${UUID.randomUUID()}"
+        val before = campaignRepository.findById(campaignId).get().raised
+
+        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("30.00"))
+        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("30.00"))
+        entityManager.flush()
+        entityManager.clear()
+
+        val after = campaignRepository.findById(campaignId).get().raised
+        assertEquals(0, before.add(BigDecimal("30.00")).compareTo(after), "raised must be credited once, was $after")
     }
 }
