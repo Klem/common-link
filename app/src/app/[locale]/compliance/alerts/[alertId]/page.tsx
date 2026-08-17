@@ -44,6 +44,39 @@ function payloadScore(payload: Record<string, unknown>, key: string): string {
   return value.toFixed(4);
 }
 
+/**
+ * Extracts the RFC-7807 `detail` from a failed request, or null when there is none.
+ *
+ * Without this the officer read "Request failed with status code 422" — axios's own message — while
+ * the backend was returning the actionable reason ("La traçabilité de la notification à la DG Trésor
+ * est obligatoire…"). The server messages are already in French and are the ones worth showing.
+ */
+function problemDetail(err: unknown): string | null {
+  if (!err || typeof err !== 'object' || !('response' in err)) return null;
+  const data = (err as { response?: { data?: unknown } }).response?.data;
+  if (!data || typeof data !== 'object' || !('detail' in data)) return null;
+  const detail = (data as { detail?: unknown }).detail;
+  return typeof detail === 'string' && detail.trim() ? detail : null;
+}
+
+/**
+ * Converts an `<input type="datetime-local">` value to an ISO-8601 instant.
+ *
+ * The input yields local wall-clock with no seconds and no zone (`2026-08-17T11:59`), which the
+ * backend `Instant` cannot deserialise — it answered HTTP 400 before any business validation ran,
+ * so a `SUSPICIOUS` closure was impossible to record. The value is interpreted in the officer's own
+ * timezone, which is the intended reading of "when the DG Trésor was notified".
+ *
+ * Returns `undefined` for an empty field: the backend treats the whole treasury block as optional
+ * except for a SUSPICIOUS decision, where it answers 422.
+ */
+function toInstant(datetimeLocal: string): string | undefined {
+  if (!datetimeLocal) return undefined;
+  const parsed = new Date(datetimeLocal);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed.toISOString();
+}
+
 function formatDateTime(iso: string | null, locale: string): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-GB', {
@@ -100,15 +133,14 @@ export default function AlertDetailPage({ params }: AlertDetailPageProps) {
       await closeAlert(alertId, {
         decision,
         rationale,
-        treasuryNotifiedAt: treasuryNotifiedAt || undefined,
+        treasuryNotifiedAt: toInstant(treasuryNotifiedAt),
         treasuryNotificationMethod: treasuryMethod || undefined,
         treasuryNotificationRef: treasuryRef || undefined,
       });
       const updated = await getAlert(alertId);
       setAlert(updated);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t('detail.error');
-      setSubmitError(msg);
+      setSubmitError(problemDetail(err) ?? t('detail.error'));
     } finally {
       setIsSubmitting(false);
     }

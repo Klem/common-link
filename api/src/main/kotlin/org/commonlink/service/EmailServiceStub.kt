@@ -67,4 +67,17 @@ class EmailServiceStub : EmailService {
             receiptNumber, associationName, pdfBytes.size, donorEmail,
         )
     }
+
+    /** Logs the donor freeze alert notification instead of sending an email. No identity is logged. */
+    override fun sendDonorFreezeAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        severity: String,
+        alertUrl: String,
+    ) {
+        logger.info(
+            "Donor freeze alert {} ({}) — would notify compliance at {}: {}",
+            alertId, severity, recipientEmail, alertUrl,
+        )
+    }
 }

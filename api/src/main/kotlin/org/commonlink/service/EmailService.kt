@@ -93,4 +93,27 @@ interface EmailService {
         receiptNumber: String,
         pdfBytes: ByteArray,
     )
+
+    /**
+     * Notifies the compliance function that an asset-freeze alert has been raised on a donor and is
+     * awaiting treatment (art. L.562-1 et s. CMF — the donation is already refused at this point;
+     * what the alert opens is the human ruling on the correspondence).
+     *
+     * ### No identity in the message
+     * Parameters are deliberately limited to the alert reference, its severity and a deep link. The
+     * screened name and the matched register entry are **never** put in the email body: e-mail is not
+     * an access-controlled channel, and the compliance officer reads that detail on the alert screen
+     * behind their own authentication. Same rule as the freeze-screening services' log hygiene.
+     *
+     * @param recipientEmail Compliance function mailbox.
+     * @param alertId        UUID of the [org.commonlink.entity.ComplianceAlert] to treat.
+     * @param severity       Alert severity, as its enum name (e.g. `HIGH`).
+     * @param alertUrl       Full URL of the alert detail screen in the compliance back-office.
+     */
+    fun sendDonorFreezeAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        severity: String,
+        alertUrl: String,
+    )
 }

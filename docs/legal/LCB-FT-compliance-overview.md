@@ -6,9 +6,9 @@
 |---|---|
 | **Entité** | CommonLink |
 | **Nature du document** | Synthèse fonctionnelle non technique — vue d'ensemble du Sprint 19 |
-| **Périmètre** | Épiques LCB-FT E1 à E6 — état au 13 août 2026 |
+| **Périmètre** | Épiques LCB-FT E1 à E6 — état au 17 août 2026 |
 | **Rédacteur** | Équipe technique CommonLink |
-| **Date** | 11 août 2026 — mise à jour du 14 août 2026 |
+| **Date** | 11 août 2026 — mises à jour du 14 août 2026 et du 17 août 2026 |
 | **Suivi des livrables** | https://app.asana.com/1/1213718564226627/project/1213723193546726 *(liens par livrable en section 6)* |
 
 ---
@@ -121,7 +121,7 @@ Huit composants couvrant l'ensemble du processus de contrôle des avoirs gelés 
 
 5. **Contrôle à la création d'un don** — avant tout encaissement, le nom et la date de naissance du donateur sont filtrés contre le registre. Une correspondance ou une impossibilité de contrôle bloque le paiement : aucune transaction Mollie n'est créée, aucun don n'est enregistré.
 
-6. **Traitement des alertes et information à la Direction générale du Trésor** — le responsable de la conformité dispose d'un espace dédié pour consulter les alertes générées par les contrôles de gel, les prendre en charge, et les clore avec une décision motivée. En cas de correspondance avérée, les informations de la notification à la Direction générale du Trésor (date, moyen, référence) doivent être renseignées avant la clôture. La notification elle-même est un acte humain hors système : la plateforme en trace la réalisation sans l'exécuter.
+6. **Traitement des alertes et information à la Direction générale du Trésor** — le responsable de la conformité dispose d'un espace dédié pour consulter les alertes générées par les contrôles de gel, les prendre en charge, et les clore avec une décision motivée. En cas de correspondance avérée, les informations de la notification à la Direction générale du Trésor (date, moyen, référence) doivent être renseignées avant la clôture. La notification elle-même est un acte humain hors système : la plateforme en trace la réalisation sans l'exécuter. **Complément du 17 août 2026** : une alerte de gel née d'un **don** est désormais poussée par courriel vers la boîte de la fonction conformité, et non plus seulement déposée dans l'espace de traitement. Le cycle de vie de l'alerte supposait un lecteur — hypothèse vraie à l'entrée en relation, où un opérateur instruit le dossier au moment du criblage, et fausse au don, où le donateur est refusé par un message neutre sans que personne ne soit devant un écran. Le courriel porte la référence de l'alerte, sa gravité et un lien de traitement ; il ne comporte **aucune donnée d'identité**, ni dans son corps ni dans son objet, la messagerie n'étant pas un canal à accès contrôlé. Le destinataire est une boîte de fonction et non une personne nommée, afin que l'alerte continue de parvenir à la fonction conformité indépendamment des changements d'effectif.
 
 7. **Éléments de décision sur une alerte de correspondance** — la décision du responsable de la conformité n'était pas motivable : l'écran ne présentait que des données agrégées (« 3 correspondances, score maximal 0,93 »), sans indiquer quelle entrée du registre avait été rapprochée ni sur quelle valeur la comparaison avait porté. Chaque correspondance signalée produit désormais, dans une table de preuve **distincte du journal** — dont le jeu de champs reste inchangé —, une ligne par entrée rapprochée : partie contrôlée, valeur normalisée effectivement comparée, dénomination et numéro de l'entrée du registre, référence légale du programme de sanction, score, seuil, algorithme et version du registre consultée. Ces valeurs sont **figées au moment du criblage** et non lues à l'affichage, une entrée radiée du registre faisant sinon disparaître la preuve d'une décision passée. Pour le même motif, le re-criblage à la demande a été écarté comme source de preuve. Deux compléments : les criblages impossibles génèrent désormais une alerte de gravité **moyenne** — distincte de la correspondance signalée, qui est de gravité haute — et l'écran présente, à titre strictement informatif, les décisions déjà rendues sur le même sujet, sans qu'aucune alerte ne soit jamais clôturée ou masquée automatiquement.
 
@@ -134,6 +134,7 @@ Huit composants couvrant l'ensemble du processus de contrôle des avoirs gelés 
 - Toute correspondance déclenche une alerte visible uniquement du responsable de la conformité. Ni l'association ni le donateur ne sont informés de l'existence de cette alerte ni de sa teneur — cette confidentialité est une obligation légale (interdiction de divulgation, art. L. 561-19 CMF). L'acteur concerné reçoit uniquement un refus générique.
 - Chaque résultat de filtrage est tracé de façon immuable, permettant à un auditeur de reconstituer l'intégralité des contrôles effectués et la version du registre consultée à chaque moment.
 - Un contrôle de gel qui n'a pas pu être effectué est désormais visible du responsable de la conformité, et non plus seulement journalisé. La distinction de gravité est délibérée : un criblage empêché signifie que la plateforme **ignore** s'il existe une correspondance, là où une correspondance signalée signifie qu'elle en a détecté une.
+- Une correspondance signalée sur un donateur est portée activement à la connaissance de la fonction conformité, et non plus seulement mise à sa disposition. Deux limites sont à retenir : l'envoi est fait **au mieux** — la plateforme enregistre qu'elle a remis le message au serveur de messagerie, non qu'il est parvenu ni qu'il a été lu, la trace opposable de l'ouverture de l'alerte demeurant l'entrée du journal d'audit — et **aucune relance n'existe** lorsqu'une alerte reste non traitée. Un courriel manqué ramène donc la détection à la consultation spontanée de l'espace de traitement. Les alertes de criblage impossible, en particulier, ne déclenchent aujourd'hui aucune notification, alors qu'un contrôle empêché n'est pas un contrôle favorable ; cet écart est repris en 7.2.
 - La plateforme met des éléments à disposition ; elle ne qualifie aucune correspondance. Aucune décision n'est prise automatiquement sur la base du criblage — la qualification demeure un acte humain motivé d'une personne physique désignée (point mentionné au regard de l'article 22 du RGPD).
 
 **Points ouverts portés à la connaissance de la commission juridique**
@@ -210,6 +211,7 @@ Le tableau suivant couvre l'intégralité du parcours, des contrôles pré-exist
 | Alerte de criblage impossible (E4) | Système, lorsqu'un contrôle de gel obligatoire n'a pas pu être effectué (registre non chargé, dirigeants absents du dossier, incident technique) | Automatique sur événement | Non bloquant en lui-même — le blocage est déjà produit par l'issue du criblage · gravité moyenne, distincte de la correspondance signalée | Responsable de la conformité (examen de l'alerte) |
 | Traitement d'une alerte de gel (E4) | Responsable de la conformité | Geste humain | Non bloquant sur le parcours en cours — traitement postérieur à la détection · les éléments de preuve du rapprochement sont présentés à l'appui de la décision | Responsable de la conformité |
 | Information à la Direction générale du Trésor (E4) | Responsable de la conformité, lors de la clôture d'une alerte avec décision « correspondance avérée » | Automatiquement exigé à la clôture | Bloquant sur la clôture de l'alerte — impossible de clore sans renseigner la date, le moyen et la référence de l'information | Responsable de la conformité (renseigner les champs obligatoires) |
+| Notification de la fonction conformité sur alerte de gel au don (E4) | Système, à la création de l'alerte | Automatique sur événement · une seule fois par alerte ouverte | Non bloquant — le refus du don est déjà produit par le criblage · envoi au mieux, sans preuve de délivrance ni relance · limité aux alertes de gel portant sur un donateur | Sans objet — l'alerte reste accessible dans l'espace de traitement même si le courriel échoue |
 
 ---
 
@@ -261,6 +263,8 @@ Trois natures de travail sont distinguées, car elles n'appellent ni les mêmes 
 | Documentation de l'interdiction de divulgation et du devoir d'abstention | Modèle de dossier de soupçon | [1216210853624515](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624515) |
 | Formation de l'équipe à la LCB-FT | Aucun développement — condition d'exploitation | [1216210976716055](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210976716055) |
 | Seuils de fractionnement validés | Détection du fractionnement | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Boîte de la fonction conformité effectivement surveillée, et son filtrage anti-indésirable configuré pour ne pas écarter les notifications de la plateforme | Efficacité réelle de la notification des alertes de gel au don — le mécanisme technique est livré, sa portée dépend entièrement de la surveillance de la boîte destinataire | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Délai cible de traitement d'une alerte de gel | Relance et escalade sur alerte non traitée — rien ne peut être développé avant que le délai ne soit fixé | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 **Un prérequis est devenu sans objet.** Le contrat de tierce introduction au titre de l'article R. 561-13 du code monétaire et financier n'est plus requis : la **décision interne D11 du 7 août 2026** a acté qu'aucune tierce introduction n'est pratiquée. La tâche correspondante — [1216210976716071](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210976716071) — est à **clore** et ne bloque plus rien. La fiche *E3 — Non-délégation des diligences au prestataire de paiement* corrobore cette décision pour le prestataire de paiement effectivement utilisé, en établissant qu'aucune information de vérification ne transite de ce prestataire vers CommonLink ; elle ne se prononce pas sur les autres canaux.
 
@@ -296,6 +300,8 @@ L'infrastructure est livrée. Le seul travail restant est le prérequis non tech
 | Traçabilité de la simple consultation d'un dossier d'alerte | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Couverture automatisée des deux scénarios de filtrage déclarés par la fiche *Filtrage à l'entrée en relation* | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Vérification d'identité du donateur (KYC donateur) | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Délai maximal de traitement d'une alerte et relance sur alerte non traitée — **conditionné par un prérequis de procédure** (le délai cible n'est pas fixé) | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Notification de la fonction conformité sur alerte de criblage impossible | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 **Responsabilité n° 5 — Surveillance des opérations atypiques et déclaration** *(non engagée)*
 
@@ -340,4 +346,4 @@ Deux travaux sont exigibles avant l'ouverture de l'encaissement, indépendamment
 
 ---
 
-*Document établi le 11 août 2026, mis à jour le 14 août 2026 : état des livrables arrêté au 13 août 2026. Ce document est une synthèse de travaux en cours. Il sera mis à jour à chaque sprint livrant des éléments du dispositif LCB-FT.*
+*Document établi le 11 août 2026, mis à jour le 14 août 2026 puis le 17 août 2026 : état des livrables arrêté au 17 août 2026. La mise à jour du 17 août porte sur la notification de la fonction conformité à l'ouverture d'une alerte de gel au don (épique E4, composant 6) et sur les travaux restants qu'elle fait apparaître. Ce document est une synthèse de travaux en cours. Il sera mis à jour à chaque sprint livrant des éléments du dispositif LCB-FT.*

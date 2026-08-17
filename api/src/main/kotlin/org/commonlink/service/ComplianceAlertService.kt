@@ -7,9 +7,11 @@ import org.commonlink.entity.ComplianceAlertSeverity
 import org.commonlink.entity.ComplianceAlertStatus
 import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.entity.ComplianceAuditSubjectType
+import org.commonlink.event.ComplianceAlertOpenedEvent
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.ComplianceAlertRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -45,6 +47,7 @@ import java.util.UUID
 class ComplianceAlertService(
     private val repo: ComplianceAlertRepository,
     private val auditLog: ComplianceAuditLogService,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     companion object {
@@ -113,6 +116,10 @@ class ComplianceAlertService(
      * transaction rolls back. Each unique open alert creation writes one `ALERT_OPENED` entry to
      * the compliance audit journal; duplicate calls write nothing.
      *
+     * Publishes [org.commonlink.event.ComplianceAlertOpenedEvent] on insertion only — never on the
+     * idempotent return — so subscribers such as [ComplianceAlertEmailListener] fire exactly once per
+     * open alert. Consumed `AFTER_COMMIT` against this method's own transaction.
+     *
      * @param auditLogSeqRef sequence_no of the compliance_audit_log entry that triggered this
      *   alert, for traceability. Null when not available at call site.
      */
@@ -147,6 +154,19 @@ class ComplianceAlertService(
                 "alertSubjectType" to subjectType.name,
                 "alertSubjectId" to subjectId?.toString(),
                 "severity" to severity.name,
+            ),
+        )
+
+        // Published only on insertion, never on the idempotent early return above: a subscriber must
+        // not be woken twice for the same open alert. Consumed AFTER_COMMIT, so no notification can
+        // go out for an alert row that never landed.
+        eventPublisher.publishEvent(
+            ComplianceAlertOpenedEvent(
+                alertId = alert.id!!,
+                origin = origin,
+                subjectType = subjectType,
+                subjectId = subjectId,
+                severity = severity,
             ),
         )
 

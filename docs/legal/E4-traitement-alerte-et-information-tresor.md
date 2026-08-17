@@ -10,7 +10,7 @@
 | **Référence de suivi interne** | Tâche Asana n° `1216210853624509` — « Écran d'alerte de gel et notification à la DG Trésor » |
 | **Lien de suivi** | https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624509 |
 | **Priorité assignée** | P1 |
-| **Date de réalisation** | 11 août 2026 |
+| **Date de réalisation** | 11 août 2026 — complétée le 17 août 2026 par la notification de la fonction conformité (point 4.6) |
 | **État** | Réalisé et vérifié par contrôles automatisés. Non encore déployé — la mise en production de la plateforme est conditionnée à l'achèvement de l'ensemble du dispositif. |
 | **Rédacteur** | Équipe technique CommonLink |
 
@@ -91,6 +91,9 @@ Chaque alerte suit un cycle de vie irréversible à trois états :
 Le retour en arrière est impossible : une alerte clôturée ne peut pas être rouverte. Si une
 nouvelle correspondance survient sur le même sujet après clôture, une nouvelle alerte est créée.
 
+Le passage de `PENDING` à `IN_REVIEW` suppose que la fonction conformité ait connaissance de
+l'alerte. Le point 4.6 décrit la notification qui l'en informe, et les limites de celle-ci.
+
 Les seules transitions autorisées (`PENDING → IN_REVIEW`, `IN_REVIEW → CLOSED`) sont imposées
 par le moteur de transition d'état côté serveur ; toute autre combinaison est rejetée avec une
 erreur explicite.
@@ -166,6 +169,51 @@ horodaté** de la plateforme (`compliance_audit_log`), identifiant :
 Ce journal est protégé par une chaîne de hachage continue ; toute altération rétroactive est
 détectable. Il constitue la trace opposable des décisions prises.
 
+### 4.6 Notification de la fonction conformité à l'ouverture d'une alerte
+
+*Contrôle complémentaire livré le 17 août 2026, postérieurement au reste de la présente fiche.*
+
+**La situation corrigée.** Le cycle de vie décrit au point 4.1 supposait un lecteur : une alerte
+créée reste `PENDING` jusqu'à ce qu'un responsable ouvre l'espace de travail. Pour une alerte née à
+l'adhésion, cette hypothèse est vérifiée — un opérateur instruit le dossier au moment même où le
+criblage s'exécute et voit le refus immédiatement. Pour une alerte née d'un **don**, elle ne l'est
+pas : le donateur est refusé par un message neutre, l'association n'est pas informée, et personne
+n'est devant un écran. L'alerte pouvait donc rester en attente aussi longtemps que nul n'ouvrait le
+back-office de sa propre initiative.
+
+**Le mécanisme.** À la création d'une alerte de gel portant sur un donateur, l'application adresse
+un courriel à la **boîte de la fonction conformité** (`compliance@common-link.org`). Le message
+indique la référence de l'alerte, sa sévérité, et un lien direct vers l'écran de traitement.
+
+**Boîte de fonction et non personne nommée.** L'adresse destinataire est celle d'une fonction, non
+d'un titulaire. Une alerte de gel doit continuer de parvenir à la fonction conformité indépendamment
+des changements d'effectif, sans qu'une reconfiguration technique soit nécessaire.
+
+**Aucune donnée d'identité dans le message.** Le courriel ne comporte ni le nom criblé, ni l'entrée
+du registre correspondante, ni le score de rapprochement — ni dans son corps, ni dans son objet. Un
+objet de courriel apparaît dans les bandeaux de notification, les prévisualisations et les
+sauvegardes de messagerie, qui ne sont pas des canaux à accès contrôlé. Le détail de la
+correspondance reste consultable uniquement sur l'écran d'alerte, après authentification, selon les
+restrictions du point 5.2. Cette règle est la même que celle appliquée aux journaux applicatifs par
+les services de criblage.
+
+**Exactitude du message.** Le courriel affirme que le don a été refusé et qu'aucun paiement n'a été
+créé. Cette affirmation est exacte pour l'alerte de gel au don : le refus intervient avant tout
+appel au prestataire de paiement. Elle ne le serait pas pour une alerte de nature différente — une
+règle d'atypicité, par construction, se déclenche sur un don déjà encaissé. L'extension de ce
+mécanisme à d'autres natures d'alerte exige donc un texte propre à chacune, et non le seul
+élargissement du filtre.
+
+**Envoi au mieux, alerte enregistrée d'abord.** Le courriel part après enregistrement définitif de
+l'alerte : aucun message ne peut annoncer une alerte qui n'aurait finalement pas été enregistrée.
+Réciproquement, une défaillance du serveur de messagerie n'empêche ni le refus du don, ni la création
+de l'alerte, ni son inscription au journal — elle est enregistrée comme incident. L'information n'est
+donc jamais perdue ; seule sa diffusion peut l'être, et cet écart est repris au point 6.
+
+**Envoi unique par alerte ouverte.** Le message est émis à la création de l'alerte, jamais lors des
+tentatives ultérieures portant sur le même sujet tant que l'alerte reste ouverte : la fonction
+conformité n'est pas sollicitée deux fois pour une même correspondance en attente de décision.
+
 ## 5. Les éléments de preuve
 
 ### 5.1 Contrôles automatisés côté serveur
@@ -180,6 +228,20 @@ Trois contrôles automatisés ont été ajoutés au patrimoine de tests, à l'oc
 
 Ces contrôles sont exécutés à chaque modification du logiciel. Ils vérifient les règles au niveau
 du service métier, indépendamment de l'interface.
+
+Six contrôles supplémentaires couvrent la notification décrite au point 4.6 :
+
+| Scénario | Résultat attendu | Vérifié |
+|---|---|---|
+| Alerte de gel sur un donateur | Un courriel unique est adressé à la boîte de la fonction conformité, portant un lien exploitable vers l'écran de traitement | Oui |
+| Adresse de la plateforme comportant une barre oblique finale | Le lien transmis reste valide (pas de double séparateur) | Oui |
+| Alerte de gel née de l'adhésion | Aucun courriel — un opérateur est déjà devant le dossier (point 4.6) | Oui |
+| Alerte de criblage impossible et alerte d'échec de synchronisation | Aucun courriel — ces natures d'alerte ne relèvent pas de ce mécanisme | Oui |
+| Boîte destinataire non configurée | Aucun envoi, incident enregistré, aucune interruption du traitement | Oui |
+| Défaillance du serveur de messagerie | L'exception est absorbée : ni le refus du don, ni l'alerte, ni le journal ne sont affectés | Oui |
+
+Ces six contrôles vérifient le comportement du composant de notification isolément, sans serveur de
+messagerie réel. **Ils n'établissent pas que le courriel est effectivement délivré** — voir point 6.
 
 ### 5.2 Restrictions d'accès
 
@@ -239,6 +301,24 @@ n'est pas couverte et suppose que le back-office de revue des dossiers existe au
 est enregistrée lors de la prise en charge et de la clôture, non lors de la consultation. Cet écart
 est repris par la fiche *E4 — Preuve de correspondance au registre de gel*.
 
+**Preuve de délivrance de la notification.** La notification du point 4.6 est un envoi au mieux.
+L'application enregistre qu'elle a remis le message au serveur de messagerie, non que le message est
+parvenu à destination, ni qu'il a été lu. Aucun accusé de réception n'est exigé ni conservé. La
+notification est un confort opérationnel : la trace opposable de l'ouverture de l'alerte demeure
+l'entrée `ALERT_OPENED` du journal d'audit, non le courriel.
+
+**Absence de relance sur alerte non traitée.** Aucun mécanisme ne relance la fonction conformité, ni
+n'escalade, lorsqu'une alerte demeure en `PENDING` au-delà d'un délai donné. Un courriel manqué —
+défaillance de messagerie, filtrage en indésirable, boîte non surveillée — ramène donc la détection
+de l'alerte à la consultation spontanée du back-office, c'est-à-dire à la situation antérieure au
+point 4.6. Un délai maximal de traitement et sa relance restent à définir, ce qui relève de la
+procédure interne avant toute traduction technique.
+
+**Notification limitée aux alertes de gel sur un donateur.** Les autres natures d'alerte
+n'engendrent aucun courriel, pour les raisons exposées au point 4.6. En particulier, une alerte de
+criblage impossible — c'est-à-dire un contrôle qui n'a pas pu être mené à son terme — ne notifie
+personne, alors qu'un contrôle impossible n'est pas un contrôle favorable. Cet écart est à combler.
+
 **Suivi des travaux restants.** Les éléments ci-dessus qui restent à réaliser sont suivis dans le
 référentiel interne de gestion de projet aux références suivantes.
 
@@ -253,6 +333,9 @@ référentiel interne de gestion de projet aux références suivantes.
 | Cloisonnement des dossiers de soupçon par déclarant *(épique E1)* | [1216210976716060](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210976716060) |
 | Revue de sécurité du dispositif, dont la couverture des accès par rôle non vérifiée au point 5.2 *(épique E6)* | [1216210853624519](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624519) |
 | Traçabilité de la simple consultation d'une alerte | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Délai maximal de traitement d'une alerte et relance sur alerte non traitée — **prérequis de procédure avant traduction technique** | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Notification de la fonction conformité sur alerte de criblage impossible | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Surveillance de la boîte de la fonction conformité et de son filtrage anti-indésirable *(prérequis non technique)* | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 ## 7. Situation de ce contrôle dans le dispositif d'ensemble
 
@@ -276,13 +359,19 @@ dédiée au dispositif LCB-FT (`app-legal-lcb-ft`). Il comprend :
   clôture avec décision et traçabilité) ;
 - l'interface de traitement des alertes dans la section `/compliance` de la plateforme, accessible
   uniquement au responsable de conformité ;
-- les contrôles automatisés décrits au point 5.
+- les contrôles automatisés décrits au point 5 ;
+- pour la notification du point 4.6 : l'événement émis à la création d'une alerte, le composant
+  d'envoi qui y souscrit, la méthode d'envoi ajoutée au service de messagerie et ses deux
+  implémentations (envoi réel et substitut de développement), ainsi que le paramètre de
+  configuration portant l'adresse de la boîte de la fonction conformité.
 
 Les règles métier — motivation obligatoire, champs DG Trésor obligatoires en cas de correspondance
 avérée, irréversibilité de la clôture, caractère humain et hors-application de la notification à
-la DG Trésor — sont documentées directement dans le code source, à l'endroit où elles s'appliquent.
+la DG Trésor, absence de donnée d'identité dans la notification et exactitude de son contenu au
+regard de la nature de l'alerte — sont documentées directement dans le code source, à l'endroit où
+elles s'appliquent.
 
 ---
 
-*Document établi le 11 août 2026. Une fiche de même nature est produite pour chaque contrôle du
-dispositif LCB-FT au fur et à mesure de sa réalisation.*
+*Document établi le 11 août 2026, complété le 17 août 2026. Une fiche de même nature est produite
+pour chaque contrôle du dispositif LCB-FT au fur et à mesure de sa réalisation.*

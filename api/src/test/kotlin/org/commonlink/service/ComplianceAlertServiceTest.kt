@@ -12,6 +12,7 @@ import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.ComplianceAlertRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
@@ -36,7 +37,8 @@ class ComplianceAlertServiceTest {
 
     private val repo: ComplianceAlertRepository = mockk()
     private val auditLog: ComplianceAuditLogService = mockk(relaxed = true)
-    private val service = ComplianceAlertService(repo, auditLog)
+    private val eventPublisher: ApplicationEventPublisher = mockk(relaxed = true)
+    private val service = ComplianceAlertService(repo, auditLog, eventPublisher)
 
     private val associationId: UUID = UUID.randomUUID()
     private val officerId: UUID = UUID.randomUUID()

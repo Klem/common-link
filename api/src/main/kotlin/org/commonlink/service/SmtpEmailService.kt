@@ -187,4 +187,33 @@ class SmtpEmailService(
         )
         mailSender.send(message)
     }
+
+    override fun sendDonorFreezeAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        severity: String,
+        alertUrl: String,
+    ) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        // No donor name, no register entry, no score: the subject line lands in mail clients,
+        // notification banners and backups — none of them access-controlled.
+        helper.setSubject("[LCB-FT] Alerte gel des avoirs — donateur — sévérité $severity")
+        helper.setText(
+            """
+            <p>Une mesure de gel des avoirs a été détectée lors du criblage d'un donateur.
+            Le don a été refusé automatiquement ; aucun paiement n'a été créé.</p>
+            <p>Cette alerte attend une décision de la fonction conformité.</p>
+            <p>Référence de l'alerte : <strong>$alertId</strong><br>
+            Sévérité : <strong>$severity</strong></p>
+            <p><a href="$alertUrl">Ouvrir l'alerte dans le back-office conformité</a></p>
+            <p>Le détail de la correspondance (nom criblé, entrée du registre, score) est consultable
+            uniquement sur cet écran, après authentification.</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
 }

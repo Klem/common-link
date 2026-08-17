@@ -130,6 +130,13 @@ app:
     email: ${APP_COMPLIANCE_OFFICER_EMAIL}
     password: ${APP_COMPLIANCE_OFFICER_PASSWORD}
 
+  compliance:
+    # Function mailbox notified when an asset-freeze alert is raised on a donor
+    # (ComplianceAlertEmailListener). A role address, not a person: the alert must keep reaching the
+    # compliance function across staff changes. Blank disables the notification and logs a warning.
+    alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL}
+
+
 commonlink:
   compliance:
     # No default (unlike base/staging): an absent COMPLIANCE_ENCRYPTION_KEY fails placeholder
