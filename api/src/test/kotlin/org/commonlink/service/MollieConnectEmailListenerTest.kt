@@ -5,6 +5,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MollieOnboardingStatus
+import org.commonlink.event.MollieConnectionBrokenEvent
 import org.commonlink.event.MollieOnboardingStatusChangedEvent
 import org.commonlink.repository.AssociationProfileRepository
 import org.junit.jupiter.api.BeforeEach
@@ -16,7 +17,8 @@ import java.util.UUID
  * Unit tests for [MollieConnectEmailListener].
  *
  * Verifies that each status transition triggers the correct [EmailService] method exactly once,
- * including the regression path (IN_REVIEW → NEEDS_DATA). Runs without Spring context.
+ * including the regression path (IN_REVIEW → NEEDS_DATA), plus the broken-authorisation warning
+ * raised by the scheduled token refresh. Runs without Spring context.
  */
 class MollieConnectEmailListenerTest {
 
@@ -27,10 +29,11 @@ class MollieConnectEmailListenerTest {
     private val associationId: UUID = UUID.randomUUID()
     private val associationName = "Les Restos du Cœur"
     private val contactEmail = "contact@restos.org"
+    private val frontendUrl = "https://app.common-link.test"
 
     @BeforeEach
     fun setUp() {
-        listener = MollieConnectEmailListener(emailService, associationRepo)
+        listener = MollieConnectEmailListener(emailService, associationRepo, frontendUrl)
         val profile: AssociationProfile = mockk()
         every { profile.contactEmail } returns contactEmail
         every { profile.name } returns associationName
@@ -98,4 +101,38 @@ class MollieConnectEmailListenerTest {
             previousStatus = previous,
             newStatus = next,
         )
+
+    @Test
+    fun `sends broken-connection email with a reconnect link`() {
+        listener.onConnectionBroken(MollieConnectionBrokenEvent(associationId))
+
+        verify(exactly = 1) {
+            emailService.sendMollieConnectionBroken(
+                associationName,
+                contactEmail,
+                "$frontendUrl/fr/dashboard/association",
+            )
+        }
+    }
+
+    @Test
+    fun `skips broken-connection email when the association has no contact email`() {
+        val profile: AssociationProfile = mockk()
+        every { profile.contactEmail } returns null
+        every { profile.name } returns associationName
+        every { associationRepo.findById(associationId) } returns Optional.of(profile)
+
+        listener.onConnectionBroken(MollieConnectionBrokenEvent(associationId))
+
+        verify(exactly = 0) { emailService.sendMollieConnectionBroken(any(), any(), any()) }
+    }
+
+    @Test
+    fun `swallows email failure so the refresh sweep is never aborted`() {
+        every { emailService.sendMollieConnectionBroken(any(), any(), any()) } throws RuntimeException("SMTP down")
+
+        listener.onConnectionBroken(MollieConnectionBrokenEvent(associationId))
+
+        verify(exactly = 1) { emailService.sendMollieConnectionBroken(any(), any(), any()) }
+    }
 }

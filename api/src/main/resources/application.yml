@@ -88,9 +88,20 @@ app:
       #switch between /onboarding/me (LEGACY) and the new /capabilities (CAPABILITIES)
       onboarding-api: LEGACY
       #Mock the entire mollie process
-      mock: ${MOLLIE_CONNECT_MOCK:true}
+      mock: ${MOLLIE_CONNECT_MOCK:false}
       #Force the Onboarding / KYC to "true"
       allow-fake-completion: ${MOLLIE_CONNECT_ALLOW_FAKE_COMPLETION:true}
+      # Proactive access-token renewal. Refresh is otherwise lazy — nothing calls it until a
+      # donation arrives — so a revoked authorisation is discovered by the donor and that donation
+      # is lost. This sweep surfaces a dead grant hours earlier and emails the association.
+      token-refresh:
+        enabled: true
+        # Gap between the end of one sweep and the start of the next (fixedDelay semantics).
+        fixed-delay-ms: 900000
+        initial-delay-ms: 120000
+        # Renew a token expiring within this window. Keep it >= 2x fixed-delay-ms, otherwise tokens
+        # whose expiry falls between two ticks are missed and get refreshed lazily after all.
+        lookahead-seconds: 1800
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:

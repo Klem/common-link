@@ -78,6 +78,20 @@ interface EmailService {
     fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String)
 
     /**
+     * Warns the association that its Mollie authorisation has been rejected and that it has
+     * therefore stopped being able to collect donations.
+     *
+     * Sent by the scheduled token refresh when Mollie definitively refuses the refresh token, so the
+     * association learns about it before a donor does. Recovery is a re-authorisation through the
+     * OAuth popup; no amount of retrying restores a revoked grant.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     * @param reconnectUrl    Full URL of the dashboard screen carrying the reconnect action.
+     */
+    fun sendMollieConnectionBroken(associationName: String, recipientEmail: String, reconnectUrl: String)
+
+    /**
      * Sends the Cerfa 2041-RD fiscal receipt PDF to the donor after on-chain confirmation.
      *
      * @param donorEmail      Donor's email address.

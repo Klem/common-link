@@ -34,6 +34,7 @@ enum class OnboardingApi {
  * @param onboardingApi Which Mollie API to use for KYC status polling. Defaults to [OnboardingApi.LEGACY]
  *                      (`GET /v2/onboarding/me`) which works today. Switch to [OnboardingApi.CAPABILITIES]
  *                      (`GET /v2/capabilities`) once Mollie enables the feature flag for this org.
+ * @param tokenRefresh Cadence of the scheduled proactive token refresh.
  */
 @ConfigurationProperties(prefix = "app.mollie.connect")
 data class MollieConnectConfig(
@@ -45,10 +46,37 @@ data class MollieConnectConfig(
     val mock: Boolean = false,
     val allowFakeCompletion: Boolean = false,
     val onboardingApi: OnboardingApi = OnboardingApi.LEGACY,
+    val tokenRefresh: TokenRefresh = TokenRefresh(),
 ) {
+    /**
+     * Settings of the scheduled proactive refresh driven by
+     * [org.commonlink.service.MollieTokenRefreshScheduler].
+     *
+     * The point of refreshing on a schedule is not donor latency (a lazy refresh costs a few
+     * hundred milliseconds); it is that a lazy refresh only ever runs when a donation arrives, so a
+     * revoked authorisation is discovered *by the donor*, and that donation is lost. A periodic tick
+     * surfaces a dead grant hours or days earlier — and keeps the grant warm on associations whose
+     * widget sees no traffic for weeks.
+     *
+     * @param enabled Set false to silence the scheduler (tests, one-off maintenance windows).
+     * @param fixedDelayMs Gap between the end of one sweep and the start of the next (fixedDelay
+     *                     semantics, so a slow sweep never overlaps itself). Default 15 min.
+     * @param initialDelayMs Grace period after startup before the first sweep. Default 2 min.
+     * @param lookaheadSeconds Refresh a token when it expires within this window. MUST stay at or
+     *                         above twice [fixedDelayMs], otherwise tokens whose expiry falls
+     *                         between two ticks are missed and the donation path refreshes them
+     *                         lazily after all. Default 30 min against a 1 h Mollie token.
+     */
+    data class TokenRefresh(
+        val enabled: Boolean = true,
+        val fixedDelayMs: Long = 900_000,
+        val initialDelayMs: Long = 120_000,
+        val lookaheadSeconds: Long = 1_800,
+    )
+
     /** Redacts [clientSecret] and [advancedToken] (Bearer with clients.write) so they never leak via logs. */
     override fun toString(): String =
         "MollieConnectConfig(clientId=$clientId, clientSecret=***, redirectUri=$redirectUri, " +
         "scopes=$scopes, advancedToken=***, mock=$mock, allowFakeCompletion=$allowFakeCompletion, " +
-        "onboardingApi=$onboardingApi)"
+        "onboardingApi=$onboardingApi, tokenRefresh=$tokenRefresh)"
 }

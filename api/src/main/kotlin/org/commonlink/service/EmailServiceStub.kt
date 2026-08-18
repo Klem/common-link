@@ -54,6 +54,12 @@ class EmailServiceStub : EmailService {
         logger.info("Mollie KYC completed for '$associationName' — would notify $recipientEmail")
     }
 
+    override fun sendMollieConnectionBroken(associationName: String, recipientEmail: String, reconnectUrl: String) {
+        logger.info(
+            "Mollie connection BROKEN for '$associationName' — would notify $recipientEmail (reconnect: $reconnectUrl)"
+        )
+    }
+
     /** Logs the donation receipt details instead of sending an email with attachment. */
     override fun sendDonationReceipt(
         donorEmail: String,

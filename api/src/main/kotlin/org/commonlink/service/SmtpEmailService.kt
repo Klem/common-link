@@ -140,6 +140,29 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendMollieConnectionBroken(associationName: String, recipientEmail: String, reconnectUrl: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Action requise : votre compte Mollie n'est plus connecté — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>L'autorisation Mollie de l'association <strong>$associationName</strong> a été refusée par Mollie.
+            En conséquence, <strong>vos campagnes ne peuvent plus recevoir de dons en ligne</strong> pour le moment.</p>
+            <p>Cela arrive lorsque l'accès accordé à CommonLink a été retiré depuis votre tableau de bord Mollie,
+            ou lorsque le compte Mollie a été fermé. Une simple attente ne rétablira pas la connexion :
+            il faut reconnecter votre compte.</p>
+            <p><a href="$reconnectUrl">Reconnecter mon compte Mollie</a></p>
+            <p>Vos campagnes et vos dons déjà reçus ne sont pas affectés : seule la collecte de nouveaux dons est suspendue.</p>
+            <p>Merci de votre réactivité,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
