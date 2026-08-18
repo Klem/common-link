@@ -85,11 +85,18 @@ class Donation(
     @Column(name = "donor_country", length = 2)
     val donorCountry: String? = null,
 
-    /** Snapshot d'identité — date de naissance, requis pour le reçu fiscal Cerfa 2041-RD. */
+    /**
+     * Date de naissance du donateur — **jamais alimentée par le widget**.
+     *
+     * Le formulaire de don la propose à titre facultatif, mais la valeur saisie sert uniquement au
+     * filtrage gel puis est jetée : elle n'est pas conservée. La colonne subsiste pour le donateur
+     * disposant d'un espace, qui pourra renseigner l'information ; le reçu fiscal l'imprime alors
+     * (voir [org.commonlink.service.ReceiptService]).
+     */
     @Column(name = "donor_birth_date")
     val donorBirthDate: LocalDate? = null,
 
-    /** Snapshot d'identité — ville de naissance. */
+    /** Ville de naissance — même régime que [donorBirthDate] ; le widget ne la collecte pas. */
     @Column(name = "donor_birth_city", length = 128)
     val donorBirthCity: String? = null,
 

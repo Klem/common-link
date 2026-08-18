@@ -10,8 +10,13 @@ export const donationSchema = z.object({
     .refine((v) => Number(v.toFixed(2)) === v, 'errors.amountDecimals'),
   donorEmail: z.string().min(1, 'errors.emailRequired').email('errors.emailInvalid'),
   donorFullName: z.string().min(1, 'errors.fieldRequired').max(255, 'errors.fieldTooLong'),
-  donorBirthDate: z.string().min(1, 'errors.fieldRequired'),
-  donorBirthCity: z.string().min(1, 'errors.fieldRequired').max(128, 'errors.fieldTooLong'),
+  // Facultative : sert uniquement au filtrage gel côté API, qui ne la conserve pas.
+  // Le `transform` est indispensable — un input date vidé renvoie '', que l'API refuserait
+  // (400 sur un LocalDate) là où l'absence est acceptée.
+  donorBirthDate: z
+    .string()
+    .optional()
+    .transform((v) => (v === '' ? undefined : v)),
   donorAddressLine1: z.string().min(1, 'errors.fieldRequired').max(255, 'errors.fieldTooLong'),
   donorAddressLine2: z
     .string()

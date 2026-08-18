@@ -27,6 +27,11 @@ import java.util.UUID
  * donor supply a parseable year component and they differ. When the register entry has no DOB, or
  * the DOB is not parseable, the match is retained (false positive risk &lt; false negative risk).
  *
+ * The donor's DOB is facultative — the widget form no longer requires it. When it is absent the
+ * post-filter is inert: **every** name match above the threshold is retained, so a donor who is a
+ * mere homonym of a designated person sees their donation refused. Never the reverse: an absent
+ * DOB can only make the screening stricter.
+ *
  * ### Log hygiene
  * Donor names are never written to application logs. Per-screening traces belong exclusively in the
  * compliance audit journal ([ComplianceAuditLogService]).
@@ -214,9 +219,11 @@ class FreezeScreeningDonationService(
     /**
      * A match is discarded (false positive excluded by DOB) only when **both** the register entry
      * and the donor supply a parseable year and they differ. Conservative: when the register has no
-     * DOB or an unparseable one, the match is retained for human review.
+     * DOB or an unparseable one — or when the donor did not supply one, the widget field being
+     * facultative — the match is retained for human review.
      */
-    private fun isConfirmedHit(match: ScreeningMatch, donorBirthDate: LocalDate): Boolean {
+    private fun isConfirmedHit(match: ScreeningMatch, donorBirthDate: LocalDate?): Boolean {
+        if (donorBirthDate == null) return true
         val registerDob = match.dateOfBirth ?: return true
         val registerYear = extractYear(registerDob) ?: return true
         return registerYear == donorBirthDate.year

@@ -78,7 +78,6 @@ class PublicWidgetControllerTest {
         donorEmail = "donor@example.com",
         donorFullName = "Jean Dupont",
         donorBirthDate = java.time.LocalDate.of(1985, 6, 15),
-        donorBirthCity = "Lyon",
         donorAddressLine1 = "12 rue de la Paix",
         donorAddressLine2 = null,
         donorPostalCode = "75001",
@@ -170,6 +169,64 @@ class PublicWidgetControllerTest {
             post("/api/public/widget/clk_valid/donations")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRequest))
+        ).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `createDonation - 200 when the body carries no birth date at all`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } returns sampleResponse
+
+        // Corps sans la clé donorBirthDate : le champ est facultatif côté widget.
+        val body = """
+            {
+              "amount": 25.00,
+              "donorEmail": "donor@example.com",
+              "donorFullName": "Jean Dupont",
+              "donorAddressLine1": "12 rue de la Paix",
+              "donorPostalCode": "75001",
+              "donorCity": "Paris",
+              "donorCountry": "FR",
+              "anonymousDisplay": false,
+              "consent": true
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+        ).andExpect(status().isOk)
+    }
+
+    /**
+     * Un widget déjà chargé dans le navigateur d'un donateur continue d'envoyer `donorBirthCity`
+     * jusqu'au rechargement de la page. Le champ ayant disparu du contrat, ces soumissions en vol
+     * ne doivent pas se transformer en erreurs.
+     */
+    @Test
+    fun `createDonation - 200 when an in-flight widget still sends the removed birth city`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } returns sampleResponse
+
+        val body = """
+            {
+              "amount": 25.00,
+              "donorEmail": "donor@example.com",
+              "donorFullName": "Jean Dupont",
+              "donorBirthDate": "1985-06-15",
+              "donorBirthCity": "Lyon",
+              "donorAddressLine1": "12 rue de la Paix",
+              "donorPostalCode": "75001",
+              "donorCity": "Paris",
+              "donorCountry": "FR",
+              "anonymousDisplay": false,
+              "consent": true
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
         ).andExpect(status().isOk)
     }
 

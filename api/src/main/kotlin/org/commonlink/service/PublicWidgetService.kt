@@ -104,7 +104,6 @@ class PublicWidgetService(
             city = request.donorCity,
             country = request.donorCountry,
             birthDate = request.donorBirthDate,
-            birthCity = request.donorBirthCity,
         )
 
         // LCB-FT art. L.561-5 — screen donor against asset-freeze register before any payment

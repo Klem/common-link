@@ -59,8 +59,10 @@ class FreezeScreeningDonationServiceTest {
         city = "Paris",
         country = "FR",
         birthDate = donorBirthDate,
-        birthCity = "Lyon",
     )
+
+    /** Le donateur n'a pas renseigné le champ facultatif : aucune désambiguïsation possible. */
+    private val identityWithoutBirthDate = identity.copy(birthDate = null)
 
     private fun setupRegisterAvailable() {
         every { sanctionedEntityRepository.findMaxPublicationDate() } returns publicationDate
@@ -153,6 +155,29 @@ class FreezeScreeningDonationServiceTest {
 
         assertEquals(ScreeningOutcome.CLEAR, result)
         verify(exactly = 0) { alertPort.onFreezeHit(any(), any()) }
+    }
+
+    @Test
+    fun `homonym with different birth year is retained when the donor gave no birth date`() {
+        setupRegisterAvailable()
+        // Même entrée que le test précédent : née en 1960, écartée quand la date du donateur est
+        // connue. Sans date, plus rien ne l'écarte — le don est refusé et l'officier tranche.
+        every { screeningService.screen(any(), nature = SanctionedNature.PHYSICAL_PERSON) } returns listOf(match(dateOfBirth = "01/01/1960"))
+
+        val result = service.runFreezeCheck(associationId, donorProfileId, identityWithoutBirthDate)
+
+        assertEquals(ScreeningOutcome.HIT, result)
+        verify(exactly = 1) { alertPort.onFreezeHit(any(), any()) }
+    }
+
+    @Test
+    fun `no name match still produces CLEAR when the donor gave no birth date`() {
+        setupRegisterAvailable()
+        every { screeningService.screen(any(), nature = SanctionedNature.PHYSICAL_PERSON) } returns emptyList()
+
+        val result = service.runFreezeCheck(associationId, donorProfileId, identityWithoutBirthDate)
+
+        assertEquals(ScreeningOutcome.CLEAR, result)
     }
 
     @Test

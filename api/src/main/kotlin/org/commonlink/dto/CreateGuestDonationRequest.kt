@@ -6,7 +6,6 @@ import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Digits
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
@@ -17,6 +16,9 @@ import java.time.LocalDate
  *
  * Validation mirrors the frontend (app/src/app/.../embed/donate/.../page.tsx) per CLAUDE.md rule 8.
  * Identity fields (donorFullName..donorCountry) are snapshotted on the Donation for the Cerfa 2041-RD receipt.
+ *
+ * [donorBirthDate] is the exception: facultative, consumed only by the asset-freeze screening and
+ * discarded afterwards. The widget never collects the birth city — no control uses it.
  */
 data class CreateGuestDonationRequest(
 
@@ -57,14 +59,14 @@ data class CreateGuestDonationRequest(
     @field:AssertTrue(message = "RGPD consent is required")
     val consent: Boolean,
 
-    /** Date de naissance — snapshot pour le reçu fiscal Cerfa 2041-RD. */
-    @field:NotNull(message = "must not be null")
-    val donorBirthDate: LocalDate,
-
-    /** Ville de naissance — snapshot pour le reçu fiscal Cerfa 2041-RD. */
-    @field:NotBlank(message = "must not be blank")
-    @field:Size(max = 128, message = "must not exceed 128 characters")
-    val donorBirthCity: String,
+    /**
+     * Date de naissance — **facultative** et **jamais persistée** pour un don widget.
+     *
+     * Sert uniquement à écarter les homonymes lors du filtrage gel
+     * ([org.commonlink.service.FreezeScreeningDonationService]). Absente, aucune correspondance de
+     * nom n'est écartée : le don peut être refusé pour un simple homonyme.
+     */
+    val donorBirthDate: LocalDate? = null,
 
     /** Origin site auto-declared by the widget snippet. Sanitised server-side; treat as untrusted. */
     val sourceSite: String? = null,

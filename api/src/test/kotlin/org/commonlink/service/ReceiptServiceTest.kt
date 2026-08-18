@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -48,13 +49,19 @@ class ReceiptServiceTest {
         every { it.signerRole } returns "Présidente"
     }
 
-    private fun donation(paymentMethod: String?): Donation {
+    private fun donation(
+        paymentMethod: String?,
+        birthDate: LocalDate? = null,
+        birthCity: String? = null,
+    ): Donation {
         val assoc = association()
         val campaign = mockk<Campaign>(relaxed = true).also { every { it.association } returns assoc }
         return mockk<Donation>(relaxed = true).also {
             every { it.campaign } returns campaign
             every { it.amount } returns BigDecimal("42.00")
             every { it.donorFullName } returns "Jean Dupont"
+            every { it.donorBirthDate } returns birthDate
+            every { it.donorBirthCity } returns birthCity
             every { it.donorAddressLine1 } returns "3 avenue des Fleurs"
             every { it.donorAddressLine2 } returns null
             every { it.donorPostalCode } returns "69003"
@@ -66,14 +73,18 @@ class ReceiptServiceTest {
     }
 
     /** Text of the single-page receipt, whitespace-normalised so line wrapping does not matter. */
-    private fun receiptText(paymentMethod: String? = "creditcard"): String {
+    private fun receiptText(
+        paymentMethod: String? = "creditcard",
+        birthDate: LocalDate? = null,
+        birthCity: String? = null,
+    ): String {
         val mandate = mockk<FiscalMandate>(relaxed = true).also {
             every { it.eligibility } returns MandateEligibility.OIG_66
         }
         every { mandateRepository.findByAssociationIdAndRevokedAtIsNull(associationId) } returns mandate
         every { taxRateService.taxReductionRate(any()) } returns 66
 
-        val bytes = service.generate(donation(paymentMethod), "2026-0042")
+        val bytes = service.generate(donation(paymentMethod, birthDate, birthCity), "2026-0042")
         val reader = PdfReader(bytes)
         val text = (1..reader.numberOfPages)
             .joinToString(" ") { PdfTextExtractor(reader).getTextFromPage(it) }
@@ -144,5 +155,26 @@ class ReceiptServiceTest {
         val text = receiptText(paymentMethod = null)
 
         assertTrue(text.contains("Mode de versement Non précisé"), text)
+    }
+
+    /**
+     * Le don widget ne conserve aucune donnée de naissance : le reçu doit se générer sans elle, et
+     * surtout ne pas afficher un libellé sans valeur, qui se lirait comme une information manquante.
+     */
+    @Test
+    fun `says nothing about the birth when it is unknown`() {
+        val text = receiptText()
+
+        assertFalse(text.contains("Date de naissance"), text)
+        assertFalse(text.contains("Ville de naissance"), text)
+    }
+
+    /** Renseignée par un donateur disposant d'un espace, l'information enrichit le reçu. */
+    @Test
+    fun `prints the birth details when they are known`() {
+        val text = receiptText(birthDate = LocalDate.of(1985, 6, 15), birthCity = "Lyon")
+
+        assertTrue(text.contains("Date de naissance 15/06/1985"), text)
+        assertTrue(text.contains("Ville de naissance Lyon"), text)
     }
 }

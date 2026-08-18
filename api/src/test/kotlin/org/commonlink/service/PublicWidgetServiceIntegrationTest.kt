@@ -162,6 +162,32 @@ class PublicWidgetServiceIntegrationTest {
         assertTrue(donorProfile.anonymous, "DonorProfile.anonymous must be true when anonymousDisplay=true")
     }
 
+    @Test
+    fun `createDonation never persists the birth date, even when the donor supplies it`() {
+        val req = validRequest(donorBirthDate = java.time.LocalDate.of(1985, 6, 15))
+
+        val response = publicWidgetService.createDonation(widgetToken, req)
+
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")
+        assertNotNull(donation)
+        assertNull(
+            donation!!.donorBirthDate,
+            "La date de naissance sert au filtrage gel puis est jetée — elle ne doit jamais être écrite",
+        )
+        assertNull(donation.donorBirthCity, "Le widget ne collecte aucune ville de naissance")
+    }
+
+    @Test
+    fun `createDonation succeeds without any birth date`() {
+        val req = validRequest(donorBirthDate = null)
+
+        val response = publicWidgetService.createDonation(widgetToken, req)
+
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")
+        assertNotNull(donation, "Une date de naissance absente ne doit pas empêcher le don")
+        assertNull(donation!!.donorBirthDate)
+    }
+
     // ── T5 : sourceSite sanitisation ─────────────────────────────────────────
 
     @Test
@@ -444,8 +470,7 @@ class PublicWidgetServiceIntegrationTest {
     private fun validRequest(
         donorEmail: String = "anon@example.com",
         donorFullName: String = "Jean Dupont",
-        donorBirthDate: java.time.LocalDate = java.time.LocalDate.of(1985, 6, 15),
-        donorBirthCity: String = "Lyon",
+        donorBirthDate: java.time.LocalDate? = java.time.LocalDate.of(1985, 6, 15),
         donorAddressLine1: String = "12 rue de la Paix",
         donorAddressLine2: String? = null,
         donorPostalCode: String = "75001",
@@ -458,7 +483,6 @@ class PublicWidgetServiceIntegrationTest {
         donorEmail        = donorEmail,
         donorFullName     = donorFullName,
         donorBirthDate    = donorBirthDate,
-        donorBirthCity    = donorBirthCity,
         donorAddressLine1 = donorAddressLine1,
         donorAddressLine2 = donorAddressLine2,
         donorPostalCode   = donorPostalCode,

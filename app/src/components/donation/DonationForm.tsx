@@ -201,7 +201,7 @@ export function DonationForm({
 
         <div className={s.field}>
           <label htmlFor="donorBirthDate" className={s.label}>
-            {t('identity.birthDate')} *
+            {t('identity.birthDate')}
           </label>
           <input
             id="donorBirthDate"
@@ -210,28 +210,10 @@ export function DonationForm({
             disabled={inert}
             {...register('donorBirthDate')}
           />
+          <p style={styles.hint}>{t('identity.birthDateHint')}</p>
           {errors.donorBirthDate && (
             <p className={s.error}>
               {t(errors.donorBirthDate.message as Parameters<typeof t>[0])}
-            </p>
-          )}
-        </div>
-
-        <div className={s.field}>
-          <label htmlFor="donorBirthCity" className={s.label}>
-            {t('identity.birthCity')} *
-          </label>
-          <input
-            id="donorBirthCity"
-            type="text"
-            placeholder={t('identity.birthCityPlaceholder')}
-            className={s.input}
-            disabled={inert}
-            {...register('donorBirthCity')}
-          />
-          {errors.donorBirthCity && (
-            <p className={s.error}>
-              {t(errors.donorBirthCity.message as Parameters<typeof t>[0])}
             </p>
           )}
         </div>

@@ -159,9 +159,19 @@ class ReceiptService(
         ).apply { spacingAfter = 6f })
     }
 
+    /**
+     * Bloc « DONATEUR » du reçu.
+     *
+     * Les éléments de naissance sont imprimés **seulement s'ils sont connus** : le formulaire de don
+     * du widget ne les conserve pas (voir [Donation.donorBirthDate]), ils ne sont renseignés que par
+     * un donateur disposant d'un espace. Une ligne vide vaudrait affirmation d'une information
+     * absente — on n'imprime rien plutôt qu'un libellé sans valeur.
+     */
     private fun donorSection(doc: Document, d: Donation) {
         sectionHeader(doc, "DONATEUR")
         fieldRow(doc, "Nom et prénom", d.donorFullName.orEmpty())
+        d.donorBirthDate?.let { fieldRow(doc, "Date de naissance", dateFmt.format(it)) }
+        d.donorBirthCity?.takeIf { it.isNotBlank() }?.let { fieldRow(doc, "Ville de naissance", it) }
         val address = buildString {
             d.donorAddressLine1?.let { append(it) }
             d.donorAddressLine2?.let { if (it.isNotBlank()) append(", $it") }

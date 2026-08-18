@@ -14,7 +14,13 @@ import { createGuestDonation } from '@/lib/api/public';
 
 const mockCreateGuestDonation = createGuestDonation as ReturnType<typeof vi.fn>;
 
-function fillValidForm() {
+/**
+ * Fills every field the backend still requires.
+ *
+ * @param birthDate ISO date, or `null` to leave the facultative birth date empty — the case the
+ *   widget must accept since the value is only used for the freeze screening and never kept.
+ */
+function fillValidForm(birthDate: string | null = '1990-01-15') {
   fireEvent.click(screen.getByText('25 €'));
   fireEvent.change(screen.getByLabelText(/identity.email/i), {
     target: { value: 'jean@example.com' },
@@ -22,12 +28,11 @@ function fillValidForm() {
   fireEvent.change(screen.getByLabelText(/identity.fullName/i), {
     target: { value: 'Jean Dupont' },
   });
-  fireEvent.change(screen.getByLabelText(/identity.birthDate/i), {
-    target: { value: '1990-01-15' },
-  });
-  fireEvent.change(screen.getByLabelText(/identity.birthCity/i), {
-    target: { value: 'Lyon' },
-  });
+  if (birthDate !== null) {
+    fireEvent.change(screen.getByLabelText(/identity.birthDate/i), {
+      target: { value: birthDate },
+    });
+  }
   fireEvent.change(screen.getByLabelText(/identity.addressLine1/i), {
     target: { value: '12 rue de la Paix' },
   });
@@ -330,5 +335,51 @@ describe('DonationForm — disabled prop (landing preview)', () => {
     const btn = screen.getByRole('button', { name: 'submit' });
     expect(btn.className).toContain('lp-submit-btn');
     expect(btn).toBeDisabled();
+  });
+});
+
+describe('DonationForm — date de naissance facultative', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'top', { value: window, writable: true });
+    // The submission is rejected on purpose: the payload is asserted before the redirect, which
+    // jsdom cannot perform.
+    mockCreateGuestDonation.mockRejectedValue(new Error('network'));
+  });
+
+  it('submits with no birth date at all', async () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+    );
+
+    fillValidForm(null);
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(mockCreateGuestDonation).toHaveBeenCalled();
+    });
+    expect(mockCreateGuestDonation.mock.calls[0][1].donorBirthDate).toBeUndefined();
+  });
+
+  it('sends the birth date when the donor fills it in', async () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+    );
+
+    fillValidForm('1990-01-15');
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(mockCreateGuestDonation).toHaveBeenCalled();
+    });
+    expect(mockCreateGuestDonation.mock.calls[0][1].donorBirthDate).toBe('1990-01-15');
+  });
+
+  it('never asks for a birth city', () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+    );
+
+    expect(screen.queryByLabelText(/identity.birthCity/i)).toBeNull();
   });
 });

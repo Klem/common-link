@@ -92,6 +92,18 @@ deux personnes homonymes. Lorsque le registre ne comporte pas de date de naissan
 est conservée et transmise à un examen humain — cette prudence est préférable au risque d'un faux
 négatif.
 
+**La date de naissance est facultative.** Le formulaire de don la propose sans l'exiger : elle
+n'est pas nécessaire à l'exécution du contrôle, qui porte sur le nom, et le donateur qui ne
+souhaite pas la communiquer n'en est pas empêché de donner. Elle n'est utilisée qu'à cette fin de
+désambiguïsation et **n'est pas conservée** : la valeur saisie sert au filtrage puis est écartée,
+elle n'est enregistrée sur aucune ligne de don. Le donateur en est informé sous le champ.
+
+Lorsque la date n'est pas renseignée, la comparaison des années ne peut pas être opérée : **toutes
+les correspondances de nom sont alors conservées** et transmises à l'examen humain. L'absence de
+cette donnée ne peut donc jamais rendre le contrôle plus permissif — elle le rend plus strict, au
+prix de refus opposés à de simples homonymes, que le responsable de la conformité tranche ensuite
+selon la procédure de traitement des alertes.
+
 ### 4.4 Résultats possibles du contrôle
 
 Le contrôle produit l'un des résultats suivants :
@@ -134,6 +146,8 @@ en échec avant d'être intégrée.
 | Correspondance détectée | Don refusé | Oui — correspondance journalisée, alerte transmise — vérifié |
 | Don de faible montant, correspondance détectée | Don refusé — le refus est indépendant du montant | Oui — vérifié (le chemin de refus ne tient pas compte du montant) |
 | Homonyme avec année de naissance différente | Don possible | Oui — résultat sans correspondance après exclusion par date de naissance — vérifié |
+| Homonyme, date de naissance non renseignée par le donateur | Don refusé — aucune exclusion possible, la correspondance part à l'examen humain | Oui — correspondance journalisée, alerte transmise — vérifié |
+| Date de naissance renseignée par le donateur | Sans effet sur l'enregistrement du don | Oui — vérifié : la donnée n'est écrite sur aucune ligne de don |
 | Service de filtrage indisponible | Don refusé | Oui — indisponibilité journalisée — vérifié |
 | Correspondance détectée et service indisponible | Message identique au donateur dans les deux cas | Oui — indiscernabilité vérifiée par assertion explicite — vérifié |
 

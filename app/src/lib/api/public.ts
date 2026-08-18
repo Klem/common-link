@@ -29,8 +29,8 @@ export interface CreateGuestDonationRequest {
   amount: number;
   donorEmail: string;
   donorFullName: string;
-  donorBirthDate: string;
-  donorBirthCity: string;
+  /** Facultative (ISO yyyy-MM-dd) — utilisée pour le filtrage gel, jamais conservée. */
+  donorBirthDate?: string;
   donorAddressLine1: string;
   donorAddressLine2?: string;
   donorPostalCode: string;
