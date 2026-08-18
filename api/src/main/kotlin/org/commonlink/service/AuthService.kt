@@ -20,6 +20,7 @@ import org.commonlink.exception.EmailNotVerifiedException
 import org.commonlink.exception.InvalidTokenException
 import org.commonlink.exception.PasswordNotSetException
 import org.commonlink.exception.RateLimitException
+import org.commonlink.exception.SirenAlreadyRegisteredException
 import org.commonlink.exception.TokenExpiredException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonorProfileRepository
@@ -72,6 +73,11 @@ class AuthService(
     private val googleIdTokenVerifier: GoogleIdTokenVerifier,
     @Value("\${app.frontend-url}") private val frontendUrl: String
 ) {
+
+    private companion object {
+        /** A French SIREN is exactly 9 digits; an RNA is `W` followed by 9 digits. */
+        val SIREN_PATTERN = Regex("^\\d{9}$")
+    }
 
     /**
      * Registers a new user with email and password.
@@ -270,6 +276,10 @@ class AuthService(
         if (magicLinkTokenRepository.countByEmailAndCreatedAtAfter(email, rateLimitWindow) >= 3) {
             throw RateLimitException()
         }
+
+        // Surface a duplicate SIREN now rather than after the user has clicked the emailed link,
+        // where profile creation would fail. No-op for the RNA sign-up flow.
+        associationProfile?.let { guardSirenNotAlreadyRegistered(it.identifier) }
 
         // If role is not supplied, the caller expects an existing account (login flow).
         // Look up the existing user's role; fail if no account is found.
@@ -491,6 +501,7 @@ class AuthService(
             associationProfileRepository.save(profile)
         } else {
             // Create path: first-time profile setup using the immutable identity fields from the DTO.
+            guardSirenNotAlreadyRegistered(dto.identifier)
             associationProfileRepository.save(
                 AssociationProfile(
                     user = user,
@@ -500,7 +511,8 @@ class AuthService(
                     postalCode = dto.codePostal,
                     contactName = dto.contact,
                     contactEmail = user.email,
-                    description = dto.description
+                    description = dto.description,
+                    siren = derivedSiren(dto.identifier)
                 )
             )
         }
@@ -554,6 +566,46 @@ class AuthService(
     }
 
     /**
+     * Derives the secondary [AssociationProfile.siren] value from the primary identifier.
+     *
+     * Associations that hold a SIREN but no RNA sign up through the manual form, which stores the
+     * SIREN in `identifier`. Several downstream consumers never read `identifier` and go straight
+     * to [AssociationProfile.siren] — Mollie's `registrationNumber`, the Cerfa receipt and the
+     * mandate PDF — so the value is copied over. No schema change is involved.
+     *
+     * An RNA identifier (`W` + digits) returns `null`, which leaves the RNA sign-up flow behaving
+     * exactly as before.
+     *
+     * @param identifier Primary legal identifier captured at sign-up (RNA or SIREN).
+     * @return The identifier itself when it is a 9-digit SIREN, `null` otherwise.
+     */
+    private fun derivedSiren(identifier: String): String? =
+        identifier.trim().takeIf { SIREN_PATTERN.matches(it) }
+
+    /**
+     * Rejects a SIREN-based association sign-up when that SIREN is already registered.
+     *
+     * Both columns are checked. The SIREN sign-up path writes it to `identifier` *and* `siren`, but
+     * an association onboarded through the RNA flow can also have filled `siren` afterwards via the
+     * profile screen — checking `identifier` alone would let the same SIREN exist twice.
+     *
+     * Neither column carries a unique constraint in the schema, so uniqueness is enforced here.
+     * Deliberately scoped to the SIREN path: an RNA identifier returns early and keeps the
+     * historical permissive behaviour, leaving the original sign-up flow untouched.
+     *
+     * @param identifier Primary legal identifier captured at sign-up (RNA or SIREN).
+     * @throws SirenAlreadyRegisteredException if an association profile already carries this SIREN.
+     */
+    private fun guardSirenNotAlreadyRegistered(identifier: String) {
+        val siren = derivedSiren(identifier) ?: return
+        if (associationProfileRepository.existsByIdentifier(siren) ||
+            associationProfileRepository.existsBySiren(siren)
+        ) {
+            throw SirenAlreadyRegisteredException()
+        }
+    }
+
+    /**
      * Creates the role-appropriate profile record for a newly registered user.
      *
      * For [UserRole.DONOR], a blank [DonorProfile] is always created.
@@ -566,6 +618,7 @@ class AuthService(
             UserRole.DONOR -> donorProfileRepository.save(DonorProfile(user = user))
             UserRole.ASSOCIATION -> {
                 if (assocReq != null) {
+                    guardSirenNotAlreadyRegistered(assocReq.identifier)
                     associationProfileRepository.save(
                         AssociationProfile(
                             user = user,
@@ -574,7 +627,8 @@ class AuthService(
                             city = assocReq.city,
                             postalCode = assocReq.postalCode,
                             contactEmail = user.email,
-                            description = assocReq.description
+                            description = assocReq.description,
+                            siren = derivedSiren(assocReq.identifier)
                         )
                     )
                 }

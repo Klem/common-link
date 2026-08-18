@@ -5,6 +5,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.commonlink.dto.AssociationProfileRequestDto
 import org.commonlink.dto.AssociationProfileUpsertDto
@@ -72,6 +73,10 @@ class AuthServiceTest {
         every { emailVerificationTokenRepository.save(any()) } answers { firstArg() }
         every { userRepository.save(any()) } answers { firstArg() }
         justRun { emailService.sendEmailVerification(any(), any()) }
+        // Default: the SIREN uniqueness guard finds no existing profile. Overridden where a
+        // duplicate is the subject of the test.
+        every { associationProfileRepository.existsByIdentifier(any()) } returns false
+        every { associationProfileRepository.existsBySiren(any()) } returns false
     }
 
     // -------------------------------------------------------------------------
@@ -634,6 +639,179 @@ class AuthServiceTest {
                 AssociationProfileUpsertDto(nom = "X", identifier = "123456789")
             )
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // SIREN sign-up path (association with a SIREN but no RNA)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `register ASSOCIATION with a SIREN identifier - copies it into siren`() {
+        every { userRepository.existsByEmail("asso@example.com") } returns false
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+
+        authService.register(
+            RegisterRequestDto(
+                email = "asso@example.com",
+                password = "password123",
+                role = UserRole.ASSOCIATION,
+                associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "123456789")
+            )
+        )
+
+        assertEquals("123456789", saved.captured.identifier)
+        assertEquals("123456789", saved.captured.siren)
+    }
+
+    @Test
+    fun `register ASSOCIATION with an RNA identifier - leaves siren null`() {
+        every { userRepository.existsByEmail("asso@example.com") } returns false
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+
+        authService.register(
+            RegisterRequestDto(
+                email = "asso@example.com",
+                password = "password123",
+                role = UserRole.ASSOCIATION,
+                associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+            )
+        )
+
+        assertEquals("W123456789", saved.captured.identifier)
+        assertNull(saved.captured.siren)
+    }
+
+    @Test
+    fun `register ASSOCIATION with an already registered SIREN is rejected`() {
+        every { userRepository.existsByEmail("asso@example.com") } returns false
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        every { associationProfileRepository.existsByIdentifier("123456789") } returns true
+
+        assertThrows<SirenAlreadyRegisteredException> {
+            authService.register(
+                RegisterRequestDto(
+                    email = "asso@example.com",
+                    password = "password123",
+                    role = UserRole.ASSOCIATION,
+                    associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "123456789")
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `register ASSOCIATION with an already registered RNA still succeeds - RNA flow untouched`() {
+        every { userRepository.existsByEmail("asso@example.com") } returns false
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        every { associationProfileRepository.save(any()) } answers { firstArg() }
+        every { associationProfileRepository.existsByIdentifier("W123456789") } returns true
+
+        authService.register(
+            RegisterRequestDto(
+                email = "asso@example.com",
+                password = "password123",
+                role = UserRole.ASSOCIATION,
+                associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+            )
+        )
+
+        verify { associationProfileRepository.save(any()) }
+    }
+
+    @Test
+    fun `verifyMagicLink - association signed up with a SIREN - copies it into siren`() {
+        val token = MagicLinkToken(
+            email = "asso-new@example.com",
+            tokenHash = "hashedtoken",
+            role = UserRole.ASSOCIATION,
+            expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES),
+            assocName = "MyAsso",
+            assocIdentifier = "123456789",
+            assocCity = "Paris",
+            assocPostalCode = "75001"
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmail("asso-new@example.com") } returns Optional.empty()
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+
+        authService.verifyMagicLink("rawtoken123")
+
+        assertEquals("123456789", saved.captured.identifier)
+        assertEquals("123456789", saved.captured.siren)
+    }
+
+    @Test
+    fun `sendMagicLink - already registered SIREN is rejected before sending`() {
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter(any(), any()) } returns 0
+        every { associationProfileRepository.existsByIdentifier("123456789") } returns true
+
+        assertThrows<SirenAlreadyRegisteredException> {
+            authService.sendMagicLink(
+                "asso-new@example.com",
+                UserRole.ASSOCIATION,
+                AssociationProfileRequestDto(name = "MyAsso", identifier = "123456789")
+            )
+        }
+
+        verify(exactly = 0) { emailService.sendMagicLink(any(), any()) }
+    }
+
+    @Test
+    fun `sendMagicLink - already registered RNA still sends - RNA flow untouched`() {
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter(any(), any()) } returns 0
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        justRun { emailService.sendMagicLink(any(), any()) }
+        every { associationProfileRepository.existsByIdentifier("W123456789") } returns true
+
+        authService.sendMagicLink(
+            "asso-new@example.com",
+            UserRole.ASSOCIATION,
+            AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+        )
+
+        verify { emailService.sendMagicLink("asso-new@example.com", any()) }
+    }
+
+    @Test
+    fun `register ASSOCIATION is rejected when the SIREN is held in the secondary siren column`() {
+        // An association onboarded through the RNA flow may have filled `siren` afterwards via the
+        // profile screen. Checking `identifier` alone would let the same SIREN exist twice.
+        every { userRepository.existsByEmail("asso@example.com") } returns false
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        every { associationProfileRepository.existsByIdentifier("123456789") } returns false
+        every { associationProfileRepository.existsBySiren("123456789") } returns true
+
+        assertThrows<SirenAlreadyRegisteredException> {
+            authService.register(
+                RegisterRequestDto(
+                    email = "asso@example.com",
+                    password = "password123",
+                    role = UserRole.ASSOCIATION,
+                    associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "123456789")
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `upsertAssociationProfile - SIREN identifier is copied into siren on create`() {
+        every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
+        every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.empty()
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+
+        authService.upsertAssociationProfile(
+            assocUser.id!!,
+            AssociationProfileUpsertDto(nom = "MyAsso", identifier = "123456789", ville = "Paris", codePostal = "75001")
+        )
+
+        assertEquals("123456789", saved.captured.siren)
     }
 
     // -------------------------------------------------------------------------

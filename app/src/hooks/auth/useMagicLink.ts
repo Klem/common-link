@@ -53,7 +53,12 @@ export function useMagicLink() {
       });
       setState({ status: 'sent', error: null });
     } catch (err) {
-      if (isAxiosError(err) && err.response?.status === 429) {
+      const code = isAxiosError(err)
+        ? (err.response?.data as { code?: string } | undefined)?.code
+        : undefined;
+      if (code === 'SIREN_ALREADY_REGISTERED') {
+        setState({ status: 'error', error: 'errors.sirenAlreadyRegistered' });
+      } else if (isAxiosError(err) && err.response?.status === 429) {
         setState({ status: 'error', error: 'errors.rateLimited' });
       } else {
         setState({ status: 'error', error: 'errors.genericError' });

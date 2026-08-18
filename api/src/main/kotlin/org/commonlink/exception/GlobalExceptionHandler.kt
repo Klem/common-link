@@ -136,6 +136,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * Handles [SirenAlreadyRegisteredException] with a `code: SIREN_ALREADY_REGISTERED` property
+     * (HTTP 409), so the sign-up screen does not report a duplicate SIREN as a duplicate email.
+     */
+    @ExceptionHandler(SirenAlreadyRegisteredException::class)
+    fun handleSirenAlreadyRegistered(ex: SirenAlreadyRegisteredException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "SIREN already registered")
+        problem.setProperty("code", "SIREN_ALREADY_REGISTERED")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [CollectionCapExceededException] with a `code: COLLECTION_CAP_EXCEEDED` property and
      * the still-acceptable amount (HTTP 409).
      *

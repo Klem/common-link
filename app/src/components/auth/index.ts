@@ -1,3 +1,4 @@
+export { AssoManualEntry } from './AssoManualEntry';
 export { AssoSearch } from './AssoSearch';
 export type { AssoResult } from './AssoSearch';
 export { AuthCard } from './AuthCard';

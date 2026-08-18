@@ -458,6 +458,10 @@ A cryptographic hash function used to store sensitive tokens (Magic Links, Refre
 A 9-digit identification number assigned to each French company or association (Business Directory Identification System). Used on CommonLink to identify associations during registration (via the Business Directory) and to identify beneficiaries when added by an association (via the INSEE Sirene API).
 `business` `technical`
 
+### SIREN-only Signup (Inscription sans RNA)
+The sign-up path for an association that holds a SIREN but no RNA, and is therefore absent from the RNA (JOAFE) search the standard flow relies on. The user types a SIREN, the browser queries the Recherche d'entreprises open registry directly — keyless and CORS-open, exactly as the standard flow queries the JOAFE dataset for RNA numbers — and the returned name and registered-office address are displayed for confirmation — read-only, as in the RNA flow. The SIREN is written to both `identifier` (the mandatory primary identifier) and `siren`, since Mollie's `registrationNumber`, the Cerfa receipt and the mandate PDF read `siren` directly. No schema change: `identifier` stays mandatory, and its "RNA or SIREN" semantics predate this path. Eligibility is unaffected — a non-association or inactive SIREN is flagged to the user but never blocked at sign-up, the ruling staying with the curator registry pre-check at KYC.
+`functional` `business`
+
 ### SIRET
 14-digit identification number for a French establishment, composed of the SIREN (9 digits) followed by the NIC — Internal Classification Number (5 digits). Identifies a specific establishment of an organization (headquarters, branch, subsidiary). On CommonLink, the SIRET can be used instead of the SIREN to select a beneficiary with more precision.
 `business` `technical`

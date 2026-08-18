@@ -120,11 +120,28 @@
     }
   },
   "auth": {
+    "assoManual": {
+      "backToRna": "Back to RNA search",
+      "confirm": "This is my association",
+      "errors": {
+        "notFound": "No entity found for this SIREN. Check the number.",
+        "rateLimited": "Too many lookups. Please wait a few minutes.",
+        "unavailable": "The register is temporarily unavailable. Please try again later."
+      },
+      "hint": "Enter your association's SIREN. We check it against the official business register.",
+      "inactive": "The register reports this entity as no longer administratively active.",
+      "label": "SIREN number",
+      "notAssociation": "The register does not identify this entity as an association. Your application will be reviewed before approval.",
+      "placeholder": "SIREN (9 digits)",
+      "search": "Check",
+      "searching": "Checking…"
+    },
     "assoSearch": {
       "apiUnavailable": "The directory is temporarily unavailable. Please try again later.",
       "backToSearch": "Back to search",
       "noResults": "No association found.",
       "noResultsHint": "Check the spelling or try your RNA.",
+      "noRna": "I don't have an RNA number",
       "searchHint": "Search your association in the official directory."
     },
     "divider": {
@@ -142,6 +159,7 @@
       "passwordNotSet": "No password set. Use a magic link or Google to log in.",
       "passwordTooShort": "Password must be at least 8 characters.",
       "rateLimited": "Too many attempts. Try again in 10 minutes.",
+      "sirenAlreadyRegistered": "This SIREN is already linked to a CommonLink account. Log in, or contact us if you believe this is a mistake.",
       "tokenExpired": "This link has expired. Request a new one.",
       "tokenUsed": "This link has already been used."
     },

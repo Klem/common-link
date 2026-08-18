@@ -120,11 +120,28 @@
     }
   },
   "auth": {
+    "assoManual": {
+      "backToRna": "Retour à la recherche par RNA",
+      "confirm": "C'est mon association",
+      "errors": {
+        "notFound": "Aucune entité trouvée pour ce SIREN. Vérifiez le numéro.",
+        "rateLimited": "Trop de recherches. Patientez quelques minutes.",
+        "unavailable": "Le registre est temporairement indisponible. Réessayez plus tard."
+      },
+      "hint": "Saisissez le SIREN de votre association. Nous le vérifions auprès du registre officiel des entreprises.",
+      "inactive": "Le registre indique que cette entité n'est plus active administrativement.",
+      "label": "Numéro SIREN",
+      "notAssociation": "Le registre n'identifie pas cette entité comme une association. Votre dossier sera examiné avant validation.",
+      "placeholder": "SIREN (9 chiffres)",
+      "search": "Vérifier",
+      "searching": "Vérification…"
+    },
     "assoSearch": {
       "apiUnavailable": "Le répertoire est temporairement indisponible. Veuillez réessayer plus tard.",
       "backToSearch": "Retour à la recherche",
       "noResults": "Aucune association trouvée.",
       "noResultsHint": "Vérifiez l'orthographe ou essayez votre RNA.",
+      "noRna": "Je n'ai pas de numéro RNA",
       "searchHint": "Recherchez votre association dans le répertoire officiel."
     },
     "divider": {
@@ -142,6 +159,7 @@
       "passwordNotSet": "Aucun mot de passe défini. Utilisez un lien magique ou Google pour vous connecter.",
       "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
       "rateLimited": "Trop de tentatives. Réessayez dans 10 minutes.",
+      "sirenAlreadyRegistered": "Ce SIREN est déjà rattaché à un compte CommonLink. Connectez-vous, ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
       "tokenExpired": "Ce lien a expiré. Demandez-en un nouveau.",
       "tokenUsed": "Ce lien a déjà été utilisé."
     },
