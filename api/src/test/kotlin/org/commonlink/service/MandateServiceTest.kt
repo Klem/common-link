@@ -11,6 +11,7 @@ import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -27,6 +28,7 @@ import java.util.UUID
  * Mirrors the frontend warning modal in `MandateTab`: a mandate authorises CommonLink to issue tax
  * receipts bearing the signer's name and role, so neither may be blank at signature time.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")

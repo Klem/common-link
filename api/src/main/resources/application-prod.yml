@@ -11,6 +11,10 @@ server:
   address: 0.0.0.0   # Required: CC reverse proxy needs to reach the app
 
 spring:
+  application:
+    name: commonlink-api
+  config:
+    import: "classpath:compliance/risk-classification.yml"
   datasource:
     url: jdbc:postgresql://${POSTGRESQL_ADDON_HOST}:${POSTGRESQL_ADDON_PORT}/${POSTGRESQL_ADDON_DB}
     username: ${POSTGRESQL_ADDON_USER}
@@ -32,6 +36,7 @@ spring:
           starttls:
             enable: true
   jpa:
+    open-in-view: true  # TODO: refactor to set to "false" safe once all read service methods are @Transactional(readOnly=true)
     hibernate:
       ddl-auto: validate
     properties:
@@ -50,7 +55,6 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 12MB
-
 
 
 management:
@@ -79,7 +83,7 @@ app:
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
   cookies:
     secure: true
-    same-site: None
+    same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
@@ -110,7 +114,7 @@ app:
     webhook-url: ${MOLLIE_WEBHOOK_URL}
     test-mode: false
     connect:
-      client-id: ${MOLLIE_CONNECT_CLIENT_ID:}
+      client-id: ${MOLLIE_CONNECT_CLIENT_ID}
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}
       advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN}
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI}

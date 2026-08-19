@@ -109,7 +109,14 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // -PnoDocker: exclude tests that need a Docker daemon (Testcontainers). Used by the
+        // Clever Cloud deploy build, which has no Docker socket — see clevercloud/gradle.json.
+        // Local `./gradlew.bat test` runs everything, unchanged.
+        if (project.hasProperty("noDocker")) {
+            excludeTags("testcontainers")
+        }
+    }
 }
 
 tasks.register<JavaExec>("generateRegistryWrapper") {

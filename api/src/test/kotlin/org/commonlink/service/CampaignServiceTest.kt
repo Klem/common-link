@@ -30,6 +30,7 @@ import org.commonlink.repository.UserRepository
 import org.hibernate.SessionFactory
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -51,6 +52,7 @@ import jakarta.persistence.EntityManagerFactory
  * Each test runs in a transaction that is rolled back after completion, so the database is
  * always in a clean state between tests.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")

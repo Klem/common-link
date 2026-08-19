@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -37,6 +38,7 @@ import java.util.UUID
  * [MockkBean] replaces [MollieClient] so no real HTTP calls are made.
  * [RecordApplicationEvents] captures Spring application events published within the test transaction.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")

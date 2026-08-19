@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -22,6 +23,7 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,6 +35,7 @@ import java.util.UUID
  * onboarding chain (mirror of the frontend tab lock). Verifies each guard's throw/pass boundary
  * against a real database.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")

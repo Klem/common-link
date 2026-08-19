@@ -55,6 +55,11 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `flyway is enabled in prod`() {
+        assertEquals(true, prop("spring.flyway.enabled"))
+    }
+
+    @Test
     fun `show-sql is false in prod`() {
         assertEquals(false, prop("spring.jpa.show-sql"))
     }

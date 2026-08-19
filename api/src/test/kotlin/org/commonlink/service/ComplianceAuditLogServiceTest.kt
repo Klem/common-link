@@ -4,6 +4,7 @@ import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.repository.TestcontainersConfig
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,6 +50,7 @@ import jakarta.persistence.EntityManager
         ".tasks/lessons.md). Re-enable once a `SELECT version()` sanity check confirms real " +
         "Postgres, not H2, is behind TestcontainersConfig.",
 )
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")

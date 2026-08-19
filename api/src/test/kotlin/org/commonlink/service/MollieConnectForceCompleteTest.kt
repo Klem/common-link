@@ -11,6 +11,7 @@ import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -30,6 +31,7 @@ import java.util.UUID
  * No [org.springframework.test.web.client.MockRestServiceServer] is needed: force-completion
  * never calls Mollie — it only mutates the existing connection row.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")

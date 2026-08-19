@@ -7,6 +7,7 @@ import org.commonlink.repository.TestcontainersConfig
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -22,6 +23,7 @@ import java.util.concurrent.Executors
  * Proves that two concurrent [OnchainJobClaimer.claimBatch] calls never return the same job id.
  * Uses a real PostgreSQL container so FOR UPDATE SKIP LOCKED semantics are exercised end-to-end.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
