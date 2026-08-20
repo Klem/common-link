@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.core.env.Environment
 
@@ -28,6 +29,8 @@ class OnchainMockGuardTest {
         return OnchainMockGuard(env, buildConfig(mock))
     }
 
+    @Disabled("onchain.mock intentionally stays true in prod until the blockchain component " +
+        "is actually deployed — re-enable this test once it goes live.")
     @Test
     fun `throws when prod active and mock true`() {
         assertThrows(IllegalStateException::class.java) {

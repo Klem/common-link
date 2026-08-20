@@ -15,8 +15,9 @@ import kotlin.random.Random
  * INFO level and returns a synthetic [TransactionReceipt] — random tx hash, auto-incremented block
  * number, status `0x1`. No web3j RPC calls, no private keys, no network I/O.
  *
- * **NEVER active in production.** [org.commonlink.config.OnchainMockGuard] enforces this at
- * startup: the context refuses to start if profile `prod` is active with `onchain.mock=true`.
+ * **Temporarily tolerated in production** until the blockchain component is deployed:
+ * [org.commonlink.config.OnchainMockGuard] only logs a WARN when profile `prod` is active with
+ * `onchain.mock=true` — its fail-fast is commented out (see the TODO there).
  */
 @Component
 @ConditionalOnProperty(prefix = "onchain", name = ["mock"], havingValue = "true")
