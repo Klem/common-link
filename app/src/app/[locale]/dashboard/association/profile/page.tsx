@@ -750,7 +750,7 @@ export default function AssociationProfilePage() {
 
       {/* ── SetPassword modal ────────────────────────────────────────────── */}
       {showPasswordModal && (
-        <div className="ov" onClick={() => setShowPasswordModal(false)}>
+        <div className="ov on" onClick={() => setShowPasswordModal(false)}>
           <div className="mod" onClick={(e) => e.stopPropagation()}>
             <div className="mod-h">
               <h3>{t('association.profile.security.changePassword')}</h3>
