@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service
  * invocation in tests and operational tooling.
  *
  * [org.springframework.scheduling.annotation.EnableScheduling] is activated by
- * [org.commonlink.config.Web3jConfig].
+ * [org.commonlink.config.SchedulingConfig].
  */
 @Service
 @ConditionalOnProperty(prefix = "commonlink.sanctions.sync", name = ["enabled"], havingValue = "true", matchIfMissing = true)

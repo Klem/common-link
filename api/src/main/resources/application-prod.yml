@@ -178,7 +178,8 @@ onchain:
   mock: true
   rpc-url: ${ONCHAIN_RPC_URL}
   chain-id: ${ONCHAIN_CHAIN_ID}
-  # Dev-only defaults — safe because OnchainRegistryClient is inactive when mock=true.
+  # Empty defaults — safe because both OnchainRegistryClient and Web3jConfig (which builds the
+  # signing credentials from recorder-pk / curator-pk) are inactive when mock=true.
   # Prod supply real values via environment variables.
   registry-address: ${ONCHAIN_REGISTRY_ADDRESS:}
   recorder-pk: ${ONCHAIN_RECORDER_PK:}

@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service
  * operational tooling even when the schedule is off.
  *
  * [org.springframework.scheduling.annotation.EnableScheduling] is activated by
- * [org.commonlink.config.Web3jConfig].
+ * [org.commonlink.config.SchedulingConfig].
  */
 @Service
 @ConditionalOnProperty(
