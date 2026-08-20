@@ -14,7 +14,7 @@ import java.util.UUID
  * `MollieConnection.association` is a LAZY `@OneToOne`, so handing back detached entities would
  * make the sweep depend on Hibernate returning an id from an uninitialised proxy. Selecting the
  * id directly removes the question. [refreshToken] still passes through
- * [org.commonlink.security.MoneriumTokenConverter], so the mock sentinel is comparable in clear.
+ * [org.commonlink.security.OAuthTokenConverter], so the mock sentinel is comparable in clear.
  */
 data class MollieRefreshCandidate(
     val associationId: UUID,
@@ -53,7 +53,7 @@ interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
      * and `getValidAccessToken` throws on them without attempting anything.
      *
      * No lock and no mock filtering here. Mock rows cannot be excluded in SQL because
-     * [org.commonlink.security.MoneriumTokenConverter] stores tokens as AES-GCM with a random IV
+     * [org.commonlink.security.OAuthTokenConverter] stores tokens as AES-GCM with a random IV
      * in production, so the ciphertext differs on every write and `refresh_token <> 'mock'` would
      * silently match everything. The caller filters decrypted values in Kotlin instead.
      */

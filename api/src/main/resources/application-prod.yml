@@ -101,18 +101,13 @@ app:
     demo-mode: false
     api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}
     api-token: ${VOP_API_TOKEN:}
-  monerium:
-    client-id: ${MONERIUM_CLIENT_ID}
-    base-url: ${MONERIUM_BASE_URL}
-    redirect-uri: ${MONERIUM_REDIRECT_URI}
-    skip-kyc: false
-    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY} # also encrypt Mollie tokens
   mollie:
     api-key: ${MOLLIE_API_KEY}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL}
     webhook-url: ${MOLLIE_WEBHOOK_URL}
     test-mode: false
+    token-enc-key: ${MOLLIE_TOKEN_ENC_KEY}
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID}
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}

@@ -35,11 +35,6 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `monerium skip-kyc is false in prod`() {
-        assertEquals(false, prop("app.monerium.skip-kyc"))
-    }
-
-    @Test
     fun `springdoc api-docs disabled in prod`() {
         assertEquals(false, prop("springdoc.api-docs.enabled"))
     }
@@ -132,9 +127,8 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `monerium token-enc-key is required with no plaintext-inheriting default in prod`() {
-        // H4: base/staging default this empty (→ plaintext tokens); prod must require the key.
-        assertEquals("\${MONERIUM_TOKEN_ENC_KEY}", prop("app.monerium.token-enc-key"))
+    fun `mollie token-enc-key is required with no plaintext-inheriting default in prod`() {
+        assertEquals("\${MOLLIE_TOKEN_ENC_KEY}", prop("app.mollie.token-enc-key"))
     }
 
     @Test

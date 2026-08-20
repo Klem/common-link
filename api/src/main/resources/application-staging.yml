@@ -98,18 +98,13 @@ app:
     demo-mode: true
     api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}
     api-token: ${VOP_API_TOKEN}
-  monerium:
-    client-id: ${MONERIUM_CLIENT_ID}
-    base-url: ${MONERIUM_BASE_URL}
-    redirect-uri: ${MONERIUM_REDIRECT_URI}
-    skip-kyc: true
-    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:} # also encrypt Mollie tokens, null give no encryption
   mollie:
     api-key: ${MOLLIE_API_KEY}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL}
     webhook-url: ${MOLLIE_WEBHOOK_URL}
     test-mode: true
+    token-enc-key: ${MOLLIE_TOKEN_ENC_KEY:}
     # api-key ci-dessus = clé de PAIEMENT, ne sert PAS au Connect (incapable d'appeler /v2/client-links)
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID}
@@ -155,7 +150,7 @@ app:
 commonlink:
   compliance:
     # AES-256-GCM key for LCB-FT sensitive fields (ComplianceCryptoConverter), Base64/32 bytes.
-    # Absent here → converter is a no-op (plaintext), same as app.monerium.token-enc-key. Prod
+    # Absent here → converter is a no-op (plaintext). Prod
     # requires COMPLIANCE_ENCRYPTION_KEY and refuses to start without it.
     encryption-key: ${COMPLIANCE_ENCRYPTION_KEY:}
   sanctions:

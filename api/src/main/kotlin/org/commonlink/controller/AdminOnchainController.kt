@@ -1,21 +1,12 @@
 package org.commonlink.controller
 
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.responses.ApiResponse
-import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.OnchainJobAction
-import org.commonlink.exception.UnprocessableEntityException
-import org.commonlink.service.AssociationService
-import org.commonlink.service.MoneriumService
 import org.commonlink.service.CampaignService
 import org.commonlink.service.CampaignIdPayload
 import org.commonlink.service.OnchainOutboxService
-import org.commonlink.service.VerifyAssociationPayload
-import org.commonlink.service.AddressOnlyPayload
-import org.commonlink.onchain.OnchainCodec
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import org.web3j.utils.Numeric
 import java.util.UUID
 
 @RestController
@@ -31,42 +21,9 @@ import java.util.UUID
 @Tag(name = "Admin · On-chain moderation", description = "CURATOR-only manual moderation actions.")
 @PreAuthorize("hasAnyRole('CURATOR','ADMIN')")
 class AdminOnchainController(
-    private val associationService: AssociationService,
     private val campaignService: CampaignService,
     private val outbox: OnchainOutboxService,
-    private val moneriumService: MoneriumService,
 ) {
-
-    @PostMapping("/associations/{id}/{action}")
-    @Operation(summary = "Trigger a CURATOR-level association action on-chain")
-    @ApiResponses(value = [
-        ApiResponse(responseCode = "202", description = "Job enqueued"),
-        ApiResponse(responseCode = "404", description = "Association not found"),
-        ApiResponse(responseCode = "422", description = "Association has no Monerium wallet"),
-    ])
-    fun associationAction(
-        @PathVariable id: UUID,
-        @PathVariable action: String,
-    ): ResponseEntity<JobEnqueuedResponse> {
-        val parsedAction = runCatching { AssociationAdminAction.valueOf(action.uppercase()) }
-            .getOrElse { return ResponseEntity.badRequest().build() }
-        if (!associationService.existsById(id)) return ResponseEntity.notFound().build()
-        val wallet = moneriumService.getWalletAddress(id)
-            ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build()
-
-        val job = when (parsedAction) {
-            AssociationAdminAction.VERIFY -> outbox.enqueue(
-                OnchainJobAction.VERIFY_ASSOCIATION,
-                VerifyAssociationPayload(wallet, Numeric.toHexString(OnchainCodec.keccakSiren(
-                    associationService.getIdentifier(id)
-                ))),
-                "VERIFY_ASSOCIATION:$id",
-            )
-            AssociationAdminAction.REVOKE  -> outbox.enqueue(OnchainJobAction.REVOKE_ASSOCIATION,  AddressOnlyPayload(wallet), "REVOKE_ASSOCIATION:$id")
-            AssociationAdminAction.RESTORE -> outbox.enqueue(OnchainJobAction.RESTORE_ASSOCIATION, AddressOnlyPayload(wallet), "RESTORE_ASSOCIATION:$id")
-        }
-        return ResponseEntity.accepted().body(JobEnqueuedResponse(job.id, job.status.name))
-    }
 
     @PostMapping("/campaigns/{id}/{action}")
     @Operation(summary = "Trigger a CURATOR-level campaign action on-chain")
@@ -110,8 +67,7 @@ class AdminOnchainController(
         )
     }
 
-    enum class AssociationAdminAction { VERIFY, REVOKE, RESTORE }
-    enum class CampaignAdminAction    { PAUSE, UNPAUSE, CANCEL, COMPLETE, REVERT_TO_DRAFT }
+    enum class CampaignAdminAction { PAUSE, UNPAUSE, CANCEL, COMPLETE, REVERT_TO_DRAFT }
 
     data class JobEnqueuedResponse(val jobId: UUID, val status: String)
     data class JobStatusResponse(

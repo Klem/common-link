@@ -32,7 +32,6 @@ import org.commonlink.repository.CampaignCoverImageRepository
 import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.MollieConnectionRepository
-import org.commonlink.repository.MoneriumConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -75,7 +74,6 @@ class CampaignService(
     private val campaignCoverImageRepository: CampaignCoverImageRepository,
     private val associationProfileRepository: AssociationProfileRepository,
     private val mollieConnectionRepository: MollieConnectionRepository,
-    private val moneriumConnectionRepository: MoneriumConnectionRepository,
     private val budgetHasher: CampaignBudgetHasher,
     private val outbox: OnchainOutboxService,
 ) {
@@ -745,36 +743,15 @@ class CampaignService(
     /**
      * Enqueues on-chain jobs for the given status transition.
      * Must be called after the campaign has been saved so [Campaign.id] is stable.
+     *
+     * DRAFT→LIVE has no arm here: it used to enqueue CREATE_CAMPAIGN/PUBLISH_CAMPAIGN gated on the
+     * association's Monerium wallet address, the only source of an on-chain association address.
+     * Monerium was removed (V67) with no replacement wallet-provisioning mechanism, so publishing a
+     * campaign is now off-chain only — see `.tasks/todo.md` history for the removal scope.
      */
     private fun enqueueForTransition(from: CampaignStatus, to: CampaignStatus, campaign: Campaign) {
         val id = campaign.id!!
         when {
-            from == CampaignStatus.DRAFT && to == CampaignStatus.LIVE -> {
-                val walletAddress = moneriumConnectionRepository.findByAssociationId(
-                    campaign.association.id!!
-                )?.walletAddress
-                if (walletAddress != null) {
-                    outbox.enqueue(
-                        OnchainJobAction.CREATE_CAMPAIGN,
-                        CreateCampaignPayload(
-                            campaignId     = id,
-                            association    = walletAddress,
-                            goalCents      = org.commonlink.onchain.OnchainCodec.eurToCents(campaign.goal),
-                            milestoneCount = campaign.milestones.size,
-                            budgetHashHex  = campaign.budgetHash!!,
-                        ),
-                        correlationKey = "CREATE_CAMPAIGN:$id",
-                    )
-                    outbox.enqueue(
-                        OnchainJobAction.PUBLISH_CAMPAIGN,
-                        CampaignIdPayload(id),
-                        correlationKey = "PUBLISH_CAMPAIGN:$id",
-                    )
-                    logger.info("CREATE_CAMPAIGN + PUBLISH_CAMPAIGN enqueued: campaignId={}", id)
-                } else {
-                    logger.info("Monerium wallet not linked — skipping on-chain jobs for campaignId={}", id)
-                }
-            }
             to == CampaignStatus.PAUSED ->
                 outbox.enqueue(OnchainJobAction.PAUSE_CAMPAIGN, CampaignIdPayload(id), null)
             from == CampaignStatus.PAUSED && to == CampaignStatus.LIVE ->

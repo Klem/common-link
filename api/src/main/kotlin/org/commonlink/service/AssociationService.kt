@@ -3,20 +3,16 @@ package org.commonlink.service
 import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.dto.toDto
-import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import java.time.Instant
 import org.commonlink.exception.UserNotFoundException
-import org.commonlink.onchain.OnchainCodec
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
-import org.commonlink.repository.MoneriumConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.web3j.utils.Numeric
 import java.security.SecureRandom
 import java.util.Base64
 import java.util.UUID
@@ -32,8 +28,6 @@ import java.util.UUID
 class AssociationService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val campaignRepository: CampaignRepository,
-    private val connectionRepo: MoneriumConnectionRepository,
-    private val outbox: OnchainOutboxService,
     private val onboardingGate: OnboardingGateService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -198,10 +192,11 @@ class AssociationService(
     }
 
     /**
-     * Marks the association as curator-verified and enqueues an on-chain
-     * [OnchainJobAction.VERIFY_ASSOCIATION] job if a Monerium wallet is linked.
+     * Marks the association as curator-verified.
      *
-     * Idempotent — calling twice produces at most one on-chain job (via correlationKey).
+     * Used to enqueue an on-chain VERIFY_ASSOCIATION job gated on the association's Monerium
+     * wallet address. Monerium was removed (V67) with no replacement wallet-provisioning
+     * mechanism, so this is now a pure status update with no on-chain side effect.
      *
      * @param associationId UUID of the [org.commonlink.entity.AssociationProfile].
      * @throws IllegalArgumentException if no profile exists for this id.
@@ -213,29 +208,14 @@ class AssociationService(
         association.verificationStatus = VerificationStatus.VERIFIED
         association.verifiedAt = Instant.now()
         associationProfileRepository.save(association)
-
-        val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
-        if (walletAddress == null) {
-            logger.warn(
-                "Association {} verified but has no linked wallet — on-chain VERIFY_ASSOCIATION skipped",
-                associationId,
-            )
-            return
-        }
-        outbox.enqueue(
-            action = OnchainJobAction.VERIFY_ASSOCIATION,
-            payload = VerifyAssociationPayload(
-                address = walletAddress,
-                sirenHashHex = Numeric.toHexString(OnchainCodec.keccakSiren(association.identifier)),
-            ),
-            correlationKey = "VERIFY_ASSOCIATION:$associationId",
-        )
-        logger.info("Enqueued VERIFY_ASSOCIATION for association {} (wallet={})", associationId, walletAddress)
+        logger.info("Association {} marked verified", associationId)
     }
 
     /**
-     * Revokes curator verification for the association and enqueues an on-chain
-     * [OnchainJobAction.REVOKE_ASSOCIATION] job if a Monerium wallet is linked.
+     * Revokes curator verification for the association.
+     *
+     * Formerly also enqueued an on-chain REVOKE_ASSOCIATION job (removed with Monerium, V67) —
+     * see [markVerified].
      *
      * @param associationId UUID of the [org.commonlink.entity.AssociationProfile].
      * @throws IllegalArgumentException if no profile exists for this id.
@@ -246,26 +226,14 @@ class AssociationService(
             .orElseThrow { IllegalArgumentException("Association not found: $associationId") }
         association.verificationStatus = VerificationStatus.UNVERIFIED
         associationProfileRepository.save(association)
-
-        val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
-        if (walletAddress == null) {
-            logger.warn(
-                "Association {} revoked but has no linked wallet — on-chain REVOKE_ASSOCIATION skipped",
-                associationId,
-            )
-            return
-        }
-        outbox.enqueue(
-            action = OnchainJobAction.REVOKE_ASSOCIATION,
-            payload = AddressOnlyPayload(address = walletAddress),
-            correlationKey = "REVOKE_ASSOCIATION:$associationId",
-        )
-        logger.info("Enqueued REVOKE_ASSOCIATION for association {} (wallet={})", associationId, walletAddress)
+        logger.info("Association {} verification revoked", associationId)
     }
 
     /**
-     * Restores curator verification after a prior revocation and enqueues an on-chain
-     * [OnchainJobAction.RESTORE_ASSOCIATION] job if a Monerium wallet is linked.
+     * Restores curator verification after a prior revocation.
+     *
+     * Formerly also enqueued an on-chain RESTORE_ASSOCIATION job (removed with Monerium, V67) —
+     * see [markVerified].
      *
      * @param associationId UUID of the [org.commonlink.entity.AssociationProfile].
      * @throws IllegalArgumentException if no profile exists for this id.
@@ -277,20 +245,6 @@ class AssociationService(
         association.verificationStatus = VerificationStatus.VERIFIED
         association.verifiedAt = Instant.now()
         associationProfileRepository.save(association)
-
-        val walletAddress = connectionRepo.findByAssociationId(associationId)?.walletAddress
-        if (walletAddress == null) {
-            logger.warn(
-                "Association {} restored but has no linked wallet — on-chain RESTORE_ASSOCIATION skipped",
-                associationId,
-            )
-            return
-        }
-        outbox.enqueue(
-            action = OnchainJobAction.RESTORE_ASSOCIATION,
-            payload = AddressOnlyPayload(address = walletAddress),
-            correlationKey = "RESTORE_ASSOCIATION:$associationId",
-        )
-        logger.info("Enqueued RESTORE_ASSOCIATION for association {} (wallet={})", associationId, walletAddress)
+        logger.info("Association {} verification restored", associationId)
     }
 }

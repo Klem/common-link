@@ -14,15 +14,12 @@ import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieConnection
 import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
-import org.commonlink.entity.MoneriumConnection
-import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
-import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
@@ -72,9 +69,6 @@ class CampaignServiceTest {
 
     @Autowired
     private lateinit var associationProfileRepository: AssociationProfileRepository
-
-    @Autowired
-    private lateinit var moneriumConnectionRepository: MoneriumConnectionRepository
 
     @Autowired
     private lateinit var mollieConnectionRepository: MollieConnectionRepository
@@ -156,19 +150,6 @@ class CampaignServiceTest {
             ownerId, campaignId,
             UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
         )
-    }
-
-    /** Links an ACTIVE Monerium wallet to the association, satisfying the publish-time gate. */
-    private fun linkMonerium(ownerId: UUID) {
-        val assoc = associationProfileRepository.findByUserId(ownerId).get()
-        moneriumConnectionRepository.save(MoneriumConnection(
-            association  = assoc,
-            walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-            accessToken  = "tok",
-            refreshToken = "ref",
-            expiresAt    = java.time.Instant.now().plusSeconds(3600),
-            state        = MoneriumConnectionState.ACTIVE,
-        ))
     }
 
     // ── listCampaigns ─────────────────────────────────────────────────────────
@@ -305,7 +286,6 @@ class CampaignServiceTest {
 
     @Test
     fun `updateCampaign - updates name and status`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(
             userId,
@@ -326,7 +306,6 @@ class CampaignServiceTest {
     @Test
     fun `updateCampaign - invalid status transition LIVE to DRAFT throws 422`() {
         // LIVE → DRAFT is invalid (only LIVE → ENDED is allowed)
-        linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign", goal = BigDecimal("10000")))
         makePublishable(userId, created.id)
@@ -498,7 +477,6 @@ class CampaignServiceTest {
 
     @Test
     fun `deleteCampaign - throws when campaign is not DRAFT`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Live Campaign", goal = BigDecimal("10000")))
         makePublishable(userId, created.id)
@@ -783,12 +761,11 @@ class CampaignServiceTest {
     // ── on-chain publish ──────────────────────────────────────────────────────
 
     /**
-     * A missing Monerium wallet does not block publication — `enqueueForTransition` simply skips the
-     * on-chain jobs. (This test used to assert a 422; the exception it observed actually came from
-     * the Mollie gate, which it never satisfied. That condition is covered on its own below.)
+     * Publishing a campaign never enqueues an on-chain job — there is no wallet-provisioning
+     * mechanism for associations. The transition itself still succeeds off-chain.
      */
     @Test
-    fun `publish - no Monerium wallet publishes off-chain and enqueues no job`() {
+    fun `publish - happy path publishes off-chain and enqueues no job`() {
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("10000"))
@@ -812,7 +789,6 @@ class CampaignServiceTest {
      */
     @Test
     fun `publish - unverified KYB returns 422 even when the bank is ready`() {
-        linkMonerium(userId)
         linkMollie(userId, verifyKyb = false)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Unverified KYB", goal = BigDecimal("10000"))
@@ -842,7 +818,6 @@ class CampaignServiceTest {
      * so the proof matrix in `docs/legal/E3-verrou-verification-avant-collecte.md` holds at both layers.
      */
     private fun assertPublishRefusedForKyb(status: VerificationStatus, campaignName: String) {
-        linkMonerium(userId)
         linkMollie(userId, verifyKyb = false)
         val assoc = associationProfileRepository.findByUserId(userId).get()
         assoc.verificationStatus = status
@@ -863,7 +838,6 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - no Mollie connection returns 422 and enqueues no job`() {
-        linkMonerium(userId)
         val assoc = associationProfileRepository.findByUserId(userId).get()
         assoc.verificationStatus = VerificationStatus.VERIFIED
         associationProfileRepository.save(assoc)
@@ -881,7 +855,6 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - BROKEN Mollie connection returns 422 even when KYC was completed`() {
-        linkMonerium(userId)
         linkMollie(userId, state = MollieConnectionState.BROKEN)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Broken Mollie", goal = BigDecimal("10000"))
@@ -902,7 +875,6 @@ class CampaignServiceTest {
      */
     @Test
     fun `publish - Mollie onboarding still IN_REVIEW returns 422`() {
-        linkMonerium(userId)
         linkMollie(userId, onboardingStatus = MollieOnboardingStatus.IN_REVIEW)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "In review", goal = BigDecimal("10000"))
@@ -918,7 +890,6 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - Mollie completed but not authorized to receive payments returns 422`() {
-        linkMonerium(userId)
         linkMollie(userId, canReceivePayments = false)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No payments", goal = BigDecimal("10000"))
@@ -932,9 +903,12 @@ class CampaignServiceTest {
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
+    /**
+     * Publishing never enqueues an on-chain job (Monerium removed, V67 — see the "happy path" test
+     * above), so this only exercises the plain LIVE→LIVE transition guard.
+     */
     @Test
-    fun `publish - valid campaign enqueues CREATE then PUBLISH, republish is no-op`() {
-        linkMonerium(userId)
+    fun `publish - republishing an already-LIVE campaign is rejected`() {
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("5000"))
@@ -943,25 +917,14 @@ class CampaignServiceTest {
 
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
-        val jobs = onchainJobRepository.findAll()
-        val actions = jobs.map { it.action }
-        assertEquals(1, actions.count { it == OnchainJobAction.CREATE_CAMPAIGN })
-        assertEquals(1, actions.count { it == OnchainJobAction.PUBLISH_CAMPAIGN })
-        // CREATE must have been inserted before PUBLISH
-        val createJob  = jobs.first { it.action == OnchainJobAction.CREATE_CAMPAIGN }
-        val publishJob = jobs.first { it.action == OnchainJobAction.PUBLISH_CAMPAIGN }
-        assertFalse(createJob.createdAt.isAfter(publishJob.createdAt))
-
-        // Republish is a no-op — correlation key guard prevents a second CREATE/PUBLISH
         assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
-        assertEquals(2, onchainJobRepository.findAll().size)
+        assertEquals(0, onchainJobRepository.findAll().size)
     }
 
     @Test
     fun `saveBudget - LIVE campaign with changed budget enqueues UPDATE_CAMPAIGN_BUDGET, identical budget enqueues nothing`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Budget test", goal = BigDecimal("5000"))
@@ -1028,7 +991,6 @@ class CampaignServiceTest {
      */
     @Test
     fun `publish - empty budget returns 422`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No budget", goal = BigDecimal("10000"))
@@ -1047,7 +1009,6 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - unbalanced budget returns 422`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Unbalanced budget", goal = BigDecimal("10000"))
@@ -1075,7 +1036,6 @@ class CampaignServiceTest {
      */
     @Test
     fun `publish - budget off by less than one euro is accepted`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Rounding budget", goal = BigDecimal("10000"))
@@ -1100,7 +1060,6 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - missing or too short expected outcome returns 422`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No outcome", goal = BigDecimal("10000"))

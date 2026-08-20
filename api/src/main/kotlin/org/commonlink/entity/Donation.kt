@@ -9,7 +9,7 @@ import java.util.UUID
 /**
  * Represents a confirmed donation from a [DonorProfile] to a [Campaign].
  *
- * [providerRef] identifies the payment provider transaction (e.g. "stripe:pi_..." or "monerium:...").
+ * [providerRef] identifies the payment provider transaction (e.g. "stripe:pi_..." or "mollie:tr_...").
  * [confirmedAt] is set when the payment is confirmed and the on-chain recording job is enqueued.
  */
 @Entity
@@ -31,7 +31,7 @@ class Donation(
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     val amount: BigDecimal,
 
-    /** Payment provider transaction reference. Format: "stripe:pi_..." or "monerium:<uuid>". */
+    /** Payment provider transaction reference. Format: "stripe:pi_..." or "mollie:tr_...". */
     @Column(name = "provider_ref", nullable = false, length = 255)
     val providerRef: String,
 

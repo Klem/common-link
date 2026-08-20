@@ -3,7 +3,6 @@ package org.commonlink
 import org.commonlink.config.DonationCapProperties
 import org.commonlink.config.MollieConnectConfig
 import org.commonlink.config.MollieProperties
-import org.commonlink.config.MoneriumConfig
 import org.commonlink.config.OnchainConfig
 import org.commonlink.config.RiskClassificationProperties
 import org.commonlink.config.SanctionsProperties
@@ -14,7 +13,6 @@ import org.springframework.boot.runApplication
 
 @SpringBootApplication
 @EnableConfigurationProperties(
-    MoneriumConfig::class,
     OnchainConfig::class,
     MollieProperties::class,
     MollieConnectConfig::class,

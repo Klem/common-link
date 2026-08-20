@@ -338,9 +338,6 @@
     "mollieErrorFetch": "Failed to get Mollie authentication URL. Please try again.",
     "mollieErrorMissingContactEmail": "Please fill in your contact email in the Infos tab before connecting Mollie.",
     "mollieErrorMissingContactName": "Please fill in your contact name in the Infos tab before connecting Mollie.",
-    "moneriumConnected": "Wallet connected successfully.",
-    "moneriumError": "Wallet connection failed. Please try again.",
-    "moneriumErrorFetch": "Failed to get authentication URL. Please try again.",
     "payeeCreated": "Beneficiary added successfully.",
     "paymentError": "Payment failed. Please try again.",
     "paymentSuccess": "Payment issued!",
@@ -890,20 +887,6 @@
           }
         },
         "memberSince": "Member since {date}",
-        "monerium": {
-          "badge": "Experimental",
-          "cancel": "Cancel",
-          "connect": "Connect wallet",
-          "connected": "Wallet connected successfully.",
-          "connectedStatus": "Connected",
-          "description": "Connect your Monerium wallet to receive and issue digital euros directly on the blockchain.",
-          "error": "Wallet connection failed. Please try again.",
-          "errorFetch": "Failed to get authentication URL. Please try again.",
-          "pendingStatus": "Authorization pending",
-          "title": "Monerium Wallet",
-          "tryAgain": "Try Again",
-          "waiting": "Authentication in progress… Complete the form in the window that just opened."
-        },
         "name": "Association name",
         "pending": "Pending verification",
         "phone": "Phone",
@@ -1393,20 +1376,6 @@
       "success": {
         "closing": "Closing window…",
         "title": "Mollie connected"
-      }
-    },
-    "moneriumPopup": {
-      "callback": {
-        "closing": "Completing KYC… this window will close.",
-        "loading": "Loading…"
-      },
-      "error": {
-        "retry": "Please try again from the profile page.",
-        "title": "KYC Failed"
-      },
-      "success": {
-        "closing": "Closing window…",
-        "title": "KYC Complete"
       }
     },
     "nav": {

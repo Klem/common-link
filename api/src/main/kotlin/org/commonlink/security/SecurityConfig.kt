@@ -47,7 +47,7 @@ class SecurityConfig(
      *
      * Route access rules:
      * - `/api/auth / **`, `/api/docs / **` — public (no token required).
-     * - `/api/association / **`, `/api/monerium / **` — requires `ROLE_ASSOCIATION`.
+     * - `/api/association / **` — requires `ROLE_ASSOCIATION`.
      * - `/api/donor / **` — requires `ROLE_DONOR`.
      * - Everything else — requires any valid JWT (any role).
      *
@@ -71,7 +71,6 @@ class SecurityConfig(
                 auth.requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/admin/verifications/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
-                auth.requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
                 auth.requestMatchers("/api/mollie/**").hasRole(UserRole.ASSOCIATION.toString())
                 // Campaign sub-resources (payouts, reporting, donor aggregates) are all
                 // association-owned; explicit gate so a ROLE_DONOR token can't reach them —

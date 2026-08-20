@@ -62,10 +62,6 @@ vi.mock('@/lib/api/campaign', () => ({
   getCampaigns: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock('@/hooks/monerium/useMoneriumStatus', () => ({
-  useMoneriumStatus: () => ({ connected: false, pending: false, isLoading: false, refresh: vi.fn() }),
-}));
-
 vi.mock('@/hooks/auth/useSetPassword', () => ({
   useSetPassword: () => ({ onSubmit: vi.fn(), loading: false }),
 }));

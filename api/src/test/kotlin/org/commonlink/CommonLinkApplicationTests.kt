@@ -28,7 +28,6 @@ import org.commonlink.service.MandatePdfService
 import org.commonlink.service.MandateService
 import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieConnectTokenManager
-import org.commonlink.service.MoneriumService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
 import org.commonlink.service.FreezeScreeningOnboardingService
@@ -63,7 +62,6 @@ class CommonLinkApplicationTests {
     @MockkBean lateinit var payeeService: PayeeService
     @MockkBean private lateinit var campaignService: CampaignService
     @MockkBean private lateinit var sireneSearchService: SireneSearchService
-    @MockkBean private lateinit var moneriumService: MoneriumService
     @MockkBean private lateinit var onchainOutboxService: OnchainOutboxService
     @MockkBean private lateinit var dashboardService: AssociationDashboardService
     @MockkBean private lateinit var associationLandingService: AssociationLandingService

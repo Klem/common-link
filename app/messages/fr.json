@@ -338,9 +338,6 @@
     "mollieErrorFetch": "Impossible d'obtenir l'URL Mollie. Veuillez réessayer.",
     "mollieErrorMissingContactEmail": "Renseignez l'email de contact dans l'onglet Informations avant de connecter Mollie.",
     "mollieErrorMissingContactName": "Renseignez le nom du contact dans l'onglet Informations avant de connecter Mollie.",
-    "moneriumConnected": "Portefeuille connecté avec succès.",
-    "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
-    "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
     "payeeCreated": "Bénéficiaire ajouté avec succès.",
     "paymentError": "Échec du paiement. Veuillez réessayer.",
     "paymentSuccess": "Paiement émis !",
@@ -890,20 +887,6 @@
           }
         },
         "memberSince": "Membre depuis {date}",
-        "monerium": {
-          "badge": "Expérimental",
-          "cancel": "Annuler",
-          "connect": "Connecter le portefeuille",
-          "connected": "Portefeuille connecté avec succès.",
-          "connectedStatus": "Connecté",
-          "description": "Connectez votre portefeuille Monerium pour recevoir et émettre des euros numériques directement sur la blockchain.",
-          "error": "La connexion au portefeuille a échoué. Veuillez réessayer.",
-          "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
-          "pendingStatus": "Autorisation en attente",
-          "title": "Portefeuille Monerium",
-          "tryAgain": "Réessayer",
-          "waiting": "Authentification en cours… Complétez le formulaire dans la fenêtre qui vient de s'ouvrir."
-        },
         "name": "Nom de l'association",
         "pending": "En attente de vérification",
         "phone": "Téléphone",
@@ -1393,20 +1376,6 @@
       "success": {
         "closing": "Fermeture de la fenêtre…",
         "title": "Mollie connecté"
-      }
-    },
-    "moneriumPopup": {
-      "callback": {
-        "closing": "Finalisation du KYC… cette fenêtre va se fermer.",
-        "loading": "Chargement…"
-      },
-      "error": {
-        "retry": "Veuillez réessayer depuis la page de profil.",
-        "title": "KYC échoué"
-      },
-      "success": {
-        "closing": "Fermeture de la fenêtre…",
-        "title": "KYC terminé"
       }
     },
     "nav": {
