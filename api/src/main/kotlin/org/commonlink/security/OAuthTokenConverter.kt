@@ -7,6 +7,7 @@ import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -41,7 +42,9 @@ class OAuthTokenConverter(
                 )
             }
             secretKey = null
-            logger.warn("OAuthTokenConverter: DISABLED — app.mollie.token-enc-key not set; fields using this converter are stored as plaintext")
+            if (statusLogged.compareAndSet(false, true)) {
+                logger.warn("OAuthTokenConverter: DISABLED — app.mollie.token-enc-key not set; fields using this converter are stored as plaintext")
+            }
         } else {
             val keyBytes = try {
                 Base64.getDecoder().decode(rawKey)
@@ -52,7 +55,9 @@ class OAuthTokenConverter(
                 "app.mollie.token-enc-key must decode to exactly $KEY_LENGTH_BYTES bytes (AES-256); got ${keyBytes.size}"
             }
             secretKey = SecretKeySpec(keyBytes, "AES")
-            logger.info("OAuthTokenConverter: ACTIVE — AES-256-GCM token encryption enabled")
+            if (statusLogged.compareAndSet(false, true)) {
+                logger.info("OAuthTokenConverter: ACTIVE — AES-256-GCM token encryption enabled")
+            }
         }
     }
 
@@ -89,5 +94,6 @@ class OAuthTokenConverter(
         private const val KEY_LENGTH_BYTES = 32
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private val logger = org.slf4j.LoggerFactory.getLogger(OAuthTokenConverter::class.java)
+        private val statusLogged = AtomicBoolean(false)
     }
 }

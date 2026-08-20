@@ -7,6 +7,7 @@ import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -43,7 +44,9 @@ class ComplianceCryptoConverter(
                 )
             }
             secretKey = null
-            logger.warn("ComplianceCryptoConverter: DISABLED — commonlink.compliance.encryption-key not set; fields using this converter are stored as plaintext")
+            if (statusLogged.compareAndSet(false, true)) {
+                logger.warn("ComplianceCryptoConverter: DISABLED — commonlink.compliance.encryption-key not set; fields using this converter are stored as plaintext")
+            }
         } else {
             val keyBytes = try {
                 Base64.getDecoder().decode(rawKey)
@@ -54,7 +57,9 @@ class ComplianceCryptoConverter(
                 "commonlink.compliance.encryption-key must decode to exactly $KEY_LENGTH_BYTES bytes (AES-256); got ${keyBytes.size}"
             }
             secretKey = SecretKeySpec(keyBytes, "AES")
-            logger.info("ComplianceCryptoConverter: ACTIVE — AES-256-GCM field encryption enabled")
+            if (statusLogged.compareAndSet(false, true)) {
+                logger.info("ComplianceCryptoConverter: ACTIVE — AES-256-GCM field encryption enabled")
+            }
         }
     }
 
@@ -94,5 +99,6 @@ class ComplianceCryptoConverter(
         private const val KEY_LENGTH_BYTES = 32
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private val logger = org.slf4j.LoggerFactory.getLogger(ComplianceCryptoConverter::class.java)
+        private val statusLogged = AtomicBoolean(false)
     }
 }
