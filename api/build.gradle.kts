@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.testing.TestDescriptor
+import org.gradle.api.tasks.testing.TestResult
+import org.gradle.kotlin.dsl.KotlinClosure2
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val web3jCodegen: Configuration by configurations.creating
@@ -117,6 +120,14 @@ tasks.withType<Test> {
             excludeTags("testcontainers")
         }
     }
+    // clevercloud/gradle.json builds with -quiet, which swallows Gradle's LIFECYCLE
+    // task logs — println is raw stdout and shows up regardless, so this is the only
+    // way to see in the Clever Cloud deploy logs that tests actually ran.
+    afterSuite(KotlinClosure2({ desc: TestDescriptor, result: TestResult ->
+        if (desc.parent == null) {
+            println("Test result: ${result.resultType} — ${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped")
+        }
+    }))
 }
 
 tasks.register<JavaExec>("generateRegistryWrapper") {
