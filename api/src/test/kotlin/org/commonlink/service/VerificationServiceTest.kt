@@ -4,18 +4,26 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
+import org.commonlink.config.RiskClassificationProperties
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
+import org.commonlink.entity.BeneficialOwnerType
+import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
+import org.commonlink.repository.TestFiles
 import org.commonlink.repository.UserRepository
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.springframework.mock.web.MockMultipartFile
 import java.util.Optional
 import java.util.UUID
 
@@ -29,8 +37,12 @@ class VerificationServiceTest {
     private val registryCheckRepo: AssociationRegistryCheckRepository = mockk(relaxed = true)
     private val emailService: EmailService = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk()
+    private val complianceAuditLogService: ComplianceAuditLogService = mockk(relaxed = true)
+    private val beneficialOwnerRepo: BeneficialOwnerRepository = mockk()
+    private val riskClassificationProperties: RiskClassificationProperties = mockk(relaxed = true)
+    private val freezeScreeningOnboardingService: FreezeScreeningOnboardingService = mockk()
 
-    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository)
+    private val service = VerificationService(associationRepo, documentRepo, registryCheckRepo, emailService, userRepository, complianceAuditLogService, beneficialOwnerRepo, riskClassificationProperties, freezeScreeningOnboardingService)
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000042")
     private val userId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
@@ -52,7 +64,11 @@ class VerificationServiceTest {
         return profile
     }
 
-    private fun mockPendingProfile(contactEmail: String? = "contact@assoc.fr", userEmail: String = "user@assoc.fr"): AssociationProfile {
+    private fun mockPendingProfile(
+        contactEmail: String? = "contact@assoc.fr",
+        userEmail: String = "user@assoc.fr",
+        hasRepresentative: Boolean = true,
+    ): AssociationProfile {
         val user: User = mockk(relaxed = true)
         every { user.email } returns userEmail
 
@@ -65,6 +81,8 @@ class VerificationServiceTest {
 
         every { associationRepo.findById(associationId) } returns Optional.of(profile)
         every { associationRepo.save(profile) } returns profile
+        every { beneficialOwnerRepo.existsByAssociationIdAndTypeAndDiscardedFalse(associationId, BeneficialOwnerType.REPRESENTATIVE) } returns hasRepresentative
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.CLEAR
 
         return profile
     }
@@ -144,6 +162,7 @@ class VerificationServiceTest {
         val checkId = UUID.randomUUID()
         val latest: AssociationRegistryCheck = mockk()
         every { latest.id } returns checkId
+        every { latest.scopeVerdict } returns ScopeVerdict.IN_SCOPE
         every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns latest
 
         service.adminApprove(associationId)
@@ -219,5 +238,199 @@ class VerificationServiceTest {
             service.adminReject(associationId, "Motif.")
         }
         verify(exactly = 0) { emailService.sendVerificationRejectedToAssociation(any(), any(), any()) }
+    }
+
+    // ─── scope check (famille INSEE 92xx — associations loi 1901) ────────────
+
+    @Test
+    fun `adminApprove succeeds when latest scan is IN_SCOPE`() {
+        val profile = mockPendingProfile()
+        val inScopeCheck: AssociationRegistryCheck = mockk(relaxed = true)
+        every { inScopeCheck.scopeVerdict } returns ScopeVerdict.IN_SCOPE
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns inScopeCheck
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendOutOfScopeRefusal(any(), any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove blocks and logs when latest scan is OUT_OF_SCOPE`() {
+        mockPendingProfile()
+        val outOfScopeCheck: AssociationRegistryCheck = mockk(relaxed = true)
+        every { outOfScopeCheck.scopeVerdict } returns ScopeVerdict.OUT_OF_SCOPE
+        every { outOfScopeCheck.legalCategory } returns "5710"
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns outOfScopeCheck
+
+        assertThrows(ConflictException::class.java) {
+            service.adminApprove(associationId)
+        }
+        verify(exactly = 1) { complianceAuditLogService.appendOutOfScopeRefusal(associationId, "5710") }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `adminApprove does not block when latest scan is UNDETERMINED`() {
+        val profile = mockPendingProfile()
+        val undeterminedCheck: AssociationRegistryCheck = mockk(relaxed = true)
+        every { undeterminedCheck.scopeVerdict } returns ScopeVerdict.UNDETERMINED
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns undeterminedCheck
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendOutOfScopeRefusal(any(), any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove does not block when no scan exists`() {
+        val profile = mockPendingProfile()
+        every { registryCheckRepo.findTopByAssociationIdOrderByCheckedAtDesc(associationId) } returns null
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendOutOfScopeRefusal(any(), any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    // ─── representative check ─────────────────────────────────────────────────
+
+    @Test
+    fun `adminApprove throws ConflictException when no legal representative has been confirmed`() {
+        mockPendingProfile(hasRepresentative = false)
+
+        assertThrows(ConflictException::class.java) {
+            service.adminApprove(associationId)
+        }
+        verify(exactly = 1) { complianceAuditLogService.appendNoRepresentativeRefusal(associationId) }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `adminApprove proceeds when at least one legal representative is confirmed`() {
+        val profile = mockPendingProfile(hasRepresentative = true)
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendNoRepresentativeRefusal(any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove succeeds when representative is confirmed but no beneficial owners exist`() {
+        // BENEFICIAL_OWNER is optional — only REPRESENTATIVE absence blocks approval (art. R.561-3 CMF)
+        val profile = mockPendingProfile(hasRepresentative = true)
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 0) { complianceAuditLogService.appendNoRepresentativeRefusal(any()) }
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    // ─── freeze screening ────────────────────────────────────────────────────
+
+    @Test
+    fun `adminApprove succeeds when freeze screening is clear`() {
+        val profile = mockPendingProfile()
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.CLEAR
+
+        service.adminApprove(associationId)
+
+        verify(exactly = 1) { associationRepo.save(profile) }
+    }
+
+    @Test
+    fun `adminApprove throws ConflictException and does not save when freeze screening has a hit`() {
+        mockPendingProfile()
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.HIT
+
+        val ex = assertThrows(ConflictException::class.java) { service.adminApprove(associationId) }
+
+        assertEquals("Cannot approve: a match was found in the asset-freeze register — review compliance audit log", ex.message)
+        verify(exactly = 0) { associationRepo.save(any()) }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `adminApprove throws ConflictException and does not save when freeze screening is unavailable`() {
+        mockPendingProfile()
+        every { freezeScreeningOnboardingService.runFreezeCheck(associationId, any()) } returns ScreeningOutcome.UNAVAILABLE
+
+        val ex = assertThrows(ConflictException::class.java) { service.adminApprove(associationId) }
+
+        assertEquals("Cannot approve: freeze screening could not be completed — see compliance audit log for details", ex.message)
+        verify(exactly = 0) { associationRepo.save(any()) }
+        verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    // -------------------------------------------------------------------------
+    // Upload byte validation (security audit 2026-08-20, M9)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Round-trip over every type the document allow-list accepts. Uploads are validated against the
+     * leading bytes now, so a legitimate file of each accepted type must still go through — a
+     * signature table that is too strict would silently break the KYB and LCB-FT document flows.
+     */
+    @Test
+    fun `uploadOptionalDocument - accepts a genuine file of every allowed type`() {
+        val cases = listOf(
+            "doc.pdf" to ("application/pdf" to TestFiles.pdf()),
+            "scan.jpg" to ("image/jpeg" to TestFiles.jpeg()),
+            "scan.png" to ("image/png" to TestFiles.png()),
+            "statuts.docx" to (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" to TestFiles.ooxml()
+            ),
+            "comptes.xlsx" to (
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" to TestFiles.ooxml()
+            ),
+        )
+
+        cases.forEach { (name, payload) ->
+            val (mime, bytes) = payload
+            val profile = mockUnverifiedProfile()
+            val docId = UUID.randomUUID()
+            val saved: org.commonlink.entity.AssociationDocument = mockk()
+            every { saved.id } returns docId
+            every { documentRepo.save(any()) } returns saved
+            every { documentRepo.findMetadataByIdAndAssociationId(docId, associationId) } returns
+                stubMetadata(docId, name, mime, bytes.size.toLong())
+
+            val dto = service.uploadOptionalDocument(userId, MockMultipartFile("file", name, mime, bytes), "OTHER")
+
+            assertEquals(name, dto.fileName, "$mime must be accepted")
+            assertEquals(profile.id, associationId)
+        }
+    }
+
+    @Test
+    fun `uploadOptionalDocument - refuses bytes contradicting the declared type`() {
+        mockUnverifiedProfile()
+
+        // Declared as a PDF, actually HTML — the exact shape that used to reach storage untouched.
+        val file = MockMultipartFile("file", "invoice.pdf", "application/pdf", TestFiles.mislabelled())
+
+        // Kotlin reified form, fully qualified: this file already imports the Java 2-arg overload.
+        org.junit.jupiter.api.assertThrows<UnprocessableEntityException> {
+            service.uploadOptionalDocument(userId, file, "FINANCIAL")
+        }
+        verify(exactly = 0) { documentRepo.save(any()) }
+    }
+
+    private fun stubMetadata(
+        id: UUID,
+        fileName: String,
+        contentType: String,
+        sizeBytes: Long,
+    ): org.commonlink.repository.AssociationDocumentMetadata {
+        val meta: org.commonlink.repository.AssociationDocumentMetadata = mockk()
+        every { meta.id } returns id
+        every { meta.fileName } returns fileName
+        every { meta.category } returns "OTHER"
+        every { meta.contentType } returns contentType
+        every { meta.sizeBytes } returns sizeBytes
+        every { meta.uploadedAt } returns java.time.Instant.now()
+        return meta
     }
 }

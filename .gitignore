@@ -5,6 +5,7 @@
 .tasks
 .prompts
 *.md
+*.svg
 landing-page
 .http
 .mcp.json

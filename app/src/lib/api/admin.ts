@@ -1,6 +1,14 @@
 import api from '@/lib/api';
 import type { VerificationStatus } from '@/types/association';
-import type { AdminVerificationSummaryDto, AdminVerificationDetailDto, RegistryPreCheckDto } from '@/types/admin';
+import type {
+  AdminVerificationSummaryDto,
+  AdminVerificationDetailDto,
+  BeneficialOwnerDto,
+  AddBeneficialOwnerRequest,
+  FreezeScreenStatusDto,
+  RegistryPreCheckDto,
+  VigilanceMeasuresDto,
+} from '@/types/admin';
 import type { Page } from '@/types/payment';
 
 /**
@@ -63,6 +71,55 @@ export const getRegistryPreCheck = (associationId: string): Promise<RegistryPreC
 export const scanRegistryPreCheck = (associationId: string): Promise<RegistryPreCheckDto> =>
   api
     .post<RegistryPreCheckDto>(`/api/admin/verifications/${associationId}/registry-precheck`)
+    .then((r) => r.data);
+
+/**
+ * Fetches the vigilance measures applicable to the association's current risk level.
+ * `GET /api/admin/verifications/{associationId}/vigilance`
+ */
+export const getVigilanceMeasures = (associationId: string): Promise<VigilanceMeasuresDto> =>
+  api
+    .get<VigilanceMeasuresDto>(`/api/admin/verifications/${associationId}/vigilance`)
+    .then((r) => r.data);
+
+/**
+ * Lists all beneficial owners for an association (retained and discarded).
+ * `GET /api/admin/verifications/{associationId}/beneficial-owners`
+ */
+export const listBeneficialOwners = (associationId: string): Promise<BeneficialOwnerDto[]> =>
+  api
+    .get<BeneficialOwnerDto[]>(`/api/admin/verifications/${associationId}/beneficial-owners`)
+    .then((r) => r.data);
+
+/**
+ * Adds a beneficial owner confirmed by the curator.
+ * `POST /api/admin/verifications/{associationId}/beneficial-owners`
+ */
+export const addBeneficialOwner = (
+  associationId: string,
+  request: AddBeneficialOwnerRequest,
+): Promise<BeneficialOwnerDto> =>
+  api
+    .post<BeneficialOwnerDto>(`/api/admin/verifications/${associationId}/beneficial-owners`, request)
+    .then((r) => r.data);
+
+/**
+ * Marks a beneficial owner as discarded.
+ * `POST /api/admin/verifications/{associationId}/beneficial-owners/{ownerId}/discard` → 204
+ */
+export const discardBeneficialOwner = (associationId: string, ownerId: string): Promise<void> =>
+  api
+    .post(`/api/admin/verifications/${associationId}/beneficial-owners/${ownerId}/discard`)
+    .then(() => undefined);
+
+/**
+ * Returns the four-state indicator of the last onboarding freeze screening for an association.
+ * `GET /api/admin/verifications/{associationId}/freeze-screen-status`
+ * Deliberately exposes no match detail (tipping-off prevention).
+ */
+export const getFreezeScreenStatus = (associationId: string): Promise<FreezeScreenStatusDto> =>
+  api
+    .get<FreezeScreenStatusDto>(`/api/admin/verifications/${associationId}/freeze-screen-status`)
     .then((r) => r.data);
 
 /**

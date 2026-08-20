@@ -9,8 +9,17 @@
 server:
   port: 8080
   address: 0.0.0.0   # Required: CC reverse proxy needs to reach the app
+  # Makes Spring honour X-Forwarded-Proto/Host from the CC proxy, so requests are seen as HTTPS.
+  # Without it Strict-Transport-Security is never emitted — the header writer skips insecure
+  # requests, and every request looks insecure behind the proxy (security audit 2026-08-20, M9).
+  # Safe here: no absolute URL is derived from the request; they all come from configuration.
+  forward-headers-strategy: framework
 
 spring:
+  application:
+    name: commonlink-api
+  config:
+    import: "classpath:compliance/risk-classification.yml"
   datasource:
     url: jdbc:postgresql://${POSTGRESQL_ADDON_HOST}:${POSTGRESQL_ADDON_PORT}/${POSTGRESQL_ADDON_DB}
     username: ${POSTGRESQL_ADDON_USER}
@@ -32,6 +41,7 @@ spring:
           starttls:
             enable: true
   jpa:
+    open-in-view: true  # TODO: refactor to set to "false" safe once all read service methods are @Transactional(readOnly=true)
     hibernate:
       ddl-auto: validate
     properties:
@@ -44,13 +54,12 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    baseline-version: 49
+    baseline-version: 0
 
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 12MB
-
 
 
 management:
@@ -61,7 +70,11 @@ management:
       base-path: /actuator
   endpoint:
     health:
-      show-details: always
+      # /actuator/health is permitAll in SecurityConfig, so `always` published the component detail
+      # — database vendor and reachability, disk space, subsystem names — to anyone who asked
+      # (security audit 2026-08-20, M8). The liveness/readiness probes below stay public and are all
+      # the Clever Cloud health check needs; the detail is now visible only to an authorised caller.
+      show-details: when-authorized
       probes:
         enabled: true
   health:
@@ -79,7 +92,13 @@ app:
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
   cookies:
     secure: true
-    same-site: None
+    same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
+  security:
+    # One Clever Cloud reverse proxy appends the real client address to X-Forwarded-For, so the
+    # rightmost entry is the only trustworthy one (ClientIpResolver). Raise this if another
+    # appending proxy is ever placed in front — too low a value throttles the proxy instead of the
+    # client, too high a value throttles a forgeable value.
+    trusted-proxy-count: ${APP_TRUSTED_PROXY_COUNT:1}
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
@@ -97,20 +116,15 @@ app:
     demo-mode: false
     api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}
     api-token: ${VOP_API_TOKEN:}
-  monerium:
-    client-id: ${MONERIUM_CLIENT_ID}
-    base-url: ${MONERIUM_BASE_URL}
-    redirect-uri: ${MONERIUM_REDIRECT_URI}
-    skip-kyc: false
-    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY} # also encrypt Mollie tokens
   mollie:
     api-key: ${MOLLIE_API_KEY}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL}
     webhook-url: ${MOLLIE_WEBHOOK_URL}
     test-mode: false
+    token-enc-key: ${MOLLIE_TOKEN_ENC_KEY}
     connect:
-      client-id: ${MOLLIE_CONNECT_CLIENT_ID:}
+      client-id: ${MOLLIE_CONNECT_CLIENT_ID}
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}
       advanced-token: ${MOLLIE_CONNECT_ADVANCED_TOKEN}
       redirect-uri: ${MOLLIE_CONNECT_REDIRECT_URI}
@@ -122,8 +136,37 @@ app:
       allow-fake-completion: false
 
   curator:
-    email: ${APP_CURATOR_EMAIL:}
-    password: ${APP_CURATOR_PASSWORD:}
+    email: ${APP_CURATOR_EMAIL}
+    password: ${APP_CURATOR_PASSWORD}
+  # Compliance officer bootstrap — set both env vars to provision the LCB-FT compliance officer account.
+  # The bean is absent when APP_COMPLIANCE_OFFICER_EMAIL is unset; no runtime cost in normal operation.
+  compliance-officer:
+    email: ${APP_COMPLIANCE_OFFICER_EMAIL}
+    password: ${APP_COMPLIANCE_OFFICER_PASSWORD}
+
+  compliance:
+    # Function mailbox notified when an asset-freeze alert is raised on a donor
+    # (ComplianceAlertEmailListener). A role address, not a person: the alert must keep reaching the
+    # compliance function across staff changes. Blank disables the notification and logs a warning.
+    alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL}
+
+
+commonlink:
+  compliance:
+    # No default (unlike base/staging): an absent COMPLIANCE_ENCRYPTION_KEY fails placeholder
+    # resolution outright. ComplianceCryptoConverter's own init{} guard is the second line of
+    # defense if this property is ever redefined with a blank fallback.
+    encryption-key: ${COMPLIANCE_ENCRYPTION_KEY}
+  sanctions:
+    screening:
+      score-threshold: 0.85
+      # S1: test data must never be active in production — enforced by ProdConfigSecurityTest.
+      use-test-data: false
+      registry-url: https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-fichier-xml
+    sync:
+      # S2: sync frequency must not exceed 24 h in production. A stale register is a latent LCB-FT breach.
+      fixed-delay-ms: 86400000
+      initial-delay-ms: 60000
 
 springdoc:
   api-docs:

@@ -17,11 +17,11 @@ import org.commonlink.dto.RegisterRequestDto
 import org.commonlink.dto.ResendVerificationRequestDto
 import org.commonlink.dto.VerifyEmailRequestDto
 import org.commonlink.security.AuthRateLimiter
+import org.commonlink.security.ClientIpResolver
+import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.service.AuthService
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.time.Duration
 import java.util.UUID
 
 @RestController
@@ -39,37 +38,25 @@ import java.util.UUID
 class AuthController(
     private val authService: AuthService,
     private val authRateLimiter: AuthRateLimiter,
-    @Value("\${app.cookies.secure:true}") private val cookiesSecure: Boolean,
-    @Value("\${app.cookies.same-site:Strict}") private val cookiesSameSite: String
+    private val clientIpResolver: ClientIpResolver,
+    private val refreshCookieFactory: RefreshCookieFactory,
 ) {
 
-    private fun HttpServletRequest.clientIp(): String =
-        getHeader("X-Forwarded-For")?.split(",")?.first()?.trim() ?: remoteAddr
+    /**
+     * Address to key rate limiting on.
+     *
+     * Delegates to [ClientIpResolver] rather than reading `X-Forwarded-For` directly: the header is
+     * caller-controlled, and taking its first entry let anyone mint a new identity per request and
+     * bypass every IP quota (security audit 2026-08-20, M2).
+     */
+    private fun HttpServletRequest.clientIp(): String = clientIpResolver.resolve(this)
 
-
-    private fun buildRefreshCookie(token: String): ResponseCookie =
-        ResponseCookie.from("cl-refresh", token)
-            .httpOnly(true)
-            .secure(cookiesSecure)
-            .sameSite(cookiesSameSite)
-            .path("/api/auth")
-            .maxAge(Duration.ofDays(30))
-            .build()
-
-    private fun buildClearRefreshCookie(): ResponseCookie =
-        ResponseCookie.from("cl-refresh", "")
-            .httpOnly(true)
-            .secure(cookiesSecure)
-            .sameSite(cookiesSameSite)
-            .path("/api/auth")
-            .maxAge(Duration.ZERO)
-            .build()
 
     /** Moves the refresh token to an HttpOnly cookie and strips it from the JSON body. */
     private fun authResponse(dto: AuthResponseDto): ResponseEntity<AuthResponseDto> {
         val token = requireNotNull(dto.refreshToken)
         return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(token).toString())
+            .header(HttpHeaders.SET_COOKIE, refreshCookieFactory.build(token).toString())
             .body(dto.copy(refreshToken = null))
     }
 
@@ -83,9 +70,14 @@ class AuthController(
         ApiResponse(responseCode = "204", description = "Account created, verification email sent"),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(responseCode = "409", description = "Email already in use", content = [Content()]),
-        ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
+        ApiResponse(responseCode = "422", description = "Validation errors, or a role that cannot be self-assigned", content = [Content()]),
+        ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
-    fun register(@Valid @RequestBody req: RegisterRequestDto): ResponseEntity<Void> {
+    fun register(@Valid @RequestBody req: RegisterRequestDto, request: HttpServletRequest): ResponseEntity<Void> {
+        // Registration was the one unauthenticated auth endpoint with no quota at all: it writes a
+        // row and sends an email per call (security audit 2026-08-20, M2).
+        authRateLimiter.check("register:ip:${request.clientIp()}", maxAttempts = 10, windowMinutes = 10)
+        authRateLimiter.check("register:email:${req.email}", maxAttempts = 5, windowMinutes = 10)
         authService.register(req)
         return ResponseEntity.noContent().build()
     }
@@ -117,7 +109,12 @@ class AuthController(
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
-    fun resendVerification(@Valid @RequestBody req: ResendVerificationRequestDto): ResponseEntity<Void> {
+    fun resendVerification(
+        @Valid @RequestBody req: ResendVerificationRequestDto,
+        request: HttpServletRequest
+    ): ResponseEntity<Void> {
+        // The per-user quota lives in AuthService; this one bounds a caller walking many addresses.
+        authRateLimiter.check("resend:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
         authService.resendVerification(req.email)
         return ResponseEntity.noContent().build()
     }
@@ -180,7 +177,12 @@ class AuthController(
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()]),
         ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
-    fun requestMagicLink(@Valid @RequestBody req: MagicLinkRequestDto): ResponseEntity<Void> {
+    fun requestMagicLink(
+        @Valid @RequestBody req: MagicLinkRequestDto,
+        request: HttpServletRequest
+    ): ResponseEntity<Void> {
+        // The per-email quota lives in AuthService; this one bounds a caller walking many addresses.
+        authRateLimiter.check("magic-link:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
         authService.sendMagicLink(req.email, req.role, req.associationProfile)
         return ResponseEntity.noContent().build()
     }
@@ -266,7 +268,7 @@ class AuthController(
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         authService.logout(UUID.fromString(principal.username))
         return ResponseEntity.noContent()
-            .header(HttpHeaders.SET_COOKIE, buildClearRefreshCookie().toString())
+            .header(HttpHeaders.SET_COOKIE, refreshCookieFactory.clear().toString())
             .build()
     }
 }

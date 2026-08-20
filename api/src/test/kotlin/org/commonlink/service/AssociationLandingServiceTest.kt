@@ -14,6 +14,7 @@ import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationLogoRepository
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.TestFiles
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -141,7 +142,7 @@ class AssociationLandingServiceTest {
         val saved = slot<AssociationLogo>()
         every { logoRepo.save(capture(saved)) } answers { saved.captured }
 
-        val file = MockMultipartFile("file", "logo.png", "image/png", ByteArray(128) { 1 })
+        val file = MockMultipartFile("file", "logo.png", "image/png", TestFiles.png(padding = 120))
         val dto = service.uploadLogo(userId, file)
 
         assertEquals("/api/public/associations/$assocId/logo", dto.landingLogo)
@@ -178,6 +179,20 @@ class AssociationLandingServiceTest {
         assertThrows<UnprocessableEntityException> { service.uploadLogo(userId, file) }
     }
 
+    /**
+     * Security regression (audit 2026-08-20, M9): the declared type is caller-controlled and these
+     * bytes are served back verbatim from a public endpoint, so a payload contradicting its own
+     * declaration must not be stored.
+     */
+    @Test
+    fun `uploadLogo - bytes contradicting the declared type are rejected`() {
+        stubProfile(profile())
+
+        val file = MockMultipartFile("file", "logo.png", "image/png", TestFiles.mislabelled())
+
+        assertThrows<UnprocessableEntityException> { service.uploadLogo(userId, file) }
+    }
+
     // ── Logo deletion and serving ─────────────────────────────────────────────
 
     @Test
@@ -194,15 +209,41 @@ class AssociationLandingServiceTest {
 
     @Test
     fun `getLogo - returns content type and bytes`() {
-        val bytes = ByteArray(4) { 7 }
+        val bytes = TestFiles.webp()
         every { logoRepo.findById(assocId) } returns Optional.of(
-            AssociationLogo(assocId, bytes, "image/webp", 4, Instant.now())
+            AssociationLogo(assocId, bytes, "image/webp", bytes.size.toLong(), Instant.now())
         )
 
         val (contentType, data) = service.getLogo(assocId)
 
         assertEquals("image/webp", contentType)
-        assertEquals(4, data.size)
+        assertEquals(bytes.size, data.size)
+    }
+
+    /**
+     * The served Content-Type is derived from the bytes, not from the stored declaration
+     * (audit 2026-08-20, M9). Pinned on a deliberately contradictory row: rows written before upload
+     * byte-validation existed carry a declaration nothing ever checked.
+     */
+    @Test
+    fun `getLogo - Content-Type comes from the bytes, not the stored declaration`() {
+        val actuallyPng = TestFiles.png()
+        every { logoRepo.findById(assocId) } returns Optional.of(
+            AssociationLogo(assocId, actuallyPng, "image/webp", actuallyPng.size.toLong(), Instant.now())
+        )
+
+        val (contentType, _) = service.getLogo(assocId)
+
+        assertEquals("image/png", contentType, "Bytes win over the stored column")
+    }
+
+    @Test
+    fun `getLogo - a legacy row whose bytes are not an image is not served`() {
+        every { logoRepo.findById(assocId) } returns Optional.of(
+            AssociationLogo(assocId, TestFiles.mislabelled(), "image/png", 38, Instant.now())
+        )
+
+        assertThrows<NotFoundException> { service.getLogo(assocId) }
     }
 
     @Test
@@ -213,7 +254,7 @@ class AssociationLandingServiceTest {
         // "add an ownership check" refactor has to break it on purpose.
         val foreignId = UUID.randomUUID()
         every { logoRepo.findById(foreignId) } returns Optional.of(
-            AssociationLogo(foreignId, ByteArray(2), "image/png", 2, Instant.now())
+            AssociationLogo(foreignId, TestFiles.png(), "image/png", 16, Instant.now())
         )
 
         val (contentType, _) = service.getLogo(foreignId)

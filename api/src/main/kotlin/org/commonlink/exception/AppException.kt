@@ -46,6 +46,18 @@ class InvalidTokenException(message: String = "Invalid token") :
 class ConflictException(message: String) :
     AppException(message, HttpStatus.CONFLICT)
 
+/**
+ * Thrown when an association sign-up carries a SIREN that is already registered.
+ *
+ * A plain [ConflictException] would be indistinguishable from "this email is already in use", which
+ * the sign-up screen already renders on 409 — and the two call for opposite user actions: log in
+ * versus contact the existing account holder. Returns HTTP 409 with a
+ * `code: SIREN_ALREADY_REGISTERED` property for client-side branching.
+ */
+class SirenAlreadyRegisteredException(
+    message: String = "SIREN already registered"
+) : AppException(message, HttpStatus.CONFLICT)
+
 /** Thrown when a caller exceeds the allowed request rate for a sensitive operation (HTTP 429). */
 class RateLimitException(message: String = "Rate limit exceeded. Try again later") :
     AppException(message, HttpStatus.TOO_MANY_REQUESTS)

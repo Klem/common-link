@@ -28,10 +28,18 @@ class User(
     @Column(name = "email", nullable = false, unique = true)
     val email: String,
 
-    /** Determines which dashboard and routes the user can access. */
+    /**
+     * Determines which dashboard and routes the user can access.
+     *
+     * Mutable for exactly one reason: a guest row provisioned by the donation widget always starts
+     * as [UserRole.DONOR], and claiming that address (registration or magic link) may turn it into
+     * an [UserRole.ASSOCIATION] account while keeping the donation history attached — see
+     * [org.commonlink.service.AuthService]. No other code path writes it, and only roles in
+     * [UserRole.SELF_ASSIGNABLE] are ever written from a request.
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
-    val role: UserRole,
+    var role: UserRole,
 
     /** Records how the account was originally created (email, Google, or magic-link). */
     @Enumerated(EnumType.STRING)

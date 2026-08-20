@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.Tag
 import org.springframework.beans.factory.annotation.Autowired
 import org.commonlink.event.MollieOnboardingStatusChangedEvent
 import org.springframework.boot.test.context.SpringBootTest
@@ -60,6 +61,7 @@ import java.util.UUID
  * the method, keeping tests isolated. The mock server is reset in @BeforeEach and
  * verified in @AfterEach to confirm all expected HTTP calls were actually made.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @RecordApplicationEvents

@@ -45,6 +45,8 @@ class PublicWidgetService(
     private val mollieConnectTokenManager: MollieConnectTokenManager,
     private val taxRateService: TaxRateService,
     private val landingPreviewTokenService: LandingPreviewTokenService,
+    private val freezeScreeningDonationService: FreezeScreeningDonationService,
+    private val donationCapService: DonationCapService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -60,6 +62,7 @@ class PublicWidgetService(
             raised = campaign.raised,
             campaignCoverImage = campaign.coverImage,
             widgetAllowedOrigin = association.widgetAllowedOrigin,
+            remainingCapacity = donationCapService.remainingCapacity(campaign),
         )
     }
 
@@ -76,18 +79,52 @@ class PublicWidgetService(
     fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
         val (association, campaign) = resolveWidget(widgetToken)
 
-        val assocToken = resolveMollieToken(association)
-        val assocProfileId = mollieClient.getFirstProfileId(assocToken)
+        // Collection cap — refuse before anything is created. A donation above the cap could only be
+        // refunded, and a refund after collection is precisely what must not happen: the receipt is
+        // numbered, hashed on-chain and emailed. Checked here rather than further down so a refused
+        // attempt leaves no guest profile and no screening journal entry behind.
+        donationCapService.requireWithinCap(campaign, request.amount)
 
         // Provision guest donor (idempotent by email)
-        val donorProfile = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
+        val resolvedDonor = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
+        val donorProfile = resolvedDonor.profile
 
-        // Sync display preferences (anonymous flag, display name) — last donation wins
-        if (donorProfile.anonymous != request.anonymousDisplay || donorProfile.displayName != request.donorFullName) {
+        // Sync display preferences (anonymous flag, display name) — last donation wins.
+        // Guest profiles only: this endpoint is unauthenticated and the e-mail in the body proves
+        // nothing. Applying these fields to a real donor's profile let anyone rename them and, worse,
+        // flip `anonymous` to false — overriding someone else's privacy choice from the outside
+        // (security audit 2026-08-20, M1).
+        if (resolvedDonor.ownedByGuest &&
+            (donorProfile.anonymous != request.anonymousDisplay || donorProfile.displayName != request.donorFullName)
+        ) {
             donorProfile.anonymous = request.anonymousDisplay
             donorProfile.displayName = request.donorFullName
             donorProfileRepository.save(donorProfile)
         }
+
+        // Build identity snapshot before freeze check — required to screen the donor
+        val identity = DonorIdentitySnapshot(
+            fullName = request.donorFullName,
+            addressLine1 = request.donorAddressLine1,
+            addressLine2 = request.donorAddressLine2,
+            postalCode = request.donorPostalCode,
+            city = request.donorCity,
+            country = request.donorCountry,
+            birthDate = request.donorBirthDate,
+        )
+
+        // LCB-FT art. L.561-5 — screen donor against asset-freeze register before any payment
+        val freezeOutcome = freezeScreeningDonationService.runFreezeCheck(
+            associationId = association.id!!,
+            donorProfileId = donorProfile.id!!,
+            identity = identity,
+        )
+        if (freezeOutcome != ScreeningOutcome.CLEAR) {
+            throw ConflictException(FREEZE_BLOCK_MESSAGE)
+        }
+
+        val assocToken = resolveMollieToken(association)
+        val assocProfileId = mollieClient.getFirstProfileId(assocToken)
 
         val cleanSourceSite = sanitizeSourceSite(request.sourceSite)
         val safeLocale = request.locale?.takeIf { it.matches(Regex("[a-z]{2}")) } ?: "fr"
@@ -122,17 +159,6 @@ class PublicWidgetService(
             profileId = assocProfileId,
         )
 
-        val identity = DonorIdentitySnapshot(
-            fullName = request.donorFullName,
-            addressLine1 = request.donorAddressLine1,
-            addressLine2 = request.donorAddressLine2,
-            postalCode = request.donorPostalCode,
-            city = request.donorCity,
-            country = request.donorCountry,
-            birthDate = request.donorBirthDate,
-            birthCity = request.donorBirthCity,
-        )
-
         donationService.initiatePendingDonation(
             providerRef = "mollie:${molliePayment.id}",
             donorProfileId = donorProfile.id,
@@ -147,6 +173,12 @@ class PublicWidgetService(
 
         logger.info("Pending donation created — mollieId={} campaign={}", molliePayment.id, campaign.id)
         return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id)
+    }
+
+    companion object {
+        // Indiscernability constraint (LCB-FT): HIT and UNAVAILABLE throw the same exception with
+        // the same message — callers and tests may assert equality on this constant.
+        internal const val FREEZE_BLOCK_MESSAGE = "Le service est temporairement indisponible."
     }
 
     /**
@@ -205,6 +237,7 @@ class PublicWidgetService(
             showTrust = association.landingShowTrust,
             // Only ever false behind a valid preview token: resolveLanding would have thrown otherwise.
             donationsEnabled = campaign.status == CampaignStatus.LIVE,
+            remainingCapacity = donationCapService.remainingCapacity(campaign),
         )
     }
 

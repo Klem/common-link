@@ -44,16 +44,17 @@
       "siren": "SIREN",
       "skipped": {
         "noRna": "RNA non trouvé",
-        "noSiren": "SIREN non trouvé",
+        "noSiren": "Aucun numéro SIREN connu",
         "title": "Non effectué",
-        "unavailable": "Recherche registres indisponible"
+        "unavailable": "Registre des entreprises indisponible"
       },
       "status": {
         "active": "Active",
         "ceased": "Cessée (INSEE)",
         "dissolved": "Dissolution détectée",
         "insolvency": "Procédure collective",
-        "notFound": "Non trouvée"
+        "notFound": "Non trouvée",
+        "notListed": "Non répertoriée (association sans numéro SIREN)"
       },
       "title": "Vérification registres",
       "warnings": "Avertissements"
@@ -119,11 +120,28 @@
     }
   },
   "auth": {
+    "assoManual": {
+      "backToRna": "Retour à la recherche par RNA",
+      "confirm": "C'est mon association",
+      "errors": {
+        "notFound": "Aucune entité trouvée pour ce SIREN. Vérifiez le numéro.",
+        "rateLimited": "Trop de recherches. Patientez quelques minutes.",
+        "unavailable": "Le registre est temporairement indisponible. Réessayez plus tard."
+      },
+      "hint": "Saisissez le SIREN de votre association. Nous le vérifions auprès du registre officiel des entreprises.",
+      "inactive": "Le registre indique que cette entité n'est plus active administrativement.",
+      "label": "Numéro SIREN",
+      "notAssociation": "Le registre n'identifie pas cette entité comme une association. Votre dossier sera examiné avant validation.",
+      "placeholder": "SIREN (9 chiffres)",
+      "search": "Vérifier",
+      "searching": "Vérification…"
+    },
     "assoSearch": {
       "apiUnavailable": "Le répertoire est temporairement indisponible. Veuillez réessayer plus tard.",
       "backToSearch": "Retour à la recherche",
       "noResults": "Aucune association trouvée.",
       "noResultsHint": "Vérifiez l'orthographe ou essayez votre RNA.",
+      "noRna": "Je n'ai pas de numéro RNA",
       "searchHint": "Recherchez votre association dans le répertoire officiel."
     },
     "divider": {
@@ -141,6 +159,7 @@
       "passwordNotSet": "Aucun mot de passe défini. Utilisez un lien magique ou Google pour vous connecter.",
       "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
       "rateLimited": "Trop de tentatives. Réessayez dans 10 minutes.",
+      "sirenAlreadyRegistered": "Ce SIREN est déjà rattaché à un compte CommonLink. Connectez-vous, ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
       "tokenExpired": "Ce lien a expiré. Demandez-en un nouveau.",
       "tokenUsed": "Ce lien a déjà été utilisé."
     },
@@ -319,9 +338,6 @@
     "mollieErrorFetch": "Impossible d'obtenir l'URL Mollie. Veuillez réessayer.",
     "mollieErrorMissingContactEmail": "Renseignez l'email de contact dans l'onglet Informations avant de connecter Mollie.",
     "mollieErrorMissingContactName": "Renseignez le nom du contact dans l'onglet Informations avant de connecter Mollie.",
-    "moneriumConnected": "Portefeuille connecté avec succès.",
-    "moneriumError": "La connexion au portefeuille a échoué. Veuillez réessayer.",
-    "moneriumErrorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
     "payeeCreated": "Bénéficiaire ajouté avec succès.",
     "paymentError": "Échec du paiement. Veuillez réessayer.",
     "paymentSuccess": "Paiement émis !",
@@ -339,6 +355,325 @@
     "widgetAllowedOriginSaved": "Origine de redirection enregistrée.",
     "widgetDestinationSaved": "Campagne de destination enregistrée.",
     "widgetTokenGenerated": "Token widget généré."
+  },
+  "compliance": {
+    "alerts": {
+      "actions": {
+        "view": "Consulter"
+      },
+      "ageFormat": {
+        "daysHours": "{days}j {hours}h",
+        "hoursMinutes": "{hours}h {minutes}min",
+        "minutes": "{minutes}min"
+      },
+      "col": {
+        "actions": "Actions",
+        "age": "Ancienneté",
+        "origin": "Origine",
+        "severity": "Criticité",
+        "status": "Statut",
+        "subject": "Sujet"
+      },
+      "empty": "Aucune alerte de gel.",
+      "error": "Erreur lors du chargement des alertes.",
+      "loading": "Chargement des alertes…",
+      "origin": {
+        "FREEZE_HIT_DONATION": "Gel — Don",
+        "FREEZE_HIT_ONBOARDING": "Gel — Adhésion",
+        "SCREENING_UNAVAILABLE": "Criblage indisponible"
+      },
+      "pagination": {
+        "pageOf": "Page {current} / {total}"
+      },
+      "severity": {
+        "HIGH": "Élevée",
+        "LOW": "Faible",
+        "MEDIUM": "Modérée"
+      },
+      "status": {
+        "CLOSED": "Clôturée",
+        "IN_REVIEW": "En cours d'examen",
+        "PENDING": "En attente"
+      },
+      "subjectType": {
+        "ASSOCIATION": "Association",
+        "BENEFICIAL_OWNER": "Bénéficiaire effectif",
+        "DECLARANT": "Dirigeant (registre)",
+        "DONOR": "Donateur",
+        "REPRESENTATIVE": "Représentant légal",
+        "SYSTEM": "Système"
+      },
+      "title": "Alertes de gel"
+    },
+    "auditLog": {
+      "col": {
+        "date": "Date",
+        "event": "Événement",
+        "seq": "N° séquence"
+      },
+      "empty": "Aucune entrée.",
+      "error": "Erreur lors du chargement.",
+      "loading": "Chargement du journal...",
+      "title": "Journal d'audit récent"
+    },
+    "dashboard": {
+      "alertCount": {
+        "error": "Erreur de chargement.",
+        "loading": "Chargement...",
+        "title": "Alertes de gel en attente",
+        "viewAll": "Voir toutes les alertes"
+      },
+      "title": "Tableau de bord"
+    },
+    "detail": {
+      "age": "Ancienneté",
+      "backToList": "Retour à la liste",
+      "closed": {
+        "decision": "Décision",
+        "rationale": "Motivation",
+        "title": "Décision enregistrée"
+      },
+      "createdAt": "Détectée le",
+      "decision": {
+        "FALSE_POSITIVE": "Faux positif — erreur d'identification",
+        "LEGITIMATE": "Correspondance non avérée — situation légitime",
+        "SUSPICIOUS": "Correspondance avérée",
+        "label": "Décision",
+        "placeholder": "Sélectionner une décision…",
+        "title": "Décision de clôture"
+      },
+      "error": "Erreur lors du chargement de l'alerte.",
+      "history": {
+        "col": {
+          "date": "Date",
+          "event": "Événement",
+          "matchCount": "Correspondances",
+          "reason": "Motif",
+          "registryDate": "Version du registre",
+          "seq": "N° séquence",
+          "threshold": "Seuil",
+          "topScore": "Score max"
+        },
+        "empty": "Aucun historique disponible.",
+        "title": "Historique du contrôle de gel"
+      },
+      "loading": "Chargement de l'alerte…",
+      "metadata": "Informations",
+      "origin": "Origine",
+      "rationale": {
+        "label": "Motivation (obligatoire)",
+        "placeholder": "Exposez les éléments qui fondent cette décision."
+      },
+      "severity": "Criticité",
+      "status": "Statut",
+      "subject": "Sujet",
+      "subjectType": "Type de sujet",
+      "submit": "Enregistrer la décision",
+      "submitting": "Enregistrement…",
+      "takeInCharge": {
+        "button": "Prendre en charge",
+        "description": "Prenez cette alerte en charge pour commencer l'examen.",
+        "title": "Prise en charge"
+      },
+      "takenInChargeAt": "Prise en charge le",
+      "takenInChargeBy": "Prise en charge par",
+      "title": "Détail de l'alerte",
+      "treasury": {
+        "method": "Moyen utilisé",
+        "methodPlaceholder": "Ex. : courriel sécurisé, courrier recommandé",
+        "note": "La notification à la Direction générale du Trésor est un geste humain accompli hors application. Aucune transmission automatique n'existe ni n'est prévue. Ces champs conservent uniquement la preuve de ce geste.",
+        "notifiedAt": "Date de notification",
+        "ref": "Référence de la notification",
+        "refPlaceholder": "Numéro ou identifiant attribué à l'envoi",
+        "requiredForSuspicious": "Ces trois champs sont obligatoires pour une décision de correspondance avérée.",
+        "section": "Traçabilité de la notification à la Direction générale du Trésor"
+      }
+    },
+    "evidence": {
+      "algorithm": "Algorithme",
+      "col": {
+        "dateOfBirth": "Date de naissance",
+        "idRegistre": "N° registre",
+        "legalReference": "Programme de sanction",
+        "matchedName": "Entrée du registre",
+        "nature": "Nature",
+        "score": "Score"
+      },
+      "conditionsSide": "Conditions du criblage",
+      "empty": "Aucune correspondance enregistrée pour cette alerte. Un criblage qui n'a pas pu être effectué ne produit aucune comparaison.",
+      "matchCount": "Correspondances",
+      "nature": {
+        "LEGAL_ENTITY": "Personne morale",
+        "PHYSICAL_PERSON": "Personne physique",
+        "VESSEL": "Navire"
+      },
+      "no": "Non",
+      "registryCheckedAt": "Registres vérifiés le",
+      "registryPublicationDate": "Version du registre",
+      "rna": "RNA",
+      "rnaActive": "RNA actif",
+      "screenedNormalized": "Valeur comparée",
+      "screenedParty": "Partie criblée",
+      "screenedSide": "Ce qui a été criblé",
+      "siren": "SIREN",
+      "snapshotNote": "Les entrées du registre sont figées telles qu'au moment du criblage : la preuve subsiste si l'entrée est radiée.",
+      "subject": "Sujet",
+      "subjectId": "Identifiant technique",
+      "subjectType": "Type de sujet",
+      "subjectUnresolved": "Sujet non résolu",
+      "threshold": "Seuil de score",
+      "title": "Éléments du criblage",
+      "unknown": "Inconnu",
+      "yes": "Oui"
+    },
+    "nav": {
+      "alerts": "Alertes de gel",
+      "dashboard": "Tableau de bord"
+    },
+    "priorDecisions": {
+      "date": "Date",
+      "decision": "Décision",
+      "note": "À titre informatif. La clôture d'une alerte est irréversible et toute nouvelle correspondance crée une nouvelle alerte : celle-ci doit être examinée pour elle-même.",
+      "origin": "Origine",
+      "title": "Décisions antérieures sur ce sujet"
+    },
+    "registry": {
+      "col": {
+        "association": "Association",
+        "date": "Date du contrôle",
+        "exists": "Existence",
+        "rna": "RNA actif",
+        "verdict": "Périmètre",
+        "warnings": "Avertissements"
+      },
+      "empty": "Aucun contrôle enregistré.",
+      "error": "Erreur lors du chargement.",
+      "exists": {
+        "false": "Non",
+        "null": "—",
+        "true": "Oui"
+      },
+      "loading": "Chargement des contrôles...",
+      "pagination": {
+        "pageOf": "Page {current} / {total}"
+      },
+      "rna": {
+        "false": "Inactif",
+        "null": "Non renseigné",
+        "true": "Actif"
+      },
+      "title": "Derniers contrôles des registres",
+      "verdict": {
+        "IN_SCOPE": "Dans le périmètre",
+        "OUT_OF_SCOPE": "Hors périmètre",
+        "UNDETERMINED": "Indéterminé"
+      }
+    },
+    "shell": {
+      "logout": "Déconnexion",
+      "navLabel": "Navigation",
+      "title": "Conformité LCB-FT"
+    }
+  },
+  "curator": {
+    "dossier": {
+      "approval": {
+        "blockedNoRepresentative": "Approbation bloquée : aucun représentant légal n'est saisi.",
+        "blockedScope": "Approbation bloquée : l'association est hors périmètre loi 1901."
+      },
+      "registry": {
+        "legalCategory": {
+          "codes": {
+            "9210": "Association non déclarée",
+            "9220": "Association déclarée",
+            "9221": "Association déclarée « entreprises d'insertion par l'économique »",
+            "9222": "Association intermédiaire",
+            "9223": "Groupement d'employeurs",
+            "9230": "Association déclarée reconnue d'utilité publique",
+            "9240": "Congrégation",
+            "9260": "Association de droit local (Alsace-Moselle)",
+            "9300": "Fondation"
+          },
+          "title": "Catégorie juridique",
+          "unknown": "Non récupérée"
+        },
+        "officers": {
+          "empty": "Aucun représentant collecté",
+          "title": "Représentants"
+        },
+        "rnaActive": {
+          "false": "RNA inactif",
+          "true": "RNA actif",
+          "unknown": "Statut RNA non renseigné"
+        },
+        "scopeVerdict": {
+          "IN_SCOPE": "Dans le périmètre",
+          "OUT_OF_SCOPE": "Hors périmètre",
+          "UNDETERMINED": "Indéterminé",
+          "accepted": "Formes acceptées : 9220 déclarée · 9221 insertion par l'économique · 9222 intermédiaire · 9223 groupement d'employeurs · 9230 reconnue d'utilité publique · 9260 droit local.",
+          "outOfScopeWarning": "L'approbation est bloquée : l'association est hors périmètre loi 1901.",
+          "title": "Périmètre loi 1901",
+          "undeterminedHint": "Catégorie juridique non récupérée — l'approbation n'est pas bloquée."
+        }
+      },
+      "representative": {
+        "add": {
+          "title": "Ajouter un représentant légal"
+        },
+        "noRetained": "Aucun représentant légal retenu — l'approbation est bloquée.",
+        "title": "Représentants légaux"
+      },
+      "risk": {
+        "HIGH": "Élevé",
+        "LOW": "Faible",
+        "STANDARD": "Standard",
+        "title": "Niveau de risque LCB-FT"
+      },
+      "ubo": {
+        "add": {
+          "dateOfBirth": "Date de naissance",
+          "name": "Nom complet (obligatoire)",
+          "nameRequired": "Le nom est obligatoire.",
+          "nameTooLong": "Maximum 200 caractères.",
+          "role": "Rôle / fonction",
+          "submit": "Ajouter",
+          "title": "Ajouter un bénéficiaire effectif"
+        },
+        "discard": "Écarter",
+        "discardConfirm": "Confirmer l'exclusion ?",
+        "discarded": "Écarté",
+        "error": "Impossible de charger les bénéficiaires effectifs.",
+        "loading": "Chargement...",
+        "noRetained": "Aucun bénéficiaire effectif retenu — l'approbation est bloquée.",
+        "officers": {
+          "addHint": "Ajouter comme bénéficiaire effectif",
+          "title": "Représentants des registres (points de départ suggérés)"
+        },
+        "origin": {
+          "DECLARED": "Déclaré",
+          "REGISTRY": "Registre",
+          "STATUTS": "Statuts"
+        },
+        "retained": "Retenu",
+        "title": "Bénéficiaires effectifs"
+      },
+      "vigilance": {
+        "error": "Impossible de charger les mesures de vigilance.",
+        "loading": "Chargement des mesures...",
+        "requiredDocuments": "Documents requis :",
+        "reviewFrequency": "Fréquence de contrôle :",
+        "title": "Mesures de vigilance applicables",
+        "version": "Référentiel"
+      }
+    },
+    "freezeScreen": {
+      "HIT": "une correspondance a été détectée — le dossier est en attente de la décision du responsable de la conformité",
+      "HIT_CLEARED": "correspondance écartée par le responsable de la conformité — contrôle du {date}",
+      "NOT_PERFORMED": "aucun contrôle de gel n'a encore été effectué",
+      "PASSED": "contrôle effectué le {date} — aucune correspondance",
+      "UNAVAILABLE": "le contrôle de gel n'a pas pu être effectué — l'approbation est suspendue",
+      "title": "Contrôle de gel"
+    }
   },
   "dashboard": {
     "association": {
@@ -552,20 +887,6 @@
           }
         },
         "memberSince": "Membre depuis {date}",
-        "monerium": {
-          "badge": "Expérimental",
-          "cancel": "Annuler",
-          "connect": "Connecter le portefeuille",
-          "connected": "Portefeuille connecté avec succès.",
-          "connectedStatus": "Connecté",
-          "description": "Connectez votre portefeuille Monerium pour recevoir et émettre des euros numériques directement sur la blockchain.",
-          "error": "La connexion au portefeuille a échoué. Veuillez réessayer.",
-          "errorFetch": "Impossible d'obtenir l'URL d'authentification. Veuillez réessayer.",
-          "pendingStatus": "Autorisation en attente",
-          "title": "Portefeuille Monerium",
-          "tryAgain": "Réessayer",
-          "waiting": "Authentification en cours… Complétez le formulaire dans la fenêtre qui vient de s'ouvrir."
-        },
         "name": "Nom de l'association",
         "pending": "En attente de vérification",
         "phone": "Téléphone",
@@ -976,16 +1297,16 @@
         "continueEditing": "Continuer l'édition",
         "fill": "Compléter",
         "recommended": {
-          "budget": "Budget prévisionnel équilibré (+40% de dons)",
-          "impactGoals": "Objectifs d'impact mesurables",
           "milestones": "Jalons (augmente l'engagement des donateurs)",
           "reason": "« Pourquoi maintenant ? » (renforce la confiance)",
           "section": "Recommandé — n'empêche pas la publication"
         },
         "required": {
+          "budget": "Budget prévisionnel équilibré (charges = produits)",
           "dates": "Dates de début et de fin",
           "description": "Description (10 caractères min)",
           "goal": "Objectif de collecte",
+          "impactGoals": "Résultat attendu (20 caractères min)",
           "name": "Nom de la campagne",
           "section": "Requis pour publier"
         },
@@ -1055,20 +1376,6 @@
       "success": {
         "closing": "Fermeture de la fenêtre…",
         "title": "Mollie connecté"
-      }
-    },
-    "moneriumPopup": {
-      "callback": {
-        "closing": "Finalisation du KYC… cette fenêtre va se fermer.",
-        "loading": "Chargement…"
-      },
-      "error": {
-        "retry": "Veuillez réessayer depuis la page de profil.",
-        "title": "KYC échoué"
-      },
-      "success": {
-        "closing": "Fermeture de la fenêtre…",
-        "title": "KYC terminé"
       }
     },
     "nav": {
@@ -1498,6 +1805,7 @@
     "amounts": {
       "custom": "Autre montant (€)",
       "customPlaceholder": "Saisir un montant",
+      "remaining": "Cette campagne peut encore collecter {amount} €.",
       "title": "Choisissez un montant"
     },
     "anonymous": {
@@ -1516,6 +1824,8 @@
       "amountMax": "Le don maximum est de 10 000 €",
       "amountMin": "Le don minimum est de 1 €",
       "amountRequired": "Le montant est requis",
+      "capExceeded": "Ce montant dépasse ce que la campagne peut encore collecter. Merci de saisir un montant plus faible.",
+      "capFull": "Cette campagne a atteint son plafond de collecte et n'accepte plus de dons.",
       "consentRequired": "Vous devez consentir pour continuer",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide",
@@ -1530,9 +1840,8 @@
       "addressLine1Placeholder": "Numéro et rue",
       "addressLine2": "Adresse (ligne 2)",
       "addressLine2Placeholder": "Appartement, bâtiment, etc. (facultatif)",
-      "birthCity": "Ville de naissance",
-      "birthCityPlaceholder": "Ville...",
       "birthDate": "Date de naissance",
+      "birthDateHint": "Facultative et non conservée. La renseigner réduit le risque qu'un homonyme fasse refuser votre don.",
       "birthDatePlaceholder": "JJ/MM/AAAA",
       "city": "Ville",
       "country": "Pays",

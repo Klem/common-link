@@ -61,4 +61,18 @@ describe('AssoSearch', () => {
       expect(screen.getByText('Croix Rouge Française')).toBeInTheDocument();
     });
   });
+
+  it('does not render the no-RNA escape hatch when onNoRna is omitted', () => {
+    render(<AssoSearch onSelect={vi.fn()} />);
+    expect(screen.queryByText('assoSearch.noRna')).not.toBeInTheDocument();
+  });
+
+  it('switches to manual entry when the no-RNA escape hatch is clicked', () => {
+    const onNoRna = vi.fn();
+    render(<AssoSearch onSelect={vi.fn()} onNoRna={onNoRna} />);
+
+    fireEvent.click(screen.getByText('assoSearch.noRna'));
+
+    expect(onNoRna).toHaveBeenCalledTimes(1);
+  });
 });

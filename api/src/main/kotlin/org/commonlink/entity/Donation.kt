@@ -9,7 +9,7 @@ import java.util.UUID
 /**
  * Represents a confirmed donation from a [DonorProfile] to a [Campaign].
  *
- * [providerRef] identifies the payment provider transaction (e.g. "stripe:pi_..." or "monerium:...").
+ * [providerRef] identifies the payment provider transaction (e.g. "stripe:pi_..." or "mollie:tr_...").
  * [confirmedAt] is set when the payment is confirmed and the on-chain recording job is enqueued.
  */
 @Entity
@@ -31,13 +31,24 @@ class Donation(
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     val amount: BigDecimal,
 
-    /** Payment provider transaction reference. Format: "stripe:pi_..." or "monerium:<uuid>". */
+    /** Payment provider transaction reference. Format: "stripe:pi_..." or "mollie:tr_...". */
     @Column(name = "provider_ref", nullable = false, length = 255)
     val providerRef: String,
 
     /** Set when payment is confirmed and on-chain recording job is enqueued. */
     @Column(name = "confirmed_at")
     var confirmedAt: Instant? = null,
+
+    /**
+     * Payment method actually used, as reported by the provider (e.g. `creditcard`, `banktransfer`).
+     *
+     * Written once by [org.commonlink.service.MollieWebhookService] when the payment is confirmed,
+     * and rendered as "Mode de versement" on the Cerfa receipt. Stays null for donations confirmed
+     * without a webhook payload (reconciler path) — the receipt then prints "Non précisé" rather
+     * than guessing.
+     */
+    @Column(name = "payment_method", length = 32)
+    var paymentMethod: String? = null,
 
     /** French plan comptable prefix used for budget variance reporting. Default "74" (subventions). */
     @Column(name = "type_code", nullable = false, length = 50)
@@ -74,11 +85,23 @@ class Donation(
     @Column(name = "donor_country", length = 2)
     val donorCountry: String? = null,
 
-    /** Snapshot d'identité — date de naissance, requis pour le reçu fiscal Cerfa 2041-RD. */
+    /**
+     * Date de naissance du donateur — **jamais alimentée par le widget**.
+     *
+     * Le formulaire de don la propose à titre facultatif, mais la valeur saisie sert uniquement au
+     * filtrage gel puis est jetée : elle n'est pas conservée. La colonne subsiste pour le donateur
+     * disposant d'un espace, qui pourra renseigner l'information ; le reçu fiscal l'imprime alors
+     * (voir [org.commonlink.service.ReceiptService]).
+     */
     @Column(name = "donor_birth_date")
     val donorBirthDate: LocalDate? = null,
 
-    /** Snapshot d'identité — ville de naissance. */
+    /** Ville de naissance — même régime que [donorBirthDate] ; le widget ne la collecte pas. */
     @Column(name = "donor_birth_city", length = 128)
     val donorBirthCity: String? = null,
+
+    /** AML/CFT risk level recorded at donation time. Defaults to STANDARD. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "risk_level", nullable = false, length = 20)
+    val riskLevel: RiskLevel = RiskLevel.STANDARD,
 )

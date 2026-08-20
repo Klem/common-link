@@ -57,6 +57,11 @@ data class PublicLandingDto(
     val showTransparency: Boolean = true,
     val showTrust: Boolean = true,
     val donationsEnabled: Boolean = true,
+    /**
+     * Amount the campaign may still accept — same figure, same purpose and same absence of a default
+     * as [PublicWidgetDto.remainingCapacity]. The landing page embeds the same donation form.
+     */
+    val remainingCapacity: BigDecimal,
 )
 
 /**

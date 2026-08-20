@@ -8,14 +8,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.commonlink.dto.AddBeneficialOwnerRequest
 import org.commonlink.dto.AdminVerificationDetailDto
 import org.commonlink.dto.AdminVerificationSummaryDto
+import org.commonlink.dto.BeneficialOwnerDto
+import org.commonlink.dto.FreezeScreenStatusDto
+import org.commonlink.dto.PageResponse
 import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.dto.RejectVerificationRequest
+import org.commonlink.dto.VigilanceMeasuresDto
+import org.commonlink.dto.toPageResponse
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.service.AssociationRegistryCheckService
-import org.commonlink.dto.PageResponse
-import org.commonlink.dto.toPageResponse
+import org.commonlink.service.BeneficialOwnerService
+import org.commonlink.service.FreezeScreeningOnboardingService
 import org.commonlink.service.VerificationService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -42,6 +48,8 @@ import java.util.UUID
 class AdminVerificationController(
     private val verificationService: VerificationService,
     private val registryCheckService: AssociationRegistryCheckService,
+    private val beneficialOwnerService: BeneficialOwnerService,
+    private val freezeScreeningService: FreezeScreeningOnboardingService,
 ) {
 
     @GetMapping
@@ -82,6 +90,26 @@ class AdminVerificationController(
         @PathVariable associationId: UUID,
     ): ResponseEntity<AdminVerificationDetailDto> =
         ResponseEntity.ok(verificationService.adminGetDetail(associationId))
+
+    @GetMapping("/{associationId}/vigilance")
+    @Operation(
+        summary = "Vigilance measures for a dossier",
+        description = "Returns the vigilance measures applicable to the association's current risk level, " +
+                "read from the versioned risk-classification config. Never exposes raw YAML."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Vigilance measures returned",
+            content = [Content(schema = Schema(implementation = VigilanceMeasuresDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+    )
+    fun getVigilanceMeasures(
+        @PathVariable associationId: UUID,
+    ): ResponseEntity<VigilanceMeasuresDto> =
+        ResponseEntity.ok(verificationService.adminGetVigilanceMeasures(associationId))
 
     @GetMapping("/{associationId}/documents/{docId}/content")
     @Operation(
@@ -168,10 +196,96 @@ class AdminVerificationController(
             ?.let { ResponseEntity.ok(it) }
             ?: ResponseEntity.noContent().build()
 
+    @GetMapping("/{associationId}/freeze-screen-status")
+    @Operation(
+        summary = "Onboarding freeze-screen status",
+        description = "Returns the five-state indicator of the last onboarding asset-freeze screening for this " +
+                "association. Deliberately contains no information that could identify a match " +
+                "(tipping-off prevention, art. L.561-29 CMF). Returns NOT_PERFORMED if no check has run.",
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Status returned",
+            content = [Content(schema = Schema(implementation = FreezeScreenStatusDto::class))],
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun getFreezeScreenStatus(
+        @PathVariable associationId: UUID,
+    ): ResponseEntity<FreezeScreenStatusDto> =
+        ResponseEntity.ok(freezeScreeningService.getOnboardingFreezeScreenStatus(associationId))
+
+    // -------------------------------------------------------------------------
+    // Beneficial owners
+    // -------------------------------------------------------------------------
+
+    @GetMapping("/{associationId}/beneficial-owners")
+    @Operation(
+        summary = "List beneficial owners",
+        description = "Returns all beneficial owners for an association (including discarded), in chronological order. " +
+                "The [name] and [dateOfBirth] fields are returned decrypted by the server — they are never stored in clear text."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Beneficial owners returned",
+            content = [Content(schema = Schema(implementation = BeneficialOwnerDto::class))]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+    )
+    fun listBeneficialOwners(
+        @PathVariable associationId: UUID,
+    ): ResponseEntity<List<BeneficialOwnerDto>> =
+        ResponseEntity.ok(beneficialOwnerService.listOwners(associationId))
+
+    @PostMapping("/{associationId}/beneficial-owners")
+    @Operation(
+        summary = "Add a beneficial owner",
+        description = "Records a beneficial owner confirmed by the curator. The name and date of birth are stored " +
+                "encrypted. The action is logged in the compliance audit journal (event UBO_CONFIRMED)."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Beneficial owner added",
+            content = [Content(schema = Schema(implementation = BeneficialOwnerDto::class))]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Validation error", content = [Content()]),
+    )
+    fun addBeneficialOwner(
+        @PathVariable associationId: UUID,
+        @Valid @RequestBody request: AddBeneficialOwnerRequest,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<BeneficialOwnerDto> =
+        ResponseEntity.ok(beneficialOwnerService.addOwner(associationId, request, UUID.fromString(principal.username)))
+
+    @PostMapping("/{associationId}/beneficial-owners/{ownerId}/discard")
+    @Operation(
+        summary = "Discard a beneficial owner",
+        description = "Marks a beneficial owner as discarded (soft delete — the row is preserved for audit). " +
+                "The action is logged in the compliance audit journal (event UBO_DISCARDED). " +
+                "Returns 409 if the owner is already discarded."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Beneficial owner discarded", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Beneficial owner not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Already discarded", content = [Content()]),
+    )
+    fun discardBeneficialOwner(
+        @PathVariable associationId: UUID,
+        @PathVariable ownerId: UUID,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<Void> {
+        beneficialOwnerService.discardOwner(associationId, ownerId, UUID.fromString(principal.username))
+        return ResponseEntity.noContent().build()
+    }
+
     @PostMapping("/{associationId}/registry-precheck")
     @Operation(
         summary = "Run a registry pre-check scan",
-        description = "Queries French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC) " +
+        description = "Queries French public registries (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC, RNA/DJEPVA) " +
                 "to check the legal existence of the association, then persists the result as a new immutable " +
                 "scan (append-only audit trail). Informational only — never auto-approves or rejects. " +
                 "Each source degrades gracefully: failures are reported as warnings, not errors."

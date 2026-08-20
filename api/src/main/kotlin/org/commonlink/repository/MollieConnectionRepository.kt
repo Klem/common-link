@@ -4,7 +4,22 @@ import org.commonlink.entity.MollieConnection
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import java.time.Instant
 import java.util.UUID
+
+/**
+ * Exactly what the scheduled token refresh needs about a candidate connection.
+ *
+ * A projection rather than the entity, because the sweep reads outside any transaction:
+ * `MollieConnection.association` is a LAZY `@OneToOne`, so handing back detached entities would
+ * make the sweep depend on Hibernate returning an id from an uninitialised proxy. Selecting the
+ * id directly removes the question. [refreshToken] still passes through
+ * [org.commonlink.security.OAuthTokenConverter], so the mock sentinel is comparable in clear.
+ */
+data class MollieRefreshCandidate(
+    val associationId: UUID,
+    val refreshToken: String,
+)
 
 interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
 
@@ -29,6 +44,26 @@ interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
         nativeQuery = true,
     )
     fun findByAssociationIdForUpdate(@Param("associationId") associationId: UUID): MollieConnection?
+
+    /**
+     * Returns every ACTIVE connection whose access token expires before [threshold] — the
+     * candidate set for the scheduled proactive refresh ([org.commonlink.service.MollieTokenRefreshExecutor]).
+     *
+     * BROKEN connections are excluded: they can only be recovered by a user-driven re-authorisation,
+     * and `getValidAccessToken` throws on them without attempting anything.
+     *
+     * No lock and no mock filtering here. Mock rows cannot be excluded in SQL because
+     * [org.commonlink.security.OAuthTokenConverter] stores tokens as AES-GCM with a random IV
+     * in production, so the ciphertext differs on every write and `refresh_token <> 'mock'` would
+     * silently match everything. The caller filters decrypted values in Kotlin instead.
+     */
+    @Query(
+        "SELECT new org.commonlink.repository.MollieRefreshCandidate(c.association.id, c.refreshToken) " +
+            "FROM MollieConnection c " +
+            "WHERE c.state = org.commonlink.entity.MollieConnectionState.ACTIVE " +
+            "AND c.expiresAt < :threshold",
+    )
+    fun findActiveExpiringBefore(@Param("threshold") threshold: Instant): List<MollieRefreshCandidate>
 
     /**
      * Returns true if the given association already has a Mollie connection.

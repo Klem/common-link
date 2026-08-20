@@ -6,12 +6,15 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.DonationStatusDto
 import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
+import org.commonlink.security.AuthRateLimiter
+import org.commonlink.security.ClientIpResolver
 import org.commonlink.service.PublicWidgetService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -33,6 +36,8 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "Public Widget", description = "Public donation widget endpoints (no authentication required)")
 class PublicWidgetController(
     private val publicWidgetService: PublicWidgetService,
+    private val rateLimiter: AuthRateLimiter,
+    private val clientIpResolver: ClientIpResolver,
 ) {
 
     /**
@@ -82,13 +87,22 @@ class PublicWidgetController(
         ),
         ApiResponse(responseCode = "404", description = "Unknown token or no LIVE destination campaign", content = [Content()]),
         ApiResponse(responseCode = "409", description = "Destination campaign is not accepting donations", content = [Content()]),
-        ApiResponse(responseCode = "422", description = "Validation failed (amount, email, identity or consent)", content = [Content()])
+        ApiResponse(responseCode = "422", description = "Validation failed (amount, email, identity or consent)", content = [Content()]),
+        ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
     fun createDonation(
         @PathVariable widgetToken: String,
         @Valid @RequestBody request: CreateGuestDonationRequest,
-    ): ResponseEntity<CreateGuestDonationResponse> =
-        ResponseEntity.ok(publicWidgetService.createDonation(widgetToken, request))
+        httpRequest: HttpServletRequest,
+    ): ResponseEntity<CreateGuestDonationResponse> {
+        // Unauthenticated, and every call writes rows, screens a donor and calls Mollie on the
+        // association's account. Two independent quotas: one bounds a single caller, the other
+        // bounds the damage to one widget when many callers are involved
+        // (security audit 2026-08-20, M6).
+        rateLimiter.check("donation:ip:${clientIpResolver.resolve(httpRequest)}", maxAttempts = 10, windowMinutes = 10)
+        rateLimiter.check("donation:widget:$widgetToken", maxAttempts = 60, windowMinutes = 10)
+        return ResponseEntity.ok(publicWidgetService.createDonation(widgetToken, request))
+    }
 
     /**
      * Returns the public confirmation status of a donation identified by its Mollie payment ID.

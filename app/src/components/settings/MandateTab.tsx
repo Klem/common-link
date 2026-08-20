@@ -467,7 +467,7 @@ export function MandateTab({
 
       {/* ── Modal d'alerte : signataire habilité manquant ─────────────────── */}
       {showSignerWarning && (
-        <div className="ov" onClick={() => setShowSignerWarning(false)}>
+        <div className="ov on" onClick={() => setShowSignerWarning(false)}>
           <div className="mod" onClick={(e) => e.stopPropagation()}>
             <div className="mod-h">
               <h3>{t('association.profile.mandate.signerWarning.title')}</h3>
@@ -499,7 +499,7 @@ export function MandateTab({
 
       {/* ── Modal de confirmation de révocation ──────────────────────────── */}
       {showRevokeModal && (
-        <div className="ov" onClick={() => setShowRevokeModal(false)}>
+        <div className="ov on" onClick={() => setShowRevokeModal(false)}>
           <div className="mod" onClick={(e) => e.stopPropagation()}>
             <div className="mod-h">
               <h3>{t('association.profile.mandate.revokeModal.title')}</h3>

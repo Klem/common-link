@@ -32,6 +32,26 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendPasswordChanged(email: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(email)
+        helper.setSubject("Le mot de passe de votre compte CommonLink a été modifié")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Le mot de passe de votre compte CommonLink vient d'être modifié, et toutes vos sessions
+            ont été déconnectées.</p>
+            <p>Si vous êtes à l'origine de ce changement, aucune action n'est nécessaire.
+            Dans le cas contraire, réinitialisez immédiatement votre mot de passe et contactez-nous.</p>
+            <p>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendVerificationSubmittedToAdmin(associationName: String, recipientEmail: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
@@ -140,6 +160,29 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendMollieConnectionBroken(associationName: String, recipientEmail: String, reconnectUrl: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Action requise : votre compte Mollie n'est plus connecté — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>L'autorisation Mollie de l'association <strong>$associationName</strong> a été refusée par Mollie.
+            En conséquence, <strong>vos campagnes ne peuvent plus recevoir de dons en ligne</strong> pour le moment.</p>
+            <p>Cela arrive lorsque l'accès accordé à CommonLink a été retiré depuis votre tableau de bord Mollie,
+            ou lorsque le compte Mollie a été fermé. Une simple attente ne rétablira pas la connexion :
+            il faut reconnecter votre compte.</p>
+            <p><a href="$reconnectUrl">Reconnecter mon compte Mollie</a></p>
+            <p>Vos campagnes et vos dons déjà reçus ne sont pas affectés : seule la collecte de nouveaux dons est suspendue.</p>
+            <p>Merci de votre réactivité,<br>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
@@ -184,6 +227,35 @@ class SmtpEmailService(
         helper.addAttachment(
             "recu-fiscal-$receiptNumber.pdf",
             ByteArrayDataSource(pdfBytes, "application/pdf"),
+        )
+        mailSender.send(message)
+    }
+
+    override fun sendDonorFreezeAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        severity: String,
+        alertUrl: String,
+    ) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        // No donor name, no register entry, no score: the subject line lands in mail clients,
+        // notification banners and backups — none of them access-controlled.
+        helper.setSubject("[LCB-FT] Alerte gel des avoirs — donateur — sévérité $severity")
+        helper.setText(
+            """
+            <p>Une mesure de gel des avoirs a été détectée lors du criblage d'un donateur.
+            Le don a été refusé automatiquement ; aucun paiement n'a été créé.</p>
+            <p>Cette alerte attend une décision de la fonction conformité.</p>
+            <p>Référence de l'alerte : <strong>$alertId</strong><br>
+            Sévérité : <strong>$severity</strong></p>
+            <p><a href="$alertUrl">Ouvrir l'alerte dans le back-office conformité</a></p>
+            <p>Le détail de la correspondance (nom criblé, entrée du registre, score) est consultable
+            uniquement sur cet écran, après authentification.</p>
+            """.trimIndent(),
+            true
         )
         mailSender.send(message)
     }

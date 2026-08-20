@@ -77,17 +77,25 @@ export function PrePublishModal({
   const expenses = sumSide(campaign.budgetSections, BudgetSide.EXPENSE);
   const revenues = sumSide(campaign.budgetSections, BudgetSide.REVENUE);
   const budgetBalanced = expenses > 0 && revenues > 0 && Math.abs(revenues - expenses) < 1;
-  const budgetPartial = (expenses > 0 || revenues > 0) && !budgetBalanced;
 
+  /**
+   * Publication blockers. Each predicate is mirrored exactly — tolerance included — by
+   * `CampaignService.preparePublish` (rule 8): loosening one side only makes the button enable
+   * and the PUT answer 422.
+   *
+   * `budget` and `impactGoals` used to be mere recommendations. They now block: a campaign is
+   * published with a balanced prévisionnel and a stated expected outcome, or it is not published.
+   */
   const blockers = [
     { ok: campaign.name.trim().length > 0, labelKey: 'required.name', tab: 'info' },
     { ok: (campaign.description?.trim().length ?? 0) >= 10, labelKey: 'required.description', tab: 'info' },
     { ok: campaign.startDate !== null && campaign.endDate !== null, labelKey: 'required.dates', tab: 'info' },
     { ok: campaign.goal > 0, labelKey: 'required.goal', tab: 'info' },
+    { ok: budgetBalanced, labelKey: 'required.budget', tab: 'budget' },
+    { ok: (campaign.impactGoals?.trim().length ?? 0) >= 20, labelKey: 'required.impactGoals', tab: 'info' },
   ];
 
   const boosters = [
-    { ok: budgetBalanced, warn: budgetPartial, labelKey: 'recommended.budget', tab: 'budget' },
     {
       ok: campaign.milestones.length >= 1,
       warn: false,
@@ -98,12 +106,6 @@ export function PrePublishModal({
       ok: (campaign.reason?.trim().length ?? 0) >= 20,
       warn: false,
       labelKey: 'recommended.reason',
-      tab: 'info',
-    },
-    {
-      ok: (campaign.impactGoals?.trim().length ?? 0) >= 20,
-      warn: false,
-      labelKey: 'recommended.impactGoals',
       tab: 'info',
     },
   ];

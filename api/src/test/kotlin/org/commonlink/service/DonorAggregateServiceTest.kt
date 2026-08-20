@@ -51,7 +51,7 @@ class DonorAggregateServiceTest {
     private val donorProfile = DonorProfile(user = donorUser, displayName = "Marie D.", anonymous = false).setId(donorId)
 
     private fun makeDonation(id: UUID = donationId, targetCampaign: Campaign = campaign) =
-        Donation(donor = donorProfile, campaign = targetCampaign, amount = BigDecimal("75.00"), providerRef = "monerium:abc", confirmedAt = Instant.now())
+        Donation(donor = donorProfile, campaign = targetCampaign, amount = BigDecimal("75.00"), providerRef = "mollie:tr_abc", confirmedAt = Instant.now())
             .setId(id)
 
     private fun makeRow(
@@ -150,7 +150,7 @@ class DonorAggregateServiceTest {
         val result = service.getDonation(campaignId, donationId, userId)
 
         assertThat(result.id).isEqualTo(donationId)
-        assertThat(result.providerRef).isEqualTo("monerium:abc")
+        assertThat(result.providerRef).isEqualTo("mollie:tr_abc")
     }
 
     @Test

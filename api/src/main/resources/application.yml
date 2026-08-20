@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: commonlink-api
+  config:
+    import: "classpath:compliance/risk-classification.yml"
   datasource:
     url: ${COMMON_LINK_DB_URL:jdbc:postgresql://localhost:5432/commonlink}
     username: ${COMMON_LINK_DB_USER:commonlink}
@@ -47,6 +49,11 @@ app:
   cookies:
     secure: ${APP_COOKIES_SECURE:true}
     same-site: Strict
+  security:
+    # Proxies that APPEND to X-Forwarded-For between the client and the app (ClientIpResolver).
+    # 0 = ignore the header and use the socket address — correct for local dev, where the app is
+    # reached directly and any X-Forwarded-For present can only be forged.
+    trusted-proxy-count: ${APP_TRUSTED_PROXY_COUNT:0}
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
@@ -64,18 +71,13 @@ app:
     demo-mode: true
     api-url: ${VOP_BASE_URL=https://thirdparty.qonto.com/v2/sepa/verify_payee}
     api-token: ${VOP_API_TOKEN:}
-  monerium:
-    client-id: ${MONERIUM_CLIENT_ID:}
-    base-url: ${MONERIUM_BASE_URL:https://api.monerium.dev}
-    redirect-uri: ${MONERIUM_REDIRECT_URI:http://localhost:8080/api/public/webhooks/monerium}
-    skip-kyc: true
-    token-enc-key: ${MONERIUM_TOKEN_ENC_KEY:} # also encrypt Mollie tokens
   mollie:
     api-key: ${MOLLIE_API_KEY:}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}
     test-mode: ${MOLLIE_TEST_MODE:true}
+    token-enc-key: ${MOLLIE_TOKEN_ENC_KEY:}
     # api-key ci-dessus = clé de PAIEMENT, ne sert PAS au Connect (incapable d'appeler /v2/client-links)
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID}
@@ -89,11 +91,65 @@ app:
       mock: ${MOLLIE_CONNECT_MOCK:false}
       #Force the Onboarding / KYC to "true"
       allow-fake-completion: ${MOLLIE_CONNECT_ALLOW_FAKE_COMPLETION:true}
+      # Proactive access-token renewal. Refresh is otherwise lazy — nothing calls it until a
+      # donation arrives — so a revoked authorisation is discovered by the donor and that donation
+      # is lost. This sweep surfaces a dead grant hours earlier and emails the association.
+      token-refresh:
+        enabled: true
+        # Gap between the end of one sweep and the start of the next (fixedDelay semantics).
+        fixed-delay-ms: 900000
+        initial-delay-ms: 120000
+        # Renew a token expiring within this window. Keep it >= 2x fixed-delay-ms, otherwise tokens
+        # whose expiry falls between two ticks are missed and get refreshed lazily after all.
+        lookahead-seconds: 1800
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:
     email: ${APP_CURATOR_EMAIL:}
     password: ${APP_CURATOR_PASSWORD:}
+  # Compliance officer bootstrap — set both env vars to provision the LCB-FT compliance officer account.
+  # The bean is absent when APP_COMPLIANCE_OFFICER_EMAIL is unset; no runtime cost in normal operation.
+  compliance-officer:
+    email: ${APP_COMPLIANCE_OFFICER_EMAIL:}
+    password: ${APP_COMPLIANCE_OFFICER_PASSWORD:}
+  compliance:
+    # Function mailbox notified when an asset-freeze alert is raised on a donor
+    # (ComplianceAlertEmailListener). A role address, not a person: the alert must keep reaching the
+    # compliance function across staff changes. Blank disables the notification and logs a warning.
+    alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL:compliance@common-link.org}
+  donation:
+    # Collection cap enforced at payment initiation (DonationCapProperties). A donation beyond the
+    # cap is refused before any money moves — never refunded afterwards, since the receipt is
+    # numbered, hashed on-chain and emailed.
+    cap:
+      # Cap = goal × (1 + margin/100). 0 = strict cap at the goal; a small margin avoids rejecting
+      # the last donation of a campaign over a few euros of overshoot.
+      margin-percent: ${APP_DONATION_CAP_MARGIN_PERCENT:10}
+      # Open payment sessions are counted against the cap for this long, so simultaneous checkouts
+      # cannot collectively overshoot. Must stay above Mollie's ~15 min expiry of an untouched
+      # payment, otherwise capacity is released while it is still payable.
+      reservation-ttl: ${APP_DONATION_CAP_RESERVATION_TTL:PT30M}
+
+commonlink:
+  compliance:
+    # AES-256-GCM key for LCB-FT sensitive fields (ComplianceCryptoConverter), Base64/32 bytes.
+    # Absent here → converter is a no-op (plaintext). Prod
+    # requires COMPLIANCE_ENCRYPTION_KEY and refuses to start without it.
+    encryption-key: ${COMPLIANCE_ENCRYPTION_KEY:}
+  sanctions:
+    screening:
+      score-threshold: 0.85
+      # use-test-data=true loads the bundled fixture instead of the live DG Trésor registry.
+      # Safe for local dev and CI. Must be false in staging and production — enforced by ProdConfigSecurityTest.
+      use-test-data: false
+      registry-url: https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-fichier-xml
+    sync:
+      # Interval between end of one sync and start of the next (fixedDelay semantics).
+      # Default: 86 400 000 ms = 24 h. A stale register is a latent LCB-FT compliance gap.
+      # Operators must keep this value at 24 h or below in all environments.
+      fixed-delay-ms: 86400000
+      # Delay before first execution after startup. Default: 60 000 ms = 1 min.
+      initial-delay-ms: 60000
 
 springdoc:
   api-docs:

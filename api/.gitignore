@@ -8,3 +8,4 @@ gradlew
 .env
 .env.*
 .http
+src/main/resources/db/*.sql

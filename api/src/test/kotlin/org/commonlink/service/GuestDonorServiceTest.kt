@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -22,6 +23,7 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
@@ -45,24 +47,25 @@ class GuestDonorServiceTest {
     fun `findOrCreateGuestDonor is idempotent - two calls same email return same User and DonorProfile`() {
         val email = "  Guest.Donor@Example.COM  "
 
-        val profile1 = guestDonorService.findOrCreateGuestDonor(email, "Jean Dupont")
-        val profile2 = guestDonorService.findOrCreateGuestDonor(email, "Jean Dupont")
+        val first = guestDonorService.findOrCreateGuestDonor(email, "Jean Dupont")
+        val second = guestDonorService.findOrCreateGuestDonor(email, "Jean Dupont")
 
-        assertEquals(profile1.id, profile2.id, "Same DonorProfile id on both calls")
-        assertEquals(profile1.user.id, profile2.user.id, "Same User id on both calls")
+        assertEquals(first.profile.id, second.profile.id, "Same DonorProfile id on both calls")
+        assertEquals(first.profile.user.id, second.profile.user.id, "Same User id on both calls")
 
         val users = userRepository.findAll().filter { it.email == "guest.donor@example.com" }
         assertEquals(1, users.size, "Only one User row should exist")
 
-        val profiles = donorProfileRepository.findAll().filter { it.user.id == profile1.user.id }
+        val profiles = donorProfileRepository.findAll().filter { it.user.id == first.profile.user.id }
         assertEquals(1, profiles.size, "Only one DonorProfile row should exist")
     }
 
     @Test
     fun `guest user is created with correct flags`() {
-        val profile = guestDonorService.findOrCreateGuestDonor("widget-guest@example.com", "Marie Curie")
+        val resolved = guestDonorService.findOrCreateGuestDonor("widget-guest@example.com", "Marie Curie")
 
-        val user = profile.user
+        val user = resolved.profile.user
+        assertTrue(resolved.ownedByGuest, "A freshly created guest row is owned by this flow")
         assertEquals(AuthProvider.GUEST, user.provider)
         assertTrue(user.guest)
         assertFalse(user.emailVerified)
@@ -72,17 +75,57 @@ class GuestDonorServiceTest {
     }
 
     @Test
-    fun `guest DonorProfile stores displayName and anonymous defaults to false`() {
-        val profile = guestDonorService.findOrCreateGuestDonor("anon@example.com", "Pierre Martin")
+    fun `guest DonorProfile stores displayName and defaults to anonymous`() {
+        val resolved = guestDonorService.findOrCreateGuestDonor("anon@example.com", "Pierre Martin")
 
-        assertEquals("Pierre Martin", profile.displayName)
-        assertTrue(profile.anonymous)
-        assertFalse(profile.user.guest.not()) // guest=true
+        assertEquals("Pierre Martin", resolved.profile.displayName)
+        assertTrue(resolved.profile.anonymous)
+        assertTrue(resolved.profile.user.guest)
+    }
+
+    /**
+     * Security regression (audit 2026-08-20, M1): the widget endpoint is unauthenticated, so an
+     * e-mail in its body proves nothing. A real donor's profile must be reported as not owned by
+     * the guest flow, and the caller-supplied display name must not reach it.
+     */
+    @Test
+    fun `existing real account is never reported as guest-owned and keeps its display name`() {
+        val realUser = userRepository.save(
+            TestFixtures.donorUser(email = "real.donor@example.com", displayName = "Alice Dupont")
+        )
+        val realProfile = donorProfileRepository.save(
+            TestFixtures.donorProfile(realUser).apply {
+                displayName = "Alice D."
+                anonymous = true
+            }
+        )
+
+        val resolved = guestDonorService.findOrCreateGuestDonor("real.donor@example.com", "ATTAQUANT")
+
+        assertFalse(resolved.ownedByGuest, "A real account is never owned by the guest flow")
+        assertEquals(realProfile.id, resolved.profile.id, "Donation still attaches to the real donor")
+        assertEquals("Alice D.", resolved.profile.displayName, "Caller-supplied name must not be applied")
+        assertTrue(resolved.profile.anonymous, "Privacy choice must survive an outside donation")
+    }
+
+    /**
+     * A real account with no donor profile yet (an association making a donation). The profile is
+     * created with privacy-preserving defaults, never with values taken from the request body.
+     */
+    @Test
+    fun `profile created for a real account without one starts anonymous and unnamed`() {
+        userRepository.save(TestFixtures.associationUser(email = "asso.donates@example.com"))
+
+        val resolved = guestDonorService.findOrCreateGuestDonor("asso.donates@example.com", "ATTAQUANT")
+
+        assertFalse(resolved.ownedByGuest)
+        assertEquals(null, resolved.profile.displayName, "No caller-supplied name on a real account")
+        assertTrue(resolved.profile.anonymous)
     }
 
     @Test
     fun `confirmDonation derives wallet address for a guest donor identically to regular donors`() {
-        val guestProfile = guestDonorService.findOrCreateGuestDonor("wallet-test@example.com", "Test Donor")
+        val guestProfile = guestDonorService.findOrCreateGuestDonor("wallet-test@example.com", "Test Donor").profile
         assertEquals(null, guestProfile.walletAddress, "No wallet before first donation")
 
         val assocUser = userRepository.save(TestFixtures.associationUser(email = "assoc-guesttest@example.com"))

@@ -1,12 +1,17 @@
 package org.commonlink.service
 
+import org.commonlink.config.RiskClassificationProperties
 import org.commonlink.dto.AdminVerificationDetailDto
 import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.DocumentSlotDto
 import org.commonlink.dto.OptionalDocumentDto
 import org.commonlink.dto.VerificationStateDto
+import org.commonlink.dto.VigilanceMeasuresDto
+import org.commonlink.entity.ACCEPTED_LEGAL_CATEGORIES
 import org.commonlink.entity.AssociationDocument
 import org.commonlink.entity.AssociationDocumentType
+import org.commonlink.entity.BeneficialOwnerType
+import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.AssociationDocumentType.OPTIONAL
 import org.commonlink.entity.AssociationDocumentType.VERIF_RNA_RECEIPT
 import org.commonlink.entity.AssociationDocumentType.VERIF_REPRESENTATIVE_ID
@@ -20,7 +25,9 @@ import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
 import org.commonlink.repository.UserRepository
+import org.commonlink.util.FileTypeSniffer
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -63,6 +70,10 @@ class VerificationService(
     private val registryCheckRepository: AssociationRegistryCheckRepository,
     private val emailService: EmailService,
     private val userRepository: UserRepository,
+    private val complianceAuditLogService: ComplianceAuditLogService,
+    private val beneficialOwnerRepository: BeneficialOwnerRepository,
+    private val riskClassificationProperties: RiskClassificationProperties,
+    private val freezeScreeningOnboardingService: FreezeScreeningOnboardingService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -327,8 +338,24 @@ class VerificationService(
             submittedAt = profile.verificationSubmittedAt,
             verifiedAt = profile.verifiedAt,
             docCount = slots.count { it.uploaded },
+            riskLevel = profile.riskLevel,
             requiredDocuments = slots,
             optionalDocuments = optionalDocs,
+        )
+    }
+
+    fun adminGetVigilanceMeasures(associationId: UUID): VigilanceMeasuresDto {
+        val profile = associationProfileRepository.findById(associationId)
+            .orElseThrow { NotFoundException("Association $associationId not found") }
+        val riskLevel = profile.riskLevel
+        val measures = riskClassificationProperties.measures[riskLevel.name]
+            ?: throw NotFoundException("No vigilance measures configured for risk level $riskLevel")
+        return VigilanceMeasuresDto(
+            riskLevel = riskLevel,
+            classificationVersion = riskClassificationProperties.version,
+            description = measures.description,
+            reviewFrequency = measures.reviewFrequency,
+            requiredDocuments = measures.requiredDocuments,
         )
     }
 
@@ -358,6 +385,44 @@ class VerificationService(
         if (profile.verificationStatus != VerificationStatus.PENDING) {
             throw ConflictException("Cannot approve: status is ${profile.verificationStatus}, expected PENDING")
         }
+
+        // Scope check: block approval when the latest scan shows a legal category outside
+        // ACCEPTED_LEGAL_CATEGORIES (the declared forms of INSEE family 92 — see ScopeVerdict).
+        // UNDETERMINED (null category / no scan) does not block — a registry outage must not
+        // disqualify an association. Log is committed in its own transaction before throwing.
+        val latestCheck = registryCheckRepository.findTopByAssociationIdOrderByCheckedAtDesc(associationId)
+        if (latestCheck?.scopeVerdict == ScopeVerdict.OUT_OF_SCOPE) {
+            complianceAuditLogService.appendOutOfScopeRefusal(associationId, latestCheck.legalCategory!!)
+            throw ConflictException(
+                "Cannot approve: association legal category '${latestCheck.legalCategory}' is outside platform scope" +
+                    " — accepted categories are ${ACCEPTED_LEGAL_CATEGORIES.sorted().joinToString(", ")}" +
+                    " (declared loi 1901 associations and equivalents)"
+            )
+        }
+
+        // Representative check: at least one legal representative must be confirmed before approval.
+        // Art. R.561-3 CMF (décret n°2024-720): tout dirigeant d'une association est bénéficiaire effectif.
+        if (!beneficialOwnerRepository.existsByAssociationIdAndTypeAndDiscardedFalse(associationId, BeneficialOwnerType.REPRESENTATIVE)) {
+            complianceAuditLogService.appendNoRepresentativeRefusal(associationId)
+            throw ConflictException(
+                "Cannot approve: no legal representative has been confirmed for this association"
+            )
+        }
+
+        // Freeze screening: mandatory three-party check (association, representative, beneficial owners).
+        // An impossible check (UNAVAILABLE) is not a favorable check — it blocks approval identically to a HIT.
+        // The audit log entries are committed in REQUIRES_NEW transactions inside the screening service
+        // and survive even if this method throws afterward.
+        when (freezeScreeningOnboardingService.runFreezeCheck(associationId, profile.name)) {
+            ScreeningOutcome.HIT -> throw ConflictException(
+                "Cannot approve: a match was found in the asset-freeze register — review compliance audit log"
+            )
+            ScreeningOutcome.UNAVAILABLE -> throw ConflictException(
+                "Cannot approve: freeze screening could not be completed — see compliance audit log for details"
+            )
+            ScreeningOutcome.CLEAR -> Unit
+        }
+
         profile.verificationStatus = VerificationStatus.VERIFIED
         profile.verifiedAt = Instant.now()
         // Freeze the registry pre-check that informed this decision (LCB-FT audit trail; null if never scanned)
@@ -420,6 +485,13 @@ class VerificationService(
         val mime = file.contentType ?: "application/octet-stream"
         if (mime !in allowedMime) {
             throw UnprocessableEntityException("File type '$mime' is not allowed. Accepted: ${allowedMime.joinToString()}")
+        }
+        // The declared type is caller-controlled and is replayed as the Content-Type when a curator
+        // downloads the document. The bytes must match what was announced
+        // (security audit 2026-08-20, M9).
+        if (!FileTypeSniffer.matches(file.bytes, mime)) {
+            logger.warn("Rejected document upload: bytes do not match declared type {}", mime)
+            throw UnprocessableEntityException("File content does not match its declared type '$mime'")
         }
     }
 }

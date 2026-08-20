@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
+import org.commonlink.entity.ScopeVerdict
 import java.time.Instant
 import java.util.UUID
 
@@ -28,6 +29,12 @@ data class RegistryPreCheckDto(
     @Schema(description = "RNA number (W + 9 digits), if found.")
     val rna: String?,
 
+    @Schema(description = "INSEE legal category (nature_juridique) from Recherche d'entreprises. Null if source unavailable or no SIREN.")
+    val legalCategory: String?,
+
+    @Schema(description = "Computed perimeter verdict: IN_SCOPE (a declared form of INSEE family 92 — 9220, 9221, 9222, 9223, 9230, 9260), OUT_OF_SCOPE (any other known category), UNDETERMINED (source unavailable or category not retrieved). UNDETERMINED never blocks approval.")
+    val scopeVerdict: ScopeVerdict,
+
     @Schema(description = "INSEE administrative status: 'A' = active, 'C' = ceased. Null if no SIREN or INSEE call failed.")
     val etatAdministratif: String?,
 
@@ -45,4 +52,10 @@ data class RegistryPreCheckDto(
 
     @Schema(description = "Non-fatal warnings from individual source failures (e.g. timeout, HTTP error).")
     val warnings: List<String>,
+
+    @Schema(description = "Representatives of the association collected from consulted public registries (names only).")
+    val officers: List<String>,
+
+    @Schema(description = "Whether the association is still live according to RNA-derived data (Recherche d'entreprises, falling back to a JOAFE publication with no dissolution notice). Null when no source could settle it.")
+    val rnaActive: Boolean?,
 )

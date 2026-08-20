@@ -10,6 +10,7 @@ import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationLogoRepository
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.util.FileTypeSniffer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -150,7 +151,16 @@ class AssociationLandingService(
     fun getLogo(associationId: UUID): Pair<String, ByteArray> {
         val logo = associationLogoRepository.findById(associationId)
             .orElseThrow { NotFoundException("No logo for association $associationId") }
-        return logo.contentType to logo.data
+        // Content-Type recomputed from the bytes, never replayed from the stored column: rows written
+        // before upload byte-validation existed carry an unverified declaration, and this endpoint is
+        // public and unauthenticated (security audit 2026-08-20, M9). Unidentifiable bytes are not
+        // served at all rather than served under a guess.
+        val contentType = FileTypeSniffer.detectImageMime(logo.data)
+            ?: run {
+                logger.warn("Refusing to serve logo of association {} — bytes are not a supported image", associationId)
+                throw NotFoundException("No logo for association $associationId")
+            }
+        return contentType to logo.data
     }
 
     /**
@@ -175,7 +185,7 @@ class AssociationLandingService(
     /** Public serving path stored on the profile — never recomposed by callers. */
     private fun logoPath(associationId: UUID) = "/api/public/associations/$associationId/logo"
 
-    /** Rejects empty files, oversized files and non-image MIME types. */
+    /** Rejects empty files, oversized files, non-image MIME types, and mislabelled bytes. */
     private fun validateLogo(file: MultipartFile) {
         if (file.isEmpty) {
             throw UnprocessableEntityException("Logo file is empty")
@@ -188,6 +198,13 @@ class AssociationLandingService(
             throw UnprocessableEntityException(
                 "Unsupported logo type '$mime'; allowed types: ${LOGO_ALLOWED_MIME.joinToString(", ")}"
             )
+        }
+        // The declared type is caller-controlled, and these bytes are served back verbatim from a
+        // public endpoint. They must actually be the image they claim to be
+        // (security audit 2026-08-20, M9).
+        if (!FileTypeSniffer.matches(file.bytes, mime)) {
+            logger.warn("Rejected logo upload: bytes do not match declared type {}", mime)
+            throw UnprocessableEntityException("Logo content does not match its declared type '$mime'")
         }
     }
 

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 import { approveVerification, rejectVerification } from '@/lib/api/admin';
 import { VerificationStatus } from '@/types/association';
+import { FreezeScreenStatus, ScopeVerdict } from '@/types/admin';
 import { STATUS_BADGE_CLASS } from '@/components/admin/adminShared';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -17,6 +18,12 @@ interface Props {
   status: VerificationStatus;
   verifiedAt?: string | null;
   rejectionReason?: string | null;
+  /** Scope verdict from the latest registry scan — used to label a compliance 409. */
+  scopeVerdict?: ScopeVerdict | null;
+  /** Whether at least one legal representative is confirmed — used to label a compliance 409. */
+  hasRepresentative?: boolean | null;
+  /** Freeze screening status — used to label a compliance 409 when the freeze gate blocks. */
+  freezeScreenStatus?: FreezeScreenStatus | null;
   onDecisionMade: (newStatus: VerificationStatus, rejectionReason?: string) => void;
   onNeedRefetch: () => void;
 }
@@ -26,13 +33,19 @@ export function VerificationDecisionPanel({
   status,
   verifiedAt,
   rejectionReason,
+  scopeVerdict,
+  hasRepresentative,
+  freezeScreenStatus,
   onDecisionMade,
   onNeedRefetch,
 }: Props) {
   const t = useTranslations('admin');
+  const tc = useTranslations('curator.dossier');
+  const tf = useTranslations('curator.freezeScreen');
   const addToast = useToastStore((s) => s.addToast);
 
   const [armingApprove, setArmingApprove] = useState(false);
+  const [approveBlockedMessage, setApproveBlockedMessage] = useState<string | null>(null);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
   const [reasonError, setReasonError] = useState<string | null>(null);
@@ -70,23 +83,39 @@ export function VerificationDecisionPanel({
 
   const handleApproveConfirm = async () => {
     setIsSubmitting(true);
+    setApproveBlockedMessage(null);
     try {
       await approveVerification(associationId);
       onDecisionMade(VerificationStatus.VERIFIED, undefined);
       addToast('success', 'admin.decision.approved');
     } catch (err: unknown) {
-      const status =
+      const httpStatus =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { status?: number } }).response?.status
           : undefined;
-      if (status === 409) {
-        addToast('warning', 'admin.decision.notPending');
-        onNeedRefetch();
+      if (httpStatus === 409) {
+        // Pick the label from already-loaded frontend state (backend is the gate, frontend labels).
+        if (scopeVerdict === ScopeVerdict.OUT_OF_SCOPE) {
+          setApproveBlockedMessage(tc('approval.blockedScope'));
+          setArmingApprove(false);
+        } else if (hasRepresentative === false) {
+          setApproveBlockedMessage(tc('approval.blockedNoRepresentative'));
+          setArmingApprove(false);
+        } else if (
+          freezeScreenStatus === FreezeScreenStatus.HIT ||
+          freezeScreenStatus === FreezeScreenStatus.UNAVAILABLE
+        ) {
+          setApproveBlockedMessage(tf(freezeScreenStatus));
+          setArmingApprove(false);
+        } else {
+          // Dossier was processed concurrently — reload
+          addToast('warning', 'admin.decision.notPending');
+          onNeedRefetch();
+        }
       }
-      // 5xx are already handled by the global axios interceptor (toast shown automatically)
+      // 5xx are handled by the global axios interceptor
     } finally {
       setIsSubmitting(false);
-      setArmingApprove(false);
     }
   };
 
@@ -128,6 +157,7 @@ export function VerificationDecisionPanel({
 
   const resetForms = () => {
     setArmingApprove(false);
+    setApproveBlockedMessage(null);
     setShowRejectForm(false);
     setReason('');
     setReasonError(null);
@@ -178,6 +208,22 @@ export function VerificationDecisionPanel({
           </button>
         )}
       </div>
+
+      {/* Approval blocked by compliance check */}
+      {approveBlockedMessage && (
+        <div
+          style={{
+            padding: '10px 14px',
+            borderRadius: 6,
+            background: 'rgba(231,76,60,0.08)',
+            border: '1px solid rgba(231,76,60,0.25)',
+            color: 'var(--color-error)',
+            fontSize: 13,
+          }}
+        >
+          {approveBlockedMessage}
+        </div>
+      )}
 
       {/* Reject form */}
       {showRejectForm && (

@@ -3,10 +3,13 @@ package org.commonlink.entity
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
- * Defines the two types of users on the platform.
+ * Defines the types of users on the platform.
  *
  * The role is embedded in the JWT (`role` claim) and used by Spring Security
  * as a granted authority (`ROLE_DONOR` / `ROLE_ASSOCIATION`) for route-level access control.
+ *
+ * Two of these roles are **back-office** roles ([CURATOR], [COMPLIANCE_OFFICER]) and must never be
+ * reachable from a public sign-up payload — see [SELF_ASSIGNABLE].
  */
 enum class UserRole {
     /** A philanthropist who browses campaigns and makes donations. */
@@ -15,6 +18,31 @@ enum class UserRole {
     ASSOCIATION,
     /** A platform curator who can perform on-chain moderation actions (verify, pause, etc.). */
     CURATOR,
+    /**
+     * The AML/CFT compliance officer responsible for reviewing alerts and suspicious-activity
+     * reports (SARs). Grants exclusive access to the compliance back-office (/api/compliance/)
+     * and nothing else — in particular, no curator moderation actions and no association data.
+     */
+    COMPLIANCE_OFFICER,
+    ;
+
+    companion object {
+        /**
+         * Roles a caller may request for themselves on a public, unauthenticated sign-up route
+         * (email registration, magic link, Google sign-up).
+         *
+         * [CURATOR] and [COMPLIANCE_OFFICER] are deliberately excluded: they are provisioned
+         * out-of-band by [org.commonlink.bootstrap.CuratorBootstrap] and
+         * [org.commonlink.bootstrap.ComplianceOfficerBootstrap]. Accepting them from a request body
+         * granted anyone who could receive an email full access to the compliance back-office
+         * (security audit 2026-08-20, C1).
+         *
+         * Single source of truth for the DTO constraint
+         * ([org.commonlink.validation.SelfAssignableRole]) and the service-side guard in
+         * [org.commonlink.service.AuthService].
+         */
+        val SELF_ASSIGNABLE: Set<UserRole> = setOf(DONOR, ASSOCIATION)
+    }
 }
 
 /**
@@ -246,3 +274,30 @@ enum class PayoutBlockingReason {
     /** The payout label/justification is shorter than 16 characters once trimmed. */
     DESCRIPTION_TOO_SHORT,
 }
+
+/**
+ * AML/CFT (LCB-FT) risk level assigned to an association or a donation.
+ *
+ * Capturing the level without the associated [AssociationProfile.riskClassificationVersion]
+ * renders a past assessment uninterpretable once the classification document is revised.
+ * The mapping from a risk level to the corresponding due-diligence measures (simplified,
+ * standard, or enhanced) is defined in a versioned classification document, not in this code.
+ */
+enum class RiskLevel {
+    /** Low risk — simplified due diligence may apply per the current classification. */
+    LOW,
+    /** Standard risk — baseline due diligence applies. Default for all new records. */
+    STANDARD,
+    /** High risk — enhanced due diligence required per the current classification. */
+    HIGH,
+}
+
+/**
+ * Distingue les représentants légaux (REPRESENTATIVE) des bénéficiaires effectifs stricts
+ * (BENEFICIAL_OWNER) au sein de la table `beneficial_owner`.
+ *
+ * Art. R.561-3 CMF (décret n°2024-720 du 5 juillet 2024) : pour une association, tout
+ * administrateur, membre de surveillance ou dirigeant est bénéficiaire effectif. Les deux
+ * catégories sont soumises au contrôle de gel et à un gate d'approbation distinct.
+ */
+enum class BeneficialOwnerType { BENEFICIAL_OWNER, REPRESENTATIVE }

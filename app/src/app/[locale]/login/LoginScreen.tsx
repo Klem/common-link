@@ -15,6 +15,7 @@ import {
   EmailRegisterForm,
   MagicLinkForm,
   AssoSearch,
+  AssoManualEntry,
   StepIndicator,
   LoginProgressOverlay,
 } from '@/components/auth';
@@ -87,6 +88,9 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
   );
   const [assoStep, setAssoStep] = useState<1 | 2>(1);
   const [selectedAsso, setSelectedAsso] = useState<AssoResult | null>(null);
+  // Step 1 has two mutually exclusive entry points: the RNA (JOAFE) search, and the manual SIREN
+  // form for associations that have no RNA and are therefore absent from JOAFE.
+  const [assoManualEntry, setAssoManualEntry] = useState(false);
 
   // Hooks
   const googleAuth = useGoogleAuth();
@@ -200,6 +204,13 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
   }
 
   // ─── Render: auth page ─────────────────────────────────────────────────────
+
+  /**
+   * Labels an association identifier by the register it comes from: RNA numbers start with a `W`,
+   * anything else on this screen is a SIREN captured through the manual form.
+   */
+  const identifierRegister = (identifier: string): string =>
+    identifier.toUpperCase().startsWith('W') ? 'RNA' : 'SIREN';
 
   const assoStepLabels = [
     t('signup.association.steps.search'),
@@ -330,13 +341,24 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
 
               <StepIndicator steps={assoStepLabels} currentStep={assoStep} />
 
-              {/* Step 1 — Search */}
-              {assoStep === 1 && (
+              {/* Step 1 — Search (RNA) or manual entry (SIREN, no RNA) */}
+              {assoStep === 1 && !assoManualEntry && (
                 <AssoSearch
                   onSelect={(asso) => {
                     setSelectedAsso(asso);
                     setAssoStep(2);
                   }}
+                  onNoRna={() => setAssoManualEntry(true)}
+                />
+              )}
+
+              {assoStep === 1 && assoManualEntry && (
+                <AssoManualEntry
+                  onSelect={(asso) => {
+                    setSelectedAsso(asso);
+                    setAssoStep(2);
+                  }}
+                  onBack={() => setAssoManualEntry(false)}
                 />
               )}
 
@@ -351,7 +373,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
                       <div className="flex-1 min-w-0">
                         <div className="text-[12.5px] font-semibold text-text truncate">{selectedAsso.nom}</div>
                         <div className="text-[11px] text-muted">
-                          📍 {selectedAsso.ville} {selectedAsso.codePostal} · RNA {selectedAsso.identifier}
+                          📍 {selectedAsso.ville} {selectedAsso.codePostal} · {identifierRegister(selectedAsso.identifier)} {selectedAsso.identifier}
                         </div>
                       </div>
                       <button

@@ -1,6 +1,6 @@
 {
   "build": {
     "type": "gradle",
-    "goal": "bootJar -x test --no-daemon -quiet"
+    "goal": "test -PnoDocker bootJar --no-daemon -quiet"
   }
 }

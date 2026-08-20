@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getRegistryPreCheck, scanRegistryPreCheck } from '@/lib/api/admin';
 import type { RegistryPreCheckDto } from '@/types/admin';
+import { ScopeVerdict } from '@/types/admin';
 
 interface Props {
   associationId: string;
@@ -39,6 +40,19 @@ function Row({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * INSEE legal categories (level III) that carry a translated label. Any other code is displayed
+ * raw rather than mislabelled — the backend accept-list lives in `ScopeVerdict.kt` and this list
+ * only governs how a code is rendered.
+ */
+const LABELLED_LEGAL_CATEGORIES = [
+  '9210', '9220', '9221', '9222', '9223', '9230', '9240', '9260', '9300',
+] as const;
+
+function isKnownLegalCategory(code: string): boolean {
+  return (LABELLED_LEGAL_CATEGORIES as readonly string[]).includes(code);
+}
+
 function Source({ name }: { name: string }) {
   return (
     <span style={{ color: 'var(--color-text-2)', fontSize: 12, marginLeft: 2 }}>
@@ -49,6 +63,7 @@ function Source({ name }: { name: string }) {
 
 export function RegistryPreCheckBanner({ associationId }: Props) {
   const t = useTranslations('admin');
+  const tc = useTranslations('curator.dossier');
   const locale = useLocale();
 
   const [data, setData] = useState<RegistryPreCheckDto | null>(null);
@@ -154,16 +169,18 @@ export function RegistryPreCheckBanner({ associationId }: Props) {
       year: 'numeric',
     });
 
+  // `associationExists === null` has two very different causes and must not be shown as one:
+  // the source errored (a warning is recorded), or the entity is simply absent from a register
+  // that only lists SIREN-bearing entities — which proves nothing about an association.
+  const rechercheFailed = data.warnings.some((w) => w.startsWith('recherche-entreprises:'));
+
   // Determine which checks were skipped and why
   const skipped: Array<{ sources: string[]; reason: string }> = [];
 
   if (data.siren === null) {
-    const reason =
-      data.associationExists === false
-        ? t('registryCheck.status.notFound')
-        : data.associationExists === null
-        ? t('registryCheck.skipped.unavailable')
-        : t('registryCheck.skipped.noSiren');
+    const reason = rechercheFailed
+      ? t('registryCheck.skipped.unavailable')
+      : t('registryCheck.skipped.noSiren');
     skipped.push({ sources: ['INSEE Sirene', 'BODACC'], reason });
   }
 
@@ -207,7 +224,9 @@ export function RegistryPreCheckBanner({ associationId }: Props) {
               ? t('registryCheck.status.active')
               : data.associationExists === false
               ? t('registryCheck.status.notFound')
-              : t('registryCheck.error')}
+              : rechercheFailed
+              ? t('registryCheck.error')
+              : t('registryCheck.status.notListed')}
           </span>
           <Source name="Recherche entreprises" />
         </Row>
@@ -272,6 +291,96 @@ export function RegistryPreCheckBanner({ associationId }: Props) {
               ))}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Scope verdict — loi 1901 */}
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--color-border)' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-2)' }}>
+          {tc('registry.scopeVerdict.title')}:{' '}
+        </span>
+        {data.scopeVerdict === ScopeVerdict.IN_SCOPE && (
+          <span style={{ color: COLOR_OK, fontWeight: 600, fontSize: 13 }}>
+            {tc('registry.scopeVerdict.IN_SCOPE')}
+          </span>
+        )}
+        {data.scopeVerdict === ScopeVerdict.OUT_OF_SCOPE && (
+          <>
+            <span style={{ color: COLOR_ERR, fontWeight: 600, fontSize: 13 }}>
+              {tc('registry.scopeVerdict.OUT_OF_SCOPE')}
+            </span>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: COLOR_ERR }}>
+              {tc('registry.scopeVerdict.outOfScopeWarning')}
+            </p>
+          </>
+        )}
+        {data.scopeVerdict === ScopeVerdict.UNDETERMINED && (
+          <>
+            <span style={{ color: 'var(--color-text-2)', fontSize: 13 }}>
+              {tc('registry.scopeVerdict.UNDETERMINED')}
+            </span>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-text-2)' }}>
+              {tc('registry.scopeVerdict.undeterminedHint')}
+            </p>
+          </>
+        )}
+
+        {/* Which INSEE legal category the verdict was derived from */}
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-text-2)' }}>
+          {tc('registry.legalCategory.title')}:{' '}
+          {data.legalCategory === null ? (
+            <em>{tc('registry.legalCategory.unknown')}</em>
+          ) : (
+            <>
+              <span style={{ fontFamily: 'monospace' }}>{data.legalCategory}</span>
+              {isKnownLegalCategory(data.legalCategory) &&
+                ` — ${tc(`registry.legalCategory.codes.${data.legalCategory}`)}`}
+            </>
+          )}
+        </p>
+
+        {data.scopeVerdict !== ScopeVerdict.IN_SCOPE && (
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--color-text-2)' }}>
+            {tc('registry.scopeVerdict.accepted')}
+          </p>
+        )}
+      </div>
+
+      {/* RNA active status */}
+      {data.rnaActive !== undefined && (
+        <div style={{ marginTop: 6, fontSize: 13 }}>
+          <Row>
+            <StatusDot
+              ok={data.rnaActive === true}
+              warn={data.rnaActive === null}
+            />
+            <span>
+              {data.rnaActive === true
+                ? tc('registry.rnaActive.true')
+                : data.rnaActive === false
+                ? tc('registry.rnaActive.false')
+                : tc('registry.rnaActive.unknown')}
+            </span>
+            <Source name="RNA" />
+          </Row>
+        </div>
+      )}
+
+      {/* Officers */}
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--color-border)' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-2)' }}>
+          {tc('registry.officers.title')}
+        </span>
+        {data.officers.length === 0 ? (
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-text-2)', fontStyle: 'italic' }}>
+            {tc('registry.officers.empty')}
+          </p>
+        ) : (
+          <ul style={{ margin: '4px 0 0', paddingLeft: 16, fontSize: 13 }}>
+            {data.officers.map((name) => (
+              <li key={name} style={{ marginBottom: 2 }}>{name}</li>
+            ))}
+          </ul>
         )}
       </div>
 

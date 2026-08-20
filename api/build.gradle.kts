@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.testing.TestDescriptor
+import org.gradle.api.tasks.testing.TestResult
+import org.gradle.kotlin.dsl.KotlinClosure2
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val web3jCodegen: Configuration by configurations.creating
@@ -74,6 +77,9 @@ dependencies {
     implementation("org.web3j:crypto:4.12.2")
     implementation("org.web3j:utils:4.12.2")
 
+    // Fuzzy name matching — JaroWinkler for LCB-FT sanctions screening (not managed by Spring BOM)
+    implementation("org.apache.commons:commons-text:1.12.0")
+
     // Web3j codegen — only used by generateRegistryWrapper task, not deployed
     web3jCodegen("org.web3j:codegen:4.12.2")
 
@@ -106,7 +112,22 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // -PnoDocker: exclude tests that need a Docker daemon (Testcontainers). Used by the
+        // Clever Cloud deploy build, which has no Docker socket — see clevercloud/gradle.json.
+        // Local `./gradlew.bat test` runs everything, unchanged.
+        if (project.hasProperty("noDocker")) {
+            excludeTags("testcontainers")
+        }
+    }
+    // clevercloud/gradle.json builds with -quiet, which swallows Gradle's LIFECYCLE
+    // task logs — println is raw stdout and shows up regardless, so this is the only
+    // way to see in the Clever Cloud deploy logs that tests actually ran.
+    afterSuite(KotlinClosure2({ desc: TestDescriptor, result: TestResult ->
+        if (desc.parent == null) {
+            println("Test result: ${result.resultType} — ${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped")
+        }
+    }))
 }
 
 tasks.register<JavaExec>("generateRegistryWrapper") {

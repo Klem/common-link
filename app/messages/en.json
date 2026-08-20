@@ -44,16 +44,17 @@
       "siren": "SIREN",
       "skipped": {
         "noRna": "RNA not found",
-        "noSiren": "SIREN not found",
+        "noSiren": "No SIREN number known",
         "title": "Not performed",
-        "unavailable": "Registry search unavailable"
+        "unavailable": "Business register unavailable"
       },
       "status": {
         "active": "Active",
         "ceased": "Ceased (INSEE)",
         "dissolved": "Dissolution detected",
         "insolvency": "Insolvency procedure",
-        "notFound": "Not found"
+        "notFound": "Not found",
+        "notListed": "Not listed (association with no SIREN number)"
       },
       "title": "Registry check",
       "warnings": "Warnings"
@@ -119,11 +120,28 @@
     }
   },
   "auth": {
+    "assoManual": {
+      "backToRna": "Back to RNA search",
+      "confirm": "This is my association",
+      "errors": {
+        "notFound": "No entity found for this SIREN. Check the number.",
+        "rateLimited": "Too many lookups. Please wait a few minutes.",
+        "unavailable": "The register is temporarily unavailable. Please try again later."
+      },
+      "hint": "Enter your association's SIREN. We check it against the official business register.",
+      "inactive": "The register reports this entity as no longer administratively active.",
+      "label": "SIREN number",
+      "notAssociation": "The register does not identify this entity as an association. Your application will be reviewed before approval.",
+      "placeholder": "SIREN (9 digits)",
+      "search": "Check",
+      "searching": "Checking…"
+    },
     "assoSearch": {
       "apiUnavailable": "The directory is temporarily unavailable. Please try again later.",
       "backToSearch": "Back to search",
       "noResults": "No association found.",
       "noResultsHint": "Check the spelling or try your RNA.",
+      "noRna": "I don't have an RNA number",
       "searchHint": "Search your association in the official directory."
     },
     "divider": {
@@ -141,6 +159,7 @@
       "passwordNotSet": "No password set. Use a magic link or Google to log in.",
       "passwordTooShort": "Password must be at least 8 characters.",
       "rateLimited": "Too many attempts. Try again in 10 minutes.",
+      "sirenAlreadyRegistered": "This SIREN is already linked to a CommonLink account. Log in, or contact us if you believe this is a mistake.",
       "tokenExpired": "This link has expired. Request a new one.",
       "tokenUsed": "This link has already been used."
     },
@@ -319,9 +338,6 @@
     "mollieErrorFetch": "Failed to get Mollie authentication URL. Please try again.",
     "mollieErrorMissingContactEmail": "Please fill in your contact email in the Infos tab before connecting Mollie.",
     "mollieErrorMissingContactName": "Please fill in your contact name in the Infos tab before connecting Mollie.",
-    "moneriumConnected": "Wallet connected successfully.",
-    "moneriumError": "Wallet connection failed. Please try again.",
-    "moneriumErrorFetch": "Failed to get authentication URL. Please try again.",
     "payeeCreated": "Beneficiary added successfully.",
     "paymentError": "Payment failed. Please try again.",
     "paymentSuccess": "Payment issued!",
@@ -339,6 +355,325 @@
     "widgetAllowedOriginSaved": "Redirect origin saved.",
     "widgetDestinationSaved": "Destination campaign saved.",
     "widgetTokenGenerated": "Widget token generated."
+  },
+  "compliance": {
+    "alerts": {
+      "actions": {
+        "view": "View"
+      },
+      "ageFormat": {
+        "daysHours": "{days}d {hours}h",
+        "hoursMinutes": "{hours}h {minutes}min",
+        "minutes": "{minutes}min"
+      },
+      "col": {
+        "actions": "Actions",
+        "age": "Age",
+        "origin": "Origin",
+        "severity": "Severity",
+        "status": "Status",
+        "subject": "Subject"
+      },
+      "empty": "No freeze alerts.",
+      "error": "Error loading alerts.",
+      "loading": "Loading alerts…",
+      "origin": {
+        "FREEZE_HIT_DONATION": "Freeze — Donation",
+        "FREEZE_HIT_ONBOARDING": "Freeze — Onboarding",
+        "SCREENING_UNAVAILABLE": "Screening unavailable"
+      },
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      },
+      "severity": {
+        "HIGH": "High",
+        "LOW": "Low",
+        "MEDIUM": "Medium"
+      },
+      "status": {
+        "CLOSED": "Closed",
+        "IN_REVIEW": "Under review",
+        "PENDING": "Pending"
+      },
+      "subjectType": {
+        "ASSOCIATION": "Association",
+        "BENEFICIAL_OWNER": "Beneficial owner",
+        "DECLARANT": "Officer (registry)",
+        "DONOR": "Donor",
+        "REPRESENTATIVE": "Legal representative",
+        "SYSTEM": "System"
+      },
+      "title": "Freeze alerts"
+    },
+    "auditLog": {
+      "col": {
+        "date": "Date",
+        "event": "Event",
+        "seq": "Sequence no."
+      },
+      "empty": "No entries.",
+      "error": "Error loading audit log.",
+      "loading": "Loading audit log...",
+      "title": "Recent audit log"
+    },
+    "dashboard": {
+      "alertCount": {
+        "error": "Loading error.",
+        "loading": "Loading...",
+        "title": "Pending freeze alerts",
+        "viewAll": "View all alerts"
+      },
+      "title": "Dashboard"
+    },
+    "detail": {
+      "age": "Age",
+      "backToList": "Back to list",
+      "closed": {
+        "decision": "Decision",
+        "rationale": "Rationale",
+        "title": "Decision recorded"
+      },
+      "createdAt": "Detected on",
+      "decision": {
+        "FALSE_POSITIVE": "False positive — misidentification",
+        "LEGITIMATE": "No match confirmed — legitimate situation",
+        "SUSPICIOUS": "Match confirmed",
+        "label": "Decision",
+        "placeholder": "Select a decision…",
+        "title": "Close alert"
+      },
+      "error": "Error loading alert.",
+      "history": {
+        "col": {
+          "date": "Date",
+          "event": "Event",
+          "matchCount": "Matches",
+          "reason": "Reason",
+          "registryDate": "Register version",
+          "seq": "Sequence no.",
+          "threshold": "Threshold",
+          "topScore": "Top score"
+        },
+        "empty": "No history available.",
+        "title": "Freeze-screening audit history"
+      },
+      "loading": "Loading alert…",
+      "metadata": "Information",
+      "origin": "Origin",
+      "rationale": {
+        "label": "Rationale (mandatory)",
+        "placeholder": "State the elements supporting this decision."
+      },
+      "severity": "Severity",
+      "status": "Status",
+      "subject": "Subject",
+      "subjectType": "Subject type",
+      "submit": "Record decision",
+      "submitting": "Saving…",
+      "takeInCharge": {
+        "button": "Take in charge",
+        "description": "Take this alert in charge to begin review.",
+        "title": "Take in charge"
+      },
+      "takenInChargeAt": "Taken in charge on",
+      "takenInChargeBy": "Taken in charge by",
+      "title": "Alert detail",
+      "treasury": {
+        "method": "Method used",
+        "methodPlaceholder": "E.g.: secure email, registered letter",
+        "note": "Notifying the Direction générale du Trésor is a human action performed outside the application. No automated transmission exists or will be built. These fields record proof of that action only.",
+        "notifiedAt": "Notification date",
+        "ref": "Notification reference",
+        "refPlaceholder": "Number or identifier assigned to the notification",
+        "requiredForSuspicious": "These three fields are mandatory when the decision is a confirmed match.",
+        "section": "Proof of notification to the Direction générale du Trésor"
+      }
+    },
+    "evidence": {
+      "algorithm": "Algorithm",
+      "col": {
+        "dateOfBirth": "Date of birth",
+        "idRegistre": "Register no.",
+        "legalReference": "Sanctions programme",
+        "matchedName": "Register entry",
+        "nature": "Nature",
+        "score": "Score"
+      },
+      "conditionsSide": "Screening conditions",
+      "empty": "No correspondence recorded for this alert. A screening that could not be performed produces no comparison.",
+      "matchCount": "Correspondences",
+      "nature": {
+        "LEGAL_ENTITY": "Legal entity",
+        "PHYSICAL_PERSON": "Natural person",
+        "VESSEL": "Vessel"
+      },
+      "no": "No",
+      "registryCheckedAt": "Registry checked on",
+      "registryPublicationDate": "Register version",
+      "rna": "RNA",
+      "rnaActive": "RNA active",
+      "screenedNormalized": "Value compared",
+      "screenedParty": "Screened party",
+      "screenedSide": "What was screened",
+      "siren": "SIREN",
+      "snapshotNote": "Register entries are recorded as they stood at screening time, so this evidence survives the entry being delisted.",
+      "subject": "Subject",
+      "subjectId": "Technical identifier",
+      "subjectType": "Subject type",
+      "subjectUnresolved": "Unresolved subject",
+      "threshold": "Score threshold",
+      "title": "Screening evidence",
+      "unknown": "Unknown",
+      "yes": "Yes"
+    },
+    "nav": {
+      "alerts": "Freeze alerts",
+      "dashboard": "Dashboard"
+    },
+    "priorDecisions": {
+      "date": "Date",
+      "decision": "Decision",
+      "note": "Informative only. Closing an alert is irreversible and every new correspondence raises a new alert: this one must still be examined on its own merits.",
+      "origin": "Origin",
+      "title": "Previous rulings on this subject"
+    },
+    "registry": {
+      "col": {
+        "association": "Association",
+        "date": "Scan date",
+        "exists": "Existence",
+        "rna": "RNA active",
+        "verdict": "Perimeter",
+        "warnings": "Warnings"
+      },
+      "empty": "No scans recorded.",
+      "error": "Error loading scans.",
+      "exists": {
+        "false": "No",
+        "null": "—",
+        "true": "Yes"
+      },
+      "loading": "Loading scans...",
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      },
+      "rna": {
+        "false": "Inactive",
+        "null": "Not available",
+        "true": "Active"
+      },
+      "title": "Latest registry scans",
+      "verdict": {
+        "IN_SCOPE": "In scope",
+        "OUT_OF_SCOPE": "Out of scope",
+        "UNDETERMINED": "Undetermined"
+      }
+    },
+    "shell": {
+      "logout": "Log out",
+      "navLabel": "Navigation",
+      "title": "LCB-FT Compliance"
+    }
+  },
+  "curator": {
+    "dossier": {
+      "approval": {
+        "blockedNoRepresentative": "Approval blocked: no legal representative has been entered.",
+        "blockedScope": "Approval blocked: the association is out of loi 1901 scope."
+      },
+      "registry": {
+        "legalCategory": {
+          "codes": {
+            "9210": "Undeclared association",
+            "9220": "Declared association",
+            "9221": "Declared association (work integration enterprise)",
+            "9222": "Intermediary association",
+            "9223": "Employers' grouping",
+            "9230": "Declared association recognised as being of public utility",
+            "9240": "Congregation",
+            "9260": "Local-law association (Alsace-Moselle)",
+            "9300": "Foundation"
+          },
+          "title": "Legal category",
+          "unknown": "Not retrieved"
+        },
+        "officers": {
+          "empty": "No officers collected",
+          "title": "Officers"
+        },
+        "rnaActive": {
+          "false": "RNA inactive",
+          "true": "RNA active",
+          "unknown": "RNA status unknown"
+        },
+        "scopeVerdict": {
+          "IN_SCOPE": "In scope",
+          "OUT_OF_SCOPE": "Out of scope",
+          "UNDETERMINED": "Undetermined",
+          "accepted": "Accepted forms: 9220 declared · 9221 work integration · 9222 intermediary · 9223 employers' grouping · 9230 public utility · 9260 local law.",
+          "outOfScopeWarning": "Approval is blocked: the association is out of loi 1901 scope.",
+          "title": "Loi 1901 scope",
+          "undeterminedHint": "Legal category not retrieved — approval is not blocked."
+        }
+      },
+      "representative": {
+        "add": {
+          "title": "Add a legal representative"
+        },
+        "noRetained": "No legal representative retained — approval is blocked.",
+        "title": "Legal Representatives"
+      },
+      "risk": {
+        "HIGH": "High",
+        "LOW": "Low",
+        "STANDARD": "Standard",
+        "title": "AML/CFT Risk Level"
+      },
+      "ubo": {
+        "add": {
+          "dateOfBirth": "Date of birth",
+          "name": "Full name (required)",
+          "nameRequired": "Name is required.",
+          "nameTooLong": "Maximum 200 characters.",
+          "role": "Role / function",
+          "submit": "Add",
+          "title": "Add a beneficial owner"
+        },
+        "discard": "Discard",
+        "discardConfirm": "Confirm discard?",
+        "discarded": "Discarded",
+        "error": "Failed to load beneficial owners.",
+        "loading": "Loading...",
+        "noRetained": "No retained beneficial owner — approval is blocked.",
+        "officers": {
+          "addHint": "Add as beneficial owner",
+          "title": "Registry officers (suggested starting points)"
+        },
+        "origin": {
+          "DECLARED": "Declared",
+          "REGISTRY": "Registry",
+          "STATUTS": "Statutes"
+        },
+        "retained": "Retained",
+        "title": "Beneficial Owners"
+      },
+      "vigilance": {
+        "error": "Failed to load vigilance measures.",
+        "loading": "Loading measures...",
+        "requiredDocuments": "Required documents:",
+        "reviewFrequency": "Review frequency:",
+        "title": "Applicable vigilance measures",
+        "version": "Classification"
+      }
+    },
+    "freezeScreen": {
+      "HIT": "a match was detected — dossier awaiting compliance officer decision",
+      "HIT_CLEARED": "match ruled a false positive by the compliance officer — screened on {date}",
+      "NOT_PERFORMED": "no screening has been performed yet",
+      "PASSED": "screening passed on {date}",
+      "UNAVAILABLE": "screening could not be completed — approval suspended",
+      "title": "Freeze screening"
+    }
   },
   "dashboard": {
     "association": {
@@ -552,20 +887,6 @@
           }
         },
         "memberSince": "Member since {date}",
-        "monerium": {
-          "badge": "Experimental",
-          "cancel": "Cancel",
-          "connect": "Connect wallet",
-          "connected": "Wallet connected successfully.",
-          "connectedStatus": "Connected",
-          "description": "Connect your Monerium wallet to receive and issue digital euros directly on the blockchain.",
-          "error": "Wallet connection failed. Please try again.",
-          "errorFetch": "Failed to get authentication URL. Please try again.",
-          "pendingStatus": "Authorization pending",
-          "title": "Monerium Wallet",
-          "tryAgain": "Try Again",
-          "waiting": "Authentication in progress… Complete the form in the window that just opened."
-        },
         "name": "Association name",
         "pending": "Pending verification",
         "phone": "Phone",
@@ -976,16 +1297,16 @@
         "continueEditing": "Continue editing",
         "fill": "Fill in",
         "recommended": {
-          "budget": "Balanced estimated budget (+40% donations)",
-          "impactGoals": "Measurable impact goals",
           "milestones": "Milestones (increases donor engagement)",
           "reason": "\"Why now?\" (builds trust)",
           "section": "Recommended — does not block publishing"
         },
         "required": {
+          "budget": "Balanced estimated budget (expenses = revenues)",
           "dates": "Start and end dates",
           "description": "Description (at least 10 characters)",
           "goal": "Fundraising goal",
+          "impactGoals": "Expected outcome (at least 20 characters)",
           "name": "Campaign name",
           "section": "Required to publish"
         },
@@ -1055,20 +1376,6 @@
       "success": {
         "closing": "Closing window…",
         "title": "Mollie connected"
-      }
-    },
-    "moneriumPopup": {
-      "callback": {
-        "closing": "Completing KYC… this window will close.",
-        "loading": "Loading…"
-      },
-      "error": {
-        "retry": "Please try again from the profile page.",
-        "title": "KYC Failed"
-      },
-      "success": {
-        "closing": "Closing window…",
-        "title": "KYC Complete"
       }
     },
     "nav": {
@@ -1498,6 +1805,7 @@
     "amounts": {
       "custom": "Other amount (€)",
       "customPlaceholder": "Enter amount",
+      "remaining": "This campaign can still collect {amount} €.",
       "title": "Select an amount"
     },
     "anonymous": {
@@ -1516,6 +1824,8 @@
       "amountMax": "Maximum donation is 10,000 €",
       "amountMin": "Minimum donation is 1 €",
       "amountRequired": "Amount is required",
+      "capExceeded": "This amount exceeds what the campaign can still collect. Please enter a lower amount.",
+      "capFull": "This campaign has reached its collection cap and no longer accepts donations.",
       "consentRequired": "You must consent to proceed",
       "countryInvalid": "Please enter a valid 2-letter country code",
       "emailInvalid": "Please enter a valid email address",
@@ -1530,9 +1840,8 @@
       "addressLine1Placeholder": "Street and number",
       "addressLine2": "Address (line 2)",
       "addressLine2Placeholder": "Apartment, building, etc. (optional)",
-      "birthCity": "City of birth",
-      "birthCityPlaceholder": "City...",
       "birthDate": "Date of birth",
+      "birthDateHint": "Optional and not stored. Providing it reduces the chance that a namesake gets your donation refused.",
       "birthDatePlaceholder": "YYYY-MM-DD",
       "city": "City",
       "country": "Country",

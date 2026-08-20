@@ -28,6 +28,11 @@ interface JoafeResponse {
 
 interface AssoSearchProps {
   onSelect: (asso: AssoResult) => void;
+  /**
+   * Switches to the manual SIREN form. When omitted the escape hatch is not rendered, so the
+   * component keeps its original single-purpose behaviour.
+   */
+  onNoRna?: () => void;
 }
 
 type SearchState = 'idle' | 'loading' | 'results' | 'empty' | 'error';
@@ -59,7 +64,7 @@ function mapJoafeRecords(records: JoafeRecord[]): AssoResult[] {
     }));
 }
 
-export function AssoSearch({ onSelect }: AssoSearchProps) {
+export function AssoSearch({ onSelect, onNoRna }: AssoSearchProps) {
   const t = useTranslations('auth');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<AssoResult[]>([]);
@@ -169,6 +174,18 @@ export function AssoSearch({ onSelect }: AssoSearchProps) {
       {/* API unavailable error */}
       {apiUnavailable && (
         <p className="text-[12px] text-red">{t('assoSearch.apiUnavailable')}</p>
+      )}
+
+      {/* Escape hatch for associations registered with a SIREN but no RNA: they are absent from
+          JOAFE, so no query here can ever find them. */}
+      {onNoRna && (
+        <button
+          type="button"
+          onClick={onNoRna}
+          className="self-start text-[11.5px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline"
+        >
+          {t('assoSearch.noRna')}
+        </button>
       )}
 
     </div>

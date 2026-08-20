@@ -15,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.access.intercept.AuthorizationFilter
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
@@ -46,7 +47,7 @@ class SecurityConfig(
      *
      * Route access rules:
      * - `/api/auth / **`, `/api/docs / **` — public (no token required).
-     * - `/api/association / **`, `/api/monerium / **` — requires `ROLE_ASSOCIATION`.
+     * - `/api/association / **` — requires `ROLE_ASSOCIATION`.
      * - `/api/donor / **` — requires `ROLE_DONOR`.
      * - Everything else — requires any valid JWT (any role).
      *
@@ -66,10 +67,10 @@ class SecurityConfig(
                 if (docsEnabled) auth.requestMatchers("/api/docs/**").permitAll()
                 // Public widget and webhook endpoints — no JWT required
                 auth.requestMatchers("/api/public/**").permitAll()
+                auth.requestMatchers("/api/compliance/**").hasRole(UserRole.COMPLIANCE_OFFICER.name)
                 auth.requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/admin/verifications/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
-                auth.requestMatchers("/api/monerium/**").hasRole(UserRole.ASSOCIATION.toString())
                 auth.requestMatchers("/api/mollie/**").hasRole(UserRole.ASSOCIATION.toString())
                 // Campaign sub-resources (payouts, reporting, donor aggregates) are all
                 // association-owned; explicit gate so a ROLE_DONOR token can't reach them —
@@ -78,7 +79,22 @@ class SecurityConfig(
                 auth.requestMatchers("/api/donor/**").hasRole(UserRole.DONOR.toString())
                 auth.anyRequest().authenticated()
             }
+            .headers { headers ->
+                // nosniff and DENY are Spring Security defaults; declared explicitly so they are
+                // visible at the place the policy is read, and so a future `headers {}` block cannot
+                // silently drop them (security audit 2026-08-20, M9).
+                headers.contentTypeOptions { }
+                headers.frameOptions { it.deny() }
+                // Only emitted on requests Spring sees as secure — hence
+                // `server.forward-headers-strategy: framework` on the deployed profiles, without
+                // which every request behind the Clever Cloud proxy looks like plain HTTP.
+                headers.httpStrictTransportSecurity {
+                    it.includeSubDomains(true).maxAgeInSeconds(HSTS_MAX_AGE_SECONDS)
+                }
+                headers.contentSecurityPolicy { it.policyDirectives(contentSecurityPolicy()) }
+            }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterAfter(ComplianceAccessLogFilter(), AuthorizationFilter::class.java)
 
             // === This is the key addition for clean 401 vs 403 ===
             .exceptionHandling { exceptions ->
@@ -94,6 +110,26 @@ class SecurityConfig(
             }
 
         return http.build()
+    }
+
+    /**
+     * Content-Security-Policy for API responses.
+     *
+     * A JSON API and a handful of image endpoints need no scripts, styles or frames of their own, so
+     * the baseline denies everything and forbids framing. It matters because those image endpoints
+     * are public and return stored bytes: a document that manages to be interpreted from this origin
+     * finds nothing it is allowed to load.
+     *
+     * When the OpenAPI UI is enabled (never in production) the policy is widened to what Swagger UI
+     * needs — it is a real HTML page served from this origin. Blocking it would trade a working tool
+     * for no security gain on an environment that publishes its own API documentation anyway.
+     */
+    private fun contentSecurityPolicy(): String = if (docsEnabled) {
+        "default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
+            "script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self' data:; " +
+            "frame-ancestors 'none'; base-uri 'none'"
+    } else {
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
     }
 
     /**
@@ -143,4 +179,9 @@ class SecurityConfig(
     @Bean
     fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager =
         config.authenticationManager
+
+    private companion object {
+        /** One year, the usual floor for an HSTS policy to be worth declaring. */
+        const val HSTS_MAX_AGE_SECONDS = 31_536_000L
+    }
 }

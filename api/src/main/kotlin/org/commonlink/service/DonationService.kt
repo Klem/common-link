@@ -19,7 +19,12 @@ import java.util.UUID
 /**
  * Snapshot of donor identity fields captured at donation time for the Cerfa 2041-RD receipt.
  *
- * Stored on the [Donation] row — immutable fiscal truth independent of later profile changes.
+ * Every field except [birthDate] is stored on the [Donation] row — immutable fiscal truth
+ * independent of later profile changes.
+ *
+ * [birthDate] is the exception: facultative on the widget form and **never persisted**. It travels
+ * this far only because [FreezeScreeningDonationService] needs it to discard homonyms, and is
+ * dropped once the screening has run.
  */
 data class DonorIdentitySnapshot(
     val fullName: String,
@@ -28,8 +33,7 @@ data class DonorIdentitySnapshot(
     val postalCode: String,
     val city: String,
     val country: String,
-    val birthDate: LocalDate,
-    val birthCity: String,
+    val birthDate: LocalDate?,
 )
 
 /**
@@ -118,9 +122,33 @@ class DonationService(
 
         donation.confirmedAt = Instant.now()
         donationRepository.save(donation)
+        creditCampaign(donation)
 
         publisher.publishEvent(DonationConfirmedEvent(donation.id!!))
         logger.info("Confirmed donation {} — receipt generation enqueued async", donation.id)
+    }
+
+    /**
+     * Adds [donation]'s amount to [org.commonlink.entity.Campaign.raised].
+     *
+     * This is the single writer of that column. It is read by every campaign projection
+     * ([org.commonlink.dto.CampaignDto], [org.commonlink.dto.PublicWidgetDto]), by the collection-cap
+     * check in [DonationCapService], and by
+     * [org.commonlink.repository.CampaignMilestoneRepository.findNextMilestoneByAssociationId] —
+     * all of which were silently reading a column nobody incremented before this.
+     *
+     * The increment is done in SQL ([CampaignRepository.addToRaised]) so two donations confirmed
+     * concurrently on the same campaign cannot lose an increment. The guard on [Donation.confirmedAt]
+     * in the caller keeps it idempotent.
+     *
+     * Note for callers of [confirmDonation]: that bulk update clears the persistence context, so any
+     * entity read before it must be re-read afterwards rather than reused.
+     */
+    private fun creditCampaign(donation: Donation) {
+        val campaignId = donation.campaign.id!!
+        val updated = campaignRepository.addToRaised(campaignId, donation.amount)
+        if (updated == 0) throw NotFoundException("Campaign not found: $campaignId")
+        logger.debug("Campaign {} credited with {}", campaignId, donation.amount)
     }
 
     /**
@@ -135,7 +163,8 @@ class DonationService(
      * @param campaignId UUID of the destination [org.commonlink.entity.Campaign].
      * @param amount Donation amount in EUR.
      * @param sourceSite Sanitised origin site from the widget snippet (nullable, untrusted).
-     * @param identity Fiscal identity snapshot required for the Cerfa 2041-RD receipt.
+     * @param identity Fiscal identity snapshot required for the Cerfa 2041-RD receipt. Its
+     *   [DonorIdentitySnapshot.birthDate] is not written: see the note on that field.
      */
     @Transactional
     fun initiatePendingDonation(
@@ -170,8 +199,9 @@ class DonationService(
                 donorPostalCode = identity.postalCode,
                 donorCity = identity.city,
                 donorCountry = identity.country,
-                donorBirthDate = identity.birthDate,
-                donorBirthCity = identity.birthCity,
+                // donorBirthDate / donorBirthCity are deliberately left unset: the widget collects
+                // no birth city, and the birth date — facultative — is consumed by the freeze
+                // screening then discarded. See DonorIdentitySnapshot and Donation.donorBirthDate.
             )
         ).also { logger.info("Created pending donation id={} providerRef={}", it.id, providerRef) }
     }

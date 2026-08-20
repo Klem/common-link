@@ -14,22 +14,21 @@ import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieConnection
 import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
-import org.commonlink.entity.MoneriumConnection
-import org.commonlink.entity.MoneriumConnectionState
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
-import org.commonlink.repository.MoneriumConnectionRepository
 import org.commonlink.repository.OnchainJobRepository
+import org.commonlink.repository.TestFiles
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
 import org.hibernate.SessionFactory
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -51,6 +50,7 @@ import jakarta.persistence.EntityManagerFactory
  * Each test runs in a transaction that is rolled back after completion, so the database is
  * always in a clean state between tests.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
@@ -70,9 +70,6 @@ class CampaignServiceTest {
 
     @Autowired
     private lateinit var associationProfileRepository: AssociationProfileRepository
-
-    @Autowired
-    private lateinit var moneriumConnectionRepository: MoneriumConnectionRepository
 
     @Autowired
     private lateinit var mollieConnectionRepository: MollieConnectionRepository
@@ -132,17 +129,28 @@ class CampaignServiceTest {
         ))
     }
 
-    /** Links an ACTIVE Monerium wallet to the association, satisfying the publish-time gate. */
-    private fun linkMonerium(ownerId: UUID) {
-        val assoc = associationProfileRepository.findByUserId(ownerId).get()
-        moneriumConnectionRepository.save(MoneriumConnection(
-            association  = assoc,
-            walletAddress = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-            accessToken  = "tok",
-            refreshToken = "ref",
-            expiresAt    = java.time.Instant.now().plusSeconds(3600),
-            state        = MoneriumConnectionState.ACTIVE,
-        ))
+    /**
+     * Satisfies the two *content* gates of `preparePublish`: a balanced budget prévisionnel
+     * (expenses = revenues, both non-zero) and an expected outcome of at least 20 characters.
+     *
+     * Tests that exercise an account gate call this first, so the campaign is publishable in every
+     * respect but the one under test — otherwise they would assert on the content message instead.
+     */
+    private fun makePublishable(
+        ownerId: UUID,
+        campaignId: UUID,
+        amount: BigDecimal = BigDecimal("1000"),
+    ) {
+        campaignService.saveBudget(ownerId, campaignId, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", amount, 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", amount, 0))),
+        )))
+        campaignService.updateCampaign(
+            ownerId, campaignId,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
     }
 
     // ── listCampaigns ─────────────────────────────────────────────────────────
@@ -279,12 +287,12 @@ class CampaignServiceTest {
 
     @Test
     fun `updateCampaign - updates name and status`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(
             userId,
             CreateCampaignRequest(name = "Old Name", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, created.id)
 
         val result = campaignService.updateCampaign(
             userId,
@@ -299,9 +307,9 @@ class CampaignServiceTest {
     @Test
     fun `updateCampaign - invalid status transition LIVE to DRAFT throws 422`() {
         // LIVE → DRAFT is invalid (only LIVE → ENDED is allowed)
-        linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign", goal = BigDecimal("10000")))
+        makePublishable(userId, created.id)
         campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
         assertThrows<UnprocessableEntityException> {
@@ -357,10 +365,13 @@ class CampaignServiceTest {
 
     // ── cover image ───────────────────────────────────────────────────────────
 
-    /** Builds a fake multipart image part. */
+    /**
+     * Builds a multipart image part whose bytes really are of [contentType] — upload validation
+     * checks the leading bytes against the declared type (audit 2026-08-20, M9).
+     */
     private fun imagePart(
         contentType: String = "image/png",
-        bytes: ByteArray = byteArrayOf(1, 2, 3, 4),
+        bytes: ByteArray = TestFiles.png(),
     ): MultipartFile = MockMultipartFile("file", "cover.png", contentType, bytes)
 
     @Test
@@ -372,7 +383,7 @@ class CampaignServiceTest {
         assertEquals("/api/public/campaigns/${created.id}/cover", updated.coverImage)
         val (contentType, data) = campaignService.getCoverImage(created.id)
         assertEquals("image/png", contentType)
-        assertArrayEquals(byteArrayOf(1, 2, 3, 4), data)
+        assertArrayEquals(TestFiles.png(), data)
     }
 
     @Test
@@ -382,12 +393,12 @@ class CampaignServiceTest {
 
         campaignService.uploadCoverImage(
             userId, created.id,
-            imagePart(contentType = "image/webp", bytes = byteArrayOf(9, 9)),
+            imagePart(contentType = "image/webp", bytes = TestFiles.webp()),
         )
 
         val (contentType, data) = campaignService.getCoverImage(created.id)
         assertEquals("image/webp", contentType)
-        assertArrayEquals(byteArrayOf(9, 9), data)
+        assertArrayEquals(TestFiles.webp(), data)
     }
 
     @Test
@@ -470,9 +481,9 @@ class CampaignServiceTest {
 
     @Test
     fun `deleteCampaign - throws when campaign is not DRAFT`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Live Campaign", goal = BigDecimal("10000")))
+        makePublishable(userId, created.id)
         campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
         assertThrows<UnprocessableEntityException> {
@@ -754,16 +765,16 @@ class CampaignServiceTest {
     // ── on-chain publish ──────────────────────────────────────────────────────
 
     /**
-     * A missing Monerium wallet does not block publication — `enqueueForTransition` simply skips the
-     * on-chain jobs. (This test used to assert a 422; the exception it observed actually came from
-     * the Mollie gate, which it never satisfied. That condition is covered on its own below.)
+     * Publishing a campaign never enqueues an on-chain job — there is no wallet-provisioning
+     * mechanism for associations. The transition itself still succeeds off-chain.
      */
     @Test
-    fun `publish - no Monerium wallet publishes off-chain and enqueues no job`() {
+    fun `publish - happy path publishes off-chain and enqueues no job`() {
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
         val result = campaignService.updateCampaign(
             userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE)
@@ -782,32 +793,48 @@ class CampaignServiceTest {
      */
     @Test
     fun `publish - unverified KYB returns 422 even when the bank is ready`() {
-        linkMonerium(userId)
         linkMollie(userId, verifyKyb = false)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Unverified KYB", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association KYB must be verified before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
     @Test
     fun `publish - REJECTED KYB returns 422 even when the bank is ready`() {
-        linkMonerium(userId)
+        assertPublishRefusedForKyb(VerificationStatus.REJECTED, "Rejected KYB")
+    }
+
+    @Test
+    fun `publish - PENDING KYB returns 422 even when the bank is ready`() {
+        assertPublishRefusedForKyb(VerificationStatus.PENDING, "Pending KYB")
+    }
+
+    /**
+     * Publishes a bank-ready campaign whose association sits in [status] and asserts the KYB gate
+     * refuses it. Keeps the three non-VERIFIED states covered symmetrically with the frontend,
+     * so the proof matrix in `docs/legal/E3-verrou-verification-avant-collecte.md` holds at both layers.
+     */
+    private fun assertPublishRefusedForKyb(status: VerificationStatus, campaignName: String) {
         linkMollie(userId, verifyKyb = false)
         val assoc = associationProfileRepository.findByUserId(userId).get()
-        assoc.verificationStatus = VerificationStatus.REJECTED
+        assoc.verificationStatus = status
         associationProfileRepository.save(assoc)
         val campaign = campaignService.createCampaign(
-            userId, CreateCampaignRequest(name = "Rejected KYB", goal = BigDecimal("10000"))
+            userId, CreateCampaignRequest(name = campaignName, goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association KYB must be verified before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -815,28 +842,33 @@ class CampaignServiceTest {
 
     @Test
     fun `publish - no Mollie connection returns 422 and enqueues no job`() {
-        linkMonerium(userId)
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        assoc.verificationStatus = VerificationStatus.VERIFIED
+        associationProfileRepository.save(assoc)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No Mollie", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association must connect a Mollie account before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
     @Test
     fun `publish - BROKEN Mollie connection returns 422 even when KYC was completed`() {
-        linkMonerium(userId)
         linkMollie(userId, state = MollieConnectionState.BROKEN)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Broken Mollie", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Mollie connection is broken — re-authorization required before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -847,25 +879,47 @@ class CampaignServiceTest {
      */
     @Test
     fun `publish - Mollie onboarding still IN_REVIEW returns 422`() {
-        linkMonerium(userId)
         linkMollie(userId, onboardingStatus = MollieOnboardingStatus.IN_REVIEW)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "In review", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
 
-        assertThrows<UnprocessableEntityException> {
+        val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
+        assertEquals("Association must complete Mollie KYC before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
     @Test
     fun `publish - Mollie completed but not authorized to receive payments returns 422`() {
-        linkMonerium(userId)
         linkMollie(userId, canReceivePayments = false)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No payments", goal = BigDecimal("10000"))
         )
+        makePublishable(userId, campaign.id)
+
+        val ex = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertEquals("Association must complete Mollie KYC before going live", ex.message)
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    /**
+     * Publishing never enqueues an on-chain job (Monerium removed, V67 — see the "happy path" test
+     * above), so this only exercises the plain LIVE→LIVE transition guard.
+     */
+    @Test
+    fun `publish - republishing an already-LIVE campaign is rejected`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("5000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
 
         assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -874,50 +928,32 @@ class CampaignServiceTest {
     }
 
     @Test
-    fun `publish - valid campaign enqueues CREATE then PUBLISH, republish is no-op`() {
-        linkMonerium(userId)
-        linkMollie(userId)
-        val campaign = campaignService.createCampaign(
-            userId, CreateCampaignRequest(name = "Publish test", goal = BigDecimal("5000"))
-        )
-
-        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
-
-        val jobs = onchainJobRepository.findAll()
-        val actions = jobs.map { it.action }
-        assertEquals(1, actions.count { it == OnchainJobAction.CREATE_CAMPAIGN })
-        assertEquals(1, actions.count { it == OnchainJobAction.PUBLISH_CAMPAIGN })
-        // CREATE must have been inserted before PUBLISH
-        val createJob  = jobs.first { it.action == OnchainJobAction.CREATE_CAMPAIGN }
-        val publishJob = jobs.first { it.action == OnchainJobAction.PUBLISH_CAMPAIGN }
-        assertFalse(createJob.createdAt.isAfter(publishJob.createdAt))
-
-        // Republish is a no-op — correlation key guard prevents a second CREATE/PUBLISH
-        assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
-        }
-        assertEquals(2, onchainJobRepository.findAll().size)
-    }
-
-    @Test
     fun `saveBudget - LIVE campaign with changed budget enqueues UPDATE_CAMPAIGN_BUDGET, identical budget enqueues nothing`() {
-        linkMonerium(userId)
         linkMollie(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Budget test", goal = BigDecimal("5000"))
         )
+        // Balanced: publishing now requires expenses = revenues (CampaignService.requireBalancedBudget).
         val budgetReq = SaveBudgetRequest(listOf(
             SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
-                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("500"), 0)))
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("500"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("500"), 0))),
         ))
         campaignService.saveBudget(userId, campaign.id, budgetReq)
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         val jobsAfterPublish = onchainJobRepository.findAll().size
 
         // Edit with different amount — should enqueue UPDATE_CAMPAIGN_BUDGET
         val changedBudget = SaveBudgetRequest(listOf(
             SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
-                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("999"), 0)))
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("999"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("999"), 0))),
         ))
         campaignService.saveBudget(userId, campaign.id, changedBudget)
         val jobsAfterChange = onchainJobRepository.findAll()
@@ -948,5 +984,106 @@ class CampaignServiceTest {
         entityManager.clear()
         val updated = campaignService.getCampaign(userId, campaign.id)
         assertNotNull(updated.budgetHash)
+    }
+
+    // ── publish-time content gates (mirror PrePublishModal's blockers — rule 8) ────────────────
+
+    /**
+     * A donor is asked for money against a costed plan, so an empty or lopsided budget prévisionnel
+     * blocks publication. Both were merely "recommended" before, which let a campaign go live with
+     * no budget at all.
+     */
+    @Test
+    fun `publish - empty budget returns 422`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No budget", goal = BigDecimal("10000"))
+        )
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val ex = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(ex.message!!.contains("Budget prévisionnel must be balanced"))
+        assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    @Test
+    fun `publish - unbalanced budget returns 422`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Unbalanced budget", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("800"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val ex = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(ex.message!!.contains("Budget prévisionnel must be balanced"))
+    }
+
+    /**
+     * Tolerance is one euro, exclusive — the same `Math.abs(revenues - expenses) < 1` the frontend
+     * uses. A stricter backend would refuse a campaign the publish button declared ready.
+     */
+    @Test
+    fun `publish - budget off by less than one euro is accepted`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Rounding budget", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000.00"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000.40"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val result = campaignService.updateCampaign(
+            userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE)
+        )
+
+        assertEquals(CampaignStatus.LIVE, result.status)
+    }
+
+    @Test
+    fun `publish - missing or too short expected outcome returns 422`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No outcome", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+
+        val whenNull = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(whenNull.message!!.contains("impactGoals"))
+
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(impactGoals = "Trop court"))
+        val whenShort = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(whenShort.message!!.contains("impactGoals"))
     }
 }

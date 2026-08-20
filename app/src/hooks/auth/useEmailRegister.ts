@@ -58,7 +58,11 @@ export function useEmailRegister() {
     } catch (err) {
       if (isAxiosError(err)) {
         const problemDetail = err.response?.data as ProblemDetail | undefined;
-        if (err.response?.status === 409 || problemDetail?.code === 'EMAIL_ALREADY_EXISTS') {
+        // Checked before the generic 409 branch: the association sign-up can now conflict on the
+        // SIREN as well as on the email, and the two call for opposite user actions.
+        if (problemDetail?.code === 'SIREN_ALREADY_REGISTERED') {
+          setError('errors.sirenAlreadyRegistered');
+        } else if (err.response?.status === 409 || problemDetail?.code === 'EMAIL_ALREADY_EXISTS') {
           setError('errors.accountExists');
         } else {
           setError('errors.genericError');

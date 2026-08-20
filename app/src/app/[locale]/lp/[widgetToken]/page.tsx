@@ -129,6 +129,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
         locale={locale}
         campaignName={data.campaignName}
         donationsEnabled={data.donationsEnabled}
+        remainingCapacity={data.remainingCapacity}
       >
         {data.showProject && (
           <ProjectSection

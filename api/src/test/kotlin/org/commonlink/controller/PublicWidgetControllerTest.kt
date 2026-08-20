@@ -13,6 +13,8 @@ import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.UserRepository
+import org.commonlink.security.AuthRateLimiter
+import org.commonlink.security.ClientIpResolver
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
@@ -33,7 +35,12 @@ import java.math.BigDecimal
 import java.util.UUID
 
 @WebMvcTest(PublicWidgetController::class)
-@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@Import(
+    SecurityConfig::class,
+    JwtAuthenticationFilter::class,
+    AuthRateLimiter::class,
+    ClientIpResolver::class,
+)
 @TestPropertySource(properties = [
     "app.frontend-url=http://localhost:3000",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!"
@@ -70,6 +77,7 @@ class PublicWidgetControllerTest {
         campaignCoverImage = "https://example.com/cover.jpg",
         currency = "EUR",
         widgetAllowedOrigin = "https://www.msf.fr",
+        remainingCapacity = BigDecimal("7500.00"),
     )
 
     private val validRequest = CreateGuestDonationRequest(
@@ -77,7 +85,6 @@ class PublicWidgetControllerTest {
         donorEmail = "donor@example.com",
         donorFullName = "Jean Dupont",
         donorBirthDate = java.time.LocalDate.of(1985, 6, 15),
-        donorBirthCity = "Lyon",
         donorAddressLine1 = "12 rue de la Paix",
         donorAddressLine2 = null,
         donorPostalCode = "75001",
@@ -108,6 +115,9 @@ class PublicWidgetControllerTest {
             .andExpect(jsonPath("$.campaignDescription").value("Aide médicale d'urgence"))
             .andExpect(jsonPath("$.goal").value(10000.00))
             .andExpect(jsonPath("$.raised").value(3500.00))
+            // The form caps the amount input on this value; absent, it would let the donor fill
+            // everything in only to be refused on submit.
+            .andExpect(jsonPath("$.remainingCapacity").value(7500.00))
             .andExpect(jsonPath("$.campaignCoverImage").value("https://example.com/cover.jpg"))
             .andExpect(jsonPath("$.currency").value("EUR"))
             .andExpect(jsonPath("$.id").doesNotExist())
@@ -166,6 +176,64 @@ class PublicWidgetControllerTest {
             post("/api/public/widget/clk_valid/donations")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRequest))
+        ).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `createDonation - 200 when the body carries no birth date at all`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } returns sampleResponse
+
+        // Corps sans la clé donorBirthDate : le champ est facultatif côté widget.
+        val body = """
+            {
+              "amount": 25.00,
+              "donorEmail": "donor@example.com",
+              "donorFullName": "Jean Dupont",
+              "donorAddressLine1": "12 rue de la Paix",
+              "donorPostalCode": "75001",
+              "donorCity": "Paris",
+              "donorCountry": "FR",
+              "anonymousDisplay": false,
+              "consent": true
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+        ).andExpect(status().isOk)
+    }
+
+    /**
+     * Un widget déjà chargé dans le navigateur d'un donateur continue d'envoyer `donorBirthCity`
+     * jusqu'au rechargement de la page. Le champ ayant disparu du contrat, ces soumissions en vol
+     * ne doivent pas se transformer en erreurs.
+     */
+    @Test
+    fun `createDonation - 200 when an in-flight widget still sends the removed birth city`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } returns sampleResponse
+
+        val body = """
+            {
+              "amount": 25.00,
+              "donorEmail": "donor@example.com",
+              "donorFullName": "Jean Dupont",
+              "donorBirthDate": "1985-06-15",
+              "donorBirthCity": "Lyon",
+              "donorAddressLine1": "12 rue de la Paix",
+              "donorPostalCode": "75001",
+              "donorCity": "Paris",
+              "donorCountry": "FR",
+              "anonymousDisplay": false,
+              "consent": true
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
         ).andExpect(status().isOk)
     }
 
@@ -321,6 +389,7 @@ class PublicWidgetControllerTest {
         budget = emptyList(),
         budgetHash = null,
         milestones = emptyList(),
+        remainingCapacity = BigDecimal("850.00"),
     )
 
     @Test

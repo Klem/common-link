@@ -9,6 +9,7 @@ import org.commonlink.entity.CampaignBudgetItem
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MollieConnection
+import org.commonlink.exception.CollectionCapExceededException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -49,6 +51,7 @@ import java.util.UUID
  *
  * [MockkBean] replaces [MollieClient] so no real HTTP calls are made.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
@@ -81,6 +84,9 @@ class PublicWidgetServiceIntegrationTest {
     @MockkBean
     private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
 
+    @MockkBean
+    private lateinit var freezeScreeningDonationService: FreezeScreeningDonationService
+
     private val widgetToken = "clk_integ_test"
 
     @BeforeEach
@@ -107,6 +113,9 @@ class PublicWidgetServiceIntegrationTest {
                 checkoutUrl = "https://checkout.mollie.com/pay/tr_integ",
                 metadata = emptyMap(),
             )
+
+        // Default: freeze check passes — individual tests override for blocking scenarios.
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.CLEAR
     }
 
     // ── T4 : identity snapshot ────────────────────────────────────────────────
@@ -153,6 +162,32 @@ class PublicWidgetServiceIntegrationTest {
         val donorProfile = donorProfileRepository.findAll()
             .first { it.user.email == "anon@example.com" }
         assertTrue(donorProfile.anonymous, "DonorProfile.anonymous must be true when anonymousDisplay=true")
+    }
+
+    @Test
+    fun `createDonation never persists the birth date, even when the donor supplies it`() {
+        val req = validRequest(donorBirthDate = java.time.LocalDate.of(1985, 6, 15))
+
+        val response = publicWidgetService.createDonation(widgetToken, req)
+
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")
+        assertNotNull(donation)
+        assertNull(
+            donation!!.donorBirthDate,
+            "La date de naissance sert au filtrage gel puis est jetée — elle ne doit jamais être écrite",
+        )
+        assertNull(donation.donorBirthCity, "Le widget ne collecte aucune ville de naissance")
+    }
+
+    @Test
+    fun `createDonation succeeds without any birth date`() {
+        val req = validRequest(donorBirthDate = null)
+
+        val response = publicWidgetService.createDonation(widgetToken, req)
+
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")
+        assertNotNull(donation, "Une date de naissance absente ne doit pas empêcher le don")
+        assertNull(donation!!.donorBirthDate)
     }
 
     // ── T5 : sourceSite sanitisation ─────────────────────────────────────────
@@ -290,6 +325,138 @@ class PublicWidgetServiceIntegrationTest {
         assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
     }
 
+    // ── Freeze screening — LCB-FT art. L.561-5 ───────────────────────────────
+
+    @Test
+    fun `createDonation - listed donor triggers ConflictException and Mollie payment is never created`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.HIT
+
+        val countBefore = donationRepository.count()
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertEquals(countBefore, donationRepository.count(), "Donation count must not increase on a freeze HIT")
+    }
+
+    @Test
+    fun `createDonation - small-amount listed donor is refused identically (no amount threshold)`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.HIT
+        val smallAmountRequest = validRequest().copy(amount = BigDecimal("1.00"))
+
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, smallAmountRequest) }
+
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - screening unavailable blocks donation and Mollie is never called`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.UNAVAILABLE
+
+        assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - freeze HIT and UNAVAILABLE produce identical ConflictException messages`() {
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.HIT
+        val hitEx = assertThrows<ConflictException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.UNAVAILABLE
+        val unavailableEx = assertThrows<ConflictException> {
+            publicWidgetService.createDonation(widgetToken, validRequest(donorEmail = "other@example.com"))
+        }
+
+        assertEquals(hitEx.message, unavailableEx.message, "Freeze HIT and UNAVAILABLE must produce identical messages")
+    }
+
+    // ── Collection cap ────────────────────────────────────────────────────────
+
+    /**
+     * The cap must bite *before* Mollie is called: after that a payable checkout URL exists and the
+     * only remaining option would be a refund, which is exactly what the cap prevents.
+     */
+    @Test
+    fun `createDonation - donation above the cap is refused and Mollie is never called`() {
+        // Fixture goal is 40 000; with the default 10 % margin the cap is 44 000.
+        setCampaignRaised(BigDecimal("43990.00"))
+
+        val ex = assertThrows<CollectionCapExceededException> {
+            publicWidgetService.createDonation(widgetToken, validRequest())
+        }
+
+        assertEquals(0, BigDecimal("10.00").compareTo(ex.remainingCapacity))
+        verify(exactly = 0) { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    /**
+     * A cap refusal must leave nothing behind: it happens before the guest donor is provisioned, so a
+     * refused attempt creates neither a donor profile nor a screening journal entry.
+     */
+    @Test
+    fun `createDonation - a capped refusal provisions no donor and runs no screening`() {
+        setCampaignRaised(BigDecimal("44000.00"))
+        val donorsBefore = donorProfileRepository.count()
+
+        assertThrows<CollectionCapExceededException> {
+            publicWidgetService.createDonation(widgetToken, validRequest(donorEmail = "capped@example.com"))
+        }
+
+        assertEquals(donorsBefore, donorProfileRepository.count(), "No guest donor may be provisioned")
+        verify(exactly = 0) { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - donation within the margin above the goal is accepted`() {
+        // 40 000 collected: the goal is met, but the 10 % margin leaves 4 000 of capacity.
+        setCampaignRaised(BigDecimal("40000.00"))
+
+        val response = publicWidgetService.createDonation(widgetToken, validRequest())
+
+        assertNotNull(response.checkoutUrl)
+    }
+
+    /**
+     * A payment session already open holds its amount against the cap, so two donors checking out at
+     * the same time cannot collectively overshoot.
+     */
+    @Test
+    fun `createDonation - an open payment session holds capacity against the next donor`() {
+        setCampaignRaised(BigDecimal("43950.00"))
+
+        // First donor takes 25 of the remaining 50 — the row stays pending (confirmedAt null).
+        publicWidgetService.createDonation(widgetToken, validRequest(donorEmail = "first@example.com"))
+        entityManager.flush()
+
+        // Second donor asking for 30 exceeds the 25 still free.
+        val ex = assertThrows<CollectionCapExceededException> {
+            publicWidgetService.createDonation(
+                widgetToken,
+                validRequest(donorEmail = "second@example.com").copy(amount = BigDecimal("30.00")),
+            )
+        }
+        assertEquals(0, BigDecimal("25.00").compareTo(ex.remainingCapacity))
+    }
+
+    @Test
+    fun `getWidget exposes the remaining capacity`() {
+        setCampaignRaised(BigDecimal("43000.00"))
+
+        val widget = publicWidgetService.getWidget(widgetToken)
+
+        assertEquals(0, BigDecimal("1000.00").compareTo(widget.remainingCapacity))
+    }
+
+    /** Sets the confirmed total of the destination campaign and makes it visible to the service. */
+    private fun setCampaignRaised(raised: BigDecimal) {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        val campaign = assoc.widgetDestinationCampaign!!
+        campaign.raised = raised
+        campaignRepository.save(campaign)
+        entityManager.flush()
+        entityManager.clear()
+    }
+
     /** Flips the destination campaign status and makes the change visible to the service. */
     private fun setCampaignStatus(status: CampaignStatus) {
         val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
@@ -305,8 +472,7 @@ class PublicWidgetServiceIntegrationTest {
     private fun validRequest(
         donorEmail: String = "anon@example.com",
         donorFullName: String = "Jean Dupont",
-        donorBirthDate: java.time.LocalDate = java.time.LocalDate.of(1985, 6, 15),
-        donorBirthCity: String = "Lyon",
+        donorBirthDate: java.time.LocalDate? = java.time.LocalDate.of(1985, 6, 15),
         donorAddressLine1: String = "12 rue de la Paix",
         donorAddressLine2: String? = null,
         donorPostalCode: String = "75001",
@@ -319,7 +485,6 @@ class PublicWidgetServiceIntegrationTest {
         donorEmail        = donorEmail,
         donorFullName     = donorFullName,
         donorBirthDate    = donorBirthDate,
-        donorBirthCity    = donorBirthCity,
         donorAddressLine1 = donorAddressLine1,
         donorAddressLine2 = donorAddressLine2,
         donorPostalCode   = donorPostalCode,

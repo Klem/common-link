@@ -35,13 +35,17 @@ enum class MolliePaymentStatus {
  * @param amount Transaction amount parsed from Mollie's string representation.
  * @param checkoutUrl Hosted checkout URL from `_links.checkout.href`. Absent after the first redirect.
  * @param metadata Key-value pairs attached at payment creation.
+ * @param method Payment method actually used by the payer (Mollie code, e.g. `creditcard`,
+ *   `banktransfer`, `bancontact`). Null until the payer picks one on the hosted checkout page —
+ *   so it is only reliably present once the payment reaches [MolliePaymentStatus.PAID].
  */
 data class MolliePayment(
     val id: String,
     val status: MolliePaymentStatus,
     val amount: BigDecimal,
     val checkoutUrl: String?,
-    val metadata: Map<String, String>
+    val metadata: Map<String, String>,
+    val method: String? = null,
 )
 
 // ── Internal JSON DTOs (Mollie wire format) ──────────────────────────────────
@@ -61,6 +65,8 @@ private data class MolliePaymentResponseJson(
     val status: String,
     val amount: MollieAmountJson,
     val metadata: Map<String, String>?,
+    /** Method chosen by the payer; absent while the payment is still `open`. */
+    val method: String? = null,
     @JsonProperty("_links") val links: MollieLinksJson?
 )
 
@@ -225,7 +231,8 @@ class MollieClient(
             status = parsedStatus,
             amount = BigDecimal(amount.value),
             checkoutUrl = links?.checkout?.href,
-            metadata = metadata ?: emptyMap()
+            metadata = metadata ?: emptyMap(),
+            method = method?.takeIf { it.isNotBlank() },
         )
     }
 }

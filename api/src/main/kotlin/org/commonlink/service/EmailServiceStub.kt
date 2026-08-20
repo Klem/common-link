@@ -54,6 +54,12 @@ class EmailServiceStub : EmailService {
         logger.info("Mollie KYC completed for '$associationName' — would notify $recipientEmail")
     }
 
+    override fun sendMollieConnectionBroken(associationName: String, recipientEmail: String, reconnectUrl: String) {
+        logger.info(
+            "Mollie connection BROKEN for '$associationName' — would notify $recipientEmail (reconnect: $reconnectUrl)"
+        )
+    }
+
     /** Logs the donation receipt details instead of sending an email with attachment. */
     override fun sendDonationReceipt(
         donorEmail: String,
@@ -65,6 +71,24 @@ class EmailServiceStub : EmailService {
         logger.info(
             "Donation receipt {} for '{}' — would send PDF ({} bytes) to {}",
             receiptNumber, associationName, pdfBytes.size, donorEmail,
+        )
+    }
+
+    /** Logs the password-change notification instead of sending an email. */
+    override fun sendPasswordChanged(email: String) {
+        logger.info("Password changed — would notify {}", email)
+    }
+
+    /** Logs the donor freeze alert notification instead of sending an email. No identity is logged. */
+    override fun sendDonorFreezeAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        severity: String,
+        alertUrl: String,
+    ) {
+        logger.info(
+            "Donor freeze alert {} ({}) — would notify compliance at {}: {}",
+            alertId, severity, recipientEmail, alertUrl,
         )
     }
 }

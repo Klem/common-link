@@ -9,18 +9,27 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
 
-/** Campaign satisfying every blocking requirement, so tests isolate the account-status block. */
-function campaign(): CampaignDto {
+/** Balanced budget: one expense section and one revenue section for the same total. */
+function balancedBudget(expenses = 10_000, revenues = 10_000) {
+  return [
+    { side: 'EXPENSE', code: 'CHARGES', name: 'Charges', items: [{ label: 'Achat', amount: expenses }] },
+    { side: 'REVENUE', code: 'PRODUITS', name: 'Produits', items: [{ label: 'Dons', amount: revenues }] },
+  ];
+}
+
+/** Campaign satisfying every blocking requirement, so tests isolate the block under test. */
+function campaign(overrides: Record<string, unknown> = {}): CampaignDto {
   return {
     name: 'Campagne test',
     description: 'Une description suffisamment longue',
     startDate: '2026-01-01',
     endDate: '2026-06-01',
     goal: 10_000,
-    budgetSections: [],
+    budgetSections: balancedBudget(),
     milestones: [],
     reason: null,
-    impactGoals: null,
+    impactGoals: ' 200 repas servis chaque semaine pendant six mois',
+    ...overrides,
   } as unknown as CampaignDto;
 }
 
@@ -127,4 +136,48 @@ describe('PrePublishModal — account status', () => {
 
     expect(screen.getByText('complete').closest('button')).toBeDisabled();
   });
+});
+
+/**
+ * A donor is asked for money against a costed plan and a declared result, so the budget
+ * prévisionnel and the expected outcome block publication instead of merely being recommended.
+ * Both predicates are mirrored in `CampaignService.preparePublish` (rule 8).
+ */
+describe('PrePublishModal — budget and expected outcome are blocking', () => {
+  it('lists them under the required section, not the recommended one', () => {
+    renderWith();
+
+    expect(screen.getByText('required.budget')).toBeInTheDocument();
+    expect(screen.getByText('required.impactGoals')).toBeInTheDocument();
+    expect(screen.queryByText('recommended.budget')).not.toBeInTheDocument();
+    expect(screen.queryByText('recommended.impactGoals')).not.toBeInTheDocument();
+  });
+
+  it('blocks publishing when no budget has been entered', () => {
+    renderWith({ campaign: campaign({ budgetSections: [] }) });
+
+    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+  });
+
+  it('blocks publishing when expenses and revenues do not match', () => {
+    renderWith({ campaign: campaign({ budgetSections: balancedBudget(10_000, 8_000) }) });
+
+    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+  });
+
+  /** Tolerance mirrors the backend: a sub-euro rounding gap must not block a publish. */
+  it('accepts a budget off by less than one euro', () => {
+    renderWith({ campaign: campaign({ budgetSections: balancedBudget(10_000, 10_000.4) }) });
+
+    expect(screen.getByText('confirm').closest('button')).toBeEnabled();
+  });
+
+  it.each([null, '', 'Trop court'])(
+    'blocks publishing when the expected outcome is %p',
+    (impactGoals) => {
+      renderWith({ campaign: campaign({ impactGoals }) });
+
+      expect(screen.getByText('complete').closest('button')).toBeDisabled();
+    },
+  );
 });

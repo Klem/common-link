@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -37,6 +38,7 @@ import java.util.UUID
  * [MockkBean] replaces [MollieClient] so no real HTTP calls are made.
  * [RecordApplicationEvents] captures Spring application events published within the test transaction.
  */
+@Tag("testcontainers")
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
@@ -160,6 +162,40 @@ class MollieWebhookServiceTest {
         assertNotNull(updatedDonor.walletAddress, "Wallet address must be derived after confirmation")
         assertTrue(updatedDonor.walletAddress!!.startsWith("0x"), "EVM address starts with 0x")
         assertEquals(42, updatedDonor.walletAddress!!.length, "EVM address is 42 chars")
+    }
+
+    // ── Payment method captured for the fiscal receipt ───────────────────────
+
+    /**
+     * The receipt states "Mode de versement", which must be the mode actually used. The method is only
+     * known once the payer picked one, so it is read off the confirmed payment and written before
+     * confirmation — the receipt PDF is rendered from the committed row.
+     */
+    @Test
+    fun `paid webhook - stores the real payment method on the donation`() {
+        val mollieId = "tr_method_${UUID.randomUUID()}"
+        val providerRef = "mollie:$mollieId"
+        createPendingDonation(providerRef)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId).copy(method = "bancontact")
+
+        mollieWebhookService.handleWebhook(mollieId)
+
+        assertEquals("bancontact", donationRepository.findByProviderRef(providerRef)?.paymentMethod)
+    }
+
+    /** Mollie may report no method; the receipt then states "Non précisé" rather than guessing. */
+    @Test
+    fun `paid webhook - a missing payment method leaves the column null`() {
+        val mollieId = "tr_nomethod_${UUID.randomUUID()}"
+        val providerRef = "mollie:$mollieId"
+        createPendingDonation(providerRef)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId).copy(method = null)
+
+        mollieWebhookService.handleWebhook(mollieId)
+
+        val donation = donationRepository.findByProviderRef(providerRef)
+        assertNotNull(donation?.confirmedAt, "Donation must still be confirmed")
+        assertNull(donation?.paymentMethod)
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

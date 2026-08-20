@@ -14,7 +14,13 @@ import { createGuestDonation } from '@/lib/api/public';
 
 const mockCreateGuestDonation = createGuestDonation as ReturnType<typeof vi.fn>;
 
-function fillValidForm() {
+/**
+ * Fills every field the backend still requires.
+ *
+ * @param birthDate ISO date, or `null` to leave the facultative birth date empty — the case the
+ *   widget must accept since the value is only used for the freeze screening and never kept.
+ */
+function fillValidForm(birthDate: string | null = '1990-01-15') {
   fireEvent.click(screen.getByText('25 €'));
   fireEvent.change(screen.getByLabelText(/identity.email/i), {
     target: { value: 'jean@example.com' },
@@ -22,12 +28,11 @@ function fillValidForm() {
   fireEvent.change(screen.getByLabelText(/identity.fullName/i), {
     target: { value: 'Jean Dupont' },
   });
-  fireEvent.change(screen.getByLabelText(/identity.birthDate/i), {
-    target: { value: '1990-01-15' },
-  });
-  fireEvent.change(screen.getByLabelText(/identity.birthCity/i), {
-    target: { value: 'Lyon' },
-  });
+  if (birthDate !== null) {
+    fireEvent.change(screen.getByLabelText(/identity.birthDate/i), {
+      target: { value: birthDate },
+    });
+  }
   fireEvent.change(screen.getByLabelText(/identity.addressLine1/i), {
     target: { value: '12 rue de la Paix' },
   });
@@ -182,6 +187,119 @@ describe('DonationForm — submitLabel prop', () => {
   });
 });
 
+/**
+ * Collection cap: a donation above what the campaign may still take must be refused *before* the
+ * payment, never refunded after. The backend is the authority (`COLLECTION_CAP_EXCEEDED`); the form
+ * only spares the donor a wasted round trip.
+ */
+describe('DonationForm — collection cap', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'top', { value: window, writable: true });
+  });
+
+  it('leaves the cap entirely to the backend when no capacity is provided', () => {
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />);
+
+    expect(screen.queryByText('amounts.remaining')).not.toBeInTheDocument();
+    expect(screen.getByText('100 €')).not.toBeDisabled();
+  });
+
+  it('disables the presets above the remaining capacity', () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="default"
+        remainingCapacity={30}
+      />,
+    );
+
+    expect(screen.getByText('25 €')).not.toBeDisabled();
+    expect(screen.getByText('50 €')).toBeDisabled();
+    expect(screen.getByText('100 €')).toBeDisabled();
+  });
+
+  it('blocks the submit and explains why when the amount exceeds the capacity', async () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="default"
+        remainingCapacity={30}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/amounts.custom/i), { target: { value: '80' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.capExceeded')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
+  it('renders a full campaign inert', () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="default"
+        remainingCapacity={0}
+      />,
+    );
+
+    expect(screen.getByText('errors.capFull')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+    expect(screen.getByText('10 €')).toBeDisabled();
+  });
+
+  /**
+   * Landing preview of an unpublished campaign: the goal may still be zero, so the capacity is zero
+   * too. Saying "this campaign has reached its cap" there would recreate the confusion the `disabled`
+   * state was introduced to prevent.
+   */
+  it('says nothing about capacity in preview mode', () => {
+    render(
+      <DonationForm
+        widgetToken="clk_test"
+        sourceSite={null}
+        locale="fr"
+        skin="landing"
+        disabled
+        remainingCapacity={0}
+      />,
+    );
+
+    expect(screen.queryByText('errors.capFull')).not.toBeInTheDocument();
+    expect(screen.queryByText('amounts.remaining')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
+  /**
+   * A cap refusal is not "this association cannot collect": the donor can succeed with a lower
+   * amount, so the form must stay live instead of going inert like the generic 409 does.
+   */
+  it('keeps the form live after a COLLECTION_CAP_EXCEEDED refusal', async () => {
+    mockCreateGuestDonation.mockRejectedValue({
+      response: { status: 409, data: { code: 'COLLECTION_CAP_EXCEEDED', remainingCapacity: 12 } },
+    });
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />);
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.capExceeded')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('errors.notCollecting')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).not.toBeDisabled();
+    expect(screen.getByText('25 €')).not.toBeDisabled();
+  });
+});
+
 describe('DonationForm — disabled prop (landing preview)', () => {
   /** Every control a donor can touch. */
   function controls(): HTMLElement[] {
@@ -217,5 +335,51 @@ describe('DonationForm — disabled prop (landing preview)', () => {
     const btn = screen.getByRole('button', { name: 'submit' });
     expect(btn.className).toContain('lp-submit-btn');
     expect(btn).toBeDisabled();
+  });
+});
+
+describe('DonationForm — date de naissance facultative', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'top', { value: window, writable: true });
+    // The submission is rejected on purpose: the payload is asserted before the redirect, which
+    // jsdom cannot perform.
+    mockCreateGuestDonation.mockRejectedValue(new Error('network'));
+  });
+
+  it('submits with no birth date at all', async () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+    );
+
+    fillValidForm(null);
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(mockCreateGuestDonation).toHaveBeenCalled();
+    });
+    expect(mockCreateGuestDonation.mock.calls[0][1].donorBirthDate).toBeUndefined();
+  });
+
+  it('sends the birth date when the donor fills it in', async () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+    );
+
+    fillValidForm('1990-01-15');
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(mockCreateGuestDonation).toHaveBeenCalled();
+    });
+    expect(mockCreateGuestDonation.mock.calls[0][1].donorBirthDate).toBe('1990-01-15');
+  });
+
+  it('never asks for a birth city', () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+    );
+
+    expect(screen.queryByLabelText(/identity.birthCity/i)).toBeNull();
   });
 });

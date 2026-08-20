@@ -35,11 +35,6 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `monerium skip-kyc is false in prod`() {
-        assertEquals(false, prop("app.monerium.skip-kyc"))
-    }
-
-    @Test
     fun `springdoc api-docs disabled in prod`() {
         assertEquals(false, prop("springdoc.api-docs.enabled"))
     }
@@ -52,6 +47,11 @@ class ProdConfigSecurityTest {
     @Test
     fun `ddl-auto is validate in prod`() {
         assertEquals("validate", prop("spring.jpa.hibernate.ddl-auto"))
+    }
+
+    @Test
+    fun `flyway is enabled in prod`() {
+        assertEquals(true, prop("spring.flyway.enabled"))
     }
 
     @Test
@@ -93,6 +93,26 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `curator email is required with no empty default in prod`() {
+        assertEquals("\${APP_CURATOR_EMAIL}", prop("app.curator.email"))
+    }
+
+    @Test
+    fun `curator password is required with no empty default in prod`() {
+        assertEquals("\${APP_CURATOR_PASSWORD}", prop("app.curator.password"))
+    }
+
+    @Test
+    fun `compliance officer email is required with no empty default in prod`() {
+        assertEquals("\${APP_COMPLIANCE_OFFICER_EMAIL}", prop("app.compliance-officer.email"))
+    }
+
+    @Test
+    fun `compliance officer password is required with no empty default in prod`() {
+        assertEquals("\${APP_COMPLIANCE_OFFICER_PASSWORD}", prop("app.compliance-officer.password"))
+    }
+
+    @Test
     fun `mollie test-mode is false in prod`() {
         // T1: base defaults test-mode true for local Connect sandbox; prod must pin false or live donations route to Mollie test mode
         assertEquals(false, prop("app.mollie.test-mode"))
@@ -107,9 +127,13 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `monerium token-enc-key is required with no plaintext-inheriting default in prod`() {
-        // H4: base/staging default this empty (→ plaintext tokens); prod must require the key.
-        assertEquals("\${MONERIUM_TOKEN_ENC_KEY}", prop("app.monerium.token-enc-key"))
+    fun `mollie token-enc-key is required with no plaintext-inheriting default in prod`() {
+        assertEquals("\${MOLLIE_TOKEN_ENC_KEY}", prop("app.mollie.token-enc-key"))
+    }
+
+    @Test
+    fun `compliance encryption-key is required with no blank-fallback default in prod`() {
+        assertEquals("\${COMPLIANCE_ENCRYPTION_KEY}", prop("commonlink.compliance.encryption-key"))
     }
 
     @Test
@@ -118,5 +142,28 @@ class ProdConfigSecurityTest {
         val duration = Duration.parse(raw)
         assertTrue(duration <= Duration.ofHours(1),
             "app.jwt.access-token-expiration must be ≤ PT1H in prod, was: $raw")
+    }
+
+    @Test
+    fun `sanctions use-test-data is false in prod`() {
+        // S1: test data mode routes ingestion to a bundled fixture bypassing the live DG Trésor registry.
+        // Shipping it active in production would mean the register is never checked — a legal violation.
+        assertEquals(false, prop("commonlink.sanctions.screening.use-test-data"))
+    }
+
+    @Test
+    fun `actuator health details are not exposed to anonymous callers in prod`() {
+        // /actuator/health is permitAll in SecurityConfig, so `always` hands the component detail
+        // (database vendor and reachability, disk space, subsystem names) to any caller
+        // (security audit 2026-08-20, M8).
+        assertNotEquals("always", prop("management.endpoint.health.show-details"))
+    }
+
+    @Test
+    fun `trusted-proxy-count is set in prod`() {
+        // Rate limiting keys on the client address resolved by ClientIpResolver. Leaving the count
+        // unset would fall back to the base-profile value of 0, i.e. every request behind the Clever
+        // Cloud proxy sharing one bucket (security audit 2026-08-20, M2).
+        assertEquals("\${APP_TRUSTED_PROXY_COUNT:1}", prop("app.security.trusted-proxy-count"))
     }
 }

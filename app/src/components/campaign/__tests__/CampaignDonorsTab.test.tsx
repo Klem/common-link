@@ -52,7 +52,7 @@ const anonymousDonor = {
 const donation1 = {
   id: 'don-1',
   amount: 100,
-  providerRef: 'monerium:abc-123',
+  providerRef: 'mollie:tr_abc123',
   confirmedAt: '2026-03-15T10:00:00Z',
   createdAt: '2026-03-15T09:00:00Z',
   onChain: true,

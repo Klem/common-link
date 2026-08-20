@@ -4,6 +4,7 @@ import jakarta.persistence.*
 import java.time.Instant
 import java.util.UUID
 
+
 /**
  * A single automated legal-existence pre-check run against French public registries
  * (Recherche d'entreprises, INSEE Sirene, JOAFE, BODACC) for an association.
@@ -43,6 +44,10 @@ class AssociationRegistryCheck(
     @Column(name = "rna", length = 20)
     val rna: String? = null,
 
+    /** INSEE legal category (nature_juridique) from Recherche d'entreprises. Null if source unavailable or no SIREN. */
+    @Column(name = "legal_category", length = 10)
+    val legalCategory: String? = null,
+
     /** INSEE administrative status: 'A' = active, 'C' = ceased. */
     @Column(name = "etat_administratif", length = 1)
     val etatAdministratif: String? = null,
@@ -64,6 +69,20 @@ class AssociationRegistryCheck(
     @Column(name = "warnings", nullable = false, columnDefinition = "text")
     val warnings: List<String> = emptyList(),
 
+    /** Representatives of the association collected from consulted registries (name only, no title), stored as a JSON array. */
+    @Convert(converter = StringListJsonConverter::class)
+    @Column(name = "officers", nullable = false, columnDefinition = "text")
+    val officers: List<String> = emptyList(),
+
+    /**
+     * Whether the association is still live according to RNA-derived data: `est_association` from
+     * Recherche d'entreprises (which aggregates the RNA), falling back to a JOAFE publication with no
+     * dissolution notice for associations absent from that registry. Null when no source could settle it —
+     * notably JOAFE silence, which is not evidence of inactivity.
+     */
+    @Column(name = "rna_active")
+    val rnaActive: Boolean? = null,
+
     /** UUID of the curator ([User.id]) who triggered this scan. */
     @Column(name = "checked_by", updatable = false)
     val checkedBy: UUID? = null,
@@ -71,4 +90,16 @@ class AssociationRegistryCheck(
     /** Timestamp when the scan was performed. */
     @Column(name = "checked_at", nullable = false, updatable = false)
     val checkedAt: Instant = Instant.now(),
-)
+) {
+    /**
+     * Perimeter verdict derived from [legalCategory].
+     * [ScopeVerdict.OUT_OF_SCOPE] blocks KYC approval. [ScopeVerdict.UNDETERMINED] (null category)
+     * does not block — a public registry being unavailable must not disqualify an association.
+     */
+    val scopeVerdict: ScopeVerdict
+        get() = when {
+            legalCategory == null -> ScopeVerdict.UNDETERMINED
+            legalCategory in ACCEPTED_LEGAL_CATEGORIES -> ScopeVerdict.IN_SCOPE
+            else -> ScopeVerdict.OUT_OF_SCOPE
+        }
+}

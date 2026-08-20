@@ -1,9 +1,16 @@
 package org.commonlink
 
 import com.ninjasquad.springmockk.MockkBean
+import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationRegistryCheckRepository
+import org.commonlink.repository.BeneficialOwnerRepository
+import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.FreezeScreeningMatchRepository
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.AuthRateLimiter
+import org.commonlink.security.ClientIpResolver
 import org.commonlink.security.JwtService
+import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationDashboardService
@@ -12,6 +19,7 @@ import org.commonlink.service.MollieWebhookService
 import org.commonlink.service.PublicWidgetService
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.AssociationService
+import org.commonlink.service.BeneficialOwnerService
 import org.commonlink.service.AuthService
 import org.commonlink.service.VerificationService
 import org.commonlink.service.PayeeService
@@ -22,7 +30,9 @@ import org.commonlink.service.MandatePdfService
 import org.commonlink.service.MandateService
 import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieConnectTokenManager
-import org.commonlink.service.MoneriumService
+import org.commonlink.service.ComplianceAlertService
+import org.commonlink.service.ComplianceAuditLogService
+import org.commonlink.service.FreezeScreeningOnboardingService
 import org.commonlink.service.OnboardingGateService
 import org.commonlink.service.OnchainOutboxService
 import org.commonlink.service.PayoutService
@@ -38,7 +48,7 @@ import org.springframework.test.context.TestPropertySource
  * Uses @WebMvcTest to avoid needing Docker/Testcontainers.
  */
 @WebMvcTest
-@Import(SecurityConfig::class)
+@Import(SecurityConfig::class, ClientIpResolver::class, RefreshCookieFactory::class)
 @TestPropertySource(properties = [
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000"
@@ -54,7 +64,6 @@ class CommonLinkApplicationTests {
     @MockkBean lateinit var payeeService: PayeeService
     @MockkBean private lateinit var campaignService: CampaignService
     @MockkBean private lateinit var sireneSearchService: SireneSearchService
-    @MockkBean private lateinit var moneriumService: MoneriumService
     @MockkBean private lateinit var onchainOutboxService: OnchainOutboxService
     @MockkBean private lateinit var dashboardService: AssociationDashboardService
     @MockkBean private lateinit var associationLandingService: AssociationLandingService
@@ -66,11 +75,20 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var mandateService: MandateService
     @MockkBean private lateinit var mandatePdfService: MandatePdfService
     @MockkBean private lateinit var associationRegistryCheckService: AssociationRegistryCheckService
+    @MockkBean private lateinit var beneficialOwnerService: BeneficialOwnerService
     @MockkBean private lateinit var publicWidgetService: PublicWidgetService
     @MockkBean private lateinit var mollieWebhookService: MollieWebhookService
     @MockkBean private lateinit var mollieConnectService: MollieConnectService
     @MockkBean private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
+    @MockkBean private lateinit var freezeScreeningOnboardingService: FreezeScreeningOnboardingService
     @MockkBean private lateinit var onboardingGateService: OnboardingGateService
+    @MockkBean private lateinit var complianceAlertService: ComplianceAlertService
+    @MockkBean private lateinit var complianceAuditLogService: ComplianceAuditLogService
+    @MockkBean private lateinit var associationRegistryCheckRepository: AssociationRegistryCheckRepository
+    @MockkBean private lateinit var associationProfileRepository: AssociationProfileRepository
+    @MockkBean private lateinit var beneficialOwnerRepository: BeneficialOwnerRepository
+    @MockkBean private lateinit var donorProfileRepository: DonorProfileRepository
+    @MockkBean private lateinit var freezeScreeningMatchRepository: FreezeScreeningMatchRepository
 
     @Test
     fun contextLoads() {

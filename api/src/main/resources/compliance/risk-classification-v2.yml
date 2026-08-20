@@ -1,0 +1,150 @@
+# Document de classification des risques — CommonLink
+#
+# Version  : 2026-08-v2  (révision — périmètre réduit au strict exigé)
+# Approuvé : À VALIDER par le conseil avant mise en production
+#
+# ─────────────────────────────────────────────────────────────────────────
+# NOTE DE RÉVISION (v1 -> v2) — structure inchangée (LOW / STANDARD / HIGH),
+# seul le CONTENU a été nettoyé pour ne garder que ce qui est exigé par la
+# réglementation. Aucun refactor de code nécessaire : les clés sont conservées.
+#
+#  1. Retrait des fréquences fixes de réexamen (3 / 2 / 1 ans) : politique
+#     interne, non imposée. 'review-frequency' contient désormais l'obligation
+#     réelle (mise à jour continue L.561-6 al. 2 + réexamen sur événement).
+#     Fixer des intervalles chiffrés reste un choix interne légitime que le
+#     conseil peut réintroduire, à condition de le justifier.
+#  2. Retrait du justificatif de domicile de chaque dirigeant : non imposé.
+#  3. Retrait de « l'attestation d'absence de bénéficiaire effectif » :
+#     inapplicable à une association (elle a toujours des BE).
+#  4. Bénéficiaire effectif reformulé selon l'art. R.561-3 CMF (décret
+#     n°2024-720 du 5 juillet 2024) : personnes exerçant des fonctions
+#     d'administration, de direction ou de surveillance. Pas de seuil de capital.
+#  5. Filtrage « gel des avoirs » écrit comme mesure obligatoire et continue
+#     (L.562-1 et s.), pas comme pièce à demander au client.
+#  6. STANDARD est le niveau PAR DÉFAUT (vigilance normale). LOW n'est pas un
+#     point de départ : c'est un allègement à justifier client par client
+#     (L.561-9, R.561-14), les associations loi 1901 n'étant pas dans la liste
+#     limitative de faible risque intrinsèque (R.561-15 / R.561-16).
+# ─────────────────────────────────────────────────────────────────────────
+#
+# Base légale : art. L.561-5, L.561-5-1, L.561-6, L.561-9, L.561-10,
+# L.561-10-2, R.561-1 à R.561-3, R.561-5, R.561-5-1, R.561-12, R.561-14 à
+# R.561-16-2, R.561-20, L.562-1 et s. CMF ; lignes directrices révisées ACPR
+# (2022) ; ordonnances n° 2016-1635 et n° 2020-115.
+#
+# Traçabilité : toute modification incrémente 'version', met à jour
+# 'approved-on' après validation du conseil, et fait l'objet d'un commit
+# distinct. Aucun écran d'administration ne modifie ce mapping à chaud
+# (décision architecturale D6).
+
+risk-classification:
+  version: "2026-08-v2"
+  approved-on: null   # à renseigner après validation du conseil
+
+  measures:
+
+    # ─────────────────────────────────────────────────────────────────
+    # RISQUE FAIBLE — Vigilance simplifiée
+    # Base légale : art. L.561-9, R.561-14, R.561-14-1 CMF.
+    # N'est JAMAIS le niveau par défaut. Applicable uniquement après une
+    # analyse documentée établissant un faible risque pour CE client, et en
+    # l'absence de tout soupçon. La vigilance simplifiée n'exonère pas de
+    # l'identification ni du filtrage gel ; elle en adapte l'étendue, le
+    # calendrier et l'intensité de la surveillance (R.561-14-1). La charge de
+    # la preuve du faible risque incombe à CommonLink.
+    # ─────────────────────────────────────────────────────────────────
+    LOW:
+      description: >
+        Identification de l'association et de ses représentants légaux et
+        identification des bénéficiaires effectifs (art. R.561-3 CMF), avec une
+        étendue et un calendrier de vérification adaptés au faible risque
+        (R.561-14-1). Filtrage de l'association et de ses bénéficiaires effectifs
+        contre le registre national des gels des avoirs et les listes de
+        sanctions UE/ONU, à l'entrée en relation puis en continu (L.562-1 et s.).
+        Surveillance allégée de la cohérence des opérations, proportionnée au
+        faible risque. Tout indice de soupçon exclut immédiatement le régime
+        allégé et entraîne le reclassement en vigilance standard ou renforcée.
+      review-frequency: >
+        Connaissance client tenue à jour pendant toute la relation (L.561-6 al. 2),
+        avec vérification continue que le risque reste faible. Réexamen sans délai
+        en cas d'événement significatif : changement de dirigeants, modification
+        statutaire, opération atypique, ou tout élément modifiant le profil de risque.
+      required-documents:
+        - "Publication au Journal officiel ou récépissé de déclaration en préfecture portant le numéro RNA (+ SIREN, et SIRET si l'association en dispose)"
+        - "Statuts en vigueur de l'association"
+        - "Liste des personnes exerçant des fonctions d'administration, de direction ou de surveillance (vaut identification des bénéficiaires effectifs au sens de l'art. R.561-3 CMF)"
+        - "Pièce d'identité officielle en cours de validité de chaque représentant légal"
+        - "Description de l'objet de l'association et de la nature des collectes envisagées"
+        - "Note d'analyse documentant les critères de faible risque retenus (piste d'audit ACPR)"
+
+    # ─────────────────────────────────────────────────────────────────
+    # RISQUE STANDARD — Vigilance normale — NIVEAU PAR DÉFAUT
+    # Base légale : art. L.561-5, L.561-5-1, L.561-6, R.561-5, R.561-5-1 CMF.
+    # Point d'entrée : une association démarre en STANDARD, sauf déclassement
+    # motivé vers LOW ou surclassement vers HIGH.
+    # ─────────────────────────────────────────────────────────────────
+    STANDARD:
+      description: >
+        Identification complète de l'association et vérification de son identité.
+        Identification et vérification de l'identité de chaque représentant légal.
+        Identification des bénéficiaires effectifs au sens de l'art. R.561-3 CMF
+        (personnes exerçant des fonctions d'administration, de direction ou de
+        surveillance). Recueil d'informations sur l'objet, l'activité, les zones
+        géographiques, la nature et le volume des opérations attendues et la
+        provenance des fonds (L.561-6). Filtrage de l'association et de ses
+        bénéficiaires effectifs contre le registre national des gels des avoirs
+        et les listes de sanctions UE/ONU, à l'entrée en relation puis en continu
+        (L.562-1 et s.). Surveillance continue de la cohérence des opérations avec
+        mise à jour périodique des éléments de connaissance client.
+      review-frequency: >
+        Connaissance client tenue à jour pendant toute la relation (L.561-6 al. 2).
+        Réexamen sans délai en cas d'événement significatif : changement de
+        dirigeants, modification statutaire, dépassement des volumes attendus,
+        opération atypique, ou évolution du contexte affectant la catégorie de risque.
+      required-documents:
+        - "Publication au Journal officiel ou récépissé de déclaration en préfecture portant le numéro RNA (+ SIREN, et SIRET si l'association en dispose)"
+        - "Statuts en vigueur de l'association, datés et signés"
+        - "Procès-verbal de la dernière assemblée générale désignant les dirigeants en exercice"
+        - "Liste des personnes exerçant des fonctions d'administration, de direction ou de surveillance, avec leurs fonctions (identification des bénéficiaires effectifs, art. R.561-3 CMF)"
+        - "Pièce d'identité officielle en cours de validité de chaque représentant légal"
+        - "Description de l'objet associatif, de la nature et du périmètre géographique des collectes envisagées"
+        - "Estimation du volume annuel de dons attendu et provenance générale des fonds"
+
+    # ─────────────────────────────────────────────────────────────────
+    # RISQUE ÉLEVÉ — Vigilance renforcée — SUR DÉCLENCHEUR
+    # Base légale : art. L.561-10, L.561-10-2 (PPE), R.561-20 CMF.
+    # Déclencheurs : dirigeant ou bénéficiaire effectif politiquement exposé
+    # (PPE) ; structure de contrôle opaque ou complexe ; opérations vers ou
+    # depuis un pays à risque GAFI/UE (y compris versements bénéficiaires) ;
+    # volumes ou nature atypiques ; indice de soupçon non encore déclaré.
+    # ─────────────────────────────────────────────────────────────────
+    HIGH:
+      description: >
+        Toutes les mesures du niveau standard, complétées par des diligences
+        renforcées. Collecte d'informations supplémentaires sur l'origine des
+        fonds et la justification économique des opérations (R.561-20).
+        Vérification approfondie de la chaîne de contrôle de l'association.
+        Lorsqu'un dirigeant ou un bénéficiaire effectif est une personne
+        politiquement exposée (PPE), application de l'art. L.561-10-2 :
+        autorisation d'un niveau hiérarchique approprié, enquête sur l'origine du
+        patrimoine et des fonds, surveillance renforcée de l'ensemble des
+        opérations. Surveillance transactionnelle intensifiée avec examen
+        documenté de toute opération dépassant les seuils de la cartographie des
+        risques.
+      review-frequency: >
+        Surveillance renforcée et continue pendant toute la relation. Réexamen
+        sans délai en cas d'événement significatif, d'alerte de surveillance, ou
+        d'opération nécessitant une analyse individuelle documentée.
+      required-documents:
+        - "Publication au Journal officiel ou récépissé de déclaration en préfecture portant le numéro RNA (+ SIREN, et SIRET si l'association en dispose)"
+        - "Statuts en vigueur de l'association, datés et signés"
+        - "Procès-verbal de la dernière assemblée générale désignant les dirigeants en exercice"
+        - "Liste des personnes exerçant des fonctions d'administration, de direction ou de surveillance, avec leurs fonctions (identification des bénéficiaires effectifs, art. R.561-3 CMF)"
+        - "Pièce d'identité officielle en cours de validité de chaque représentant légal"
+        - "Description de l'objet associatif, de la nature et du périmètre géographique des collectes envisagées"
+        - "Estimation du volume annuel de dons attendu et provenance générale des fonds"
+        - "Justificatif de l'origine des fonds apportés à la collecte (relevés, conventions de mécénat, actes de donation)"
+        - "Description détaillée et justification économique de chaque opération d'un montant ou d'une nature inhabituels"
+        - "Attestation ou questionnaire PPE renseigné par chaque dirigeant et bénéficiaire effectif"
+        - "Document d'autorisation hiérarchique interne validant l'entrée ou le maintien en relation (si PPE confirmée)"
+        - "Rapport d'analyse individuelle documentée pour toute opération ayant déclenché une alerte de surveillance"

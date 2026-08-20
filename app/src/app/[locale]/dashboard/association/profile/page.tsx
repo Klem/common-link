@@ -10,11 +10,9 @@ import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
-import { useMoneriumStatus } from '@/hooks/monerium/useMoneriumStatus';
 import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
-import MoneriumOnboardModal from '@/components/dashboard/MoneriumOnboardModal';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
 import { forceCompleteMollieOnboarding } from '@/lib/api/mollie-connect';
 import { MollieOnboardingStatus } from '@/types/mollie-connect';
@@ -105,9 +103,6 @@ const PROVIDER_KEYS = {
   MAGIC_LINK: 'association.profile.security.magicLink',
 } as const;
 
-// Monerium est temporairement masqué de l'UI — code conservé intégralement, réactivation = passer à true.
-const MONERIUM_ENABLED = false
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AssociationProfilePage() {
@@ -120,10 +115,6 @@ export default function AssociationProfilePage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('infos');
   const [verifStatus, setVerifStatus] = useState<VerificationStatus | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showMoneriumModal, setShowMoneriumModal] = useState(false);
-  const [moneriumInterrupted, setMoneriumInterrupted] = useState(false);
-  const { connected, pending, isLoading: moneriumLoading, refresh: refreshMonerium } =
-    useMoneriumStatus(MONERIUM_ENABLED);
   const [showMollieModal, setShowMollieModal] = useState(false);
   const [mollieInterrupted, setMollieInterrupted] = useState(false);
   const {
@@ -180,11 +171,6 @@ export default function AssociationProfilePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isLoading, mandateLoading, mollieLoading, verifDone, mandateDone, bankDone]);
-
-  const handlePopupClosed = useCallback(async () => {
-    setMoneriumInterrupted(true);
-    await refreshMonerium();
-  }, [refreshMonerium]);
 
   const handleMolliePopupClosed = useCallback(async () => {
     setMollieInterrupted(true);
@@ -615,51 +601,6 @@ export default function AssociationProfilePage() {
       {/* ══ Onglet : Compte bancaire ══════════════════════════════════════ */}
       {activeTab === 'bank' && (
         <div className="set-tab-content active">
-          {/* Carte Monerium */}
-          {MONERIUM_ENABLED && (
-          <div className="card no-hover monerium-card mb-5">
-            <div className="card-h">
-              <h3>{t('association.profile.monerium.title')}</h3>
-              <span className="badge badge-info">{t('association.profile.monerium.badge')}</span>
-            </div>
-            <div className="card-b">
-              <p className="monerium-desc">
-                {t('association.profile.monerium.description')}
-              </p>
-              {moneriumLoading ? (
-                <div className="monerium-spinner" />
-              ) : connected ? (
-                <span className="badge badge-active">
-                  {t('association.profile.monerium.connectedStatus')}
-                </span>
-              ) : moneriumInterrupted ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoneriumInterrupted(false);
-                    setShowMoneriumModal(true);
-                  }}
-                  className="btn btn-secondary btn-sm"
-                >
-                  {t('association.profile.monerium.tryAgain')}
-                </button>
-              ) : pending ? (
-                <span className="badge badge-warning">
-                  {t('association.profile.monerium.pendingStatus')}
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowMoneriumModal(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  {t('association.profile.monerium.connect')}
-                </button>
-              )}
-            </div>
-          </div>
-          )}
-
           {/* Carte Mollie */}
           <div className="card no-hover mollie-kyc-card mb-5">
             <div className="card-h">
@@ -809,7 +750,7 @@ export default function AssociationProfilePage() {
 
       {/* ── SetPassword modal ────────────────────────────────────────────── */}
       {showPasswordModal && (
-        <div className="ov" onClick={() => setShowPasswordModal(false)}>
+        <div className="ov on" onClick={() => setShowPasswordModal(false)}>
           <div className="mod" onClick={(e) => e.stopPropagation()}>
             <div className="mod-h">
               <h3>{t('association.profile.security.changePassword')}</h3>
@@ -826,18 +767,6 @@ export default function AssociationProfilePage() {
         </div>
       )}
 
-      {/* ── Monerium onboard modal ───────────────────────────────────────── */}
-      <MoneriumOnboardModal
-        isOpen={showMoneriumModal}
-        onClose={() => setShowMoneriumModal(false)}
-        onConnected={() => {
-          setMoneriumInterrupted(false);
-          refreshMonerium();
-        }}
-        onPopupClosed={handlePopupClosed}
-      />
-
-      {/* ── Mollie onboard modal ─────────────────────────────────────────── */}
       <MollieOnboardModal
         isOpen={showMollieModal}
         onClose={() => setShowMollieModal(false)}

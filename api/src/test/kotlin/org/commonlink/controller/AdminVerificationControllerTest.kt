@@ -6,11 +6,16 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
 import org.commonlink.dto.AdminVerificationDetailDto
+import org.commonlink.entity.RiskLevel
 import org.commonlink.dto.AdminVerificationSummaryDto
 import org.commonlink.dto.DocumentSlotDto
 import org.commonlink.dto.RegistryPreCheckDto
+import org.commonlink.dto.VigilanceMeasuresDto
 import org.commonlink.entity.AssociationDocumentType
+import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.VerificationStatus
+import org.commonlink.dto.FreezeScreenStatus
+import org.commonlink.dto.FreezeScreenStatusDto
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationDocumentMetadata
@@ -20,6 +25,8 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationRegistryCheckService
+import org.commonlink.service.BeneficialOwnerService
+import org.commonlink.service.FreezeScreeningOnboardingService
 import org.commonlink.service.VerificationService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,6 +59,8 @@ class AdminVerificationControllerTest {
 
     @MockkBean private lateinit var verificationService: VerificationService
     @MockkBean private lateinit var registryCheckService: AssociationRegistryCheckService
+    @MockkBean private lateinit var beneficialOwnerService: BeneficialOwnerService
+    @MockkBean private lateinit var freezeScreeningService: FreezeScreeningOnboardingService
     @MockkBean private lateinit var jwtService: JwtService
     @MockkBean private lateinit var userDetailsService: UserDetailsServiceImpl
     @MockkBean private lateinit var userRepository: UserRepository
@@ -78,6 +87,7 @@ class AdminVerificationControllerTest {
         submittedAt = now,
         verifiedAt = null,
         docCount = 2,
+        riskLevel = RiskLevel.STANDARD,
         requiredDocuments = listOf(
             DocumentSlotDto(AssociationDocumentType.VERIF_STATUTS, true, docId, "statuts.pdf", 12345L, now),
             DocumentSlotDto(AssociationDocumentType.VERIF_RNA_RECEIPT, true, UUID.randomUUID(), "rna.pdf", 9876L, now),
@@ -205,6 +215,10 @@ class AdminVerificationControllerTest {
         bodaccProcedureFound = false,
         checkedAt = now,
         warnings = emptyList(),
+        officers = emptyList(),
+        rnaActive = null,
+        legalCategory = "9220",
+        scopeVerdict = ScopeVerdict.IN_SCOPE,
     )
 
     @Test
@@ -338,6 +352,102 @@ class AdminVerificationControllerTest {
                 .with(user("assoc").roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(mapOf("reason" to "reason")))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/admin/verifications/{associationId}/vigilance
+    // -------------------------------------------------------------------------
+
+    private val sampleVigilance = VigilanceMeasuresDto(
+        riskLevel = RiskLevel.STANDARD,
+        classificationVersion = "2024-A",
+        description = "Standard due diligence.",
+        reviewFrequency = "Every 2 years",
+        requiredDocuments = listOf("Statuts", "Relevé d'identité bancaire"),
+    )
+
+    @Test
+    fun `getVigilanceMeasures - 200 with CURATOR role`() {
+        every { verificationService.adminGetVigilanceMeasures(associationId) } returns sampleVigilance
+
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/vigilance")
+                .with(user("curator").roles("CURATOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.riskLevel").value("STANDARD"))
+            .andExpect(jsonPath("$.classificationVersion").value("2024-A"))
+            .andExpect(jsonPath("$.requiredDocuments").isArray)
+    }
+
+    @Test
+    fun `getVigilanceMeasures - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/vigilance")
+                .with(user("assoc").roles("ASSOCIATION"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET/POST /api/admin/verifications/{associationId}/beneficial-owners
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `listBeneficialOwners - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/beneficial-owners")
+                .with(user("assoc").roles("ASSOCIATION"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `addBeneficialOwner - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            post("/api/admin/verifications/$associationId/beneficial-owners")
+                .with(user("assoc").roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mapOf("name" to "Jean Martin", "origin" to "REGISTRY")))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `discardBeneficialOwner - 403 with ASSOCIATION role`() {
+        val ownerId = UUID.fromString("00000000-0000-0000-0000-000000000099")
+        mockMvc.perform(
+            post("/api/admin/verifications/$associationId/beneficial-owners/$ownerId/discard")
+                .with(user("assoc").roles("ASSOCIATION"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/admin/verifications/{associationId}/freeze-screen-status
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getFreezeScreenStatus - 200 with CURATOR role`() {
+        every { freezeScreeningService.getOnboardingFreezeScreenStatus(associationId) } returns
+            FreezeScreenStatusDto(FreezeScreenStatus.PASSED, now)
+
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/freeze-screen-status")
+                .with(user("curator").roles("CURATOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("PASSED"))
+            .andExpect(jsonPath("$.checkedAt").isNotEmpty)
+    }
+
+    @Test
+    fun `getFreezeScreenStatus - 403 with ASSOCIATION role`() {
+        mockMvc.perform(
+            get("/api/admin/verifications/$associationId/freeze-screen-status")
+                .with(user("assoc").roles("ASSOCIATION"))
         )
             .andExpect(status().isForbidden)
     }

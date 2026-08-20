@@ -4,14 +4,20 @@ import { useState, useEffect } from 'react';
 import { use } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { getVerificationDetail } from '@/lib/api/admin';
+import { getVerificationDetail, getRegistryPreCheck } from '@/lib/api/admin';
 import type { AdminVerificationDetailDto } from '@/types/admin';
+import { FreezeScreenStatus, ScopeVerdict } from '@/types/admin';
 import { VerificationStatus } from '@/types/association';
 import { ROUTES } from '@/lib/routes';
 import { STATUS_BADGE_CLASS } from '@/components/admin/adminShared';
 import { VerificationDocumentRow } from '@/components/admin/VerificationDocumentRow';
 import { VerificationDecisionPanel } from '@/components/admin/VerificationDecisionPanel';
 import { RegistryPreCheckBanner } from '@/components/admin/RegistryPreCheckBanner';
+import { FreezeScreenStatusBanner } from '@/components/admin/FreezeScreenStatusBanner';
+import { RiskLevelBadge } from '@/components/admin/RiskLevelBadge';
+import { VigilanceMeasuresPanel } from '@/components/admin/VigilanceMeasuresPanel';
+import { BeneficialOwnersPanel } from '@/components/admin/BeneficialOwnersPanel';
+import { BeneficialOwnerType } from '@/types/admin';
 
 interface Props {
   params: Promise<{ associationId: string }>;
@@ -26,14 +32,24 @@ export default function VerificationDetailPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [registryOfficers, setRegistryOfficers] = useState<string[]>([]);
+  const [scopeVerdict, setScopeVerdict] = useState<ScopeVerdict | null>(null);
+  const [retainedRepresentativeCount, setRetainedRepresentativeCount] = useState<number | null>(null);
+  const [freezeScreenStatus, setFreezeScreenStatus] = useState<FreezeScreenStatus | null>(null);
 
   const loadDetail = async () => {
     setIsLoading(true);
     setNotFound(false);
     setHasError(false);
     try {
-      const data = await getVerificationDetail(associationId);
+      const [data, precheck] = await Promise.all([
+        getVerificationDetail(associationId),
+        getRegistryPreCheck(associationId).catch(() => null),
+      ]);
       setDetail(data);
+      if (precheck?.officers) setRegistryOfficers(precheck.officers);
+      if (precheck?.scopeVerdict) setScopeVerdict(precheck.scopeVerdict);
+      else setScopeVerdict(null);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosErr = err as { response?: { status?: number } };
@@ -106,9 +122,12 @@ export default function VerificationDetailPage({ params }: Props) {
             {detail.identifier}
           </p>
         </div>
-        <span className={STATUS_BADGE_CLASS[detail.status]}>
-          {t(`status.${detail.status}`)}
-        </span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <RiskLevelBadge riskLevel={detail.riskLevel} />
+          <span className={STATUS_BADGE_CLASS[detail.status]}>
+            {t(`status.${detail.status}`)}
+          </span>
+        </div>
       </div>
 
       {/* Meta info */}
@@ -159,6 +178,30 @@ export default function VerificationDetailPage({ params }: Props) {
           <p style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{detail.rejectionReason}</p>
         </div>
       )}
+
+      {/* Vigilance measures — derived from risk level */}
+      <VigilanceMeasuresPanel associationId={associationId} />
+
+      {/* Legal representatives — required for approval (art. R.561-3 CMF) */}
+      <BeneficialOwnersPanel
+        associationId={associationId}
+        officers={[]}
+        type={BeneficialOwnerType.REPRESENTATIVE}
+        onRetainedCountChange={setRetainedRepresentativeCount}
+      />
+
+      {/* Beneficial owners — optional, screened but not required for approval */}
+      <BeneficialOwnersPanel
+        associationId={associationId}
+        officers={registryOfficers}
+        type={BeneficialOwnerType.BENEFICIAL_OWNER}
+      />
+
+      {/* Freeze screen status — loads independently, informs the decision panel */}
+      <FreezeScreenStatusBanner
+        associationId={associationId}
+        onStatusLoaded={setFreezeScreenStatus}
+      />
 
       {/* Registry pre-check — informational, loads independently */}
       <RegistryPreCheckBanner associationId={associationId} />
@@ -216,6 +259,13 @@ export default function VerificationDetailPage({ params }: Props) {
           status={detail.status}
           verifiedAt={detail.verifiedAt}
           rejectionReason={detail.rejectionReason}
+          scopeVerdict={scopeVerdict}
+          hasRepresentative={
+            retainedRepresentativeCount !== null
+              ? retainedRepresentativeCount > 0
+              : null
+          }
+          freezeScreenStatus={freezeScreenStatus}
           onDecisionMade={(newStatus, reason) =>
             setDetail((prev) =>
               prev

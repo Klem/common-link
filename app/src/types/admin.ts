@@ -3,6 +3,33 @@ import type { DocumentSlotDto, OptionalDocumentDto } from '@/types/verification'
 
 export type { Page } from '@/types/payment';
 
+export const RiskLevel = {
+  LOW: 'LOW',
+  STANDARD: 'STANDARD',
+  HIGH: 'HIGH',
+} as const;
+export type RiskLevel = typeof RiskLevel[keyof typeof RiskLevel];
+
+export const ScopeVerdict = {
+  IN_SCOPE: 'IN_SCOPE',
+  OUT_OF_SCOPE: 'OUT_OF_SCOPE',
+  UNDETERMINED: 'UNDETERMINED',
+} as const;
+export type ScopeVerdict = typeof ScopeVerdict[keyof typeof ScopeVerdict];
+
+export const BeneficialOwnerOrigin = {
+  DECLARED: 'DECLARED',
+  REGISTRY: 'REGISTRY',
+  STATUTS: 'STATUTS',
+} as const;
+export type BeneficialOwnerOrigin = typeof BeneficialOwnerOrigin[keyof typeof BeneficialOwnerOrigin];
+
+export const BeneficialOwnerType = {
+  BENEFICIAL_OWNER: 'BENEFICIAL_OWNER',
+  REPRESENTATIVE: 'REPRESENTATIVE',
+} as const;
+export type BeneficialOwnerType = typeof BeneficialOwnerType[keyof typeof BeneficialOwnerType];
+
 /** Full set of document types handled by the admin verification console. */
 export const AssociationDocumentType = {
   VERIF_STATUTS: 'VERIF_STATUTS',
@@ -32,6 +59,9 @@ export interface RegistryPreCheckDto {
   associationExists: boolean | null;
   siren: string | null;
   rna: string | null;
+  legalCategory: string | null;
+  /** Loi 1901 scope verdict: IN_SCOPE, OUT_OF_SCOPE, or UNDETERMINED. */
+  scopeVerdict: ScopeVerdict;
   /** 'A' = active, 'C' = ceased. Null if no SIREN or INSEE unavailable. */
   etatAdministratif: string | null;
   joafeDeclarationFound: boolean | null;
@@ -39,6 +69,10 @@ export interface RegistryPreCheckDto {
   bodaccProcedureFound: boolean | null;
   checkedAt: string;
   warnings: string[];
+  /** Legal representatives collected from the registry scan. */
+  officers: string[];
+  /** RNA administrative status. Null if not available. */
+  rnaActive: boolean | null;
 }
 
 /** Full dossier returned by `GET /api/admin/verifications/{associationId}`. */
@@ -51,6 +85,57 @@ export interface AdminVerificationDetailDto {
   submittedAt: string | null;
   verifiedAt: string | null;
   docCount: number;
+  riskLevel: RiskLevel;
   requiredDocuments: DocumentSlotDto[];
   optionalDocuments: OptionalDocumentDto[];
+}
+
+/** Vigilance measures returned by `GET /api/admin/verifications/{associationId}/vigilance`. */
+export interface VigilanceMeasuresDto {
+  riskLevel: RiskLevel;
+  classificationVersion: string;
+  description: string;
+  reviewFrequency: string;
+  requiredDocuments: string[];
+}
+
+/** A beneficial owner or legal representative record returned by the API. */
+export interface BeneficialOwnerDto {
+  id: string;
+  name: string;
+  role: string | null;
+  dateOfBirth: string | null;
+  origin: BeneficialOwnerOrigin;
+  type: BeneficialOwnerType;
+  collectedAt: string;
+  confirmedBy: string;
+  discarded: boolean;
+  discardedBy: string | null;
+  discardedAt: string | null;
+}
+
+/** Four-state indicator of the most recent onboarding freeze screening. */
+export const FreezeScreenStatus = {
+  NOT_PERFORMED: 'NOT_PERFORMED',
+  PASSED: 'PASSED',
+  HIT: 'HIT',
+  /** Entries were found and a compliance officer ruled them false positives — no longer blocking. */
+  HIT_CLEARED: 'HIT_CLEARED',
+  UNAVAILABLE: 'UNAVAILABLE',
+} as const;
+export type FreezeScreenStatus = typeof FreezeScreenStatus[keyof typeof FreezeScreenStatus];
+
+/** Response body for `GET /api/admin/verifications/{id}/freeze-screen-status`. */
+export interface FreezeScreenStatusDto {
+  status: FreezeScreenStatus;
+  checkedAt: string | null;
+}
+
+/** Request body for adding a beneficial owner or legal representative. */
+export interface AddBeneficialOwnerRequest {
+  name: string;
+  role?: string | null;
+  dateOfBirth?: string | null;
+  origin: BeneficialOwnerOrigin;
+  type: BeneficialOwnerType;
 }

@@ -65,7 +65,7 @@ class CampaignDonorControllerTest {
     private val sampleDonationDto = DonationDto(
         id          = donationId,
         amount      = BigDecimal("75.00"),
-        providerRef = "monerium:abc-123",
+        providerRef = "mollie:tr_abc123",
         confirmedAt = Instant.now(),
         createdAt   = Instant.now(),
         onChain     = true,
@@ -160,7 +160,7 @@ class CampaignDonorControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(donationId.toString()))
-            .andExpect(jsonPath("$.providerRef").value("monerium:abc-123"))
+            .andExpect(jsonPath("$.providerRef").value("mollie:tr_abc123"))
     }
 
     @Test

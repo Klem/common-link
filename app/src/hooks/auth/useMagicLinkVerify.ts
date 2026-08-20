@@ -34,6 +34,7 @@ type VerifyStatus = 'idle' | 'verifying' | 'success' | 'error';
  * On failure, maps backend error codes to i18n keys:
  * - `TOKEN_EXPIRED` → `errors.tokenExpired`
  * - `TOKEN_USED` → `errors.tokenUsed` (single-use tokens)
+ * - `SIREN_ALREADY_REGISTERED` → `errors.sirenAlreadyRegistered` (SIREN claimed since the link was sent)
  * - Other errors → `errors.genericError`
  *
  * @param token - The raw magic link token from the URL query string, or null.
@@ -75,6 +76,10 @@ export function useMagicLinkVerify(
             setError('errors.tokenExpired');
           } else if (problemDetail?.code === 'TOKEN_USED') {
             setError('errors.tokenUsed');
+          } else if (problemDetail?.code === 'SIREN_ALREADY_REGISTERED') {
+            // Reachable when someone else registers the SIREN between the link being sent and
+            // clicked: profile creation happens here, so the guard fires at verification time.
+            setError('errors.sirenAlreadyRegistered');
           } else {
             setError('errors.genericError');
           }

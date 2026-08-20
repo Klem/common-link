@@ -136,6 +136,33 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
+     * Handles [SirenAlreadyRegisteredException] with a `code: SIREN_ALREADY_REGISTERED` property
+     * (HTTP 409), so the sign-up screen does not report a duplicate SIREN as a duplicate email.
+     */
+    @ExceptionHandler(SirenAlreadyRegisteredException::class)
+    fun handleSirenAlreadyRegistered(ex: SirenAlreadyRegisteredException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "SIREN already registered")
+        problem.setProperty("code", "SIREN_ALREADY_REGISTERED")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
+     * Handles [CollectionCapExceededException] with a `code: COLLECTION_CAP_EXCEEDED` property and
+     * the still-acceptable amount (HTTP 409).
+     *
+     * A plain [ConflictException] would be indistinguishable from "this association cannot collect
+     * yet", which the widget already renders on 409 — and the two call for opposite donor actions:
+     * come back later versus lower the amount.
+     */
+    @ExceptionHandler(CollectionCapExceededException::class)
+    fun handleCollectionCapExceeded(ex: CollectionCapExceededException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Collection cap reached")
+        problem.setProperty("code", "COLLECTION_CAP_EXCEEDED")
+        problem.setProperty("remainingCapacity", ex.remainingCapacity)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [MoneriumReauthRequiredException] with a `code: MONERIUM_REAUTH_REQUIRED`
      * property (HTTP 409). The frontend uses this code to surface a "Reconnect Monerium"
      * CTA and re-trigger the PKCE flow.

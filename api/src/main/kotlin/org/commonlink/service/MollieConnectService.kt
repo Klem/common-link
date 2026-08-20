@@ -13,6 +13,8 @@ import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOAuthState
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.User
+import org.commonlink.exception.MollieRefreshRejectedException
+import org.commonlink.exception.MollieRefreshUnavailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
@@ -29,12 +31,21 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.HttpStatusCodeException
+import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.postForEntity
 import java.net.URLEncoder
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+
+/**
+ * Token value written by [MollieConnectService.buildMockConnection] when
+ * `app.mollie.connect.mock=true`. Never a real Mollie credential: it exists only so the
+ * onboarding UI can be walked through without an OAuth popup. Payment paths must fail fast
+ * rather than present it to Mollie — see [MollieConnectTokenManager.refreshTokens].
+ */
+internal const val MOCK_TOKEN_SENTINEL = "mock"
 
 // --- Private Mollie API response DTOs (file-private, not part of the public API contract) ---
 
@@ -185,12 +196,28 @@ class MollieConnectTokenManager(
      * @throws IllegalStateException if no connection exists or the connection is BROKEN.
      */
     @Transactional
-    fun getValidAccessToken(associationId: UUID): String {
+    fun getValidAccessToken(associationId: UUID): String =
+        getValidAccessToken(associationId, REFRESH_SAFETY_MARGIN_SECONDS)
+
+    /**
+     * Same as [getValidAccessToken] but with an explicit refresh lookahead, so the scheduled
+     * refresh ([MollieTokenRefreshExecutor]) can renew tokens long before a donor needs them
+     * while reusing this exact locked path.
+     *
+     * Reusing it — rather than calling [forceRefreshAccessToken] — is what makes the scheduled
+     * refresh idempotent across instances: the expiry re-check happens *after* the row lock is
+     * acquired, so a second instance arriving on an already-renewed connection does no HTTP call.
+     *
+     * @param safetyMarginSeconds refresh when the token expires within this many seconds.
+     * @throws IllegalStateException if no connection exists or the connection is BROKEN.
+     */
+    @Transactional
+    fun getValidAccessToken(associationId: UUID, safetyMarginSeconds: Long): String {
         val connection = connectionRepo.findByAssociationIdForUpdate(associationId)
             ?: throw IllegalStateException("No Mollie connection for association $associationId")
         if (connection.state == MollieConnectionState.BROKEN)
             throw IllegalStateException("Mollie connection is BROKEN for association $associationId")
-        val safeUntil = Instant.now().plusSeconds(REFRESH_SAFETY_MARGIN_SECONDS)
+        val safeUntil = Instant.now().plusSeconds(safetyMarginSeconds)
         return if (connection.expiresAt.isAfter(safeUntil)) {
             connection.accessToken
         } else {
@@ -215,12 +242,31 @@ class MollieConnectTokenManager(
 
     /**
      * POSTs grant_type=refresh_token to Mollie, persists the new token pair, and returns the
-     * new access token. On any HTTP error (including invalid_grant), marks the connection
-     * BROKEN and throws. Must be called within a transaction holding the pessimistic write lock.
+     * new access token. Must be called within a transaction holding the pessimistic write lock.
      *
-     * Tokens are never logged.
+     * Failures are classified rather than lumped together, because the remedies are opposites:
+     * [MollieRefreshRejectedException] (4xx — the grant is dead, only a re-OAuth recovers) versus
+     * [MollieRefreshUnavailableException] (429/5xx/IO — retrying works). This method deliberately
+     * does **not** persist [MollieConnectionState.BROKEN]: writing it here was dead code, since
+     * throwing marks the surrounding transaction rollback-only and the row stayed ACTIVE anyway.
+     * The decision belongs to the caller, which can commit it in its own transaction —
+     * see [MollieTokenRefreshExecutor].
+     *
+     * Mock connections short-circuit: presenting [MOCK_TOKEN_SENTINEL] to Mollie can only ever
+     * yield 400 invalid_grant, so it is refused locally instead of being sent.
+     *
+     * Tokens are never logged; Mollie's OAuth error body carries only an error code.
      */
     private fun refreshTokens(connection: MollieConnection): String {
+        if (connection.refreshToken == MOCK_TOKEN_SENTINEL) {
+            logger.warn(
+                "Mollie connection for association {} is a mock (app.mollie.connect.mock=true) — " +
+                    "its 1h token has lapsed and no real refresh is possible. Set " +
+                    "MOLLIE_CONNECT_MOCK=false and redo the OAuth flow to collect payments.",
+                connection.association.id,
+            )
+            throw IllegalStateException("Mollie connection is mocked — real payments are impossible")
+        }
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_FORM_URLENCODED
             val encoded = Base64.getEncoder()
@@ -237,15 +283,26 @@ class MollieConnectTokenManager(
                 "${mollieProperties.apiBaseUrl}/oauth2/tokens",
                 HttpEntity(body, headers),
                 TokenResponse::class.java,
-            ).body ?: throw IllegalStateException("Empty refresh response from Mollie")
+            ).body ?: throw MollieRefreshUnavailableException(message = "Empty refresh response from Mollie")
         } catch (ex: HttpStatusCodeException) {
+            val status = ex.statusCode
+            // 429 is a 4xx but says nothing about the grant — never treat throttling as a dead grant.
+            val definitive = status.is4xxClientError && status.value() != TOO_MANY_REQUESTS
             logger.warn(
-                "Mollie token refresh rejected for association {}: status={}",
-                connection.association.id, ex.statusCode,
+                "Mollie token refresh failed for association {}: status={} definitive={} body={}",
+                connection.association.id, status, definitive, ex.responseBodyAsString,
             )
-            connection.state = MollieConnectionState.BROKEN
-            connectionRepo.save(connection)
-            throw IllegalStateException("Mollie refresh token rejected — connection marked BROKEN")
+            throw if (definitive) {
+                MollieRefreshRejectedException(status, ex.responseBodyAsString)
+            } else {
+                MollieRefreshUnavailableException(status)
+            }
+        } catch (ex: RestClientException) {
+            logger.warn(
+                "Mollie token refresh unreachable for association {}: {}",
+                connection.association.id, ex.message,
+            )
+            throw MollieRefreshUnavailableException(message = "Mollie /oauth2/tokens unreachable")
         }
 
         connection.accessToken = tokenResponse.accessToken
@@ -258,6 +315,7 @@ class MollieConnectTokenManager(
 
     companion object {
         private const val REFRESH_SAFETY_MARGIN_SECONDS = 60L
+        private const val TOO_MANY_REQUESTS = 429
     }
 }
 
@@ -341,12 +399,12 @@ class MollieConnectService(
         val existing = connectionRepo.findByAssociationId(association.id!!)
         val mockConn = existing ?: MollieConnection(
             association = association,
-            accessToken = "mock",
-            refreshToken = "mock",
+            accessToken = MOCK_TOKEN_SENTINEL,
+            refreshToken = MOCK_TOKEN_SENTINEL,
             expiresAt = Instant.now().plusSeconds(3600),
         )
-        mockConn.accessToken = "mock"
-        mockConn.refreshToken = "mock"
+        mockConn.accessToken = MOCK_TOKEN_SENTINEL
+        mockConn.refreshToken = MOCK_TOKEN_SENTINEL
         mockConn.expiresAt = Instant.now().plusSeconds(3600)
         mockConn.state = MollieConnectionState.ACTIVE
         mockConn.onboardingStatus = MollieOnboardingStatus.COMPLETED
@@ -447,6 +505,14 @@ class MollieConnectService(
      * - Phase 1: DB reads — validate CSRF state, extract associationId
      * - Phase 2: HTTP — token exchange, org fetch, onboarding status fetch (no transaction open)
      * - Phase 3: DB writes — uniqueness guard, persist connection, delete consumed state
+     *
+     * LCB-FT boundary: this method writes exclusively to [MollieConnection] — access token,
+     * refresh token, expiry, connection state, onboarding status, canReceivePayments,
+     * canReceiveSettlements, onboardingDashboardUrl, mollieOrganizationId, lastSyncedAt.
+     * No field of [org.commonlink.entity.AssociationProfile] is written here. Mollie's onboarding
+     * validation is conducted by Mollie for its own regulatory purposes and does not constitute a
+     * CommonLink due-diligence act; CommonLink's KYB dossier is validated independently by
+     * [VerificationService]. The two validations are cumulative — neither substitutes for the other.
      *
      * @throws IllegalStateException on invalid/expired state, Mollie error, or org already linked.
      */

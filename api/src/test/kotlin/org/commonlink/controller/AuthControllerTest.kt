@@ -17,8 +17,10 @@ import org.commonlink.exception.RateLimitException
 import org.commonlink.exception.TokenExpiredException
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.AuthRateLimiter
+import org.commonlink.security.ClientIpResolver
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
+import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AuthService
@@ -41,7 +43,13 @@ import java.time.Instant
 import java.util.UUID
 
 @WebMvcTest(AuthController::class)
-@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@Import(
+    SecurityConfig::class,
+    JwtAuthenticationFilter::class,
+    // Imported rather than mocked: both are pure logic worth exercising for real here.
+    ClientIpResolver::class,
+    RefreshCookieFactory::class,
+)
 @TestPropertySource(properties = [
     "app.frontend-url=http://localhost:3000",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
@@ -103,6 +111,62 @@ class AuthControllerTest {
                 .content("""{"email":"test@example.com","password":"password123","role":"DONOR"}""")
         )
             .andExpect(status().isNoContent)
+    }
+
+    /**
+     * Security regression (audit 2026-08-20, C1): `UserRole` also holds the two back-office roles.
+     * Accepting one from a public sign-up body handed anyone who could receive an e-mail a JWT
+     * carrying `ROLE_COMPLIANCE_OFFICER` or `ROLE_CURATOR`.
+     */
+    @Test
+    fun `register - 422 when a back-office role is requested`() {
+        listOf("CURATOR", "COMPLIANCE_OFFICER").forEach { role ->
+            mockMvc.perform(
+                post("/api/auth/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"email":"test@example.com","password":"password123","role":"$role"}""")
+            )
+                .andExpect(status().isUnprocessableEntity)
+        }
+        verify(exactly = 0) { authService.register(any()) }
+    }
+
+    @Test
+    fun `requestMagicLink - 422 when a back-office role is requested`() {
+        mockMvc.perform(
+            post("/api/auth/magic-link/request")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"test@example.com","role":"CURATOR"}""")
+        )
+            .andExpect(status().isUnprocessableEntity)
+
+        verify(exactly = 0) { authService.sendMagicLink(any(), any(), any()) }
+    }
+
+    @Test
+    fun `signUpWithGoogle - 422 when a back-office role is requested`() {
+        mockMvc.perform(
+            post("/api/auth/signup/google")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"idToken":"valid-token","role":"COMPLIANCE_OFFICER"}""")
+        )
+            .andExpect(status().isUnprocessableEntity)
+
+        verify(exactly = 0) { authService.signUpWithGoogle(any(), any()) }
+    }
+
+    @Test
+    fun `register - 429 when rate limited`() {
+        every { authRateLimiter.check(any(), any(), any()) } throws RateLimitException()
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"test@example.com","password":"password123","role":"DONOR"}""")
+        )
+            .andExpect(status().isTooManyRequests)
+
+        verify(exactly = 0) { authService.register(any()) }
     }
 
     @Test

@@ -11,6 +11,8 @@ interface Props {
   campaignName: string;
   /** False in preview mode on an unpublished campaign — the form is then rendered disabled. */
   donationsEnabled?: boolean;
+  /** Amount the campaign may still accept; forwarded to the donation form's collection-cap guard. */
+  remainingCapacity?: number;
   children: ReactNode;
 }
 
@@ -20,6 +22,7 @@ export function LandingClient({
   locale,
   campaignName,
   donationsEnabled = true,
+  remainingCapacity,
   children,
 }: Props) {
   const [selectedAmount, setSelectedAmount] = useState<number | undefined>(undefined);
@@ -35,6 +38,7 @@ export function LandingClient({
               sourceSite={sourceSite}
               locale={locale}
               disabled={!donationsEnabled}
+              remainingCapacity={remainingCapacity}
               onAmountChange={setSelectedAmount}
             />
           </div>

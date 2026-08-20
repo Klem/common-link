@@ -8,7 +8,7 @@ import java.util.UUID
 /**
  * Public representation of a single donation.
  *
- * [providerRef] is the payment provider reference (e.g. "monerium:<uuid>" or "stripe:pi_…").
+ * [providerRef] is the payment provider reference (e.g. "mollie:tr_..." or "stripe:pi_...").
  * It is on-chain proof and is always exposed regardless of donor anonymity.
  * [onChain] is true when [confirmedAt] is set, indicating the donation has been recorded on-chain.
  */

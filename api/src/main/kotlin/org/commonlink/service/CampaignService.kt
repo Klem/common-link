@@ -11,6 +11,7 @@ import org.commonlink.dto.UpdateCampaignRequest
 import org.commonlink.dto.UpdateMilestoneRequest
 import org.commonlink.dto.toDto
 import org.commonlink.dto.toSummaryDto
+import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignBudgetItem
 import org.commonlink.entity.CampaignCoverImage
@@ -31,7 +32,7 @@ import org.commonlink.repository.CampaignCoverImageRepository
 import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.MollieConnectionRepository
-import org.commonlink.repository.MoneriumConnectionRepository
+import org.commonlink.util.FileTypeSniffer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -47,6 +48,12 @@ private const val MAX_COVER_IMAGE_SIZE = 5L * 1024 * 1024
 
 /** Accepted cover image MIME types — mirrored in the frontend upload zone (rule 8). */
 private val COVER_IMAGE_ALLOWED_MIME = setOf("image/jpeg", "image/png", "image/webp")
+
+/**
+ * Minimum length of the expected outcome ([Campaign.impactGoals]) required to publish.
+ * Mirrored in `PrePublishModal.tsx` (rule 8).
+ */
+private const val MIN_IMPACT_GOALS_LENGTH = 20
 
 /** Public serving path of a campaign cover image; stored in [Campaign.coverImage]. */
 private fun coverImagePath(campaignId: UUID): String = "/api/public/campaigns/$campaignId/cover"
@@ -68,7 +75,6 @@ class CampaignService(
     private val campaignCoverImageRepository: CampaignCoverImageRepository,
     private val associationProfileRepository: AssociationProfileRepository,
     private val mollieConnectionRepository: MollieConnectionRepository,
-    private val moneriumConnectionRepository: MoneriumConnectionRepository,
     private val budgetHasher: CampaignBudgetHasher,
     private val outbox: OnchainOutboxService,
 ) {
@@ -311,10 +317,17 @@ class CampaignService(
     fun getCoverImage(campaignId: UUID): Pair<String, ByteArray> {
         val image = campaignCoverImageRepository.findById(campaignId)
             .orElseThrow { NotFoundException("No cover image for campaign $campaignId") }
-        return image.contentType to image.data
+        // Same rule as the association logo: the served Content-Type comes from the bytes, not from
+        // the stored declaration (security audit 2026-08-20, M9).
+        val contentType = FileTypeSniffer.detectImageMime(image.data)
+            ?: run {
+                logger.warn("Refusing to serve cover image of campaign {} — bytes are not a supported image", campaignId)
+                throw NotFoundException("No cover image for campaign $campaignId")
+            }
+        return contentType to image.data
     }
 
-    /** Rejects empty files, oversized files and non-image MIME types. */
+    /** Rejects empty files, oversized files, non-image MIME types, and mislabelled bytes. */
     private fun validateCoverImage(file: MultipartFile) {
         if (file.isEmpty) {
             throw UnprocessableEntityException("Cover image file is empty")
@@ -327,6 +340,12 @@ class CampaignService(
             throw UnprocessableEntityException(
                 "Unsupported cover image type '$mime'; allowed types: ${COVER_IMAGE_ALLOWED_MIME.joinToString(", ")}"
             )
+        }
+        // Served back verbatim from a public endpoint, so the bytes must match the declared type
+        // (security audit 2026-08-20, M9).
+        if (!FileTypeSniffer.matches(file.bytes, mime)) {
+            logger.warn("Rejected cover image upload: bytes do not match declared type {}", mime)
+            throw UnprocessableEntityException("Cover image content does not match its declared type '$mime'")
         }
     }
 
@@ -661,6 +680,11 @@ class CampaignService(
      * Pre-save checks and preparation for the DRAFT→LIVE publish transition.
      * Sets [Campaign.budgetHash] on the campaign instance (persisted by the caller's save).
      *
+     * A balanced budget prévisionnel ([requireBalancedBudget]) and a stated expected outcome
+     * ([Campaign.impactGoals], at least [MIN_IMPACT_GOALS_LENGTH] characters) are publication
+     * blockers, not recommendations: a donor is asked for money against a costed plan and a
+     * declared result. Both predicates mirror `PrePublishModal.tsx` exactly (rule 8).
+     *
      * The KYB guard re-checks [org.commonlink.entity.AssociationProfile.verificationStatus] at publish
      * time. The onboarding chain already implies it transitively (a signed mandate requires VERIFIED,
      * and a Mollie connection requires a signed mandate), but only *at the time each step was taken* —
@@ -676,6 +700,12 @@ class CampaignService(
     private fun preparePublish(campaign: Campaign, associationId: UUID) {
         if (campaign.goal <= BigDecimal.ZERO) {
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
+        }
+        requireBalancedBudget(campaign)
+        if ((campaign.impactGoals?.trim()?.length ?: 0) < MIN_IMPACT_GOALS_LENGTH) {
+            throw UnprocessableEntityException(
+                "Expected outcome (impactGoals) must be at least $MIN_IMPACT_GOALS_LENGTH characters before publishing"
+            )
         }
         val profile = associationProfileRepository.findById(associationId)
             .orElseThrow { UserNotFoundException("Association profile not found: $associationId") }
@@ -695,38 +725,47 @@ class CampaignService(
     }
 
     /**
+     * Rejects publication unless the budget prévisionnel is balanced.
+     *
+     * Exact mirror of the `budgetBalanced` predicate in `app/src/components/campaign/PrePublishModal.tsx`
+     * (rule 8), **tolerance included**: both sides must be non-empty and differ by strictly less than
+     * one euro. A looser backend would let the publish button enable and then answer 422; a stricter
+     * one would reject a campaign the UI declared publishable.
+     *
+     * `campaign.budgetSections` is initialised in the caller's transaction — [budgetHasher] walks the
+     * same collection right after.
+     */
+    private fun requireBalancedBudget(campaign: Campaign) {
+        val expenses = sumBudgetSide(campaign, BudgetSide.EXPENSE)
+        val revenues = sumBudgetSide(campaign, BudgetSide.REVENUE)
+        val balanced = expenses > BigDecimal.ZERO &&
+            revenues > BigDecimal.ZERO &&
+            (revenues - expenses).abs() < BigDecimal.ONE
+        if (!balanced) {
+            throw UnprocessableEntityException(
+                "Budget prévisionnel must be balanced before publishing (expenses=$expenses, revenues=$revenues)"
+            )
+        }
+    }
+
+    private fun sumBudgetSide(campaign: Campaign, side: BudgetSide): BigDecimal =
+        campaign.budgetSections
+            .filter { it.side == side }
+            .flatMap { it.items }
+            .fold(BigDecimal.ZERO) { acc, item -> acc + item.amount }
+
+    /**
      * Enqueues on-chain jobs for the given status transition.
      * Must be called after the campaign has been saved so [Campaign.id] is stable.
+     *
+     * DRAFT→LIVE has no arm here: it used to enqueue CREATE_CAMPAIGN/PUBLISH_CAMPAIGN gated on the
+     * association's Monerium wallet address, the only source of an on-chain association address.
+     * Monerium was removed (V67) with no replacement wallet-provisioning mechanism, so publishing a
+     * campaign is now off-chain only — see `.tasks/todo.md` history for the removal scope.
      */
     private fun enqueueForTransition(from: CampaignStatus, to: CampaignStatus, campaign: Campaign) {
         val id = campaign.id!!
         when {
-            from == CampaignStatus.DRAFT && to == CampaignStatus.LIVE -> {
-                val walletAddress = moneriumConnectionRepository.findByAssociationId(
-                    campaign.association.id!!
-                )?.walletAddress
-                if (walletAddress != null) {
-                    outbox.enqueue(
-                        OnchainJobAction.CREATE_CAMPAIGN,
-                        CreateCampaignPayload(
-                            campaignId     = id,
-                            association    = walletAddress,
-                            goalCents      = org.commonlink.onchain.OnchainCodec.eurToCents(campaign.goal),
-                            milestoneCount = campaign.milestones.size,
-                            budgetHashHex  = campaign.budgetHash!!,
-                        ),
-                        correlationKey = "CREATE_CAMPAIGN:$id",
-                    )
-                    outbox.enqueue(
-                        OnchainJobAction.PUBLISH_CAMPAIGN,
-                        CampaignIdPayload(id),
-                        correlationKey = "PUBLISH_CAMPAIGN:$id",
-                    )
-                    logger.info("CREATE_CAMPAIGN + PUBLISH_CAMPAIGN enqueued: campaignId={}", id)
-                } else {
-                    logger.info("Monerium wallet not linked — skipping on-chain jobs for campaignId={}", id)
-                }
-            }
             to == CampaignStatus.PAUSED ->
                 outbox.enqueue(OnchainJobAction.PAUSE_CAMPAIGN, CampaignIdPayload(id), null)
             from == CampaignStatus.PAUSED && to == CampaignStatus.LIVE ->

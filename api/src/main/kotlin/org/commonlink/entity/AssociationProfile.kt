@@ -156,4 +156,21 @@ class AssociationProfile(
     /** Show the "donate with confidence" section on the landing page. */
     @Column(name = "landing_show_trust", nullable = false)
     var landingShowTrust: Boolean = true,
+
+    /** AML/CFT risk level assigned to this association. Defaults to STANDARD pending formal classification. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "risk_level", nullable = false, length = 20)
+    var riskLevel: RiskLevel = RiskLevel.STANDARD,
+
+    /** Timestamp when the risk level was last formally assessed. Null until a first assessment is recorded. */
+    @Column(name = "risk_level_assessed_at")
+    var riskLevelAssessedAt: Instant? = null,
+
+    /**
+     * Version identifier of the risk classification document in force at assessment time.
+     * Null until the first formal assessment. Without this reference a past assessment cannot
+     * be interpreted once the classification document is revised.
+     */
+    @Column(name = "risk_classification_version", length = 32)
+    var riskClassificationVersion: String? = null,
 )
