@@ -6,6 +6,9 @@
 server:
   port: 8080
   address: 0.0.0.0   # Required: CC reverse proxy needs to reach the app
+  # Same reason as production: without it the app sees plain HTTP behind the CC proxy and never
+  # emits Strict-Transport-Security (security audit 2026-08-20, M9).
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -81,6 +84,9 @@ app:
   cookies:
     secure: true
     same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
+  security:
+    # Same single Clever Cloud reverse proxy as production — see application-prod.yml.
+    trusted-proxy-count: ${APP_TRUSTED_PROXY_COUNT:1}
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:

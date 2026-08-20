@@ -32,6 +32,26 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendPasswordChanged(email: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(email)
+        helper.setSubject("Le mot de passe de votre compte CommonLink a été modifié")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Le mot de passe de votre compte CommonLink vient d'être modifié, et toutes vos sessions
+            ont été déconnectées.</p>
+            <p>Si vous êtes à l'origine de ce changement, aucune action n'est nécessaire.
+            Dans le cas contraire, réinitialisez immédiatement votre mot de passe et contactez-nous.</p>
+            <p>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendVerificationSubmittedToAdmin(associationName: String, recipientEmail: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")

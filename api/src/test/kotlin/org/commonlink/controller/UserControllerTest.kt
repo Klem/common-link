@@ -5,9 +5,11 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import org.commonlink.exception.AuthException
+import org.hamcrest.Matchers.containsString
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
+import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AuthService
@@ -20,12 +22,13 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
 
 @WebMvcTest(UserController::class)
-@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@Import(SecurityConfig::class, JwtAuthenticationFilter::class, RefreshCookieFactory::class)
 @TestPropertySource(properties = [
     "app.frontend-url=http://localhost:3000",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!"
@@ -54,8 +57,8 @@ class UserControllerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `setPassword - 204 when authenticated and passwords match`() {
-        justRun { authService.setPassword(userId, "newpass123", "newpass123") }
+    fun `setPassword - 204 sets the rotated refresh cookie`() {
+        every { authService.setPassword(userId, "newpass123", "newpass123", null) } returns "raw-refresh"
 
         mockMvc.perform(
             patch("/api/user/me/password")
@@ -64,8 +67,29 @@ class UserControllerTest {
                 .content("""{"password":"newpass123","confirmPassword":"newpass123"}""")
         )
             .andExpect(status().isNoContent)
+            // Every previous refresh token is revoked, so the response must carry the replacement —
+            // otherwise the caller is silently logged out (audit 2026-08-20, M7).
+            .andExpect(header().string("Set-Cookie", containsString("cl-refresh=raw-refresh")))
+            .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
 
-        verify { authService.setPassword(userId, "newpass123", "newpass123") }
+        verify { authService.setPassword(userId, "newpass123", "newpass123", null) }
+    }
+
+    @Test
+    fun `setPassword - forwards currentPassword when supplied`() {
+        every { authService.setPassword(userId, "newpass123", "newpass123", "oldpass123") } returns "raw-refresh"
+
+        mockMvc.perform(
+            patch("/api/user/me/password")
+                .with(user(userId.toString()).roles("DONOR"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """{"password":"newpass123","confirmPassword":"newpass123","currentPassword":"oldpass123"}"""
+                )
+        )
+            .andExpect(status().isNoContent)
+
+        verify { authService.setPassword(userId, "newpass123", "newpass123", "oldpass123") }
     }
 
     @Test

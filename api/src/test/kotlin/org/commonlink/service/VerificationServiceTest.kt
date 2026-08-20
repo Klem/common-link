@@ -13,14 +13,17 @@ import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.repository.BeneficialOwnerRepository
+import org.commonlink.repository.TestFiles
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.springframework.mock.web.MockMultipartFile
 import java.util.Optional
 import java.util.UUID
 
@@ -359,5 +362,75 @@ class VerificationServiceTest {
         assertEquals("Cannot approve: freeze screening could not be completed — see compliance audit log for details", ex.message)
         verify(exactly = 0) { associationRepo.save(any()) }
         verify(exactly = 0) { emailService.sendVerificationApprovedToAssociation(any(), any()) }
+    }
+
+    // -------------------------------------------------------------------------
+    // Upload byte validation (security audit 2026-08-20, M9)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Round-trip over every type the document allow-list accepts. Uploads are validated against the
+     * leading bytes now, so a legitimate file of each accepted type must still go through — a
+     * signature table that is too strict would silently break the KYB and LCB-FT document flows.
+     */
+    @Test
+    fun `uploadOptionalDocument - accepts a genuine file of every allowed type`() {
+        val cases = listOf(
+            "doc.pdf" to ("application/pdf" to TestFiles.pdf()),
+            "scan.jpg" to ("image/jpeg" to TestFiles.jpeg()),
+            "scan.png" to ("image/png" to TestFiles.png()),
+            "statuts.docx" to (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" to TestFiles.ooxml()
+            ),
+            "comptes.xlsx" to (
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" to TestFiles.ooxml()
+            ),
+        )
+
+        cases.forEach { (name, payload) ->
+            val (mime, bytes) = payload
+            val profile = mockUnverifiedProfile()
+            val docId = UUID.randomUUID()
+            val saved: org.commonlink.entity.AssociationDocument = mockk()
+            every { saved.id } returns docId
+            every { documentRepo.save(any()) } returns saved
+            every { documentRepo.findMetadataByIdAndAssociationId(docId, associationId) } returns
+                stubMetadata(docId, name, mime, bytes.size.toLong())
+
+            val dto = service.uploadOptionalDocument(userId, MockMultipartFile("file", name, mime, bytes), "OTHER")
+
+            assertEquals(name, dto.fileName, "$mime must be accepted")
+            assertEquals(profile.id, associationId)
+        }
+    }
+
+    @Test
+    fun `uploadOptionalDocument - refuses bytes contradicting the declared type`() {
+        mockUnverifiedProfile()
+
+        // Declared as a PDF, actually HTML — the exact shape that used to reach storage untouched.
+        val file = MockMultipartFile("file", "invoice.pdf", "application/pdf", TestFiles.mislabelled())
+
+        // Kotlin reified form, fully qualified: this file already imports the Java 2-arg overload.
+        org.junit.jupiter.api.assertThrows<UnprocessableEntityException> {
+            service.uploadOptionalDocument(userId, file, "FINANCIAL")
+        }
+        verify(exactly = 0) { documentRepo.save(any()) }
+    }
+
+    private fun stubMetadata(
+        id: UUID,
+        fileName: String,
+        contentType: String,
+        sizeBytes: Long,
+    ): org.commonlink.repository.AssociationDocumentMetadata {
+        val meta: org.commonlink.repository.AssociationDocumentMetadata = mockk()
+        every { meta.id } returns id
+        every { meta.fileName } returns fileName
+        every { meta.category } returns "OTHER"
+        every { meta.contentType } returns contentType
+        every { meta.sizeBytes } returns sizeBytes
+        every { meta.uploadedAt } returns java.time.Instant.now()
+        return meta
     }
 }

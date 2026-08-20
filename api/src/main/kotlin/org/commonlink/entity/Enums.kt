@@ -3,10 +3,13 @@ package org.commonlink.entity
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
- * Defines the two types of users on the platform.
+ * Defines the types of users on the platform.
  *
  * The role is embedded in the JWT (`role` claim) and used by Spring Security
  * as a granted authority (`ROLE_DONOR` / `ROLE_ASSOCIATION`) for route-level access control.
+ *
+ * Two of these roles are **back-office** roles ([CURATOR], [COMPLIANCE_OFFICER]) and must never be
+ * reachable from a public sign-up payload — see [SELF_ASSIGNABLE].
  */
 enum class UserRole {
     /** A philanthropist who browses campaigns and makes donations. */
@@ -21,6 +24,25 @@ enum class UserRole {
      * and nothing else — in particular, no curator moderation actions and no association data.
      */
     COMPLIANCE_OFFICER,
+    ;
+
+    companion object {
+        /**
+         * Roles a caller may request for themselves on a public, unauthenticated sign-up route
+         * (email registration, magic link, Google sign-up).
+         *
+         * [CURATOR] and [COMPLIANCE_OFFICER] are deliberately excluded: they are provisioned
+         * out-of-band by [org.commonlink.bootstrap.CuratorBootstrap] and
+         * [org.commonlink.bootstrap.ComplianceOfficerBootstrap]. Accepting them from a request body
+         * granted anyone who could receive an email full access to the compliance back-office
+         * (security audit 2026-08-20, C1).
+         *
+         * Single source of truth for the DTO constraint
+         * ([org.commonlink.validation.SelfAssignableRole]) and the service-side guard in
+         * [org.commonlink.service.AuthService].
+         */
+        val SELF_ASSIGNABLE: Set<UserRole> = setOf(DONOR, ASSOCIATION)
+    }
 }
 
 /**

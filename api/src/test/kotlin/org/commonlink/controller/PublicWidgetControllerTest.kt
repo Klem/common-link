@@ -13,6 +13,8 @@ import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.UserRepository
+import org.commonlink.security.AuthRateLimiter
+import org.commonlink.security.ClientIpResolver
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
@@ -33,7 +35,12 @@ import java.math.BigDecimal
 import java.util.UUID
 
 @WebMvcTest(PublicWidgetController::class)
-@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@Import(
+    SecurityConfig::class,
+    JwtAuthenticationFilter::class,
+    AuthRateLimiter::class,
+    ClientIpResolver::class,
+)
 @TestPropertySource(properties = [
     "app.frontend-url=http://localhost:3000",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!"

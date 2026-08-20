@@ -86,10 +86,17 @@ class PublicWidgetService(
         donationCapService.requireWithinCap(campaign, request.amount)
 
         // Provision guest donor (idempotent by email)
-        val donorProfile = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
+        val resolvedDonor = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
+        val donorProfile = resolvedDonor.profile
 
-        // Sync display preferences (anonymous flag, display name) — last donation wins
-        if (donorProfile.anonymous != request.anonymousDisplay || donorProfile.displayName != request.donorFullName) {
+        // Sync display preferences (anonymous flag, display name) — last donation wins.
+        // Guest profiles only: this endpoint is unauthenticated and the e-mail in the body proves
+        // nothing. Applying these fields to a real donor's profile let anyone rename them and, worse,
+        // flip `anonymous` to false — overriding someone else's privacy choice from the outside
+        // (security audit 2026-08-20, M1).
+        if (resolvedDonor.ownedByGuest &&
+            (donorProfile.anonymous != request.anonymousDisplay || donorProfile.displayName != request.donorFullName)
+        ) {
             donorProfile.anonymous = request.anonymousDisplay
             donorProfile.displayName = request.donorFullName
             donorProfileRepository.save(donorProfile)

@@ -54,14 +54,34 @@ class DonationCapService(
     }
 
     /**
-     * Refuses [amount] when it would take [campaign] past its cap.
+     * Refuses [amount] when it would take [campaign] past its cap, or when the campaign already
+     * carries as many open payment sessions as [DonationCapProperties.maxPendingSessions] allows.
      *
      * Called before the payment is created with the provider — after that point a payable checkout
      * URL exists and refusing is no longer free.
      *
+     * The session ceiling exists because a pending row *is* a reservation and the widget endpoint is
+     * unauthenticated: without it, an outsider creates sessions until the remaining capacity is
+     * exhausted and every genuine donor is refused for the whole reservation TTL
+     * (security audit 2026-08-20, M6). Refusing on the ceiling is reported as a cap event with zero
+     * remaining capacity, so the donor sees "not accepting donations right now" rather than a hint
+     * that the platform is being probed.
+     *
      * @throws CollectionCapExceededException carrying the still-acceptable amount.
      */
     fun requireWithinCap(campaign: Campaign, amount: BigDecimal) {
+        val pendingSessions = donationRepository.countPendingByCampaignIdSince(
+            campaign.id!!,
+            Instant.now().minus(properties.reservationTtl),
+        )
+        if (pendingSessions >= properties.maxPendingSessions) {
+            logger.warn(
+                "Donation refused on pending-session ceiling: campaign={} pending={} max={}",
+                campaign.id, pendingSessions, properties.maxPendingSessions,
+            )
+            throw CollectionCapExceededException(BigDecimal.ZERO)
+        }
+
         val remaining = remainingCapacity(campaign)
         if (amount > remaining) {
             logger.info(

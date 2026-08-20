@@ -13,7 +13,9 @@ import org.commonlink.dto.UserDto
 import org.commonlink.dto.toDto
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.UserRepository
+import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.service.AuthService
+import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -29,7 +31,8 @@ import java.util.UUID
 @Tag(name = "User", description = "User account management endpoints")
 class UserController(
     private val authService: AuthService,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val refreshCookieFactory: RefreshCookieFactory,
 ) {
 
     @GetMapping("/me")
@@ -73,19 +76,34 @@ class UserController(
     @Operation(
         summary = "Set or update password",
         description = "Sets or updates the password for the authenticated user. " +
-            "Useful for users who signed up via Google or Magic Link and want to add a password."
+            "Useful for users who signed up via Google or Magic Link and want to add a password. " +
+            "`currentPassword` is required when the account already has a password. " +
+            "On success, all refresh tokens are revoked and the account holder is notified by email."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "204", description = "Password updated successfully"),
+        ApiResponse(responseCode = "204", description = "Password updated successfully; all sessions revoked"),
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
-        ApiResponse(responseCode = "401", description = "Missing or invalid JWT, or passwords do not match", content = [Content()]),
+        ApiResponse(
+            responseCode = "401",
+            description = "Missing or invalid JWT, passwords do not match, or currentPassword missing/wrong",
+            content = [Content()]
+        ),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
     fun setPassword(
         @AuthenticationPrincipal principal: UserDetails,
         @Valid @RequestBody req: SetPasswordRequestDto
     ): ResponseEntity<Void> {
-        authService.setPassword(UUID.fromString(principal.username), req.password, req.confirmPassword)
-        return ResponseEntity.noContent().build()
+        // All previous refresh tokens are revoked; this cookie carries the replacement issued for
+        // the caller's own session (security audit 2026-08-20, M7).
+        val newRefreshToken = authService.setPassword(
+            UUID.fromString(principal.username),
+            req.password,
+            req.confirmPassword,
+            req.currentPassword,
+        )
+        return ResponseEntity.noContent()
+            .header(HttpHeaders.SET_COOKIE, refreshCookieFactory.build(newRefreshToken).toString())
+            .build()
     }
 }

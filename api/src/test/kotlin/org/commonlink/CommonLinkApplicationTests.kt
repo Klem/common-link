@@ -8,7 +8,9 @@ import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.FreezeScreeningMatchRepository
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.AuthRateLimiter
+import org.commonlink.security.ClientIpResolver
 import org.commonlink.security.JwtService
+import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationDashboardService
@@ -46,7 +48,7 @@ import org.springframework.test.context.TestPropertySource
  * Uses @WebMvcTest to avoid needing Docker/Testcontainers.
  */
 @WebMvcTest
-@Import(SecurityConfig::class)
+@Import(SecurityConfig::class, ClientIpResolver::class, RefreshCookieFactory::class)
 @TestPropertySource(properties = [
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000"

@@ -130,4 +130,15 @@ interface EmailService {
         severity: String,
         alertUrl: String,
     )
+
+    /**
+     * Notifies the account holder that their password was changed and their sessions revoked.
+     *
+     * The point is detection: a password change is the step that turns a stolen access token into
+     * lasting access, so the legitimate holder must hear about it even when the change is genuine
+     * (security audit 2026-08-20, M7). Carries no token and no link that grants anything.
+     *
+     * @param email Account holder's email address.
+     */
+    fun sendPasswordChanged(email: String)
 }

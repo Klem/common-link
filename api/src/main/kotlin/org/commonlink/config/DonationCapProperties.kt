@@ -20,9 +20,19 @@ import java.time.Duration
  * for [reservationTtl], so two donors checking out simultaneously cannot collectively overshoot.
  * The default sits above Mollie's ~15-minute expiry of an untouched payment: shorter than the
  * provider's own window would release capacity that is still payable.
+ *
+ * **Pending session ceiling** — because a pending donation *is* a reservation, and because the
+ * widget endpoint is unauthenticated, an outsider could reserve a campaign's entire remaining
+ * capacity and keep it frozen (security audit 2026-08-20, M6). [maxPendingSessions] bounds how many
+ * open sessions a single campaign carries at once, independently of any per-caller rate limit.
+ *
+ * @property marginPercent Widening of the cap above the goal, in percent.
+ * @property reservationTtl How long an open payment session holds capacity.
+ * @property maxPendingSessions Open payment sessions allowed per campaign within [reservationTtl].
  */
 @ConfigurationProperties(prefix = "app.donation.cap")
 data class DonationCapProperties(
     val marginPercent: BigDecimal = BigDecimal("10"),
     val reservationTtl: Duration = Duration.ofMinutes(30),
+    val maxPendingSessions: Int = 50,
 )

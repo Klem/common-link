@@ -32,6 +32,7 @@ import org.commonlink.repository.CampaignCoverImageRepository
 import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.MollieConnectionRepository
+import org.commonlink.util.FileTypeSniffer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -316,10 +317,17 @@ class CampaignService(
     fun getCoverImage(campaignId: UUID): Pair<String, ByteArray> {
         val image = campaignCoverImageRepository.findById(campaignId)
             .orElseThrow { NotFoundException("No cover image for campaign $campaignId") }
-        return image.contentType to image.data
+        // Same rule as the association logo: the served Content-Type comes from the bytes, not from
+        // the stored declaration (security audit 2026-08-20, M9).
+        val contentType = FileTypeSniffer.detectImageMime(image.data)
+            ?: run {
+                logger.warn("Refusing to serve cover image of campaign {} — bytes are not a supported image", campaignId)
+                throw NotFoundException("No cover image for campaign $campaignId")
+            }
+        return contentType to image.data
     }
 
-    /** Rejects empty files, oversized files and non-image MIME types. */
+    /** Rejects empty files, oversized files, non-image MIME types, and mislabelled bytes. */
     private fun validateCoverImage(file: MultipartFile) {
         if (file.isEmpty) {
             throw UnprocessableEntityException("Cover image file is empty")
@@ -332,6 +340,12 @@ class CampaignService(
             throw UnprocessableEntityException(
                 "Unsupported cover image type '$mime'; allowed types: ${COVER_IMAGE_ALLOWED_MIME.joinToString(", ")}"
             )
+        }
+        // Served back verbatim from a public endpoint, so the bytes must match the declared type
+        // (security audit 2026-08-20, M9).
+        if (!FileTypeSniffer.matches(file.bytes, mime)) {
+            logger.warn("Rejected cover image upload: bytes do not match declared type {}", mime)
+            throw UnprocessableEntityException("Cover image content does not match its declared type '$mime'")
         }
     }
 

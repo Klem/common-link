@@ -17,6 +17,7 @@ import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.FiscalMandateRepository
+import org.commonlink.util.FileTypeSniffer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -216,6 +217,12 @@ class MandateService(
             throw UnprocessableEntityException("File exceeds the maximum allowed size of 10 MB")
         }
         val mime = file.contentType ?: ""
+        // Bytes must match the declared type — the declaration is caller-controlled and is replayed
+        // as the Content-Type on download (security audit 2026-08-20, M9).
+        if (mime in MANDATE_ALLOWED_MIME && !FileTypeSniffer.matches(file.bytes, mime)) {
+            logger.warn("Rejected mandate document upload: bytes do not match declared type {}", mime)
+            throw UnprocessableEntityException("File content does not match its declared type '$mime'")
+        }
         if (mime !in MANDATE_ALLOWED_MIME) {
             throw UnprocessableEntityException(
                 "File type '$mime' is not accepted. Allowed: PDF, JPEG, PNG, DOCX"

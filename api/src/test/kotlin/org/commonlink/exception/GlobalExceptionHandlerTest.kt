@@ -6,8 +6,10 @@ import io.mockk.justRun
 import org.commonlink.controller.AuthController
 import org.commonlink.security.AuthRateLimiter
 import org.commonlink.repository.UserRepository
+import org.commonlink.security.ClientIpResolver
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
+import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AuthService
@@ -29,7 +31,12 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
  * Each test covers a specific exception type → HTTP status + ProblemDetail structure.
  */
 @WebMvcTest(AuthController::class)
-@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@Import(
+    SecurityConfig::class,
+    JwtAuthenticationFilter::class,
+    ClientIpResolver::class,
+    RefreshCookieFactory::class,
+)
 @TestPropertySource(properties = [
     "app.frontend-url=http://localhost:3000",
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!"

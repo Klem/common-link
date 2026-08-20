@@ -9,6 +9,11 @@
 server:
   port: 8080
   address: 0.0.0.0   # Required: CC reverse proxy needs to reach the app
+  # Makes Spring honour X-Forwarded-Proto/Host from the CC proxy, so requests are seen as HTTPS.
+  # Without it Strict-Transport-Security is never emitted — the header writer skips insecure
+  # requests, and every request looks insecure behind the proxy (security audit 2026-08-20, M9).
+  # Safe here: no absolute URL is derived from the request; they all come from configuration.
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -65,7 +70,11 @@ management:
       base-path: /actuator
   endpoint:
     health:
-      show-details: always
+      # /actuator/health is permitAll in SecurityConfig, so `always` published the component detail
+      # — database vendor and reachability, disk space, subsystem names — to anyone who asked
+      # (security audit 2026-08-20, M8). The liveness/readiness probes below stay public and are all
+      # the Clever Cloud health check needs; the detail is now visible only to an authorised caller.
+      show-details: when-authorized
       probes:
         enabled: true
   health:
@@ -84,6 +93,12 @@ app:
   cookies:
     secure: true
     same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
+  security:
+    # One Clever Cloud reverse proxy appends the real client address to X-Forwarded-For, so the
+    # rightmost entry is the only trustworthy one (ClientIpResolver). Raise this if another
+    # appending proxy is ever placed in front — too low a value throttles the proxy instead of the
+    # client, too high a value throttles a forgeable value.
+    trusted-proxy-count: ${APP_TRUSTED_PROXY_COUNT:1}
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:

@@ -21,6 +21,7 @@ import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.OnchainJobRepository
+import org.commonlink.repository.TestFiles
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
@@ -364,10 +365,13 @@ class CampaignServiceTest {
 
     // ── cover image ───────────────────────────────────────────────────────────
 
-    /** Builds a fake multipart image part. */
+    /**
+     * Builds a multipart image part whose bytes really are of [contentType] — upload validation
+     * checks the leading bytes against the declared type (audit 2026-08-20, M9).
+     */
     private fun imagePart(
         contentType: String = "image/png",
-        bytes: ByteArray = byteArrayOf(1, 2, 3, 4),
+        bytes: ByteArray = TestFiles.png(),
     ): MultipartFile = MockMultipartFile("file", "cover.png", contentType, bytes)
 
     @Test
@@ -379,7 +383,7 @@ class CampaignServiceTest {
         assertEquals("/api/public/campaigns/${created.id}/cover", updated.coverImage)
         val (contentType, data) = campaignService.getCoverImage(created.id)
         assertEquals("image/png", contentType)
-        assertArrayEquals(byteArrayOf(1, 2, 3, 4), data)
+        assertArrayEquals(TestFiles.png(), data)
     }
 
     @Test
@@ -389,12 +393,12 @@ class CampaignServiceTest {
 
         campaignService.uploadCoverImage(
             userId, created.id,
-            imagePart(contentType = "image/webp", bytes = byteArrayOf(9, 9)),
+            imagePart(contentType = "image/webp", bytes = TestFiles.webp()),
         )
 
         val (contentType, data) = campaignService.getCoverImage(created.id)
         assertEquals("image/webp", contentType)
-        assertArrayEquals(byteArrayOf(9, 9), data)
+        assertArrayEquals(TestFiles.webp(), data)
     }
 
     @Test

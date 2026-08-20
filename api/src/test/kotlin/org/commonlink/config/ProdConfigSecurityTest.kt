@@ -150,4 +150,20 @@ class ProdConfigSecurityTest {
         // Shipping it active in production would mean the register is never checked — a legal violation.
         assertEquals(false, prop("commonlink.sanctions.screening.use-test-data"))
     }
+
+    @Test
+    fun `actuator health details are not exposed to anonymous callers in prod`() {
+        // /actuator/health is permitAll in SecurityConfig, so `always` hands the component detail
+        // (database vendor and reachability, disk space, subsystem names) to any caller
+        // (security audit 2026-08-20, M8).
+        assertNotEquals("always", prop("management.endpoint.health.show-details"))
+    }
+
+    @Test
+    fun `trusted-proxy-count is set in prod`() {
+        // Rate limiting keys on the client address resolved by ClientIpResolver. Leaving the count
+        // unset would fall back to the base-profile value of 0, i.e. every request behind the Clever
+        // Cloud proxy sharing one bucket (security audit 2026-08-20, M2).
+        assertEquals("\${APP_TRUSTED_PROXY_COUNT:1}", prop("app.security.trusted-proxy-count"))
+    }
 }

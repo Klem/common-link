@@ -29,7 +29,11 @@ class DonationCapServiceTest {
     private fun service(marginPercent: String = "10", ttl: Duration = Duration.ofMinutes(30)) =
         DonationCapService(
             donationRepository,
-            DonationCapProperties(marginPercent = BigDecimal(marginPercent), reservationTtl = ttl),
+            DonationCapProperties(
+                marginPercent = BigDecimal(marginPercent),
+                reservationTtl = ttl,
+                maxPendingSessions = MAX_SESSIONS,
+            ),
         )
 
     /** Campaign with the given goal and confirmed total; id is needed for the pending-sum lookup. */
@@ -40,9 +44,15 @@ class DonationCapServiceTest {
             every { it.raised } returns BigDecimal(raised)
         }
 
-    private fun pending(amount: String?) {
+    /**
+     * Stubs the open-session lookups: [amount] is the capacity they hold, [sessions] how many rows
+     * that is. The count backs the pending-session ceiling (audit 2026-08-20, M6) and defaults to a
+     * value well below it, so tests about the amount stay about the amount.
+     */
+    private fun pending(amount: String?, sessions: Long = 0) {
         every { donationRepository.sumPendingAmountByCampaignIdSince(any(), any()) } returns
             amount?.let { BigDecimal(it) }
+        every { donationRepository.countPendingByCampaignIdSince(any(), any()) } returns sessions
     }
 
     @Test
@@ -151,5 +161,38 @@ class DonationCapServiceTest {
         val elapsed = Duration.between(cutoffs.single(), Instant.now())
         assert(elapsed >= Duration.ofMinutes(30)) { "cutoff must be at least the TTL in the past, was $elapsed" }
         assert(elapsed < Duration.ofMinutes(31)) { "cutoff must not exceed the TTL, was $elapsed" }
+    }
+
+    /**
+     * Pending-session ceiling (audit 2026-08-20, M6). The widget endpoint is unauthenticated, so
+     * capacity alone is not a sufficient guard: an outsider opening session after session would hold
+     * a campaign's whole remaining capacity hostage for the reservation TTL. The ceiling refuses on
+     * the count, independently of how much room is left.
+     */
+    @Test
+    fun `a campaign already at the pending-session ceiling refuses a donation with room to spare`() {
+        pending("0", sessions = MAX_SESSIONS.toLong())
+        val c = campaign(goal = "1000", raised = "0")
+
+        val ex = assertThrows<CollectionCapExceededException> {
+            service().requireWithinCap(c, BigDecimal("10"))
+        }
+        assertEquals(
+            0,
+            BigDecimal.ZERO.compareTo(ex.remainingCapacity),
+            "No capacity is offered while capped on sessions",
+        )
+    }
+
+    @Test
+    fun `a campaign just below the ceiling still accepts a donation`() {
+        pending("0", sessions = MAX_SESSIONS.toLong() - 1)
+        val c = campaign(goal = "1000", raised = "0")
+
+        service().requireWithinCap(c, BigDecimal("10"))
+    }
+
+    private companion object {
+        const val MAX_SESSIONS = 50
     }
 }

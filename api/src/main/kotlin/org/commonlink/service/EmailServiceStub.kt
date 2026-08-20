@@ -74,6 +74,11 @@ class EmailServiceStub : EmailService {
         )
     }
 
+    /** Logs the password-change notification instead of sending an email. */
+    override fun sendPasswordChanged(email: String) {
+        logger.info("Password changed — would notify {}", email)
+    }
+
     /** Logs the donor freeze alert notification instead of sending an email. No identity is logged. */
     override fun sendDonorFreezeAlertOpened(
         recipientEmail: String,

@@ -131,6 +131,26 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
      * Rows older than [since] are ignored: an abandoned checkout must not hold capacity for ever.
      * Returns null when no matching rows exist; callers should treat null as zero.
      */
+    /**
+     * Number of payment sessions still in flight on a campaign — the row count matching
+     * [sumPendingAmountByCampaignIdSince].
+     *
+     * Backs the pending-session ceiling in [org.commonlink.service.DonationCapService]: the amount
+     * alone cannot tell a busy campaign from a campaign whose capacity is being held hostage by an
+     * unauthenticated caller (security audit 2026-08-20, M6).
+     */
+    @Query("""
+        SELECT COUNT(d)
+        FROM Donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NULL
+          AND d.createdAt >= :since
+    """)
+    fun countPendingByCampaignIdSince(
+        @Param("campaignId") campaignId: UUID,
+        @Param("since") since: Instant,
+    ): Long
+
     @Query("""
         SELECT COALESCE(SUM(d.amount), 0)
         FROM Donation d

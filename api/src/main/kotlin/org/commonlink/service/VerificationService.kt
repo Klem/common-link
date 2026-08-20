@@ -27,6 +27,7 @@ import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.repository.BeneficialOwnerRepository
 import org.commonlink.repository.UserRepository
+import org.commonlink.util.FileTypeSniffer
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -484,6 +485,13 @@ class VerificationService(
         val mime = file.contentType ?: "application/octet-stream"
         if (mime !in allowedMime) {
             throw UnprocessableEntityException("File type '$mime' is not allowed. Accepted: ${allowedMime.joinToString()}")
+        }
+        // The declared type is caller-controlled and is replayed as the Content-Type when a curator
+        // downloads the document. The bytes must match what was announced
+        // (security audit 2026-08-20, M9).
+        if (!FileTypeSniffer.matches(file.bytes, mime)) {
+            logger.warn("Rejected document upload: bytes do not match declared type {}", mime)
+            throw UnprocessableEntityException("File content does not match its declared type '$mime'")
         }
     }
 }

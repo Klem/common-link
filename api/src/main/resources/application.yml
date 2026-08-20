@@ -49,6 +49,11 @@ app:
   cookies:
     secure: ${APP_COOKIES_SECURE:true}
     same-site: Strict
+  security:
+    # Proxies that APPEND to X-Forwarded-For between the client and the app (ClientIpResolver).
+    # 0 = ignore the header and use the socket address — correct for local dev, where the app is
+    # reached directly and any X-Forwarded-For present can only be forged.
+    trusted-proxy-count: ${APP_TRUSTED_PROXY_COUNT:0}
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
