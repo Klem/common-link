@@ -259,4 +259,47 @@ class SmtpEmailService(
         )
         mailSender.send(message)
     }
+
+    /**
+     * Renders the technical incident as a small definition table plus an optional `<pre>` stack
+     * trace. HTML-escaped throughout: the context values include an exception message, which can
+     * embed anything the failing code interpolated into it.
+     */
+    override fun sendTechnicalAlert(
+        recipientEmail: String,
+        severity: String,
+        title: String,
+        context: Map<String, String>,
+        stackTrace: String?,
+    ) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("[TECHNIQUE][$severity] $title")
+        val rows = context.entries.joinToString("\n") {
+            "<tr><td><strong>${escapeHtml(it.key)}</strong></td><td>${escapeHtml(it.value)}</td></tr>"
+        }
+        val trace = stackTrace
+            ?.let { "<p>Trace :</p><pre style=\"font-size:12px;overflow:auto\">${escapeHtml(it)}</pre>" }
+            .orEmpty()
+        helper.setText(
+            """
+            <p><strong>$severity</strong> — ${escapeHtml(title)}</p>
+            <table cellpadding="4">$rows</table>
+            $trace
+            <p style="font-size:12px;color:#666">Alerte technique automatique CommonLink. Le canal est
+            limité en débit : consultez les logs applicatifs pour le volume réel.</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
+    /** Minimal HTML escaping for values interpolated into an HTML mail body. */
+    private fun escapeHtml(value: String): String = value
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
 }
