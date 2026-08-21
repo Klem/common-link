@@ -20,7 +20,7 @@ import javax.crypto.spec.SecretKeySpec
  * 12-byte IV on every write, stored as `v1:<iv_b64>:<ct_b64>`. The `v1` prefix exists so a future
  * key rotation can introduce `v2` without a data migration.
  *
- * Mirrors [org.commonlink.security.MoneriumTokenConverter]: when the key is absent the converter
+ * Mirrors [org.commonlink.security.OAuthTokenConverter]: when the key is absent the converter
  * is a no-op (plaintext), which is acceptable for local/staging only. Under the `prod` profile a
  * blank key is a hard startup failure — production never stores LCB-FT data unencrypted.
  *

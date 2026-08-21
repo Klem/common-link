@@ -1,6 +1,5 @@
 package org.commonlink.entity
 
-import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
  * Defines the types of users on the platform.
@@ -139,40 +138,6 @@ enum class BudgetSide {
     EXPENSE,
     /** Revenue/income items (French: produits). */
     REVENUE
-}
-
-/**
- * Operational state of a Monerium connection.
- *
- * BROKEN means the stored refresh token has been rejected by Monerium (rotated, revoked, or
- * expired) and no automated recovery is possible; the frontend must re-trigger the PKCE flow.
- * Stored as a string column so future states (e.g. SUSPENDED) can be added without a migration.
- */
-enum class MoneriumConnectionState {
-    /** Connection is healthy; access token can be refreshed silently. */
-    ACTIVE,
-    /** Refresh token was rejected by Monerium; the association must reconnect via PKCE. */
-    BROKEN,
-}
-
-/**
- * Type of Monerium profile. Matches the `kind` field returned by Monerium API v2 — Monerium
- * uses lowercase strings on the wire ("personal", "corporate"), so each constant is annotated
- * with [com.fasterxml.jackson.annotation.JsonProperty] to map the casing without hand-rolling
- * a serializer. CommonLink associations are always [CORPORATE].
- */
-enum class MoneriumProfileKind {
-    @JsonProperty("personal")
-    PERSONAL,
-
-    @JsonProperty("corporate")
-    CORPORATE,
-
-    @JsonProperty("unknown")
-    UNKNOWN,
-
-    @JsonProperty("")
-    EMPTY,
 }
 
 /**

@@ -79,10 +79,6 @@ vi.mock('@/components/auth/SetPasswordForm', () => ({
   SetPasswordForm: () => null,
 }));
 
-vi.mock('@/components/dashboard/MoneriumOnboardModal', () => ({
-  default: () => null,
-}));
-
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('Onglet Informations — profile/page.tsx', () => {

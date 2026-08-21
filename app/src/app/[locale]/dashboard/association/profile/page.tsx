@@ -607,9 +607,9 @@ export default function AssociationProfilePage() {
               <h3>{tM('mollie.title')}</h3>
             </div>
             <div className="card-b">
-              <p className="monerium-desc">{tM('mollie.description')}</p>
+              <p className="mollie-desc">{tM('mollie.description')}</p>
               {mollieLoading ? (
-                <div className="monerium-spinner" />
+                <div className="mollie-spinner" />
               ) : bankDone ? (
                 <span className="badge badge-active">{tM('mollie.status.completed')}</span>
               ) : mollieBroken ? (
