@@ -65,6 +65,25 @@ Chaque contrôle de gel effectué par la plateforme enregistre dans le journal d
 
 Un mécanisme d'alerte opérationnelle vers les équipes de permanence est prévu et documenté dans le code comme point d'extension ; il sera branché lors de la mise en place du système d'alertes général de la plateforme.
 
+**Complément du 21 août 2026 — la mise à jour automatique ne dépend pas du composant blockchain.**
+Le mécanisme qui déclenche les exécutions périodiques de la plateforme était, jusqu'au
+20 août 2026, hébergé dans le composant de configuration de la chaîne de blocs. Ce composant est
+depuis désactivé lorsque la plateforme fonctionne avec une chaîne simulée — configuration
+actuellement retenue en production, par décision documentée, en attendant la mise en service du
+composant réel. Hébergé là, le déclencheur périodique aurait été désactivé avec lui, et la mise à
+jour du registre des mesures de gel aurait cessé **silencieusement** : aucun échec n'aurait été
+enregistré, puisqu'aucune tentative n'aurait eu lieu, et le registre se serait figé sans que rien ne
+le signale. Le déclencheur a été extrait dans un composant de configuration distinct, indépendant de
+l'état du composant blockchain. Les deux modifications ont été livrées ensemble : la situation
+décrite n'a existé dans aucune version déployée. Ce point est mentionné parce que l'indépendance
+ainsi obtenue conditionne désormais la mise à jour du registre et ne doit pas être défaite par une
+évolution ultérieure ; elle est documentée comme telle dans le logiciel.
+
+Il est par ailleurs rappelé que la synchronisation est régie par un paramètre d'activation. Celui-ci
+est actif en l'absence de mention explicite, de sorte qu'un environnement qui ne le mentionne pas
+synchronise bien le registre ; une désactivation reste possible par configuration, sans modification
+du logiciel, et emporterait le figement du registre.
+
 **Deux instances simultanées ne peuvent pas effectuer deux mises à jour concurrentes.** La plateforme est conçue pour fonctionner sur plusieurs serveurs en parallèle. Un mécanisme de verrou au niveau de la base de données garantit qu'une seule instance effectue la mise à jour à la fois. Si une deuxième instance tente de démarrer une mise à jour pendant qu'une autre est en cours, elle attend la fin de la première sans déclencher de mise à jour redondante.
 
 ## 5. Les éléments de preuve
@@ -107,7 +126,7 @@ En particulier, il ne couvre pas :
 | Conservation des pièces et rapport annuel *(épique E6)* | [1216210853624518](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624518) · [1216210853624517](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624517) · [1216210853624520](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624520) |
 | Re-criblage des sujets déjà contrôlés après mise à jour du registre | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Branchement du mécanisme d'alerte opérationnelle sur échec de synchronisation | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
-| Validation de la migration V58 sur un environnement exécutant les scripts de migration | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| ~~Validation de la migration V58 sur un environnement exécutant les scripts de migration~~ — **réalisé** : depuis le 19 août 2026, un contrôle automatisé exécute la totalité des migrations sur une base PostgreSQL vide et vérifie leur concordance avec le mapping des entités *(non exécuté par la porte de déploiement, qui exclut les tests requérant un moteur de conteneurs)* | *Sans objet — réalisé* |
 
 ## 7. Situation de ce contrôle dans le dispositif d'ensemble
 
@@ -130,4 +149,4 @@ La fréquence de mise à jour (vingt-quatre heures) et le comportement en cas d'
 
 ---
 
-*Document établi le 10 août 2026. Une fiche de même nature sera produite pour chaque contrôle du dispositif LCB-FT au fur et à mesure de sa réalisation.*
+*Document établi le 10 août 2026, complété le 21 août 2026 (point 4 — indépendance du déclencheur périodique vis-à-vis du composant blockchain). Une fiche de même nature sera produite pour chaque contrôle du dispositif LCB-FT au fur et à mesure de sa réalisation.*

@@ -60,6 +60,51 @@ une trace applicative contenant l'identifiant de l'utilisateur et la ressource c
 Cette trace n'enregistre pas le contenu des échanges (les dossiers de soupçon contenant des données
 sensibles), mais uniquement le fait de l'accès et son auteur.
 
+### 3.1 Complément du 20 août 2026 — une voie de contournement du cloisonnement, corrigée
+
+Ce complément est porté à la connaissance de la commission parce qu'il contredit, pour la période
+concernée, l'affirmation centrale de la présente fiche : que l'accès à l'espace de conformité est
+réservé au seul responsable de la conformité.
+
+**Ce qui a été constaté.** Un audit de sécurité conduit le 20 août 2026 a établi que le rôle
+demandé lors de la création d'un compte n'était contraint par aucune règle. Les trois voies
+publiques de création de compte — inscription par mot de passe, lien de connexion par courriel,
+inscription par compte Google — acceptaient indifféremment n'importe lequel des rôles reconnus par
+la plateforme, y compris celui de responsable de la conformité et celui d'opérateur de modération.
+Une personne non authentifiée, disposant d'une simple adresse de courriel valide, pouvait donc
+s'attribuer elle-même le rôle de responsable de la conformité et accéder en lecture à l'intégralité
+de l'espace de conformité : alertes de gel des avoirs, identités des donateurs criblés, résultats
+des consultations de registres et journal d'audit LCB-FT.
+
+Le cloisonnement décrit au point 3 n'était pas en défaut : les règles de refus par rôle
+fonctionnaient et sont vérifiées par les contrôles automatisés du point 4. La faille était en amont,
+au moment de l'attribution du rôle — le contrôle vérifiait qui portait le rôle, non comment ce rôle
+avait été obtenu.
+
+**Ce qui limite la portée du constat.** La plateforme n'est pas déployée en production et
+n'héberge aucune donnée réelle : aucun don n'a été encaissé, aucun dossier d'association réel n'a
+été instruit, aucune alerte de gel réelle n'a été émise. Il n'existait donc, sur la période, aucune
+donnée de conformité à exposer. Aucune exploitation n'a par ailleurs été constatée.
+
+**Ce qui a été corrigé.** L'ensemble des rôles est désormais scindé en deux catégories, et seuls
+les rôles de donateur et d'association peuvent être demandés depuis une voie publique de création
+de compte. Le refus est appliqué en deux endroits indépendants — validation du formulaire reçu et
+garde dans le service d'authentification — conformément au principe interne selon lequel toute
+action de l'utilisateur doit être considérée comme rejouable en contournant l'interface. Les comptes
+de responsable de la conformité et d'opérateur de modération ne peuvent être créés que par la
+procédure d'amorçage réservée à l'exploitation, hors de toute requête publique.
+
+**Une limite subsiste sur la remédiation.** Les jetons d'accès déjà émis ne portent pas
+d'identifiant unitaire et la plateforme ne dispose d'aucun mécanisme de révocation d'un jeton
+individuel. Si un compte illégitime devait être découvert, sa suppression ne suffirait pas :
+la remédiation complète suppose de supprimer le compte, de révoquer les jetons de renouvellement
+et de faire tourner le secret de signature. Ce point est un constat d'audit distinct, non corrigé à
+ce jour.
+
+Le constat, son chemin d'exploitation détaillé et l'état de sa remédiation figurent au rapport
+`docs/security/audit-2026-08-20.md` (constat C1), qui fait autorité sur ce point. La présente fiche
+n'en reprend que ce qui touche au cloisonnement du rôle de responsable de la conformité.
+
 ## 4. Les éléments de preuve
 
 La mise en œuvre est accompagnée de **sept contrôles automatisés** ajoutés au patrimoine de tests
@@ -74,6 +119,8 @@ de la plateforme. Ces contrôles sont réexécutés à chaque modification du lo
 | Un administrateur de plateforme tente d'accéder à l'espace de conformité | Accès refusé | Vérifié — contrôle automatisé |
 | Le responsable de la conformité accède à l'espace de conformité | Une trace est enregistrée, comportant l'identifiant de l'utilisateur et la ressource consultée, en un seul exemplaire par accès | Vérifié — contrôle automatisé |
 | Le responsable de la conformité tente d'accéder à l'espace de modération | Accès refusé | Vérifié — contrôle automatisé |
+| Une voie publique de création de compte demande le rôle de responsable de la conformité | Demande refusée | Vérifié — contrôle automatisé *(ajouté le 20 août 2026)* |
+| Une voie publique de création de compte demande le rôle d'opérateur de modération | Demande refusée | Vérifié — contrôle automatisé *(ajouté le 20 août 2026)* |
 
 Les quatre scénarios de refus (association, donateur, modérateur, administrateur) sont vérifiés
 **séparément** : il n'est pas supposé qu'un refus pour l'un vaut refus pour les autres.
@@ -112,6 +159,9 @@ Ce contrôle ne couvre pas non plus :
   document de classification reste à faire adopter par l'organe compétent ;
 - les **mesures de gel des avoirs** — *traitées depuis par les fiches de l'épique E4* ;
 - la **surveillance des opérations atypiques** et le **rapport annuel** — non engagés.
+- la **révocation d'un jeton d'accès individuel** — la plateforme n'en dispose pas ; l'exclusion
+  immédiate d'un compte de conformité compromis suppose une rotation du secret de signature, qui
+  invalide toutes les sessions en cours *(voir le point 3.1 et le rapport d'audit du 20 août 2026)*.
 
 **Suivi des travaux restants.** Les éléments ci-dessus qui restent à réaliser sont suivis dans le
 référentiel interne de gestion de projet aux références suivantes.
@@ -125,6 +175,7 @@ référentiel interne de gestion de projet aux références suivantes.
 | Surveillance des opérations atypiques et déclaration de soupçon *(épique E5)* | [1216210853624511](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624511) · [1216210853624512](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624512) · [1216210853624513](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624513) · [1216210853624514](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624514) |
 | Conservation des documents et rapport annuel *(épique E6)* | [1216210853624518](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624518) · [1216210853624517](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624517) · [1216210853624520](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624520) |
 | Interface de gestion des désignations de déclarants | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Révocation unitaire d'un jeton d'accès *(constat d'audit du 20 août 2026, non corrigé)* | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 ## 6. Situation de ce contrôle dans le dispositif d'ensemble
 
@@ -172,5 +223,5 @@ aux donateurs ne donnent accès aux informations de conformité.
 
 ---
 
-*Document établi le 6 août 2026. Une fiche de même nature sera produite pour chaque contrôle du
+*Document établi le 6 août 2026, complété le 21 août 2026 (point 3.1 — faille de cloisonnement constatée et corrigée le 20 août 2026). Une fiche de même nature sera produite pour chaque contrôle du
 dispositif LCB-FT au fur et à mesure de sa réalisation.*

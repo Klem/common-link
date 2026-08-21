@@ -196,11 +196,41 @@ modification du logiciel. Ces contrôles couvrent :
 
 > **Note sur les contrôles de refus de modification et de suppression.** Ces contrôles existent et
 > sont écrits dans la suite de tests. Ils nécessitent une connexion à une véritable base de données
-> PostgreSQL — ce que l'environnement de développement actuel ne permet pas de manière fiable
-> (problème de connectivité entre la machine Windows et le moteur Docker hébergé dans WSL). Ils
-> sont désactivés en attendant la résolution de ce problème et seront réactivés avant tout
-> déploiement. La protection par chaîne de hachage — qui détecte toute altération même en
-> l'absence du refus au niveau de la base — est, elle, active et vérifiée automatiquement.
+> PostgreSQL, avec exécution effective des scripts de migration. Ils sont **désactivés**, et le
+> refus au niveau de la base de données n'est donc **établi par aucun contrôle automatisé** à ce
+> jour. La protection par chaîne de hachage — qui détecte toute altération même en l'absence du
+> refus au niveau de la base — est, elle, active et vérifiée automatiquement.
+>
+> **Mise à jour du 21 août 2026 — ce qui a changé, et ce qui n'a pas changé.** Depuis le
+> 19 août 2026, la suite de tests comprend une vérification qui démarre l'application contre une base
+> PostgreSQL vide et y exécute la totalité des scripts de migration dans l'ordre, en n'aboutissant
+> que si le schéma produit correspond exactement au mapping des entités. Il en résulte deux
+> conséquences distinctes, qu'il importe de ne pas confondre :
+>
+> - **ce qui est désormais établi** — la migration qui révoque les droits de modification et installe
+>   le déclencheur d'immuabilité *s'applique* sans erreur sur une base vierge, de même que les
+>   migrations relatives aux catégories de personnes physiques et à la table de preuve. Ces scripts
+>   ne sont plus seulement vérifiés à la main ;
+> - **ce qui reste non établi** — qu'une tentative de modification ou de suppression soit
+>   *effectivement refusée*. Aucun contrôle automatisé n'exécute une telle tentative pour en constater
+>   le rejet : c'est précisément l'objet des deux contrôles désactivés ci-dessus. Appliquer un script
+>   et vérifier l'effet du garde-fou qu'il installe sont deux choses différentes.
+>
+> Le motif d'environnement invoqué à l'origine pour justifier la désactivation — impossibilité de
+> joindre le moteur de conteneurs depuis cette machine — n'est plus exact, puisque la vérification
+> décrite ci-dessus s'exécute dans ce même environnement contre une base PostgreSQL réelle. La
+> réactivation de ces deux contrôles est donc à reprendre ; elle reste à faire et son résultat n'est
+> pas anticipé ici.
+>
+> **Une réserve subsiste sur la portée du contrôle automatique préalable au déploiement, et elle
+> dépasse la seule vérification des migrations.** Depuis le 19 août 2026, la réussite des tests
+> conditionne le déploiement de la plateforme. Mais cette porte s'exécute sur un environnement
+> dépourvu de moteur de conteneurs et écarte **l'intégralité des contrôles qui en requièrent un** —
+> c'est-à-dire tous ceux qui s'exécutent contre une base de données réelle. La vérification des
+> migrations en fait partie, comme en font partie plusieurs des contrôles automatisés énumérés au
+> présent point 5. Ceux-ci sont exécutés par la suite de tests complète lancée localement, non avant
+> chaque déploiement. Les contrôles ne touchant pas la base de données — dont la vérification de la
+> chaîne de hachage et la détection d'altération — sont, eux, exécutés par la porte de déploiement.
 
 Les contrôles automatisés décrits ci-dessus ont été exécutés avec succès. Les vérifications
 automatisées portant sur le journal de conformité existant et sur le service de contrôle du
@@ -291,5 +321,5 @@ les réutilise sans les modifier.
 
 ---
 
-*Document établi le 10 août 2026. Une fiche de même nature sera produite pour chaque contrôle du
+*Document établi le 10 août 2026, complété le 21 août 2026 (point 5 — portée exacte de la couverture automatisée des migrations). Une fiche de même nature sera produite pour chaque contrôle du
 dispositif LCB-FT au fur et à mesure de sa réalisation.*

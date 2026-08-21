@@ -48,6 +48,16 @@ Trois caractéristiques de ce livrable méritent d'être soulignées devant la c
 
 **Il ne constitue pas une classification en vigueur.** L'enregistrement d'un niveau de risque autre que la valeur par défaut exigera un document de classification préalablement rédigé et validé. Tant que ce document n'existe pas, le champ conserve la valeur standard, non en vertu d'une décision mais faute d'instruction. Ce document reste à écrire et à valider — c'est le prérequis non technique signalé en tête du présent sprint de développement.
 
+> **Précision apportée le 21 août 2026 — la retenue n'est pas un verrou logiciel.** La phrase
+> ci-dessus décrit une règle d'exploitation, non un contrôle programmé, et la commission ne doit pas
+> la lire comme tel. À la date de cette précision, **aucun écran ni aucun point d'entrée du serveur
+> ne permet d'attribuer un niveau de risque** : le champ est créé avec la valeur standard et seul un
+> accès direct à la base de données pourrait le modifier. La date d'adoption du document de
+> classification est, elle, lue au démarrage et inscrite au journal technique, mais **elle ne
+> conditionne aucun traitement** — aucun code ne vérifie qu'elle est renseignée avant d'autoriser
+> une évaluation. La retenue décrite tient donc à l'absence de la fonctionnalité, non à une garantie
+> technique ; le jour où l'attribution sera développée, le verrou correspondant restera à écrire.
+
 **Il préserve l'interprétabilité des évaluations dans le temps.** Aux côtés du niveau de risque, deux champs complémentaires sont introduits : la date de la dernière évaluation formelle, et l'identifiant de la version du document de classification en vigueur à ce moment. Sans cette référence de version, une évaluation passée deviendrait ininterprétable dès que le document de classification serait révisé — on ne saurait plus à quelles règles elle se rapportait.
 
 **Il s'applique à la fois aux associations et aux dons.** Le niveau de risque peut évoluer dans le temps pour une association. Certains dons peuvent avoir été enregistrés sous un niveau différent de celui qui prévaut au moment d'une réévaluation ultérieure. Conserver un instantané du niveau de risque sur le don lui-même permet de rendre compte de l'état du risque au moment précis où le don a été effectué, indépendamment des réévaluations qui interviendront ensuite.
@@ -66,6 +76,16 @@ Trois caractéristiques de ce livrable méritent d'être soulignées devant la c
 
 Note : les tests de persistance (`RiskLevelPersistenceTest`) valident le mapping JPA sur le schéma généré par Hibernate (create-drop). Ils ne valident pas la migration Flyway V53 elle-même — celle-ci a été vérifiée manuellement (voir ci-dessous).
 
+> **Mise à jour du 21 août 2026.** La migration V53 est désormais couverte par un contrôle
+> automatisé : depuis le 19 août 2026, la suite de tests comprend une vérification qui démarre
+> l'application contre une base PostgreSQL vide, y exécute la totalité des migrations dans l'ordre,
+> et n'aboutit que si le schéma produit correspond exactement au mapping des entités. La
+> vérification manuelle décrite ci-dessous n'est donc plus le seul élément de preuve de
+> l'applicabilité de V53. Deux réserves subsistent : ce contrôle établit que la migration
+> *s'applique*, non que les données existantes ont été reprises comme décrit — c'est la
+> vérification manuelle qui porte ce point — et il n'est pas exécuté par le contrôle automatique
+> qui précède le déploiement, cet environnement ne disposant pas de moteur de conteneurs.
+
 ### Vérification opérationnelle manuelle
 
 La migration de base de données a été appliquée manuellement sur la base de données locale de développement, en présence de lignes existantes dans les deux tables concernées.
@@ -81,7 +101,8 @@ Cette précision est apportée pour éviter toute lecture extensive de la prése
 
 Ce livrable introduit la capacité technique d'enregistrer un niveau de risque. **Il ne met pas en place une classification des risques effective, et n'implique aucune mesure de vigilance particulière à ce stade.** En particulier, il ne couvre pas :
 
-- la **rédaction et l'adoption du document de classification des risques** — c'est le prérequis immédiat, non technique, signalé comme non encore satisfait ; aucune évaluation ne peut être effectuée avant que ce document existe et soit validé par le conseil ;
+- la **rédaction et l'adoption du document de classification des risques** — c'est le prérequis immédiat, non technique, signalé comme non encore satisfait ; aucune évaluation ne peut être effectuée avant que ce document existe et soit validé par le conseil. Une **révision de ce document a été rédigée le 18 août 2026** et n'est pas en vigueur — voir la fiche *E2 — Correspondance entre le niveau de risque et les mesures de vigilance*, point 4.1 ;
+- l'**attribution elle-même d'un niveau de risque** — aucun écran ni point d'entrée du serveur ne le permet à ce jour *(voir la précision du 21 août 2026 au point 4)* ; le champ et son estampillage de version existent, la fonction qui les renseigne reste à construire, verrou d'adoption compris ;
 - l'**évaluation effective du niveau de risque** de chaque association et de chaque don — cette évaluation suppose l'adoption préalable du document de classification ; le mécanisme qui applique les règles correspondantes est, lui, livré *(voir la fiche E2 — Correspondance entre le niveau de risque et les mesures de vigilance)* ;
 - les **mesures de vigilance différenciées** selon le niveau de risque — diligences simplifiées, standard ou renforcées : *la transcription versionnée de cette correspondance est traitée depuis par la fiche E2 — Correspondance entre le niveau de risque et les mesures de vigilance* ; la collecte et la vérification effectives des pièces qu'elle énumère restent à réaliser ;
 - le **contrôle des mesures de gel des avoirs**, ni sur les associations, ni sur leurs représentants, ni sur les donateurs — *traité depuis par les fiches de l'épique E4* ;
@@ -97,6 +118,7 @@ Ce livrable introduit la capacité technique d'enregistrer un niveau de risque. 
 | Surveillance des opérations atypiques et déclaration de soupçon *(épique E5)* | [1216210853624511](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624511) · [1216210853624512](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624512) · [1216210853624513](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624513) · [1216210853624514](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624514) |
 | Conservation des pièces justificatives et rapport annuel *(épique E6)* | [1216210853624518](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624518) · [1216210853624517](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624517) · [1216210853624520](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624520) |
 | Collecte et vérification effectives des pièces exigées par niveau de risque | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Attribution d'un niveau de risque par le responsable de la conformité, et verrou subordonnant toute valeur autre que « standard » à l'adoption du document de classification | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 ## 7. Situation de ce contrôle dans le dispositif d'ensemble
 
@@ -117,4 +139,4 @@ Les modifications sont enregistrées dans l'historique des modifications du logi
 
 ---
 
-*Document établi le 7 août 2026. Une fiche de même nature sera produite pour chaque livrable du dispositif LCB-FT au fur et à mesure de sa réalisation.*
+*Document établi le 7 août 2026, complété le 21 août 2026 (absence de point d'entrée d'attribution ; couverture automatisée de la migration V53). Une fiche de même nature sera produite pour chaque livrable du dispositif LCB-FT au fur et à mesure de sa réalisation.*

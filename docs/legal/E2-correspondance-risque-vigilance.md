@@ -53,6 +53,40 @@ Quatre caractéristiques de ce livrable méritent d'être soulignées devant la 
 
 **Toute modification laisse une trace permanente et non falsifiable.** Le document de classification est géré dans l'historique des modifications du logiciel. Chaque changement y est enregistré avec l'identité de son auteur, la date et heure exactes, et la description des modifications apportées. Il n'existe intentionnellement aucun moyen de modifier la correspondance sans laisser cette trace, ni aucun écran d'administration permettant de le faire à chaud — cette contrainte a été actée comme décision architecturale du dispositif.
 
+### 4.1 Complément du 21 août 2026 — une révision rédigée, non mise en vigueur
+
+**Une version révisée du document de classification a été rédigée le 18 août 2026.** Elle porte
+l'identifiant `2026-08-v2` et coexiste dans le dépôt avec la version `2026-08-v1`. Sa structure est
+identique — les trois niveaux et les clés de chaque entrée sont conservés, aucune modification du
+logiciel n'est nécessaire pour la charger.
+
+**Elle n'est pas en vigueur.** Les trois environnements d'exploitation de la plateforme importent
+la version `v1`, qui est donc celle que le logiciel applique et estampille sur les évaluations. La
+version révisée n'est chargée par aucun environnement ; à ce jour, elle est un projet de texte
+déposé dans le dépôt et rien de plus. Toute description du dispositif — y compris le point 4 de la
+présente fiche et la synthèse d'ensemble — se rapporte à `v1`.
+
+**Ce que la révision modifierait.** Son objet déclaré est de ramener le document au strict exigé par
+la réglementation, en retirant ce qui relevait d'un choix interne non imposé :
+
+| Point révisé | Sens de la révision |
+|---|---|
+| Fréquences fixes de réexamen (3 ans / 2 ans / 1 an) | Retirées. Remplacées par l'obligation réellement portée par les textes : connaissance client tenue à jour en continu (art. L.561-6 al. 2 CMF) et réexamen sans délai sur événement significatif. Le conseil peut réintroduire des intervalles chiffrés, à charge de les justifier. |
+| Justificatif de domicile de chaque dirigeant | Retiré — pièce non imposée. |
+| Attestation d'absence de bénéficiaire effectif | Retirée — inapplicable à une association, qui en comporte toujours. |
+| Définition du bénéficiaire effectif | Reformulée sur l'art. R.561-3 CMF dans sa rédaction issue du décret n° 2024-720 du 5 juillet 2024 : personnes exerçant des fonctions d'administration, de direction ou de surveillance, sans seuil de détention. |
+| Filtrage « gel des avoirs » | Réécrit comme mesure obligatoire et continue (art. L.562-1 et s. CMF), et non comme une pièce à réclamer au client. |
+| Statut du niveau « faible » | Explicité : le niveau standard est le niveau par défaut ; le niveau faible est un allègement à justifier client par client (art. L.561-9, R.561-14 CMF), les associations loi 1901 ne figurant pas dans la liste limitative des situations de faible risque intrinsèque (art. R.561-15 et R.561-16 CMF). |
+
+**Une divergence est signalée à la commission, et non tranchée ici.** La version en vigueur porte
+une date d'adoption renseignée — 7 août 2026 — tandis que la version révisée porte la mention
+« à valider par le conseil » et une date d'adoption vide. Le suivi de projet et la synthèse
+d'ensemble décrivent, eux, l'adoption du document de classification comme un prérequis non encore
+satisfait. Ces trois énoncés ne peuvent pas être simultanément exacts. La qualification de ce qui
+s'est tenu le 7 août 2026 — adoption formelle par l'organe compétent, ou datation d'une rédaction —
+appartient à la commission ; elle détermine laquelle des deux versions doit être mise en vigueur et
+sous quelle date.
+
 ## 5. Les éléments de preuve
 
 La correction est accompagnée de **quatre contrôles automatisés** ajoutés au patrimoine de tests de la plateforme. Ces contrôles sont réexécutés à chaque modification du logiciel : si une évolution future venait à rétablir une lacune, elle serait signalée en échec avant d'être intégrée.
@@ -75,6 +109,8 @@ Cette précision est apportée pour éviter toute lecture extensive de la prése
 Ce livrable garantit la cohérence entre la correspondance écrite et le comportement du logiciel, et l'impossibilité de modifier cette correspondance sans laisser de trace. **Il ne met pas en place une évaluation effective des associations, et n'implique aucune décision de vigilance à ce stade.** En particulier, il ne couvre pas :
 
 - l'**évaluation effective du niveau de risque** de chaque association — cette évaluation suppose l'adoption formelle du document de classification par le conseil, qui constitue encore un prérequis non satisfait à la date de ce document ;
+- la **subordination technique d'une évaluation à l'adoption du document** — la date d'adoption est lue au démarrage et inscrite au journal technique, mais **elle ne conditionne aucun traitement** : aucun code ne vérifie qu'elle est renseignée. La règle décrite dans les fiches E2 est une règle d'exploitation, non un verrou logiciel ;
+- la **mise en vigueur de la version révisée** `2026-08-v2` — rédigée, non chargée par aucun environnement *(voir le point 4.1)* ;
 - la **mise en œuvre concrète des mesures de vigilance** — les pièces listées dans la correspondance ne sont pas encore collectées ni vérifiées automatiquement ;
 - le **contrôle des mesures de gel des avoirs**, ni sur les associations, ni sur leurs représentants, ni sur les donateurs — *traité depuis par les fiches de l'épique E4* ;
 - la **surveillance des opérations atypiques** et la déclaration de soupçon ;
@@ -92,6 +128,8 @@ Chacun de ces points fait l'objet de travaux planifiés et ordonnancés, avec de
 | Surveillance des opérations atypiques et déclaration de soupçon *(épique E5)* | [1216210853624511](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624511) · [1216210853624512](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624512) · [1216210853624513](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624513) · [1216210853624514](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624514) |
 | Conservation des pièces justificatives et rapport annuel *(épique E6)* | [1216210853624518](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624518) · [1216210853624517](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624517) · [1216210853624520](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624520) |
 | Collecte et vérification automatiques des pièces listées dans la correspondance | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Arbitrage sur la version à mettre en vigueur (`v1` en service / `v2` rédigée) et sur la date d'adoption à retenir *(arbitrage de la commission, non un développement)* | *Sans objet — n'est pas une tâche de développement* |
+| Verrou logiciel subordonnant toute évaluation à une date d'adoption renseignée | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 ## 7. Situation de ce contrôle dans le dispositif d'ensemble
 
@@ -114,4 +152,4 @@ Le document de classification lui-même fait partie du logiciel et est soumis au
 
 ---
 
-*Document établi le 7 août 2026. Une fiche de même nature sera produite pour chaque livrable du dispositif LCB-FT au fur et à mesure de sa réalisation.*
+*Document établi le 7 août 2026, complété le 21 août 2026 (point 4.1 — révision `2026-08-v2` rédigée et non mise en vigueur ; divergence sur la date d'adoption). Une fiche de même nature sera produite pour chaque livrable du dispositif LCB-FT au fur et à mesure de sa réalisation.*

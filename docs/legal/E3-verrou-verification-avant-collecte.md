@@ -95,6 +95,27 @@ d'identification y était présenté comme une information indicative, sans effe
 d'ouvrir une collecte. Il est désormais présenté comme une condition bloquante, ce qui reflète la
 règle réellement appliquée.
 
+### 4.1 Complément du 21 août 2026 — deux conditions d'ouverture supplémentaires
+
+Le 17 août 2026, deux conditions qui étaient présentées à l'association comme des recommandations
+sont devenues des conditions bloquantes de l'ouverture d'une collecte :
+
+| Condition | Règle appliquée |
+|---|---|
+| Budget prévisionnel équilibré | Les deux volets — dépenses et ressources — doivent être renseignés et leur écart être inférieur à un euro. |
+| Résultat attendu de la campagne | Doit être renseigné et comporter au moins vingt caractères. |
+
+Ces deux conditions ne relèvent pas du dispositif LCB-FT : elles répondent au principe selon lequel
+un donateur est sollicité au regard d'un plan chiffré et d'un résultat annoncé. Elles sont
+mentionnées ici parce que la présente fiche énumère les conditions d'ouverture d'une collecte et que
+cette énumération devait rester exacte.
+
+Elles sont appliquées selon les mêmes modalités que le verrou de vérification décrit au point 4 :
+dans l'interface de l'association et, indépendamment, par le serveur, avec des règles identiques de
+part et d'autre — tolérance comprise, afin que l'interface ne déclare jamais publiable une campagne
+que le serveur refuserait. **Le verrou de vérification du dossier d'identification est inchangé** :
+ces conditions s'ajoutent à lui et ne s'y substituent en rien.
+
 ## 5. Les éléments de preuve
 
 La correction est accompagnée de **six contrôles automatisés** ajoutés au patrimoine de tests de
@@ -194,5 +215,5 @@ redondance qui avait produit la faille.
 
 ---
 
-*Document établi le 5 août 2026. Une fiche de même nature sera produite pour chaque contrôle du
+*Document établi le 5 août 2026, complété le 21 août 2026 (point 4.1 — deux conditions d'ouverture supplémentaires, hors dispositif LCB-FT). Une fiche de même nature sera produite pour chaque contrôle du
 dispositif LCB-FT au fur et à mesure de sa réalisation.*
