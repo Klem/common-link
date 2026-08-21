@@ -25,6 +25,7 @@ onchain:
   recorder-pk: "0x0000000000000000000000000000000000000000000000000000000000000001"
   curator-pk: "0x0000000000000000000000000000000000000000000000000000000000000002"
   donor-address-secret: "test-donor-address-secret-placeholder-32ch"
+  association-address-secret: "test-association-address-secret-placehold"
   worker:
     enabled: false
 

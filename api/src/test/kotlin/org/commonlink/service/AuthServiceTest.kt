@@ -29,6 +29,7 @@ class AuthServiceTest {
     private val userRepository: UserRepository = mockk()
     private val donorProfileRepository: DonorProfileRepository = mockk()
     private val associationProfileRepository: AssociationProfileRepository = mockk()
+    private val associationAddressGenerator: org.commonlink.onchain.AssociationAddressGenerator = mockk()
     private val magicLinkTokenRepository: MagicLinkTokenRepository = mockk()
     private val refreshTokenRepository: RefreshTokenRepository = mockk()
     private val emailVerificationTokenRepository: EmailVerificationTokenRepository = mockk()
@@ -41,7 +42,7 @@ class AuthServiceTest {
     private val frontendUrl = "http://localhost:3000"
 
     private val authService = AuthService(
-        userRepository, donorProfileRepository, associationProfileRepository,
+        userRepository, donorProfileRepository, associationProfileRepository, associationAddressGenerator,
         magicLinkTokenRepository, refreshTokenRepository, emailVerificationTokenRepository, jwtService, tokenHashService,
         passwordEncoder, emailService, googleIdTokenVerifier, frontendUrl
     )
@@ -77,6 +78,7 @@ class AuthServiceTest {
         // duplicate is the subject of the test.
         every { associationProfileRepository.existsByIdentifier(any()) } returns false
         every { associationProfileRepository.existsBySiren(any()) } returns false
+        every { associationAddressGenerator.generate(any()) } returns "0x1111111111111111111111111111111111111111"
         // Default: no profile exists yet. createProfile is idempotent since a claimed guest account
         // already carries a DonorProfile (audit 2026-08-20, M1), so it looks before writing.
         every { donorProfileRepository.findByUserId(any()) } returns Optional.empty()
@@ -111,7 +113,7 @@ class AuthServiceTest {
     fun `register ASSOCIATION - happy path`() {
         every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
         every { passwordEncoder.encode("password123") } returns "hashed"
-        every { associationProfileRepository.save(any()) } answers { firstArg() }
+        every { associationProfileRepository.save(any()) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         val req = RegisterRequestDto(
             email = "asso@example.com",
@@ -756,7 +758,7 @@ class AuthServiceTest {
     fun `upsertAssociationProfile - creates profile when none exists`() {
         every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
         every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.empty()
-        every { associationProfileRepository.save(any()) } answers { firstArg() }
+        every { associationProfileRepository.save(any()) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         val dto = AssociationProfileUpsertDto(
             nom = "MyAsso",
@@ -782,7 +784,7 @@ class AuthServiceTest {
         )
         every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
         every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.of(existingProfile)
-        every { associationProfileRepository.save(any()) } answers { firstArg() }
+        every { associationProfileRepository.save(any()) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         val dto = AssociationProfileUpsertDto(
             nom = "MyAsso",
@@ -821,7 +823,7 @@ class AuthServiceTest {
         every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
         every { passwordEncoder.encode("password123") } returns "hashed"
         val saved = slot<AssociationProfile>()
-        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         authService.register(
             RegisterRequestDto(
@@ -841,7 +843,7 @@ class AuthServiceTest {
         every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
         every { passwordEncoder.encode("password123") } returns "hashed"
         val saved = slot<AssociationProfile>()
-        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         authService.register(
             RegisterRequestDto(
@@ -878,7 +880,7 @@ class AuthServiceTest {
     fun `register ASSOCIATION with an already registered RNA still succeeds - RNA flow untouched`() {
         every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
         every { passwordEncoder.encode("password123") } returns "hashed"
-        every { associationProfileRepository.save(any()) } answers { firstArg() }
+        every { associationProfileRepository.save(any()) } answers { firstArg<AssociationProfile>().withGeneratedId() }
         every { associationProfileRepository.existsByIdentifier("W123456789") } returns true
 
         authService.register(
@@ -909,7 +911,7 @@ class AuthServiceTest {
         every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
         every { userRepository.findByEmailIgnoreCase("asso-new@example.com") } returns Optional.empty()
         val saved = slot<AssociationProfile>()
-        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         authService.verifyMagicLink("rawtoken123")
 
@@ -975,7 +977,7 @@ class AuthServiceTest {
         every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
         every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.empty()
         val saved = slot<AssociationProfile>()
-        every { associationProfileRepository.save(capture(saved)) } answers { firstArg() }
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         authService.upsertAssociationProfile(
             assocUser.id!!,
@@ -988,6 +990,13 @@ class AuthServiceTest {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /** Mimics Hibernate assigning the @GeneratedValue id on persist, for save() mocks that need a non-null id back. */
+    private fun AssociationProfile.withGeneratedId(): AssociationProfile = also {
+        if (it.id == null) {
+            it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID())
+        }
+    }
 
     private fun buildGooglePayload(
         sub: String,

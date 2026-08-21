@@ -19,6 +19,7 @@ class OnchainMockGuardTest {
         pollingIntervalMs = 1500L,
         receiptTimeoutMs = 60000L,
         donorAddressSecret = "test-secret",
+        associationAddressSecret = "test-secret",
         mock = mock,
         worker = OnchainConfig.WorkerConfig(enabled = false, batchSize = 10, fixedDelayMs = 5000L),
     )

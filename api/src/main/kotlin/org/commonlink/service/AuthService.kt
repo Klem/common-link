@@ -23,6 +23,7 @@ import org.commonlink.exception.RateLimitException
 import org.commonlink.exception.SirenAlreadyRegisteredException
 import org.commonlink.exception.TokenExpiredException
 import org.commonlink.exception.UnprocessableEntityException
+import org.commonlink.onchain.AssociationAddressGenerator
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.EmailVerificationTokenRepository
@@ -65,6 +66,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val donorProfileRepository: DonorProfileRepository,
     private val associationProfileRepository: AssociationProfileRepository,
+    private val associationAddressGenerator: AssociationAddressGenerator,
     private val magicLinkTokenRepository: MagicLinkTokenRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
     private val emailVerificationTokenRepository: EmailVerificationTokenRepository,
@@ -602,7 +604,8 @@ class AuthService(
      * Creates or updates the [AssociationProfile] for the authenticated user.
      *
      * If a profile already exists, all mutable fields are updated. If no profile exists,
-     * a new one is created using [dto.nom] and [dto.identifier] as the immutable identity fields.
+     * a new one is created using [dto.nom] and [dto.identifier] as the immutable identity fields,
+     * and a deterministic on-chain wallet address is derived and persisted for it.
      *
      * Only users with [UserRole.ASSOCIATION] may call this method.
      *
@@ -630,7 +633,7 @@ class AuthService(
         } else {
             // Create path: first-time profile setup using the immutable identity fields from the DTO.
             guardSirenNotAlreadyRegistered(dto.identifier)
-            associationProfileRepository.save(
+            val saved = associationProfileRepository.save(
                 AssociationProfile(
                     user = user,
                     name = dto.nom,
@@ -643,6 +646,8 @@ class AuthService(
                     siren = derivedSiren(dto.identifier)
                 )
             )
+            saved.walletAddress = associationAddressGenerator.generate(saved.id!!)
+            associationProfileRepository.save(saved)
         }
     }
 
@@ -768,8 +773,9 @@ class AuthService(
      *
      * For [UserRole.DONOR], a blank [DonorProfile] is created.
      * For [UserRole.ASSOCIATION], an [AssociationProfile] is created only when [assocReq] is
-     * provided (magic-link and email/password sign-up). Google sign-ups for associations
-     * create the profile in a separate step via [upsertAssociationProfile].
+     * provided (magic-link and email/password sign-up), with a deterministic on-chain wallet
+     * address derived and persisted for it. Google sign-ups for associations create the profile
+     * in a separate step via [upsertAssociationProfile].
      *
      * **Idempotent**: an already-existing profile is left untouched. A claimed guest account
      * already carries a [DonorProfile] (and the donations attached to it), so creating a second
@@ -789,7 +795,7 @@ class AuthService(
                     (userId == null || associationProfileRepository.findByUserId(userId).isEmpty)
                 ) {
                     guardSirenNotAlreadyRegistered(assocReq.identifier)
-                    associationProfileRepository.save(
+                    val saved = associationProfileRepository.save(
                         AssociationProfile(
                             user = user,
                             name = assocReq.name,
@@ -801,6 +807,8 @@ class AuthService(
                             siren = derivedSiren(assocReq.identifier)
                         )
                     )
+                    saved.walletAddress = associationAddressGenerator.generate(saved.id!!)
+                    associationProfileRepository.save(saved)
                 }
             }
             UserRole.CURATOR -> { /* curator accounts have no associated profile */ }

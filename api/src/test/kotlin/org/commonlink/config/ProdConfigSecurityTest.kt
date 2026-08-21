@@ -81,6 +81,16 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `onchain association-address-secret may keep its dev placeholder while mock is true`() {
+        // While onchain.mock stays true (see the disabled test above), the on-chain component
+        // isn't wired up, so a dev placeholder here — like the sibling onchain.* keys
+        // (donor-address-secret, recorder-pk, curator-pk, registry-address) — is accepted rather
+        // than enforced via env-only injection the way app.jwt.secret / MOLLIE_API_KEY are.
+        val secret = prop("onchain.association-address-secret") as? String ?: ""
+        assertEquals("\${ASSOCIATION_ADDRESS_SECRET:dev-placeholder-change-in-staging}", secret)
+    }
+
+    @Test
     fun `mollie allow-fake-completion is false in prod`() {
         // C1: base defaults this true; prod must override it explicitly or the self-service
         // fake-KYC route ships active in production.

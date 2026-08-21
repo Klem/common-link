@@ -191,6 +191,19 @@ springdoc:
 
 onchain:
   mock: true
+  rpc-url: ${ONCHAIN_RPC_URL}
+  chain-id: ${ONCHAIN_CHAIN_ID}
+  # Empty defaults — safe because both OnchainRegistryClient and Web3jConfig (which builds the
+  # signing credentials from recorder-pk / curator-pk) are inactive when mock=true.
+  # Prod supply real values via environment variables.
+  registry-address: ${ONCHAIN_REGISTRY_ADDRESS:}
+  recorder-pk: ${ONCHAIN_RECORDER_PK:}
+  curator-pk: ${ONCHAIN_CURATOR_PK:}
+  polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
+  receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
+  donor-address-secret: ${DONOR_ADDRESS_SECRET:dev-placeholder-change-in-staging}
+  association-address-secret: ${ASSOCIATION_ADDRESS_SECRET:dev-placeholder-change-in-staging}
+
   worker:
     enabled: true
     batch-size: 10

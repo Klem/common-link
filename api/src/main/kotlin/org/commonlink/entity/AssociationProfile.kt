@@ -173,4 +173,8 @@ class AssociationProfile(
      */
     @Column(name = "risk_classification_version", length = 32)
     var riskClassificationVersion: String? = null,
+
+    /** Deterministic 20-byte EVM address derived from the association's UUID via HMAC-SHA256. Set at profile creation. */
+    @Column(name = "wallet_address", length = 42)
+    var walletAddress: String? = null,
 )

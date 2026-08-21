@@ -12,6 +12,7 @@ data class OnchainConfig(
     val pollingIntervalMs: Long,
     val receiptTimeoutMs: Long,
     val donorAddressSecret: String,
+    val associationAddressSecret: String,
     val mock: Boolean = false,
     val worker: WorkerConfig,
 ) {
@@ -24,5 +25,5 @@ data class OnchainConfig(
     override fun toString(): String =
         "OnchainConfig(rpcUrl=$rpcUrl, chainId=$chainId, registryAddress=$registryAddress, " +
         "recorderPk=***, curatorPk=***, pollingIntervalMs=$pollingIntervalMs, " +
-        "receiptTimeoutMs=$receiptTimeoutMs, donorAddressSecret=***, worker=$worker)"
+        "receiptTimeoutMs=$receiptTimeoutMs, donorAddressSecret=***, associationAddressSecret=***, worker=$worker)"
 }
