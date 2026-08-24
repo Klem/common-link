@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LandingTab } from '../LandingTab';
 import { LandingTheme } from '@/types/association';
@@ -95,6 +95,7 @@ const baseProfile: AssociationProfileDto = {
   landingShowProject: true,
   landingShowTransparency: true,
   landingShowTrust: true,
+  gtmContainerId: null,
 };
 
 const liveProfile: AssociationProfileDto = {
@@ -287,5 +288,116 @@ describe('LandingTab — preview modal', () => {
     await waitFor(() => screen.getByText('snippet.noToken'));
 
     expect(screen.queryByText('preview.open')).not.toBeInTheDocument();
+  });
+});
+
+describe('LandingTab — GTM', () => {
+  const mockFetch = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', mockFetch);
+    mockFetch.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('saves a valid GTM container ID', async () => {
+    renderTab(baseProfile);
+    await waitFor(() => screen.getByPlaceholderText('gtm.placeholder'));
+
+    fireEvent.change(screen.getByPlaceholderText('gtm.placeholder'), {
+      target: { value: 'GTM-ABC1234' },
+    });
+    fireEvent.click(screen.getByText('gtm.save'));
+
+    await waitFor(() => expect(mockUpdateLandingConfig).toHaveBeenCalledTimes(1));
+    expect(mockUpdateLandingConfig).toHaveBeenCalledWith({ gtmContainerId: 'GTM-ABC1234' });
+  });
+
+  it('rejects a malformed GTM container ID without calling the backend', async () => {
+    renderTab(baseProfile);
+    await waitFor(() => screen.getByPlaceholderText('gtm.placeholder'));
+
+    // Lowercase — mirrors the backend pattern (UpdateLandingConfigRequest.gtmContainerId).
+    fireEvent.change(screen.getByPlaceholderText('gtm.placeholder'), {
+      target: { value: 'GTM-abcd' },
+    });
+    fireEvent.click(screen.getByText('gtm.save'));
+
+    expect(screen.getByText('gtm.error')).toBeInTheDocument();
+    expect(mockUpdateLandingConfig).not.toHaveBeenCalled();
+  });
+
+  it('sends an empty value to clear a configured GTM container ID', async () => {
+    renderTab({ ...baseProfile, gtmContainerId: 'GTM-ABC1234' });
+    await waitFor(() => screen.getByDisplayValue('GTM-ABC1234'));
+
+    fireEvent.change(screen.getByDisplayValue('GTM-ABC1234'), { target: { value: '' } });
+    fireEvent.click(screen.getByText('gtm.save'));
+
+    await waitFor(() => expect(mockUpdateLandingConfig).toHaveBeenCalledTimes(1));
+    expect(mockUpdateLandingConfig).toHaveBeenCalledWith({ gtmContainerId: '' });
+  });
+
+  it('hides the export without a configured GTM container ID', async () => {
+    renderTab(liveProfile);
+    await waitFor(() => screen.getByText('snippet.title'));
+
+    expect(screen.queryByText('gtm.export.title')).not.toBeInTheDocument();
+  });
+
+  it('hides the export when GTM is configured but no widget token exists', async () => {
+    renderTab({ ...baseProfile, gtmContainerId: 'GTM-ABC1234' });
+    await waitFor(() => screen.getByText('snippet.noToken'));
+
+    expect(screen.queryByText('gtm.export.title')).not.toBeInTheDocument();
+  });
+
+  it('hides the export when the destination campaign is not LIVE, even with GTM configured', async () => {
+    renderTab({
+      ...baseProfile,
+      widgetToken: 'clk_abc',
+      widgetDestinationCampaignId: 'camp-draft',
+      gtmContainerId: 'GTM-ABC1234',
+    });
+    await waitFor(() => screen.getByText('snippet.noLiveCampaign'));
+
+    expect(screen.queryByText('gtm.export.title')).not.toBeInTheDocument();
+  });
+
+  it('fetches the export from /api/gtm-export once GTM, the token and a LIVE campaign are set', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ html: '<!DOCTYPE html><html><body>real landing content</body></html>' }),
+    });
+
+    renderTab({ ...liveProfile, gtmContainerId: 'GTM-ABC1234' });
+
+    await waitFor(() => screen.getByText('gtm.export.loading'));
+    expect(mockFetch).toHaveBeenCalledWith('/api/gtm-export/clk_abc?gtmId=GTM-ABC1234');
+
+    await waitFor(() => screen.getByText('gtm.export.download'));
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    expect(textarea.value).toContain('real landing content');
+  });
+
+  it('shows an explicit error and offers a retry when the export fails', async () => {
+    mockFetch.mockRejectedValue(new Error('boom'));
+
+    renderTab({ ...liveProfile, gtmContainerId: 'GTM-ABC1234' });
+
+    await waitFor(() => screen.getByText('gtm.export.failed'));
+    expect(document.querySelector('textarea')).toBeNull();
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ html: '<!DOCTYPE html><html><body>ok</body></html>' }),
+    });
+    fireEvent.click(screen.getByText('gtm.export.reload'));
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+    await waitFor(() => screen.getByText('gtm.export.download'));
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getCampaigns } from '@/lib/api/campaign';
 import {
@@ -12,6 +12,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { CampaignStatus } from '@/types/campaign';
 import { LandingTheme, LANDING_THEMES } from '@/types/association';
 import { apiUrl } from '@/lib/api';
+import { GTM_ID_PATTERN } from '@/lib/gtm';
 import { CopyableCode } from './CopyableCode';
 import { LandingPreviewModal } from './LandingPreviewModal';
 import type { AssociationProfileDto, UpdateLandingConfigRequest } from '@/types/association';
@@ -70,9 +71,19 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
   const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [gtmInput, setGtmInput] = useState(profile?.gtmContainerId ?? '');
+  const [gtmError, setGtmError] = useState(false);
+  const [gtmExportCopied, setGtmExportCopied] = useState(false);
+  const [gtmExportHtml, setGtmExportHtml] = useState<string | null>(null);
+  const [gtmExportFailed, setGtmExportFailed] = useState(false);
+
   useEffect(() => {
     getCampaigns().then(setCampaigns).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setGtmInput(profile?.gtmContainerId ?? '');
+  }, [profile?.gtmContainerId]);
 
   /**
    * Sends one field per interaction and refreshes the profile — no Save button to understand.
@@ -115,6 +126,35 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
     }
   };
 
+  const handleSaveGtm = async () => {
+    const trimmed = gtmInput.trim();
+    // Mirror of the backend pattern (UpdateLandingConfigRequest.gtmContainerId) — rule 8.
+    if (trimmed && !GTM_ID_PATTERN.test(trimmed)) {
+      setGtmError(true);
+      return;
+    }
+    setGtmError(false);
+    await patchConfig({ gtmContainerId: trimmed });
+  };
+
+  const handleCopyGtmExport = async (html: string) => {
+    await navigator.clipboard.writeText(html);
+    setGtmExportCopied(true);
+    setTimeout(() => setGtmExportCopied(false), 2000);
+  };
+
+  const handleDownloadGtmExport = (html: string) => {
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'landing-gtm.html';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleLogoDelete = async () => {
     setIsSaving(true);
     try {
@@ -143,6 +183,36 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
   // Same gate as WidgetTab, and a 1:1 mirror of the public endpoint's 404 (no token) / 409
   // (destination not LIVE) — never advertise a link that cannot render.
   const showSnippets = !!widgetToken && isDestinationLive;
+  const showGtmExport = showSnippets && !!profile?.gtmContainerId;
+  const gtmContainerId = profile?.gtmContainerId ?? null;
+
+  /**
+   * Fetches a fresh standalone export from `/api/gtm-export/{widgetToken}` — a snapshot of the
+   * real landing page at generation time, not a live view. Re-run on demand ("Régénérer") rather
+   * than cached indefinitely, so a later content or GTM ID change doesn't leave a stale download.
+   */
+  const loadGtmExport = useCallback(async () => {
+    if (!widgetToken || !gtmContainerId) return;
+    setGtmExportFailed(false);
+    setGtmExportHtml(null);
+    try {
+      const res = await fetch(`/api/gtm-export/${widgetToken}?gtmId=${encodeURIComponent(gtmContainerId)}`);
+      if (!res.ok) throw new Error('export failed');
+      const { html } = await res.json();
+      setGtmExportHtml(html);
+    } catch {
+      setGtmExportFailed(true);
+    }
+  }, [widgetToken, gtmContainerId]);
+
+  useEffect(() => {
+    if (showGtmExport) {
+      loadGtmExport();
+    } else {
+      setGtmExportHtml(null);
+      setGtmExportFailed(false);
+    }
+  }, [showGtmExport, loadGtmExport]);
 
   const copyLabel = t('snippet.copy');
   const copiedLabel = t('snippet.copied');
@@ -277,6 +347,41 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
         </div>
       </div>
 
+      {/* ── Google Tag Manager ────────────────────────────────────────── */}
+      <div className="card no-hover" style={{ marginBottom: 24 }}>
+        <div className="card-h">
+          <h3>{t('gtm.title')}</h3>
+        </div>
+        <div className="card-b">
+          <p className="fhint" style={{ marginBottom: 12 }}>{t('gtm.hint')}</p>
+          <div className="fg" style={{ marginBottom: 20 }}>
+            <label className="fl">{t('gtm.label')}</label>
+            <input
+              type="text"
+              className="fi"
+              value={gtmInput}
+              onChange={(e) => {
+                setGtmInput(e.target.value);
+                setGtmError(false);
+              }}
+              placeholder={t('gtm.placeholder')}
+              disabled={isSaving}
+            />
+            {gtmError && <p className="fhint error">{t('gtm.error')}</p>}
+            <div className="frow-actions" style={{ marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleSaveGtm}
+                disabled={isSaving}
+              >
+                {t('gtm.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Landing page ──────────────────────────────────────────────── */}
       <div className="card no-hover">
         <div className="card-h">
@@ -308,11 +413,52 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
                 <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.scriptHelp')}</p>
                 <CopyableCode value={scriptCode} copyLabel={copyLabel} copiedLabel={copiedLabel} />
               </div>
-              <div className="fg">
+              <div className="fg" style={{ marginBottom: showGtmExport ? 20 : 0 }}>
                 <label className="fl">{t('snippet.iframe')}</label>
                 <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.iframeHelp')}</p>
                 <CopyableCode value={iframeCode} copyLabel={copyLabel} copiedLabel={copiedLabel} />
               </div>
+              {showGtmExport && (
+                <div className="fg">
+                  <label className="fl">{t('gtm.export.title')}</label>
+                  <p className="fhint" style={{ marginBottom: 6 }}>{t('gtm.export.hint')}</p>
+                  {gtmExportFailed && <p className="fhint error">{t('gtm.export.failed')}</p>}
+                  {!gtmExportFailed && !gtmExportHtml && <p className="fhint">{t('gtm.export.loading')}</p>}
+                  {gtmExportHtml && (
+                    <textarea
+                      className="fi"
+                      readOnly
+                      rows={10}
+                      value={gtmExportHtml}
+                      style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
+                      onFocus={(e) => e.target.select()}
+                    />
+                  )}
+                  <div className="frow-actions" style={{ marginTop: 10 }}>
+                    {gtmExportHtml && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleCopyGtmExport(gtmExportHtml)}
+                        >
+                          {gtmExportCopied ? copiedLabel : copyLabel}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleDownloadGtmExport(gtmExportHtml)}
+                        >
+                          {t('gtm.export.download')}
+                        </button>
+                      </>
+                    )}
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={loadGtmExport}>
+                      {t('gtm.export.reload')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

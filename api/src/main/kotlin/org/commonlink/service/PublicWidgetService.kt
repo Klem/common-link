@@ -63,6 +63,7 @@ class PublicWidgetService(
             campaignCoverImage = campaign.coverImage,
             widgetAllowedOrigin = association.widgetAllowedOrigin,
             remainingCapacity = donationCapService.remainingCapacity(campaign),
+            gtmContainerId = association.gtmContainerId,
         )
     }
 
@@ -238,6 +239,7 @@ class PublicWidgetService(
             // Only ever false behind a valid preview token: resolveLanding would have thrown otherwise.
             donationsEnabled = campaign.status == CampaignStatus.LIVE,
             remainingCapacity = donationCapService.remainingCapacity(campaign),
+            gtmContainerId = association.gtmContainerId,
         )
     }
 

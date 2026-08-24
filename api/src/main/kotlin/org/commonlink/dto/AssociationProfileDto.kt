@@ -46,6 +46,8 @@ data class AssociationProfileDto(
     val landingShowTransparency: Boolean,
     /** Whether the landing page shows the "donate with confidence" section. */
     val landingShowTrust: Boolean,
+    /** Google Tag Manager container ID for Ad Grants tracking. Null if not configured. */
+    val gtmContainerId: String?,
 )
 
 fun AssociationProfile.toDto() = AssociationProfileDto(
@@ -76,4 +78,5 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     landingShowProject = landingShowProject,
     landingShowTransparency = landingShowTransparency,
     landingShowTrust = landingShowTrust,
+    gtmContainerId = gtmContainerId,
 )

@@ -41,6 +41,7 @@ const mockProfile: AssociationProfileDto = {
   landingShowProject: true,
   landingShowTransparency: true,
   landingShowTrust: true,
+  gtmContainerId: null,
 };
 
 vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({

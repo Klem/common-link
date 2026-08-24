@@ -7,12 +7,12 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 const cspDirectives = [
   "default-src 'self'",
-  // Next.js dev + prod inline scripts
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/",
+  // Next.js dev + prod inline scripts + GTM's self-injected gtm.js (Google Ad Grants tracking)
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/ https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/",
   "font-src 'self'",
-  // Google OAuth frames + API
-  "frame-src 'self' https://accounts.google.com/",
+  // Google OAuth frames + GTM's noscript fallback iframe (ns.html)
+  "frame-src 'self' https://accounts.google.com/ https://www.googletagmanager.com",
   // Both public registries are queried straight from the browser during association sign-up:
   // JOAFE for RNA numbers, Recherche d'entreprises for associations that only have a SIREN.
   `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com https://recherche-entreprises.api.gouv.fr`,

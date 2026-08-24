@@ -23,6 +23,8 @@ export interface PublicWidgetDto {
    * `DonationCapService.remainingCapacity`; the backend re-checks it on submit.
    */
   remainingCapacity: number;
+  /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
+  gtmContainerId: string | null;
 }
 
 export interface CreateGuestDonationRequest {
@@ -130,6 +132,8 @@ export interface PublicLandingDto {
   donationsEnabled: boolean;
   /** Same figure and purpose as {@link PublicWidgetDto.remainingCapacity}. */
   remainingCapacity: number;
+  /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
+  gtmContainerId: string | null;
 }
 
 /**

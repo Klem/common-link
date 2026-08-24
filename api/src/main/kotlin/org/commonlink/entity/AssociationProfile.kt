@@ -177,4 +177,13 @@ class AssociationProfile(
     /** Deterministic 20-byte EVM address derived from the association's UUID via HMAC-SHA256. Set at profile creation. */
     @Column(name = "wallet_address", length = 42)
     var walletAddress: String? = null,
+
+    /**
+     * Google Tag Manager container ID (e.g. `GTM-XXXXXXX`) for Google Ad Grants tracking.
+     * Drives GTM injection on the landing page, the embedded widget, and the copy/paste export
+     * offered in the settings tab — not landing-scoped, hence no `landing_` prefix. Null means
+     * GTM is not configured, so nothing is injected anywhere.
+     */
+    @Column(name = "gtm_container_id", length = 20)
+    var gtmContainerId: String? = null,
 )

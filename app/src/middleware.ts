@@ -50,6 +50,14 @@ function parseAuthSession(raw: string): AuthSession | null {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // API routes are never locale-prefixed: falling through to `intlMiddleware` below would
+  // redirect e.g. `/api/gtm-export/x` to `/fr/api/gtm-export/x`, a path no route handler
+  // matches (route handlers live outside `[locale]`) — a silent 404 for every API call.
+  if (pathname.startsWith('/api/') || pathname === '/api') {
+    return NextResponse.next();
+  }
+
   const locale = pathname.match(/^\/([a-z]{2})(\/|$)/)?.[1] ?? routing.defaultLocale;
   const barePath = stripLocale(pathname);
 

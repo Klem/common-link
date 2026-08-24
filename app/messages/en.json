@@ -1692,6 +1692,22 @@
         },
         "title": "Appearance"
       },
+      "gtm": {
+        "error": "Invalid format: expected GTM-XXXXXXX.",
+        "export": {
+          "download": "Download",
+          "failed": "The export could not be generated. Please try again.",
+          "hint": "Copy this HTML or download it to publish it as-is on your own site: it's a snapshot of your CommonLink landing page's actual content (taken now, not updated automatically) with Google Tag Manager tracking added and the donation form served via widget.js — it stays fully functional and never breaks, even after a CommonLink update. Regenerate it after any content change. If widget.js is already installed on that same site with this container ID, each visit will be counted twice until event-based tracking is configured in GTM.",
+          "loading": "Generating the export…",
+          "reload": "Regenerate",
+          "title": "Standalone HTML page"
+        },
+        "hint": "Enter your GTM container ID to enable Google Ad Grants tracking on your landing page and your widget. Detailed tracking (dataLayer) will be added in a future update.",
+        "label": "GTM container ID",
+        "placeholder": "GTM-XXXXXXX",
+        "save": "Save",
+        "title": "Google Tag Manager"
+      },
       "iframeTitle": "Donate",
       "prereq": {
         "campaign": "Destination campaign",
