@@ -11,19 +11,13 @@ const BAR_COLORS = [
   '#9CA3AF',
 ] as const;
 
-function truncateHash(hash: string): string {
-  return `${hash.slice(0, 10)}…${hash.slice(-8)}`;
-}
-
 interface TransparencySectionProps {
   budget: LandingBudgetPostDto[];
-  budgetHash: string | null;
   milestones: MilestoneDto[];
 }
 
 export function TransparencySection({
   budget,
-  budgetHash,
   milestones,
 }: TransparencySectionProps) {
   const t = useTranslations('landing');
@@ -79,15 +73,6 @@ export function TransparencySection({
         )}
 
         <p className="lp-transparency-note">{t('transparency.note')}</p>
-
-        {budgetHash !== null && (
-          <p className="lp-budget-hash">
-            {t('transparency.budgetHash')}{' '}
-            <span className="lp-budget-hash-value" title={budgetHash}>
-              {truncateHash(budgetHash)}
-            </span>
-          </p>
-        )}
 
         {commitments.length > 0 && (
           <div className="lp-commitments">

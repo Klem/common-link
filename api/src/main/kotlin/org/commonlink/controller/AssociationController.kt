@@ -155,7 +155,7 @@ class AssociationController(
     @PatchMapping("/me/landing")
     @Operation(
         summary = "Update landing page configuration",
-        description = "Updates the landing page theme and section visibility. Only provided fields are updated."
+        description = "Updates the landing page theme, section visibility and GTM container ID. Only provided fields are updated."
     )
     @ApiResponses(
         ApiResponse(
@@ -163,6 +163,7 @@ class AssociationController(
             content = [Content(schema = Schema(implementation = AssociationProfileDto::class))]
         ),
         ApiResponse(responseCode = "400", description = "Unknown theme value", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Malformed GTM container ID", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
         ApiResponse(responseCode = "409", description = "Bank account (Mollie) not completed — required before configuring the landing page", content = [Content()])

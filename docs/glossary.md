@@ -578,6 +578,16 @@ A single data point in the 6-month fundraising chart: `month` (ISO string "YYYY-
 Dashboard field identifying the campaign milestone closest to being reached — i.e. the unfinished milestone (status ≠ REACHED) across all LIVE campaigns with the smallest positive `targetAmount − campaign.raised`. Null when no such milestone exists.
 `technical` `backend` `association`
 
+### Donation Public Ref
+An opaque UUID minted server-side (`PublicWidgetService.createDonation`) before the Mollie payment is created, since Mollie's own payment id does not exist yet at redirect-URL construction time. Carried as the `ref` query param on the Mollie success redirect URL alongside the dataLayer tracking payload (amount, currency, campaign, association, anonymous flag) — never on the cancel URL. Stored on `Donation.publicRef` (`donations.public_ref`, partial unique index). Looked up by the public, unauthenticated `GET /api/public/widget/donations/{ref}/status` endpoint, which the `/return` page polls to decide whether to push the GA4 `purchase` event. Leaks no internal data beyond PENDING/CONFIRMED and, once confirmed, the payment method.
+`technical` `backend`
+
+## G
+
+### GA4 Ecommerce Donation Tracking
+Google Analytics 4 ecommerce events pushed to `window.dataLayer` (via `app/src/lib/gtm.ts#pushDonationEvent`) to track the donation funnel for Ad Grants reporting. `begin_checkout` fires client-side right before the donor is redirected to Mollie's hosted checkout (`useGuestDonation`), using the [[Donation Public Ref]] as `transaction_id`. `purchase` fires on the `/return` page once `GET .../donations/{ref}/status` reports CONFIRMED, polled every 750ms bounded to the existing 3s auto-redirect window — never fired for a cancelled payment, and never guessed optimistically. Both events carry `items: [{item_id: campaignId, item_name: campaignName}]` and `affiliation: associationName`; `purchase` additionally carries the Mollie payment method once known. The push is a no-op with nothing to read it when the association has no `gtmContainerId` configured.
+`technical` `functional`
+
 ## P (continued)
 
 ### Payout

@@ -105,6 +105,36 @@ class AssociationLandingServiceTest {
     }
 
     @Test
+    fun `updateLandingConfig - sets the GTM container ID`() {
+        val profile = profile()
+        stubProfile(profile)
+
+        val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(gtmContainerId = "GTM-ABC1234"))
+
+        assertEquals("GTM-ABC1234", dto.gtmContainerId)
+    }
+
+    @Test
+    fun `updateLandingConfig - blank GTM container ID clears it`() {
+        val profile = profile().apply { gtmContainerId = "GTM-ABC1234" }
+        stubProfile(profile)
+
+        val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(gtmContainerId = ""))
+
+        assertNull(dto.gtmContainerId)
+    }
+
+    @Test
+    fun `updateLandingConfig - absent GTM container ID leaves it untouched`() {
+        val profile = profile().apply { gtmContainerId = "GTM-ABC1234" }
+        stubProfile(profile)
+
+        val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(theme = LandingTheme.WARM))
+
+        assertEquals("GTM-ABC1234", dto.gtmContainerId)
+    }
+
+    @Test
     fun `updateLandingConfig - unknown user throws UserNotFoundException`() {
         every { associationRepo.findByUserId(userId) } returns Optional.empty()
 

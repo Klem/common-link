@@ -1,5 +1,6 @@
 package org.commonlink.dto
 
+import jakarta.validation.constraints.Pattern
 import org.commonlink.entity.LandingTheme
 
 /**
@@ -22,4 +23,13 @@ data class UpdateLandingConfigRequest(
 
     /** Show the "donate with confidence" section. Null leaves the current value unchanged. */
     val showTrust: Boolean? = null,
+
+    /**
+     * Google Tag Manager container ID (e.g. `GTM-XXXXXXX`). Null/absent leaves the current value
+     * unchanged; an empty string clears it (no GTM injection anywhere). This field is interpolated
+     * into an inline `<script>` and an `iframe src` on our own origin — the pattern is a stored-XSS
+     * guard, not a UX nicety.
+     */
+    @field:Pattern(regexp = "^(GTM-[A-Z0-9]{4,10})?$", message = "must be empty or match GTM-XXXXXXX")
+    val gtmContainerId: String? = null,
 )

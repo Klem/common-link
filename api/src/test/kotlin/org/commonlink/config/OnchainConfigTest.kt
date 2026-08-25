@@ -16,6 +16,7 @@ class OnchainConfigTest {
         pollingIntervalMs = 1500L,
         receiptTimeoutMs = 60000L,
         donorAddressSecret = "super-secret-hmac-key",
+        associationAddressSecret = "super-secret-association-hmac-key",
         worker = OnchainConfig.WorkerConfig(enabled = false, batchSize = 10, fixedDelayMs = 5000L)
     )
 
@@ -35,11 +36,17 @@ class OnchainConfigTest {
     }
 
     @Test
-    fun `toString contains redacted placeholder for all three secrets`() {
+    fun `toString does not contain associationAddressSecret value`() {
+        assertFalse(cfg.toString().contains("super-secret-association-hmac-key"))
+    }
+
+    @Test
+    fun `toString contains redacted placeholder for all four secrets`() {
         val s = cfg.toString()
         assertTrue(s.contains("recorderPk=***"))
         assertTrue(s.contains("curatorPk=***"))
         assertTrue(s.contains("donorAddressSecret=***"))
+        assertTrue(s.contains("associationAddressSecret=***"))
     }
 
     @Test

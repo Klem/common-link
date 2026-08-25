@@ -125,6 +125,30 @@ En conséquence, la relation entre CommonLink et son prestataire de paiement **n
 recours à un tiers introducteur** au sens de l'article R.561-13 du code monétaire et financier,
 et **aucun contrat de cette nature n'est requis**.
 
+### 4.4 Complément du 21 août 2026 — le canal du prestataire antérieur est définitivement fermé
+
+La présente fiche portait sur le prestataire de paiement effectivement utilisé et se gardait
+expressément de se prononcer sur les autres canaux. L'un de ces canaux est désormais clos par
+constat matériel plutôt que par analyse.
+
+**Le prestataire antérieur ne subsiste plus dans la plateforme.** Le 20 août 2026, l'intégralité
+des composants relatifs à ce prestataire a été retirée du logiciel : points d'entrée du serveur,
+appels sortants, écrans, et les deux tables où étaient conservées l'autorisation d'accès et les
+données de compte. Le retrait comporte la suppression de ces tables par une migration de base de
+données.
+
+**Aucune donnée personnelle n'a été détruite par ce retrait.** Les deux tables étaient vides —
+aucune association n'a jamais raccordé de compte auprès de ce prestataire, ni en environnement de
+recette ni ailleurs, la plateforme n'étant pas déployée en production. Il n'existait donc aucune
+donnée d'identification issue de ce canal, ni à conserver, ni à effacer.
+
+**Portée.** Ce constat ne modifie pas la conclusion du point 4.3, qui portait sur le prestataire en
+service : il en écarte définitivement une réserve, en établissant que le canal du prestataire
+antérieur n'a jamais transmis d'information de vérification à CommonLink et ne peut plus le faire.
+La tâche de contrat de tierce introduction rattachée à ce prestataire dans le référentiel de projet,
+déjà mise hors objet par la décision interne D11 du 7 août 2026, est ainsi privée de tout support
+technique résiduel.
+
 ## 5. Les éléments de preuve
 
 La démonstration du point 4.1 — indépendance et cumul des deux procédures — est établie par
@@ -258,5 +282,5 @@ issue de la lecture directe du traitement correspondant dans le code source au 1
 
 ---
 
-*Document établi le 10 août 2026. Une fiche de même nature sera produite pour chaque contrôle
+*Document établi le 10 août 2026, complété le 21 août 2026 (point 4.4 — retrait intégral du prestataire antérieur). Une fiche de même nature sera produite pour chaque contrôle
 du dispositif LCB-FT au fur et à mesure de sa réalisation.*

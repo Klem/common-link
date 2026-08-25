@@ -91,4 +91,18 @@ class EmailServiceStub : EmailService {
             alertId, severity, recipientEmail, alertUrl,
         )
     }
+
+    /** Logs the technical alert instead of sending an email. The stack trace is already in the log. */
+    override fun sendTechnicalAlert(
+        recipientEmail: String,
+        severity: String,
+        title: String,
+        context: Map<String, String>,
+        stackTrace: String?,
+    ) {
+        logger.info(
+            "Technical alert [{}] {} — would notify {} ({})",
+            severity, title, recipientEmail, context,
+        )
+    }
 }

@@ -12,6 +12,8 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.MollieWebhookService
+import org.commonlink.service.TechnicalAlertKind
+import org.commonlink.service.TechnicalAlertService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -44,6 +46,9 @@ class MollieWebhookControllerTest {
 
     @MockkBean
     private lateinit var userRepository: UserRepository
+
+    @MockkBean
+    private lateinit var technicalAlertService: TechnicalAlertService
 
     private fun postWebhook(id: String) =
         mockMvc.perform(
@@ -98,7 +103,32 @@ class MollieWebhookControllerTest {
     @Test
     fun `returns 200 even when service throws unexpected exception`() {
         every { mollieWebhookService.handleWebhook("tr_crash") } throws RuntimeException("boom")
+        every { technicalAlertService.reportFailure(any(), any(), any(), any()) } just Runs
         postWebhook("tr_crash").andExpect(status().isOk)
+    }
+
+    @Test
+    fun `processing failure raises a WEBHOOK_PROCESSING_FAILURE technical alert`() {
+        every { mollieWebhookService.handleWebhook("tr_alert") } throws RuntimeException("boom")
+        every { technicalAlertService.reportFailure(any(), any(), any(), any()) } just Runs
+
+        postWebhook("tr_alert").andExpect(status().isOk)
+
+        verify(exactly = 1) {
+            technicalAlertService.reportFailure(
+                TechnicalAlertKind.WEBHOOK_PROCESSING_FAILURE,
+                "POST",
+                "/api/public/webhooks/mollie",
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `no technical alert is raised on a successful webhook`() {
+        every { mollieWebhookService.handleWebhook("tr_ok") } just Runs
+        postWebhook("tr_ok").andExpect(status().isOk)
+        verify(exactly = 0) { technicalAlertService.reportFailure(any(), any(), any(), any()) }
     }
 
     @Test

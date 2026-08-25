@@ -62,6 +62,8 @@ data class PublicLandingDto(
      * as [PublicWidgetDto.remainingCapacity]. The landing page embeds the same donation form.
      */
     val remainingCapacity: BigDecimal,
+    /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
+    val gtmContainerId: String? = null,
 )
 
 /**

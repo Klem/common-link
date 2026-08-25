@@ -17,6 +17,7 @@ class DonorAddressGeneratorTest {
         pollingIntervalMs = 1500L,
         receiptTimeoutMs = 60000L,
         donorAddressSecret = secret,
+        associationAddressSecret = secret,
         worker = OnchainConfig.WorkerConfig(enabled = false, batchSize = 10, fixedDelayMs = 5000L),
     )
     private val generator = DonorAddressGenerator(cfg)

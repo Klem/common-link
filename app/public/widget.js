@@ -8,13 +8,19 @@
  *           data-widget-token="clk_xxx"
  *           async></script>
  *
+ * The iframe height follows the form's content: it posts its height on every layout change
+ * (field validation errors, address autocomplete, etc.), so the host page never shows an inner
+ * scrollbar.
+ *
  * Optional attributes:
- *   data-width   — iframe CSS width  (default: "100%")
- *   data-height  — iframe CSS height (default: "640px")
+ *   data-width   — iframe CSS width (default: "100%")
+ *   data-height  — initial CSS height, used until the first height message (default: "640px")
  *   data-locale  — UI language: "fr" or "en" (default: "fr")
  */
 (function () {
   'use strict';
+
+  var MESSAGE_TYPE = 'cl-widget-height';
 
   var script = document.currentScript;
   if (!script) return;
@@ -57,6 +63,22 @@
     sourceUrl = document.referrer;
   }
 
+  // Origin of the script, resolved by the browser's own URL parser. Used to authenticate
+  // height messages: `event.origin` is always scheme://host[:port], so comparing it to
+  // `frontUrl` would fail whenever the script is served from a sub-path.
+  var resolver = document.createElement('a');
+  resolver.href = scriptSrc;
+  var frontOrigin = resolver.protocol + '//' + resolver.host;
+
+  // The widget posts its height to this exact origin (never "*"), so the message cannot be
+  // observed by another frame if the host page is itself embedded somewhere.
+  var parentOrigin = '';
+  try {
+    parentOrigin = window.location.origin || '';
+  } catch (e) {
+    // cross-origin restriction in some sandboxes — auto-resize is then skipped
+  }
+
   var iframeSrc =
     frontUrl +
     '/' +
@@ -64,8 +86,15 @@
     '/embed/donate/' +
     encodeURIComponent(token);
 
+  var iframeParams = [];
   if (sourceUrl) {
-    iframeSrc += '?source=' + encodeURIComponent(sourceUrl);
+    iframeParams.push('source=' + encodeURIComponent(sourceUrl));
+  }
+  if (parentOrigin) {
+    iframeParams.push('parentOrigin=' + encodeURIComponent(parentOrigin));
+  }
+  if (iframeParams.length) {
+    iframeSrc += '?' + iframeParams.join('&');
   }
 
   var iframe = document.createElement('iframe');
@@ -100,9 +129,18 @@
     'allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation allow-same-origin'
   );
 
-  // TODO (optional): listen for postMessage from the iframe to auto-resize height.
-  // Requires coordinating a postMessage send from EmbedDonateClient.tsx.
-  // When implemented, verify message.origin === frontUrl before trusting the payload.
+  // Auto-resize — registered before insertion so the very first message cannot be missed.
+  // Every guard matters: only our own iframe (source), only our own origin, only our own
+  // message shape, only a sane positive number.
+  window.addEventListener('message', function (event) {
+    if (event.source !== iframe.contentWindow) return;
+    if (event.origin !== frontOrigin) return;
+    var data = event.data;
+    if (!data || data.type !== MESSAGE_TYPE) return;
+    var reported = Number(data.height);
+    if (!isFinite(reported) || reported <= 0) return;
+    iframe.style.height = Math.ceil(reported) + 'px';
+  });
 
   // Insert immediately after the <script> tag (or at end of parent if last child)
   var parent = script.parentNode;

@@ -4,6 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.*
 import jakarta.persistence.EntityManager
 import org.commonlink.dto.CreateGuestDonationRequest
+import org.commonlink.dto.DonationPublicStatus
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignBudgetItem
 import org.commonlink.entity.CampaignBudgetSection
@@ -465,6 +466,155 @@ class PublicWidgetServiceIntegrationTest {
         campaignRepository.save(campaign)
         entityManager.flush()
         entityManager.clear()
+    }
+
+    // ── Tracking payload on the Mollie redirect URL ──────────────────────────
+
+    @Test
+    fun `createDonation embeds the dataLayer tracking payload and a fresh public ref on redirectUrl`() {
+        val req = validRequest(anonymousDisplay = true)
+
+        publicWidgetService.createDonation(widgetToken, req)
+
+        val redirectUrlSlot = slot<String>()
+        verify(exactly = 1) {
+            mollieClient.createPayment(
+                amount = any(),
+                currency = any(),
+                description = any(),
+                redirectUrl = capture(redirectUrlSlot),
+                cancelUrl = any(),
+                webhookUrl = any(),
+                metadata = any(),
+                idempotencyKey = any(),
+                bearerToken = any(),
+                profileId = any(),
+            )
+        }
+        val redirectUrl = redirectUrlSlot.captured
+        assertTrue(redirectUrl.contains("&currency=EUR"), redirectUrl)
+        assertTrue(redirectUrl.contains("&amount=25.00"), redirectUrl)
+        assertTrue(redirectUrl.contains("&anonymous=true"), redirectUrl)
+        assertTrue(redirectUrl.contains("&campaignId="), redirectUrl)
+        assertTrue(redirectUrl.contains("&campaignName="), redirectUrl)
+        assertTrue(redirectUrl.contains("&associationName="), redirectUrl)
+        assertTrue(Regex("ref=[0-9a-fA-F-]{36}").containsMatchIn(redirectUrl), "redirectUrl must carry a fresh public ref: $redirectUrl")
+    }
+
+    @Test
+    fun `createDonation never embeds the tracking payload on cancelUrl`() {
+        publicWidgetService.createDonation(widgetToken, validRequest())
+
+        val cancelUrlSlot = slot<String>()
+        verify(exactly = 1) {
+            mollieClient.createPayment(
+                amount = any(),
+                currency = any(),
+                description = any(),
+                redirectUrl = any(),
+                cancelUrl = capture(cancelUrlSlot),
+                webhookUrl = any(),
+                metadata = any(),
+                idempotencyKey = any(),
+                bearerToken = any(),
+                profileId = any(),
+            )
+        }
+        val cancelUrl = cancelUrlSlot.captured
+        assertTrue(cancelUrl.contains("cancelled=true"), cancelUrl)
+        assertFalse(cancelUrl.contains("ref="), "cancelUrl must not carry the tracking payload: $cancelUrl")
+    }
+
+    // ── Donation status polling (public_ref) ─────────────────────────────────
+
+    @Test
+    fun `getDonationStatus returns PENDING without a method before confirmation`() {
+        val response = publicWidgetService.createDonation(widgetToken, validRequest())
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")!!
+
+        val status = publicWidgetService.getDonationStatus(donation.publicRef!!)
+
+        assertEquals(DonationPublicStatus.PENDING, status.status)
+        assertNull(status.method)
+    }
+
+    @Test
+    fun `getDonationStatus returns CONFIRMED with the payment method once confirmed`() {
+        val response = publicWidgetService.createDonation(widgetToken, validRequest())
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")!!
+        donation.paymentMethod = "creditcard"
+        donation.confirmedAt = java.time.Instant.now()
+        donationRepository.save(donation)
+        entityManager.flush()
+        entityManager.clear()
+
+        val status = publicWidgetService.getDonationStatus(donation.publicRef!!)
+
+        assertEquals(DonationPublicStatus.CONFIRMED, status.status)
+        assertEquals("creditcard", status.method)
+    }
+
+    @Test
+    fun `getDonationStatus throws NotFoundException for an unknown ref`() {
+        assertThrows<NotFoundException> { publicWidgetService.getDonationStatus(UUID.randomUUID()) }
+    }
+
+    @Test
+    fun `getDonationStatus confirms immediately from a live Mollie check, without waiting for the webhook`() {
+        val response = publicWidgetService.createDonation(widgetToken, validRequest())
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")!!
+
+        every { mollieClient.getPayment(response.paymentId, bearerToken = "test_assoc_token") } returns
+            MolliePayment(
+                id = response.paymentId,
+                status = MolliePaymentStatus.PAID,
+                amount = BigDecimal("25.00"),
+                checkoutUrl = null,
+                metadata = emptyMap(),
+                method = "creditcard",
+            )
+
+        val status = publicWidgetService.getDonationStatus(donation.publicRef!!)
+
+        assertEquals(DonationPublicStatus.CONFIRMED, status.status)
+        assertEquals("creditcard", status.method)
+
+        val persisted = donationRepository.findByProviderRef("mollie:${response.paymentId}")!!
+        assertNotNull(persisted.confirmedAt, "Live confirmation must persist confirmedAt, not just the response")
+
+        val campaign = associationProfileRepository.findByWidgetToken(widgetToken).get().widgetDestinationCampaign!!
+        entityManager.clear()
+        assertEquals(0, BigDecimal("25.00").compareTo(campaignRepository.findById(campaign.id!!).get().raised),
+            "Live confirmation must credit the campaign exactly like the webhook path does")
+    }
+
+    @Test
+    fun `getDonationStatus stays PENDING when the live Mollie check fails, instead of propagating`() {
+        val response = publicWidgetService.createDonation(widgetToken, validRequest())
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")!!
+
+        every { mollieClient.getPayment(response.paymentId, bearerToken = "test_assoc_token") } throws
+            RuntimeException("Mollie unreachable")
+
+        val status = publicWidgetService.getDonationStatus(donation.publicRef!!)
+
+        assertEquals(DonationPublicStatus.PENDING, status.status)
+        assertNull(status.method)
+    }
+
+    @Test
+    fun `getDonationStatus does not attempt a live check once already confirmed`() {
+        val response = publicWidgetService.createDonation(widgetToken, validRequest())
+        val donation = donationRepository.findByProviderRef("mollie:${response.paymentId}")!!
+        donation.paymentMethod = "creditcard"
+        donation.confirmedAt = java.time.Instant.now()
+        donationRepository.save(donation)
+        entityManager.flush()
+        entityManager.clear()
+
+        publicWidgetService.getDonationStatus(donation.publicRef!!)
+
+        verify(exactly = 0) { mollieClient.getPayment(any(), any()) }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

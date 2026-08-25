@@ -17,20 +17,28 @@ import { useTranslations } from 'next-intl';
  * set to `true` and children are rendered. The auth store's `isAuthenticated`
  * flag reflects whether hydration succeeded.
  *
- * Embed routes (`/embed/`) are skipped — no session exists in an iframe context
- * and the refresh call would always fail with 401.
+ * Embed routes (`/embed/`) and the public landing page (`/lp/`) are skipped — both are
+ * guest-facing, read nothing from `useAuthStore`, and would otherwise show a "loading" screen
+ * (and, server-side, no real content at all) while a refresh call that only matters for
+ * association/admin sessions resolves.
+ *
+ * The guest-route check seeds `hydrated`'s *initial* state, not just a post-mount effect:
+ * `usePathname()` resolves during SSR too, so these routes render their real children in the
+ * server-rendered HTML immediately — a `useEffect`-only skip would still leave the SSR output
+ * stuck on the loading fallback, since effects never run server-side.
  *
  * This component must be placed above any component that reads from `useAuthStore`.
  *
  * @param children - The application subtree to render after hydration.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [hydrated, setHydrated] = useState(false);
-  const t = useTranslations('common');
   const pathname = usePathname();
+  const isGuestRoute = pathname.includes('/embed/') || pathname.includes('/lp/');
+  const [hydrated, setHydrated] = useState(isGuestRoute);
+  const t = useTranslations('common');
 
   useEffect(() => {
-    if (pathname.includes('/embed/')) {
+    if (isGuestRoute) {
       useAuthStore.setState({ isLoading: false });
       setHydrated(true);
       return;

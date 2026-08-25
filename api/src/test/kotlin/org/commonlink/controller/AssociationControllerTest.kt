@@ -4,6 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.slot
+import io.mockk.verify
 import org.commonlink.exception.UnprocessableEntityException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -105,6 +106,7 @@ class AssociationControllerTest {
         landingShowProject = true,
         landingShowTransparency = true,
         landingShowTrust = true,
+        gtmContainerId = null,
     )
 
     // -------------------------------------------------------------------------
@@ -381,6 +383,33 @@ class AssociationControllerTest {
         assertNull(slot.captured.theme)
         assertNull(slot.captured.showTransparency)
         assertNull(slot.captured.showTrust)
+        assertNull(slot.captured.gtmContainerId)
+    }
+
+    @Test
+    fun `updateLandingConfig - malformed GTM container ID is rejected with 422`() {
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"gtmContainerId":"GTM-X');alert(1)//"}""")
+        )
+            .andExpect(status().isUnprocessableEntity)
+
+        verify(exactly = 0) { landingService.updateLandingConfig(any(), any()) }
+    }
+
+    @Test
+    fun `updateLandingConfig - blank GTM container ID is accepted (clears the field)`() {
+        every { landingService.updateLandingConfig(userId, any()) } returns sampleProfile
+
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"gtmContainerId":""}""")
+        )
+            .andExpect(status().isOk)
     }
 
     @Test

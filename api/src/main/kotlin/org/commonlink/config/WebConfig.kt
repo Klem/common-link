@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate
 class WebConfig {
 
     /**
-     * Shared [RestTemplate] instance for outbound HTTP calls (e.g. Monerium token exchange).
+     * Shared [RestTemplate] instance for outbound HTTP calls to third-party APIs.
      */
     @Bean
     fun restTemplate(): RestTemplate = RestTemplate()

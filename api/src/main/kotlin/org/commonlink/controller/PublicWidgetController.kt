@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 /**
  * Public (unauthenticated) widget and landing page endpoints.
@@ -105,14 +106,15 @@ class PublicWidgetController(
     }
 
     /**
-     * Returns the public confirmation status of a donation identified by its Mollie payment ID.
+     * Returns the public confirmation status of a donation identified by its opaque public ref.
      *
      * Used by the return page to poll until confirmation or timeout.
-     * Returns only PENDING/CONFIRMED — no internal data exposed.
+     * Returns only PENDING/CONFIRMED (+ payment method once confirmed) — no internal data exposed.
      *
-     * @param paymentId Mollie payment ID (tr_…), without the "mollie:" prefix.
+     * @param ref Opaque correlation id handed to the donor on the Mollie redirect URL (`ref` query
+     *   param) — not the Mollie payment id, not any internal donor/campaign id.
      */
-    @GetMapping("/widget/donations/{paymentId}/status")
+    @GetMapping("/widget/donations/{ref}/status")
     @Operation(
         summary = "Get donation payment status",
         description = "Returns CONFIRMED when the Mollie webhook has confirmed the payment, PENDING otherwise. No authentication required."
@@ -122,10 +124,10 @@ class PublicWidgetController(
             responseCode = "200", description = "Status returned",
             content = [Content(schema = Schema(implementation = DonationStatusDto::class))]
         ),
-        ApiResponse(responseCode = "404", description = "Payment ID not found", content = [Content()])
+        ApiResponse(responseCode = "404", description = "Unknown ref", content = [Content()])
     )
-    fun getDonationStatus(@PathVariable paymentId: String): ResponseEntity<DonationStatusDto> =
-        ResponseEntity.ok(publicWidgetService.getDonationStatus(paymentId))
+    fun getDonationStatus(@PathVariable ref: UUID): ResponseEntity<DonationStatusDto> =
+        ResponseEntity.ok(publicWidgetService.getDonationStatus(ref))
 
     /**
      * Returns the full landing page data for the association campaign associated with this widget token.

@@ -1,6 +1,10 @@
 package org.commonlink.exception
 
+import jakarta.servlet.http.HttpServletRequest
+import org.commonlink.service.TechnicalAlertKind
+import org.commonlink.service.TechnicalAlertService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -22,9 +26,31 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  *
  * The catch-all [handleGeneric] logs the full stack trace at ERROR level, which is
  * intentionally not exposed to the client to avoid information leakage.
+ *
+ * ## Which failures reach a developer
+ * Most handlers below map a *user* mistake — a wrong password, a stale campaign state, a missing
+ * resource — and are logged, at most, at WARN. A minority mean the platform itself is broken and
+ * nobody would find out from a 500 body: those additionally call [TechnicalAlertService], which
+ * owns the throttling and the e-mail. Three are reported on first occurrence ([handleGeneric],
+ * [handleMolliePayment], [handleBadGateway]); two are reported only as a *rate*
+ * ([handleAccessDenied], [handleRateLimit]), because one occurrence of either is ordinary traffic
+ * and a burst is a probe. Adding an alert to any other handler means volunteering to be paged by
+ * normal user behaviour.
+ *
+ * ## Logging levels
+ * Client-caused outcomes are DEBUG or WARN, server-caused ones are ERROR. The distinction is what
+ * makes an ERROR-level log watch meaningful: a 422 on a campaign form must never sit at the same
+ * level as an unreachable payment gateway.
+ *
+ * @property technicalAlertServiceProvider Alerting collaborator, resolved lazily and optionally.
+ *   `@RestControllerAdvice` beans are loaded into every `@WebMvcTest` slice, and none of those
+ *   slices declares an alerting bean; an [ObjectProvider] lets the handler keep working — silently,
+ *   without alerts — in a slice, instead of forcing a mock into twenty-odd unrelated tests.
  */
 @RestControllerAdvice
-class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
+class GlobalExceptionHandler(
+    private val technicalAlertServiceProvider: ObjectProvider<TechnicalAlertService>,
+) : ResponseEntityExceptionHandler() {
 
     private val appLogger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
@@ -163,24 +189,18 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     /**
-     * Handles [MoneriumReauthRequiredException] with a `code: MONERIUM_REAUTH_REQUIRED`
-     * property (HTTP 409). The frontend uses this code to surface a "Reconnect Monerium"
-     * CTA and re-trigger the PKCE flow.
-     */
-    @ExceptionHandler(MoneriumReauthRequiredException::class)
-    fun handleMoneriumReauth(ex: MoneriumReauthRequiredException): ResponseEntity<ProblemDetail> {
-        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Monerium reauthentication required")
-        problem.setProperty("code", "MONERIUM_REAUTH_REQUIRED")
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
-    }
-
-    /**
      * Handles [RateLimitException] (HTTP 429).
      *
      * Includes a `Retry-After: 600` header (10 minutes) as guidance for clients and proxies.
+     *
+     * Alerted **on burst only**, for the same reason as [handleAccessDenied]: the limiter doing its
+     * job on one impatient user is not news, whereas a sustained stream of 429s on the login path
+     * is credential stuffing and on the widget path is scripted abuse.
      */
     @ExceptionHandler(RateLimitException::class)
-    fun handleRateLimit(ex: RateLimitException): ResponseEntity<ProblemDetail> {
+    fun handleRateLimit(ex: RateLimitException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
+        appLogger.warn("Rate limit exceeded on {}: {}", path(request), ex.message)
+        burst(TechnicalAlertKind.RATE_LIMIT_BURST, request)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.message ?: "Rate limit exceeded")
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
             .header("Retry-After", "600")
@@ -193,9 +213,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
      * In Spring Security 7, `AuthorizationDeniedException` (a subclass) is thrown from AOP
      * interceptors inside the MVC dispatch — after `ExceptionTranslationFilter` has already run.
      * Without this handler it would reach [handleGeneric] and produce a 500.
+     *
+     * Alerted **on burst only**. A single 403 is a user on the wrong screen, or a stale tab after a
+     * role change. A sustained stream of them is somebody enumerating endpoints against a token
+     * they hold — the shape of the privilege-escalation attempt the 2026-08-20 audit closed (C1),
+     * which is exactly the thing worth learning about while it is still happening.
      */
     @ExceptionHandler(AccessDeniedException::class)
-    fun handleAccessDenied(ex: AccessDeniedException): ResponseEntity<ProblemDetail> {
+    fun handleAccessDenied(ex: AccessDeniedException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
+        appLogger.warn("Access denied on {}: {}", path(request), ex.message)
+        burst(TechnicalAlertKind.ACCESS_DENIED_BURST, request)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied")
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem)
     }
@@ -211,28 +238,44 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
     /**
      * Handles [BadGatewayException] when an upstream dependency is unavailable (HTTP 502).
+     *
+     * Alerted: the throw sites are the INSEE registry lookup and the VOP payee check, so this
+     * status means association onboarding and IBAN verification are both stalled — a state no user
+     * can resolve and no user will report as anything but "the site is broken".
      */
     @ExceptionHandler(BadGatewayException::class)
-    fun handleBadGateway(ex: BadGatewayException): ResponseEntity<ProblemDetail> {
+    fun handleBadGateway(ex: BadGatewayException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
+        appLogger.error("Upstream dependency unavailable on {}: {}", path(request), ex.message)
+        alert(TechnicalAlertKind.UPSTREAM_UNAVAILABLE, request, ex)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "Bad gateway")
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
     }
 
     /**
      * Handles [UnprocessableEntityException], e.g. when VOP is attempted on an IBAN with invalid status (HTTP 422).
+     *
+     * Logged at DEBUG and never alerted. Every throw site is a business rule refusing a user
+     * action — campaign state transitions, file size and MIME checks, publication guards — so this
+     * is expected traffic. Its messages also interpolate user-supplied values, which is a second
+     * reason to keep them out of an e-mail channel.
      */
     @ExceptionHandler(UnprocessableEntityException::class)
-    fun handleUnprocessableEntity(ex: UnprocessableEntityException): ResponseEntity<ProblemDetail> {
+    fun handleUnprocessableEntity(ex: UnprocessableEntityException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
+        appLogger.debug("Unprocessable entity on {}: {}", path(request), ex.message)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.message ?: "Unprocessable entity")
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem)
     }
 
     /**
      * Handles [MolliePaymentException] when the Mollie payment gateway is unreachable or returns an error (HTTP 502).
+     *
+     * Alerted: this is the donation path failing. Every occurrence is a donor who tried to give and
+     * could not, and the association hears about it before anybody on the team otherwise would.
      */
     @ExceptionHandler(MolliePaymentException::class)
-    fun handleMolliePayment(ex: MolliePaymentException): ResponseEntity<ProblemDetail> {
-        appLogger.error("Mollie payment error: {}", ex.message)
+    fun handleMolliePayment(ex: MolliePaymentException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
+        appLogger.error("Mollie payment error on {}: {}", path(request), ex.message)
+        alert(TechnicalAlertKind.PAYMENT_GATEWAY_FAILURE, request, ex)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, "Payment gateway error")
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
     }
@@ -242,11 +285,48 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
      *
      * Logs the full stack trace at ERROR level but returns only a generic message to the
      * client to avoid leaking internal implementation details.
+     *
+     * Alerted: reaching here means an exception nobody anticipated escaped a controller, which is
+     * by definition a defect. [TechnicalAlertService] filters out client disconnects, the one
+     * routine visitor to this handler.
      */
     @ExceptionHandler(Exception::class)
-    fun handleGeneric(ex: Exception): ResponseEntity<ProblemDetail> {
-        appLogger.error("Unexpected error", ex)
+    fun handleGeneric(ex: Exception, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
+        appLogger.error("Unexpected error on {}", path(request), ex)
+        alert(TechnicalAlertKind.UNHANDLED_EXCEPTION, request, ex)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred")
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem)
     }
+
+    /**
+     * Reports a failure worth an e-mail on first occurrence.
+     *
+     * Wrapped in a try/catch even though [TechnicalAlertService] already swallows its own errors:
+     * the provider lookup happens here, and an exception escaping an exception handler replaces a
+     * handled failure with an unhandled one — the single worst outcome available at this point.
+     */
+    private fun alert(kind: TechnicalAlertKind, request: HttpServletRequest?, ex: Throwable) {
+        try {
+            technicalAlertServiceProvider.ifAvailable?.reportFailure(kind, request?.method, path(request), ex)
+        } catch (e: Exception) {
+            appLogger.warn("Technical alert {} could not be raised: {}", kind, e.javaClass.simpleName)
+        }
+    }
+
+    /** Records one occurrence of a rate-based signal. See [alert] for the try/catch rationale. */
+    private fun burst(kind: TechnicalAlertKind, request: HttpServletRequest?) {
+        try {
+            technicalAlertServiceProvider.ifAvailable?.reportBurst(kind, request?.method, path(request))
+        } catch (e: Exception) {
+            appLogger.warn("Burst alert {} could not be raised: {}", kind, e.javaClass.simpleName)
+        }
+    }
+
+    /**
+     * Request path **without** the query string.
+     *
+     * Query strings carry verification tokens and e-mail addresses on this API, and these values
+     * end up in logs and in alert e-mails — neither of which is an access-controlled channel.
+     */
+    private fun path(request: HttpServletRequest?): String = request?.requestURI ?: "(unknown)"
 }

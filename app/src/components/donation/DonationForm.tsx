@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { SUGGESTED_AMOUNTS } from '@/lib/donation/donationSchema';
-import { useGuestDonation } from '@/lib/donation/useGuestDonation';
+import { useGuestDonation, type DonationTrackingContext } from '@/lib/donation/useGuestDonation';
 
 type Skin = 'default' | 'landing';
 
@@ -39,6 +39,8 @@ interface DonationFormProps {
   widgetToken: string;
   sourceSite: string | null;
   locale: string;
+  /** Campaign/association context for the `begin_checkout` dataLayer push made on submit. */
+  tracking: DonationTrackingContext;
   skin?: Skin;
   submitLabel?: (amount: number | undefined) => string | undefined;
   /**
@@ -62,6 +64,7 @@ export function DonationForm({
   widgetToken,
   sourceSite,
   locale,
+  tracking,
   skin = 'default',
   submitLabel,
   disabled = false,
@@ -72,7 +75,7 @@ export function DonationForm({
   const s = SKINS[skin];
 
   const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked } =
-    useGuestDonation({ widgetToken, sourceSite, locale });
+    useGuestDonation({ widgetToken, sourceSite, locale, tracking });
 
   // A full campaign cannot take any amount, so there is nothing to fill in. Never in preview
   // (`disabled`): an unpublished campaign has no meaningful capacity — its goal may still be zero —
@@ -83,6 +86,14 @@ export function DonationForm({
   // `blocked` comes from the submission lifecycle; `disabled` is the caller's decision. Both make
   // every control inert, so the rest of the form reads a single flag.
   const inert = blocked || disabled || campaignFull;
+
+  // At least one preset is disabled by the cap — explains the greyed-out buttons below without
+  // disclosing the exact remaining amount.
+  const nearingCap =
+    !disabled &&
+    !campaignFull &&
+    remainingCapacity !== undefined &&
+    remainingCapacity < Math.max(...SUGGESTED_AMOUNTS);
 
   const amountValue = watch('amount');
 
@@ -109,9 +120,7 @@ export function DonationForm({
       <div style={styles.section}>
         <p style={styles.sectionLabel}>{t('amounts.title')}</p>
         {campaignFull && <p className={s.error}>{t('errors.capFull')}</p>}
-        {!disabled && !campaignFull && remainingCapacity !== undefined && (
-          <p style={styles.hint}>{t('amounts.remaining', { amount: remainingCapacity })}</p>
-        )}
+        {nearingCap && <p style={styles.hint}>{t('amounts.nearingCap')}</p>}
         <div style={styles.amountGrid}>
           {SUGGESTED_AMOUNTS.map((preset) => (
             <button

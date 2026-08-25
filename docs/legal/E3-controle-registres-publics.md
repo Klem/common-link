@@ -125,7 +125,12 @@ dossier. En l'absence de correspondance, aucune donnée n'est retenue.
 entités titulaires d'un SIREN. Une association qui n'y figure pas n'en est pas moins régulièrement
 déclarée. Le résultat porte « indéterminé » et non « inexistante » dans cette situation.
 
-**Le statut d'activité peut être établi par le Journal officiel des associations.** Pour une
+**Le statut d'activité peut être établi par le Journal officiel des associations.** La consultation
+du Journal officiel s'effectue sur le numéro RNA — celui du dossier, ou à défaut celui que
+l'enregistrement du registre des entreprises fait apparaître. Une association identifiée par son
+seul numéro SIREN dont l'enregistrement ne porte aucun numéro RNA échappe donc à cette consultation :
+ni publication, ni avis de dissolution ne sont recherchés pour elle, et le dossier n'en porte pas
+mention comme d'une absence de résultat mais comme d'une consultation non effectuée. Pour une
 association absente du registre des entreprises, le Journal officiel est la seule source
 disponible : une publication la concernant, sans avis de dissolution, établit qu'elle est toujours
 en activité. Deux limites sont posées délibérément — l'absence de publication n'est jamais
@@ -138,6 +143,43 @@ Journal officiel retourne une tranche d'avis ; demandée sans ordre, elle pourra
 un avis de dissolution pour une association ayant fait l'objet de nombreuses publications. L'ordre
 décroissant est celui dans lequel un avis de dissolution — dernier événement de la vie d'une
 association — se trouve nécessairement.
+
+### 4.2 bis Complément du 21 août 2026 — l'entrée par un numéro SIREN auto-déclaré
+
+Le point 4.2 décrit le cas d'une association identifiée par son seul numéro RNA. Depuis le
+18 août 2026, le cas symétrique existe : une association qui détient un numéro SIREN mais dont le
+numéro RNA n'est pas connu peut créer son compte en saisissant elle-même son numéro SIREN, sans
+passer par la recherche assistée dans les registres. Trois conséquences sont portées à la
+connaissance de la commission.
+
+**Le numéro saisi est un numéro déclaré, non un numéro vérifié à la saisie.** La création du compte
+ne consulte aucun registre : elle enregistre ce que l'association déclare. La vérification reste
+entièrement portée par la consultation des registres décrite dans la présente fiche, déclenchée
+ultérieurement par le curateur lors de l'instruction du dossier. Ce séquencement est inchangé et
+c'est le verrou de vérification avant ouverture de collecte qui garantit qu'aucune collecte ne
+s'ouvre sur un dossier non instruit.
+
+**Un même numéro SIREN ne peut pas être enregistré deux fois.** La création du compte est refusée
+lorsque le numéro déclaré est déjà porté par une autre association, les deux emplacements où ce
+numéro peut être stocké étant examinés. Cette unicité est assurée par le logiciel et **non par une
+contrainte de la base de données** : les colonnes concernées n'en portent pas. Un enregistrement
+effectué par un autre chemin que la création de compte — reprise de données, intervention directe en
+base — n'est donc pas couvert. Le contrôle est par ailleurs délibérément limité au numéro SIREN : la
+voie d'entrée par numéro RNA conserve son comportement antérieur et n'oppose aucun refus en cas de
+doublon.
+
+**Point ouvert — la garantie de correspondance exacte n'est pas symétrique.** Le point 4.2 énonce
+qu'un enregistrement du registre national des entreprises n'est retenu que si son numéro RNA
+correspond exactement à celui du dossier. Cette vérification n'a pas d'équivalent sur la voie du
+numéro SIREN : l'interrogation étant faite par un moteur de recherche en texte intégral, c'est le
+premier enregistrement retourné qui est retenu, sans qu'il soit vérifié que le numéro SIREN qu'il
+porte est bien celui du dossier. Ce comportement était sans portée pratique lorsque les numéros
+SIREN présents en base provenaient de reprises de données ; il en acquiert une depuis que le numéro
+est saisi par l'association elle-même. Les conséquences seraient l'attribution au dossier de la
+catégorie juridique, du statut et des dirigeants d'une autre entité — c'est-à-dire, en aval, un
+verdict de périmètre et un périmètre de criblage portant sur la mauvaise personne morale. Aucune
+correspondance erronée n'a été constatée ; le point est signalé comme un écart de conception à
+corriger, non comme un incident.
 
 ### 4.3 Deux caractéristiques à souligner devant la commission
 
@@ -221,6 +263,13 @@ particulier, il ne couvre pas :
   bénéficiaires effectifs d'une association, livrée* ;
 - les **effets du verdict de périmètre** et la liste des formes juridiques acceptées, qui relèvent
   de la fiche *E3 — Contrôle automatique du périmètre d'intervention de la plateforme*, **livrée** ;
+- la **vérification que l'enregistrement retenu est bien celui du dossier lorsque l'entrée se fait
+  par un numéro SIREN** — la correspondance exacte n'est contrôlée que sur la voie du numéro RNA
+  *(voir le point 4.2 bis)* ;
+- la **vérification du numéro déclaré au moment de la création du compte** — elle n'a pas lieu ; la
+  vérification est portée par la consultation décrite ici, déclenchée ultérieurement par le curateur ;
+- l'**unicité du numéro SIREN au niveau de la base de données** — elle est assurée par le logiciel
+  sur la seule voie de création de compte, sans contrainte de schéma *(voir le point 4.2 bis)* ;
 - la **reconsultation périodique des registres** pour les associations déjà en relation d'affaires
   — la consultation reste déclenchée à la main d'un opérateur (décision interne D9) et **aucune
   reconsultation programmée n'est en place** ; un changement de dirigeant, une dissolution ou une
@@ -239,6 +288,8 @@ référentiel interne de gestion de projet aux références suivantes.
 |---|---|
 | Surveillance des opérations atypiques et déclaration de soupçon *(épique E5)* | [1216210853624511](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624511) · [1216210853624512](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624512) · [1216210853624513](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624513) · [1216210853624514](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624514) |
 | Conservation des pièces justificatives et rapport annuel *(épique E6)* | [1216210853624518](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624518) · [1216210853624517](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624517) · [1216210853624520](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624520) |
+| Correspondance exacte du numéro SIREN sur l'enregistrement retenu, par symétrie avec la voie du numéro RNA | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Contrainte d'unicité du numéro SIREN au niveau du schéma de base de données | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Reconsultation périodique programmée des registres publics | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 ## 7. Situation de ce contrôle dans le dispositif d'ensemble
@@ -268,5 +319,5 @@ qu'une évolution ultérieure ne puisse pas les remettre en cause par inadvertan
 
 ---
 
-*Document établi le 7 août 2026, état arrêté au 13 août 2026. Une fiche de même nature est produite
+*Document établi le 7 août 2026, état arrêté au 13 août 2026, complété le 21 août 2026 (point 4.2 bis — entrée par un numéro SIREN auto-déclaré). Une fiche de même nature est produite
 pour chaque contrôle du dispositif LCB-FT au fur et à mesure de sa réalisation.*

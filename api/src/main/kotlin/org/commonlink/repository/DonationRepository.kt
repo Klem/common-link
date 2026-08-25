@@ -273,4 +273,21 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         @Param("campaignId") campaignId: UUID,
         pageable: Pageable,
     ): Page<Donation>
+
+    /** Looks up a donation by the opaque [Donation.publicRef] handed to the donor on the Mollie redirect URL. */
+    fun findByPublicRef(publicRef: UUID): Donation?
+
+    /**
+     * Donations still unconfirmed [threshold] after creation — candidates for
+     * [org.commonlink.service.MolliePaymentReconciler]: either the Mollie webhook was never
+     * delivered, or it was delivered and failed processing. `providerRef` is always set by this
+     * point ([org.commonlink.service.DonationService.initiatePendingDonation] only runs after
+     * the Mollie payment itself was created), so no null-check is needed here.
+     */
+    @Query("""
+        SELECT d FROM Donation d
+        WHERE d.confirmedAt IS NULL
+          AND d.createdAt < :threshold
+    """)
+    fun findStalePending(@Param("threshold") threshold: Instant): List<Donation>
 }

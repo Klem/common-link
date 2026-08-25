@@ -278,17 +278,6 @@
   margin: 0 0 16px;
 }
 
-.lp-budget-hash {
-  font-size: .85rem;
-  color: var(--lp-text-mute);
-  margin: 0 0 24px;
-}
-
-.lp-budget-hash-value {
-  font-family: monospace;
-  color: var(--lp-text);
-}
-
 .lp-commitments {
   margin-top: 24px;
   padding-top: 20px;

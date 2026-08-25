@@ -10,6 +10,7 @@ import { LandingClient } from './LandingClient';
 import { LegalFooter } from './LegalFooter';
 import { EmbedHeightReporter } from './EmbedHeightReporter';
 import { PreviewBanner } from './PreviewBanner';
+import { GtmSnippet } from '@/components/GtmSnippet';
 import './landing.css';
 
 interface Props {
@@ -99,8 +100,12 @@ export default async function LandingPage({ params, searchParams }: Props) {
     },
   };
 
+  // Skipped in preview mode: the association's own preview views must not pollute its analytics.
+  const gtmId = previewToken ? null : data.gtmContainerId;
+
   return (
     <div className="lp-root" data-theme={data.landingTheme}>
+      <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
       <script
         type="application/ld+json"
@@ -128,6 +133,12 @@ export default async function LandingPage({ params, searchParams }: Props) {
         sourceSite={data.widgetAllowedOrigin ?? null}
         locale={locale}
         campaignName={data.campaignName}
+        tracking={{
+          campaignId: data.campaignId,
+          campaignName: data.campaignName,
+          associationName: data.associationName,
+          currency: data.currency,
+        }}
         donationsEnabled={data.donationsEnabled}
         remainingCapacity={data.remainingCapacity}
       >
@@ -141,7 +152,6 @@ export default async function LandingPage({ params, searchParams }: Props) {
         {data.showTransparency && (
           <TransparencySection
             budget={data.budget}
-            budgetHash={data.budgetHash}
             milestones={data.milestones}
           />
         )}

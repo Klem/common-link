@@ -1655,7 +1655,6 @@
       "label": "Donate"
     },
     "transparency": {
-      "budgetHash": "Budget fingerprint anchored on-chain:",
       "commitmentsTitle": "Our transparency commitments",
       "eyebrow": "Transparency",
       "note": "Indicative breakdown for the current financial year, updated quarterly. Every donation can be traced through to how it is actually spent on the ground.",
@@ -1691,6 +1690,28 @@
           "WARM": "Warm"
         },
         "title": "Appearance"
+      },
+      "gtm": {
+        "embed": {
+          "bodyLabel": "Tag to add right after the body tag opens",
+          "headLabel": "Tag to add in the head",
+          "hint": "GTM tracking above only runs inside the CommonLink page loaded in the iframe. For reliable analytics on your own site, add these two official Google tags: the first in the head of your page, the second right after your body tag opens.",
+          "title": "Tags for your own site (iframe/script embed)"
+        },
+        "error": "Invalid format: expected GTM-XXXXXXX.",
+        "export": {
+          "download": "Download",
+          "failed": "The export could not be generated. Please try again.",
+          "hint": "Copy this HTML or download it to publish it as-is on your own site: it's a snapshot of your CommonLink landing page's actual content (taken now, not updated automatically) with Google Tag Manager tracking added and the donation form served via widget.js — it stays fully functional and never breaks, even after a CommonLink update. Regenerate it after any content change. If widget.js is already installed on that same site with this container ID, each visit will be counted twice until event-based tracking is configured in GTM.",
+          "loading": "Generating the export…",
+          "reload": "Regenerate",
+          "title": "Standalone HTML page"
+        },
+        "hint": "Enter your GTM container ID to enable Google Ad Grants tracking on your landing page and your widget. Detailed tracking (dataLayer) will be added in a future update.",
+        "label": "GTM container ID",
+        "placeholder": "GTM-XXXXXXX",
+        "save": "Save",
+        "title": "Google Tag Manager"
       },
       "iframeTitle": "Donate",
       "prereq": {
@@ -1805,7 +1826,7 @@
     "amounts": {
       "custom": "Other amount (€)",
       "customPlaceholder": "Enter amount",
-      "remaining": "This campaign can still collect {amount} €.",
+      "nearingCap": "Some amounts are unavailable: this campaign is nearing its collection cap.",
       "title": "Select an amount"
     },
     "anonymous": {

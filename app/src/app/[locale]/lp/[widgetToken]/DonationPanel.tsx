@@ -2,11 +2,13 @@
 
 import { useTranslations } from 'next-intl';
 import { DonationForm } from '@/components/donation/DonationForm';
+import type { DonationTrackingContext } from '@/lib/donation/useGuestDonation';
 
 interface Props {
   widgetToken: string;
   sourceSite: string | null;
   locale: string;
+  tracking: DonationTrackingContext;
   /** Renders every field and the submit button disabled — preview on an unpublished campaign. */
   disabled?: boolean;
   /** Amount the campaign may still accept; forwarded to the form's collection-cap guard. */
@@ -18,6 +20,7 @@ export function DonationPanel({
   widgetToken,
   sourceSite,
   locale,
+  tracking,
   disabled,
   remainingCapacity,
   onAmountChange,
@@ -33,6 +36,7 @@ export function DonationPanel({
         widgetToken={widgetToken}
         sourceSite={sourceSite}
         locale={locale}
+        tracking={tracking}
         submitLabel={(amount) => (amount ? t('donate.submitWithAmount', { amount }) : undefined)}
         disabled={disabled}
         remainingCapacity={remainingCapacity}

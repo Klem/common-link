@@ -75,6 +75,7 @@ const baseProfile: AssociationProfileDto = {
   landingShowProject: true,
   landingShowTransparency: true,
   landingShowTrust: true,
+  gtmContainerId: null,
 };
 
 const onTokenChanged = vi.fn().mockResolvedValue(undefined);

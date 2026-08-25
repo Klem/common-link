@@ -41,6 +41,7 @@ const mockProfile: AssociationProfileDto = {
   landingShowProject: true,
   landingShowTransparency: true,
   landingShowTrust: true,
+  gtmContainerId: null,
 };
 
 vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({
@@ -77,10 +78,6 @@ vi.mock('@/components/dashboard/Topbar', () => ({
 
 vi.mock('@/components/auth/SetPasswordForm', () => ({
   SetPasswordForm: () => null,
-}));
-
-vi.mock('@/components/dashboard/MoneriumOnboardModal', () => ({
-  default: () => null,
 }));
 
 // ── Tests ────────────────────────────────────────────────────────────────────

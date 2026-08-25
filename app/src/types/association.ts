@@ -78,6 +78,8 @@ export interface AssociationProfileDto {
   landingShowTransparency: boolean;
   /** Whether the landing page shows the "donate with confidence" section. */
   landingShowTrust: boolean;
+  /** Google Tag Manager container ID for Ad Grants tracking. Null if not configured. */
+  gtmContainerId: string | null;
 }
 
 /**
@@ -89,6 +91,11 @@ export interface UpdateLandingConfigRequest {
   showProject?: boolean;
   showTransparency?: boolean;
   showTrust?: boolean;
+  /**
+   * Google Tag Manager container ID (e.g. `GTM-XXXXXXX`). Omitted/undefined leaves the current
+   * value unchanged; an empty string clears it.
+   */
+  gtmContainerId?: string;
 }
 
 /** Response shape for `POST /api/association/me/landing/preview-session`. */

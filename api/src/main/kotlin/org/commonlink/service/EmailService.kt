@@ -141,4 +141,25 @@ interface EmailService {
      * @param email Account holder's email address.
      */
     fun sendPasswordChanged(email: String)
+
+    /**
+     * Sends a technical incident report to the developer mailbox (`app.technical`).
+     *
+     * Called only by [TechnicalAlertService], which owns the throttling and decides what is worth
+     * reporting; this method just renders and delivers. Nothing user-identifying reaches it: the
+     * caller passes a request path stripped of its query string, never headers or a request body.
+     *
+     * @param recipientEmail Developer/on-call mailbox.
+     * @param severity       Severity label carried in the subject, e.g. `ERROR`.
+     * @param title          Short description of the incident class.
+     * @param context        Ordered label/value pairs rendered as the body table.
+     * @param stackTrace     Pre-rendered, already-truncated stack trace, or `null` for burst alerts.
+     */
+    fun sendTechnicalAlert(
+        recipientEmail: String,
+        severity: String,
+        title: String,
+        context: Map<String, String>,
+        stackTrace: String?,
+    )
 }

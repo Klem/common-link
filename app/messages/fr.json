@@ -1655,7 +1655,6 @@
       "label": "Faire un don"
     },
     "transparency": {
-      "budgetHash": "Empreinte du budget ancrée on-chain :",
       "commitmentsTitle": "Nos engagements de transparence",
       "eyebrow": "Transparence",
       "note": "Répartition indicative sur l'exercice en cours, actualisée chaque trimestre. Chaque don est traçable jusqu'à son utilisation réelle sur le terrain.",
@@ -1691,6 +1690,28 @@
           "WARM": "Chaleureuse"
         },
         "title": "Apparence"
+      },
+      "gtm": {
+        "embed": {
+          "bodyLabel": "Balise à ajouter juste après l'ouverture du body",
+          "headLabel": "Balise à ajouter dans le head",
+          "hint": "Le suivi GTM ci-dessus ne s'exécute qu'à l'intérieur de la page CommonLink chargée dans l'iframe. Pour un suivi fiable sur votre propre site, ajoutez ces deux balises officielles Google : la première dans le head de votre page, la seconde juste après l'ouverture du body.",
+          "title": "Balises pour votre propre site (intégration iframe/script)"
+        },
+        "error": "Format invalide : attendu GTM-XXXXXXX.",
+        "export": {
+          "download": "Télécharger",
+          "failed": "L'export n'a pas pu être généré. Veuillez réessayer.",
+          "hint": "Copiez ce HTML ou téléchargez-le pour le publier tel quel sur votre propre site : c'est un instantané du contenu actuel de votre landing page CommonLink (pris maintenant, non mis à jour automatiquement), avec le suivi Google Tag Manager ajouté et le formulaire de don servi via widget.js — il reste pleinement fonctionnel et ne casse jamais, même après une mise à jour de CommonLink. Régénérez-le après toute modification du contenu. Si widget.js est déjà installé sur ce même site avec cet identifiant, chaque visite sera comptée deux fois tant que le suivi par événements n'est pas configuré dans GTM.",
+          "loading": "Génération de l'export…",
+          "reload": "Régénérer",
+          "title": "Page HTML autonome"
+        },
+        "hint": "Renseignez l'identifiant de votre conteneur GTM pour activer le suivi Google Ad Grants sur votre landing page et votre widget. Le tracking détaillé (dataLayer) sera ajouté dans une prochaine version.",
+        "label": "Identifiant du conteneur GTM",
+        "placeholder": "GTM-XXXXXXX",
+        "save": "Enregistrer",
+        "title": "Google Tag Manager"
       },
       "iframeTitle": "Faire un don",
       "prereq": {
@@ -1805,7 +1826,7 @@
     "amounts": {
       "custom": "Autre montant (€)",
       "customPlaceholder": "Saisir un montant",
-      "remaining": "Cette campagne peut encore collecter {amount} €.",
+      "nearingCap": "Certains montants ne sont plus disponibles : cette campagne approche de son plafond de collecte.",
       "title": "Choisissez un montant"
     },
     "anonymous": {

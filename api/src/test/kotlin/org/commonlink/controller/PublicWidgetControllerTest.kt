@@ -98,6 +98,7 @@ class PublicWidgetControllerTest {
     private val sampleResponse = CreateGuestDonationResponse(
         checkoutUrl = "https://www.mollie.com/checkout/pay/tr_test123",
         paymentId = "tr_test123",
+        publicRef = UUID.randomUUID(),
     )
 
     // ── GET /widget/{token} ──────────────────────────────────────────────────
@@ -329,16 +330,18 @@ class PublicWidgetControllerTest {
         ).andExpect(status().isNotFound)
     }
 
-    // ── GET /widget/donations/{paymentId}/status ─────────────────────────────
+    // ── GET /widget/donations/{ref}/status ────────────────────────────────────
 
     @Test
     fun `getDonationStatus - 200 CONFIRMED when donation is confirmed`() {
-        every { publicWidgetService.getDonationStatus("tr_test123") } returns
-            DonationStatusDto(DonationPublicStatus.CONFIRMED)
+        val ref = UUID.randomUUID()
+        every { publicWidgetService.getDonationStatus(ref) } returns
+            DonationStatusDto(DonationPublicStatus.CONFIRMED, method = "creditcard")
 
-        mockMvc.perform(get("/api/public/widget/donations/tr_test123/status"))
+        mockMvc.perform(get("/api/public/widget/donations/$ref/status"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.status").value("CONFIRMED"))
+            .andExpect(jsonPath("$.method").value("creditcard"))
             .andExpect(jsonPath("$.id").doesNotExist())
             .andExpect(jsonPath("$.donorId").doesNotExist())
             .andExpect(jsonPath("$.campaignId").doesNotExist())
@@ -347,19 +350,22 @@ class PublicWidgetControllerTest {
 
     @Test
     fun `getDonationStatus - 200 PENDING when donation is not yet confirmed`() {
-        every { publicWidgetService.getDonationStatus("tr_pending") } returns
+        val ref = UUID.randomUUID()
+        every { publicWidgetService.getDonationStatus(ref) } returns
             DonationStatusDto(DonationPublicStatus.PENDING)
 
-        mockMvc.perform(get("/api/public/widget/donations/tr_pending/status"))
+        mockMvc.perform(get("/api/public/widget/donations/$ref/status"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.status").value("PENDING"))
+            .andExpect(jsonPath("$.method").doesNotExist())
     }
 
     @Test
-    fun `getDonationStatus - 404 for unknown paymentId`() {
-        every { publicWidgetService.getDonationStatus("tr_unknown") } throws NotFoundException("Payment not found")
+    fun `getDonationStatus - 404 for unknown ref`() {
+        val ref = UUID.randomUUID()
+        every { publicWidgetService.getDonationStatus(ref) } throws NotFoundException("Payment not found")
 
-        mockMvc.perform(get("/api/public/widget/donations/tr_unknown/status"))
+        mockMvc.perform(get("/api/public/widget/donations/$ref/status"))
             .andExpect(status().isNotFound)
     }
 

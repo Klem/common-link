@@ -206,6 +206,7 @@ describe('EmbedDonateClient', () => {
     mockCreateGuestDonation.mockResolvedValue({
       checkoutUrl: 'https://checkout.mollie.com/pay/tr_test123',
       paymentId: 'tr_test123',
+      publicRef: 'ref-test123',
     });
     const locationSpy = vi.fn();
     Object.defineProperty(window, 'location', {

@@ -3,12 +3,14 @@
 import { useState, type ReactNode } from 'react';
 import { DonationPanel } from './DonationPanel';
 import { StickyBar } from './StickyBar';
+import type { DonationTrackingContext } from '@/lib/donation/useGuestDonation';
 
 interface Props {
   widgetToken: string;
   sourceSite: string | null;
   locale: string;
   campaignName: string;
+  tracking: DonationTrackingContext;
   /** False in preview mode on an unpublished campaign — the form is then rendered disabled. */
   donationsEnabled?: boolean;
   /** Amount the campaign may still accept; forwarded to the donation form's collection-cap guard. */
@@ -21,6 +23,7 @@ export function LandingClient({
   sourceSite,
   locale,
   campaignName,
+  tracking,
   donationsEnabled = true,
   remainingCapacity,
   children,
@@ -37,6 +40,7 @@ export function LandingClient({
               widgetToken={widgetToken}
               sourceSite={sourceSite}
               locale={locale}
+              tracking={tracking}
               disabled={!donationsEnabled}
               remainingCapacity={remainingCapacity}
               onAmountChange={setSelectedAmount}
