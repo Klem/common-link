@@ -133,6 +133,12 @@ export default async function LandingPage({ params, searchParams }: Props) {
         sourceSite={data.widgetAllowedOrigin ?? null}
         locale={locale}
         campaignName={data.campaignName}
+        tracking={{
+          campaignId: data.campaignId,
+          campaignName: data.campaignName,
+          associationName: data.associationName,
+          currency: data.currency,
+        }}
         donationsEnabled={data.donationsEnabled}
         remainingCapacity={data.remainingCapacity}
       >

@@ -104,4 +104,12 @@ class Donation(
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level", nullable = false, length = 20)
     val riskLevel: RiskLevel = RiskLevel.STANDARD,
+
+    /**
+     * Opaque correlation id minted before the Mollie redirect, carried on the return URL so the
+     * `/return` page can poll [org.commonlink.dto.DonationStatusDto] without exposing [providerRef]
+     * or any internal donor/campaign id. Null for donations created outside the public widget flow.
+     */
+    @Column(name = "public_ref")
+    val publicRef: UUID? = null,
 )

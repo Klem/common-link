@@ -165,6 +165,8 @@ class DonationService(
      * @param sourceSite Sanitised origin site from the widget snippet (nullable, untrusted).
      * @param identity Fiscal identity snapshot required for the Cerfa 2041-RD receipt. Its
      *   [DonorIdentitySnapshot.birthDate] is not written: see the note on that field.
+     * @param publicRef Opaque correlation id minted by the caller before the Mollie redirect;
+     *   stored so the `/return` page can poll status by it. Null outside the public widget flow.
      */
     @Transactional
     fun initiatePendingDonation(
@@ -174,6 +176,7 @@ class DonationService(
         amount: BigDecimal,
         sourceSite: String?,
         identity: DonorIdentitySnapshot,
+        publicRef: UUID? = null,
     ): Donation {
         val existing = donationRepository.findByProviderRef(providerRef)
         if (existing != null) {
@@ -202,6 +205,7 @@ class DonationService(
                 // donorBirthDate / donorBirthCity are deliberately left unset: the widget collects
                 // no birth city, and the birth date — facultative — is consumed by the freeze
                 // screening then discarded. See DonorIdentitySnapshot and Donation.donorBirthDate.
+                publicRef = publicRef,
             )
         ).also { logger.info("Created pending donation id={} providerRef={}", it.id, providerRef) }
     }

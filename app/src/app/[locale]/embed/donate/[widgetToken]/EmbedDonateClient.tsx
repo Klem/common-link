@@ -82,6 +82,12 @@ export function EmbedDonateClient({ widgetToken, sourceSite, locale }: Props) {
         widgetToken={widgetToken}
         sourceSite={sourceSite}
         locale={locale}
+        tracking={{
+          campaignId: widget.campaignId,
+          campaignName: widget.campaignName,
+          associationName: widget.associationName,
+          currency: widget.currency,
+        }}
         skin="default"
         remainingCapacity={widget.remainingCapacity}
       />

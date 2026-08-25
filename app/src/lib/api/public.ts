@@ -48,6 +48,12 @@ export interface CreateGuestDonationRequest {
 export interface CreateGuestDonationResponse {
   checkoutUrl: string;
   paymentId: string;
+  /**
+   * Opaque correlation id also embedded in the Mollie redirect URL (`ref` query param). Use it as
+   * the GA4 `transaction_id` on the `begin_checkout` push made before redirecting, so it matches
+   * the `purchase` push made on the return page.
+   */
+  publicRef: string;
 }
 
 export const getWidget = (token: string): Promise<PublicWidgetDto> =>
@@ -69,11 +75,17 @@ export type DonationReturnStatus = (typeof DonationReturnStatus)[keyof typeof Do
 
 export interface DonationStatusResponse {
   status: DonationReturnStatus;
+  /** Payment method used by the donor (e.g. `creditcard`, `banktransfer`). Set only when CONFIRMED. */
+  method?: string;
 }
 
-export const getDonationStatus = (paymentId: string): Promise<DonationStatusResponse> =>
+/**
+ * Polls donation confirmation status by the opaque `ref` carried on the Mollie return URL —
+ * not the Mollie payment id, not any internal donor/campaign id.
+ */
+export const getDonationStatus = (ref: string): Promise<DonationStatusResponse> =>
   publicApi
-    .get<DonationStatusResponse>(`/api/public/widget/donations/${paymentId}/status`)
+    .get<DonationStatusResponse>(`/api/public/widget/donations/${ref}/status`)
     .then((r) => r.data);
 
 export interface LandingBudgetPostDto {

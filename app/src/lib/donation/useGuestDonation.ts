@@ -5,15 +5,25 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { createGuestDonation } from '@/lib/api/public';
+import { pushDonationEvent, captureUtmParams } from '@/lib/gtm';
 import { donationSchema, type DonationFormData } from './donationSchema';
+
+/** Campaign/association context needed to fill the GA4 ecommerce `items`/`affiliation` fields. */
+export interface DonationTrackingContext {
+  campaignId: string;
+  campaignName: string;
+  associationName: string;
+  currency: string;
+}
 
 interface UseGuestDonationOptions {
   widgetToken: string;
   sourceSite: string | null;
   locale: string;
+  tracking: DonationTrackingContext;
 }
 
-export function useGuestDonation({ widgetToken, sourceSite, locale }: UseGuestDonationOptions) {
+export function useGuestDonation({ widgetToken, sourceSite, locale, tracking }: UseGuestDonationOptions) {
   const t = useTranslations('widget');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
@@ -41,6 +51,17 @@ export function useGuestDonation({ widgetToken, sourceSite, locale }: UseGuestDo
         sourceSite,
         locale,
       });
+      pushDonationEvent(
+        'begin_checkout',
+        {
+          transaction_id: response.publicRef,
+          value: data.amount,
+          currency: tracking.currency,
+          items: [{ item_id: tracking.campaignId, item_name: tracking.campaignName }],
+          affiliation: tracking.associationName,
+        },
+        { anonymous: data.anonymousDisplay, utm: captureUtmParams() },
+      );
       const top = typeof window !== 'undefined' ? window.top : null;
       if (top) {
         top.location.href = response.checkoutUrl;

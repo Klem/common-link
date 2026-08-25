@@ -12,6 +12,7 @@ import org.commonlink.dto.toDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.Donation
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.MolliePaymentException
 import org.commonlink.exception.NotFoundException
@@ -47,6 +48,7 @@ class PublicWidgetService(
     private val landingPreviewTokenService: LandingPreviewTokenService,
     private val freezeScreeningDonationService: FreezeScreeningDonationService,
     private val donationCapService: DonationCapService,
+    private val mollieWebhookService: MollieWebhookService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -133,8 +135,23 @@ class PublicWidgetService(
         val amountCents = request.amount.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toLong()
         val idempotencyKey = buildIdempotencyKey(widgetToken, donorProfile.id!!, amountCents, mollieProperties.webhookUrl)
 
+        // Minted here, not read off molliePayment.id below: Mollie's own payment id does not exist
+        // yet at this point (it is only known once createPayment returns), so it cannot be embedded
+        // in the URL passed *into* that call. This id is what the /return page polls status by —
+        // never providerRef, never an internal donor/campaign id.
+        val publicRef = UUID.randomUUID()
+
         val base = "${mollieProperties.redirectBaseUrl}/$safeLocale/embed/donate/$widgetToken/return"
-        val redirectUrl = if (encodedSource != null) "$base?source=$encodedSource" else base
+        // Carried on the success redirect only — the dataLayer `purchase` push on /return needs it,
+        // the cancelled path never fires that event so cancelUrl stays free of donation data.
+        val trackingQuery = "ref=$publicRef" +
+            "&amount=${request.amount.toPlainString()}" +
+            "&currency=EUR" +
+            "&campaignId=${campaign.id}" +
+            "&campaignName=${URLEncoder.encode(campaign.name, StandardCharsets.UTF_8)}" +
+            "&associationName=${URLEncoder.encode(association.name, StandardCharsets.UTF_8)}" +
+            "&anonymous=${request.anonymousDisplay}"
+        val redirectUrl = if (encodedSource != null) "$base?$trackingQuery&source=$encodedSource" else "$base?$trackingQuery"
         val cancelUrl = if (encodedSource != null) "$base?cancelled=true&source=$encodedSource" else "$base?cancelled=true"
         val description = "Don - ${campaign.name}".take(255)
 
@@ -167,13 +184,14 @@ class PublicWidgetService(
             amount = request.amount,
             sourceSite = cleanSourceSite,
             identity = identity,
+            publicRef = publicRef,
         )
 
         val checkoutUrl = molliePayment.checkoutUrl
             ?: throw MolliePaymentException("Mollie returned no checkout URL for payment ${molliePayment.id}")
 
         logger.info("Pending donation created — mollieId={} campaign={}", molliePayment.id, campaign.id)
-        return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id)
+        return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id, publicRef = publicRef)
     }
 
     companion object {
@@ -244,18 +262,53 @@ class PublicWidgetService(
     }
 
     /**
-     * Returns the public confirmation status of a donation by its Mollie payment ID.
+     * Returns the public confirmation status of a donation by its opaque [Donation.publicRef].
      *
-     * Used by the return page to poll for confirmation.
-     * Leaks no internal data — only PENDING or CONFIRMED.
+     * Used by the `/return` page to poll for confirmation before pushing the `purchase` dataLayer
+     * event. Leaks no internal data: no providerRef, no donor/campaign id — [method] is the only
+     * addition beyond PENDING/CONFIRMED, and it is set only once confirmed (the donor already knows
+     * which method they used, so nothing new is disclosed).
      *
-     * @throws [NotFoundException] if no donation exists for this paymentId.
+     * While still pending, makes a best-effort live Mollie status check ([tryLiveConfirm]) instead of
+     * waiting on the webhook: Mollie confirms a card payment in seconds, but webhook *delivery* can lag
+     * 1-30s, and the `/return` page only polls for a few seconds before giving up and redirecting.
+     *
+     * @throws [NotFoundException] if no donation exists for this ref.
      */
-    fun getDonationStatus(paymentId: String): DonationStatusDto {
-        val donation = donationRepository.findByProviderRef("mollie:$paymentId")
+    fun getDonationStatus(publicRef: UUID): DonationStatusDto {
+        var donation = donationRepository.findByPublicRef(publicRef)
             ?: throw NotFoundException("Payment not found")
-        val status = if (donation.confirmedAt != null) DonationPublicStatus.CONFIRMED else DonationPublicStatus.PENDING
-        return DonationStatusDto(status)
+
+        if (donation.confirmedAt == null) {
+            donation = tryLiveConfirm(publicRef, donation.providerRef) ?: donation
+        }
+
+        val confirmed = donation.confirmedAt != null
+        return DonationStatusDto(
+            status = if (confirmed) DonationPublicStatus.CONFIRMED else DonationPublicStatus.PENDING,
+            method = donation.paymentMethod.takeIf { confirmed },
+        )
+    }
+
+    /**
+     * Re-fetches [providerRef]'s payment status from Mollie right now and, if paid, confirms it —
+     * reusing [MollieWebhookService.handleWebhook] so campaign credit / receipt / on-chain enqueue
+     * always go through the exact same path regardless of whether this call or the later webhook
+     * confirms first (the latter becomes a no-op via [DonationService.recordPayment]'s confirmedAt guard).
+     *
+     * Never propagates a failure: a Mollie outage, a broken Connect token, or a non-Mollie
+     * [providerRef] must not break donor-facing status polling. Falls back to the caller's own
+     * (unconfirmed) copy of the donation on any error.
+     */
+    private fun tryLiveConfirm(publicRef: UUID, providerRef: String): Donation? {
+        if (!providerRef.startsWith("mollie:")) return null
+        return try {
+            mollieWebhookService.handleWebhook(providerRef.removePrefix("mollie:"))
+            donationRepository.findByPublicRef(publicRef)
+        } catch (e: Exception) {
+            logger.debug("Live Mollie status check failed for publicRef={}", publicRef, e)
+            null
+        }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

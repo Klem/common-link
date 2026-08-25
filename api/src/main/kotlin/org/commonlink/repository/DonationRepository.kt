@@ -273,4 +273,7 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         @Param("campaignId") campaignId: UUID,
         pageable: Pageable,
     ): Page<Donation>
+
+    /** Looks up a donation by the opaque [Donation.publicRef] handed to the donor on the Mollie redirect URL. */
+    fun findByPublicRef(publicRef: UUID): Donation?
 }

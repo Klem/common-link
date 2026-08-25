@@ -195,3 +195,7 @@ logging:
   level:
     org.commonlink: DEBUG
     org.springframework.security: INFO
+    # Intentional: SecurityConfig.authenticationProvider() wires UserDetailsServiceImpl manually
+    # into a DaoAuthenticationProvider for programmatic JWT login. The startup warning about
+    # UserDetailsService beans being ignored doesn't apply here — silence it, don't remove the bean.
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR

@@ -14,6 +14,13 @@ import { createGuestDonation } from '@/lib/api/public';
 
 const mockCreateGuestDonation = createGuestDonation as ReturnType<typeof vi.fn>;
 
+const TRACKING_FIXTURE = {
+  campaignId: 'campaign-1',
+  campaignName: 'Test Campaign',
+  associationName: 'Test Association',
+  currency: 'EUR',
+};
+
 /**
  * Fills every field the backend still requires.
  *
@@ -53,7 +60,8 @@ describe('DonationForm — skin default', () => {
 
   it('renders amount buttons with btn-outline class for unselected amounts', () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
     const btn10 = screen.getByText('10 €');
     expect(btn10.className).toContain('btn-outline');
@@ -62,7 +70,8 @@ describe('DonationForm — skin default', () => {
 
   it('renders selected amount button with btn-primary class', async () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
     fireEvent.click(screen.getByText('25 €'));
     await waitFor(() => {
@@ -73,7 +82,8 @@ describe('DonationForm — skin default', () => {
 
   it('uses form-group, form-label, form-input classes for fields', () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
     const emailInput = screen.getByLabelText(/identity.email/i);
     expect(emailInput.className).toContain('form-input');
@@ -82,7 +92,8 @@ describe('DonationForm — skin default', () => {
 
   it('submit button uses btn-primary class', () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
     const btn = screen.getByRole('button', { name: 'submit' });
     expect(btn.className).toContain('btn-primary');
@@ -92,14 +103,16 @@ describe('DonationForm — skin default', () => {
 describe('DonationForm — skin landing', () => {
   it('renders amount buttons with lp-amount-btn class', () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="landing" />,
     );
     expect(screen.getByText('10 €').className).toContain('lp-amount-btn');
   });
 
   it('selected amount uses lp-amount-btn--active class', async () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="landing" />,
     );
     fireEvent.click(screen.getByText('50 €'));
     await waitFor(() => {
@@ -109,7 +122,8 @@ describe('DonationForm — skin landing', () => {
 
   it('submit button uses lp-submit-btn class', () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="landing" />,
     );
     const btn = screen.getByRole('button', { name: 'submit' });
     expect(btn.className).toContain('lp-submit-btn');
@@ -125,7 +139,8 @@ describe('DonationForm — 409 blocked state', () => {
   it('shows errors.notCollecting and disables form on 409 response', async () => {
     mockCreateGuestDonation.mockRejectedValue({ response: { status: 409 } });
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
     fillValidForm();
@@ -142,7 +157,8 @@ describe('DonationForm — 409 blocked state', () => {
   it('shows errors.submitFailed on generic error', async () => {
     mockCreateGuestDonation.mockRejectedValue(new Error('network'));
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
     fillValidForm();
@@ -163,6 +179,7 @@ describe('DonationForm — submitLabel prop', () => {
         widgetToken="clk_test"
         sourceSite={null}
         locale="fr"
+            tracking={TRACKING_FIXTURE}
         skin="default"
         submitLabel={(amount) => (amount ? `Donate ${amount}€` : undefined)}
       />,
@@ -179,6 +196,7 @@ describe('DonationForm — submitLabel prop', () => {
         widgetToken="clk_test"
         sourceSite={null}
         locale="fr"
+            tracking={TRACKING_FIXTURE}
         skin="default"
         submitLabel={() => undefined}
       />,
@@ -199,7 +217,8 @@ describe('DonationForm — collection cap', () => {
   });
 
   it('leaves the cap entirely to the backend when no capacity is provided', () => {
-    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />);
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />);
 
     expect(screen.queryByText('amounts.nearingCap')).not.toBeInTheDocument();
     expect(screen.getByText('100 €')).not.toBeDisabled();
@@ -211,6 +230,7 @@ describe('DonationForm — collection cap', () => {
         widgetToken="clk_test"
         sourceSite={null}
         locale="fr"
+            tracking={TRACKING_FIXTURE}
         skin="default"
         remainingCapacity={30}
       />,
@@ -228,6 +248,7 @@ describe('DonationForm — collection cap', () => {
         widgetToken="clk_test"
         sourceSite={null}
         locale="fr"
+            tracking={TRACKING_FIXTURE}
         skin="default"
         remainingCapacity={30}
       />,
@@ -247,6 +268,7 @@ describe('DonationForm — collection cap', () => {
         widgetToken="clk_test"
         sourceSite={null}
         locale="fr"
+            tracking={TRACKING_FIXTURE}
         skin="default"
         remainingCapacity={0}
       />,
@@ -268,6 +290,7 @@ describe('DonationForm — collection cap', () => {
         widgetToken="clk_test"
         sourceSite={null}
         locale="fr"
+            tracking={TRACKING_FIXTURE}
         skin="landing"
         disabled
         remainingCapacity={0}
@@ -287,7 +310,8 @@ describe('DonationForm — collection cap', () => {
     mockCreateGuestDonation.mockRejectedValue({
       response: { status: 409, data: { code: 'COLLECTION_CAP_EXCEEDED', remainingCapacity: 12 } },
     });
-    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />);
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />);
 
     fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
@@ -313,7 +337,8 @@ describe('DonationForm — disabled prop (landing preview)', () => {
   }
 
   it('leaves every control enabled by default', () => {
-    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" />);
+    render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="landing" />);
 
     expect(controls().every((el) => !(el as HTMLInputElement).disabled)).toBe(true);
   });
@@ -322,7 +347,8 @@ describe('DonationForm — disabled prop (landing preview)', () => {
     // Preview of an unpublished campaign: the backend refuses the payment (409), so nothing in the
     // form may be clickable — an association clicking a live button would think its page is broken.
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" disabled />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="landing" disabled />,
     );
 
     expect(controls().every((el) => (el as HTMLInputElement).disabled)).toBe(true);
@@ -330,7 +356,8 @@ describe('DonationForm — disabled prop (landing preview)', () => {
 
   it('keeps the skin classes while disabled', () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="landing" disabled />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="landing" disabled />,
     );
 
     const btn = screen.getByRole('button', { name: 'submit' });
@@ -350,7 +377,8 @@ describe('DonationForm — date de naissance facultative', () => {
 
   it('submits with no birth date at all', async () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
     fillValidForm(null);
@@ -364,7 +392,8 @@ describe('DonationForm — date de naissance facultative', () => {
 
   it('sends the birth date when the donor fills it in', async () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
     fillValidForm('1990-01-15');
@@ -378,7 +407,8 @@ describe('DonationForm — date de naissance facultative', () => {
 
   it('never asks for a birth city', () => {
     render(
-      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />,
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
     expect(screen.queryByLabelText(/identity.birthCity/i)).toBeNull();
