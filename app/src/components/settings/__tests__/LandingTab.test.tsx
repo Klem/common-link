@@ -379,7 +379,7 @@ describe('LandingTab — GTM', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/gtm-export/clk_abc?gtmId=GTM-ABC1234');
 
     await waitFor(() => screen.getByText('gtm.export.download'));
-    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const textarea = screen.getByTestId('gtm-export-textarea') as HTMLTextAreaElement;
     expect(textarea.value).toContain('real landing content');
   });
 
@@ -389,7 +389,7 @@ describe('LandingTab — GTM', () => {
     renderTab({ ...liveProfile, gtmContainerId: 'GTM-ABC1234' });
 
     await waitFor(() => screen.getByText('gtm.export.failed'));
-    expect(document.querySelector('textarea')).toBeNull();
+    expect(screen.queryByTestId('gtm-export-textarea')).not.toBeInTheDocument();
 
     mockFetch.mockResolvedValue({
       ok: true,

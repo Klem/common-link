@@ -201,11 +201,11 @@ describe('DonationForm — collection cap', () => {
   it('leaves the cap entirely to the backend when no capacity is provided', () => {
     render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr" skin="default" />);
 
-    expect(screen.queryByText('amounts.remaining')).not.toBeInTheDocument();
+    expect(screen.queryByText('amounts.nearingCap')).not.toBeInTheDocument();
     expect(screen.getByText('100 €')).not.toBeDisabled();
   });
 
-  it('disables the presets above the remaining capacity', () => {
+  it('disables the presets above the remaining capacity and explains why without disclosing the amount', () => {
     render(
       <DonationForm
         widgetToken="clk_test"
@@ -219,6 +219,7 @@ describe('DonationForm — collection cap', () => {
     expect(screen.getByText('25 €')).not.toBeDisabled();
     expect(screen.getByText('50 €')).toBeDisabled();
     expect(screen.getByText('100 €')).toBeDisabled();
+    expect(screen.getByText('amounts.nearingCap')).toBeInTheDocument();
   });
 
   it('blocks the submit and explains why when the amount exceeds the capacity', async () => {
@@ -274,7 +275,7 @@ describe('DonationForm — collection cap', () => {
     );
 
     expect(screen.queryByText('errors.capFull')).not.toBeInTheDocument();
-    expect(screen.queryByText('amounts.remaining')).not.toBeInTheDocument();
+    expect(screen.queryByText('amounts.nearingCap')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
   });
 

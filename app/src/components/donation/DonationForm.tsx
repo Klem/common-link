@@ -84,6 +84,14 @@ export function DonationForm({
   // every control inert, so the rest of the form reads a single flag.
   const inert = blocked || disabled || campaignFull;
 
+  // At least one preset is disabled by the cap — explains the greyed-out buttons below without
+  // disclosing the exact remaining amount.
+  const nearingCap =
+    !disabled &&
+    !campaignFull &&
+    remainingCapacity !== undefined &&
+    remainingCapacity < Math.max(...SUGGESTED_AMOUNTS);
+
   const amountValue = watch('amount');
 
   /**
@@ -109,9 +117,7 @@ export function DonationForm({
       <div style={styles.section}>
         <p style={styles.sectionLabel}>{t('amounts.title')}</p>
         {campaignFull && <p className={s.error}>{t('errors.capFull')}</p>}
-        {!disabled && !campaignFull && remainingCapacity !== undefined && (
-          <p style={styles.hint}>{t('amounts.remaining', { amount: remainingCapacity })}</p>
-        )}
+        {nearingCap && <p style={styles.hint}>{t('amounts.nearingCap')}</p>}
         <div style={styles.amountGrid}>
           {SUGGESTED_AMOUNTS.map((preset) => (
             <button

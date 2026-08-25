@@ -1655,7 +1655,6 @@
       "label": "Faire un don"
     },
     "transparency": {
-      "budgetHash": "Empreinte du budget ancrée on-chain :",
       "commitmentsTitle": "Nos engagements de transparence",
       "eyebrow": "Transparence",
       "note": "Répartition indicative sur l'exercice en cours, actualisée chaque trimestre. Chaque don est traçable jusqu'à son utilisation réelle sur le terrain.",
@@ -1693,6 +1692,12 @@
         "title": "Apparence"
       },
       "gtm": {
+        "embed": {
+          "bodyLabel": "Balise à ajouter juste après l'ouverture du body",
+          "headLabel": "Balise à ajouter dans le head",
+          "hint": "Le suivi GTM ci-dessus ne s'exécute qu'à l'intérieur de la page CommonLink chargée dans l'iframe. Pour un suivi fiable sur votre propre site, ajoutez ces deux balises officielles Google : la première dans le head de votre page, la seconde juste après l'ouverture du body.",
+          "title": "Balises pour votre propre site (intégration iframe/script)"
+        },
         "error": "Format invalide : attendu GTM-XXXXXXX.",
         "export": {
           "download": "Télécharger",
@@ -1821,7 +1826,7 @@
     "amounts": {
       "custom": "Autre montant (€)",
       "customPlaceholder": "Saisir un montant",
-      "remaining": "Cette campagne peut encore collecter {amount} €.",
+      "nearingCap": "Certains montants ne sont plus disponibles : cette campagne approche de son plafond de collecte.",
       "title": "Choisissez un montant"
     },
     "anonymous": {

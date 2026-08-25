@@ -12,7 +12,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { CampaignStatus } from '@/types/campaign';
 import { LandingTheme, LANDING_THEMES } from '@/types/association';
 import { apiUrl } from '@/lib/api';
-import { GTM_ID_PATTERN } from '@/lib/gtm';
+import { GTM_ID_PATTERN, gtmHeadScript, gtmNoscriptIframe } from '@/lib/gtm';
 import { CopyableCode } from './CopyableCode';
 import { LandingPreviewModal } from './LandingPreviewModal';
 import type { AssociationProfileDto, UpdateLandingConfigRequest } from '@/types/association';
@@ -76,6 +76,8 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
   const [gtmExportCopied, setGtmExportCopied] = useState(false);
   const [gtmExportHtml, setGtmExportHtml] = useState<string | null>(null);
   const [gtmExportFailed, setGtmExportFailed] = useState(false);
+  const [gtmHeadTagCopied, setGtmHeadTagCopied] = useState(false);
+  const [gtmBodyTagCopied, setGtmBodyTagCopied] = useState(false);
 
   useEffect(() => {
     getCampaigns().then(setCampaigns).catch(() => {});
@@ -137,10 +139,10 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
     await patchConfig({ gtmContainerId: trimmed });
   };
 
-  const handleCopyGtmExport = async (html: string) => {
-    await navigator.clipboard.writeText(html);
-    setGtmExportCopied(true);
-    setTimeout(() => setGtmExportCopied(false), 2000);
+  const copyToClipboard = async (text: string, setCopied: (copied: boolean) => void) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownloadGtmExport = (html: string) => {
@@ -185,6 +187,12 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
   const showSnippets = !!widgetToken && isDestinationLive;
   const showGtmExport = showSnippets && !!profile?.gtmContainerId;
   const gtmContainerId = profile?.gtmContainerId ?? null;
+
+  // The iframe/script embed loads the landing page cross-origin: our own GTM auto-injection
+  // (`GtmSnippet`) only fires inside that iframe's document, never on the association's own page.
+  // Offered as plain copy/paste — same builders the standalone export already uses.
+  const gtmHeadTag = gtmContainerId ? `<script>${gtmHeadScript(gtmContainerId)}</script>` : '';
+  const gtmBodyTag = gtmContainerId ? `<noscript>${gtmNoscriptIframe(gtmContainerId)}</noscript>` : '';
 
   /**
    * Fetches a fresh standalone export from `/api/gtm-export/{widgetToken}` — a snapshot of the
@@ -419,6 +427,50 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
                 <CopyableCode value={iframeCode} copyLabel={copyLabel} copiedLabel={copiedLabel} />
               </div>
               {showGtmExport && (
+                <div className="fg" style={{ marginBottom: 20 }}>
+                  <label className="fl">{t('gtm.embed.title')}</label>
+                  <p className="fhint" style={{ marginBottom: 6 }}>{t('gtm.embed.hint')}</p>
+
+                  <p className="fhint" style={{ marginBottom: 4 }}>{t('gtm.embed.headLabel')}</p>
+                  <textarea
+                    className="fi"
+                    readOnly
+                    rows={4}
+                    value={gtmHeadTag}
+                    style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <div className="frow-actions" style={{ marginTop: 6, marginBottom: 12 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => copyToClipboard(gtmHeadTag, setGtmHeadTagCopied)}
+                    >
+                      {gtmHeadTagCopied ? copiedLabel : copyLabel}
+                    </button>
+                  </div>
+
+                  <p className="fhint" style={{ marginBottom: 4 }}>{t('gtm.embed.bodyLabel')}</p>
+                  <textarea
+                    className="fi"
+                    readOnly
+                    rows={2}
+                    value={gtmBodyTag}
+                    style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <div className="frow-actions" style={{ marginTop: 6 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => copyToClipboard(gtmBodyTag, setGtmBodyTagCopied)}
+                    >
+                      {gtmBodyTagCopied ? copiedLabel : copyLabel}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {showGtmExport && (
                 <div className="fg">
                   <label className="fl">{t('gtm.export.title')}</label>
                   <p className="fhint" style={{ marginBottom: 6 }}>{t('gtm.export.hint')}</p>
@@ -430,6 +482,7 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
                       readOnly
                       rows={10}
                       value={gtmExportHtml}
+                      data-testid="gtm-export-textarea"
                       style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
                       onFocus={(e) => e.target.select()}
                     />
@@ -440,7 +493,7 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => handleCopyGtmExport(gtmExportHtml)}
+                          onClick={() => copyToClipboard(gtmExportHtml, setGtmExportCopied)}
                         >
                           {gtmExportCopied ? copiedLabel : copyLabel}
                         </button>

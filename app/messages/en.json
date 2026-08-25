@@ -1655,7 +1655,6 @@
       "label": "Donate"
     },
     "transparency": {
-      "budgetHash": "Budget fingerprint anchored on-chain:",
       "commitmentsTitle": "Our transparency commitments",
       "eyebrow": "Transparency",
       "note": "Indicative breakdown for the current financial year, updated quarterly. Every donation can be traced through to how it is actually spent on the ground.",
@@ -1693,6 +1692,12 @@
         "title": "Appearance"
       },
       "gtm": {
+        "embed": {
+          "bodyLabel": "Tag to add right after the body tag opens",
+          "headLabel": "Tag to add in the head",
+          "hint": "GTM tracking above only runs inside the CommonLink page loaded in the iframe. For reliable analytics on your own site, add these two official Google tags: the first in the head of your page, the second right after your body tag opens.",
+          "title": "Tags for your own site (iframe/script embed)"
+        },
         "error": "Invalid format: expected GTM-XXXXXXX.",
         "export": {
           "download": "Download",
@@ -1821,7 +1826,7 @@
     "amounts": {
       "custom": "Other amount (€)",
       "customPlaceholder": "Enter amount",
-      "remaining": "This campaign can still collect {amount} €.",
+      "nearingCap": "Some amounts are unavailable: this campaign is nearing its collection cap.",
       "title": "Select an amount"
     },
     "anonymous": {

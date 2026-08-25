@@ -102,7 +102,7 @@ app:
   google:
     client-id: ${YOUR_GOOGLE_CLIENT_ID:}
   mail:
-    from: ${MAIL_FROM:noreply@commonlink.org}
+    from: ${MAIL_FROM:no-reply@commonlink.org}
   technical:
     # Developer/on-call mailbox for technical incidents raised by GlobalExceptionHandler
     # (TechnicalAlertService): unhandled 500s, Mollie failures, unreachable upstreams, and bursts of

@@ -146,7 +146,6 @@ export default async function LandingPage({ params, searchParams }: Props) {
         {data.showTransparency && (
           <TransparencySection
             budget={data.budget}
-            budgetHash={data.budgetHash}
             milestones={data.milestones}
           />
         )}
