@@ -35,6 +35,29 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
 
     /** Sustained 429s: credential stuffing or scripted abuse rather than an impatient user. */
     RATE_LIMIT_BURST("Rafale de dépassements de quota (HTTP 429)", "WARN"),
+
+    /**
+     * A Mollie payment webhook reached the controller but blew up while being processed —
+     * distinct from [PAYMENT_GATEWAY_FAILURE], which is *our* outbound call to Mollie failing.
+     * The controller always answers Mollie 200 regardless, so without this the failure was
+     * logged and otherwise invisible.
+     */
+    WEBHOOK_PROCESSING_FAILURE("Échec de traitement d'un webhook paiement", "ERROR"),
+
+    /**
+     * [MolliePaymentReconciler] found a donation Mollie had already confirmed while the local
+     * row was still pending — the webhook that should have confirmed it either never arrived or
+     * failed processing without recovering on its own. The donation is self-healed by the
+     * reconciler; this alert exists only so a human learns the confirmation path itself is
+     * broken (e.g. a dead tunnel in local dev, or a firewall change), since
+     * [GlobalExceptionHandler]-based alerting cannot see an event that never reached the app.
+     *
+     * Not proof of a broken channel by itself: a donor using a slow-settling method (e.g. a bank
+     * transfer) can legitimately still be within `stale-after-minutes` when Mollie confirms, with
+     * the real webhook simply not having landed yet. The cooldown keeps that noise to at most one
+     * e-mail per window rather than one per donation.
+     */
+    MISSED_WEBHOOK("Callback Mollie manqué — confirmé par le réconciliateur", "ERROR"),
 }
 
 /**

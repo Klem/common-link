@@ -215,6 +215,8 @@ object TestFixtures {
      * @param amount Donation amount in euros.
      * @param confirmedAt When the payment was confirmed; null means unconfirmed.
      * @param typeCode Plan comptable prefix for budget variance reporting (default "74").
+     * @param createdAt Overridable so tests can simulate a donation old enough to be picked up by
+     *   [org.commonlink.service.MolliePaymentReconciler]'s staleness threshold.
      */
     fun donation(
         donor: DonorProfile,
@@ -224,6 +226,7 @@ object TestFixtures {
         confirmedAt: Instant? = Instant.now(),
         typeCode: String = "74",
         riskLevel: RiskLevel = RiskLevel.STANDARD,
+        createdAt: Instant = Instant.now(),
     ) = Donation(
         donor = donor,
         campaign = campaign,
@@ -232,6 +235,7 @@ object TestFixtures {
         confirmedAt = confirmedAt,
         typeCode = typeCode,
         riskLevel = riskLevel,
+        createdAt = createdAt,
     )
 
     // ── Mandates ─────────────────────────────────────────────────────────────
