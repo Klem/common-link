@@ -34,21 +34,6 @@ const MAX_LOGO_SIZE = 2 * 1024 * 1024;
 const LOGO_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
 /**
- * The three toggleable landing sections, in page order.
- *
- * Typed against both DTOs on purpose: a renamed or mistyped key fails to compile instead of
- * silently sending a field the backend ignores.
- */
-const SECTIONS: readonly {
-  key: keyof UpdateLandingConfigRequest & `show${string}`;
-  field: keyof AssociationProfileDto & `landingShow${string}`;
-}[] = [
-  { key: 'showProject', field: 'landingShowProject' },
-  { key: 'showTransparency', field: 'landingShowTransparency' },
-  { key: 'showTrust', field: 'landingShowTrust' },
-];
-
-/**
  * Fixed height of the JavaScript-free fallback snippet: without `landing.js` there is no
  * channel to report the real page height, so the host has to reserve a generous one.
  */
@@ -327,31 +312,6 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
               disabled={isSaving}
             />
           </div>
-        </div>
-      </div>
-
-      {/* ── Sections ──────────────────────────────────────────────────── */}
-      <div className="card no-hover" style={{ marginBottom: 24 }}>
-        <div className="card-h">
-          <h3>{t('sections.title')}</h3>
-        </div>
-        <div className="card-b">
-          <p className="fhint" style={{ marginBottom: 12 }}>{t('sections.hint')}</p>
-          {SECTIONS.map(({ key, field }) => (
-            <div key={key} className="lt-prereq-row">
-              <span className="lt-prereq-value">{t(`sections.${key}`)}</span>
-              <label className="lt-switch">
-                <input
-                  type="checkbox"
-                  checked={profile?.[field] ?? true}
-                  onChange={(e) => patchConfig({ [key]: e.target.checked })}
-                  disabled={isSaving}
-                />
-                <span className="lt-switch-track" aria-hidden="true" />
-              </label>
-            </div>
-          ))}
-          <p className="fhint" style={{ marginTop: 12 }}>{t('sections.donationLocked')}</p>
         </div>
       </div>
 

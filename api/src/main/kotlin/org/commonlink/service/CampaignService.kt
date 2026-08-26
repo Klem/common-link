@@ -680,10 +680,14 @@ class CampaignService(
      * Pre-save checks and preparation for the DRAFT→LIVE publish transition.
      * Sets [Campaign.budgetHash] on the campaign instance (persisted by the caller's save).
      *
-     * A balanced budget prévisionnel ([requireBalancedBudget]) and a stated expected outcome
-     * ([Campaign.impactGoals], at least [MIN_IMPACT_GOALS_LENGTH] characters) are publication
-     * blockers, not recommendations: a donor is asked for money against a costed plan and a
-     * declared result. Both predicates mirror `PrePublishModal.tsx` exactly (rule 8).
+     * A balanced budget prévisionnel ([requireBalancedBudget]), a stated expected outcome
+     * ([Campaign.impactGoals], at least [MIN_IMPACT_GOALS_LENGTH] characters) and a set calendrier
+     * ([Campaign.startDate], [Campaign.endDate]) are publication blockers, not recommendations: a
+     * donor is asked for money against a costed plan, a declared result and a stated collection
+     * period — the last three of the five elements the ACPR public-collection notice requires on
+     * the public landing page (`PublicWidgetService.getLanding`), the first two being the campaign's
+     * objet and montant cible, already required at creation. All predicates mirror
+     * `PrePublishModal.tsx` exactly (rule 8).
      *
      * The KYB guard re-checks [org.commonlink.entity.AssociationProfile.verificationStatus] at publish
      * time. The onboarding chain already implies it transitively (a signed mandate requires VERIFIED,
@@ -700,6 +704,11 @@ class CampaignService(
     private fun preparePublish(campaign: Campaign, associationId: UUID) {
         if (campaign.goal <= BigDecimal.ZERO) {
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
+        }
+        // Mirrors `required.dates` in PrePublishModal.tsx (rule 8) — the calendrier is one of the
+        // five elements the ACPR public-collection notice mandates on the public landing page.
+        if (campaign.startDate == null || campaign.endDate == null) {
+            throw UnprocessableEntityException("Campaign start and end dates must be set before publishing")
         }
         requireBalancedBudget(campaign)
         if ((campaign.impactGoals?.trim()?.length ?: 0) < MIN_IMPACT_GOALS_LENGTH) {

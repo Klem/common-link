@@ -391,6 +391,8 @@ class PublicWidgetControllerTest {
         campaignCategory = null,
         goal = BigDecimal("1000.00"),
         raised = BigDecimal("250.00"),
+        startDate = null,
+        endDate = null,
         coverImage = null,
         budget = emptyList(),
         budgetHash = null,

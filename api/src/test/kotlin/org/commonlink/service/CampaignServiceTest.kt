@@ -130,8 +130,9 @@ class CampaignServiceTest {
     }
 
     /**
-     * Satisfies the two *content* gates of `preparePublish`: a balanced budget prévisionnel
-     * (expenses = revenues, both non-zero) and an expected outcome of at least 20 characters.
+     * Satisfies the three *content* gates of `preparePublish`: a balanced budget prévisionnel
+     * (expenses = revenues, both non-zero), an expected outcome of at least 20 characters, and a
+     * set calendrier (startDate/endDate).
      *
      * Tests that exercise an account gate call this first, so the campaign is publishable in every
      * respect but the one under test — otherwise they would assert on the content message instead.
@@ -149,7 +150,11 @@ class CampaignServiceTest {
         )))
         campaignService.updateCampaign(
             ownerId, campaignId,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
     }
 
@@ -943,7 +948,11 @@ class CampaignServiceTest {
         campaignService.saveBudget(userId, campaign.id, budgetReq)
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         val jobsAfterPublish = onchainJobRepository.findAll().size
@@ -1001,7 +1010,11 @@ class CampaignServiceTest {
         )
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
 
         val ex = assertThrows<UnprocessableEntityException> {
@@ -1025,7 +1038,11 @@ class CampaignServiceTest {
         )))
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
 
         val ex = assertThrows<UnprocessableEntityException> {
@@ -1052,7 +1069,11 @@ class CampaignServiceTest {
         )))
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
 
         val result = campaignService.updateCampaign(
@@ -1074,6 +1095,13 @@ class CampaignServiceTest {
             SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
                 listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
         )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
+        )
 
         val whenNull = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
@@ -1085,5 +1113,28 @@ class CampaignServiceTest {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
         }
         assertTrue(whenShort.message!!.contains("impactGoals"))
+    }
+
+    @Test
+    fun `publish - missing calendrier returns 422`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No dates", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val error = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(error.message!!.contains("dates"))
     }
 }

@@ -5,6 +5,7 @@ import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.LandingTheme
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -19,9 +20,15 @@ import java.util.UUID
  * @param budgetHash Integrity hash of the published budget, null when no budget has been published.
  * @param landingTheme Visual palette chosen by the association. Drives the `--lp-*` token overrides.
  * @param landingLogo Public serving path of the association logo, null when none was uploaded.
- * @param showProject Whether the "what this donation funds" section must be rendered.
- * @param showTransparency Whether the budget / milestones section must be rendered.
- * @param showTrust Whether the "donate with confidence" section must be rendered.
+ * @param showProject Always true — the "what this donation funds" section carries ACPR-mandated
+ *   content (objet, montant cible, calendrier, résultat attendu) and cannot be hidden. Kept as a
+ *   field rather than dropped so the frontend contract doesn't shift under a still-stored,
+ *   still-editable [org.commonlink.entity.AssociationProfile.landingShowProject] preference.
+ * @param showTransparency Always true — same reasoning, for the budget section (description
+ *   chiffrée de l'utilisation prévue des fonds).
+ * @param showTrust Always true — the "donate with confidence" section is no longer gated by the
+ *   association's [org.commonlink.entity.AssociationProfile.landingShowTrust] preference either,
+ *   same treatment as [showProject] and [showTransparency]. Field kept for the same reason.
  * @param donationsEnabled False only in preview mode on a campaign that is not LIVE: the donation
  *   endpoint would refuse the payment, so the form must be rendered disabled instead of failing on
  *   submit. Always true on a normally served landing page, so nothing about the campaign lifecycle
@@ -46,6 +53,9 @@ data class PublicLandingDto(
     val goal: BigDecimal,
     val raised: BigDecimal,
     val currency: String = "EUR",
+    /** ACPR public-collection notice requires a visible calendrier; null when the association left it unset. */
+    val startDate: LocalDate?,
+    val endDate: LocalDate?,
     val coverImage: String?,
     val budget: List<LandingBudgetPostDto>,
     val budgetHash: String?,

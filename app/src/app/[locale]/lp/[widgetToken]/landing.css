@@ -318,6 +318,36 @@
   margin: 0 0 24px;
 }
 
+.lp-project-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.lp-project-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--lp-primary-soft);
+  border-radius: var(--lp-radius);
+  padding: 12px 18px;
+}
+
+.lp-project-fact-label {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--lp-text-mute);
+}
+
+.lp-project-fact-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--lp-primary-dark);
+}
+
 .lp-impact-box {
   background: var(--lp-secondary-soft);
   border-radius: var(--lp-radius);

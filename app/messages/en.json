@@ -1647,7 +1647,12 @@
       "label": "Preview"
     },
     "project": {
+      "calendarFrom": "Since {start}",
+      "calendarFull": "From {start} to {end}",
+      "calendarLabel": "Timeline",
+      "calendarUntil": "Until {end}",
       "eyebrow": "What your donation funds",
+      "goalLabel": "Fundraising goal",
       "impactTitle": "Impact goals"
     },
     "sticky": {
@@ -1707,7 +1712,7 @@
           "reload": "Regenerate",
           "title": "Standalone HTML page"
         },
-        "hint": "Enter your GTM container ID to enable Google Ad Grants tracking on your landing page and your widget. Detailed tracking (dataLayer) will be added in a future update.",
+        "hint": "Enter your GTM container ID to enable Google Ad Grants tracking on your landing page and your widget.",
         "label": "GTM container ID",
         "placeholder": "GTM-XXXXXXX",
         "save": "Save",
@@ -1734,14 +1739,6 @@
         "open": "Preview",
         "reload": "Refresh",
         "title": "Preview of your donation page"
-      },
-      "sections": {
-        "donationLocked": "The donation form is always shown: it is the purpose of the page.",
-        "hint": "Choose what your donation page shows. Changes are saved immediately.",
-        "showProject": "What the donation funds",
-        "showTransparency": "Budget transparency",
-        "showTrust": "Donate with confidence",
-        "title": "Page sections"
       },
       "snippet": {
         "copied": "Copied",

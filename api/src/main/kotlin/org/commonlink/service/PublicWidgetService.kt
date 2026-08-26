@@ -244,6 +244,8 @@ class PublicWidgetService(
             campaignCategory = campaign.category,
             goal = campaign.goal,
             raised = campaign.raised,
+            startDate = campaign.startDate,
+            endDate = campaign.endDate,
             coverImage = campaign.coverImage,
             budget = budget,
             budgetHash = campaign.budgetHash,
@@ -251,9 +253,14 @@ class PublicWidgetService(
             widgetAllowedOrigin = association.widgetAllowedOrigin,
             landingTheme = association.landingTheme,
             landingLogo = association.landingLogo,
-            showProject = association.landingShowProject,
-            showTransparency = association.landingShowTransparency,
-            showTrust = association.landingShowTrust,
+            // ACPR public-collection notice: objet, montant cible, calendrier, description chiffrée
+            // and résultat attendu are legally mandated — the association's landing preference
+            // (still stored, still editable) cannot hide them from the public page.
+            showProject = true,
+            showTransparency = true,
+            // Trust section preference is no longer honored either — same treatment, kept as a
+            // still-stored, still-editable field for the same reason.
+            showTrust = true,
             // Only ever false behind a valid preview token: resolveLanding would have thrown otherwise.
             donationsEnabled = campaign.status == CampaignStatus.LIVE,
             remainingCapacity = donationCapService.remainingCapacity(campaign),

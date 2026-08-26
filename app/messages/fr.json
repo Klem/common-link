@@ -1647,7 +1647,12 @@
       "label": "Aperçu"
     },
     "project": {
+      "calendarFrom": "Depuis le {start}",
+      "calendarFull": "Du {start} au {end}",
+      "calendarLabel": "Calendrier",
+      "calendarUntil": "Jusqu'au {end}",
       "eyebrow": "À quoi sert ce don",
+      "goalLabel": "Objectif de collecte",
       "impactTitle": "Objectifs d'impact"
     },
     "sticky": {
@@ -1707,7 +1712,7 @@
           "reload": "Régénérer",
           "title": "Page HTML autonome"
         },
-        "hint": "Renseignez l'identifiant de votre conteneur GTM pour activer le suivi Google Ad Grants sur votre landing page et votre widget. Le tracking détaillé (dataLayer) sera ajouté dans une prochaine version.",
+        "hint": "Renseignez l'identifiant de votre conteneur GTM pour activer le suivi Google Ad Grants sur votre landing page et votre widget.",
         "label": "Identifiant du conteneur GTM",
         "placeholder": "GTM-XXXXXXX",
         "save": "Enregistrer",
@@ -1734,14 +1739,6 @@
         "open": "Prévisualiser",
         "reload": "Rafraîchir",
         "title": "Aperçu de votre page de don"
-      },
-      "sections": {
-        "donationLocked": "Le formulaire de don est toujours affiché : c'est l'objet de la page.",
-        "hint": "Choisissez ce qu'affiche votre page de don. Les modifications sont enregistrées immédiatement.",
-        "showProject": "À quoi sert le don",
-        "showTransparency": "Transparence budgétaire",
-        "showTrust": "Votre don en toute confiance",
-        "title": "Sections de la page"
       },
       "snippet": {
         "copied": "Copié",

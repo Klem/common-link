@@ -264,6 +264,38 @@ class PublicWidgetServiceIntegrationTest {
         assertEquals(66, dto.taxReductionRate)
     }
 
+    @Test
+    fun `getLanding exposes goal and campaign calendar for the ACPR public-collection notice`() {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        val campaign = assoc.widgetDestinationCampaign!!
+        campaign.startDate = java.time.LocalDate.of(2026, 1, 1)
+        campaign.endDate = java.time.LocalDate.of(2026, 12, 31)
+        campaignRepository.save(campaign)
+        entityManager.flush()
+        entityManager.clear()
+
+        val dto = publicWidgetService.getLanding(widgetToken)
+
+        assertEquals(0, campaign.goal.compareTo(dto.goal))
+        assertEquals(java.time.LocalDate.of(2026, 1, 1), dto.startDate)
+        assertEquals(java.time.LocalDate.of(2026, 12, 31), dto.endDate)
+    }
+
+    @Test
+    fun `getLanding ignores landingShowProject, landingShowTransparency and landingShowTrust preferences`() {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        assoc.landingShowProject = false
+        assoc.landingShowTransparency = false
+        assoc.landingShowTrust = false
+        associationProfileRepository.save(assoc)
+
+        val dto = publicWidgetService.getLanding(widgetToken)
+
+        assertTrue(dto.showProject)
+        assertTrue(dto.showTransparency)
+        assertTrue(dto.showTrust)
+    }
+
     // ── Landing preview : contournement du gate LIVE ─────────────────────────
 
     @Test

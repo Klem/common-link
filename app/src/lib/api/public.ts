@@ -125,6 +125,9 @@ export interface PublicLandingDto {
   goal: number;
   raised: number;
   currency: string;
+  /** ISO 8601 (YYYY-MM-DD), null when the association left the calendrier unset. */
+  startDate: string | null;
+  endDate: string | null;
   coverImage: string | null;
   budget: LandingBudgetPostDto[];
   budgetHash: string | null;
