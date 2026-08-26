@@ -8,6 +8,20 @@ export const VerificationStatus = {
 export type VerificationStatus = typeof VerificationStatus[keyof typeof VerificationStatus];
 
 /**
+ * Compliance status of an association (IC-44 — canal de signalement de campagne).
+ *
+ * `ACTIVE` is normal. `ALERT` means a campaign report is open and awaiting compliance review —
+ * internal only, does not gate donations or public visibility. `SUSPENDED` means a report was
+ * confirmed founded and blocks every campaign of this association from accepting donations.
+ */
+export const AssociationStatus = {
+  ACTIVE: 'ACTIVE',
+  ALERT: 'ALERT',
+  SUSPENDED: 'SUSPENDED',
+} as const;
+export type AssociationStatus = typeof AssociationStatus[keyof typeof AssociationStatus];
+
+/**
  * Visual palette of an association's donation landing page.
  *
  * Single source of truth for both surfaces: the settings tab and the public landing page

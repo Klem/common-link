@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { listAlerts } from '@/lib/api/compliance';
+import { listAlerts, listCampaignReportAlerts } from '@/lib/api/compliance';
 import type { ComplianceAlertSummaryDto } from '@/types/compliance';
 import type { Page } from '@/types/payment';
 import { ROUTES } from '@/lib/routes';
@@ -29,10 +29,18 @@ function formatAge(ageSeconds: number, t: (key: string, values?: Record<string, 
   return t('alerts.ageFormat.minutes', { minutes });
 }
 
+type AlertTab = 'freeze' | 'campaign_report';
+
+const TAB_LOADERS: Record<AlertTab, typeof listAlerts> = {
+  freeze: listAlerts,
+  campaign_report: listCampaignReportAlerts,
+};
+
 export default function AlertsPage() {
   const locale = useLocale();
   const t = useTranslations('compliance');
 
+  const [tab, setTab] = useState<AlertTab>('freeze');
   const [currentPage, setCurrentPage] = useState(0);
   const [data, setData] = useState<Page<ComplianceAlertSummaryDto> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,14 +50,14 @@ export default function AlertsPage() {
     setIsLoading(true);
     setHasError(false);
     try {
-      const result = await listAlerts(currentPage);
+      const result = await TAB_LOADERS[tab](currentPage);
       setData(result);
     } catch {
       setHasError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage]);
+  }, [tab, currentPage]);
 
   useEffect(() => {
     loadData();
@@ -63,6 +71,30 @@ export default function AlertsPage() {
         </div>
       </div>
 
+      <div className="set-tabs" style={{ marginTop: 12 }}>
+        <button
+          type="button"
+          className={`btn btn-sm ${tab === 'freeze' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => {
+            setTab('freeze');
+            setCurrentPage(0);
+          }}
+        >
+          {t('alerts.tabs.freeze')}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${tab === 'campaign_report' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ marginLeft: 8 }}
+          onClick={() => {
+            setTab('campaign_report');
+            setCurrentPage(0);
+          }}
+        >
+          {t('alerts.tabs.campaignReport')}
+        </button>
+      </div>
+
       {isLoading && <p className="camp-loading">{t('alerts.loading')}</p>}
 
       {hasError && !isLoading && (
@@ -72,7 +104,9 @@ export default function AlertsPage() {
       {!isLoading && !hasError && data && (
         <>
           {data.content.length === 0 ? (
-            <p style={{ color: 'var(--color-text-2)', marginTop: 24 }}>{t('alerts.empty')}</p>
+            <p style={{ color: 'var(--color-text-2)', marginTop: 24 }}>
+              {t(tab === 'freeze' ? 'alerts.empty' : 'alerts.emptyCampaignReport')}
+            </p>
           ) : (
             <div style={{ overflowX: 'auto', marginTop: 16 }}>
               <table className="cm-table">

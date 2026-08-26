@@ -32,7 +32,7 @@ const FAKE_LANDING_HTML = `<!DOCTYPE html>
 </aside>
 </div>
 <div class="lp-sticky-bar" aria-hidden="true">Sticky CTA</div>
-<footer class="lp-footer">Mentions légales</footer>
+<footer class="lp-footer">Mentions légales<button type="button" class="lp-footer-report">Signaler cette campagne</button></footer>
 </div>
 <next-route-announcer style="position: absolute;"></next-route-announcer>
 </body>
@@ -98,6 +98,13 @@ describe('GET /api/gtm-export/[widgetToken]', () => {
     expect(html).toContain('Mon Asso');
     expect(html).toContain('Contenu projet');
     expect(html).toContain('Mentions légales');
+
+    // The report button has no JS to open its modal in this export — swapped for a plain link
+    // to the standalone report page, which hydrates on its own.
+    expect(html).not.toContain('<button type="button" class="lp-footer-report">');
+    expect(html).toContain(
+      '<a href="https://app.common-link.org/fr/report/clk_abc" class="lp-footer-report" target="_blank" rel="noopener noreferrer">Signaler cette campagne</a>',
+    );
 
     // Budget bar filled to its real percentage — SSR always renders 0% (scroll-triggered
     // animation, no JS in this export to trigger it).

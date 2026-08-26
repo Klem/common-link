@@ -10,6 +10,7 @@ import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.dto.buildBudgetProjection
 import org.commonlink.dto.toDto
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.AssociationStatus
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Donation
@@ -342,6 +343,14 @@ class PublicWidgetService(
             .orElseThrow { NotFoundException("Widget not found") }
         val campaign = association.widgetDestinationCampaign
             ?: throw NotFoundException("No destination campaign configured")
+        // SUSPENDED (IC-44 — confirmed campaign report) blocks the whole association's portfolio,
+        // same generic message as a non-LIVE campaign: nothing here should tell the caller which
+        // check failed. ALERT (report merely received, not yet ruled on) is deliberately not
+        // gated — see AssociationStatus KDoc.
+        if (association.status == AssociationStatus.SUSPENDED) {
+            logger.debug("Landing {} has SUSPENDED association {}", widgetToken, association.id)
+            throw ConflictException("Campaign is not accepting donations")
+        }
         if (campaign.status != CampaignStatus.LIVE) {
             val previewFor = landingPreviewTokenService.resolveAssociationId(previewToken)
             if (previewFor == null || previewFor != association.id) {
@@ -358,6 +367,11 @@ class PublicWidgetService(
             .orElseThrow { NotFoundException("Widget not found") }
         val campaign = association.widgetDestinationCampaign
             ?: throw NotFoundException("No destination campaign configured")
+        // Same SUSPENDED gate as resolveLanding — see the comment there.
+        if (association.status == AssociationStatus.SUSPENDED) {
+            logger.debug("Widget {} has SUSPENDED association {}", widgetToken, association.id)
+            throw ConflictException("Campaign is not accepting donations")
+        }
         if (campaign.status != CampaignStatus.LIVE) {
             logger.debug("Widget {} has non-LIVE campaign {} ({})", widgetToken, campaign.id, campaign.status)
             throw ConflictException("Campaign is not accepting donations")

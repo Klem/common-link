@@ -375,9 +375,11 @@
         "subject": "Sujet"
       },
       "empty": "Aucune alerte de gel.",
+      "emptyCampaignReport": "Aucun signalement de campagne.",
       "error": "Erreur lors du chargement des alertes.",
       "loading": "Chargement des alertes…",
       "origin": {
+        "CAMPAIGN_REPORT": "Signalement de campagne",
         "FREEZE_HIT_DONATION": "Gel — Don",
         "FREEZE_HIT_ONBOARDING": "Gel — Adhésion",
         "SCREENING_UNAVAILABLE": "Criblage indisponible"
@@ -403,7 +405,11 @@
         "REPRESENTATIVE": "Représentant légal",
         "SYSTEM": "Système"
       },
-      "title": "Alertes de gel"
+      "tabs": {
+        "campaignReport": "Signalements",
+        "freeze": "Gel"
+      },
+      "title": "Alertes"
     },
     "auditLog": {
       "col": {
@@ -428,6 +434,13 @@
     "detail": {
       "age": "Ancienneté",
       "backToList": "Retour à la liste",
+      "campaignReports": {
+        "anonymous": "Anonyme",
+        "empty": "Aucun signalement enregistré pour cette alerte.",
+        "occurredAt": "Reçu le",
+        "reporterEmail": "E-mail du signalant",
+        "title": "Signalements reçus"
+      },
       "closed": {
         "decision": "Décision",
         "rationale": "Motivation",
@@ -441,6 +454,11 @@
         "label": "Décision",
         "placeholder": "Sélectionner une décision…",
         "title": "Décision de clôture"
+      },
+      "decisionCampaignReport": {
+        "FALSE_POSITIVE": "Signalement non fondé — malentendu",
+        "LEGITIMATE": "Signalement non fondé — campagne conforme",
+        "SUSPICIOUS": "Signalement confirmé fondé"
       },
       "error": "Erreur lors du chargement de l'alerte.",
       "history": {
@@ -463,6 +481,14 @@
       "rationale": {
         "label": "Motivation (obligatoire)",
         "placeholder": "Exposez les éléments qui fondent cette décision."
+      },
+      "reactivate": {
+        "button": "Réactiver",
+        "description": "Lève la suspension. L'alerte ci-dessus reste clôturée avec sa décision « fondé » comme preuve — il s'agit d'une action distincte et postérieure.",
+        "rationaleLabel": "Motif de la réactivation",
+        "rationalePlaceholder": "ex. l'association a corrigé le problème signalé, contesté avec preuves à l'appui...",
+        "success": "Association réactivée.",
+        "title": "Réactiver l'association"
       },
       "severity": "Criticité",
       "status": "Statut",
@@ -527,7 +553,7 @@
       "yes": "Oui"
     },
     "nav": {
-      "alerts": "Alertes de gel",
+      "alerts": "Alertes",
       "dashboard": "Tableau de bord"
     },
     "priorDecisions": {
@@ -1654,6 +1680,23 @@
       "eyebrow": "À quoi sert ce don",
       "goalLabel": "Objectif de collecte",
       "impactTitle": "Objectifs d'impact"
+    },
+    "report": {
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "closeButton": "Fermer",
+      "description": "Expliquez-nous ce qui ne va pas avec cette campagne. Notre équipe conformité examinera votre signalement.",
+      "emailHint": "Utilisé uniquement par notre équipe conformité si elle a besoin de vous recontacter. Aucune réponse n'est garantie.",
+      "emailLabel": "Votre e-mail (facultatif)",
+      "emailPlaceholder": "vous@exemple.com",
+      "error": "Une erreur est survenue. Veuillez réessayer.",
+      "messageLabel": "Votre message",
+      "messagePlaceholder": "Décrivez le problème...",
+      "submit": "Envoyer le signalement",
+      "submitting": "Envoi...",
+      "success": "Merci. Votre signalement a été enregistré et sera examiné.",
+      "title": "Signaler cette campagne",
+      "trigger": "Signaler cette campagne"
     },
     "sticky": {
       "cta": "Je donne {amount}€ →",

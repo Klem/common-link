@@ -3,6 +3,8 @@ export const ComplianceAlertOrigin = {
   FREEZE_HIT_DONATION: 'FREEZE_HIT_DONATION',
   /** A mandatory freeze screening could not be performed. Not a favorable outcome. */
   SCREENING_UNAVAILABLE: 'SCREENING_UNAVAILABLE',
+  /** A public visitor reported a campaign's content (IC-44). */
+  CAMPAIGN_REPORT: 'CAMPAIGN_REPORT',
 } as const;
 export type ComplianceAlertOrigin = typeof ComplianceAlertOrigin[keyof typeof ComplianceAlertOrigin];
 
@@ -110,6 +112,16 @@ export interface ComplianceAlertDetailDto extends ComplianceAlertSummaryDto {
   priorDecisions: PriorDecisionDto[];
   /** Public-registry identity of the subject association. Null for donor / beneficial-owner subjects. */
   subjectRegistry: SubjectRegistryDto | null;
+  /** Every report received, oldest first. Populated only for a CAMPAIGN_REPORT alert. */
+  campaignReports: CampaignReportEntryDto[];
+}
+
+/** One report entry, read back from the compliance journal (IC-44). */
+export interface CampaignReportEntryDto {
+  campaignId: string | null;
+  message: string;
+  reporterEmail: string | null;
+  occurredAt: string;
 }
 
 /**

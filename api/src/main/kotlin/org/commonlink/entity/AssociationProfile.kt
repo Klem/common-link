@@ -174,4 +174,16 @@ class AssociationProfile(
      */
     @Column(name = "gtm_container_id", length = 20)
     var gtmContainerId: String? = null,
+
+    /**
+     * Compliance status of the association. `ACTIVE` is the normal operating state.
+     *
+     * `ALERT` means a campaign report is open and awaiting compliance review — internal only,
+     * does not gate donations or public visibility (see [org.commonlink.service.PublicWidgetService]).
+     * `SUSPENDED` means a report was confirmed founded and blocks every campaign of this
+     * association from accepting donations, until a compliance officer reactivates it.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    var status: AssociationStatus = AssociationStatus.ACTIVE,
 )

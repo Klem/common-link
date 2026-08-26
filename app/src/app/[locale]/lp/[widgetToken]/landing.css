@@ -565,6 +565,21 @@
   margin: 0 0 4px;
 }
 
+.lp-footer-report {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 8px;
+  font-size: .78rem;
+  color: var(--lp-text-mute);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.lp-footer-report:hover {
+  color: var(--warm-coral);
+}
+
 /* ── Sticky mobile bar ───────────────────────────────────────────────── */
 .lp-sticky-bar {
   position: fixed;

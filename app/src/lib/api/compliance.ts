@@ -73,3 +73,29 @@ export const listRegistryScans = (
  */
 export const listAuditLog = (): Promise<AuditLogEntryDto[]> =>
   api.get<AuditLogEntryDto[]>('/api/compliance/audit-log/recent').then((r) => r.data);
+
+/**
+ * Lists campaign-report compliance alerts (IC-44), most recent first.
+ * `GET /api/compliance/alerts/campaign-reports?page=0&size=20`
+ */
+export const listCampaignReportAlerts = (page = 0, size = 20): Promise<Page<ComplianceAlertSummaryDto>> =>
+  api
+    .get<Page<ComplianceAlertSummaryDto>>('/api/compliance/alerts/campaign-reports', { params: { page, size } })
+    .then((r) => r.data);
+
+/**
+ * Returns the number of campaign-report alerts still awaiting treatment (PENDING or IN_REVIEW).
+ * `GET /api/compliance/alerts/campaign-reports/open-count`
+ */
+export const countOpenCampaignReportAlerts = (): Promise<number> =>
+  api.get<{ count: number }>('/api/compliance/alerts/campaign-reports/open-count').then((r) => r.data.count);
+
+/**
+ * Lifts a SUSPENDED association back to ACTIVE (voies de contestation, IC-44). Does not reopen
+ * the closed alert that caused the suspension.
+ * `POST /api/compliance/associations/{associationId}/reactivate`
+ */
+export const reactivateAssociation = (associationId: string, rationale: string): Promise<void> =>
+  api
+    .post<void>(`/api/compliance/associations/${associationId}/reactivate`, { rationale })
+    .then(() => undefined);

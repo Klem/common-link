@@ -6,9 +6,11 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.AuditLogEntryDto
+import org.commonlink.dto.CampaignReportEntryDto
 import org.commonlink.dto.CloseAlertRequest
 import org.commonlink.dto.ComplianceAlertDetailDto
 import org.commonlink.dto.ComplianceRegistryScanSummaryDto
@@ -17,6 +19,7 @@ import org.commonlink.dto.ComplianceAlertSummaryDto
 import org.commonlink.dto.FreezeScreeningMatchDto
 import org.commonlink.dto.OpenAlertCountDto
 import org.commonlink.dto.PriorDecisionDto
+import org.commonlink.dto.ReactivateAssociationRequest
 import org.commonlink.dto.SubjectRegistryDto
 import org.commonlink.dto.toDto
 import org.commonlink.dto.toEntryDto
@@ -26,7 +29,9 @@ import org.commonlink.dto.toPriorDecisionDto
 import org.commonlink.dto.toSummaryDto
 import org.commonlink.entity.ComplianceAlert
 import org.commonlink.entity.ComplianceAlertDecision
+import org.commonlink.entity.ComplianceAlertOrigin
 import org.commonlink.entity.ComplianceAlertSubjectType
+import org.commonlink.entity.ComplianceAuditLog
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
@@ -34,6 +39,7 @@ import org.commonlink.repository.BeneficialOwnerRepository
 import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.FreezeScreeningMatchRepository
 import org.commonlink.repository.UserRepository
+import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
@@ -72,6 +78,8 @@ class ComplianceController(
     private val donorProfileRepository: DonorProfileRepository,
     private val userRepository: UserRepository,
     private val matchRepository: FreezeScreeningMatchRepository,
+    private val associationComplianceStatusService: AssociationComplianceStatusService,
+    private val objectMapper: ObjectMapper,
 ) {
 
     /** Health-check / role-gate probe. Used by integration tests to verify COMPLIANCE_OFFICER access. */
@@ -128,6 +136,46 @@ class ComplianceController(
         ResponseEntity.ok(OpenAlertCountDto(alertService.countOpenFreezeAlerts()))
 
     /**
+     * Lists campaign-report alerts (IC-44), most recent first. Mirrors [listAlerts], kept as a
+     * separate endpoint rather than a query parameter on it: freeze and campaign-report alerts
+     * are shown as distinct tabs on the compliance dashboard, not filtered views of one list.
+     */
+    @GetMapping("/alerts/campaign-reports")
+    @Operation(
+        summary = "List campaign-report compliance alerts",
+        description = "Returns a paginated list of CAMPAIGN_REPORT alerts, sorted by creation date descending."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Page of alerts"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun listCampaignReportAlerts(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<PageResponse<ComplianceAlertSummaryDto>> {
+        val now = Instant.now()
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        val result = alertService.listCampaignReportAlerts(pageable)
+            .map { it.toSummaryDto(now, resolveSubjectLabel(it)) }
+        return ResponseEntity.ok(result.toPageResponse())
+    }
+
+    /** Counts campaign-report alerts still awaiting treatment (PENDING or IN_REVIEW). */
+    @GetMapping("/alerts/campaign-reports/open-count")
+    @Operation(
+        summary = "Count campaign-report alerts awaiting treatment",
+        description = "Returns the number of PENDING or IN_REVIEW CAMPAIGN_REPORT alerts."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Open alert count"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun countOpenCampaignReportAlerts(): ResponseEntity<OpenAlertCountDto> =
+        ResponseEntity.ok(OpenAlertCountDto(alertService.countOpenCampaignReportAlerts()))
+
+    /**
      * Returns the full detail of a single compliance alert, including the freeze-screening
      * audit history for the subject (read from the hash-chained compliance journal).
      *
@@ -155,8 +203,13 @@ class ComplianceController(
         val now = Instant.now()
         val alert = alertService.findById(alertId)
         val subjectId = alert.subjectId
-        val history = if (subjectId != null) {
+        val history = if (subjectId != null && alert.origin != ComplianceAlertOrigin.CAMPAIGN_REPORT) {
             auditLogService.findFreezeScreeningHistory(subjectId).map { it.toEntryDto() }
+        } else {
+            emptyList()
+        }
+        val campaignReports = if (subjectId != null && alert.origin == ComplianceAlertOrigin.CAMPAIGN_REPORT) {
+            resolveCampaignReportWindow(alert, subjectId)
         } else {
             emptyList()
         }
@@ -169,8 +222,44 @@ class ComplianceController(
                 subjectLabel = resolveSubjectLabel(alert),
                 takenInChargeByLabel = alert.takenInChargeBy?.let { resolveUserLabel(it) },
                 subjectRegistry = resolveSubjectRegistry(alert),
+                campaignReports = campaignReports,
             ),
         )
+    }
+
+    /**
+     * Parses one [ComplianceAuditLogService.CAMPAIGN_REPORTED] journal row into its structured
+     * DTO. Tolerant of a missing `reporterEmail` (optional at submission time, see
+     * [org.commonlink.dto.CampaignReportRequest]).
+     */
+    private fun ComplianceAuditLog.toCampaignReportEntryDto(): CampaignReportEntryDto {
+        val node = objectMapper.readTree(payload)
+        return CampaignReportEntryDto(
+            campaignId = node.get("campaignId")?.takeIf { !it.isNull }?.asText(),
+            message = node.get("message")?.asText().orEmpty(),
+            reporterEmail = node.get("reporterEmail")?.takeIf { !it.isNull }?.asText(),
+            occurredAt = occurredAt,
+        )
+    }
+
+    /**
+     * Bounds the association's full [ComplianceAuditLogService.findCampaignReportHistory] to this
+     * one alert's own lifetime: `sequenceNo >= alert.auditLogSeqRef` and, when a later alert has
+     * since opened on the same subject, `sequenceNo < nextAlert.auditLogSeqRef`.
+     *
+     * Without the upper bound, re-opening an old, already-CLOSED alert after a newer one has been
+     * raised on the same association would show reports that belong to the newer alert — evidence
+     * the officer never ruled on for *this* decision.
+     */
+    private fun resolveCampaignReportWindow(alert: ComplianceAlert, subjectId: UUID): List<CampaignReportEntryDto> {
+        val lowerBound = alert.auditLogSeqRef
+        val all = auditLogService.findCampaignReportHistory(subjectId)
+        if (lowerBound == null) return all.map { it.toCampaignReportEntryDto() }
+
+        val upperBound = alertService.findNextAlert(subjectId, alert.origin, lowerBound)?.auditLogSeqRef
+        return all
+            .filter { it.sequenceNo >= lowerBound && (upperBound == null || it.sequenceNo < upperBound) }
+            .map { it.toCampaignReportEntryDto() }
     }
 
     /**
@@ -399,5 +488,35 @@ class ComplianceController(
     fun listRecentAuditLog(): ResponseEntity<List<AuditLogEntryDto>> {
         val entries = auditLogService.findRecentEntries().map { it.toEntryDto() }
         return ResponseEntity.ok(entries)
+    }
+
+    /**
+     * Lifts a `SUSPENDED` association back to `ACTIVE` (IC-44 — voies de contestation).
+     *
+     * Does not touch the [ComplianceAlert] that caused the suspension — it stays `CLOSED` with its
+     * `SUSPICIOUS` decision intact as the historical record; reactivation is journaled separately
+     * (`ASSOCIATION_REACTIVATED`). See [AssociationComplianceStatusService.reactivate].
+     */
+    @PostMapping("/associations/{associationId}/reactivate")
+    @Operation(
+        summary = "Reactivate a suspended association",
+        description = "Moves the association from SUSPENDED back to ACTIVE, recording the acting " +
+            "compliance officer and a mandatory rationale. Does not reopen the closed alert."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Association reactivated"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Blank rationale, or association not SUSPENDED", content = [Content()]),
+    )
+    fun reactivateAssociation(
+        @PathVariable @Parameter(description = "Association UUID") associationId: UUID,
+        @Valid @RequestBody request: ReactivateAssociationRequest,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<Unit> {
+        val officerId = UUID.fromString(principal.username)
+        associationComplianceStatusService.reactivate(associationId, officerId, request.rationale)
+        return ResponseEntity.ok().build()
     }
 }

@@ -43,6 +43,10 @@ One of the supported payment methods for donations. Allows one-tap payment using
 One of the two user types on CommonLink. An association is a French non-profit organization (loi 1901) that creates fundraising campaigns, manages budgets, tracks milestones, and reports impact to donors. Identified by its SIREN number.
 `business` `functional`
 
+### Association Status
+Compliance status of an association (`ACTIVE`, `ALERT`, `SUSPENDED`), separate from `VerificationStatus` (KYC). `ACTIVE` is normal. `ALERT` means a campaign report is open and awaiting compliance review — internal only, does not gate donations or public visibility. `SUSPENDED` means a report was confirmed founded; it blocks every campaign of the association from accepting donations until a compliance officer reactivates it. Reactivation does not reopen the `ComplianceAlert` that caused the suspension — that alert stays `CLOSED` with its `SUSPICIOUS` decision as the historical record; reactivation is a separate, later fact (`ASSOCIATION_REACTIVATED` journal entry).
+`functional` `security`
+
 ### Association Card
 The UI element displayed in the public discovery grid (landing page). Each card shows the association's name, cause, location, verification status, live campaign progress, key stats (total raised, donor count), and badges.
 `functional`
@@ -110,6 +114,10 @@ A percentage (0–100%) displayed in the campaign editor hero bar, representing 
 ### CampaignStatus
 Enum representing the lifecycle of a campaign. Transitions are one-directional and strictly enforced by the backend: `DRAFT` → `LIVE` → `ENDED`. No backwards transition is allowed; `ENDED` is terminal. The transition is validated in `CampaignService` and throws a 422 if violated.
 `technical` `functional`
+
+### Campaign Report
+A public, unauthenticated report of a campaign's content, submitted via a "Report this campaign" popup on the landing page (message + optional reporter e-mail, no account required). Raises a `CAMPAIGN_REPORT` `ComplianceAlert` on the owning association and moves its `AssociationStatus` to `ALERT`. Each submission writes its own append-only journal entry (`CAMPAIGN_REPORTED`), so a second report received while the first alert is still open is not lost. If the compliance officer rules the report founded (`SUSPICIOUS`), the association moves to `SUSPENDED`; otherwise it clears back to `ACTIVE` provided no other report is still open.
+`functional` `security`
 
 ### Campaign Category (Cause)
 The thematic classification of an association. Categories include: Environnement, Social, Éducation, Santé, Culture, Animal, Humanitaire. Used for filtering in the discovery grid.

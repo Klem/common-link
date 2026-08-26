@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
+import org.commonlink.dto.CampaignReportRequest
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.DonationStatusDto
@@ -15,6 +16,7 @@ import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.security.AuthRateLimiter
 import org.commonlink.security.ClientIpResolver
+import org.commonlink.service.CampaignReportService
 import org.commonlink.service.PublicWidgetService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -37,6 +39,7 @@ import java.util.UUID
 @Tag(name = "Public Widget", description = "Public donation widget endpoints (no authentication required)")
 class PublicWidgetController(
     private val publicWidgetService: PublicWidgetService,
+    private val campaignReportService: CampaignReportService,
     private val rateLimiter: AuthRateLimiter,
     private val clientIpResolver: ClientIpResolver,
 ) {
@@ -161,4 +164,39 @@ class PublicWidgetController(
         @RequestParam(required = false) preview: String?,
     ): ResponseEntity<PublicLandingDto> =
         ResponseEntity.ok(publicWidgetService.getLanding(widgetToken, preview))
+
+    /**
+     * Reports the widget's destination campaign to the compliance function (IC-44).
+     *
+     * Opens (or reuses) a `CAMPAIGN_REPORT` compliance alert and raises the owning association to
+     * `AssociationStatus.ALERT` — internal only, does not affect public visibility or donations.
+     * No authentication required; reporting works with or without a CommonLink account.
+     *
+     * @param widgetToken Opaque public token identifying the association's widget.
+     * @param request Free-text report message and an optional reporter e-mail.
+     */
+    @PostMapping("/widget/{widgetToken}/report")
+    @Operation(
+        summary = "Report a campaign",
+        description = "Records a compliance report against the widget's destination campaign. No authentication required."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Report recorded"),
+        ApiResponse(responseCode = "404", description = "Unknown token or no destination campaign configured", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Validation failed (blank message or invalid e-mail)", content = [Content()]),
+        ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
+    )
+    fun reportCampaign(
+        @PathVariable widgetToken: String,
+        @Valid @RequestBody request: CampaignReportRequest,
+        httpRequest: HttpServletRequest,
+    ): ResponseEntity<Unit> {
+        // Unauthenticated and write-only. ALERT is non-blocking (see AssociationStatus KDoc), so the
+        // worst case of abuse is spam to the compliance mailbox, not a takedown — a proportionate
+        // throttle, not the tighter donation-path quotas.
+        rateLimiter.check("report:ip:${clientIpResolver.resolve(httpRequest)}", maxAttempts = 5, windowMinutes = 10)
+        rateLimiter.check("report:widget:$widgetToken", maxAttempts = 20, windowMinutes = 10)
+        campaignReportService.report(widgetToken, request.message, request.reporterEmail)
+        return ResponseEntity.ok().build()
+    }
 }

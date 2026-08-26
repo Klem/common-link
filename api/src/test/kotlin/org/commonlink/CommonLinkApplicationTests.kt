@@ -1,5 +1,6 @@
 package org.commonlink
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
@@ -13,8 +14,10 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationLandingService
+import org.commonlink.service.CampaignReportService
 import org.commonlink.service.MollieWebhookService
 import org.commonlink.service.PublicWidgetService
 import org.commonlink.service.AssociationRegistryCheckService
@@ -89,6 +92,9 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var beneficialOwnerRepository: BeneficialOwnerRepository
     @MockkBean private lateinit var donorProfileRepository: DonorProfileRepository
     @MockkBean private lateinit var freezeScreeningMatchRepository: FreezeScreeningMatchRepository
+    @MockkBean private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
+    @MockkBean private lateinit var campaignReportService: CampaignReportService
+    @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test
     fun contextLoads() {

@@ -161,3 +161,18 @@ export const getLanding = (token: string, preview?: string | null): Promise<Publ
       params: preview ? { preview } : undefined,
     })
     .then((r) => r.data);
+
+export interface CampaignReportRequest {
+  message: string;
+  reporterEmail?: string;
+}
+
+/**
+ * Reports the widget's destination campaign to the compliance function (IC-44).
+ *
+ * No authentication required — reporting works with or without a CommonLink account. Does not
+ * affect what the caller sees afterwards: opening (or reusing) a compliance alert is internal
+ * only, see `AssociationStatus` on the backend.
+ */
+export const reportCampaign = (token: string, payload: CampaignReportRequest): Promise<void> =>
+  publicApi.post<void>(`/api/public/widget/${token}/report`, payload).then(() => undefined);

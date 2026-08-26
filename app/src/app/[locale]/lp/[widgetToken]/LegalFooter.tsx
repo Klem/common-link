@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { ReportCampaignModal } from './ReportCampaignModal';
 
 interface Props {
+  widgetToken: string;
   associationName: string;
   addressLine1: string | null;
   postalCode: string | null;
@@ -27,6 +30,7 @@ function buildAddressLine(
 }
 
 export function LegalFooter({
+  widgetToken,
   associationName,
   addressLine1,
   postalCode,
@@ -36,6 +40,7 @@ export function LegalFooter({
   taxReductionRate,
 }: Props) {
   const t = useTranslations('landing');
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   return (
     <footer className="lp-footer">
@@ -48,7 +53,21 @@ export function LegalFooter({
           </p>
         )}
         <p>{t('footer.taxMention', { rate: taxReductionRate })}</p>
+        <p>
+          <button
+            type="button"
+            className="lp-footer-report"
+            onClick={() => setIsReportOpen(true)}
+          >
+            {t('report.trigger')}
+          </button>
+        </p>
       </div>
+      <ReportCampaignModal
+        isOpen={isReportOpen}
+        widgetToken={widgetToken}
+        onClose={() => setIsReportOpen(false)}
+      />
     </footer>
   );
 }

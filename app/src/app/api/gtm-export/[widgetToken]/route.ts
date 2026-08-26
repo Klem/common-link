@@ -86,6 +86,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `<div id="don"><script src="${origin}/widget.js" data-widget-token="${escapeHtml(widgetToken)}" async></script></div>`;
   }
 
+  // The "report this campaign" footer button only works via React state (opens an in-page
+  // modal) — with scripts stripped it would be dead markup. Point it at the standalone report
+  // page instead, a real Next.js route that hydrates on its own regardless of this host page.
+  const reportTrigger = lpRoot.querySelector('.lp-footer-report');
+  if (reportTrigger) {
+    const reportUrl = `${origin}/fr/report/${encodeURIComponent(widgetToken)}`;
+    reportTrigger.replaceWith(
+      `<a href="${reportUrl}" class="lp-footer-report" target="_blank" rel="noopener noreferrer">${escapeHtml(reportTrigger.text)}</a>`,
+    );
+  }
+
   // Inline every stylesheet's actual content — not a link to a hashed file — so styling survives
   // deploys too. landing.css is confirmed self-contained (no @import/url()).
   const styleLinks = doc.querySelectorAll('link[rel="stylesheet"]');

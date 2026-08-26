@@ -124,6 +124,27 @@ interface EmailService {
      * @param severity       Alert severity, as its enum name (e.g. `HIGH`).
      * @param alertUrl       Full URL of the alert detail screen in the compliance back-office.
      */
+    /**
+     * Notifies the compliance function that a public campaign report has been received (IC-44)
+     * and is awaiting treatment.
+     *
+     * ### No reporter content in the message
+     * Same log-hygiene rule as [sendDonorFreezeAlertOpened]: the reporter's free-text message and
+     * their optional e-mail are **never** put in this mail's body — they are read on the alert
+     * screen behind compliance authentication. Unlike a freeze hit, nothing here is refused
+     * automatically: the message must not assert that a donation was blocked or that the
+     * association was suspended, since at this point neither has happened.
+     *
+     * @param recipientEmail Compliance function mailbox.
+     * @param alertId        UUID of the [org.commonlink.entity.ComplianceAlert] to treat.
+     * @param alertUrl       Full URL of the alert detail screen in the compliance back-office.
+     */
+    fun sendCampaignReportAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        alertUrl: String,
+    )
+
     fun sendDonorFreezeAlertOpened(
         recipientEmail: String,
         alertId: java.util.UUID,

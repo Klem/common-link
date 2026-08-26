@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import org.assertj.core.api.Assertions.assertThat
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import java.time.Instant
@@ -30,6 +31,7 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
@@ -38,7 +40,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.context.TestPropertySource
@@ -56,6 +60,13 @@ import java.util.UUID
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
 ])
 class ComplianceControllerTest {
+
+    /** Real ObjectMapper — not @WebMvcTest-autoconfigured here; needed to exercise getAlert's JSON parsing for CAMPAIGN_REPORT payloads. */
+    @TestConfiguration
+    class ObjectMapperTestConfig {
+        @Bean
+        fun objectMapper(): ObjectMapper = ObjectMapper()
+    }
 
     @Autowired
     lateinit var mockMvc: MockMvc
@@ -92,6 +103,9 @@ class ComplianceControllerTest {
 
     @MockkBean
     private lateinit var matchRepository: FreezeScreeningMatchRepository
+
+    @MockkBean
+    private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
 
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
 

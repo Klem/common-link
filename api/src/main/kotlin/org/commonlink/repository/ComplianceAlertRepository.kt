@@ -67,4 +67,20 @@ interface ComplianceAlertRepository : JpaRepository<ComplianceAlert, UUID> {
         origin: ComplianceAlertOrigin,
         status: ComplianceAlertStatus,
     ): List<ComplianceAlert>
+
+    /**
+     * The next alert of the same (subject, origin) opened after [auditLogSeqRef], if any — the
+     * one immediately following it in the journal.
+     *
+     * Backs the upper bound of a per-alert journal-history window: since the partial unique index
+     * `compliance_alert_pending_dedup_uq` guarantees at most one open alert per (origin, subject)
+     * at a time, alerts for the same pair are strictly ordered by [ComplianceAlert.auditLogSeqRef].
+     * Without this, a report journaled *after* the current alert closed (and belonging to the next
+     * one) would appear on the current, already-ruled-on alert's detail screen.
+     */
+    fun findFirstBySubjectIdAndOriginAndAuditLogSeqRefGreaterThanOrderByAuditLogSeqRefAsc(
+        subjectId: UUID,
+        origin: ComplianceAlertOrigin,
+        auditLogSeqRef: Long,
+    ): ComplianceAlert?
 }

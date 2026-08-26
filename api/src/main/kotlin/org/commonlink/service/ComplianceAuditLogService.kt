@@ -84,6 +84,18 @@ class ComplianceAuditLogService(
         const val ALERT_OPENED = "ALERT_OPENED"
         const val ALERT_IN_REVIEW = "ALERT_IN_REVIEW"
         const val ALERT_CLOSED = "ALERT_CLOSED"
+
+        /** A public visitor reported a campaign's content (IC-44). Written by [org.commonlink.service.CampaignReportService]. */
+        const val CAMPAIGN_REPORTED = "CAMPAIGN_REPORTED"
+
+        /**
+         * A compliance officer lifted a `SUSPENDED` association back to `ACTIVE`. Written by
+         * [org.commonlink.service.AssociationComplianceStatusService.reactivate]. Deliberately
+         * distinct from [ALERT_CLOSED]: the alert that caused the suspension stays `CLOSED` with
+         * its original `SUSPICIOUS` decision as a historical record — reactivation is a separate
+         * fact recorded afterwards, not a reversal of that decision.
+         */
+        const val ASSOCIATION_REACTIVATED = "ASSOCIATION_REACTIVATED"
     }
 
     /**
@@ -315,6 +327,18 @@ class ComplianceAuditLogService(
         repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(subjectId, FREEZE_SCREENING_EVENT_TYPES)
 
     /**
+     * Returns every [CAMPAIGN_REPORTED] entry for an association, in chronological order.
+     *
+     * Written with `subject_type = ASSOCIATION` and `subject_id = association.id` (not the
+     * reported campaign's id — see [org.commonlink.service.CampaignReportService]), so a second
+     * report received while a [org.commonlink.entity.ComplianceAlert] is already open is never
+     * lost: the alert deduplicates on (origin, subject), the journal does not.
+     */
+    @Transactional(readOnly = true)
+    fun findCampaignReportHistory(associationId: UUID): List<ComplianceAuditLog> =
+        repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(associationId, listOf(CAMPAIGN_REPORTED))
+
+    /**
      * Derives the five-state [FreezeScreenStatus] for the **most recent onboarding screening run**
      * of an association, without exposing any match detail (tipping-off prevention).
      *
@@ -414,6 +438,40 @@ class ComplianceAuditLogService(
      *   register has never been successfully synced. Included in the payload so auditors can
      *   assess how stale the register was at the time of the failure.
      */
+    /**
+     * Records a public campaign report (IC-44). Committed in a **new, independent transaction**
+     * ([Propagation.REQUIRES_NEW]) for the same reason every `appendFreezeScreening*` helper is:
+     * the caller ([org.commonlink.service.CampaignReportService.report]) subsequently calls
+     * [org.commonlink.service.ComplianceAlertService.createOrIgnore], which is itself
+     * `REQUIRES_NEW` and appends its own `ALERT_OPENED` entry. Both calls take the same
+     * `compliance_audit_log_lock` row lock — if this method held it under the caller's own
+     * `REQUIRED` transaction instead, the suspended caller transaction would still be holding the
+     * lock when the nested `REQUIRES_NEW` transaction tries to acquire it, deadlocking every
+     * first report on an association (a second report while the alert is still open never reaches
+     * this method — `createOrIgnore` returns the existing alert before it — which is why this
+     * class of bug does not show up until the very first submission).
+     *
+     * Written with `subject_type = ASSOCIATION` and `subject_id = associationId` — not the
+     * reported campaign's id — so [findCampaignReportHistory] can look it up the same way
+     * [ComplianceAlertOpenedEvent] and the alert itself are keyed.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignReported(
+        associationId: UUID,
+        campaignId: UUID,
+        message: String,
+        reporterEmail: String?,
+    ): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_REPORTED,
+        subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+        subjectId = associationId,
+        payload = mapOf(
+            "campaignId" to campaignId.toString(),
+            "message" to message,
+            "reporterEmail" to reporterEmail,
+        ),
+    )
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun appendSyncFailure(reason: String, lastSuccessAt: Instant?): ComplianceAuditLog = append(
         eventType = SANCTION_SYNC_FAILURE,

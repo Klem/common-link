@@ -266,3 +266,13 @@ enum class RiskLevel {
  * catégories sont soumises au contrôle de gel et à un gate d'approbation distinct.
  */
 enum class BeneficialOwnerType { BENEFICIAL_OWNER, REPRESENTATIVE }
+
+/**
+ * Compliance status of an [AssociationProfile] (IC-44 — canal de signalement de campagne).
+ *
+ * Cycle : `ACTIVE → ALERT` (signalement public reçu, [org.commonlink.entity.ComplianceAlertOrigin.CAMPAIGN_REPORT]
+ * ouvert) → `SUSPENDED` (signalement confirmé fondé) → `ACTIVE` (réactivation par la compliance).
+ * `ALERT` ne bloque rien publiquement — seul `SUSPENDED` gate les dons, voir
+ * [org.commonlink.service.PublicWidgetService].
+ */
+enum class AssociationStatus { ACTIVE, ALERT, SUSPENDED }

@@ -163,6 +163,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
         <TrustSection taxReductionRate={data.taxReductionRate} />
       </LandingClient>
       <LegalFooter
+        widgetToken={widgetToken}
         associationName={data.associationName}
         addressLine1={data.addressLine1}
         postalCode={data.postalCode}

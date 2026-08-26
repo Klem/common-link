@@ -48,6 +48,7 @@ class ComplianceAlertService(
     private val repo: ComplianceAlertRepository,
     private val auditLog: ComplianceAuditLogService,
     private val eventPublisher: ApplicationEventPublisher,
+    private val associationComplianceStatusService: AssociationComplianceStatusService,
 ) {
 
     companion object {
@@ -66,6 +67,9 @@ class ComplianceAlertService(
             ComplianceAlertOrigin.FREEZE_HIT_DONATION,
             ComplianceAlertOrigin.SCREENING_UNAVAILABLE,
         )
+
+        /** Origins surfaced on the compliance officer's campaign-report screen (IC-44). */
+        val CAMPAIGN_REPORT_ORIGINS = listOf(ComplianceAlertOrigin.CAMPAIGN_REPORT)
     }
 
     /**
@@ -87,6 +91,16 @@ class ComplianceAlertService(
     fun countOpenFreezeAlerts(): Long =
         repo.countByOriginInAndStatusIn(FREEZE_ORIGINS, OPEN_STATUSES)
 
+    /** Returns a paginated list of campaign-report alerts (IC-44), ordered by the provided [pageable]. */
+    @Transactional(readOnly = true)
+    fun listCampaignReportAlerts(pageable: Pageable): Page<ComplianceAlert> =
+        repo.findByOriginIn(CAMPAIGN_REPORT_ORIGINS, pageable)
+
+    /** Counts campaign-report alerts still awaiting treatment (PENDING or IN_REVIEW). */
+    @Transactional(readOnly = true)
+    fun countOpenCampaignReportAlerts(): Long =
+        repo.countByOriginInAndStatusIn(CAMPAIGN_REPORT_ORIGINS, OPEN_STATUSES)
+
     /**
      * Returns the closed alerts previously ruled on for the same subject, most recent first.
      *
@@ -107,6 +121,16 @@ class ComplianceAlertService(
     @Transactional(readOnly = true)
     fun findById(alertId: UUID): ComplianceAlert =
         repo.findById(alertId).orElseThrow { NotFoundException("Alerte $alertId introuvable") }
+
+    /**
+     * The next alert of the same (subject, origin) opened after [auditLogSeqRef], if any.
+     *
+     * Used to bound the journal-history window shown for one alert to its own lifetime — see
+     * [ComplianceAlertRepository.findFirstBySubjectIdAndOriginAndAuditLogSeqRefGreaterThanOrderByAuditLogSeqRefAsc].
+     */
+    @Transactional(readOnly = true)
+    fun findNextAlert(subjectId: UUID, origin: ComplianceAlertOrigin, auditLogSeqRef: Long): ComplianceAlert? =
+        repo.findFirstBySubjectIdAndOriginAndAuditLogSeqRefGreaterThanOrderByAuditLogSeqRefAsc(subjectId, origin, auditLogSeqRef)
 
     /**
      * Creates a new alert for the given (origin, subject) pair, or returns the existing open alert
@@ -209,12 +233,15 @@ class ComplianceAlertService(
      * @param decision the compliance outcome (LEGITIMATE / SUSPICIOUS / FALSE_POSITIVE).
      * @param rationale mandatory justification for the decision; must not be blank.
      * @param treasuryNotifiedAt when the DG Trésor was notified (human gesture, proof only).
-     *   Required when [decision] is [ComplianceAlertDecision.SUSPICIOUS].
-     * @param treasuryNotificationMethod channel used for notification; required when [decision] is SUSPICIOUS.
-     * @param treasuryNotificationRef reference assigned to the notification; required when [decision] is SUSPICIOUS.
+     *   Required when [decision] is [ComplianceAlertDecision.SUSPICIOUS] **and** the alert's
+     *   origin is one of [FREEZE_ORIGINS] — DG Trésor notification is an asset-freeze obligation,
+     *   not a general consequence of a SUSPICIOUS ruling (a campaign-report alert has nothing to
+     *   notify the Treasury about).
+     * @param treasuryNotificationMethod channel used for notification; required under the same condition.
+     * @param treasuryNotificationRef reference assigned to the notification; required under the same condition.
      * @throws NotFoundException if the alert does not exist.
      * @throws UnprocessableEntityException if the current status does not allow this transition,
-     *   if [rationale] is blank, or if treasury fields are missing for a SUSPICIOUS decision.
+     *   if [rationale] is blank, or if treasury fields are missing for a SUSPICIOUS freeze-origin decision.
      */
     @Transactional
     fun close(
@@ -227,12 +254,12 @@ class ComplianceAlertService(
         treasuryNotificationRef: String? = null,
     ): ComplianceAlert {
         if (rationale.isBlank()) throw UnprocessableEntityException("La motivation de la décision est obligatoire")
-        if (decision == ComplianceAlertDecision.SUSPICIOUS &&
+        val alert = repo.findById(alertId).orElseThrow { NotFoundException("Alerte $alertId introuvable") }
+        if (decision == ComplianceAlertDecision.SUSPICIOUS && alert.origin in FREEZE_ORIGINS &&
             (treasuryNotifiedAt == null || treasuryNotificationMethod.isNullOrBlank() || treasuryNotificationRef.isNullOrBlank())
         ) {
             throw UnprocessableEntityException("La traçabilité de la notification à la DG Trésor est obligatoire pour une décision de correspondance avérée")
         }
-        val alert = repo.findById(alertId).orElseThrow { NotFoundException("Alerte $alertId introuvable") }
         validateStatusTransition(alert.status, ComplianceAlertStatus.CLOSED)
 
         alert.status = ComplianceAlertStatus.CLOSED
@@ -254,6 +281,18 @@ class ComplianceAlertService(
                 "treasuryNotified" to (treasuryNotifiedAt != null),
             ),
         )
+
+        // Association status side effect — CAMPAIGN_REPORT only. SUSPICIOUS confirms the report:
+        // suspend. LEGITIMATE/FALSE_POSITIVE dismisses it: clear the ALERT flag, but only if no
+        // other open report still stands (see AssociationComplianceStatusService.clearAlertIfNoneOpen).
+        val subjectId = saved.subjectId
+        if (saved.origin == ComplianceAlertOrigin.CAMPAIGN_REPORT && subjectId != null) {
+            if (decision == ComplianceAlertDecision.SUSPICIOUS) {
+                associationComplianceStatusService.suspend(subjectId)
+            } else {
+                associationComplianceStatusService.clearAlertIfNoneOpen(subjectId)
+            }
+        }
 
         return saved
     }

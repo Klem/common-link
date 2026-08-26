@@ -231,6 +231,28 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendCampaignReportAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        alertUrl: String,
+    ) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("[IC-44] Signalement de campagne reçu")
+        helper.setText(
+            """
+            <p>Un visiteur a signalé le contenu d'une campagne via le formulaire public.</p>
+            <p>Cette alerte attend une décision de la fonction conformité.</p>
+            <p>Référence de l'alerte : <strong>$alertId</strong></p>
+            <p><a href="$alertUrl">Consulter l'alerte</a></p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendDonorFreezeAlertOpened(
         recipientEmail: String,
         alertId: java.util.UUID,

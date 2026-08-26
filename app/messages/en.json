@@ -375,9 +375,11 @@
         "subject": "Subject"
       },
       "empty": "No freeze alerts.",
+      "emptyCampaignReport": "No campaign reports.",
       "error": "Error loading alerts.",
       "loading": "Loading alerts…",
       "origin": {
+        "CAMPAIGN_REPORT": "Campaign report",
         "FREEZE_HIT_DONATION": "Freeze — Donation",
         "FREEZE_HIT_ONBOARDING": "Freeze — Onboarding",
         "SCREENING_UNAVAILABLE": "Screening unavailable"
@@ -403,7 +405,11 @@
         "REPRESENTATIVE": "Legal representative",
         "SYSTEM": "System"
       },
-      "title": "Freeze alerts"
+      "tabs": {
+        "campaignReport": "Campaign reports",
+        "freeze": "Freeze"
+      },
+      "title": "Alerts"
     },
     "auditLog": {
       "col": {
@@ -428,6 +434,13 @@
     "detail": {
       "age": "Age",
       "backToList": "Back to list",
+      "campaignReports": {
+        "anonymous": "Anonymous",
+        "empty": "No report recorded for this alert.",
+        "occurredAt": "Received on",
+        "reporterEmail": "Reporter e-mail",
+        "title": "Reports received"
+      },
       "closed": {
         "decision": "Decision",
         "rationale": "Rationale",
@@ -441,6 +454,11 @@
         "label": "Decision",
         "placeholder": "Select a decision…",
         "title": "Close alert"
+      },
+      "decisionCampaignReport": {
+        "FALSE_POSITIVE": "Report not founded — misunderstanding",
+        "LEGITIMATE": "Report not founded — campaign is compliant",
+        "SUSPICIOUS": "Report confirmed founded"
       },
       "error": "Error loading alert.",
       "history": {
@@ -463,6 +481,14 @@
       "rationale": {
         "label": "Rationale (mandatory)",
         "placeholder": "State the elements supporting this decision."
+      },
+      "reactivate": {
+        "button": "Reactivate",
+        "description": "Lifts the suspension. The alert above stays closed with its founded decision as the record — this is a separate, later action.",
+        "rationaleLabel": "Reason for reactivation",
+        "rationalePlaceholder": "e.g. the association corrected the reported issue, contested and provided evidence...",
+        "success": "Association reactivated.",
+        "title": "Reactivate the association"
       },
       "severity": "Severity",
       "status": "Status",
@@ -527,7 +553,7 @@
       "yes": "Yes"
     },
     "nav": {
-      "alerts": "Freeze alerts",
+      "alerts": "Alerts",
       "dashboard": "Dashboard"
     },
     "priorDecisions": {
@@ -1654,6 +1680,23 @@
       "eyebrow": "What your donation funds",
       "goalLabel": "Fundraising goal",
       "impactTitle": "Impact goals"
+    },
+    "report": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "closeButton": "Close",
+      "description": "Tell us what's wrong with this campaign. Our compliance team will review your report.",
+      "emailHint": "Only used by our compliance team if they need to reach you. No reply is guaranteed.",
+      "emailLabel": "Your e-mail (optional)",
+      "emailPlaceholder": "you@example.com",
+      "error": "Something went wrong. Please try again.",
+      "messageLabel": "Your message",
+      "messagePlaceholder": "Describe the issue...",
+      "submit": "Send report",
+      "submitting": "Sending...",
+      "success": "Thank you. Your report has been recorded and will be reviewed.",
+      "title": "Report this campaign",
+      "trigger": "Report this campaign"
     },
     "sticky": {
       "cta": "Donate €{amount} →",

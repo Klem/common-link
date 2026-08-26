@@ -19,6 +19,7 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.CampaignReportService
 import org.commonlink.service.PublicWidgetService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -54,6 +55,9 @@ class PublicWidgetControllerTest {
 
     @MockkBean
     private lateinit var publicWidgetService: PublicWidgetService
+
+    @MockkBean
+    private lateinit var campaignReportService: CampaignReportService
 
     @MockkBean
     private lateinit var jwtService: JwtService
