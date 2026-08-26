@@ -92,9 +92,6 @@ const baseProfile: AssociationProfileDto = {
   widgetAllowedOrigin: null,
   landingTheme: LandingTheme.DEFAULT,
   landingLogo: null,
-  landingShowProject: true,
-  landingShowTransparency: true,
-  landingShowTrust: true,
   gtmContainerId: null,
 };
 

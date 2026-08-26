@@ -145,18 +145,6 @@ class AssociationProfile(
     @Column(name = "landing_logo", length = 255)
     var landingLogo: String? = null,
 
-    /** Show the "what this donation funds" section on the landing page. */
-    @Column(name = "landing_show_project", nullable = false)
-    var landingShowProject: Boolean = true,
-
-    /** Show the budget / milestones transparency section on the landing page. */
-    @Column(name = "landing_show_transparency", nullable = false)
-    var landingShowTransparency: Boolean = true,
-
-    /** Show the "donate with confidence" section on the landing page. */
-    @Column(name = "landing_show_trust", nullable = false)
-    var landingShowTrust: Boolean = true,
-
     /** AML/CFT risk level assigned to this association. Defaults to STANDARD pending formal classification. */
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level", nullable = false, length = 20)

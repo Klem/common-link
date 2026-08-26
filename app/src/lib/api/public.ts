@@ -137,9 +137,6 @@ export interface PublicLandingDto {
   landingTheme: LandingTheme;
   /** Public serving path of the association logo, null when none was uploaded. */
   landingLogo: string | null;
-  showProject: boolean;
-  showTransparency: boolean;
-  showTrust: boolean;
   /**
    * False only in preview mode on a campaign that is not LIVE: the donation endpoint would refuse
    * the payment, so the form must be rendered disabled rather than fail on submit.

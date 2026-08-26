@@ -281,21 +281,6 @@ class PublicWidgetServiceIntegrationTest {
         assertEquals(java.time.LocalDate.of(2026, 12, 31), dto.endDate)
     }
 
-    @Test
-    fun `getLanding ignores landingShowProject, landingShowTransparency and landingShowTrust preferences`() {
-        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
-        assoc.landingShowProject = false
-        assoc.landingShowTransparency = false
-        assoc.landingShowTrust = false
-        associationProfileRepository.save(assoc)
-
-        val dto = publicWidgetService.getLanding(widgetToken)
-
-        assertTrue(dto.showProject)
-        assertTrue(dto.showTransparency)
-        assertTrue(dto.showTrust)
-    }
-
     // ── Landing preview : contournement du gate LIVE ─────────────────────────
 
     @Test

@@ -72,12 +72,6 @@ export interface AssociationProfileDto {
   landingTheme: LandingTheme;
   /** Public serving path of the landing logo, null if none was uploaded. */
   landingLogo: string | null;
-  /** Whether the landing page shows the "what this donation funds" section. */
-  landingShowProject: boolean;
-  /** Whether the landing page shows the transparency section. */
-  landingShowTransparency: boolean;
-  /** Whether the landing page shows the "donate with confidence" section. */
-  landingShowTrust: boolean;
   /** Google Tag Manager container ID for Ad Grants tracking. Null if not configured. */
   gtmContainerId: string | null;
 }
@@ -88,9 +82,6 @@ export interface AssociationProfileDto {
  */
 export interface UpdateLandingConfigRequest {
   theme?: LandingTheme;
-  showProject?: boolean;
-  showTransparency?: boolean;
-  showTrust?: boolean;
   /**
    * Google Tag Manager container ID (e.g. `GTM-XXXXXXX`). Omitted/undefined leaves the current
    * value unchanged; an empty string clears it.
