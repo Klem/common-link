@@ -9,6 +9,9 @@ import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignBudgetItem
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.LegalAcceptanceSubjectType
+import org.commonlink.entity.LegalDocument
+import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MollieConnection
 import org.commonlink.exception.CollectionCapExceededException
 import org.commonlink.exception.ConflictException
@@ -20,6 +23,8 @@ import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
+import org.commonlink.repository.LegalAcceptanceRepository
+import org.commonlink.repository.LegalDocumentRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
@@ -75,6 +80,8 @@ class PublicWidgetServiceIntegrationTest {
     @Autowired private lateinit var milestoneRepository: CampaignMilestoneRepository
     @Autowired private lateinit var entityManager: EntityManager
     @Autowired private lateinit var landingPreviewTokenService: LandingPreviewTokenService
+    @Autowired private lateinit var legalDocumentRepository: LegalDocumentRepository
+    @Autowired private lateinit var legalAcceptanceRepository: LegalAcceptanceRepository
 
     @MockkBean
     private lateinit var mollieClient: MollieClient
@@ -117,6 +124,16 @@ class PublicWidgetServiceIntegrationTest {
 
         // Default: freeze check passes — individual tests override for blocking scenarios.
         every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.CLEAR
+
+        // legal_document rows are seeded by Flyway (V73) in real environments; this suite runs on
+        // a Hibernate-only schema (no Flyway, see FlywayMigrationTest KDoc), so the CGU/CGV gate in
+        // createDonation would otherwise 404 on a document that simply was never inserted here.
+        if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) == null) {
+            legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGU, version = "test", content = "test CGU"))
+        }
+        if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGV) == null) {
+            legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGV, version = "test", content = "test CGV"))
+        }
     }
 
     // ── T4 : identity snapshot ────────────────────────────────────────────────
@@ -143,6 +160,17 @@ class PublicWidgetServiceIntegrationTest {
         assertEquals("Paris", donation.donorCity)
         assertEquals("FR", donation.donorCountry)
         assertNull(donation.confirmedAt, "Donation must stay pending after initiation")
+
+        // Art. 1740 A CGI proof of acceptance — restitution must be able to tie a donor's
+        // acceptance rows back to both the donation and the campaign it was made on.
+        val acceptances = legalAcceptanceRepository.findAllBySubjectTypeAndSubjectIdOrderByAcceptedAtDesc(
+            LegalAcceptanceSubjectType.DONOR, donation.donor.id!!,
+        )
+        assertEquals(2, acceptances.size, "One row per document type (CGU, CGV)")
+        acceptances.forEach {
+            assertEquals(donation.id, it.donationId)
+            assertEquals(donation.campaign.id, it.campaignId)
+        }
     }
 
     @Test
@@ -262,6 +290,23 @@ class PublicWidgetServiceIntegrationTest {
         assertFalse(dto.budget.any { it.label == "Subvention" }, "Revenue items must not appear in budget")
         assertEquals(1, dto.milestones.size)
         assertEquals(66, dto.taxReductionRate)
+    }
+
+    @Test
+    fun `getLanding exposes goal and campaign calendar for the ACPR public-collection notice`() {
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        val campaign = assoc.widgetDestinationCampaign!!
+        campaign.startDate = java.time.LocalDate.of(2026, 1, 1)
+        campaign.endDate = java.time.LocalDate.of(2026, 12, 31)
+        campaignRepository.save(campaign)
+        entityManager.flush()
+        entityManager.clear()
+
+        val dto = publicWidgetService.getLanding(widgetToken)
+
+        assertEquals(0, campaign.goal.compareTo(dto.goal))
+        assertEquals(java.time.LocalDate.of(2026, 1, 1), dto.startDate)
+        assertEquals(java.time.LocalDate.of(2026, 12, 31), dto.endDate)
     }
 
     // ── Landing preview : contournement du gate LIVE ─────────────────────────
@@ -642,6 +687,8 @@ class PublicWidgetServiceIntegrationTest {
         donorCountry      = donorCountry,
         anonymousDisplay  = anonymousDisplay,
         consent           = true,
+        cguAccepted       = true,
+        cgvAccepted       = true,
         sourceSite        = sourceSite,
     )
 }

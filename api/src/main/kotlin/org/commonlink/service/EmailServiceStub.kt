@@ -92,6 +92,18 @@ class EmailServiceStub : EmailService {
         )
     }
 
+    /** Logs the campaign report alert notification instead of sending an email. No reporter content is logged. */
+    override fun sendCampaignReportAlertOpened(
+        recipientEmail: String,
+        alertId: java.util.UUID,
+        alertUrl: String,
+    ) {
+        logger.info(
+            "Campaign report alert {} — would notify compliance at {}: {}",
+            alertId, recipientEmail, alertUrl,
+        )
+    }
+
     /** Logs the technical alert instead of sending an email. The stack trace is already in the log. */
     override fun sendTechnicalAlert(
         recipientEmail: String,

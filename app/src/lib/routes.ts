@@ -26,6 +26,10 @@ export const ROUTES = {
     root: '/compliance',
     alerts: '/compliance/alerts',
     alertDetail: (id: string) => `/compliance/alerts/${id}`,
+    associations: '/compliance/associations',
+    associationDetail: (id: string) => `/compliance/associations/${id}`,
+    campaignDetail: (associationId: string, campaignId: string) =>
+      `/compliance/associations/${associationId}/campaigns/${campaignId}`,
   },
 } as const;
 

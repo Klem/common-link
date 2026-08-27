@@ -39,6 +39,8 @@ export function useGuestDonation({ widgetToken, sourceSite, locale, tracking }: 
     defaultValues: {
       donorCountry: 'FR',
       anonymousDisplay: false,
+      cguAccepted: false,
+      cgvAccepted: false,
     },
   });
 
@@ -80,6 +82,10 @@ export function useGuestDonation({ widgetToken, sourceSite, locale, tracking }: 
       } else if (response?.status === 409) {
         setBlocked(true);
         setSubmitError(t('errors.notCollecting'));
+      } else if (response?.status === 429) {
+        // Double-submit guard (same widget/donor/amount within 60s) — transient, not `blocked`:
+        // the donor can retry shortly, unlike the 409 cases above.
+        setSubmitError(t('errors.duplicateSubmit'));
       } else {
         setSubmitError(t('errors.submitFailed'));
       }

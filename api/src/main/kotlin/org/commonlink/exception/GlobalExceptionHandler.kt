@@ -69,9 +69,9 @@ class GlobalExceptionHandler(
         request: WebRequest
     ): ResponseEntity<Any>? {
         val errors = ex.bindingResult.fieldErrors.map { "${it.field}: ${it.defaultMessage}" }
-        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, "Validation failed")
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, "Validation failed")
         problem.setProperty("errors", errors)
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem)
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(problem)
     }
 
     /**
@@ -191,7 +191,9 @@ class GlobalExceptionHandler(
     /**
      * Handles [RateLimitException] (HTTP 429).
      *
-     * Includes a `Retry-After: 600` header (10 minutes) as guidance for clients and proxies.
+     * Includes a `Retry-After` header — [RateLimitException.retryAfterSeconds], matching whatever
+     * window the throwing [org.commonlink.security.AuthRateLimiter.check] call was configured
+     * with, not a value hardcoded here.
      *
      * Alerted **on burst only**, for the same reason as [handleAccessDenied]: the limiter doing its
      * job on one impatient user is not news, whereas a sustained stream of 429s on the login path
@@ -203,7 +205,7 @@ class GlobalExceptionHandler(
         burst(TechnicalAlertKind.RATE_LIMIT_BURST, request)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.message ?: "Rate limit exceeded")
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-            .header("Retry-After", "600")
+            .header("Retry-After", ex.retryAfterSeconds.toString())
             .body(problem)
     }
 
@@ -262,8 +264,8 @@ class GlobalExceptionHandler(
     @ExceptionHandler(UnprocessableEntityException::class)
     fun handleUnprocessableEntity(ex: UnprocessableEntityException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
         appLogger.debug("Unprocessable entity on {}: {}", path(request), ex.message)
-        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.message ?: "Unprocessable entity")
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem)
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, ex.message ?: "Unprocessable entity")
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(problem)
     }
 
     /**

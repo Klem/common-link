@@ -12,6 +12,7 @@ import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
+import org.commonlink.exception.RateLimitException
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.AuthRateLimiter
 import org.commonlink.security.ClientIpResolver
@@ -19,6 +20,7 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.CampaignReportService
 import org.commonlink.service.PublicWidgetService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,6 +31,7 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
@@ -38,7 +41,6 @@ import java.util.UUID
 @Import(
     SecurityConfig::class,
     JwtAuthenticationFilter::class,
-    AuthRateLimiter::class,
     ClientIpResolver::class,
 )
 @TestPropertySource(properties = [
@@ -56,6 +58,9 @@ class PublicWidgetControllerTest {
     private lateinit var publicWidgetService: PublicWidgetService
 
     @MockkBean
+    private lateinit var campaignReportService: CampaignReportService
+
+    @MockkBean
     private lateinit var jwtService: JwtService
 
     @MockkBean
@@ -63,6 +68,14 @@ class PublicWidgetControllerTest {
 
     @MockkBean
     private lateinit var userRepository: UserRepository
+
+    // Unstubbed on purpose: MockK no-ops an unstubbed Unit-returning call, so every existing
+    // `createDonation` test below keeps passing (real AuthRateLimiter's shared in-memory state
+    // would otherwise let one test's calls consume another's quota, since several tests reuse
+    // `clk_valid` + `validRequest`'s donorEmail/amount). See the dedicated double-submit test,
+    // which stubs this explicitly.
+    @MockkBean(relaxed = true)
+    private lateinit var rateLimiter: AuthRateLimiter
 
     private val campaignId = UUID.fromString("00000000-0000-0000-0000-000000000042")
 
@@ -92,6 +105,8 @@ class PublicWidgetControllerTest {
         donorCountry = "FR",
         anonymousDisplay = false,
         consent = true,
+        cguAccepted = true,
+        cgvAccepted = true,
         sourceSite = "https://example.org",
     )
 
@@ -195,7 +210,9 @@ class PublicWidgetControllerTest {
               "donorCity": "Paris",
               "donorCountry": "FR",
               "anonymousDisplay": false,
-              "consent": true
+              "consent": true,
+              "cguAccepted": true,
+              "cgvAccepted": true
             }
         """.trimIndent()
 
@@ -227,7 +244,9 @@ class PublicWidgetControllerTest {
               "donorCity": "Paris",
               "donorCountry": "FR",
               "anonymousDisplay": false,
-              "consent": true
+              "consent": true,
+              "cguAccepted": true,
+              "cgvAccepted": true
             }
         """.trimIndent()
 
@@ -261,6 +280,26 @@ class PublicWidgetControllerTest {
     @Test
     fun `createDonation - 422 when consent is false`() {
         val req = validRequest.copy(consent = false)
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req))
+        ).andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `createDonation - 422 when cguAccepted is false`() {
+        val req = validRequest.copy(cguAccepted = false)
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req))
+        ).andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `createDonation - 422 when cgvAccepted is false`() {
+        val req = validRequest.copy(cgvAccepted = false)
         mockMvc.perform(
             post("/api/public/widget/clk_valid/donations")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -330,6 +369,23 @@ class PublicWidgetControllerTest {
         ).andExpect(status().isNotFound)
     }
 
+    @Test
+    fun `createDonation - 429 with 60s Retry-After on an identical resubmit, before reaching the service`() {
+        every {
+            rateLimiter.check(match { it.startsWith("donation:submit:") }, maxAttempts = 1, windowMinutes = 1)
+        } throws RateLimitException(retryAfterSeconds = 60)
+
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest))
+        )
+            .andExpect(status().isTooManyRequests)
+            .andExpect(header().string("Retry-After", "60"))
+
+        verify(exactly = 0) { publicWidgetService.createDonation(any(), any()) }
+    }
+
     // ── GET /widget/donations/{ref}/status ────────────────────────────────────
 
     @Test
@@ -391,6 +447,8 @@ class PublicWidgetControllerTest {
         campaignCategory = null,
         goal = BigDecimal("1000.00"),
         raised = BigDecimal("250.00"),
+        startDate = null,
+        endDate = null,
         coverImage = null,
         budget = emptyList(),
         budgetHash = null,

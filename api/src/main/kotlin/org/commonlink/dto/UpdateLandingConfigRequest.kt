@@ -15,15 +15,6 @@ data class UpdateLandingConfigRequest(
     /** Visual palette of the landing page. Null leaves the current theme unchanged. */
     val theme: LandingTheme? = null,
 
-    /** Show the "what this donation funds" section. Null leaves the current value unchanged. */
-    val showProject: Boolean? = null,
-
-    /** Show the budget / milestones transparency section. Null leaves the current value unchanged. */
-    val showTransparency: Boolean? = null,
-
-    /** Show the "donate with confidence" section. Null leaves the current value unchanged. */
-    val showTrust: Boolean? = null,
-
     /**
      * Google Tag Manager container ID (e.g. `GTM-XXXXXXX`). Null/absent leaves the current value
      * unchanged; an empty string clears it (no GTM injection anywhere). This field is interpolated

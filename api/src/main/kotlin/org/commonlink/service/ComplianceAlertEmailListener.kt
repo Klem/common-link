@@ -10,22 +10,26 @@ import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 
 /**
- * Notifies the compliance function by e-mail when an asset-freeze alert is raised on a donor.
+ * Notifies the compliance function by e-mail when certain compliance alerts are raised.
  *
- * ### Why only the donation origin
- * Scoped to [ComplianceAlertOrigin.FREEZE_HIT_DONATION]. The onboarding origin already has a human
- * in the loop — a curator is sitting in front of the dossier when the screening runs and sees the
- * refusal immediately. A donation happens with nobody watching: the donor is bounced with a neutral
- * message, the association is never told, and without this e-mail the alert sits in `PENDING` until
- * somebody happens to open the back-office.
+ * ### Why only these two origins
+ * [ComplianceAlertOrigin.FREEZE_HIT_DONATION] and [ComplianceAlertOrigin.CAMPAIGN_REPORT] both
+ * happen with nobody watching: a donor or an anonymous visitor triggers them outside any back-office
+ * session, so without an e-mail the alert sits in `PENDING` until somebody happens to open the
+ * compliance dashboard. [ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING] already has a human in the
+ * loop — a curator is sitting in front of the dossier when the screening runs and sees the refusal
+ * immediately.
  *
- * **Widening the origin set is not a one-line change.** The message body asserts that the donation
- * was refused and that no payment was created — true for [ComplianceAlertOrigin.FREEZE_HIT_DONATION],
- * where the throw in `PublicWidgetService.createDonation` precedes any Mollie call, but false or
- * unverified elsewhere: [ComplianceAlertOrigin.SCREENING_UNAVAILABLE] is also raised from the
- * onboarding path, and [ComplianceAlertOrigin.ATYPICALITY_RULE] would by design fire on an *already
- * settled* donation. A compliance e-mail that misstates whether money moved is worse than no e-mail —
- * any new origin needs its own body text, not just an entry in the guard below.
+ * **Widening the origin set is not a one-line change.** Each origin's body text makes a specific,
+ * verified claim about what already happened: [ComplianceAlertOrigin.FREEZE_HIT_DONATION] asserts
+ * the donation was refused and no payment was created — true there because the throw in
+ * `PublicWidgetService.createDonation` precedes any Mollie call — but false or unverified elsewhere:
+ * [ComplianceAlertOrigin.SCREENING_UNAVAILABLE] is also raised from the onboarding path, and
+ * [ComplianceAlertOrigin.ATYPICALITY_RULE] would by design fire on an *already settled* donation.
+ * [ComplianceAlertOrigin.CAMPAIGN_REPORT]'s body asserts nothing was blocked, because at the point
+ * the alert opens nothing has been — see [EmailService.sendCampaignReportAlertOpened]. A compliance
+ * e-mail that misstates whether money moved, or whether the association was suspended, is worse
+ * than no e-mail — any new origin needs its own body text, not just an entry in the guard below.
  *
  * ### Delivery semantics
  * `AFTER_COMMIT` — [ComplianceAlertService.createOrIgnore] runs `REQUIRES_NEW`, so the alert row is
@@ -52,8 +56,14 @@ class ComplianceAlertEmailListener(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     fun onAlertOpened(event: ComplianceAlertOpenedEvent) {
-        if (event.origin != ComplianceAlertOrigin.FREEZE_HIT_DONATION) return
+        when (event.origin) {
+            ComplianceAlertOrigin.FREEZE_HIT_DONATION -> notifyDonorFreezeAlert(event)
+            ComplianceAlertOrigin.CAMPAIGN_REPORT -> notifyCampaignReportAlert(event)
+            else -> return
+        }
+    }
 
+    private fun notifyDonorFreezeAlert(event: ComplianceAlertOpenedEvent) {
         if (recipientEmail.isBlank()) {
             logger.warn(
                 "app.compliance.alert-notification-email is not configured — donor freeze alert {} raised with no notification sent",
@@ -62,7 +72,7 @@ class ComplianceAlertEmailListener(
             return
         }
 
-        val alertUrl = "${frontendUrl.trimEnd('/')}/fr/compliance/alerts/${event.alertId}"
+        val alertUrl = alertUrl(event.alertId)
         try {
             emailService.sendDonorFreezeAlertOpened(
                 recipientEmail = recipientEmail,
@@ -81,4 +91,32 @@ class ComplianceAlertEmailListener(
             )
         }
     }
+
+    /** IC-44 — a public campaign report was received; see [EmailService.sendCampaignReportAlertOpened]. */
+    private fun notifyCampaignReportAlert(event: ComplianceAlertOpenedEvent) {
+        if (recipientEmail.isBlank()) {
+            logger.warn(
+                "app.compliance.alert-notification-email is not configured — campaign report alert {} raised with no notification sent",
+                event.alertId,
+            )
+            return
+        }
+
+        val alertUrl = alertUrl(event.alertId)
+        try {
+            emailService.sendCampaignReportAlertOpened(
+                recipientEmail = recipientEmail,
+                alertId = event.alertId,
+                alertUrl = alertUrl,
+            )
+            logger.info("Notified compliance of campaign report alert {}", event.alertId)
+        } catch (e: Exception) {
+            logger.error(
+                "Failed to notify compliance of campaign report alert {}: {}",
+                event.alertId, e.javaClass.simpleName,
+            )
+        }
+    }
+
+    private fun alertUrl(alertId: java.util.UUID) = "${frontendUrl.trimEnd('/')}/fr/compliance/alerts/$alertId"
 }

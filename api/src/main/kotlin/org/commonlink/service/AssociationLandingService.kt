@@ -64,19 +64,12 @@ class AssociationLandingService(
         val profile = resolveProfile(userId)
 
         req.theme?.let { profile.landingTheme = it }
-        req.showProject?.let { profile.landingShowProject = it }
-        req.showTransparency?.let { profile.landingShowTransparency = it }
-        req.showTrust?.let { profile.landingShowTrust = it }
         // Blank clears the field (no GTM injection); a non-blank value has already passed the
         // GTM-XXXXXXX pattern check on the request DTO.
         req.gtmContainerId?.let { profile.gtmContainerId = it.ifBlank { null } }
 
         val saved = associationProfileRepository.save(profile)
-        logger.info(
-            "Landing config updated for association {}: theme={}, project={}, transparency={}, trust={}",
-            saved.id, saved.landingTheme, saved.landingShowProject,
-            saved.landingShowTransparency, saved.landingShowTrust,
-        )
+        logger.info("Landing config updated for association {}: theme={}", saved.id, saved.landingTheme)
         return saved.toDto()
     }
 

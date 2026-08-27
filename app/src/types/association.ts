@@ -8,6 +8,20 @@ export const VerificationStatus = {
 export type VerificationStatus = typeof VerificationStatus[keyof typeof VerificationStatus];
 
 /**
+ * Compliance status of an association (IC-44 — canal de signalement de campagne).
+ *
+ * `ACTIVE` is normal. `ALERT` means a campaign report is open and awaiting compliance review —
+ * internal only, does not gate donations or public visibility. `SUSPENDED` means a report was
+ * confirmed founded and blocks every campaign of this association from accepting donations.
+ */
+export const AssociationStatus = {
+  ACTIVE: 'ACTIVE',
+  ALERT: 'ALERT',
+  SUSPENDED: 'SUSPENDED',
+} as const;
+export type AssociationStatus = typeof AssociationStatus[keyof typeof AssociationStatus];
+
+/**
  * Visual palette of an association's donation landing page.
  *
  * Single source of truth for both surfaces: the settings tab and the public landing page
@@ -72,12 +86,6 @@ export interface AssociationProfileDto {
   landingTheme: LandingTheme;
   /** Public serving path of the landing logo, null if none was uploaded. */
   landingLogo: string | null;
-  /** Whether the landing page shows the "what this donation funds" section. */
-  landingShowProject: boolean;
-  /** Whether the landing page shows the transparency section. */
-  landingShowTransparency: boolean;
-  /** Whether the landing page shows the "donate with confidence" section. */
-  landingShowTrust: boolean;
   /** Google Tag Manager container ID for Ad Grants tracking. Null if not configured. */
   gtmContainerId: string | null;
 }
@@ -88,9 +96,6 @@ export interface AssociationProfileDto {
  */
 export interface UpdateLandingConfigRequest {
   theme?: LandingTheme;
-  showProject?: boolean;
-  showTransparency?: boolean;
-  showTrust?: boolean;
   /**
    * Google Tag Manager container ID (e.g. `GTM-XXXXXXX`). Omitted/undefined leaves the current
    * value unchanged; an empty string clears it.

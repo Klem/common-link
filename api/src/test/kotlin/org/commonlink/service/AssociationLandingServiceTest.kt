@@ -59,39 +59,24 @@ class AssociationLandingServiceTest {
     // ── Landing config ────────────────────────────────────────────────────────
 
     @Test
-    fun `updateLandingConfig - theme only leaves section flags untouched`() {
-        val profile = profile().apply { landingShowTransparency = false }
+    fun `updateLandingConfig - sets the theme`() {
+        val profile = profile()
         stubProfile(profile)
 
         val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(theme = LandingTheme.NATURE))
 
         assertEquals(LandingTheme.NATURE, dto.landingTheme)
-        // A partial PATCH must never reset the fields it does not carry.
-        assertEquals(false, dto.landingShowTransparency)
-        assertTrue(dto.landingShowProject)
-        assertTrue(dto.landingShowTrust)
-    }
-
-    @Test
-    fun `updateLandingConfig - section flag only leaves theme untouched`() {
-        val profile = profile().apply { landingTheme = LandingTheme.WARM }
-        stubProfile(profile)
-
-        val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(showProject = false))
-
-        assertEquals(LandingTheme.WARM, dto.landingTheme)
-        assertEquals(false, dto.landingShowProject)
     }
 
     @Test
     fun `updateLandingConfig - empty request changes nothing`() {
-        val profile = profile()
+        val profile = profile().apply { landingTheme = LandingTheme.WARM }
         stubProfile(profile)
 
         val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest())
 
-        assertEquals(LandingTheme.DEFAULT, dto.landingTheme)
-        assertTrue(dto.landingShowProject && dto.landingShowTransparency && dto.landingShowTrust)
+        // A partial PATCH must never reset the fields it does not carry.
+        assertEquals(LandingTheme.WARM, dto.landingTheme)
     }
 
     @Test
@@ -99,7 +84,7 @@ class AssociationLandingServiceTest {
         val profile = profile()
         stubProfile(profile)
 
-        service.updateLandingConfig(userId, UpdateLandingConfigRequest(showTrust = false))
+        service.updateLandingConfig(userId, UpdateLandingConfigRequest(theme = LandingTheme.NATURE))
 
         verify(exactly = 1) { onboardingGate.requireBankReady(userId) }
     }

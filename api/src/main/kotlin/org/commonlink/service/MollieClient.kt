@@ -102,8 +102,10 @@ private data class MollieCreatePaymentRequestJson(
  * places, e.g. `"10.00"`. Passing a JSON number causes a 422.
  *
  * **Idempotency-Key:** when provided, the header is sent to Mollie on [createPayment]. Mollie
- * honours the key for 1 hour; use a UUID4 derived from a stable intent identifier to protect
- * against network retries before a `providerRef` exists locally.
+ * honours the key for 1 hour and rejects reuse of a key whose request body differs from the
+ * first call — so the key must be unique to the exact parameters sent, not merely to the
+ * donor+amount+widget "intent" (a caller wanting protection against double-submits must reuse
+ * both the same key AND send a byte-identical body across the retry).
  */
 @Service
 class MollieClient(

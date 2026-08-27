@@ -125,6 +125,9 @@ export interface PublicLandingDto {
   goal: number;
   raised: number;
   currency: string;
+  /** ISO 8601 (YYYY-MM-DD), null when the association left the calendrier unset. */
+  startDate: string | null;
+  endDate: string | null;
   coverImage: string | null;
   budget: LandingBudgetPostDto[];
   budgetHash: string | null;
@@ -134,9 +137,6 @@ export interface PublicLandingDto {
   landingTheme: LandingTheme;
   /** Public serving path of the association logo, null when none was uploaded. */
   landingLogo: string | null;
-  showProject: boolean;
-  showTransparency: boolean;
-  showTrust: boolean;
   /**
    * False only in preview mode on a campaign that is not LIVE: the donation endpoint would refuse
    * the payment, so the form must be rendered disabled rather than fail on submit.
@@ -161,3 +161,25 @@ export const getLanding = (token: string, preview?: string | null): Promise<Publ
       params: preview ? { preview } : undefined,
     })
     .then((r) => r.data);
+
+export interface CampaignReportRequest {
+  message: string;
+  reporterEmail?: string;
+}
+
+/**
+ * Reports the widget's destination campaign to the compliance function (IC-44).
+ *
+ * No authentication required — reporting works with or without a CommonLink account. Does not
+ * affect what the caller sees afterwards: opening (or reusing) a compliance alert is internal
+ * only, see `AssociationStatus` on the backend.
+ */
+export const reportCampaign = (token: string, payload: CampaignReportRequest): Promise<void> =>
+  publicApi.post<void>(`/api/public/widget/${token}/report`, payload).then(() => undefined);
+
+export { LegalDocumentType } from '@/types/legal';
+import type { LegalDocumentDto, LegalDocumentType } from '@/types/legal';
+
+/** Public, unauthenticated read of the current CGU/CGV text — no account required. */
+export const getLegalDocument = (documentType: LegalDocumentType): Promise<LegalDocumentDto> =>
+  publicApi.get<LegalDocumentDto>(`/api/public/legal/${documentType}`).then((r) => r.data);

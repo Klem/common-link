@@ -375,9 +375,11 @@
         "subject": "Subject"
       },
       "empty": "No freeze alerts.",
+      "emptyCampaignReport": "No campaign reports.",
       "error": "Error loading alerts.",
       "loading": "Loading alerts…",
       "origin": {
+        "CAMPAIGN_REPORT": "Campaign report",
         "FREEZE_HIT_DONATION": "Freeze — Donation",
         "FREEZE_HIT_ONBOARDING": "Freeze — Onboarding",
         "SCREENING_UNAVAILABLE": "Screening unavailable"
@@ -403,7 +405,151 @@
         "REPRESENTATIVE": "Legal representative",
         "SYSTEM": "System"
       },
-      "title": "Freeze alerts"
+      "tabs": {
+        "campaignReport": "Campaign reports",
+        "freeze": "Freeze"
+      },
+      "title": "Alerts"
+    },
+    "associations": {
+      "campaignHistory": {
+        "backToAssociation": "← Back to the association",
+        "col": {
+          "date": "Date",
+          "outcome": "Outcome",
+          "reason": "Motif"
+        },
+        "donorAcceptances": {
+          "col": {
+            "acceptedAt": "Accepted on",
+            "document": "Document",
+            "version": "Version"
+          },
+          "empty": "No donor acceptance recorded for this campaign.",
+          "error": "Failed to load donor acceptance history.",
+          "loading": "Loading donor acceptance history…",
+          "notice": "This lists every CGU/CGV acceptance recorded when a donation was started on this campaign — including a donation whose payment was never completed. It is not the campaign's donor list.",
+          "title": "Donor CGU/CGV acceptance history"
+        },
+        "empty": "No publish attempt recorded yet.",
+        "error": "Failed to load this campaign's history.",
+        "loading": "Loading history…",
+        "notice": "This is the history of publish attempts (retained/refused, with motif) — not a general campaign status history. Status changes after publication (e.g. live to paused) are not tracked.",
+        "outcome": {
+          "CAMPAIGN_REVIEW_REFUSED": "Refused",
+          "CAMPAIGN_REVIEW_RETAINED": "Retained"
+        },
+        "reason": {
+          "BANK_CONNECTION_BROKEN": "Mollie connection broken",
+          "BANK_KYC_INCOMPLETE": "Mollie identity verification incomplete",
+          "BANK_NOT_CONNECTED": "No Mollie account connected",
+          "BUDGET_UNBALANCED": "Budget forecast missing or unbalanced (EUR 1 tolerance)",
+          "CGU_NOT_ACCEPTED": "Terms of use not accepted (art. 1740 A CGI)",
+          "GOAL_MISSING": "Fundraising goal missing or zero",
+          "IMPACT_GOALS_MISSING": "Expected outcome missing or under 20 characters",
+          "KYB_NOT_VERIFIED": "Association's identification file not verified",
+          "SCHEDULE_MISSING": "Start or end date missing"
+        },
+        "title": "Publish-attempt history"
+      },
+      "col": {
+        "identifier": "Identifier",
+        "name": "Name",
+        "risk": "Risk level",
+        "status": "Status",
+        "verification": "KYB"
+      },
+      "detail": {
+        "backToList": "← Back to associations",
+        "campaigns": {
+          "col": {
+            "createdAt": "Created",
+            "goal": "Goal",
+            "name": "Name",
+            "raised": "Raised",
+            "status": "Status"
+          },
+          "empty": "No campaign for this filter.",
+          "error": "Failed to load campaigns.",
+          "filterAll": "All",
+          "loading": "Loading campaigns…",
+          "status": {
+            "CANCELLED": "Cancelled",
+            "COMPLETED": "Completed",
+            "DRAFT": "Draft",
+            "ENDED": "Ended",
+            "LIVE": "Live",
+            "PAUSED": "Paused",
+            "REVERT_REQUESTED": "Revert requested"
+          },
+          "title": "Campaigns"
+        },
+        "cguCgv": {
+          "col": {
+            "acceptedAt": "Accepted on",
+            "document": "Document",
+            "signer": "Signatory",
+            "version": "Version"
+          },
+          "empty": "No acceptance recorded.",
+          "error": "Failed to load acceptance history.",
+          "loading": "Loading acceptance history…",
+          "title": "CGU/CGV acceptance history"
+        },
+        "error": "Failed to load this dossier.",
+        "legalInfo": {
+          "address": "Registered address",
+          "city": "City",
+          "contactEmail": "Contact email",
+          "contactName": "Contact name",
+          "creationYear": "Founded",
+          "identifier": "RNA / SIREN identifier",
+          "object": "Legal purpose (objet social)",
+          "phone": "Phone",
+          "postalCode": "Postal code",
+          "signer": "Authorised signer",
+          "signerRole": "Signer's role",
+          "siren": "SIREN",
+          "title": "Legal information"
+        },
+        "loading": "Loading dossier…",
+        "notFound": "Association not found.",
+        "status": {
+          "current": "Current status",
+          "risk": "Risk level",
+          "riskAssessedAt": "Risk assessed on",
+          "riskVersion": "Risk classification version",
+          "suspendedLink": "Go to alerts",
+          "suspendedNotice": "This association is suspended. To reactivate it, open the compliance alert that caused the suspension.",
+          "title": "Compliance status",
+          "verification": "KYB status",
+          "verifiedAt": "Verified on"
+        }
+      },
+      "empty": "No association found.",
+      "error": "Failed to load associations.",
+      "loading": "Loading associations…",
+      "pagination": {
+        "pageOf": "Page {current} of {total}"
+      },
+      "risk": {
+        "HIGH": "High",
+        "LOW": "Low",
+        "STANDARD": "Standard"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "ALERT": "Under review",
+        "SUSPENDED": "Suspended"
+      },
+      "subtitle": "Every association, independent of alerts or registry scans on file.",
+      "title": "Associations",
+      "verification": {
+        "PENDING": "Pending review",
+        "REJECTED": "Rejected",
+        "UNVERIFIED": "Unverified",
+        "VERIFIED": "Verified"
+      }
     },
     "auditLog": {
       "col": {
@@ -428,6 +574,13 @@
     "detail": {
       "age": "Age",
       "backToList": "Back to list",
+      "campaignReports": {
+        "anonymous": "Anonymous",
+        "empty": "No report recorded for this alert.",
+        "occurredAt": "Received on",
+        "reporterEmail": "Reporter e-mail",
+        "title": "Reports received"
+      },
       "closed": {
         "decision": "Decision",
         "rationale": "Rationale",
@@ -441,6 +594,11 @@
         "label": "Decision",
         "placeholder": "Select a decision…",
         "title": "Close alert"
+      },
+      "decisionCampaignReport": {
+        "FALSE_POSITIVE": "Report not founded — misunderstanding",
+        "LEGITIMATE": "Report not founded — campaign is compliant",
+        "SUSPICIOUS": "Report confirmed founded"
       },
       "error": "Error loading alert.",
       "history": {
@@ -463,6 +621,14 @@
       "rationale": {
         "label": "Rationale (mandatory)",
         "placeholder": "State the elements supporting this decision."
+      },
+      "reactivate": {
+        "button": "Reactivate",
+        "description": "Lifts the suspension. The alert above stays closed with its founded decision as the record — this is a separate, later action.",
+        "rationaleLabel": "Reason for reactivation",
+        "rationalePlaceholder": "e.g. the association corrected the reported issue, contested and provided evidence...",
+        "success": "Association reactivated.",
+        "title": "Reactivate the association"
       },
       "severity": "Severity",
       "status": "Status",
@@ -527,7 +693,8 @@
       "yes": "Yes"
     },
     "nav": {
-      "alerts": "Freeze alerts",
+      "alerts": "Alerts",
+      "associations": "Associations",
       "dashboard": "Dashboard"
     },
     "priorDecisions": {
@@ -978,9 +1145,13 @@
       "actionReport": "View report",
       "actionShare": "Share",
       "badge": {
+        "cancelled": "✕ Cancelled",
+        "completed": "✓ Completed",
         "draft": "⚙️ Draft",
         "ended": "✓ Ended",
-        "live": "● Active"
+        "live": "● Active",
+        "paused": "⏸ Paused",
+        "revertRequested": "↩ Revert requested"
       },
       "create": "Create a campaign",
       "defaultName": "New campaign",
@@ -1292,6 +1463,11 @@
           }
         },
         "add": "Add",
+        "cgu": {
+          "label": "By publishing this campaign, you accept the",
+          "link": "Terms of Use (CGU)",
+          "section": "Terms of use"
+        },
         "complete": "Complete required fields",
         "confirm": "🚀 Publish",
         "continueEditing": "Continue editing",
@@ -1647,8 +1823,30 @@
       "label": "Preview"
     },
     "project": {
+      "calendarFrom": "Since {start}",
+      "calendarFull": "From {start} to {end}",
+      "calendarLabel": "Timeline",
+      "calendarUntil": "Until {end}",
       "eyebrow": "What your donation funds",
+      "goalLabel": "Fundraising goal",
       "impactTitle": "Impact goals"
+    },
+    "report": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "closeButton": "Close",
+      "description": "Tell us what's wrong with this campaign. Our compliance team will review your report.",
+      "emailHint": "Only used by our compliance team if they need to reach you. No reply is guaranteed.",
+      "emailLabel": "Your e-mail (optional)",
+      "emailPlaceholder": "you@example.com",
+      "error": "Something went wrong. Please try again.",
+      "messageLabel": "Your message",
+      "messagePlaceholder": "Describe the issue...",
+      "submit": "Send report",
+      "submitting": "Sending...",
+      "success": "Thank you. Your report has been recorded and will be reviewed.",
+      "title": "Report this campaign",
+      "trigger": "Report this campaign"
     },
     "sticky": {
       "cta": "Donate €{amount} →",
@@ -1672,6 +1870,16 @@
         "title": "Guaranteed traceability"
       }
     }
+  },
+  "legal": {
+    "close": "Close",
+    "loadError": "Could not load this document. Please try again.",
+    "loading": "Loading…",
+    "title": {
+      "CGU": "Terms of Use",
+      "CGV": "Terms of Sale"
+    },
+    "version": "Version {version}"
   },
   "settings": {
     "landing": {
@@ -1707,7 +1915,7 @@
           "reload": "Regenerate",
           "title": "Standalone HTML page"
         },
-        "hint": "Enter your GTM container ID to enable Google Ad Grants tracking on your landing page and your widget. Detailed tracking (dataLayer) will be added in a future update.",
+        "hint": "Enter your GTM container ID to enable Google Ad Grants tracking on your landing page and your widget.",
         "label": "GTM container ID",
         "placeholder": "GTM-XXXXXXX",
         "save": "Save",
@@ -1734,14 +1942,6 @@
         "open": "Preview",
         "reload": "Refresh",
         "title": "Preview of your donation page"
-      },
-      "sections": {
-        "donationLocked": "The donation form is always shown: it is the purpose of the page.",
-        "hint": "Choose what your donation page shows. Changes are saved immediately.",
-        "showProject": "What the donation funds",
-        "showTransparency": "Budget transparency",
-        "showTrust": "Donate with confidence",
-        "title": "Page sections"
       },
       "snippet": {
         "copied": "Copied",
@@ -1837,6 +2037,14 @@
       "goal": "Goal",
       "raised": "Raised"
     },
+    "cgu": {
+      "label": "I accept the",
+      "link": "Terms of Use (CGU)"
+    },
+    "cgv": {
+      "label": "I accept the",
+      "link": "Terms of Sale (CGV)"
+    },
     "consent": {
       "label": "I consent to my personal data being processed for this donation (GDPR)"
     },
@@ -1847,8 +2055,11 @@
       "amountRequired": "Amount is required",
       "capExceeded": "This amount exceeds what the campaign can still collect. Please enter a lower amount.",
       "capFull": "This campaign has reached its collection cap and no longer accepts donations.",
+      "cguRequired": "You must accept the Terms of Use",
+      "cgvRequired": "You must accept the Terms of Sale",
       "consentRequired": "You must consent to proceed",
       "countryInvalid": "Please enter a valid 2-letter country code",
+      "duplicateSubmit": "This donation was already submitted. Please wait a minute before trying again.",
       "emailInvalid": "Please enter a valid email address",
       "emailRequired": "Email is required",
       "fieldRequired": "This field is required",

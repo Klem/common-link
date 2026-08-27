@@ -16,6 +16,7 @@ export function Footer() {
               {t('brand.name')}
             </strong>
             <p className="text-[0.9rem]">{t('brand.description')}</p>
+            <p className="text-[0.8rem] mt-2 opacity-70">{t('brand.legalNotice')}</p>
           </div>
 
           {/* Navigation */}
@@ -55,6 +56,7 @@ export function Footer() {
             <Link href="/contact" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.contact')}</Link>
             <Link href="/tarifs" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.tarifs')}</Link>
             <Link href="/faq" className="text-white/70 text-[0.9rem] hover:text-white transition-colors duration-200">{t('legal.links.faq')}</Link>
+            <p className="text-[0.75rem] mt-3 opacity-60 leading-relaxed">{t('legal.legalNotice')}</p>
           </div>
         </div>
 

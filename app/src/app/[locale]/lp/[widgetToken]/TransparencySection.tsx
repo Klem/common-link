@@ -24,9 +24,13 @@ export function TransparencySection({
   const sectionRef = useRef<HTMLDivElement>(null);
   const [animated, setAnimated] = useState(false);
 
+  // A poste can round to 0% (buildBudgetProjection rounds HALF_UP) — showing it as an empty bar
+  // would be misleading rather than transparent, so it is dropped from display entirely.
+  const visibleBudget = budget.filter((item) => item.percentage > 0);
+
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el || budget.length === 0) return;
+    if (!el || visibleBudget.length === 0) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -38,7 +42,7 @@ export function TransparencySection({
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [budget.length]);
+  }, [visibleBudget.length]);
 
   const commitments = milestones
     .filter((m) => m.transparencyCommitment !== null)
@@ -50,9 +54,9 @@ export function TransparencySection({
         <span className="lp-eyebrow">{t('transparency.eyebrow')}</span>
         <h2 className="lp-section-title">{t('transparency.title')}</h2>
 
-        {budget.length > 0 && (
+        {visibleBudget.length > 0 && (
           <div className="lp-budget-list">
-            {budget.map((item, index) => (
+            {visibleBudget.map((item, index) => (
               <div key={item.label} className="lp-budget-item">
                 <div className="lp-budget-row">
                   <span className="lp-budget-label">{item.label}</span>

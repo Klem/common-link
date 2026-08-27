@@ -84,7 +84,7 @@ export function RegistrationForm({
         </button>
       </div>
 
-      <h3 className="text-center mb-6">{t('selectedTitle')}</h3>
+      <h3 className="text-center mb-6">{t('formTitle')}</h3>
 
       <form onSubmit={handleSubmit}>
         <FormInput

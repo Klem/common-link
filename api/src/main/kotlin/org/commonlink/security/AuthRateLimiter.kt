@@ -51,7 +51,7 @@ class AuthRateLimiter {
         val attempts = windows.computeIfAbsent(key) { Collections.synchronizedList(mutableListOf()) }
         synchronized(attempts) {
             attempts.removeIf { it.isBefore(cutoff) }
-            if (attempts.size >= maxAttempts) throw RateLimitException()
+            if (attempts.size >= maxAttempts) throw RateLimitException(retryAfterSeconds = windowMinutes * 60)
             attempts.add(now)
         }
         sweepIfDue(cutoff)

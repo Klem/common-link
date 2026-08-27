@@ -14,10 +14,12 @@ import org.commonlink.dto.toSummaryDto
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignBudgetItem
+import org.commonlink.entity.CampaignReviewRefusalReason
 import org.commonlink.entity.CampaignCoverImage
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
@@ -75,8 +77,10 @@ class CampaignService(
     private val campaignCoverImageRepository: CampaignCoverImageRepository,
     private val associationProfileRepository: AssociationProfileRepository,
     private val mollieConnectionRepository: MollieConnectionRepository,
+    private val complianceAuditLogService: ComplianceAuditLogService,
     private val budgetHasher: CampaignBudgetHasher,
     private val outbox: OnchainOutboxService,
+    private val legalAcceptanceService: LegalAcceptanceService,
 ) {
 
     private val logger = LoggerFactory.getLogger(CampaignService::class.java)
@@ -214,7 +218,7 @@ class CampaignService(
         if (req.status != null) {
             validateStatusTransition(campaign.status, req.status)
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
-                preparePublish(campaign, associationId)
+                preparePublish(campaign, associationId, req.cguAccepted)
             }
             if (req.status == CampaignStatus.REVERT_REQUESTED && campaign.raised > BigDecimal.ZERO) {
                 throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
@@ -680,10 +684,14 @@ class CampaignService(
      * Pre-save checks and preparation for the DRAFT→LIVE publish transition.
      * Sets [Campaign.budgetHash] on the campaign instance (persisted by the caller's save).
      *
-     * A balanced budget prévisionnel ([requireBalancedBudget]) and a stated expected outcome
-     * ([Campaign.impactGoals], at least [MIN_IMPACT_GOALS_LENGTH] characters) are publication
-     * blockers, not recommendations: a donor is asked for money against a costed plan and a
-     * declared result. Both predicates mirror `PrePublishModal.tsx` exactly (rule 8).
+     * A balanced budget prévisionnel ([requireBalancedBudget]), a stated expected outcome
+     * ([Campaign.impactGoals], at least [MIN_IMPACT_GOALS_LENGTH] characters) and a set calendrier
+     * ([Campaign.startDate], [Campaign.endDate]) are publication blockers, not recommendations: a
+     * donor is asked for money against a costed plan, a declared result and a stated collection
+     * period — the last three of the five elements the ACPR public-collection notice requires on
+     * the public landing page (`PublicWidgetService.getLanding`), the first two being the campaign's
+     * objet and montant cible, already required at creation. All predicates mirror
+     * `PrePublishModal.tsx` exactly (rule 8).
      *
      * The KYB guard re-checks [org.commonlink.entity.AssociationProfile.verificationStatus] at publish
      * time. The onboarding chain already implies it transitively (a signed mandate requires VERIFIED,
@@ -697,12 +705,25 @@ class CampaignService(
      * message — "not connected" and "broken link" call for different user actions than
      * "KYC incomplete".
      */
-    private fun preparePublish(campaign: Campaign, associationId: UUID) {
+    private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean) {
         if (campaign.goal <= BigDecimal.ZERO) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.GOAL_MISSING)
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
         }
-        requireBalancedBudget(campaign)
+        // Mirrors `required.dates` in PrePublishModal.tsx (rule 8) — the calendrier is one of the
+        // five elements the ACPR public-collection notice mandates on the public landing page.
+        if (campaign.startDate == null || campaign.endDate == null) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.SCHEDULE_MISSING)
+            throw UnprocessableEntityException("Campaign start and end dates must be set before publishing")
+        }
+        try {
+            requireBalancedBudget(campaign)
+        } catch (e: UnprocessableEntityException) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.BUDGET_UNBALANCED)
+            throw e
+        }
         if ((campaign.impactGoals?.trim()?.length ?: 0) < MIN_IMPACT_GOALS_LENGTH) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.IMPACT_GOALS_MISSING)
             throw UnprocessableEntityException(
                 "Expected outcome (impactGoals) must be at least $MIN_IMPACT_GOALS_LENGTH characters before publishing"
             )
@@ -710,18 +731,52 @@ class CampaignService(
         val profile = associationProfileRepository.findById(associationId)
             .orElseThrow { UserNotFoundException("Association profile not found: $associationId") }
         if (profile.verificationStatus != VerificationStatus.VERIFIED) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.KYB_NOT_VERIFIED)
             throw UnprocessableEntityException("Association KYB must be verified before going live")
         }
         val connection = mollieConnectionRepository.findByAssociationId(associationId)
-            ?: throw UnprocessableEntityException("Association must connect a Mollie account before going live")
+            ?: run {
+                logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_NOT_CONNECTED)
+                throw UnprocessableEntityException("Association must connect a Mollie account before going live")
+            }
         if (connection.state == MollieConnectionState.BROKEN) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_CONNECTION_BROKEN)
             throw UnprocessableEntityException("Mollie connection is broken — re-authorization required before going live")
         }
         if (!connection.canCollectDonations()) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_KYC_INCOMPLETE)
             throw UnprocessableEntityException("Association must complete Mollie KYC before going live")
         }
+        // Art. 1740 A CGI proof of acceptance — no-op once this association has already accepted
+        // the current CGU version (see LegalAcceptanceService KDoc).
+        try {
+            legalAcceptanceService.requireAssociationAcceptance(
+                associationId = associationId,
+                documentType = LegalDocumentType.CGU,
+                accepted = cguAccepted,
+                signerName = profile.signerName ?: profile.name,
+                signerEmail = profile.user.email,
+                campaignId = campaign.id!!,
+            )
+        } catch (e: UnprocessableEntityException) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.CGU_NOT_ACCEPTED)
+            throw e
+        }
         campaign.budgetHash = budgetHasher.hash(campaign)
+        complianceAuditLogService.appendCampaignReviewRetained(campaign.id!!, associationId)
         logger.debug("Publish prepared: campaignId={}, budgetHash={}", campaign.id, campaign.budgetHash)
+    }
+
+    /**
+     * Writes the "projet refusé" side of the annual ACPR activity report's traçage des refus
+     * (art. R.548-4 II CMF) — see `docs/legal/E6-tracage-refus-metriques-rapport-annuel.md`. Called
+     * once per guard in [preparePublish], immediately before the corresponding throw, so the
+     * journal entry is written even though the caller's own transaction is about to see an
+     * exception propagate out of it (the helper commits independently — see
+     * [ComplianceAuditLogService.appendCampaignReviewRefused]).
+     */
+    private fun logRefusal(campaign: Campaign, associationId: UUID, reason: CampaignReviewRefusalReason) {
+        complianceAuditLogService.appendCampaignReviewRefused(campaign.id!!, associationId, reason)
     }
 
     /**

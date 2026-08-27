@@ -8,33 +8,51 @@
         },
         {
           "title": "Simplify your reporting",
-          "text": "Receipts and expense proofs are recorded automatically. Less paperwork, more fieldwork."
+          "text": "No financial statement, invoice, or receipt is ever requested from you. Your payments are recorded the moment you make them."
         },
         {
           "title": "Zero technical skills needed",
           "text": "You manage your association in euros, as usual. The technology is invisible — we handle everything."
         }
       ],
-      "title": "Why join Common Link?"
+      "title": "Why join CommonLink?"
     },
     "form": {
       "change": "Change",
-      "consent": "I agree that Common Link may collect this information to notify me about the platform launch. I can unsubscribe at any time.",
-      "description": "Describe your association",
-      "descriptionPlaceholder": "In a few words, describe your activity...",
+      "consent": "I agree that CommonLink may collect this information to notify me about the platform launch. I can unsubscribe at any time.",
+      "description": "Describe your association in one sentence",
+      "descriptionPlaceholder": "e.g. Food aid in the 13th arrondissement",
       "email": "Contact email",
       "emailPlaceholder": "contact@association.org",
-      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr.",
+      "formTitle": "Last step: your contact details",
+      "note": "We'll get back to you within two business days. No commitment at this stage.",
       "responsibleName": "Responsible person's name",
       "responsibleNamePlaceholder": "First Last",
-      "selectedTitle": "Selected association",
-      "submit": "Join the waitlist",
-      "success": "Thank you! Your association is on the waitlist. We'll contact you as soon as the platform launches."
+      "selectedTitle": "Welcome to the pioneers!",
+      "submit": "Join the pioneers",
+      "success": "We've received your registration. Our team will contact you within 48h to organize your personalized onboarding."
     },
     "hero": {
       "badge": "Associations",
-      "description": "Join the first pilot associations of Common Link. We support you in simplifying your management and strengthening the trust of your supporters.",
+      "description": "Join the first pilot associations of CommonLink. We support you in simplifying your management and strengthening the trust of your supporters.",
       "title": "Offer transparency to your donors"
+    },
+    "onboarding": {
+      "title": "How does onboarding work?",
+      "steps": [
+        {
+          "title": "Search for your association",
+          "text": "Find it in the official directory above. Your basic information is pre-filled automatically."
+        },
+        {
+          "title": "Leave your contact details",
+          "text": "Responsible person's name, email — that's it. 30 seconds. Zero paperwork at this stage."
+        },
+        {
+          "title": "We support you",
+          "text": "Our team contacts you to finalize your profile, set up your space, and prepare your first project."
+        }
+      ]
     },
     "search": {
       "active": "Active",
@@ -122,7 +140,7 @@
   },
   "donors": {
     "cta": {
-      "button": "Join the waitlist",
+      "button": "Create my account for free",
       "description": "Join the first donors who want to know exactly where their money goes.",
       "title": "Ready to give differently?"
     },
@@ -170,7 +188,7 @@
       "items": [
         {
           "question": "Are my donations tax-deductible?",
-          "answer": "Yes. For each donation to an eligible association, you receive a valid tax receipt allowing you to benefit from the tax reduction provided by law (66% of the amount, up to 20% of taxable income for individuals)."
+          "answer": "For each donation to an eligible organization, you receive a tax receipt. The tax reduction provided by article 200 of the French general tax code is generally 66% of the amount given, up to 20% of taxable income. Some organizations grant a different rate. It is the beneficiary organization that declares its eligibility and is responsible for it — CommonLink does not assess it."
         },
         {
           "question": "How can I track my donation?",
@@ -193,14 +211,14 @@
     },
     "hero": {
       "badge": "Donors",
-      "description": "Track the use of every euro donated. Monitor in real time the expenses of the associations you support, with verifiable proof.",
+      "description": "See the payments made by the associations you support, with their recipient and amount.",
       "title": "Give with confidence"
     },
     "preview": {
       "items": [
         {
           "title": "Real-time tracking",
-          "text": "See where your money goes, step by step. Every expense is linked to a specific project."
+          "text": "See the payments made by the associations you support, linked to a specific project."
         },
         {
           "title": "Digital tax receipt",
@@ -208,37 +226,39 @@
         },
         {
           "title": "Verified history",
-          "text": "View all your donations and their impact. Secure proof, accessible at any time."
+          "text": "See all your donations and the payments they funded, at any time."
         }
       ],
       "title": "What you'll see once registered"
     },
     "signup": {
       "apple": "Continue with Apple",
-      "cardTitle": "Sign up for free",
-      "consent": "I agree that Common Link may collect my first name and email to notify me about the platform launch. I can unsubscribe at any time.",
-      "description": "Be among the first to know when we launch. Sign up to reserve your spot.",
+      "cardTitle": "Create your account, for free",
+      "consent": "I agree that CommonLink may collect my first name and email to notify me about the platform launch. I can unsubscribe at any time.",
+      "description": "Sign up in under a minute. Explore associations and their projects right now.",
       "divider": "or by email",
       "email": "Email",
       "emailPlaceholder": "marie@example.com",
       "firstName": "First name",
       "firstNamePlaceholder": "Marie",
       "google": "Continue with Google",
-      "note": "Your data is collected solely to inform you of the launch. It will not be shared or used for other purposes. You can exercise your rights (access, rectification, deletion) by contacting us at contact@liencommun.fr.",
-      "submit": "Join the waitlist",
-      "successLaunch": "Planned launch: Q2 2026",
-      "successText": "We'll let you know as soon as the platform is available. Keep an eye on your inbox.",
-      "successTitle": "You're on the list!",
-      "title": "Join the waitlist"
+      "note": "Your tax information (full name, address) will only be requested at the time of your first donation, to generate your tax receipt.",
+      "submit": "Create my account",
+      "successLaunch": "Opening: September 2026",
+      "successText": "Your account has been created successfully. You'll receive a confirmation email shortly.",
+      "successTitle": "Welcome to CommonLink!",
+      "title": "Create your account"
     }
   },
   "footer": {
     "brand": {
-      "description": "Transparency on donation usage, made possible by blockchain technology.",
-      "name": "Common Link"
+      "description": "Traceability of payments made by associations.",
+      "legalNotice": "Social and solidarity economy company, RCS Antibes 105 153 928.",
+      "name": "CommonLink"
     },
-    "copyright": "© {year} Common Link. All rights reserved.",
+    "copyright": "© {year} CommonLink",
     "legal": {
+      "legalNotice": "Publisher: CommonLink SAS, a simplified joint-stock company with variable capital of €10,000, RCS Antibes 105 153 928, registered office at 1047 Chemin des Impiniers, 06220 Vallauris, France. Publication director: Julian Maiolino, President. Contact: contact@common-link.org, +33 4 23 40 02 06 (standard rate). Host: Clever Cloud SAS, 4 rue Voltaire, 44000 Nantes, France, RCS Nantes 524 172 699.",
       "links": {
         "cgu": "Terms of use",
         "contact": "Contact",
@@ -261,11 +281,11 @@
   "landing": {
     "constat": {
       "associations": {
-        "text": "\"Proving our good management takes forever.\" Associations spend hundreds of hours producing reports to reassure their funders.",
+        "text": "Tracking and reporting take time away from the field. Small organizations lack the tools to properly account for how funds are used.",
         "title": "Association side"
       },
       "donors": {
-        "text": "\"I don't know how my money is being used.\" 6 out of 10 donors want more transparency on how their donations are used.",
+        "text": "It's hard to know concretely how funds are used. Annual reports arrive late, stay vague, and trust rests on good faith.",
         "title": "Donor side"
       },
       "title": "A shared observation"
@@ -273,28 +293,28 @@
     "faq": {
       "items": [
         {
-          "question": "Do I need to understand blockchain to use Common Link?",
-          "answer": "No, absolutely not. Common Link is designed to be as simple as a bank transfer. The blockchain works in the background, you never need to interact with it directly."
+          "question": "What is tracked at launch?",
+          "answer": "The payments made from the platform by associations, for published projects."
         },
         {
-          "question": "How are donations tracked?",
-          "answer": "Each donation is converted to stablecoin (EUR CoinVertible) and recorded on the Ethereum blockchain. Each association expense is also recorded with a timestamped receipt."
+          "question": "Is this crypto?",
+          "answer": "No. You give in euros, you view in euros. The technology secures verifiable proof in the background, with no jargon or manipulation. It stays invisible to the user."
         },
         {
-          "question": "Do I receive a tax receipt?",
-          "answer": "Yes. Each donation automatically generates a digital tax receipt in the form of an NFT, which you can download or keep in your donor space."
+          "question": "Who can become a partner association?",
+          "answer": "Registered associations with a registration number in the national register of associations, and endowment funds, established in France. The association must have a registered office in France, an identified legal representative, and a bank account in its own name."
         },
         {
-          "question": "Which associations can register?",
-          "answer": "Any association registered in the SIRENE directory can register for free. Verification is automatic."
+          "question": "Are there any fees?",
+          "answer": "For donors, the service is free: 100% of the donation amount is collected for the benefit of the association. For associations, CommonLink charges a commission of 10% excluding tax on the amount of donations collected during the month, i.e. 12% including all taxes. This commission covers the entire service, including collection provider fees. It is invoiced separately and is never deducted from donations. There are no other fees."
         },
         {
-          "question": "How much does it cost?",
-          "answer": "Registration is free for associations and donors. Common Link charges a 2.5% commission on each donation to fund the platform and blockchain fees."
+          "question": "How is my data managed?",
+          "answer": "Your data is processed in accordance with the General Data Protection Regulation. It is used to enable the donation, issue the tax receipt, and comply with our legal obligations. Our privacy policy will be published on the site when the service launches."
         },
         {
-          "question": "Is the data secure?",
-          "answer": "Yes. Personal data is stored encrypted and GDPR compliant. Only transaction proofs are public on the blockchain (without personal data)."
+          "question": "Why a launch in September 2026?",
+          "answer": "The company is incorporated, the platform is in its final preparation phase, and the first pilot associations have been identified."
         }
       ],
       "title": "Frequently asked questions"
@@ -302,95 +322,95 @@
     "features": {
       "items": [
         {
-          "title": "Total transparency",
-          "text": "Every donation is recorded with unfalsifiable cryptographic proof. Donors see exactly where their money goes.",
-          "tag": "Blockchain"
+          "title": "Transparency",
+          "text": "See the payments made by associations for their projects.",
+          "tag": "Published"
         },
         {
-          "title": "Verifiable proof",
-          "text": "Every expense comes with a timestamped and verified receipt. No more opaque reports.",
-          "tag": "Verifiable"
+          "title": "Traceability",
+          "text": "Every payment made from the platform is published with its recipient and amount.",
+          "tag": "Public"
         },
         {
-          "title": "Total simplicity",
-          "text": "No need to understand blockchain. Donors give in euros, associations spend in euros.",
-          "tag": "Accessible"
+          "title": "Simplicity",
+          "text": "Donations in euros, a non-technical experience.",
+          "tag": "In euros"
         }
       ],
-      "title": "What Common Link brings"
+      "title": "What CommonLink brings"
     },
     "guarantee": {
-      "text": "Our technology relies on the Ethereum blockchain and regulated stablecoins. Every transaction is immutable, publicly verifiable, and compliant with European regulations.",
-      "title": "Traceability guarantee"
+      "text": "We don't ask associations for any receipts and we don't check any invoices. Traceability comes from elsewhere: the association commits to making, from the platform, the payments funded by donations, and each of these payments is published with its recipient and amount. What gets published is the operation itself, not a declarative document.",
+      "title": "How do we guarantee traceability?"
     },
     "hero": {
-      "badge": "Verifiable traceability",
-      "cta": "Discover the platform",
-      "launch": "Launch planned Q3 2026",
-      "subtitle": "We make the link between impact and generosity visible",
-      "title": "Transparency on donation usage"
+      "badge": "Payment traceability",
+      "cta": "Discover how it works",
+      "launch": "Opening: September 2026",
+      "subtitle": "Every payment made by an association from the platform is published, with its recipient and amount.",
+      "title": "Transparency on donation usage, euro by euro."
     },
     "journal": {
       "rows": [
         {
-          "label": "School supplies purchase",
-          "badge": "Verified",
-          "amount": "€450"
+          "label": "Published payment",
+          "badge": "Published",
+          "amount": "€120"
         },
         {
-          "label": "Event room rental",
-          "badge": "Verified",
-          "amount": "€1,200"
+          "label": "Published payment",
+          "badge": "Published",
+          "amount": "€85"
         },
         {
-          "label": "Awareness campaign",
+          "label": "Payment in progress",
           "badge": "Pending",
-          "amount": "€800"
+          "amount": "€210"
         }
       ],
-      "title": "Expense journal",
-      "total": "Total tracked",
-      "totalAmount": "€2,450"
+      "title": "Published payments",
+      "total": "Project total",
+      "totalAmount": "€415"
     },
     "status": {
       "items": [
         {
-          "title": "Platform",
-          "text": "Technical architecture validated. Smart contracts in development. Donor interface in design.",
-          "badge": "In development",
+          "title": "Legal structure",
+          "text": "CommonLink SAS, a social and solidarity economy company, registered with the Antibes trade registry.",
+          "badge": "Incorporated",
           "badgeType": "in-progress"
         },
         {
-          "title": "Partnerships",
-          "text": "Looking for partners for EURx management and compliance.",
-          "badge": "In progress",
-          "badgeType": "in-progress"
-        },
-        {
-          "title": "Beta launch",
-          "text": "Pilot program with 5 partner associations planned for Q3 2026. Registrations open.",
-          "badge": "Q3 2026",
+          "title": "Pilot associations",
+          "text": "First pilot associations identified, opening planned for September 2026.",
+          "badge": "September 2026",
           "badgeType": "upcoming"
+        },
+        {
+          "title": "Contact",
+          "text": "A question? Write to us.",
+          "badgeType": "contact",
+          "contactEmail": "contact@common-link.org"
         }
       ],
-      "title": "Where are we now"
+      "title": "Where are we now?"
     },
     "steps": {
       "items": [
         {
           "number": "1",
-          "title": "The association registers",
-          "text": "Free registration in 5 minutes. Automatic verification via the SIRENE directory."
+          "title": "Publication",
+          "text": "A partner association publishes a budget and milestones for its project."
         },
         {
           "number": "2",
-          "title": "The donor gives in euros",
-          "text": "Simple donation by card or bank transfer. Automatic conversion and on-chain recording."
+          "title": "Recording",
+          "text": "The association makes its payments from the platform. Each payment is recorded with its recipient, amount, and date."
         },
         {
           "number": "3",
-          "title": "Every euro is tracked",
-          "text": "Expenses recorded with receipts. Digital tax receipt (NFT) for the donor."
+          "title": "Consultation",
+          "text": "You get a clear view: what was done, when, and for how much."
         }
       ],
       "title": "How it works"
@@ -998,9 +1018,9 @@
   },
   "metadata": {
     "associations": {
-      "description": "Offer transparency to your donors. Join Common Link and strengthen trust.",
+      "description": "Offer transparency to your donors. Join CommonLink and strengthen trust.",
       "keywords": "associations, transparency, donations, registration, SIRENE, reporting, donation management",
-      "title": "Associations — Common Link"
+      "title": "Associations — CommonLink"
     },
     "cgu": {
       "description": "Terms of use for the CommonLink platform.",
@@ -1015,27 +1035,29 @@
       "title": "Cookie policy — CommonLink"
     },
     "donors": {
-      "description": "Give with confidence. Track every euro and receive verifiable proof.",
-      "keywords": "donors, donations, tracking, tax receipt, transparency, verifiable proof, philanthropy",
-      "title": "Donors — Common Link"
+      "description": "See the payments made by the associations you support, with their recipient and amount.",
+      "keywords": "donors, donations, tracking, tax receipt, transparency, payment traceability, philanthropy",
+      "title": "Donors — CommonLink"
     },
     "faq": {
       "description": "Frequently asked questions about CommonLink, donations, and transparency.",
       "title": "FAQ — CommonLink"
     },
     "landing": {
-      "description": "Crypto-philanthropy platform that restores donor trust through transparency on fund usage.",
-      "keywords": "transparency, donations, associations, blockchain, traceability, philanthropy, trust, tax receipt",
-      "title": "Common Link — Transparency on donation usage"
+      "description": "Every payment made by an association from the platform is published, with its recipient and amount. Transparency, euro by euro.",
+      "keywords": "association donations, donation traceability, tax receipt, crowdfunding, social economy",
+      "ogDescription": "Every payment made by an association from the platform is published, with its recipient and amount.",
+      "ogTitle": "CommonLink — Transparency on donation usage, euro by euro.",
+      "title": "CommonLink — Traceability of nonprofit spending"
     },
     "mentionsLegales": {
       "description": "Legal notice for CommonLink, the donation transparency platform.",
       "title": "Legal notice — CommonLink"
     },
     "partners": {
-      "description": "Discover our vision, team, and how to become a Common Link partner.",
-      "keywords": "partners, investors, crypto-philanthropy, blockchain, fintech, social impact",
-      "title": "Partners & Investors — Common Link"
+      "description": "The nonprofit sector faces a trust crisis. CommonLink responds by publishing, for every campaign, the payments made by the association with their recipient and amount.",
+      "keywords": "partners, investors, associations, transparency, payment traceability, social impact",
+      "title": "Partners & Investors — CommonLink"
     },
     "privacy": {
       "description": "How CommonLink collects and uses your personal data.",
@@ -1049,7 +1071,7 @@
   "nav": {
     "associations": "Associations",
     "donors": "Donors",
-    "home": "Common Link — Home",
+    "home": "CommonLink — Home",
     "main": "Main navigation",
     "menuClose": "Close menu",
     "menuOpen": "Open menu",
@@ -1058,35 +1080,30 @@
   },
   "partners": {
     "architecture": {
-      "description": "Every donation is tracked end-to-end. Blockchain technology serves as a proof ledger, but remains invisible to end users.",
+      "description": "CommonLink never receives, holds, or transfers any donation. Funds never appear in its accounts at any point.",
       "steps": [
         {
-          "icon": "money",
-          "title": "1. Receiving the donation in euros",
-          "text": "The donor gives in euros through the platform. Zero friction, zero crypto jargon."
+          "title": "The donation is collected in the association's name",
+          "text": "The donor gives in euros. Funds are collected by our payment provider into an account opened in the association's name, then transferred to its bank account."
         },
         {
-          "icon": "convert",
-          "title": "2. Conversion to EURCV",
-          "text": "Funds are converted to euro stablecoin (EURCV) via our institutional partner, ensuring compliance and auditability."
+          "title": "The tax receipt is issued immediately",
+          "text": "CommonLink issues the receipt on behalf of the association, under a mandate. It is sent by email as soon as the donation is confirmed. The association remains the declarant."
         },
         {
-          "icon": "lock",
-          "title": "3. On-chain transfer to the association",
-          "text": "EURCV tokens are transferred to the association's wallet. Every movement is recorded on the blockchain."
+          "title": "The association keeps control of its money",
+          "text": "It holds its own payment account and bank account, and keeps the use of them even if it leaves the platform."
         },
         {
-          "icon": "chart",
-          "title": "4. Allocation & expenses",
-          "text": "The association distributes funds among its members. Every payment is tracked, with EURCV → EUR reconversion for bank transfers."
+          "title": "Outgoing payments are initiated by the association",
+          "text": "Each payment is authorized by its legal representative, who authenticates with their bank. The payment initiation service is provided by a licensed payment institution, which never holds the funds at any point."
         },
         {
-          "icon": "receipt",
-          "title": "5. Proofs & NFT tax receipt",
-          "text": "At each step, a proof is recorded on-chain. The donor receives their tax receipt as an NFT, accessible at any time."
+          "title": "The payment is published",
+          "text": "Recipient, amount, and the share of collected funds it represents are published on the campaign page. No receipt is requested from the association — what is published is the operation itself."
         }
       ],
-      "title": "Architecture & fund flow"
+      "title": "Architecture and fund flow"
     },
     "contact": {
       "email": "Professional email",
@@ -1095,7 +1112,7 @@
       "messagePlaceholder": "How would you like to contribute?",
       "name": "Full name",
       "namePlaceholder": "Your name",
-      "note": "We respond within 48h. Your data is processed in compliance with GDPR.",
+      "note": "We respond within two business days. Your data is processed in compliance with GDPR.",
       "org": "Organization",
       "orgPlaceholder": "Your organization name",
       "submit": "Send my request",
@@ -1131,26 +1148,26 @@
     },
     "hero": {
       "badge": "Partners & Investors",
-      "description": "The nonprofit sector faces a trust crisis. Common Link responds with a simple, verifiable, and compliant traceability infrastructure.",
+      "description": "The nonprofit sector faces a trust crisis. CommonLink responds by publishing, for every campaign, the payments made by the association with their recipient and amount.",
       "title": "Restoring donor trust through fund transparency"
     },
     "infrastructure": {
-      "description": "We are seeking an institutional partner to manage compliance and ensure the traceability and proof of impact of every donation.",
+      "description": "CommonLink holds no funds and provides no payment service. Collecting donations and initiating payments are handled by licensed providers.",
       "items": [
         {
           "title": "Compliance",
-          "text": "Association KYB, donor KYC, AML procedures, fraud alerts.",
-          "tag": "Regulated"
+          "text": "Verifying associations' existence and identity in public registries, anti-money-laundering vigilance obligations.",
+          "tag": "Public registries"
         },
         {
-          "title": "Fund management",
-          "text": "EUR reception, EURCV conversion, on-demand wallets, on-chain transfers, EUR reconversion.",
-          "tag": "Automated"
+          "title": "Financial flows",
+          "text": "Payment accounts opened in the name of associations at a licensed institution. Outgoing payments initiated by the association's legal representative.",
+          "tag": "No funds held"
         },
         {
           "title": "Transparency",
-          "text": "Wallet addresses as source of truth, open API, event indexing, NFT tax receipts.",
-          "tag": "Verifiable"
+          "text": "Publication of the recipient and amount of every payment on the campaign page, with a cryptographic fingerprint recorded in a public register.",
+          "tag": "Public"
         }
       ],
       "title": "Infrastructure & compliance"
@@ -1158,15 +1175,15 @@
     "roadmap": {
       "steps": [
         {
-          "title": "Q1 2026 — Structure & partnerships",
-          "text": "Legal incorporation, institutional partnership (compliance & blockchain infrastructure), first pilot associations identified."
+          "title": "First half of 2026 — Structure and compliance",
+          "text": "Company incorporated, professional liability insurance taken out, registration in progress, first pilot associations identified."
         },
         {
-          "title": "Q2 2026 — Pilot launch",
-          "text": "Onboarding pilot associations, first tracked donation flows, donor dashboard in beta."
+          "title": "September 2026 — Opening with pilot associations",
+          "text": "Service opens to the first associations, first donations collected and first payments published."
         },
         {
-          "title": "Q3-Q4 2026 — Growth",
+          "title": "Late 2026 — Gradual rollout",
           "text": "Gradual opening to associations and donors, product iterations, acquisition campaigns."
         }
       ],
@@ -1174,16 +1191,16 @@
     },
     "stats": [
       {
-        "number": "44%",
-        "label": "of French people held back by lack of transparency"
+        "number": "10%",
+        "label": "excluding tax, our single commission, with no other fees"
       },
       {
-        "number": "53%",
-        "label": "of associations consider their financial situation difficult"
+        "number": "€0",
+        "label": "held by CommonLink: accounts belong to associations"
       },
       {
         "number": "1.5M",
-        "label": "associations in France — a massive market"
+        "label": "associations in France, most of them small organizations"
       }
     ],
     "team": {

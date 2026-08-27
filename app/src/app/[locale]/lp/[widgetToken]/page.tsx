@@ -142,22 +142,28 @@ export default async function LandingPage({ params, searchParams }: Props) {
         donationsEnabled={data.donationsEnabled}
         remainingCapacity={data.remainingCapacity}
       >
-        {data.showProject && (
-          <ProjectSection
-            campaignName={data.campaignName}
-            campaignDescription={data.campaignDescription}
-            campaignImpactGoals={data.campaignImpactGoals}
-          />
-        )}
-        {data.showTransparency && (
-          <TransparencySection
-            budget={data.budget}
-            milestones={data.milestones}
-          />
-        )}
-        {data.showTrust && <TrustSection taxReductionRate={data.taxReductionRate} />}
+        {/* Objet, montant cible, calendrier and résultat attendu are ACPR-mandated on a public
+            collection page — this section is never gated by the association's landing preference. */}
+        <ProjectSection
+          campaignName={data.campaignName}
+          campaignDescription={data.campaignDescription}
+          campaignImpactGoals={data.campaignImpactGoals}
+          goal={data.goal}
+          currency={data.currency}
+          startDate={data.startDate}
+          endDate={data.endDate}
+        />
+        {/* Description chiffrée de l'utilisation prévue des fonds — same ACPR requirement. */}
+        <TransparencySection
+          budget={data.budget}
+          milestones={data.milestones}
+        />
+        {/* Association preference no longer honored — always rendered, same treatment as the
+            ACPR-mandated sections above. */}
+        <TrustSection taxReductionRate={data.taxReductionRate} />
       </LandingClient>
       <LegalFooter
+        widgetToken={widgetToken}
         associationName={data.associationName}
         addressLine1={data.addressLine1}
         postalCode={data.postalCode}

@@ -22,12 +22,21 @@ export function Status() {
             >
               <h3 className="mb-2">{t(`items.${i}.title`)}</h3>
               <p className="text-foreground-muted">{t(`items.${i}.text`)}</p>
-              <Badge
-                variant={badgeVariantMap[t(`items.${i}.badgeType`)] || 'status-pending'}
-                className="mt-4"
-              >
-                {t(`items.${i}.badge`)}
-              </Badge>
+              {t(`items.${i}.badgeType`) === 'contact' ? (
+                <a
+                  href={`mailto:${t(`items.${i}.contactEmail`)}`}
+                  className="inline-block font-ui font-semibold text-primary mt-4"
+                >
+                  {t(`items.${i}.contactEmail`)}
+                </a>
+              ) : (
+                <Badge
+                  variant={badgeVariantMap[t(`items.${i}.badgeType`)] || 'status-pending'}
+                  className="mt-4"
+                >
+                  {t(`items.${i}.badge`)}
+                </Badge>
+              )}
             </div>
           ))}
         </div>

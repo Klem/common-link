@@ -52,6 +52,12 @@ data class ComplianceAlertDetailDto(
      * on. Empty for a `SCREENING_UNAVAILABLE` alert, where no comparison took place.
      */
     val matches: List<FreezeScreeningMatchDto>,
+    /**
+     * Every report received for a `CAMPAIGN_REPORT` alert, oldest first. Populated only for that
+     * origin — a second report received while the first alert is still open is appended here
+     * rather than lost, since the alert itself deduplicates on (origin, subject).
+     */
+    val campaignReports: List<CampaignReportEntryDto> = emptyList(),
     /** Closed alerts previously ruled on for the same subject, most recent first. Informative only. */
     val priorDecisions: List<PriorDecisionDto>,
     /**
@@ -154,6 +160,7 @@ fun ComplianceAlert.toDetailDto(
     subjectLabel: String? = null,
     takenInChargeByLabel: String? = null,
     subjectRegistry: SubjectRegistryDto? = null,
+    campaignReports: List<CampaignReportEntryDto> = emptyList(),
 ) = ComplianceAlertDetailDto(
     id = id,
     origin = origin.name,
@@ -176,6 +183,7 @@ fun ComplianceAlert.toDetailDto(
     matches = matches,
     priorDecisions = priorDecisions,
     subjectRegistry = subjectRegistry,
+    campaignReports = campaignReports,
 )
 
 fun FreezeScreeningMatch.toDto() = FreezeScreeningMatchDto(

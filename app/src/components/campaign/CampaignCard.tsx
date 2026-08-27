@@ -18,17 +18,23 @@ function formatEur(amount: number): string {
 }
 
 const STATUS_BADGE_CLASS: Record<CampaignStatus, string> = {
-  [CampaignStatus.LIVE]:    'badge badge-active',
-  [CampaignStatus.PRIVATE]: 'badge badge-draft',
-  [CampaignStatus.ENDED]:   'badge badge-ended',
-  [CampaignStatus.DRAFT]:   'badge badge-draft',
+  [CampaignStatus.LIVE]:             'badge badge-active',
+  [CampaignStatus.DRAFT]:            'badge badge-draft',
+  [CampaignStatus.PAUSED]:           'badge badge-draft',
+  [CampaignStatus.REVERT_REQUESTED]: 'badge badge-draft',
+  [CampaignStatus.CANCELLED]:        'badge badge-ended',
+  [CampaignStatus.COMPLETED]:        'badge badge-ended',
+  [CampaignStatus.ENDED]:            'badge badge-ended',
 };
 
 const STATUS_BADGE_I18N: Record<CampaignStatus, string> = {
-  [CampaignStatus.LIVE]:    'campaigns.badge.live',
-  [CampaignStatus.PRIVATE]: 'campaigns.badge.draft',
-  [CampaignStatus.ENDED]:   'campaigns.badge.ended',
-  [CampaignStatus.DRAFT]:   'campaigns.badge.draft',
+  [CampaignStatus.LIVE]:             'campaigns.badge.live',
+  [CampaignStatus.DRAFT]:            'campaigns.badge.draft',
+  [CampaignStatus.PAUSED]:           'campaigns.badge.paused',
+  [CampaignStatus.REVERT_REQUESTED]: 'campaigns.badge.revertRequested',
+  [CampaignStatus.CANCELLED]:        'campaigns.badge.cancelled',
+  [CampaignStatus.COMPLETED]:        'campaigns.badge.completed',
+  [CampaignStatus.ENDED]:            'campaigns.badge.ended',
 };
 
 export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {

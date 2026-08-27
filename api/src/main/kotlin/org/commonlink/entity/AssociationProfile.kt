@@ -145,18 +145,6 @@ class AssociationProfile(
     @Column(name = "landing_logo", length = 255)
     var landingLogo: String? = null,
 
-    /** Show the "what this donation funds" section on the landing page. */
-    @Column(name = "landing_show_project", nullable = false)
-    var landingShowProject: Boolean = true,
-
-    /** Show the budget / milestones transparency section on the landing page. */
-    @Column(name = "landing_show_transparency", nullable = false)
-    var landingShowTransparency: Boolean = true,
-
-    /** Show the "donate with confidence" section on the landing page. */
-    @Column(name = "landing_show_trust", nullable = false)
-    var landingShowTrust: Boolean = true,
-
     /** AML/CFT risk level assigned to this association. Defaults to STANDARD pending formal classification. */
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level", nullable = false, length = 20)
@@ -186,4 +174,16 @@ class AssociationProfile(
      */
     @Column(name = "gtm_container_id", length = 20)
     var gtmContainerId: String? = null,
+
+    /**
+     * Compliance status of the association. `ACTIVE` is the normal operating state.
+     *
+     * `ALERT` means a campaign report is open and awaiting compliance review — internal only,
+     * does not gate donations or public visibility (see [org.commonlink.service.PublicWidgetService]).
+     * `SUSPENDED` means a report was confirmed founded and blocks every campaign of this
+     * association from accepting donations, until a compliance officer reactivates it.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    var status: AssociationStatus = AssociationStatus.ACTIVE,
 )

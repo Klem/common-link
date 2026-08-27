@@ -1,12 +1,23 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { PrePublishModal } from '../PrePublishModal';
 import type { CampaignDto } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
+import { getLegalAcceptanceState } from '@/lib/api/legal';
+import { getLegalDocument } from '@/lib/api/public';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => 'fr',
+}));
+
+vi.mock('@/lib/api/legal', () => ({
+  getLegalAcceptanceState: vi.fn(),
+}));
+
+vi.mock('@/lib/api/public', () => ({
+  getLegalDocument: vi.fn(),
 }));
 
 /** Balanced budget: one expense section and one revenue section for the same total. */
@@ -47,6 +58,16 @@ function renderWith(overrides: Partial<React.ComponentProps<typeof PrePublishMod
   };
   return render(<PrePublishModal {...props} />);
 }
+
+beforeEach(() => {
+  // Default: CGU already accepted, so pre-existing tests exercising other gates aren't also
+  // blocked on a checkbox they don't know about.
+  vi.mocked(getLegalAcceptanceState).mockResolvedValue({
+    documentType: 'CGU',
+    currentVersion: '2026-08-26',
+    accepted: true,
+  });
+});
 
 describe('PrePublishModal — account status', () => {
   /** Regression guard: a loading Mollie status used to render as "no bank account connected". */
@@ -110,10 +131,10 @@ describe('PrePublishModal — account status', () => {
     expect(screen.getByText('complete').closest('button')).toBeDisabled();
   });
 
-  it('enables publishing when everything is filled and Mollie is COMPLETED', () => {
+  it('enables publishing when everything is filled and Mollie is COMPLETED', async () => {
     renderWith();
 
-    expect(screen.getByText('confirm').closest('button')).toBeEnabled();
+    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
   });
 
   it('blocks publishing when Mollie is not COMPLETED', () => {
@@ -166,10 +187,10 @@ describe('PrePublishModal — budget and expected outcome are blocking', () => {
   });
 
   /** Tolerance mirrors the backend: a sub-euro rounding gap must not block a publish. */
-  it('accepts a budget off by less than one euro', () => {
+  it('accepts a budget off by less than one euro', async () => {
     renderWith({ campaign: campaign({ budgetSections: balancedBudget(10_000, 10_000.4) }) });
 
-    expect(screen.getByText('confirm').closest('button')).toBeEnabled();
+    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
   });
 
   it.each([null, '', 'Trop court'])(
@@ -180,4 +201,88 @@ describe('PrePublishModal — budget and expected outcome are blocking', () => {
       expect(screen.getByText('complete').closest('button')).toBeDisabled();
     },
   );
+});
+
+/**
+ * Art. 1740 A CGI proof of acceptance. Mirrored server-side in
+ * `CampaignService.preparePublish` / `LegalAcceptanceService`.
+ */
+describe('PrePublishModal — CGU acceptance is blocking', () => {
+  it('blocks publishing until the CGU checkbox is checked, when not yet accepted', async () => {
+    vi.mocked(getLegalAcceptanceState).mockResolvedValue({
+      documentType: 'CGU',
+      currentVersion: '2026-08-26',
+      accepted: false,
+    });
+    renderWith();
+
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
+    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /cgu\.label/ }));
+
+    expect(screen.getByText('confirm').closest('button')).toBeEnabled();
+  });
+
+  it('renders the checkbox pre-checked and disabled when already accepted, and enables publishing', async () => {
+    renderWith();
+
+    await waitFor(() => {
+      const checkbox = screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement;
+      expect(checkbox.checked).toBe(true);
+      expect(checkbox).toBeDisabled();
+    });
+    expect(screen.getByText('confirm').closest('button')).toBeEnabled();
+  });
+
+  it('passes cguAccepted=true to onConfirm when publishing', async () => {
+    const onConfirm = vi.fn();
+    renderWith({ onConfirm });
+
+    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
+    fireEvent.click(screen.getByText('confirm'));
+
+    expect(onConfirm).toHaveBeenCalledWith(true);
+  });
+
+  it('opens the CGU text in a modal instead of navigating away', async () => {
+    vi.mocked(getLegalDocument).mockResolvedValue({
+      documentType: 'CGU',
+      version: '2026-08-26',
+      content: 'Texte des CGU.',
+      publishedAt: '2026-08-26T00:00:00Z',
+    });
+    renderWith();
+
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByText('cgu.link'));
+
+    expect(getLegalDocument).toHaveBeenCalledWith('CGU');
+    await waitFor(() => {
+      expect(screen.getByText('Texte des CGU.')).toBeInTheDocument();
+    });
+  });
+
+  it('opening the CGU text does not itself check the unaccepted checkbox', async () => {
+    vi.mocked(getLegalAcceptanceState).mockResolvedValue({
+      documentType: 'CGU',
+      currentVersion: '2026-08-26',
+      accepted: false,
+    });
+    vi.mocked(getLegalDocument).mockResolvedValue({
+      documentType: 'CGU',
+      version: '2026-08-26',
+      content: 'Texte des CGU.',
+      publishedAt: '2026-08-26T00:00:00Z',
+    });
+    renderWith();
+
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByText('cgu.link'));
+    await waitFor(() => screen.getByText('Texte des CGU.'));
+
+    const checkbox = screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+  });
 });

@@ -103,9 +103,6 @@ class AssociationControllerTest {
         signerRole = null,
         landingTheme = LandingTheme.DEFAULT,
         landingLogo = null,
-        landingShowProject = true,
-        landingShowTransparency = true,
-        landingShowTrust = true,
         gtmContainerId = null,
     )
 
@@ -351,18 +348,17 @@ class AssociationControllerTest {
 
     @Test
     fun `updateLandingConfig - 200 returns the updated profile`() {
-        val updated = sampleProfile.copy(landingTheme = LandingTheme.NATURE, landingShowTrust = false)
+        val updated = sampleProfile.copy(landingTheme = LandingTheme.NATURE)
         every { landingService.updateLandingConfig(userId, any()) } returns updated
 
         mockMvc.perform(
             patch("/api/association/me/landing")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"theme":"NATURE","showTrust":false}""")
+                .content("""{"theme":"NATURE"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.landingTheme").value("NATURE"))
-            .andExpect(jsonPath("$.landingShowTrust").value(false))
     }
 
     @Test
@@ -374,16 +370,13 @@ class AssociationControllerTest {
             patch("/api/association/me/landing")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"showProject":false}""")
+                .content("""{"gtmContainerId":"GTM-ABCD123"}""")
         )
             .andExpect(status().isOk)
 
         // Absent fields must stay null so the service leaves the stored values untouched.
-        assertEquals(false, slot.captured.showProject)
+        assertEquals("GTM-ABCD123", slot.captured.gtmContainerId)
         assertNull(slot.captured.theme)
-        assertNull(slot.captured.showTransparency)
-        assertNull(slot.captured.showTrust)
-        assertNull(slot.captured.gtmContainerId)
     }
 
     @Test

@@ -8,11 +8,13 @@ vi.mock('next-intl', () => ({
 
 vi.mock('@/lib/api/public', () => ({
   createGuestDonation: vi.fn(),
+  getLegalDocument: vi.fn(),
 }));
 
-import { createGuestDonation } from '@/lib/api/public';
+import { createGuestDonation, getLegalDocument } from '@/lib/api/public';
 
 const mockCreateGuestDonation = createGuestDonation as ReturnType<typeof vi.fn>;
+const mockGetLegalDocument = getLegalDocument as ReturnType<typeof vi.fn>;
 
 const TRACKING_FIXTURE = {
   campaignId: 'campaign-1',
@@ -50,6 +52,8 @@ function fillValidForm(birthDate: string | null = '1990-01-15') {
     target: { value: 'Paris' },
   });
   fireEvent.click(screen.getByLabelText(/consent.label/i));
+  fireEvent.click(screen.getByLabelText(/cgu.label/i));
+  fireEvent.click(screen.getByLabelText(/cgv.label/i));
 }
 
 describe('DonationForm — skin default', () => {
@@ -152,6 +156,25 @@ describe('DonationForm — 409 blocked state', () => {
 
     expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
     expect(screen.getByText('25 €')).toBeDisabled();
+  });
+
+  it('shows errors.duplicateSubmit on 429 response, without disabling the form', async () => {
+    mockCreateGuestDonation.mockRejectedValue({ response: { status: 429 } });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.duplicateSubmit')).toBeInTheDocument();
+    });
+
+    // Transient — unlike the 409 "not collecting" case, the donor can retry once the window
+    // passes, so the form must stay live.
+    expect(screen.getByRole('button', { name: 'submit' })).toBeEnabled();
   });
 
   it('shows errors.submitFailed on generic error', async () => {
@@ -351,7 +374,11 @@ describe('DonationForm — disabled prop (landing preview)', () => {
             tracking={TRACKING_FIXTURE} skin="landing" disabled />,
     );
 
-    expect(controls().every((el) => (el as HTMLInputElement).disabled)).toBe(true);
+    // Native form controls use `.disabled`; the CGU/CGV text triggers are `<span role="button">`
+    // (no native `.disabled`), so they signal it via `aria-disabled` instead.
+    expect(
+      controls().every((el) => (el as HTMLInputElement).disabled || el.getAttribute('aria-disabled') === 'true'),
+    ).toBe(true);
   });
 
   it('keeps the skin classes while disabled', () => {
@@ -412,5 +439,68 @@ describe('DonationForm — date de naissance facultative', () => {
     );
 
     expect(screen.queryByLabelText(/identity.birthCity/i)).toBeNull();
+  });
+
+  it('opens the CGU text in a modal instead of navigating away', async () => {
+    mockGetLegalDocument.mockResolvedValue({
+      documentType: 'CGU',
+      version: '2026-08-26',
+      content: 'Texte des CGU.',
+      publishedAt: '2026-08-26T00:00:00Z',
+    });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    fireEvent.click(screen.getByText('cgu.link'));
+
+    expect(mockGetLegalDocument).toHaveBeenCalledWith('CGU');
+    await waitFor(() => {
+      expect(screen.getByText('Texte des CGU.')).toBeInTheDocument();
+    });
+  });
+
+  it('opening the CGU/CGV text does not toggle the acceptance checkbox', async () => {
+    mockGetLegalDocument.mockResolvedValue({
+      documentType: 'CGU',
+      version: '2026-08-26',
+      content: 'Texte des CGU.',
+      publishedAt: '2026-08-26T00:00:00Z',
+    });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    const cguCheckbox = screen.getByLabelText(/cgu.label/i) as HTMLInputElement;
+    fireEvent.click(cguCheckbox);
+    expect(cguCheckbox.checked).toBe(true);
+
+    fireEvent.click(screen.getByText('cgu.link'));
+    await waitFor(() => screen.getByText('Texte des CGU.'));
+
+    expect(cguCheckbox.checked).toBe(true);
+  });
+
+  it('opening the CGV text does not toggle the CGV checkbox', async () => {
+    mockGetLegalDocument.mockResolvedValue({
+      documentType: 'CGV',
+      version: '2026-08-26',
+      content: 'Texte des CGV.',
+      publishedAt: '2026-08-26T00:00:00Z',
+    });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    const cgvCheckbox = screen.getByLabelText(/cgv.label/i) as HTMLInputElement;
+    expect(cgvCheckbox.checked).toBe(false);
+
+    fireEvent.click(screen.getByText('cgv.link'));
+    await waitFor(() => screen.getByText('Texte des CGV.'));
+
+    expect(cgvCheckbox.checked).toBe(false);
   });
 });

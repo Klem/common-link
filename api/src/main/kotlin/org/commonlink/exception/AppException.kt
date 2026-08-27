@@ -58,9 +58,16 @@ class SirenAlreadyRegisteredException(
     message: String = "SIREN already registered"
 ) : AppException(message, HttpStatus.CONFLICT)
 
-/** Thrown when a caller exceeds the allowed request rate for a sensitive operation (HTTP 429). */
-class RateLimitException(message: String = "Rate limit exceeded. Try again later") :
-    AppException(message, HttpStatus.TOO_MANY_REQUESTS)
+/**
+ * Thrown when a caller exceeds the allowed request rate for a sensitive operation (HTTP 429).
+ *
+ * @param retryAfterSeconds Sent as the `Retry-After` header by [org.commonlink.exception.GlobalExceptionHandler] —
+ *   defaults to 600 (10 minutes), matching [org.commonlink.security.AuthRateLimiter]'s default window.
+ */
+class RateLimitException(
+    message: String = "Rate limit exceeded. Try again later",
+    val retryAfterSeconds: Long = 600,
+) : AppException(message, HttpStatus.TOO_MANY_REQUESTS)
 
 /**
  * Thrown during email/password login when the account has no password hash set.
@@ -83,4 +90,4 @@ class BadGatewayException(message: String) :
 
 /** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */
 class UnprocessableEntityException(message: String) :
-    AppException(message, HttpStatus.UNPROCESSABLE_ENTITY)
+    AppException(message, HttpStatus.UNPROCESSABLE_CONTENT)

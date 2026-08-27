@@ -1,8 +1,12 @@
 package org.commonlink.config
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.commonlink.entity.LegalDocumentType
+import org.commonlink.repository.LegalDocumentRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -51,6 +55,9 @@ class FlywayMigrationTest {
     @Autowired
     lateinit var context: ConfigurableApplicationContext
 
+    @Autowired
+    lateinit var legalDocumentRepository: LegalDocumentRepository
+
     /**
      * ddl-auto=validate makes this assertion also prove the JPA entity mapping matches
      * exactly the schema Flyway produced — if either V1..Vn or an entity mapping drifted,
@@ -59,5 +66,20 @@ class FlywayMigrationTest {
     @Test
     fun `V1 to Vn migrate cleanly on an empty database and match the JPA entity mapping`() {
         assertTrue(context.isActive)
+    }
+
+    /**
+     * `test` profile skips Flyway (Hibernate creates the schema instead), so V73's seeded
+     * CGU/CGV placeholder rows are otherwise never exercised — this is the only path that
+     * proves the INSERT statements in V73 actually ran and are readable through the entity.
+     */
+    @Test
+    fun `V73 seeds exactly one published CGU and one published CGV document`() {
+        val cgu = legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU)
+        val cgv = legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGV)
+        assertNotNull(cgu)
+        assertNotNull(cgv)
+        assertEquals(LegalDocumentType.CGU, cgu!!.documentType)
+        assertEquals(LegalDocumentType.CGV, cgv!!.documentType)
     }
 }

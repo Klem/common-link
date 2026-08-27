@@ -38,7 +38,8 @@ class ComplianceAlertServiceTest {
     private val repo: ComplianceAlertRepository = mockk()
     private val auditLog: ComplianceAuditLogService = mockk(relaxed = true)
     private val eventPublisher: ApplicationEventPublisher = mockk(relaxed = true)
-    private val service = ComplianceAlertService(repo, auditLog, eventPublisher)
+    private val associationComplianceStatusService: AssociationComplianceStatusService = mockk(relaxed = true)
+    private val service = ComplianceAlertService(repo, auditLog, eventPublisher, associationComplianceStatusService)
 
     private val associationId: UUID = UUID.randomUUID()
     private val officerId: UUID = UUID.randomUUID()
@@ -181,11 +182,39 @@ class ComplianceAlertServiceTest {
     }
 
     @Test
-    fun `close rejects SUSPICIOUS decision without treasury fields`() {
+    fun `close rejects SUSPICIOUS decision without treasury fields for a freeze-origin alert`() {
+        val alert = savedAlert(origin = ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING, status = ComplianceAlertStatus.IN_REVIEW)
+        every { repo.findById(alertId) } returns Optional.of(alert)
+
         assertThrows<UnprocessableEntityException> {
             service.close(alertId, officerId, ComplianceAlertDecision.SUSPICIOUS, "Match confirmé")
         }
-        verify(exactly = 0) { repo.findById(any()) }
+        verify(exactly = 0) { repo.save(any()) }
+    }
+
+    @Test
+    fun `close with SUSPICIOUS decision on a CAMPAIGN_REPORT alert does not require treasury fields and suspends the association`() {
+        val alert = savedAlert(origin = ComplianceAlertOrigin.CAMPAIGN_REPORT, status = ComplianceAlertStatus.IN_REVIEW)
+        every { repo.findById(alertId) } returns Optional.of(alert)
+        every { repo.save(any<ComplianceAlert>()) } answers { firstArg() }
+
+        service.close(alertId, officerId, ComplianceAlertDecision.SUSPICIOUS, "Signalement fondé")
+
+        assertEquals(ComplianceAlertStatus.CLOSED, alert.status)
+        verify(exactly = 1) { associationComplianceStatusService.suspend(associationId) }
+        verify(exactly = 0) { associationComplianceStatusService.clearAlertIfNoneOpen(any()) }
+    }
+
+    @Test
+    fun `close with LEGITIMATE decision on a CAMPAIGN_REPORT alert clears the association alert flag`() {
+        val alert = savedAlert(origin = ComplianceAlertOrigin.CAMPAIGN_REPORT, status = ComplianceAlertStatus.IN_REVIEW)
+        every { repo.findById(alertId) } returns Optional.of(alert)
+        every { repo.save(any<ComplianceAlert>()) } answers { firstArg() }
+
+        service.close(alertId, officerId, ComplianceAlertDecision.LEGITIMATE, "Signalement infondé")
+
+        verify(exactly = 1) { associationComplianceStatusService.clearAlertIfNoneOpen(associationId) }
+        verify(exactly = 0) { associationComplianceStatusService.suspend(any()) }
     }
 
     @Test

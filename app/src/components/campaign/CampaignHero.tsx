@@ -12,7 +12,6 @@ const EMOJIS = [
 function statusPill(status: CampaignStatus): { cls: string; glyph: string; labelKey: string } {
   switch (status) {
     case 'LIVE':    return { cls: 'camp-status-pill live',    glyph: '●',  labelKey: 'status.live' };
-    case 'PRIVATE': return { cls: 'camp-status-pill private', glyph: '🔗', labelKey: 'status.private' };
     case 'ENDED':   return { cls: 'camp-status-pill ended',   glyph: '●',  labelKey: 'status.ended' };
     default:        return { cls: 'camp-status-pill draft',   glyph: '●',  labelKey: 'status.draft' };
   }

@@ -92,9 +92,6 @@ const baseProfile: AssociationProfileDto = {
   widgetAllowedOrigin: null,
   landingTheme: LandingTheme.DEFAULT,
   landingLogo: null,
-  landingShowProject: true,
-  landingShowTransparency: true,
-  landingShowTrust: true,
   gtmContainerId: null,
 };
 
@@ -228,24 +225,11 @@ describe('LandingTab — appearance', () => {
 });
 
 describe('LandingTab — sections', () => {
-  it('sends only the toggled section flag', async () => {
+  it('no longer offers any section toggle — every landing section is always shown', async () => {
     renderTab();
-    await waitFor(() => screen.getByText('sections.showTransparency'));
+    await waitFor(() => screen.getByText('appearance.title'));
 
-    const toggles = screen.getAllByRole('checkbox');
-    fireEvent.click(toggles[1]);
-
-    await waitFor(() => expect(mockUpdateLandingConfig).toHaveBeenCalledTimes(1));
-    expect(mockUpdateLandingConfig).toHaveBeenCalledWith({ showTransparency: false });
-  });
-
-  it('reflects the stored flags', async () => {
-    renderTab({ ...liveProfile, landingShowTrust: false });
-    await waitFor(() => screen.getByText('sections.showTrust'));
-
-    const toggles = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    expect(toggles[0].checked).toBe(true);
-    expect(toggles[2].checked).toBe(false);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
   });
 });
 

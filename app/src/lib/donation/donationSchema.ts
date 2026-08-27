@@ -28,6 +28,9 @@ export const donationSchema = z.object({
   donorCountry: z.string().regex(/^[A-Za-z]{2}$/, 'errors.countryInvalid'),
   anonymousDisplay: z.boolean(),
   consent: z.boolean().refine((v) => v === true, { message: 'errors.consentRequired' }),
+  // Distinct from `consent` (RGPD only) — art. 1740 A CGI proof of acceptance.
+  cguAccepted: z.boolean().refine((v) => v === true, { message: 'errors.cguRequired' }),
+  cgvAccepted: z.boolean().refine((v) => v === true, { message: 'errors.cgvRequired' }),
 });
 
 export type DonationFormData = z.infer<typeof donationSchema>;

@@ -1,8 +1,12 @@
+import type { LegalAcceptanceDto } from '@/types/legal';
+
 export const ComplianceAlertOrigin = {
   FREEZE_HIT_ONBOARDING: 'FREEZE_HIT_ONBOARDING',
   FREEZE_HIT_DONATION: 'FREEZE_HIT_DONATION',
   /** A mandatory freeze screening could not be performed. Not a favorable outcome. */
   SCREENING_UNAVAILABLE: 'SCREENING_UNAVAILABLE',
+  /** A public visitor reported a campaign's content (IC-44). */
+  CAMPAIGN_REPORT: 'CAMPAIGN_REPORT',
 } as const;
 export type ComplianceAlertOrigin = typeof ComplianceAlertOrigin[keyof typeof ComplianceAlertOrigin];
 
@@ -110,6 +114,16 @@ export interface ComplianceAlertDetailDto extends ComplianceAlertSummaryDto {
   priorDecisions: PriorDecisionDto[];
   /** Public-registry identity of the subject association. Null for donor / beneficial-owner subjects. */
   subjectRegistry: SubjectRegistryDto | null;
+  /** Every report received, oldest first. Populated only for a CAMPAIGN_REPORT alert. */
+  campaignReports: CampaignReportEntryDto[];
+}
+
+/** One report entry, read back from the compliance journal (IC-44). */
+export interface CampaignReportEntryDto {
+  campaignId: string | null;
+  message: string;
+  reporterEmail: string | null;
+  occurredAt: string;
 }
 
 /**
@@ -151,4 +165,79 @@ export interface ComplianceRegistryScanSummaryDto {
   checkedAt: string;
   siren: string | null;
   rna: string | null;
+}
+
+/** One row of the compliance « Associations » index. */
+export interface ComplianceAssociationSummaryDto {
+  id: string;
+  name: string;
+  identifier: string;
+  status: string;
+  verificationStatus: string;
+  riskLevel: string;
+}
+
+/**
+ * Full compliance dossier of one association — status, KYB standing, and every legal-identity
+ * field held on the association profile.
+ */
+export interface ComplianceAssociationDetailDto {
+  id: string;
+  name: string;
+  identifier: string;
+  siren: string | null;
+  addressLine1: string | null;
+  legalObject: string | null;
+  signerName: string | null;
+  signerRole: string | null;
+  city: string | null;
+  postalCode: string | null;
+  creationYear: number | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  phone: string | null;
+  status: string;
+  verificationStatus: string;
+  verifiedAt: string | null;
+  riskLevel: string;
+  riskLevelAssessedAt: string | null;
+  riskClassificationVersion: string | null;
+}
+
+/**
+ * Why a campaign's DRAFT→LIVE publish attempt was refused — one value per guard in
+ * `CampaignService.preparePublish()`. Labels shown to the compliance officer must match the
+ * table in `docs/legal/E6-tracage-refus-metriques-rapport-annuel.md` §4.1, not a paraphrase.
+ */
+export const CampaignReviewRefusalReason = {
+  GOAL_MISSING: 'GOAL_MISSING',
+  SCHEDULE_MISSING: 'SCHEDULE_MISSING',
+  BUDGET_UNBALANCED: 'BUDGET_UNBALANCED',
+  IMPACT_GOALS_MISSING: 'IMPACT_GOALS_MISSING',
+  KYB_NOT_VERIFIED: 'KYB_NOT_VERIFIED',
+  BANK_NOT_CONNECTED: 'BANK_NOT_CONNECTED',
+  BANK_CONNECTION_BROKEN: 'BANK_CONNECTION_BROKEN',
+  BANK_KYC_INCOMPLETE: 'BANK_KYC_INCOMPLETE',
+  CGU_NOT_ACCEPTED: 'CGU_NOT_ACCEPTED',
+} as const;
+export type CampaignReviewRefusalReason =
+  typeof CampaignReviewRefusalReason[keyof typeof CampaignReviewRefusalReason];
+
+/** Event types written on `campaign_review_event` (see [AuditLogEntryDto.eventType]). */
+export const CampaignReviewEventType = {
+  CAMPAIGN_REVIEW_RETAINED: 'CAMPAIGN_REVIEW_RETAINED',
+  CAMPAIGN_REVIEW_REFUSED: 'CAMPAIGN_REVIEW_REFUSED',
+} as const;
+export type CampaignReviewEventType =
+  typeof CampaignReviewEventType[keyof typeof CampaignReviewEventType];
+
+/**
+ * One donor's CGU/CGV acceptance rows for a single campaign, grouped — a donor who gave twice to
+ * the same campaign has one group with every document from both donations, not two rows.
+ */
+export interface DonorLegalAcceptanceGroupDto {
+  donorId: string;
+  donorName: string | null;
+  donorEmail: string | null;
+  acceptances: LegalAcceptanceDto[];
 }

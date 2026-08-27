@@ -40,12 +40,6 @@ data class AssociationProfileDto(
     val landingTheme: LandingTheme,
     /** Public serving path of the landing logo. Null if no logo has been uploaded. */
     val landingLogo: String?,
-    /** Whether the landing page shows the "what this donation funds" section. */
-    val landingShowProject: Boolean,
-    /** Whether the landing page shows the transparency section. */
-    val landingShowTransparency: Boolean,
-    /** Whether the landing page shows the "donate with confidence" section. */
-    val landingShowTrust: Boolean,
     /** Google Tag Manager container ID for Ad Grants tracking. Null if not configured. */
     val gtmContainerId: String?,
 )
@@ -75,8 +69,5 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     signerRole = signerRole,
     landingTheme = landingTheme,
     landingLogo = landingLogo,
-    landingShowProject = landingShowProject,
-    landingShowTransparency = landingShowTransparency,
-    landingShowTrust = landingShowTrust,
     gtmContainerId = gtmContainerId,
 )

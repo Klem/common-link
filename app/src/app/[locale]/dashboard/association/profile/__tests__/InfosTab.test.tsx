@@ -38,9 +38,6 @@ const mockProfile: AssociationProfileDto = {
   signerRole: null,
   landingTheme: 'DEFAULT',
   landingLogo: null,
-  landingShowProject: true,
-  landingShowTransparency: true,
-  landingShowTrust: true,
   gtmContainerId: null,
 };
 

@@ -3,6 +3,7 @@ package org.commonlink.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.dto.FreezeScreenStatus
 import org.commonlink.dto.FreezeScreenStatusDto
+import org.commonlink.entity.CampaignReviewRefusalReason
 import org.commonlink.entity.ComplianceAuditLog
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.repository.ComplianceAuditLogRepository
@@ -84,6 +85,50 @@ class ComplianceAuditLogService(
         const val ALERT_OPENED = "ALERT_OPENED"
         const val ALERT_IN_REVIEW = "ALERT_IN_REVIEW"
         const val ALERT_CLOSED = "ALERT_CLOSED"
+
+        /** A public visitor reported a campaign's content (IC-44). Written by [org.commonlink.service.CampaignReportService]. */
+        const val CAMPAIGN_REPORTED = "CAMPAIGN_REPORTED"
+
+        /**
+         * A compliance officer lifted a `SUSPENDED` association back to `ACTIVE`. Written by
+         * [org.commonlink.service.AssociationComplianceStatusService.reactivate]. Deliberately
+         * distinct from [ALERT_CLOSED]: the alert that caused the suspension stays `CLOSED` with
+         * its original `SUSPICIOUS` decision as a historical record — reactivation is a separate
+         * fact recorded afterwards, not a reversal of that decision.
+         */
+        const val ASSOCIATION_REACTIVATED = "ASSOCIATION_REACTIVATED"
+
+        /**
+         * A campaign's DRAFT→LIVE publish attempt passed every guard in
+         * [org.commonlink.service.CampaignService.preparePublish] — a "projet retenu" for the
+         * annual ACPR activity report (art. R.548-4 II CMF). Written by
+         * [appendCampaignReviewRetained].
+         */
+        const val CAMPAIGN_REVIEW_RETAINED = "CAMPAIGN_REVIEW_RETAINED"
+
+        /**
+         * A campaign's DRAFT→LIVE publish attempt was refused by
+         * [org.commonlink.service.CampaignService.preparePublish] — a "projet reçu" but not
+         * "retenu" for the annual ACPR activity report (art. R.548-4 II CMF). Written by
+         * [appendCampaignReviewRefused].
+         */
+        const val CAMPAIGN_REVIEW_REFUSED = "CAMPAIGN_REVIEW_REFUSED"
+
+        /** Both campaign-review event types, for use in queries. */
+        val CAMPAIGN_REVIEW_EVENT_TYPES = listOf(CAMPAIGN_REVIEW_RETAINED, CAMPAIGN_REVIEW_REFUSED)
+
+        /**
+         * A compliance officer opened an association's dossier (compliance associations
+         * workspace). Written by [appendAssociationDossierConsulted]. Closes, for this dossier
+         * view, the gap `LCB-FT-compliance-overview.md` §7.2 names — a WORM, queryable record of
+         * consultation, distinct from [org.commonlink.security.ComplianceAccessLogFilter]'s
+         * application-log line for every request under `/api/compliance/`, which is not durable
+         * proof to an auditor.
+         */
+        const val ASSOCIATION_DOSSIER_CONSULTED = "ASSOCIATION_DOSSIER_CONSULTED"
+
+        /** Same as [ASSOCIATION_DOSSIER_CONSULTED], for a single campaign's dossier. */
+        const val CAMPAIGN_DOSSIER_CONSULTED = "CAMPAIGN_DOSSIER_CONSULTED"
     }
 
     /**
@@ -315,6 +360,18 @@ class ComplianceAuditLogService(
         repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(subjectId, FREEZE_SCREENING_EVENT_TYPES)
 
     /**
+     * Returns every [CAMPAIGN_REPORTED] entry for an association, in chronological order.
+     *
+     * Written with `subject_type = ASSOCIATION` and `subject_id = association.id` (not the
+     * reported campaign's id — see [org.commonlink.service.CampaignReportService]), so a second
+     * report received while a [org.commonlink.entity.ComplianceAlert] is already open is never
+     * lost: the alert deduplicates on (origin, subject), the journal does not.
+     */
+    @Transactional(readOnly = true)
+    fun findCampaignReportHistory(associationId: UUID): List<ComplianceAuditLog> =
+        repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(associationId, listOf(CAMPAIGN_REPORTED))
+
+    /**
      * Derives the five-state [FreezeScreenStatus] for the **most recent onboarding screening run**
      * of an association, without exposing any match detail (tipping-off prevention).
      *
@@ -414,6 +471,121 @@ class ComplianceAuditLogService(
      *   register has never been successfully synced. Included in the payload so auditors can
      *   assess how stale the register was at the time of the failure.
      */
+    /**
+     * Records a public campaign report (IC-44). Committed in a **new, independent transaction**
+     * ([Propagation.REQUIRES_NEW]) for the same reason every `appendFreezeScreening*` helper is:
+     * the caller ([org.commonlink.service.CampaignReportService.report]) subsequently calls
+     * [org.commonlink.service.ComplianceAlertService.createOrIgnore], which is itself
+     * `REQUIRES_NEW` and appends its own `ALERT_OPENED` entry. Both calls take the same
+     * `compliance_audit_log_lock` row lock — if this method held it under the caller's own
+     * `REQUIRED` transaction instead, the suspended caller transaction would still be holding the
+     * lock when the nested `REQUIRES_NEW` transaction tries to acquire it, deadlocking every
+     * first report on an association (a second report while the alert is still open never reaches
+     * this method — `createOrIgnore` returns the existing alert before it — which is why this
+     * class of bug does not show up until the very first submission).
+     *
+     * Written with `subject_type = ASSOCIATION` and `subject_id = associationId` — not the
+     * reported campaign's id — so [findCampaignReportHistory] can look it up the same way
+     * [ComplianceAlertOpenedEvent] and the alert itself are keyed.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignReported(
+        associationId: UUID,
+        campaignId: UUID,
+        message: String,
+        reporterEmail: String?,
+    ): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_REPORTED,
+        subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+        subjectId = associationId,
+        payload = mapOf(
+            "campaignId" to campaignId.toString(),
+            "message" to message,
+            "reporterEmail" to reporterEmail,
+        ),
+    )
+
+    // -----------------------------------------------------------------------------------------
+    // Campaign-review journal helpers (art. R.548-4 II CMF — annual ACPR activity report)
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     * Records that a campaign's DRAFT→LIVE publish attempt was **retained** — every guard in
+     * [org.commonlink.service.CampaignService.preparePublish] passed. Committed in a **new,
+     * independent transaction** ([Propagation.REQUIRES_NEW]), matching every other journal helper
+     * in this class — the entry must survive regardless of what the caller's own transaction does
+     * afterward.
+     *
+     * `subject_type = CAMPAIGN`, `subject_id = campaignId`: this is a project-level fact, unlike
+     * [appendCampaignReported] which is deliberately association-level.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignReviewRetained(campaignId: UUID, associationId: UUID): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_REVIEW_RETAINED,
+        subjectType = ComplianceAuditSubjectType.CAMPAIGN,
+        subjectId = campaignId,
+        payload = mapOf("associationId" to associationId.toString()),
+    )
+
+    /**
+     * Records that a campaign's DRAFT→LIVE publish attempt was **refused**. Committed in a **new,
+     * independent transaction** ([Propagation.REQUIRES_NEW]) so the entry survives the caller
+     * throwing the user-facing [org.commonlink.exception.UnprocessableEntityException] immediately
+     * afterward — the same reason every `append*Refusal` helper in this class uses REQUIRES_NEW.
+     *
+     * `subject_type = CAMPAIGN`, `subject_id = campaignId`: this is a project-level fact, unlike
+     * [appendCampaignReported] which is deliberately association-level.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignReviewRefused(
+        campaignId: UUID,
+        associationId: UUID,
+        reason: CampaignReviewRefusalReason,
+    ): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_REVIEW_REFUSED,
+        subjectType = ComplianceAuditSubjectType.CAMPAIGN,
+        subjectId = campaignId,
+        payload = mapOf("associationId" to associationId.toString(), "reason" to reason.name),
+    )
+
+    /**
+     * Returns every campaign-review event (retained or refused) for one campaign, in chronological
+     * order. A campaign can appear more than once: a refused attempt can be corrected and
+     * resubmitted.
+     */
+    @Transactional(readOnly = true)
+    fun findCampaignReviewHistory(campaignId: UUID): List<ComplianceAuditLog> =
+        repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(campaignId, CAMPAIGN_REVIEW_EVENT_TYPES)
+
+    // -----------------------------------------------------------------------------------------
+    // Dossier-consultation journal helpers (LCB-FT-compliance-overview.md §7.2)
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     * Records that [actorUserId] opened the compliance dossier of [associationId]. Committed in a
+     * **new, independent transaction** ([Propagation.REQUIRES_NEW]), matching every other journal
+     * helper in this class — the read that triggers this call must not be able to roll the
+     * consultation record back.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendAssociationDossierConsulted(associationId: UUID, actorUserId: UUID): ComplianceAuditLog = append(
+        eventType = ASSOCIATION_DOSSIER_CONSULTED,
+        subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+        subjectId = associationId,
+        actorUserId = actorUserId,
+        payload = emptyMap<String, String>(),
+    )
+
+    /** Same as [appendAssociationDossierConsulted], for a single campaign's dossier. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignDossierConsulted(campaignId: UUID, associationId: UUID, actorUserId: UUID): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_DOSSIER_CONSULTED,
+        subjectType = ComplianceAuditSubjectType.CAMPAIGN,
+        subjectId = campaignId,
+        actorUserId = actorUserId,
+        payload = mapOf("associationId" to associationId.toString()),
+    )
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun appendSyncFailure(reason: String, lastSuccessAt: Instant?): ComplianceAuditLog = append(
         eventType = SANCTION_SYNC_FAILURE,

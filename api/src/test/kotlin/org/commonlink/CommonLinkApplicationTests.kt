@@ -1,5 +1,6 @@
 package org.commonlink
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
@@ -13,8 +14,11 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationLandingService
+import org.commonlink.service.CampaignReportService
+import org.commonlink.service.LegalAcceptanceService
 import org.commonlink.service.MollieWebhookService
 import org.commonlink.service.PublicWidgetService
 import org.commonlink.service.AssociationRegistryCheckService
@@ -31,6 +35,7 @@ import org.commonlink.service.MandateService
 import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieConnectTokenManager
 import org.commonlink.service.ComplianceAlertService
+import org.commonlink.service.ComplianceAssociationService
 import org.commonlink.service.ComplianceAuditLogService
 import org.commonlink.service.FreezeScreeningOnboardingService
 import org.commonlink.service.OnboardingGateService
@@ -83,12 +88,17 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var freezeScreeningOnboardingService: FreezeScreeningOnboardingService
     @MockkBean private lateinit var onboardingGateService: OnboardingGateService
     @MockkBean private lateinit var complianceAlertService: ComplianceAlertService
+    @MockkBean private lateinit var complianceAssociationService: ComplianceAssociationService
     @MockkBean private lateinit var complianceAuditLogService: ComplianceAuditLogService
     @MockkBean private lateinit var associationRegistryCheckRepository: AssociationRegistryCheckRepository
     @MockkBean private lateinit var associationProfileRepository: AssociationProfileRepository
     @MockkBean private lateinit var beneficialOwnerRepository: BeneficialOwnerRepository
     @MockkBean private lateinit var donorProfileRepository: DonorProfileRepository
     @MockkBean private lateinit var freezeScreeningMatchRepository: FreezeScreeningMatchRepository
+    @MockkBean private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
+    @MockkBean private lateinit var campaignReportService: CampaignReportService
+    @MockkBean private lateinit var legalAcceptanceService: LegalAcceptanceService
+    @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test
     fun contextLoads() {

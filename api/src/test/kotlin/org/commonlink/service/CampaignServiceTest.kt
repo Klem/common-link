@@ -10,6 +10,8 @@ import org.commonlink.dto.UpdateCampaignRequest
 import org.commonlink.dto.UpdateMilestoneRequest
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.LegalDocument
+import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieConnection
 import org.commonlink.entity.MollieConnectionState
@@ -19,6 +21,7 @@ import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.LegalDocumentRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestFiles
@@ -37,6 +40,7 @@ import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
@@ -54,6 +58,7 @@ import jakarta.persistence.EntityManagerFactory
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
+@Sql(scripts = ["/sql/compliance_audit_log_test_schema.sql"], executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 @TestPropertySource(properties = [
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000",
@@ -83,6 +88,12 @@ class CampaignServiceTest {
     @Autowired
     private lateinit var entityManagerFactory: EntityManagerFactory
 
+    @Autowired
+    private lateinit var legalDocumentRepository: LegalDocumentRepository
+
+    @Autowired
+    private lateinit var complianceAuditLogService: ComplianceAuditLogService
+
     private lateinit var userId: UUID
     private lateinit var otherUserId: UUID
 
@@ -95,6 +106,13 @@ class CampaignServiceTest {
         val otherUser = userRepository.save(TestFixtures.associationUser(email = "other@example.com"))
         associationProfileRepository.save(TestFixtures.associationProfile(otherUser, identifier = "123456789"))
         otherUserId = otherUser.id!!
+
+        // legal_document rows are seeded by Flyway (V73) in real environments; this suite runs on
+        // a Hibernate-only schema (no Flyway), so the publish-time CGU gate would otherwise 404 on
+        // a document that simply was never inserted here.
+        if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) == null) {
+            legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGU, version = "test", content = "test CGU"))
+        }
     }
 
     /**
@@ -130,8 +148,9 @@ class CampaignServiceTest {
     }
 
     /**
-     * Satisfies the two *content* gates of `preparePublish`: a balanced budget prévisionnel
-     * (expenses = revenues, both non-zero) and an expected outcome of at least 20 characters.
+     * Satisfies the three *content* gates of `preparePublish`: a balanced budget prévisionnel
+     * (expenses = revenues, both non-zero), an expected outcome of at least 20 characters, and a
+     * set calendrier (startDate/endDate).
      *
      * Tests that exercise an account gate call this first, so the campaign is publishable in every
      * respect but the one under test — otherwise they would assert on the content message instead.
@@ -149,7 +168,11 @@ class CampaignServiceTest {
         )))
         campaignService.updateCampaign(
             ownerId, campaignId,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
     }
 
@@ -297,7 +320,7 @@ class CampaignServiceTest {
         val result = campaignService.updateCampaign(
             userId,
             created.id,
-            UpdateCampaignRequest(name = "New Name", status = CampaignStatus.LIVE)
+            UpdateCampaignRequest(name = "New Name", status = CampaignStatus.LIVE, cguAccepted = true)
         )
 
         assertEquals("New Name", result.name)
@@ -310,7 +333,7 @@ class CampaignServiceTest {
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Campaign", goal = BigDecimal("10000")))
         makePublishable(userId, created.id)
-        campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
 
         assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.DRAFT))
@@ -484,7 +507,7 @@ class CampaignServiceTest {
         linkMollie(userId)
         val created = campaignService.createCampaign(userId, CreateCampaignRequest(name = "Live Campaign", goal = BigDecimal("10000")))
         makePublishable(userId, created.id)
-        campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        campaignService.updateCampaign(userId, created.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
 
         assertThrows<UnprocessableEntityException> {
             campaignService.deleteCampaign(userId, created.id)
@@ -777,11 +800,52 @@ class CampaignServiceTest {
         makePublishable(userId, campaign.id)
 
         val result = campaignService.updateCampaign(
-            userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE)
+            userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true)
         )
 
         assertEquals(CampaignStatus.LIVE, result.status)
         assertEquals(0, onchainJobRepository.findAll().size)
+    }
+
+    // ── publish-time CGU gate (art. 1740 A CGI proof of acceptance) ────────────────────────────
+
+    @Test
+    fun `publish - CGU not accepted returns 422`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No CGU", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        val error = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+        assertTrue(error.message!!.contains("CGU"))
+        assertEquals(CampaignStatus.DRAFT, campaignService.getCampaign(userId, campaign.id).status)
+    }
+
+    /**
+     * Mirrors the frontend's "auto-checked and greyed out for later campaigns" behaviour: once an
+     * association has accepted the current CGU version, a second campaign publishes without
+     * needing `cguAccepted` again — the standing acceptance is reused, not re-asked.
+     */
+    @Test
+    fun `publish - CGU acceptance from a first campaign is reused for a second campaign`() {
+        linkMollie(userId)
+        val first = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "First", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, first.id)
+        campaignService.updateCampaign(userId, first.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+
+        val second = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Second", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, second.id)
+
+        val result = campaignService.updateCampaign(userId, second.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+
+        assertEquals(CampaignStatus.LIVE, result.status)
     }
 
     // ── publish-time KYB gate (LCB-FT — mirrors PrePublishModal's kybReady) ────────────────────
@@ -800,7 +864,7 @@ class CampaignServiceTest {
         makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertEquals("Association KYB must be verified before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
@@ -832,7 +896,7 @@ class CampaignServiceTest {
         makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertEquals("Association KYB must be verified before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
@@ -851,7 +915,7 @@ class CampaignServiceTest {
         makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertEquals("Association must connect a Mollie account before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
@@ -866,7 +930,7 @@ class CampaignServiceTest {
         makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertEquals("Mollie connection is broken — re-authorization required before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
@@ -886,7 +950,7 @@ class CampaignServiceTest {
         makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertEquals("Association must complete Mollie KYC before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
@@ -901,7 +965,7 @@ class CampaignServiceTest {
         makePublishable(userId, campaign.id)
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertEquals("Association must complete Mollie KYC before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
@@ -919,10 +983,10 @@ class CampaignServiceTest {
         )
         makePublishable(userId, campaign.id)
 
-        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
 
         assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertEquals(0, onchainJobRepository.findAll().size)
     }
@@ -943,10 +1007,13 @@ class CampaignServiceTest {
         campaignService.saveBudget(userId, campaign.id, budgetReq)
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
-        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
-        val jobsAfterPublish = onchainJobRepository.findAll().size
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
 
         // Edit with different amount — should enqueue UPDATE_CAMPAIGN_BUDGET
         val changedBudget = SaveBudgetRequest(listOf(
@@ -1001,11 +1068,15 @@ class CampaignServiceTest {
         )
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertTrue(ex.message!!.contains("Budget prévisionnel must be balanced"))
         assertEquals(0, onchainJobRepository.findAll().size)
@@ -1025,11 +1096,15 @@ class CampaignServiceTest {
         )))
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
 
         val ex = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertTrue(ex.message!!.contains("Budget prévisionnel must be balanced"))
     }
@@ -1052,11 +1127,15 @@ class CampaignServiceTest {
         )))
         campaignService.updateCampaign(
             userId, campaign.id,
-            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
         )
 
         val result = campaignService.updateCampaign(
-            userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE)
+            userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true)
         )
 
         assertEquals(CampaignStatus.LIVE, result.status)
@@ -1074,16 +1153,252 @@ class CampaignServiceTest {
             SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
                 listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
         )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
+        )
 
         val whenNull = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertTrue(whenNull.message!!.contains("impactGoals"))
 
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(impactGoals = "Trop court"))
         val whenShort = assertThrows<UnprocessableEntityException> {
-            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertTrue(whenShort.message!!.contains("impactGoals"))
+    }
+
+    @Test
+    fun `publish - missing calendrier returns 422`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No dates", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        val error = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+        assertTrue(error.message!!.contains("dates"))
+    }
+
+    // ── campaign_review_event journal (traçage des refus, art. R.548-4 II CMF) ─────────────────
+    //
+    // One case per preparePublish() guard, in the order they are evaluated, plus the retained
+    // (happy) path. See docs/legal/E6-tracage-refus-metriques-rapport-annuel.md.
+
+    @Test
+    fun `publish - retained campaign is journaled as CAMPAIGN_REVIEW_RETAINED`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Retained", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertEquals(ComplianceAuditLogService.CAMPAIGN_REVIEW_RETAINED, history.single().eventType)
+    }
+
+    @Test
+    fun `publish - goal missing is journaled with GOAL_MISSING`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No goal journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(goal = BigDecimal.ZERO))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertEquals(ComplianceAuditLogService.CAMPAIGN_REVIEW_REFUSED, history.single().eventType)
+        assertTrue(history.single().payload.contains("GOAL_MISSING"))
+    }
+
+    @Test
+    fun `publish - missing schedule is journaled with SCHEDULE_MISSING`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No dates journal", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("SCHEDULE_MISSING"))
+    }
+
+    @Test
+    fun `publish - unbalanced budget is journaled with BUDGET_UNBALANCED`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Unbalanced journal", goal = BigDecimal("10000"))
+        )
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
+        )
+        // No budget saved at all — requireBalancedBudget fails on an empty budget.
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BUDGET_UNBALANCED"))
+    }
+
+    @Test
+    fun `publish - missing expected outcome is journaled with IMPACT_GOALS_MISSING`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No outcome journal", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("IMPACT_GOALS_MISSING"))
+    }
+
+    @Test
+    fun `publish - unverified KYB is journaled with KYB_NOT_VERIFIED`() {
+        linkMollie(userId, verifyKyb = false)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Unverified journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("KYB_NOT_VERIFIED"))
+    }
+
+    @Test
+    fun `publish - no Mollie connection is journaled with BANK_NOT_CONNECTED`() {
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        assoc.verificationStatus = VerificationStatus.VERIFIED
+        associationProfileRepository.save(assoc)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No Mollie journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BANK_NOT_CONNECTED"))
+    }
+
+    @Test
+    fun `publish - broken Mollie connection is journaled with BANK_CONNECTION_BROKEN`() {
+        linkMollie(userId, state = MollieConnectionState.BROKEN)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Broken journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BANK_CONNECTION_BROKEN"))
+    }
+
+    @Test
+    fun `publish - Mollie KYC incomplete is journaled with BANK_KYC_INCOMPLETE`() {
+        linkMollie(userId, canReceivePayments = false)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No payments journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BANK_KYC_INCOMPLETE"))
+    }
+
+    @Test
+    fun `publish - CGU not accepted is journaled with CGU_NOT_ACCEPTED`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No CGU journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("CGU_NOT_ACCEPTED"))
     }
 }

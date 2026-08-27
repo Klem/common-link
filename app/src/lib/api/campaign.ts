@@ -171,8 +171,12 @@ export const deleteMilestone = (campaignId: string, milestoneId: string): Promis
  * @param id - UUID of the campaign to publish.
  * @returns The updated campaign DTO.
  */
-export const publishCampaign = (id: string): Promise<CampaignDto> =>
-  api.put<CampaignDto>(`/api/association/campaigns/${id}`, { status: 'LIVE' }).then((r) => r.data);
+/**
+ * @param cguAccepted Must be true on the first publish for this association's current CGU
+ *   version (art. 1740 A CGI proof of acceptance); ignored once already accepted.
+ */
+export const publishCampaign = (id: string, cguAccepted: boolean): Promise<CampaignDto> =>
+  api.put<CampaignDto>(`/api/association/campaigns/${id}`, { status: 'LIVE', cguAccepted }).then((r) => r.data);
 
 /**
  * Reorders milestones for a campaign.

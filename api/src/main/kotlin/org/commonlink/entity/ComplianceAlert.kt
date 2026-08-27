@@ -27,6 +27,14 @@ enum class ComplianceAlertOrigin {
     SYNC_FAILURE,
     SPLIT_DETECTION,
     ATYPICALITY_RULE,
+
+    /**
+     * A public visitor reported a campaign's content through the public report channel (IC-44).
+     * Subject is always the owning [org.commonlink.entity.AssociationProfile] — a report is not
+     * scoped to the single reported campaign, since [org.commonlink.entity.AssociationProfile.status]
+     * suspension applies to the whole association's portfolio.
+     */
+    CAMPAIGN_REPORT,
 }
 
 enum class ComplianceAlertSubjectType {
