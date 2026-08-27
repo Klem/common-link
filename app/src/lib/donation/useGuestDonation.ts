@@ -39,6 +39,8 @@ export function useGuestDonation({ widgetToken, sourceSite, locale, tracking }: 
     defaultValues: {
       donorCountry: 'FR',
       anonymousDisplay: false,
+      cguAccepted: false,
+      cgvAccepted: false,
     },
   });
 

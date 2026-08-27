@@ -24,8 +24,6 @@ import org.commonlink.repository.MollieConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -50,6 +48,7 @@ class PublicWidgetService(
     private val freezeScreeningDonationService: FreezeScreeningDonationService,
     private val donationCapService: DonationCapService,
     private val mollieWebhookService: MollieWebhookService,
+    private val legalAcceptanceService: LegalAcceptanceService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -133,14 +132,19 @@ class PublicWidgetService(
         val cleanSourceSite = sanitizeSourceSite(request.sourceSite)
         val safeLocale = request.locale?.takeIf { it.matches(Regex("[a-z]{2}")) } ?: "fr"
         val encodedSource = cleanSourceSite?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
-        val amountCents = request.amount.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toLong()
-        val idempotencyKey = buildIdempotencyKey(widgetToken, donorProfile.id!!, amountCents, mollieProperties.webhookUrl)
 
         // Minted here, not read off molliePayment.id below: Mollie's own payment id does not exist
         // yet at this point (it is only known once createPayment returns), so it cannot be embedded
         // in the URL passed *into* that call. This id is what the /return page polls status by —
         // never providerRef, never an internal donor/campaign id.
         val publicRef = UUID.randomUUID()
+
+        // Must be derived from something already unique per call and reused verbatim in every
+        // Mollie-bound field (redirectUrl embeds publicRef below) — Mollie rejects a reused
+        // Idempotency-Key whose request body differs from the first call with that key. A key
+        // derived only from widget+donor+amount (independent of publicRef) let two genuinely
+        // separate donations of the same amount within the same hour collide and 400.
+        val idempotencyKey = publicRef.toString()
 
         val base = "${mollieProperties.redirectBaseUrl}/$safeLocale/embed/donate/$widgetToken/return"
         // Carried on the success redirect only — the dataLayer `purchase` push on /return needs it,
@@ -178,7 +182,7 @@ class PublicWidgetService(
             profileId = assocProfileId,
         )
 
-        donationService.initiatePendingDonation(
+        val donation = donationService.initiatePendingDonation(
             providerRef = "mollie:${molliePayment.id}",
             donorProfileId = donorProfile.id,
             campaignId = campaign.id,
@@ -186,6 +190,17 @@ class PublicWidgetService(
             sourceSite = cleanSourceSite,
             identity = identity,
             publicRef = publicRef,
+        )
+        // Art. 1740 A CGI proof of acceptance — a donation is a transactional act, so this is
+        // recorded fresh every time rather than reused across future donations. Idempotent per
+        // donation: a retried request (same providerRef, same pending Donation row) writes nothing
+        // twice — see LegalAcceptanceService.recordDonorAcceptance.
+        legalAcceptanceService.recordDonorAcceptance(
+            donorProfileId = donorProfile.id!!,
+            donationId = donation.id!!,
+            campaignId = campaign.id!!,
+            signerName = request.donorFullName,
+            signerEmail = request.donorEmail,
         )
 
         val checkoutUrl = molliePayment.checkoutUrl
@@ -393,15 +408,5 @@ class PublicWidgetService(
         } catch (_: Exception) {
             null
         }
-    }
-
-    /**
-     * Stable idempotency key for a given widget+donor+amount within a 1-hour window.
-     * Protects against network retries before a providerRef exists locally.
-     */
-    private fun buildIdempotencyKey(widgetToken: String, donorProfileId: UUID, amountCents: Long, webhookUrl: String): String {
-        val hourBucket = System.currentTimeMillis() / 3_600_000L
-        val input = "$widgetToken|$donorProfileId|$amountCents|${webhookUrl.ifBlank { "none" }}|$hourBucket"
-        return UUID.nameUUIDFromBytes(input.toByteArray(Charsets.UTF_8)).toString()
     }
 }

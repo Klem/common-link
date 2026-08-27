@@ -60,6 +60,17 @@ data class CreateGuestDonationRequest(
     val consent: Boolean,
 
     /**
+     * Distinct from [consent] (RGPD only) — express acceptance of the platform's Conditions
+     * Générales d'Utilisation, required on every donation (art. 1740 A CGI proof of acceptance).
+     */
+    @field:AssertTrue(message = "CGU acceptance is required")
+    val cguAccepted: Boolean,
+
+    /** Express acceptance of the Conditions Générales de Vente, required on every donation. */
+    @field:AssertTrue(message = "CGV acceptance is required")
+    val cgvAccepted: Boolean,
+
+    /**
      * Date de naissance — **facultative** et **jamais persistée** pour un don widget.
      *
      * Sert uniquement à écarter les homonymes lors du filtrage gel

@@ -1318,6 +1318,11 @@
           }
         },
         "add": "Ajouter",
+        "cgu": {
+          "label": "En publiant cette campagne, vous acceptez les",
+          "link": "Conditions Générales d'Utilisation (CGU)",
+          "section": "Conditions d'utilisation"
+        },
         "complete": "Complétez les champs requis",
         "confirm": "Publier",
         "continueEditing": "Continuer l'édition",
@@ -1721,6 +1726,13 @@
       }
     }
   },
+  "legal": {
+    "title": {
+      "CGU": "Conditions Générales d'Utilisation",
+      "CGV": "Conditions Générales de Vente"
+    },
+    "version": "Version {version}"
+  },
   "settings": {
     "landing": {
       "appearance": {
@@ -1877,6 +1889,14 @@
       "goal": "Objectif",
       "raised": "Collecté"
     },
+    "cgu": {
+      "label": "J'accepte les",
+      "link": "Conditions Générales d'Utilisation (CGU)"
+    },
+    "cgv": {
+      "label": "J'accepte les",
+      "link": "Conditions Générales de Vente (CGV)"
+    },
     "consent": {
       "label": "Je consens au traitement de mes données personnelles pour ce don (RGPD)"
     },
@@ -1887,6 +1907,8 @@
       "amountRequired": "Le montant est requis",
       "capExceeded": "Ce montant dépasse ce que la campagne peut encore collecter. Merci de saisir un montant plus faible.",
       "capFull": "Cette campagne a atteint son plafond de collecte et n'accepte plus de dons.",
+      "cguRequired": "Vous devez accepter les Conditions Générales d'Utilisation",
+      "cgvRequired": "Vous devez accepter les Conditions Générales de Vente",
       "consentRequired": "Vous devez consentir pour continuer",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide",

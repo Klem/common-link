@@ -1,10 +1,14 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import type { CampaignDto, BudgetSectionDto } from '@/types/campaign';
 import { BudgetSide } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
+import { LegalDocumentType } from '@/types/legal';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
+import { getLegalAcceptanceState } from '@/lib/api/legal';
 
 /** Visual variant of an account-status row, mapped to the `.pp-row.*` CSS modifiers. */
 interface StatusRowSpec {
@@ -52,7 +56,8 @@ interface PrePublishModalProps {
   /** Mollie hosted-onboarding deep link, used by the `NEEDS_DATA` call-to-action. */
   mollieDashboardUrl: string | null;
   onClose: () => void;
-  onConfirm: () => void;
+  /** @param cguAccepted Whether to send `cguAccepted: true` on the publish request. */
+  onConfirm: (cguAccepted: boolean) => void;
 }
 
 function sumSide(sections: BudgetSectionDto[], side: BudgetSide): number {
@@ -73,6 +78,19 @@ export function PrePublishModal({
 }: PrePublishModalProps) {
   const t = useTranslations('dashboard.campaigns.publish');
   const tNav = useTranslations('dashboard.campaigns.editor.tabs');
+  const locale = useLocale();
+
+  // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
+  // `cguState.accepted` means this association already has a standing acceptance of the current
+  // CGU version — the checkbox then renders pre-checked and disabled instead of blocking.
+  const [cguState, setCguState] = useState<{ accepted: boolean; version: string } | null>(null);
+  const [cguChecked, setCguChecked] = useState(false);
+  useEffect(() => {
+    getLegalAcceptanceState(LegalDocumentType.CGU)
+      .then((state) => setCguState({ accepted: state.accepted, version: state.currentVersion }))
+      .catch(() => setCguState({ accepted: false, version: '' }));
+  }, []);
+  const cguAccepted = cguState?.accepted === true || cguChecked;
 
   const expenses = sumSide(campaign.budgetSections, BudgetSide.EXPENSE);
   const revenues = sumSide(campaign.budgetSections, BudgetSide.REVENUE);
@@ -113,7 +131,7 @@ export function PrePublishModal({
   const allReqOk = blockers.every((b) => b.ok);
   const bankReady = mollieResolved && bankStatus === BankSetupStatus.COMPLETED;
   const kybReady = verificationStatus === VerificationStatus.VERIFIED;
-  const canPublish = allReqOk && bankReady && kybReady;
+  const canPublish = allReqOk && bankReady && kybReady && cguState !== null && cguAccepted;
   const accountComplete = bankReady && kybReady;
 
   return (
@@ -169,6 +187,26 @@ export function PrePublishModal({
             })}
           </div>
 
+          {/* — CGU (art. 1740 A CGI) — */}
+          <div className="pp-section">
+            <div className="pp-section-title">{t('cgu.section')}</div>
+            <div className={`pp-row ${cguAccepted ? 'ok' : 'missing'}`}>
+              <input
+                type="checkbox"
+                id="pp-cgu-checkbox"
+                checked={cguAccepted}
+                disabled={cguState === null || cguState.accepted}
+                onChange={(e) => setCguChecked(e.target.checked)}
+              />
+              <label htmlFor="pp-cgu-checkbox" className="pp-row-lbl">
+                {t('cgu.label')}{' '}
+                <Link href={`/${locale}/legal/CGU`} target="_blank" rel="noopener noreferrer">
+                  {t('cgu.link')}
+                </Link>
+              </label>
+            </div>
+          </div>
+
           {/* — Statut compte — */}
           <div className="pp-section">
             <div className="pp-section-title">{t('account.section')}</div>
@@ -215,7 +253,7 @@ export function PrePublishModal({
           </button>
           <button
             className="btn btn-primary"
-            onClick={onConfirm}
+            onClick={() => onConfirm(cguAccepted)}
             disabled={!canPublish}
           >
             {canPublish ? t('confirm') : t('complete')}

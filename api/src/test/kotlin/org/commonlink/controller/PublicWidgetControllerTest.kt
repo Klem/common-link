@@ -96,6 +96,8 @@ class PublicWidgetControllerTest {
         donorCountry = "FR",
         anonymousDisplay = false,
         consent = true,
+        cguAccepted = true,
+        cgvAccepted = true,
         sourceSite = "https://example.org",
     )
 
@@ -199,7 +201,9 @@ class PublicWidgetControllerTest {
               "donorCity": "Paris",
               "donorCountry": "FR",
               "anonymousDisplay": false,
-              "consent": true
+              "consent": true,
+              "cguAccepted": true,
+              "cgvAccepted": true
             }
         """.trimIndent()
 
@@ -231,7 +235,9 @@ class PublicWidgetControllerTest {
               "donorCity": "Paris",
               "donorCountry": "FR",
               "anonymousDisplay": false,
-              "consent": true
+              "consent": true,
+              "cguAccepted": true,
+              "cgvAccepted": true
             }
         """.trimIndent()
 
@@ -265,6 +271,26 @@ class PublicWidgetControllerTest {
     @Test
     fun `createDonation - 422 when consent is false`() {
         val req = validRequest.copy(consent = false)
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req))
+        ).andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `createDonation - 422 when cguAccepted is false`() {
+        val req = validRequest.copy(cguAccepted = false)
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req))
+        ).andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `createDonation - 422 when cgvAccepted is false`() {
+        val req = validRequest.copy(cgvAccepted = false)
         mockMvc.perform(
             post("/api/public/widget/clk_valid/donations")
                 .contentType(MediaType.APPLICATION_JSON)

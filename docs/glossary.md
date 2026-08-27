@@ -119,6 +119,21 @@ Enum representing the lifecycle of a campaign. Transitions are one-directional a
 A public, unauthenticated report of a campaign's content, submitted via a "Report this campaign" popup on the landing page (message + optional reporter e-mail, no account required). Raises a `CAMPAIGN_REPORT` `ComplianceAlert` on the owning association and moves its `AssociationStatus` to `ALERT`. Each submission writes its own append-only journal entry (`CAMPAIGN_REPORTED`), so a second report received while the first alert is still open is not lost. If the compliance officer rules the report founded (`SUSPICIOUS`), the association moves to `SUSPENDED`; otherwise it clears back to `ACTIVE` provided no other report is still open.
 `functional` `security`
 
+### CGU / CGV (Terms of Use / Terms of Sale)
+CGU (Conditions Générales d'Utilisation) and CGV (Conditions Générales de Vente) are versioned legal
+texts stored in `legal_document` (one immutable row per version). A `LegalAcceptance` row proves
+that a donor or an association expressly accepted a given version — document type, version,
+timestamp, and a snapshot of the signatory's name/e-mail taken at acceptance time (never re-read
+from the live profile, which could change afterwards). Donors accept both CGU and CGV fresh on
+every donation (a transactional act); an association accepts only the CGU, once per version, at
+campaign-publish time — reused for later campaigns until the CGU version changes. Required by the
+ACPR public-collection notice and, for the association, the sole protection CommonLink has under
+art. 1740 A CGI in the declarative tax-receipt model (no rescrit fiscal required as of the
+04/08/2026 decision) if a receipt is later challenged. Separate from the fiscal mandate
+(`FiscalMandate` entity, `eligibility` + `accepted`), which authorises tax-receipt issuance and is
+signed independently.
+`functional` `security` `business`
+
 ### Campaign Category (Cause)
 The thematic classification of an association. Categories include: Environnement, Social, Éducation, Santé, Culture, Animal, Humanitaire. Used for filtering in the discovery grid.
 `functional`

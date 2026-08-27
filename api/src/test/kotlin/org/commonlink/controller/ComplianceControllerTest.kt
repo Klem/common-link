@@ -10,6 +10,7 @@ import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import java.time.Instant
 import io.mockk.every
+import org.commonlink.dto.LegalAcceptanceDto
 import org.commonlink.dto.RegistryPreCheckDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
@@ -17,6 +18,8 @@ import org.commonlink.entity.ComplianceAlert
 import org.commonlink.entity.ComplianceAlertOrigin
 import org.commonlink.entity.ComplianceAlertSeverity
 import org.commonlink.entity.ComplianceAlertSubjectType
+import org.commonlink.entity.LegalAcceptanceSubjectType
+import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.ScopeVerdict
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
@@ -32,6 +35,7 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationComplianceStatusService
+import org.commonlink.service.LegalAcceptanceService
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
@@ -106,6 +110,9 @@ class ComplianceControllerTest {
 
     @MockkBean
     private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
+
+    @MockkBean
+    private lateinit var legalAcceptanceService: LegalAcceptanceService
 
     private val userId = UUID.fromString("00000000-0000-0000-0000-000000000001")
 
@@ -297,6 +304,44 @@ class ComplianceControllerTest {
         mockMvc.perform(
             get("/api/compliance/ping")
                 .with(user(userId.toString()).roles("ADMIN"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    // ── GET /legal-acceptances — restitution de preuve ───────────────────────
+
+    @Test
+    fun `listLegalAcceptances - 200 with the full acceptance history for one account`() {
+        val subjectId = UUID.randomUUID()
+        val row = LegalAcceptanceDto(
+            id = UUID.randomUUID(),
+            subjectType = LegalAcceptanceSubjectType.ASSOCIATION,
+            subjectId = subjectId,
+            documentType = LegalDocumentType.CGU,
+            documentVersion = "2026-08-26",
+            acceptedAt = Instant.parse("2026-08-26T10:00:00Z"),
+            signerName = "Jean Dupont",
+            signerEmail = "jean@asso.fr",
+            donationId = null,
+            campaignId = UUID.randomUUID(),
+        )
+        every { legalAcceptanceService.listAcceptances(LegalAcceptanceSubjectType.ASSOCIATION, subjectId) } returns listOf(row)
+
+        mockMvc.perform(
+            get("/api/compliance/legal-acceptances?subjectType=ASSOCIATION&subjectId=$subjectId")
+                .with(user(userId.toString()).roles("COMPLIANCE_OFFICER"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].documentType").value("CGU"))
+            .andExpect(jsonPath("$[0].documentVersion").value("2026-08-26"))
+            .andExpect(jsonPath("$[0].signerName").value("Jean Dupont"))
+    }
+
+    @Test
+    fun `listLegalAcceptances - 403 for a non-compliance role`() {
+        mockMvc.perform(
+            get("/api/compliance/legal-acceptances?subjectType=ASSOCIATION&subjectId=${UUID.randomUUID()}")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
         )
             .andExpect(status().isForbidden)
     }

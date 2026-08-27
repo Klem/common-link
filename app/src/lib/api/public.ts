@@ -176,3 +176,10 @@ export interface CampaignReportRequest {
  */
 export const reportCampaign = (token: string, payload: CampaignReportRequest): Promise<void> =>
   publicApi.post<void>(`/api/public/widget/${token}/report`, payload).then(() => undefined);
+
+export { LegalDocumentType } from '@/types/legal';
+import type { LegalDocumentDto, LegalDocumentType } from '@/types/legal';
+
+/** Public, unauthenticated read of the current CGU/CGV text — no account required. */
+export const getLegalDocument = (documentType: LegalDocumentType): Promise<LegalDocumentDto> =>
+  publicApi.get<LegalDocumentDto>(`/api/public/legal/${documentType}`).then((r) => r.data);

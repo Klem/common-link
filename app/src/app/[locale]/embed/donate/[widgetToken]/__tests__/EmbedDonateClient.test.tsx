@@ -50,6 +50,8 @@ function fillValidForm() {
     target: { value: 'Paris' },
   });
   fireEvent.click(screen.getByLabelText(/consent.label/i));
+  fireEvent.click(screen.getByLabelText(/cgu.label/i));
+  fireEvent.click(screen.getByLabelText(/cgv.label/i));
 }
 
 describe('EmbedDonateClient', () => {
@@ -111,6 +113,8 @@ describe('EmbedDonateClient', () => {
       target: { value: 'Paris' },
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
+  fireEvent.click(screen.getByLabelText(/cgu.label/i));
+  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -167,6 +171,8 @@ describe('EmbedDonateClient', () => {
       target: { value: 'Paris' },
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
+  fireEvent.click(screen.getByLabelText(/cgu.label/i));
+  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -194,6 +200,8 @@ describe('EmbedDonateClient', () => {
       target: { value: 'Paris' },
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
+  fireEvent.click(screen.getByLabelText(/cgu.label/i));
+  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {

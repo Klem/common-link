@@ -276,3 +276,9 @@ enum class BeneficialOwnerType { BENEFICIAL_OWNER, REPRESENTATIVE }
  * [org.commonlink.service.PublicWidgetService].
  */
 enum class AssociationStatus { ACTIVE, ALERT, SUSPENDED }
+
+/** A versioned legal document text (notice ACPR / art. 1740 A CGI — preuve d'acceptation). */
+enum class LegalDocumentType { CGU, CGV }
+
+/** Who accepted a [LegalDocumentType] — see [org.commonlink.entity.LegalAcceptance]. */
+enum class LegalAcceptanceSubjectType { DONOR, ASSOCIATION }

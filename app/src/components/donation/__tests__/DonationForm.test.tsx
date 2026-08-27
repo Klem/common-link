@@ -50,6 +50,8 @@ function fillValidForm(birthDate: string | null = '1990-01-15') {
     target: { value: 'Paris' },
   });
   fireEvent.click(screen.getByLabelText(/consent.label/i));
+  fireEvent.click(screen.getByLabelText(/cgu.label/i));
+  fireEvent.click(screen.getByLabelText(/cgv.label/i));
 }
 
 describe('DonationForm — skin default', () => {

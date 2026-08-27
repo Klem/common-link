@@ -30,6 +30,9 @@ import java.time.LocalDate
  * @param reason Why the association is launching this campaign. Null = no change.
  * @param impactGoals Concrete expected outcomes. Null = no change.
  * @param coverImage URL or path of the cover image. Null = no change.
+ * @param cguAccepted Must be true on the first DRAFT→LIVE publish for this association's current
+ *   CGU version (art. 1740 A CGI proof of acceptance); ignored once already accepted, ignored on
+ *   every other transition. Default false so unrelated updates need not think about it.
  */
 data class UpdateCampaignRequest(
     @field:Size(max = 255)
@@ -56,5 +59,7 @@ data class UpdateCampaignRequest(
 
     val impactGoals: String? = null,
 
-    val coverImage: String? = null
+    val coverImage: String? = null,
+
+    val cguAccepted: Boolean = false,
 )

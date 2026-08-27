@@ -17,6 +17,7 @@ import org.commonlink.dto.ComplianceRegistryScanSummaryDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.ComplianceAlertSummaryDto
 import org.commonlink.dto.FreezeScreeningMatchDto
+import org.commonlink.dto.LegalAcceptanceDto
 import org.commonlink.dto.OpenAlertCountDto
 import org.commonlink.dto.PriorDecisionDto
 import org.commonlink.dto.ReactivateAssociationRequest
@@ -32,6 +33,7 @@ import org.commonlink.entity.ComplianceAlertDecision
 import org.commonlink.entity.ComplianceAlertOrigin
 import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.entity.ComplianceAuditLog
+import org.commonlink.entity.LegalAcceptanceSubjectType
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
@@ -43,6 +45,7 @@ import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAuditLogService
+import org.commonlink.service.LegalAcceptanceService
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -79,6 +82,7 @@ class ComplianceController(
     private val userRepository: UserRepository,
     private val matchRepository: FreezeScreeningMatchRepository,
     private val associationComplianceStatusService: AssociationComplianceStatusService,
+    private val legalAcceptanceService: LegalAcceptanceService,
     private val objectMapper: ObjectMapper,
 ) {
 
@@ -519,4 +523,26 @@ class ComplianceController(
         associationComplianceStatusService.reactivate(associationId, officerId, request.rationale)
         return ResponseEntity.ok().build()
     }
+
+    /**
+     * Restitution of a complete CGU/CGV acceptance proof for one account (notice ACPR ;
+     * art. 1740 A CGI). Without this endpoint the acceptance records exist but cannot be produced
+     * on demand for a given donor or association — see [LegalAcceptanceService] KDoc.
+     */
+    @GetMapping("/legal-acceptances")
+    @Operation(
+        summary = "List CGU/CGV acceptance proof for one account",
+        description = "Returns every acceptance row for the given subject, most recent first — document type, " +
+            "version, timestamp, and the signatory snapshot taken at acceptance time."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "List of acceptance records"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun listLegalAcceptances(
+        @RequestParam @Parameter(description = "DONOR or ASSOCIATION") subjectType: LegalAcceptanceSubjectType,
+        @RequestParam @Parameter(description = "donor_profiles.id or association_profiles.id") subjectId: UUID,
+    ): ResponseEntity<List<LegalAcceptanceDto>> =
+        ResponseEntity.ok(legalAcceptanceService.listAcceptances(subjectType, subjectId))
 }

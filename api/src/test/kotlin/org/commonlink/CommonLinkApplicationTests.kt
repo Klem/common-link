@@ -18,6 +18,7 @@ import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationLandingService
 import org.commonlink.service.CampaignReportService
+import org.commonlink.service.LegalAcceptanceService
 import org.commonlink.service.MollieWebhookService
 import org.commonlink.service.PublicWidgetService
 import org.commonlink.service.AssociationRegistryCheckService
@@ -94,6 +95,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var freezeScreeningMatchRepository: FreezeScreeningMatchRepository
     @MockkBean private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
     @MockkBean private lateinit var campaignReportService: CampaignReportService
+    @MockkBean private lateinit var legalAcceptanceService: LegalAcceptanceService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test

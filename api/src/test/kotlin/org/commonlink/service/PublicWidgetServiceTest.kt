@@ -48,6 +48,7 @@ class PublicWidgetServiceTest {
         freezeScreeningDonationService = mockk(relaxed = true),
         donationCapService = donationCapService,
         mollieWebhookService = mockk(relaxed = true),
+        legalAcceptanceService = mockk(relaxed = true),
     )
 
     private fun campaign(status: CampaignStatus = CampaignStatus.LIVE) = Campaign(
@@ -116,6 +117,8 @@ class PublicWidgetServiceTest {
             donorPostalCode = "75001",
             donorCity = "Paris",
             consent = true,
+            cguAccepted = true,
+            cgvAccepted = true,
         )
 
         assertThrows<ConflictException> { service.createDonation("clk_x", request) }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { SUGGESTED_AMOUNTS } from '@/lib/donation/donationSchema';
 import { useGuestDonation, type DonationTrackingContext } from '@/lib/donation/useGuestDonation';
 
@@ -354,6 +355,40 @@ export function DonationForm({
         {errors.consent && (
           <p className={s.error} style={{ marginTop: 4 }}>
             {t(errors.consent.message as Parameters<typeof t>[0])}
+          </p>
+        )}
+
+        <div style={{ ...styles.checkRow, marginTop: 12 }}>
+          <input
+            id="cguAccepted"
+            type="checkbox"
+            disabled={inert}
+            {...register('cguAccepted')}
+          />
+          <label htmlFor="cguAccepted" style={styles.checkLabel}>
+            {t('cgu.label')} <Link href={`/${locale}/legal/CGU`} target="_blank" rel="noopener noreferrer">{t('cgu.link')}</Link> *
+          </label>
+        </div>
+        {errors.cguAccepted && (
+          <p className={s.error} style={{ marginTop: 4 }}>
+            {t(errors.cguAccepted.message as Parameters<typeof t>[0])}
+          </p>
+        )}
+
+        <div style={{ ...styles.checkRow, marginTop: 12 }}>
+          <input
+            id="cgvAccepted"
+            type="checkbox"
+            disabled={inert}
+            {...register('cgvAccepted')}
+          />
+          <label htmlFor="cgvAccepted" style={styles.checkLabel}>
+            {t('cgv.label')} <Link href={`/${locale}/legal/CGV`} target="_blank" rel="noopener noreferrer">{t('cgv.link')}</Link> *
+          </label>
+        </div>
+        {errors.cgvAccepted && (
+          <p className={s.error} style={{ marginTop: 4 }}>
+            {t(errors.cgvAccepted.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>

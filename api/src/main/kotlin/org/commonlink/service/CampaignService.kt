@@ -18,6 +18,7 @@ import org.commonlink.entity.CampaignCoverImage
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
@@ -77,6 +78,7 @@ class CampaignService(
     private val mollieConnectionRepository: MollieConnectionRepository,
     private val budgetHasher: CampaignBudgetHasher,
     private val outbox: OnchainOutboxService,
+    private val legalAcceptanceService: LegalAcceptanceService,
 ) {
 
     private val logger = LoggerFactory.getLogger(CampaignService::class.java)
@@ -214,7 +216,7 @@ class CampaignService(
         if (req.status != null) {
             validateStatusTransition(campaign.status, req.status)
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
-                preparePublish(campaign, associationId)
+                preparePublish(campaign, associationId, req.cguAccepted)
             }
             if (req.status == CampaignStatus.REVERT_REQUESTED && campaign.raised > BigDecimal.ZERO) {
                 throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
@@ -701,7 +703,7 @@ class CampaignService(
      * message — "not connected" and "broken link" call for different user actions than
      * "KYC incomplete".
      */
-    private fun preparePublish(campaign: Campaign, associationId: UUID) {
+    private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean) {
         if (campaign.goal <= BigDecimal.ZERO) {
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
         }
@@ -729,6 +731,16 @@ class CampaignService(
         if (!connection.canCollectDonations()) {
             throw UnprocessableEntityException("Association must complete Mollie KYC before going live")
         }
+        // Art. 1740 A CGI proof of acceptance — no-op once this association has already accepted
+        // the current CGU version (see LegalAcceptanceService KDoc).
+        legalAcceptanceService.requireAssociationAcceptance(
+            associationId = associationId,
+            documentType = LegalDocumentType.CGU,
+            accepted = cguAccepted,
+            signerName = profile.signerName ?: profile.name,
+            signerEmail = profile.user.email,
+            campaignId = campaign.id!!,
+        )
         campaign.budgetHash = budgetHasher.hash(campaign)
         logger.debug("Publish prepared: campaignId={}, budgetHash={}", campaign.id, campaign.budgetHash)
     }
