@@ -282,3 +282,30 @@ enum class LegalDocumentType { CGU, CGV }
 
 /** Who accepted a [LegalDocumentType] — see [org.commonlink.entity.LegalAcceptance]. */
 enum class LegalAcceptanceSubjectType { DONOR, ASSOCIATION }
+
+/**
+ * Why a campaign's DRAFT→LIVE publish attempt was refused by
+ * [org.commonlink.service.CampaignService.preparePublish] — one value per guard in that method, in
+ * the order they are evaluated. Recorded on the compliance audit journal
+ * ([org.commonlink.service.ComplianceAuditLogService.appendCampaignReviewRefused]); the annual
+ * ACPR activity report's "projets reçus / retenus" metric (art. R.548-4 II CMF) is derived from
+ * these events alongside [org.commonlink.service.ComplianceAuditLogService.appendCampaignReviewRetained].
+ *
+ * Freeze-list hits, out-of-scope refusals and manual curator rejections are **not** represented
+ * here: those are association-level KYB outcomes recorded on their own journal entries
+ * ([org.commonlink.service.ComplianceAuditLogService.appendOutOfScopeRefusal],
+ * [org.commonlink.service.ComplianceAuditLogService.appendNoRepresentativeRefusal]). At this gate
+ * they only ever surface as [KYB_NOT_VERIFIED] — `preparePublish` has no visibility into why
+ * `verificationStatus` isn't `VERIFIED`.
+ */
+enum class CampaignReviewRefusalReason {
+    GOAL_MISSING,
+    SCHEDULE_MISSING,
+    BUDGET_UNBALANCED,
+    IMPACT_GOALS_MISSING,
+    KYB_NOT_VERIFIED,
+    BANK_NOT_CONNECTED,
+    BANK_CONNECTION_BROKEN,
+    BANK_KYC_INCOMPLETE,
+    CGU_NOT_ACCEPTED,
+}

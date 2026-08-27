@@ -3,6 +3,7 @@ package org.commonlink.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.dto.FreezeScreenStatus
 import org.commonlink.dto.FreezeScreenStatusDto
+import org.commonlink.entity.CampaignReviewRefusalReason
 import org.commonlink.entity.ComplianceAuditLog
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.repository.ComplianceAuditLogRepository
@@ -96,6 +97,25 @@ class ComplianceAuditLogService(
          * fact recorded afterwards, not a reversal of that decision.
          */
         const val ASSOCIATION_REACTIVATED = "ASSOCIATION_REACTIVATED"
+
+        /**
+         * A campaign's DRAFT→LIVE publish attempt passed every guard in
+         * [org.commonlink.service.CampaignService.preparePublish] — a "projet retenu" for the
+         * annual ACPR activity report (art. R.548-4 II CMF). Written by
+         * [appendCampaignReviewRetained].
+         */
+        const val CAMPAIGN_REVIEW_RETAINED = "CAMPAIGN_REVIEW_RETAINED"
+
+        /**
+         * A campaign's DRAFT→LIVE publish attempt was refused by
+         * [org.commonlink.service.CampaignService.preparePublish] — a "projet reçu" but not
+         * "retenu" for the annual ACPR activity report (art. R.548-4 II CMF). Written by
+         * [appendCampaignReviewRefused].
+         */
+        const val CAMPAIGN_REVIEW_REFUSED = "CAMPAIGN_REVIEW_REFUSED"
+
+        /** Both campaign-review event types, for use in queries. */
+        val CAMPAIGN_REVIEW_EVENT_TYPES = listOf(CAMPAIGN_REVIEW_RETAINED, CAMPAIGN_REVIEW_REFUSED)
     }
 
     /**
@@ -471,6 +491,58 @@ class ComplianceAuditLogService(
             "reporterEmail" to reporterEmail,
         ),
     )
+
+    // -----------------------------------------------------------------------------------------
+    // Campaign-review journal helpers (art. R.548-4 II CMF — annual ACPR activity report)
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     * Records that a campaign's DRAFT→LIVE publish attempt was **retained** — every guard in
+     * [org.commonlink.service.CampaignService.preparePublish] passed. Committed in a **new,
+     * independent transaction** ([Propagation.REQUIRES_NEW]), matching every other journal helper
+     * in this class — the entry must survive regardless of what the caller's own transaction does
+     * afterward.
+     *
+     * `subject_type = CAMPAIGN`, `subject_id = campaignId`: this is a project-level fact, unlike
+     * [appendCampaignReported] which is deliberately association-level.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignReviewRetained(campaignId: UUID, associationId: UUID): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_REVIEW_RETAINED,
+        subjectType = ComplianceAuditSubjectType.CAMPAIGN,
+        subjectId = campaignId,
+        payload = mapOf("associationId" to associationId.toString()),
+    )
+
+    /**
+     * Records that a campaign's DRAFT→LIVE publish attempt was **refused**. Committed in a **new,
+     * independent transaction** ([Propagation.REQUIRES_NEW]) so the entry survives the caller
+     * throwing the user-facing [org.commonlink.exception.UnprocessableEntityException] immediately
+     * afterward — the same reason every `append*Refusal` helper in this class uses REQUIRES_NEW.
+     *
+     * `subject_type = CAMPAIGN`, `subject_id = campaignId`: this is a project-level fact, unlike
+     * [appendCampaignReported] which is deliberately association-level.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignReviewRefused(
+        campaignId: UUID,
+        associationId: UUID,
+        reason: CampaignReviewRefusalReason,
+    ): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_REVIEW_REFUSED,
+        subjectType = ComplianceAuditSubjectType.CAMPAIGN,
+        subjectId = campaignId,
+        payload = mapOf("associationId" to associationId.toString(), "reason" to reason.name),
+    )
+
+    /**
+     * Returns every campaign-review event (retained or refused) for one campaign, in chronological
+     * order. A campaign can appear more than once: a refused attempt can be corrected and
+     * resubmitted.
+     */
+    @Transactional(readOnly = true)
+    fun findCampaignReviewHistory(campaignId: UUID): List<ComplianceAuditLog> =
+        repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(campaignId, CAMPAIGN_REVIEW_EVENT_TYPES)
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun appendSyncFailure(reason: String, lastSuccessAt: Instant?): ComplianceAuditLog = append(

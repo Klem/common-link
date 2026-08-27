@@ -40,6 +40,7 @@ import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
@@ -57,6 +58,7 @@ import jakarta.persistence.EntityManagerFactory
 @SpringBootTest
 @ImportTestcontainers(TestcontainersConfig::class)
 @ActiveProfiles("test")
+@Sql(scripts = ["/sql/compliance_audit_log_test_schema.sql"], executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 @TestPropertySource(properties = [
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000",
@@ -88,6 +90,9 @@ class CampaignServiceTest {
 
     @Autowired
     private lateinit var legalDocumentRepository: LegalDocumentRepository
+
+    @Autowired
+    private lateinit var complianceAuditLogService: ComplianceAuditLogService
 
     private lateinit var userId: UUID
     private lateinit var otherUserId: UUID
@@ -1190,5 +1195,211 @@ class CampaignServiceTest {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
         assertTrue(error.message!!.contains("dates"))
+    }
+
+    // ── campaign_review_event journal (traçage des refus, art. R.548-4 II CMF) ─────────────────
+    //
+    // One case per preparePublish() guard, in the order they are evaluated, plus the retained
+    // (happy) path. See docs/legal/E6-tracage-refus-metriques-rapport-annuel.md.
+
+    @Test
+    fun `publish - retained campaign is journaled as CAMPAIGN_REVIEW_RETAINED`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Retained", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertEquals(ComplianceAuditLogService.CAMPAIGN_REVIEW_RETAINED, history.single().eventType)
+    }
+
+    @Test
+    fun `publish - goal missing is journaled with GOAL_MISSING`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No goal journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(goal = BigDecimal.ZERO))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertEquals(ComplianceAuditLogService.CAMPAIGN_REVIEW_REFUSED, history.single().eventType)
+        assertTrue(history.single().payload.contains("GOAL_MISSING"))
+    }
+
+    @Test
+    fun `publish - missing schedule is journaled with SCHEDULE_MISSING`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No dates journal", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(impactGoals = "200 repas servis chaque semaine pendant six mois"),
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("SCHEDULE_MISSING"))
+    }
+
+    @Test
+    fun `publish - unbalanced budget is journaled with BUDGET_UNBALANCED`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Unbalanced journal", goal = BigDecimal("10000"))
+        )
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(
+                impactGoals = "200 repas servis chaque semaine pendant six mois",
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
+        )
+        // No budget saved at all — requireBalancedBudget fails on an empty budget.
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BUDGET_UNBALANCED"))
+    }
+
+    @Test
+    fun `publish - missing expected outcome is journaled with IMPACT_GOALS_MISSING`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No outcome journal", goal = BigDecimal("10000"))
+        )
+        campaignService.saveBudget(userId, campaign.id, SaveBudgetRequest(listOf(
+            SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
+                listOf(SaveBudgetItemRequest("Matériel", BigDecimal("1000"), 0))),
+            SaveBudgetSectionRequest(BudgetSide.REVENUE, "74", "Dons", 1,
+                listOf(SaveBudgetItemRequest("Dons collectés", BigDecimal("1000"), 0))),
+        )))
+        campaignService.updateCampaign(
+            userId, campaign.id,
+            UpdateCampaignRequest(
+                startDate = java.time.LocalDate.of(2026, 1, 1),
+                endDate = java.time.LocalDate.of(2026, 12, 31),
+            ),
+        )
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("IMPACT_GOALS_MISSING"))
+    }
+
+    @Test
+    fun `publish - unverified KYB is journaled with KYB_NOT_VERIFIED`() {
+        linkMollie(userId, verifyKyb = false)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Unverified journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("KYB_NOT_VERIFIED"))
+    }
+
+    @Test
+    fun `publish - no Mollie connection is journaled with BANK_NOT_CONNECTED`() {
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        assoc.verificationStatus = VerificationStatus.VERIFIED
+        associationProfileRepository.save(assoc)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No Mollie journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BANK_NOT_CONNECTED"))
+    }
+
+    @Test
+    fun `publish - broken Mollie connection is journaled with BANK_CONNECTION_BROKEN`() {
+        linkMollie(userId, state = MollieConnectionState.BROKEN)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Broken journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BANK_CONNECTION_BROKEN"))
+    }
+
+    @Test
+    fun `publish - Mollie KYC incomplete is journaled with BANK_KYC_INCOMPLETE`() {
+        linkMollie(userId, canReceivePayments = false)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No payments journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BANK_KYC_INCOMPLETE"))
+    }
+
+    @Test
+    fun `publish - CGU not accepted is journaled with CGU_NOT_ACCEPTED`() {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No CGU journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("CGU_NOT_ACCEPTED"))
     }
 }
