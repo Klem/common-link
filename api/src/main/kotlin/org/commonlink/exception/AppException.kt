@@ -90,4 +90,4 @@ class BadGatewayException(message: String) :
 
 /** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */
 class UnprocessableEntityException(message: String) :
-    AppException(message, HttpStatus.UNPROCESSABLE_ENTITY)
+    AppException(message, HttpStatus.UNPROCESSABLE_CONTENT)

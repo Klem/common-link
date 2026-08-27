@@ -1014,7 +1014,6 @@ class CampaignServiceTest {
             ),
         )
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
-        val jobsAfterPublish = onchainJobRepository.findAll().size
 
         // Edit with different amount — should enqueue UPDATE_CAMPAIGN_BUDGET
         val changedBudget = SaveBudgetRequest(listOf(

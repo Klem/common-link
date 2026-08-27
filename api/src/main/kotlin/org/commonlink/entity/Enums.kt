@@ -93,7 +93,6 @@ enum class IbanVerificationStatus {
  * Raw outcome returned by a VOP (Verification of Payee) check against the beneficiary's bank.
  *
  * Maps directly to the four possible responses defined in the SEPA VOP standard.
- * This value is stored alongside the full [BeneficiaryIban.vopRawResponse] for audit purposes.
  */
 enum class VopResult {
     /** The provided name matches the account holder name exactly. */

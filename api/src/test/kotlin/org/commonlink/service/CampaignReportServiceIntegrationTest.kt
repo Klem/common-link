@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Timeout
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
-import org.springframework.data.domain.PageRequest
+
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
@@ -106,10 +106,9 @@ class CampaignReportServiceIntegrationTest {
         entityManager.flush()
         entityManager.clear()
 
-        val openAlerts = complianceAlertRepository
-            .findByOriginIn(listOf(ComplianceAlertOrigin.CAMPAIGN_REPORT), PageRequest.of(0, 10))
-            .content
-            .filter { it.subjectId == associationId }
-        assertEquals(1, openAlerts.size, "the dedup index must keep exactly one open alert across both reports")
+        val alert = complianceAlertRepository.findByOriginAndSubjectIdAndStatusIn(
+            ComplianceAlertOrigin.CAMPAIGN_REPORT, associationId, listOf(ComplianceAlertStatus.PENDING),
+        )
+        assertNotNull(alert, "the dedup index must keep exactly one open alert across both reports")
     }
 }
