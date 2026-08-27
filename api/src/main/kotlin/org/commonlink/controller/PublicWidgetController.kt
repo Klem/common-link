@@ -105,6 +105,15 @@ class PublicWidgetController(
         // (security audit 2026-08-20, M6).
         rateLimiter.check("donation:ip:${clientIpResolver.resolve(httpRequest)}", maxAttempts = 10, windowMinutes = 10)
         rateLimiter.check("donation:widget:$widgetToken", maxAttempts = 60, windowMinutes = 10)
+        // Accidental double-submit guard (double-click, form resubmit) — refuses a byte-identical
+        // retry within 60s before it reaches the service. Distinct from the two quotas above,
+        // which bound abuse volume rather than catch one caller's literal duplicate; also distinct
+        // from Mollie's own Idempotency-Key header, which protects Mollie's ledger, not this side.
+        rateLimiter.check(
+            "donation:submit:$widgetToken:${request.donorEmail.trim().lowercase()}:${request.amount.toPlainString()}",
+            maxAttempts = 1,
+            windowMinutes = 1,
+        )
         return ResponseEntity.ok(publicWidgetService.createDonation(widgetToken, request))
     }
 

@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import type { CampaignDto, BudgetSectionDto } from '@/types/campaign';
 import { BudgetSide } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
 import { LegalDocumentType } from '@/types/legal';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { getLegalAcceptanceState } from '@/lib/api/legal';
+import { LegalDocumentModal } from '@/components/legal/LegalDocumentModal';
+import { LegalLinkButton } from '@/components/legal/LegalLinkButton';
 
 /** Visual variant of an account-status row, mapped to the `.pp-row.*` CSS modifiers. */
 interface StatusRowSpec {
@@ -78,7 +79,6 @@ export function PrePublishModal({
 }: PrePublishModalProps) {
   const t = useTranslations('dashboard.campaigns.publish');
   const tNav = useTranslations('dashboard.campaigns.editor.tabs');
-  const locale = useLocale();
 
   // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
   // `cguState.accepted` means this association already has a standing acceptance of the current
@@ -91,6 +91,7 @@ export function PrePublishModal({
       .catch(() => setCguState({ accepted: false, version: '' }));
   }, []);
   const cguAccepted = cguState?.accepted === true || cguChecked;
+  const [showCguDoc, setShowCguDoc] = useState(false);
 
   const expenses = sumSide(campaign.budgetSections, BudgetSide.EXPENSE);
   const revenues = sumSide(campaign.budgetSections, BudgetSide.REVENUE);
@@ -200,9 +201,9 @@ export function PrePublishModal({
               />
               <label htmlFor="pp-cgu-checkbox" className="pp-row-lbl">
                 {t('cgu.label')}{' '}
-                <Link href={`/${locale}/legal/CGU`} target="_blank" rel="noopener noreferrer">
+                <LegalLinkButton className="pp-row-link" onClick={() => setShowCguDoc(true)}>
                   {t('cgu.link')}
-                </Link>
+                </LegalLinkButton>
               </label>
             </div>
           </div>
@@ -260,6 +261,10 @@ export function PrePublishModal({
           </button>
         </div>
       </div>
+
+      {showCguDoc && (
+        <LegalDocumentModal documentType={LegalDocumentType.CGU} onClose={() => setShowCguDoc(false)} />
+      )}
     </div>
   );
 }

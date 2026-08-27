@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
+import { LegalDocumentModal } from '@/components/legal/LegalDocumentModal';
+import { LegalLinkButton } from '@/components/legal/LegalLinkButton';
+import { LegalDocumentType } from '@/types/legal';
 import { SUGGESTED_AMOUNTS } from '@/lib/donation/donationSchema';
 import { useGuestDonation, type DonationTrackingContext } from '@/lib/donation/useGuestDonation';
 
@@ -77,6 +80,8 @@ export function DonationForm({
 
   const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked } =
     useGuestDonation({ widgetToken, sourceSite, locale, tracking });
+
+  const [openLegalDoc, setOpenLegalDoc] = useState<LegalDocumentType | null>(null);
 
   // A full campaign cannot take any amount, so there is nothing to fill in. Never in preview
   // (`disabled`): an unpublished campaign has no meaningful capacity — its goal may still be zero —
@@ -366,7 +371,10 @@ export function DonationForm({
             {...register('cguAccepted')}
           />
           <label htmlFor="cguAccepted" style={styles.checkLabel}>
-            {t('cgu.label')} <Link href={`/${locale}/legal/CGU`} target="_blank" rel="noopener noreferrer">{t('cgu.link')}</Link> *
+            {t('cgu.label')}{' '}
+            <LegalLinkButton className="btn-camp-link" disabled={inert} onClick={() => setOpenLegalDoc(LegalDocumentType.CGU)}>
+              {t('cgu.link')}
+            </LegalLinkButton> *
           </label>
         </div>
         {errors.cguAccepted && (
@@ -383,7 +391,10 @@ export function DonationForm({
             {...register('cgvAccepted')}
           />
           <label htmlFor="cgvAccepted" style={styles.checkLabel}>
-            {t('cgv.label')} <Link href={`/${locale}/legal/CGV`} target="_blank" rel="noopener noreferrer">{t('cgv.link')}</Link> *
+            {t('cgv.label')}{' '}
+            <LegalLinkButton className="btn-camp-link" disabled={inert} onClick={() => setOpenLegalDoc(LegalDocumentType.CGV)}>
+              {t('cgv.link')}
+            </LegalLinkButton> *
           </label>
         </div>
         {errors.cgvAccepted && (
@@ -408,6 +419,10 @@ export function DonationForm({
           ? t('submitting')
           : (resolvedSubmitLabel ?? t('submit'))}
       </button>
+
+      {openLegalDoc && (
+        <LegalDocumentModal documentType={openLegalDoc} onClose={() => setOpenLegalDoc(null)} />
+      )}
     </form>
   );
 }

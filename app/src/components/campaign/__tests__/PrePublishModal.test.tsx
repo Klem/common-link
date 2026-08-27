@@ -5,6 +5,7 @@ import type { CampaignDto } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { getLegalAcceptanceState } from '@/lib/api/legal';
+import { getLegalDocument } from '@/lib/api/public';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -13,6 +14,10 @@ vi.mock('next-intl', () => ({
 
 vi.mock('@/lib/api/legal', () => ({
   getLegalAcceptanceState: vi.fn(),
+}));
+
+vi.mock('@/lib/api/public', () => ({
+  getLegalDocument: vi.fn(),
 }));
 
 /** Balanced budget: one expense section and one revenue section for the same total. */
@@ -238,5 +243,46 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     fireEvent.click(screen.getByText('confirm'));
 
     expect(onConfirm).toHaveBeenCalledWith(true);
+  });
+
+  it('opens the CGU text in a modal instead of navigating away', async () => {
+    vi.mocked(getLegalDocument).mockResolvedValue({
+      documentType: 'CGU',
+      version: '2026-08-26',
+      content: 'Texte des CGU.',
+      publishedAt: '2026-08-26T00:00:00Z',
+    });
+    renderWith();
+
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByText('cgu.link'));
+
+    expect(getLegalDocument).toHaveBeenCalledWith('CGU');
+    await waitFor(() => {
+      expect(screen.getByText('Texte des CGU.')).toBeInTheDocument();
+    });
+  });
+
+  it('opening the CGU text does not itself check the unaccepted checkbox', async () => {
+    vi.mocked(getLegalAcceptanceState).mockResolvedValue({
+      documentType: 'CGU',
+      currentVersion: '2026-08-26',
+      accepted: false,
+    });
+    vi.mocked(getLegalDocument).mockResolvedValue({
+      documentType: 'CGU',
+      version: '2026-08-26',
+      content: 'Texte des CGU.',
+      publishedAt: '2026-08-26T00:00:00Z',
+    });
+    renderWith();
+
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByText('cgu.link'));
+    await waitFor(() => screen.getByText('Texte des CGU.'));
+
+    const checkbox = screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+    expect(screen.getByText('complete').closest('button')).toBeDisabled();
   });
 });

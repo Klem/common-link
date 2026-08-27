@@ -1727,6 +1727,9 @@
     }
   },
   "legal": {
+    "close": "Fermer",
+    "loadError": "Impossible de charger ce document. Veuillez réessayer.",
+    "loading": "Chargement…",
     "title": {
       "CGU": "Conditions Générales d'Utilisation",
       "CGV": "Conditions Générales de Vente"
@@ -1911,6 +1914,7 @@
       "cgvRequired": "Vous devez accepter les Conditions Générales de Vente",
       "consentRequired": "Vous devez consentir pour continuer",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
+      "duplicateSubmit": "Ce don a déjà été envoyé. Merci de patienter une minute avant de réessayer.",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide",
       "emailRequired": "L'e-mail est requis",
       "fieldRequired": "Ce champ est obligatoire",

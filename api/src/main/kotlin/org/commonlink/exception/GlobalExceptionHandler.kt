@@ -191,7 +191,9 @@ class GlobalExceptionHandler(
     /**
      * Handles [RateLimitException] (HTTP 429).
      *
-     * Includes a `Retry-After: 600` header (10 minutes) as guidance for clients and proxies.
+     * Includes a `Retry-After` header — [RateLimitException.retryAfterSeconds], matching whatever
+     * window the throwing [org.commonlink.security.AuthRateLimiter.check] call was configured
+     * with, not a value hardcoded here.
      *
      * Alerted **on burst only**, for the same reason as [handleAccessDenied]: the limiter doing its
      * job on one impatient user is not news, whereas a sustained stream of 429s on the login path
@@ -203,7 +205,7 @@ class GlobalExceptionHandler(
         burst(TechnicalAlertKind.RATE_LIMIT_BURST, request)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.message ?: "Rate limit exceeded")
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-            .header("Retry-After", "600")
+            .header("Retry-After", ex.retryAfterSeconds.toString())
             .body(problem)
     }
 

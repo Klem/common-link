@@ -1727,6 +1727,9 @@
     }
   },
   "legal": {
+    "close": "Close",
+    "loadError": "Could not load this document. Please try again.",
+    "loading": "Loading…",
     "title": {
       "CGU": "Terms of Use",
       "CGV": "Terms of Sale"
@@ -1911,6 +1914,7 @@
       "cgvRequired": "You must accept the Terms of Sale",
       "consentRequired": "You must consent to proceed",
       "countryInvalid": "Please enter a valid 2-letter country code",
+      "duplicateSubmit": "This donation was already submitted. Please wait a minute before trying again.",
       "emailInvalid": "Please enter a valid email address",
       "emailRequired": "Email is required",
       "fieldRequired": "This field is required",
