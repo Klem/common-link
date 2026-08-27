@@ -23,14 +23,6 @@ const infrastructureIcons = [
   </svg>,
 ];
 
-const flowIcons: Record<string, string> = {
-  money: '💶',
-  convert: '🔄',
-  lock: '🔐',
-  chart: '📊',
-  receipt: '🧾',
-};
-
 const roadmapIcons = ['🔶', '🚀', '📈'];
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -109,8 +101,8 @@ export default function PartenairesPage() {
                 key={i}
                 className="flex items-start gap-6 p-8 bg-white border border-border rounded-lg relative transition-all duration-200 hover:translate-x-1 hover:shadow-md"
               >
-                <div className="w-11 h-11 flex-shrink-0 bg-secondary-pale rounded-sm flex items-center justify-center text-primary text-xl">
-                  {flowIcons[t(`architecture.steps.${i}.icon`)] || '📋'}
+                <div className="w-11 h-11 flex-shrink-0 bg-secondary-pale rounded-sm flex items-center justify-center text-primary text-xl font-ui font-bold">
+                  {i + 1}
                 </div>
                 <div>
                   <h4 className="font-ui text-[0.95rem] font-bold mb-1">
