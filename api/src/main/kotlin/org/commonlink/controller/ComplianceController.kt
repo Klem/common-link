@@ -11,9 +11,13 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.AuditLogEntryDto
 import org.commonlink.dto.CampaignReportEntryDto
+import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.CloseAlertRequest
 import org.commonlink.dto.ComplianceAlertDetailDto
+import org.commonlink.dto.ComplianceAssociationDetailDto
+import org.commonlink.dto.ComplianceAssociationSummaryDto
 import org.commonlink.dto.ComplianceRegistryScanSummaryDto
+import org.commonlink.dto.DonorLegalAcceptanceGroupDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.ComplianceAlertSummaryDto
 import org.commonlink.dto.FreezeScreeningMatchDto
@@ -44,6 +48,7 @@ import org.commonlink.repository.UserRepository
 import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationRegistryCheckService
 import org.commonlink.service.ComplianceAlertService
+import org.commonlink.service.ComplianceAssociationService
 import org.commonlink.service.ComplianceAuditLogService
 import org.commonlink.service.LegalAcceptanceService
 import org.springframework.data.domain.PageImpl
@@ -83,6 +88,7 @@ class ComplianceController(
     private val matchRepository: FreezeScreeningMatchRepository,
     private val associationComplianceStatusService: AssociationComplianceStatusService,
     private val legalAcceptanceService: LegalAcceptanceService,
+    private val complianceAssociationService: ComplianceAssociationService,
     private val objectMapper: ObjectMapper,
 ) {
 
@@ -545,4 +551,116 @@ class ComplianceController(
         @RequestParam @Parameter(description = "donor_profiles.id or association_profiles.id") subjectId: UUID,
     ): ResponseEntity<List<LegalAcceptanceDto>> =
         ResponseEntity.ok(legalAcceptanceService.listAcceptances(subjectType, subjectId))
+
+    // -----------------------------------------------------------------------------------------
+    // Compliance associations workspace
+    // -----------------------------------------------------------------------------------------
+
+    /** Paginated index of every association, sorted by name — not scoped to alerts or scans. */
+    @GetMapping("/associations")
+    @Operation(
+        summary = "List every association",
+        description = "Returns a paginated index of all associations, sorted by name, independent of " +
+            "whether they have an open alert or a registry scan on file."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Page of associations"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+    )
+    fun listAssociations(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<PageResponse<ComplianceAssociationSummaryDto>> =
+        ResponseEntity.ok(complianceAssociationService.listAssociations(page, size).toPageResponse())
+
+    /**
+     * Full compliance dossier of one association — status, KYB standing, legal-identity fields.
+     * Writes a durable consultation record on the compliance journal (see
+     * [ComplianceAssociationService.getDetail] KDoc).
+     */
+    @GetMapping("/associations/{associationId}")
+    @Operation(
+        summary = "Get an association's compliance dossier",
+        description = "Returns status, KYB standing, and legal-identity fields. Recorded as a dossier " +
+            "consultation on the compliance journal."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Association dossier"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+    )
+    fun getAssociationDetail(
+        @PathVariable @Parameter(description = "Association UUID") associationId: UUID,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<ComplianceAssociationDetailDto> {
+        val officerId = UUID.fromString(principal.username)
+        return ResponseEntity.ok(complianceAssociationService.getDetail(associationId, officerId))
+    }
+
+    /** Every campaign of one association, most recent first. Not a dossier consultation in its own right. */
+    @GetMapping("/associations/{associationId}/campaigns")
+    @Operation(
+        summary = "List an association's campaigns",
+        description = "Returns every campaign of the association, most recent first."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "List of campaigns"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association not found", content = [Content()]),
+    )
+    fun listAssociationCampaigns(
+        @PathVariable @Parameter(description = "Association UUID") associationId: UUID,
+    ): ResponseEntity<List<CampaignSummaryDto>> =
+        ResponseEntity.ok(complianceAssociationService.listCampaigns(associationId))
+
+    /**
+     * A campaign's publish-attempt history (`CAMPAIGN_REVIEW_RETAINED` / `CAMPAIGN_REVIEW_REFUSED`
+     * + motif) — **not** a general status-transition history, see
+     * [ComplianceAssociationService.getCampaignReviewHistory] KDoc. Writes a durable consultation
+     * record on the compliance journal.
+     */
+    @GetMapping("/campaigns/{campaignId}/review-history")
+    @Operation(
+        summary = "Get a campaign's publish-attempt history",
+        description = "Returns every CAMPAIGN_REVIEW_RETAINED/CAMPAIGN_REVIEW_REFUSED event for this " +
+            "campaign, oldest first — not a general campaign status history. Recorded as a dossier " +
+            "consultation on the compliance journal."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Publish-attempt history"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()]),
+    )
+    fun getCampaignReviewHistory(
+        @PathVariable @Parameter(description = "Campaign UUID") campaignId: UUID,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<List<AuditLogEntryDto>> {
+        val officerId = UUID.fromString(principal.username)
+        return ResponseEntity.ok(complianceAssociationService.getCampaignReviewHistory(campaignId, officerId))
+    }
+
+    /**
+     * Donor CGU/CGV acceptance proof for one campaign, grouped by donor. Not logged as a separate
+     * dossier consultation — see [ComplianceAssociationService.getCampaignDonorAcceptances] KDoc.
+     */
+    @GetMapping("/campaigns/{campaignId}/donor-legal-acceptances")
+    @Operation(
+        summary = "Get a campaign's donor CGU/CGV acceptance history",
+        description = "Returns every DONOR acceptance row tied to this campaign, grouped by donor, " +
+            "most recent acceptance first within each group."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Donor acceptance groups"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Insufficient role", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()]),
+    )
+    fun getCampaignDonorAcceptances(
+        @PathVariable @Parameter(description = "Campaign UUID") campaignId: UUID,
+    ): ResponseEntity<List<DonorLegalAcceptanceGroupDto>> =
+        ResponseEntity.ok(complianceAssociationService.getCampaignDonorAcceptances(campaignId))
 }

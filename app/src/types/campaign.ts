@@ -1,14 +1,21 @@
 /**
- * Possible statuses for a fundraising campaign.
+ * Possible statuses for a fundraising campaign — mirrors the backend `CampaignStatus` enum
+ * exactly (`api/.../entity/Enums.kt`).
  * - DRAFT: not yet published, only visible to the association
- * - PRIVATE: published but accessible by direct link only (pending account verification)
  * - LIVE: published and accepting donations
- * - ENDED: closed, no longer accepting donations
+ * - PAUSED: temporarily suspended by the association
+ * - REVERT_REQUESTED: association asked to revert to DRAFT; awaiting CURATOR on-chain execution
+ * - CANCELLED: cancelled before completion
+ * - COMPLETED: reached its goal and completed
+ * - ENDED: collection period is over (legacy terminal state)
  */
 export const CampaignStatus = {
   DRAFT: 'DRAFT',
-  PRIVATE: 'PRIVATE',
   LIVE: 'LIVE',
+  PAUSED: 'PAUSED',
+  REVERT_REQUESTED: 'REVERT_REQUESTED',
+  CANCELLED: 'CANCELLED',
+  COMPLETED: 'COMPLETED',
   ENDED: 'ENDED',
 } as const;
 export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus];

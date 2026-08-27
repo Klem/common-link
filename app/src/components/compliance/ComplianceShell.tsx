@@ -72,6 +72,15 @@ export function ComplianceShell({ children }: ComplianceShellProps) {
                 {t('nav.alerts')}
               </Link>
             </li>
+            <li>
+              <Link
+                href={`/${locale}${ROUTES.compliance.associations}`}
+                className={pathname.startsWith(ROUTES.compliance.associations) ? 'active' : ''}
+              >
+                <span className="icon">◈</span>
+                {t('nav.associations')}
+              </Link>
+            </li>
           </ul>
         </div>
 

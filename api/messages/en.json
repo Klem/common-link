@@ -1,1 +1,11 @@
-{}
+{
+  "compliance": {
+    "associations": {
+      "campaignHistory": {
+        "donorAcceptances": {
+          "notice": "This lists every CGU/CGV acceptance recorded when a donation was started on this campaign — including a donation whose payment was never completed."
+        }
+      }
+    }
+  }
+}

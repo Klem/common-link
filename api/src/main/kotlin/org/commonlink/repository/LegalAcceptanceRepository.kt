@@ -28,4 +28,14 @@ interface LegalAcceptanceRepository : JpaRepository<LegalAcceptance, UUID> {
         subjectType: LegalAcceptanceSubjectType,
         subjectId: UUID,
     ): List<LegalAcceptance>
+
+    /**
+     * Every acceptance row tied to one campaign, most recent first — [subjectType] DONOR backs the
+     * campaign dossier's per-donor restitution; [LegalAcceptance.campaignId] KDoc explains why
+     * ASSOCIATION rows can also carry this campaign id without meaning the same thing.
+     */
+    fun findAllByCampaignIdAndSubjectTypeOrderByAcceptedAtDesc(
+        campaignId: UUID,
+        subjectType: LegalAcceptanceSubjectType,
+    ): List<LegalAcceptance>
 }

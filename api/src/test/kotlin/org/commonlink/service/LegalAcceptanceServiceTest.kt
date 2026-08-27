@@ -142,6 +142,49 @@ class LegalAcceptanceServiceTest {
     }
 
     @Test
+    fun `donorAcceptancesForCampaign groups rows by donor, keeping the most-recent-first order`() {
+        val donorA = UUID.randomUUID()
+        val donorB = UUID.randomUUID()
+        val cgvDoc = LegalDocument(documentType = LegalDocumentType.CGV, version = "2026-08-26", content = "text")
+
+        // Most recent first, as the repository method's name promises: donorB's single row, then
+        // donorA's two rows (its own most-recent one first).
+        val rowsMostRecentFirst = listOf(
+            LegalAcceptance(
+                subjectType = LegalAcceptanceSubjectType.DONOR, subjectId = donorB,
+                documentType = LegalDocumentType.CGU, documentVersion = cguDoc.version,
+                signerName = "Ada Lovelace", signerEmail = "ada@example.org", campaignId = campaignId,
+            ),
+            LegalAcceptance(
+                subjectType = LegalAcceptanceSubjectType.DONOR, subjectId = donorA,
+                documentType = LegalDocumentType.CGV, documentVersion = cgvDoc.version,
+                signerName = "Marie Curie (2)", signerEmail = "marie2@example.org", campaignId = campaignId,
+            ),
+            LegalAcceptance(
+                subjectType = LegalAcceptanceSubjectType.DONOR, subjectId = donorA,
+                documentType = LegalDocumentType.CGU, documentVersion = cguDoc.version,
+                signerName = "Marie Curie (1)", signerEmail = "marie1@example.org", campaignId = campaignId,
+            ),
+        )
+        every {
+            legalAcceptanceRepository.findAllByCampaignIdAndSubjectTypeOrderByAcceptedAtDesc(
+                campaignId, LegalAcceptanceSubjectType.DONOR,
+            )
+        } returns rowsMostRecentFirst
+
+        val groups = service.donorAcceptancesForCampaign(campaignId)
+
+        assertEquals(2, groups.size)
+        assertEquals(donorB, groups[0].donorId, "donor with the single most recent row groups first")
+        assertEquals("Ada Lovelace", groups[0].donorName)
+        assertEquals(1, groups[0].acceptances.size)
+
+        assertEquals(donorA, groups[1].donorId)
+        assertEquals("Marie Curie (2)", groups[1].donorName, "group identity comes from that donor's own most recent row")
+        assertEquals(2, groups[1].acceptances.size)
+    }
+
+    @Test
     fun `associationAcceptanceState reports not accepted when no row exists for the current version`() {
         every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) } returns cguDoc
         every {

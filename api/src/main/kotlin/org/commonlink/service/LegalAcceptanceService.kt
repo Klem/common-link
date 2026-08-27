@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import org.commonlink.dto.DonorLegalAcceptanceGroupDto
 import org.commonlink.dto.LegalAcceptanceDto
 import org.commonlink.dto.LegalAcceptanceStateDto
 import org.commonlink.dto.LegalDocumentDto
@@ -142,6 +143,33 @@ class LegalAcceptanceService(
     fun listAcceptances(subjectType: LegalAcceptanceSubjectType, subjectId: UUID): List<LegalAcceptanceDto> =
         legalAcceptanceRepository.findAllBySubjectTypeAndSubjectIdOrderByAcceptedAtDesc(subjectType, subjectId)
             .map { it.toDto() }
+
+    /**
+     * Donor CGU/CGV acceptance proof for one campaign, grouped by donor. Rows are read most-recent
+     * first, and `groupBy` preserves that order per key (Kotlin backs it with a `LinkedHashMap`), so
+     * no separate sort is needed for either the group order or a group's own [donorName]/[donorEmail]
+     * snapshot to land on that donor's latest acceptance.
+     *
+     * Includes every acceptance written at donation-*intent* time — [recordDonorAcceptance] is
+     * called right after the pending `Donation` row is created, before the Mollie payment
+     * confirms. A donor here may therefore have never completed payment; this is correct for a
+     * consent record (art. 1740 A CGI cares that the box was ticked, not whether the payment later
+     * succeeded), but it means this is not the same donor set as "who funded this campaign".
+     */
+    @Transactional(readOnly = true)
+    fun donorAcceptancesForCampaign(campaignId: UUID): List<DonorLegalAcceptanceGroupDto> =
+        legalAcceptanceRepository.findAllByCampaignIdAndSubjectTypeOrderByAcceptedAtDesc(
+            campaignId, LegalAcceptanceSubjectType.DONOR,
+        )
+            .groupBy { it.subjectId }
+            .map { (donorId, rows) ->
+                DonorLegalAcceptanceGroupDto(
+                    donorId = donorId,
+                    donorName = rows.first().signerName,
+                    donorEmail = rows.first().signerEmail,
+                    acceptances = rows.map { it.toDto() },
+                )
+            }
 
     private fun LegalDocument.toDto() = LegalDocumentDto(
         documentType = documentType,

@@ -36,3 +36,17 @@ data class LegalAcceptanceDto(
     val donationId: UUID?,
     val campaignId: UUID?,
 )
+
+/**
+ * One donor's CGU/CGV acceptance rows for a single campaign, grouped — a donor who gave twice to
+ * the same campaign gets one group with every document from both donations, not two rows. Groups
+ * are ordered by each donor's most recent acceptance, most recent first; [donorName]/[donorEmail]
+ * are the signer snapshot from that same most-recent row (see [org.commonlink.entity.LegalAcceptance]
+ * KDoc — never a live re-read of the donor's profile).
+ */
+data class DonorLegalAcceptanceGroupDto(
+    val donorId: UUID,
+    val donorName: String?,
+    val donorEmail: String?,
+    val acceptances: List<LegalAcceptanceDto>,
+)

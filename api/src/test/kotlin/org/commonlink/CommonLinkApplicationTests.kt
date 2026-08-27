@@ -35,6 +35,7 @@ import org.commonlink.service.MandateService
 import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieConnectTokenManager
 import org.commonlink.service.ComplianceAlertService
+import org.commonlink.service.ComplianceAssociationService
 import org.commonlink.service.ComplianceAuditLogService
 import org.commonlink.service.FreezeScreeningOnboardingService
 import org.commonlink.service.OnboardingGateService
@@ -87,6 +88,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var freezeScreeningOnboardingService: FreezeScreeningOnboardingService
     @MockkBean private lateinit var onboardingGateService: OnboardingGateService
     @MockkBean private lateinit var complianceAlertService: ComplianceAlertService
+    @MockkBean private lateinit var complianceAssociationService: ComplianceAssociationService
     @MockkBean private lateinit var complianceAuditLogService: ComplianceAuditLogService
     @MockkBean private lateinit var associationRegistryCheckRepository: AssociationRegistryCheckRepository
     @MockkBean private lateinit var associationProfileRepository: AssociationProfileRepository

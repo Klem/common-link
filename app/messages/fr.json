@@ -411,6 +411,146 @@
       },
       "title": "Alertes"
     },
+    "associations": {
+      "campaignHistory": {
+        "backToAssociation": "← Retour à l'association",
+        "col": {
+          "date": "Date",
+          "outcome": "Issue",
+          "reason": "Motif"
+        },
+        "donorAcceptances": {
+          "col": {
+            "acceptedAt": "Acceptée le",
+            "document": "Document",
+            "version": "Version"
+          },
+          "empty": "Aucune acceptation de donateur enregistrée pour cette campagne.",
+          "error": "Échec du chargement de l'historique d'acceptation des donateurs.",
+          "loading": "Chargement de l'historique d'acceptation des donateurs…",
+          "notice": "Cette liste recense chaque acceptation CGU/CGV enregistrée au lancement d'un don sur cette campagne — y compris un don dont le paiement n'a jamais abouti. Ce n'est pas la liste des donateurs de la campagne.",
+          "title": "Historique d'acceptation CGU/CGV des donateurs"
+        },
+        "empty": "Aucune tentative de publication enregistrée pour l'instant.",
+        "error": "Échec du chargement de l'historique de cette campagne.",
+        "loading": "Chargement de l'historique…",
+        "notice": "Il s'agit de l'historique des tentatives de publication (retenue/refus, avec motif) — pas d'un historique de statut général. Les changements de statut après publication (par ex. en ligne vers en pause) ne sont pas tracés.",
+        "outcome": {
+          "CAMPAIGN_REVIEW_REFUSED": "Refusée",
+          "CAMPAIGN_REVIEW_RETAINED": "Retenue"
+        },
+        "reason": {
+          "BANK_CONNECTION_BROKEN": "Connexion Mollie rompue",
+          "BANK_KYC_INCOMPLETE": "Vérification d'identité Mollie non aboutie",
+          "BANK_NOT_CONNECTED": "Aucun compte Mollie connecté",
+          "BUDGET_UNBALANCED": "Budget prévisionnel absent ou déséquilibré (tolérance d'un euro)",
+          "CGU_NOT_ACCEPTED": "Conditions générales d'utilisation non acceptées (art. 1740 A CGI)",
+          "GOAL_MISSING": "Objectif de collecte non renseigné ou nul",
+          "IMPACT_GOALS_MISSING": "Résultat attendu absent ou inférieur à vingt caractères",
+          "KYB_NOT_VERIFIED": "Dossier d'identification de l'association non vérifié",
+          "SCHEDULE_MISSING": "Date de début ou de fin non renseignée"
+        },
+        "title": "Historique des tentatives de publication"
+      },
+      "col": {
+        "identifier": "Identifiant",
+        "name": "Nom",
+        "risk": "Niveau de risque",
+        "status": "Statut",
+        "verification": "KYB"
+      },
+      "detail": {
+        "backToList": "← Retour aux associations",
+        "campaigns": {
+          "col": {
+            "createdAt": "Créée le",
+            "goal": "Objectif",
+            "name": "Nom",
+            "raised": "Collecté",
+            "status": "Statut"
+          },
+          "empty": "Aucune campagne pour ce filtre.",
+          "error": "Échec du chargement des campagnes.",
+          "filterAll": "Toutes",
+          "loading": "Chargement des campagnes…",
+          "status": {
+            "CANCELLED": "Annulée",
+            "COMPLETED": "Terminée avec succès",
+            "DRAFT": "Brouillon",
+            "ENDED": "Clôturée",
+            "LIVE": "En ligne",
+            "PAUSED": "En pause",
+            "REVERT_REQUESTED": "Retour au brouillon demandé"
+          },
+          "title": "Campagnes"
+        },
+        "cguCgv": {
+          "col": {
+            "acceptedAt": "Acceptée le",
+            "document": "Document",
+            "signer": "Signataire",
+            "version": "Version"
+          },
+          "empty": "Aucune acceptation enregistrée.",
+          "error": "Échec du chargement de l'historique d'acceptation.",
+          "loading": "Chargement de l'historique d'acceptation…",
+          "title": "Historique d'acceptation CGU/CGV"
+        },
+        "error": "Échec du chargement de ce dossier.",
+        "legalInfo": {
+          "address": "Adresse du siège",
+          "city": "Ville",
+          "contactEmail": "Email de contact",
+          "contactName": "Nom du contact",
+          "creationYear": "Année de création",
+          "identifier": "Identifiant RNA / SIREN",
+          "object": "Objet social",
+          "phone": "Téléphone",
+          "postalCode": "Code postal",
+          "signer": "Signataire habilité",
+          "signerRole": "Rôle du signataire",
+          "siren": "SIREN",
+          "title": "Informations légales"
+        },
+        "loading": "Chargement du dossier…",
+        "notFound": "Association introuvable.",
+        "status": {
+          "current": "Statut courant",
+          "risk": "Niveau de risque",
+          "riskAssessedAt": "Risque évalué le",
+          "riskVersion": "Version de la classification des risques",
+          "suspendedLink": "Aller aux alertes",
+          "suspendedNotice": "Cette association est suspendue. Pour la réactiver, ouvrez l'alerte de conformité qui a causé la suspension.",
+          "title": "Statut de conformité",
+          "verification": "Statut KYB",
+          "verifiedAt": "Vérifiée le"
+        }
+      },
+      "empty": "Aucune association trouvée.",
+      "error": "Échec du chargement des associations.",
+      "loading": "Chargement des associations…",
+      "pagination": {
+        "pageOf": "Page {current} sur {total}"
+      },
+      "risk": {
+        "HIGH": "Élevé",
+        "LOW": "Faible",
+        "STANDARD": "Standard"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "ALERT": "Sous surveillance",
+        "SUSPENDED": "Suspendue"
+      },
+      "subtitle": "Toutes les associations, indépendamment des alertes ou des scans de registre existants.",
+      "title": "Associations",
+      "verification": {
+        "PENDING": "En cours d'examen",
+        "REJECTED": "Refusée",
+        "UNVERIFIED": "Non vérifiée",
+        "VERIFIED": "Vérifiée"
+      }
+    },
     "auditLog": {
       "col": {
         "date": "Date",
@@ -554,6 +694,7 @@
     },
     "nav": {
       "alerts": "Alertes",
+      "associations": "Associations",
       "dashboard": "Tableau de bord"
     },
     "priorDecisions": {
@@ -1004,9 +1145,13 @@
       "actionReport": "Voir le rapport",
       "actionShare": "Partager",
       "badge": {
+        "cancelled": "✕ Annulée",
+        "completed": "✓ Terminée",
         "draft": "⚙️ Brouillon",
         "ended": "✓ Terminée",
-        "live": "● Active"
+        "live": "● Active",
+        "paused": "⏸ En pause",
+        "revertRequested": "↩ Retour brouillon demandé"
       },
       "create": "Créer une campagne",
       "defaultName": "Nouvelle campagne",

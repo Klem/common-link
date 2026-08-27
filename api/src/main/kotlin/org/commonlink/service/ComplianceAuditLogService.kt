@@ -116,6 +116,19 @@ class ComplianceAuditLogService(
 
         /** Both campaign-review event types, for use in queries. */
         val CAMPAIGN_REVIEW_EVENT_TYPES = listOf(CAMPAIGN_REVIEW_RETAINED, CAMPAIGN_REVIEW_REFUSED)
+
+        /**
+         * A compliance officer opened an association's dossier (compliance associations
+         * workspace). Written by [appendAssociationDossierConsulted]. Closes, for this dossier
+         * view, the gap `LCB-FT-compliance-overview.md` §7.2 names — a WORM, queryable record of
+         * consultation, distinct from [org.commonlink.security.ComplianceAccessLogFilter]'s
+         * application-log line for every request under `/api/compliance/`, which is not durable
+         * proof to an auditor.
+         */
+        const val ASSOCIATION_DOSSIER_CONSULTED = "ASSOCIATION_DOSSIER_CONSULTED"
+
+        /** Same as [ASSOCIATION_DOSSIER_CONSULTED], for a single campaign's dossier. */
+        const val CAMPAIGN_DOSSIER_CONSULTED = "CAMPAIGN_DOSSIER_CONSULTED"
     }
 
     /**
@@ -543,6 +556,35 @@ class ComplianceAuditLogService(
     @Transactional(readOnly = true)
     fun findCampaignReviewHistory(campaignId: UUID): List<ComplianceAuditLog> =
         repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(campaignId, CAMPAIGN_REVIEW_EVENT_TYPES)
+
+    // -----------------------------------------------------------------------------------------
+    // Dossier-consultation journal helpers (LCB-FT-compliance-overview.md §7.2)
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     * Records that [actorUserId] opened the compliance dossier of [associationId]. Committed in a
+     * **new, independent transaction** ([Propagation.REQUIRES_NEW]), matching every other journal
+     * helper in this class — the read that triggers this call must not be able to roll the
+     * consultation record back.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendAssociationDossierConsulted(associationId: UUID, actorUserId: UUID): ComplianceAuditLog = append(
+        eventType = ASSOCIATION_DOSSIER_CONSULTED,
+        subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+        subjectId = associationId,
+        actorUserId = actorUserId,
+        payload = emptyMap<String, String>(),
+    )
+
+    /** Same as [appendAssociationDossierConsulted], for a single campaign's dossier. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendCampaignDossierConsulted(campaignId: UUID, associationId: UUID, actorUserId: UUID): ComplianceAuditLog = append(
+        eventType = CAMPAIGN_DOSSIER_CONSULTED,
+        subjectType = ComplianceAuditSubjectType.CAMPAIGN,
+        subjectId = campaignId,
+        actorUserId = actorUserId,
+        payload = mapOf("associationId" to associationId.toString()),
+    )
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun appendSyncFailure(reason: String, lastSuccessAt: Instant?): ComplianceAuditLog = append(
