@@ -1470,6 +1470,7 @@
         },
         "complete": "Complete required fields",
         "confirm": "🚀 Publish",
+        "publishRefused": "Publish refused — check the requirements above.",
         "continueEditing": "Continue editing",
         "fill": "Fill in",
         "recommended": {

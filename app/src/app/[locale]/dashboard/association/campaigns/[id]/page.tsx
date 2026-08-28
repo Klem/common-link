@@ -81,14 +81,10 @@ export default function CampaignEditorPage() {
   };
 
   const handleConfirmPublish = async (cguAccepted: boolean) => {
+    const updated = await publishCampaign(campaignId, cguAccepted);
+    setCampaign(updated);
     setShowPublishModal(false);
-    try {
-      const updated = await publishCampaign(campaignId, cguAccepted);
-      setCampaign(updated);
-      addToast('success', 'publishCampaignSuccess');
-    } catch {
-      addToast('error', 'publishCampaignError');
-    }
+    addToast('success', 'publishCampaignSuccess');
   };
 
   /**

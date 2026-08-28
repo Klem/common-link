@@ -1470,6 +1470,7 @@
         },
         "complete": "Complétez les champs requis",
         "confirm": "Publier",
+        "publishRefused": "Publication refusée — vérifiez les conditions ci-dessus.",
         "continueEditing": "Continuer l'édition",
         "fill": "Compléter",
         "recommended": {

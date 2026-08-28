@@ -58,7 +58,7 @@ interface PrePublishModalProps {
   mollieDashboardUrl: string | null;
   onClose: () => void;
   /** @param cguAccepted Whether to send `cguAccepted: true` on the publish request. */
-  onConfirm: (cguAccepted: boolean) => void;
+  onConfirm: (cguAccepted: boolean) => Promise<void>;
 }
 
 function sumSide(sections: BudgetSectionDto[], side: BudgetSide): number {
@@ -83,6 +83,8 @@ export function PrePublishModal({
   // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
   // `cguState.accepted` means this association already has a standing acceptance of the current
   // CGU version — the checkbox then renders pre-checked and disabled instead of blocking.
+  const [attempted, setAttempted] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [cguState, setCguState] = useState<{ accepted: boolean; version: string } | null>(null);
   const [cguChecked, setCguChecked] = useState(false);
   useEffect(() => {
@@ -129,11 +131,18 @@ export function PrePublishModal({
     },
   ];
 
-  const allReqOk = blockers.every((b) => b.ok);
   const bankReady = mollieResolved && bankStatus === BankSetupStatus.COMPLETED;
   const kybReady = verificationStatus === VerificationStatus.VERIFIED;
-  const canPublish = allReqOk && bankReady && kybReady && cguState !== null && cguAccepted;
   const accountComplete = bankReady && kybReady;
+
+  const handlePublish = async () => {
+    setAttempted(true);
+    try {
+      await onConfirm(cguAccepted);
+    } catch {
+      setPublishError(t('publishRefused'));
+    }
+  };
 
   return (
     <div className="ov on" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -248,16 +257,23 @@ export function PrePublishModal({
           </div>
         </div>
 
+        {publishError && (
+          <div className="pp-row missing">
+            <div className="pp-row-ic">!</div>
+            <div className="pp-row-lbl">{publishError}</div>
+          </div>
+        )}
+
         <div className="mod-f">
           <button className="btn btn-secondary" onClick={onClose}>
             {t('continueEditing')}
           </button>
           <button
             className="btn btn-primary"
-            onClick={() => onConfirm(cguAccepted)}
-            disabled={!canPublish}
+            onClick={handlePublish}
+            disabled={attempted}
           >
-            {canPublish ? t('confirm') : t('complete')}
+            {t('confirm')}
           </button>
         </div>
       </div>
