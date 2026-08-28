@@ -313,6 +313,7 @@
     "campaignUpdated": "Campagne mise à jour.",
     "cancel": "Annuler",
     "confirm": "Confirmer",
+    "donorHistoryClaimed": "Nous avons retrouvé un historique de dons associé à cet e-mail : il est désormais rattaché à votre compte association.",
     "errors": {
       "campaignDeleteBlocked": "Seules les campagnes en brouillon peuvent être supprimées.",
       "conflict": "Cette ressource existe déjà.",
@@ -1470,9 +1471,9 @@
         },
         "complete": "Complétez les champs requis",
         "confirm": "Publier",
-        "publishRefused": "Publication refusée — vérifiez les conditions ci-dessus.",
         "continueEditing": "Continuer l'édition",
         "fill": "Compléter",
+        "publishRefused": "Publication refusée — vérifiez les conditions ci-dessus.",
         "recommended": {
           "milestones": "Jalons (augmente l'engagement des donateurs)",
           "reason": "« Pourquoi maintenant ? » (renforce la confiance)",
@@ -2065,6 +2066,7 @@
       "emailRequired": "L'e-mail est requis",
       "fieldRequired": "Ce champ est obligatoire",
       "fieldTooLong": "Ce champ est trop long",
+      "fullNameIncomplete": "Veuillez saisir votre prénom et votre nom",
       "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
       "submitFailed": "Une erreur est survenue. Veuillez réessayer."
     },

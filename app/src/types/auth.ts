@@ -55,4 +55,10 @@ export interface AuthResponseDto {
   accessToken: string;
   refreshToken: string;
   user: UserDto;
+  /**
+   * True exactly once: when this response is the moment a guest donor row (created by a widget
+   * donation) was claimed into an ASSOCIATION account. The donor history now attached to this
+   * account is real, not a mistake — surface a one-time explanation rather than leaving it silent.
+   */
+  donorHistoryClaimed?: boolean;
 }

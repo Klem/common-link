@@ -166,7 +166,13 @@ class AuthService(
         user.updatedAt = Instant.now()
         userRepository.save(user)
 
-        return issueTokens(user)
+        // A brand-new ASSOCIATION sign-up never has a DonorProfile (createProfile only builds one
+        // for DONOR) — one present here means register() claimed a guest row donations hang off.
+        // Safe to check unconditionally: this verification token can only ever be consumed once.
+        val donorHistoryClaimed = user.role == UserRole.ASSOCIATION &&
+            donorProfileRepository.findByUserId(user.id!!).isPresent
+
+        return issueTokens(user, donorHistoryClaimed)
     }
 
     /**
@@ -251,7 +257,15 @@ class AuthService(
             else -> throw ConflictException("Email already in use")
         }
         createProfile(user, user.role, null)
-        return issueTokens(user)
+
+        // See verifyEmail's identical check: a fresh ASSOCIATION sign-up never gets a DonorProfile,
+        // so one present here means a guest row (with donations attached) was just claimed. Safe to
+        // check unconditionally — signUpWithGoogle can only succeed once per account (a second call
+        // finds the googleSub already taken and throws ConflictException above).
+        val donorHistoryClaimed = user.role == UserRole.ASSOCIATION &&
+            donorProfileRepository.findByUserId(user.id!!).isPresent
+
+        return issueTokens(user, donorHistoryClaimed)
     }
 
     /**
@@ -322,6 +336,9 @@ class AuthService(
      * @param associationProfile Optional association data for the ASSOCIATION sign-up flow.
      * @throws RateLimitException if more than 3 links have been sent to this email in the last 10 minutes.
      * @throws AuthException if [role] is null and no existing account is found for the email.
+     * @throws ConflictException if [role] is supplied (sign-up) and the email already belongs to a
+     *   non-guest account — same rule as [register], enforced here too so a magic-link sign-up
+     *   cannot silently log the caller into an unrelated existing account under a different role.
      */
     @Transactional
     fun sendMagicLink(rawEmail: String, role: UserRole?, associationProfile: AssociationProfileRequestDto? = null) {
@@ -339,6 +356,19 @@ class AuthService(
         // role back from that row and would create the account with it (audit 2026-08-20, C1).
         // Checked after the quota so the guard cannot be probed for free.
         role?.let { requireSelfAssignable(it) }
+
+        // A role means sign-up intent. Unlike login (role == null), a sign-up must not silently
+        // resolve to someone else's existing account: without this, requesting a magic link for an
+        // ASSOCIATION sign-up on an email that already has a real DONOR account sent no error, and
+        // verifyMagicLink would later just log the caller into that DONOR account. Only a guest row
+        // (never a real account) may still be claimed by a sign-up — same rule as [register].
+        if (role != null) {
+            userRepository.findByEmailIgnoreCase(email).ifPresent { existing ->
+                if (!existing.guest) {
+                    throw ConflictException("Email already in use")
+                }
+            }
+        }
 
         // Surface a duplicate SIREN now rather than after the user has clicked the emailed link,
         // where profile creation would fail. No-op for the RNA sign-up flow.
@@ -384,8 +414,13 @@ class AuthService(
      *
      * @param rawToken The raw opaque token from the magic-link URL.
      * @return [AuthResponseDto] with a fresh access token and refresh token.
+     *   [AuthResponseDto.donorHistoryClaimed] is `true` exactly when this call just claimed a guest
+     *   row into an ASSOCIATION account.
      * @throws InvalidTokenException if no unused token matches the hash.
      * @throws TokenExpiredException if the token's 15-minute window has passed.
+     * @throws ConflictException if the token's role does not match a non-guest existing account's
+     *   role — [sendMagicLink] already refuses to issue such a token, this covers one persisted
+     *   before that guard existed.
      */
     @Transactional
     fun verifyMagicLink(rawToken: String): AuthResponseDto {
@@ -415,10 +450,23 @@ class AuthService(
             )
         } else null
 
+        // Set only inside the claim branch below — the one moment a guest row actually becomes an
+        // ASSOCIATION account. A brand-new sign-up (Path 2) or a plain login never sets it, so the
+        // one-time notice this backs cannot re-fire on a returning user's later magic-link logins.
+        var donorHistoryClaimed = false
+
         val user = userRepository.findByEmailIgnoreCase(token.email).map { existing ->
             // Path 1: existing account — mark the email as verified (login flow).
             // No role, provider or profile change for a real account.
             val claimingGuest = existing.guest
+
+            // A non-guest account whose role differs from the token's is not a login — it is a
+            // sign-up token for a role that belongs to someone else's existing account. sendMagicLink
+            // now refuses to issue that token in the first place; this only catches one issued before.
+            if (!claimingGuest && existing.role != token.role) {
+                throw ConflictException("Email already in use")
+            }
+
             if (claimingGuest) {
                 // A guest row provisioned by the donation widget. Clicking this link is the proof
                 // of address ownership that row never had, so it is claimed rather than left
@@ -427,6 +475,7 @@ class AuthService(
                 existing.guest = false
                 existing.provider = AuthProvider.MAGIC_LINK
                 existing.role = token.role
+                donorHistoryClaimed = token.role == UserRole.ASSOCIATION
             }
             existing.emailVerified = true
             existing.updatedAt = Instant.now()
@@ -449,7 +498,7 @@ class AuthService(
             newUser
         }
 
-        return issueTokens(user)
+        return issueTokens(user, donorHistoryClaimed)
     }
 
     /**
@@ -711,8 +760,11 @@ class AuthService(
      * Persists only the SHA-256 hash of the refresh token. The raw refresh token is returned
      * to the caller once and must be treated as a secret by the client.
      * Refresh tokens are valid for 30 days.
+     *
+     * @param donorHistoryClaimed See [AuthResponseDto.donorHistoryClaimed]. Only ever `true` from the
+     *   call site that just performed the guest-to-ASSOCIATION claim itself.
      */
-    private fun issueTokens(user: User): AuthResponseDto {
+    private fun issueTokens(user: User, donorHistoryClaimed: Boolean = false): AuthResponseDto {
         val rawRefreshToken = tokenHashService.generateOpaqueToken()
         refreshTokenRepository.save(
             RefreshToken(
@@ -724,7 +776,8 @@ class AuthService(
         return AuthResponseDto(
             accessToken = jwtService.generateAccessToken(user),
             refreshToken = rawRefreshToken,
-            user = user.toDto()
+            user = user.toDto(),
+            donorHistoryClaimed = donorHistoryClaimed
         )
     }
 

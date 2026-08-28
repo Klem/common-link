@@ -60,6 +60,10 @@ export function useMagicLink() {
         setState({ status: 'error', error: 'errors.sirenAlreadyRegistered' });
       } else if (isAxiosError(err) && err.response?.status === 429) {
         setState({ status: 'error', error: 'errors.rateLimited' });
+      } else if (isAxiosError(err) && err.response?.status === 409) {
+        // Sign-up (role passed) on an email that already has a real account — same case
+        // useEmailRegister already surfaces via errors.accountExists.
+        setState({ status: 'error', error: 'errors.accountExists' });
       } else {
         setState({ status: 'error', error: 'errors.genericError' });
       }

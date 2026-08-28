@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import { getHomePath } from '@/lib/routes';
 import type { AuthResponseDto } from '@/types/auth';
 
@@ -29,6 +30,8 @@ type VerifyStatus = 'idle' | 'verifying' | 'success' | 'error';
  *
  * On success:
  * - Stores auth state via `useAuthStore.setAuth`.
+ * - Shows a one-time `donorHistoryClaimed` toast when the backend reports
+ *   `donorHistoryClaimed` (a guest donor row was just claimed into this account).
  * - Calls `onSuccess()` if provided; otherwise redirects to the role-specific dashboard.
  *
  * On failure, maps backend error codes to i18n keys:
@@ -49,6 +52,7 @@ export function useMagicLinkVerify(
   const router = useRouter();
   const locale = useLocale();
   const { setAuth } = useAuthStore();
+  const { addToast } = useToastStore();
   const [status, setStatus] = useState<VerifyStatus>(token ? 'verifying' : 'idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +67,9 @@ export function useMagicLinkVerify(
       try {
         const { data } = await api.post<AuthResponseDto>('/api/auth/magic-link/verify', { token });
         setAuth(data.accessToken, data.user);
+        if (data.donorHistoryClaimed) {
+          addToast('success', 'donorHistoryClaimed');
+        }
         setStatus('success');
         if (onSuccess) {
           onSuccess();

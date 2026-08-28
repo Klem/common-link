@@ -174,6 +174,7 @@ class AuthController(
             description = "Role required but not provided for new account",
             content = [Content()]
         ),
+        ApiResponse(responseCode = "409", description = "Email already in use (sign-up on an existing non-guest account)", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()]),
         ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
@@ -201,6 +202,7 @@ class AuthController(
         ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Token invalid or already used", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Token expired", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Token's role does not match an existing non-guest account's role", content = [Content()]),
         ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()])
     )
     fun verifyMagicLink(@Valid @RequestBody req: MagicLinkVerifyDto): ResponseEntity<AuthResponseDto> =

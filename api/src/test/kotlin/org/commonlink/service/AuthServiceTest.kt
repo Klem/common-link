@@ -317,6 +317,29 @@ class AuthServiceTest {
     }
 
     @Test
+    fun `signUpWithGoogle - claims a guest account into ASSOCIATION and sets donorHistoryClaimed`() {
+        val guest = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.GUEST,
+            guest = true,
+            emailVerified = false,
+        )
+        val payload = buildGooglePayload(sub = "google-sub-999", email = "guest@example.com")
+        every { googleIdTokenVerifier.verify("valid-token") } returns buildGoogleToken(payload)
+        every { userRepository.findByGoogleSub("google-sub-999") } returns Optional.empty()
+        every { userRepository.findByEmailIgnoreCase("guest@example.com") } returns Optional.of(guest)
+        // The guest row already carries the donor profile the donations hang off.
+        every { donorProfileRepository.findByUserId(guest.id!!) } returns Optional.of(mockk(relaxed = true))
+
+        val result = authService.signUpWithGoogle("valid-token", UserRole.ASSOCIATION)
+
+        assertEquals(UserRole.ASSOCIATION, guest.role)
+        assertTrue(result.donorHistoryClaimed)
+    }
+
+    @Test
     fun `signUpWithGoogle - invalid token throws AuthException`() {
         every { googleIdTokenVerifier.verify("bad-token") } returns null
 
@@ -425,12 +448,62 @@ class AuthServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // verifyEmail
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `verifyEmail - happy path does not set donorHistoryClaimed`() {
+        val token = EmailVerificationToken(
+            user = donorUser,
+            tokenHash = "hashedtoken",
+            expiresAt = Instant.now().plus(24, ChronoUnit.HOURS)
+        )
+        every { emailVerificationTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+
+        val result = authService.verifyEmail("rawtoken123")
+
+        assertEquals("jwt.access.token", result.accessToken)
+        assertNotNull(token.usedAt)
+        assertFalse(result.donorHistoryClaimed)
+    }
+
+    /**
+     * A brand-new ASSOCIATION sign-up never has a DonorProfile — one present here is the signal
+     * that register() just claimed a guest row (with donations attached), so the one-time notice
+     * must fire.
+     */
+    @Test
+    fun `verifyEmail - claimed guest account into ASSOCIATION sets donorHistoryClaimed`() {
+        val claimedUser = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.ASSOCIATION,
+            provider = AuthProvider.EMAIL,
+            passwordHash = "hashed",
+            guest = false,
+            emailVerified = false,
+        )
+        val token = EmailVerificationToken(
+            user = claimedUser,
+            tokenHash = "hashedtoken",
+            expiresAt = Instant.now().plus(24, ChronoUnit.HOURS)
+        )
+        every { emailVerificationTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { donorProfileRepository.findByUserId(claimedUser.id!!) } returns Optional.of(mockk(relaxed = true))
+
+        val result = authService.verifyEmail("rawtoken123")
+
+        assertTrue(result.donorHistoryClaimed)
+    }
+
+    // -------------------------------------------------------------------------
     // sendMagicLink
     // -------------------------------------------------------------------------
 
     @Test
     fun `sendMagicLink - happy path for new user with role`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("new@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("new@example.com") } returns Optional.empty()
         every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
         justRun { emailService.sendMagicLink(any(), any()) }
 
@@ -467,6 +540,45 @@ class AuthServiceTest {
 
         // No exception — silent no-op prevents email enumeration
         authService.sendMagicLink("nobody@example.com", null)
+    }
+
+    /**
+     * Sign-up intent (role != null) on an email already owned by a real account must be refused up
+     * front — otherwise the request silently "succeeds" (email sent) and verifyMagicLink later just
+     * logs the caller into the existing account under its original role, discarding the requested
+     * role/association data with no error surfaced anywhere.
+     */
+    @Test
+    fun `sendMagicLink - signup on an email with a real account throws ConflictException`() {
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("donor@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("donor@example.com") } returns Optional.of(donorUser)
+
+        assertThrows<ConflictException> {
+            authService.sendMagicLink("donor@example.com", UserRole.ASSOCIATION)
+        }
+        verify(exactly = 0) { magicLinkTokenRepository.save(any()) }
+        verify(exactly = 0) { emailService.sendMagicLink(any(), any()) }
+    }
+
+    /** A guest row (donation widget) is not a real account yet, so a sign-up may still claim it. */
+    @Test
+    fun `sendMagicLink - signup on an email with only a guest account proceeds`() {
+        val guest = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.GUEST,
+            guest = true,
+            emailVerified = false,
+        )
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("guest@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("guest@example.com") } returns Optional.of(guest)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        justRun { emailService.sendMagicLink(any(), any()) }
+
+        authService.sendMagicLink("guest@example.com", UserRole.ASSOCIATION)
+
+        verify { emailService.sendMagicLink("guest@example.com", any()) }
     }
 
     // -------------------------------------------------------------------------
@@ -518,6 +630,73 @@ class AuthServiceTest {
         assertTrue(googleUser.emailVerified)
         assertEquals(AuthProvider.GOOGLE, googleUser.provider) // provider unchanged
         verify(exactly = 0) { donorProfileRepository.save(any()) }
+    }
+
+    /**
+     * Defence in depth: sendMagicLink now refuses to issue a token like this one (signup role
+     * differing from an existing non-guest account's role), but a token persisted before that guard
+     * existed must not silently log the caller into the wrong account either.
+     */
+    @Test
+    fun `verifyMagicLink - existing non-guest account with mismatched role throws ConflictException`() {
+        val token = MagicLinkToken(
+            email = donorUser.email,
+            tokenHash = "hashedtoken",
+            role = UserRole.ASSOCIATION,
+            expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES)
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { userRepository.findByEmailIgnoreCase(donorUser.email) } returns Optional.of(donorUser)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+
+        assertThrows<ConflictException> { authService.verifyMagicLink("rawtoken123") }
+
+        assertEquals(UserRole.DONOR, donorUser.role, "Existing account's role untouched")
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `verifyMagicLink - claims a guest account into ASSOCIATION and sets donorHistoryClaimed`() {
+        val guest = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.GUEST,
+            guest = true,
+            emailVerified = false,
+        )
+        val token = MagicLinkToken(
+            email = "guest@example.com",
+            tokenHash = "hashedtoken",
+            role = UserRole.ASSOCIATION,
+            expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES),
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase("guest@example.com") } returns Optional.of(guest)
+        every { donorProfileRepository.findByUserId(guest.id!!) } returns Optional.of(mockk(relaxed = true))
+
+        val result = authService.verifyMagicLink("rawtoken123")
+
+        assertEquals(UserRole.ASSOCIATION, guest.role)
+        assertTrue(result.donorHistoryClaimed)
+    }
+
+    @Test
+    fun `verifyMagicLink - plain login does not set donorHistoryClaimed`() {
+        val token = MagicLinkToken(
+            email = donorUser.email,
+            tokenHash = "hashedtoken",
+            role = UserRole.DONOR,
+            expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES),
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase(donorUser.email) } returns Optional.of(donorUser)
+
+        val result = authService.verifyMagicLink("rawtoken123")
+
+        assertFalse(result.donorHistoryClaimed)
     }
 
     @Test
@@ -922,6 +1101,7 @@ class AuthServiceTest {
     @Test
     fun `sendMagicLink - already registered SIREN is rejected before sending`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter(any(), any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("asso-new@example.com") } returns Optional.empty()
         every { associationProfileRepository.existsByIdentifier("123456789") } returns true
 
         assertThrows<SirenAlreadyRegisteredException> {
@@ -938,6 +1118,7 @@ class AuthServiceTest {
     @Test
     fun `sendMagicLink - already registered RNA still sends - RNA flow untouched`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter(any(), any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("asso-new@example.com") } returns Optional.empty()
         every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
         justRun { emailService.sendMagicLink(any(), any()) }
         every { associationProfileRepository.existsByIdentifier("W123456789") } returns true

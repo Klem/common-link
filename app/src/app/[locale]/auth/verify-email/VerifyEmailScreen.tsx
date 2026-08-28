@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import { ROUTES } from '@/lib/routes';
 import type { AuthResponseDto } from '@/types/auth';
 import { UserRole } from '@/types/auth';
@@ -23,6 +24,7 @@ export function VerifyEmailScreen({ token }: VerifyEmailScreenProps) {
   const locale = useLocale();
   const router = useRouter();
   const { setAuth } = useAuthStore();
+  const { addToast } = useToastStore();
   const [state, setState] = useState<VerifyState>('verifying');
 
   useEffect(() => {
@@ -35,6 +37,9 @@ export function VerifyEmailScreen({ token }: VerifyEmailScreenProps) {
       .then(({ data }) => {
         setAuth(data.accessToken, data.user);
         sessionStorage.removeItem('cl-pending-email');
+        if (data.donorHistoryClaimed) {
+          addToast('success', 'donorHistoryClaimed');
+        }
         setState('success');
         const dashboard =
           data.user.role === UserRole.ASSOCIATION

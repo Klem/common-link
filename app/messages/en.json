@@ -313,6 +313,7 @@
     "campaignUpdated": "Campaign updated.",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "donorHistoryClaimed": "We found a previous donor history under this email — it's now attached to your association account.",
     "errors": {
       "campaignDeleteBlocked": "Only draft campaigns can be deleted.",
       "conflict": "This resource already exists.",
@@ -1470,9 +1471,9 @@
         },
         "complete": "Complete required fields",
         "confirm": "🚀 Publish",
-        "publishRefused": "Publish refused — check the requirements above.",
         "continueEditing": "Continue editing",
         "fill": "Fill in",
+        "publishRefused": "Publish refused — check the requirements above.",
         "recommended": {
           "milestones": "Milestones (increases donor engagement)",
           "reason": "\"Why now?\" (builds trust)",
