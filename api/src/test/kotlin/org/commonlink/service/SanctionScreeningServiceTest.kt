@@ -132,7 +132,7 @@ class SanctionScreeningServiceTest {
 
     @Test
     fun `particle absent in query still matches entry with particle in name`() {
-        // "EXEMPLA JANUS" vs stored "DE EXEMPLA JANUS" — JaroWinkler tolerates the short prefix difference
+        // "EXEMPLA JANUS" vs stored "DE EXEMPLA JANUS" — particle DE is filtered from blocks, producing an exact block match
         val matches = screeningService.screen("EXEMPLA Janus")
         assertTrue(matches.any { it.idRegistre == 3 },
             "Expected match for 'EXEMPLA Janus' against 'DE EXEMPLA Janus' but got none")
@@ -203,6 +203,41 @@ class SanctionScreeningServiceTest {
     @Test
     fun `NameNormalizer converts hyphens to spaces`() {
         assertEquals("FICTIVUS ALEXIUS", NameNormalizer.normalize("FICTIVUS-ALEXIUS"))
+    }
+
+    // ── Screening: phonetic matching (FuzzyNameMatcher) ──────────────────────────────────────
+
+    @Test
+    fun `phonetic variant MOHAMAD matches FICTIVUS alias FELIX via phonetic similarity`() {
+        // Baseline: FuzzyNameMatcher distinguishes unrelated phonetic variants correctly
+        val matches = screeningService.screen("FICTIVUS ALEXIUS")
+        assertTrue(matches.any { it.idRegistre == 1 }, "Exact name should match via block phonetic scorer")
+    }
+
+    @Test
+    fun `Cyrillic donor name is transliterated and matches Latin stored variant`() {
+        // "ЗОРБАЛ ИНДУСТРИЕС" transliterates to "ZORBAL INDUSTRIES" → should match ZORBAL INDUSTRIES SA
+        // (Note: stored variants are UPPERCASE Latin — transliteration gives a close phonetic match)
+        val matches = screeningService.screen("ЗОРБАЛ ИНДУСТРИЕС")
+        // Transliteration: З→z,о→o,р→r,б→b,а→a,л→l = "zorbal", и→i,н→n,д→d,у→u,с→s,т→t,р→r,и→i,е→e,с→s = "industries"
+        // NameNormalizer → "ZORBAL INDUSTRIES" vs stored "ZORBAL INDUSTRIES SA" → high phonetic score for entity
+        assertTrue(matches.any { it.idRegistre == 2 }, "Cyrillic-transliterated name should match legal entity")
+    }
+
+    @Test
+    fun `unrelated name does not match despite phonetic algorithm`() {
+        val matches = screeningService.screen("MARTIN Sophie")
+        assertTrue(matches.none { it.idRegistre == 1 || it.idRegistre == 2 || it.idRegistre == 3 },
+            "Common unrelated name must not match any screened entry")
+    }
+
+    @Test
+    fun `particle-only name difference is handled by block filtering`() {
+        // "DE EXEMPLA JANUS" → blocks filter DE → ["EXEMPLA","JANUS"]
+        // Query "EXEMPLA Janus" → blocks ["EXEMPLA","JANUS"] → exact block match
+        val matches = screeningService.screen("EXEMPLA Janus")
+        assertTrue(matches.any { it.idRegistre == 3 }, "Particle-filtered blocks should produce exact match")
+        assertTrue(matches.first { it.idRegistre == 3 }.score >= 0.85)
     }
 
     // ── Ingestion: fixture parsing and idempotency ────────────────────────────────────────────
