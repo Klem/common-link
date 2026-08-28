@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET } from '../route';
 
@@ -57,6 +57,10 @@ function makeRequest(widgetToken: string, gtmId: string) {
 describe('GET /api/gtm-export/[widgetToken]', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetchSequence());
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('rejects a malformed gtmId without fetching anything', async () => {
@@ -125,5 +129,21 @@ describe('GET /api/gtm-export/[widgetToken]', () => {
     const res = await GET(request, { params });
 
     expect(res.status).toBe(404);
+  });
+
+  it('embeds NEXT_PUBLIC_APP_URL instead of the request origin when set', async () => {
+    // Reproduces the real bug: an export triggered through a local tunnel/port-forward carries
+    // a request origin like "http://localhost:8080" that never matches the public site — the
+    // exported widget script and report link must still point at the real public app URL.
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://app.common-link.org');
+    const url = `http://localhost:8080/api/gtm-export/clk_abc?gtmId=${encodeURIComponent('GTM-ABC1234')}`;
+    const request = new NextRequest(url);
+
+    const res = await GET(request, { params: Promise.resolve({ widgetToken: 'clk_abc' }) });
+    const { html } = await res.json();
+
+    expect(html).not.toContain('localhost:8080');
+    expect(html).toContain('src="https://app.common-link.org/widget.js" data-widget-token="clk_abc" async');
+    expect(html).toContain('href="https://app.common-link.org/fr/report/clk_abc"');
   });
 });
