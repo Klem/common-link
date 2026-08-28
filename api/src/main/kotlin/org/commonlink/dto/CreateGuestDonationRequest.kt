@@ -33,6 +33,7 @@ data class CreateGuestDonationRequest(
 
     @field:NotBlank(message = "must not be blank")
     @field:Size(max = 255, message = "must not exceed 255 characters")
+    @field:Pattern(regexp = "\\s*\\S+(\\s+\\S+)+\\s*", message = "must include a first and last name")
     val donorFullName: String,
 
     @field:NotBlank(message = "must not be blank")

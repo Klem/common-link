@@ -46,7 +46,19 @@ object FuzzyNameMatcher {
     // Thresholds — from VerifierRunner constants
     private const val THRESHOLD_MONOBLOC_VS_MULTIBLOC_MATCH_FIRST_TERM = 0.6
     private const val THRESHOLD_LOWER_BOUND = 0.8
-    private const val MALUS_SCORING_MONOBLOC_MULTIBLOC = 0.04
+
+    /**
+     * Score lost per block — on either side — that never entered the pairing.
+     *
+     * Without this, a register entry with more blocks than the query is strictly easier to match:
+     * the matcher always keeps only `min(blocks1.size, blocks2.size)` pairs (the best-scoring ones)
+     * and the surplus blocks on the longer side are never scored at all. A 4-block register entry
+     * then has more chances to find 2 blocks that coincidentally match well than a 2-block one,
+     * and is never penalized for the 2 blocks that didn't. Scaling the malus by the actual number
+     * of ignored blocks — rather than the previous flat monobloc-vs-multibloc malus — corrects this
+     * for every block-count combination, not just the mono-bloc case.
+     */
+    private const val MALUS_PER_UNMATCHED_BLOCK = 0.03
 
     // Phonetic score threshold for the greedy 3+-block loop
     private const val PHONETIC_THRESHOLD = 0.9
@@ -170,10 +182,10 @@ object FuzzyNameMatcher {
         }
 
         val monoBlocCompare = blocks1.size == 1 || blocks2.size == 1
-        val monoBlocVsMulti = monoBlocCompare && blocks1.size != blocks2.size
 
         val scorePhonetic: Double
         val scoreOrtho: Double
+        val nbBlocksUsed: Int
 
         when {
             monoBlocCompare -> {
@@ -181,6 +193,7 @@ object FuzzyNameMatcher {
                     val pos = maxScore(phoneticMatrix)
                     scorePhonetic = phoneticMatrix[pos[0]][pos[1]]
                     scoreOrtho    = jaro.apply(blocks1[pos[0]], blocks2[pos[1]])
+                    nbBlocksUsed  = 1
 
                     // For 1-vs-N: verify the single block actually matches the first token of the
                     // multi-block name — matching a middle token only is insufficient.
@@ -211,6 +224,7 @@ object FuzzyNameMatcher {
 
                 scorePhonetic = Math.sqrt(s1p * s2p)
                 scoreOrtho    = Math.sqrt(s1o * s2o)
+                nbBlocksUsed  = 2
             }
 
             else -> {
@@ -239,13 +253,15 @@ object FuzzyNameMatcher {
                 if (nbBlocks == 0) return 0.0
                 scorePhonetic = Math.pow(phoneticAccum, 1.0 / nbBlocks)
                 scoreOrtho    = Math.pow(orthoAccum,    1.0 / nbBlocks)
+                nbBlocksUsed  = nbBlocks
             }
         }
 
         var total = Math.pow(scorePhonetic, ratio) * Math.pow(scoreOrtho, 1.0 - ratio)
 
-        if (monoBlocVsMulti && allowMonoblocManyBloc) {
-            total -= MALUS_SCORING_MONOBLOC_MULTIBLOC
+        val unmatchedBlocks = maxOf(blocks1.size, blocks2.size) - nbBlocksUsed
+        if (unmatchedBlocks > 0) {
+            total -= MALUS_PER_UNMATCHED_BLOCK * unmatchedBlocks
         }
 
         // Levenshtein fine-grained penalty when near the threshold and lengths differ

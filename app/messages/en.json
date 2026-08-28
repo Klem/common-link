@@ -2066,6 +2066,7 @@
       "emailRequired": "Email is required",
       "fieldRequired": "This field is required",
       "fieldTooLong": "This field is too long",
+      "fullNameIncomplete": "Please enter your first and last name",
       "notCollecting": "This organisation cannot receive online donations yet. Please try again later.",
       "submitFailed": "An error occurred. Please try again."
     },
