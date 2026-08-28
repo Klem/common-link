@@ -212,7 +212,7 @@ export default function AssociationProfilePage() {
 
   /**
    * Autosave debouncé (800 ms) — même contrat que `CampaignInfoTab` :
-   * patchs fusionnés, envoi silencieux (pas de toast), flush au démontage.
+   * patchs fusionnés, toast de confirmation, flush au démontage.
    * `reset(getValues())` remet la baseline de `isDirty` sur les valeurs courantes sans toucher à
    * la saisie en cours — mais seulement si le formulaire est entièrement valide. Rebaser alors
    * qu'un autre champ est invalide effacerait son message d'erreur et installerait sa valeur
@@ -226,6 +226,7 @@ export default function AssociationProfilePage() {
     async (patch) => {
       await updateProfile(patch, true);
       if (Object.keys(errorsRef.current).length === 0) reset(getValues());
+      addToast('success', 'profileUpdated');
     },
   );
 
