@@ -35,7 +35,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   const origin = request.nextUrl.origin;
-  const pageUrl = `${origin}/fr/lp/${encodeURIComponent(widgetToken)}`;
+  // Fetching `origin` itself (the public hostname) hairpins back through the platform's reverse
+  // proxy — on Clever Cloud that self-loop is unreachable from inside the very container serving
+  // it ("fetch failed"), so every internal call here goes to the local port instead. `origin` is
+  // still used below for every URL embedded in the exported HTML — those must stay public.
+  const internalOrigin = `http://127.0.0.1:${process.env.PORT || 3000}`;
+  const pageUrl = `${internalOrigin}/fr/lp/${encodeURIComponent(widgetToken)}`;
 
   let pageRes: Response;
   try {
@@ -104,7 +109,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     styleLinks.map(async (link) => {
       const href = link.getAttribute('href');
       if (!href) return '';
-      const absoluteHref = href.startsWith('http') ? href : `${origin}${href}`;
+      const absoluteHref = href.startsWith('http') ? href : `${internalOrigin}${href}`;
       try {
         const cssRes = await fetch(absoluteHref);
         return cssRes.ok ? await cssRes.text() : '';
