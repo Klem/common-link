@@ -36,7 +36,7 @@ function ToastItem({ toast }: ToastItemProps) {
       }`}
     >
       <span className="alert-icon">{icon}</span>
-      <div>{t(toast.messageKey as Parameters<typeof t>[0])}</div>
+      <div>{t(toast.messageKey as Parameters<typeof t>[0], toast.values)}</div>
     </div>
   );
 }

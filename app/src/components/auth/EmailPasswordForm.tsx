@@ -14,11 +14,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 interface EmailPasswordFormProps {
   onSubmit: (email: string, password: string) => Promise<void> | void;
+  onForgotPassword: () => void;
   loading?: boolean;
   error?: string;
 }
 
-export function EmailPasswordForm({ onSubmit, loading = false, error }: EmailPasswordFormProps) {
+export function EmailPasswordForm({ onSubmit, onForgotPassword, loading = false, error }: EmailPasswordFormProps) {
   const t = useTranslations('auth');
 
   const {
@@ -73,13 +74,13 @@ export function EmailPasswordForm({ onSubmit, loading = false, error }: EmailPas
       </div>
 
       <div className="text-right -mt-3 mb-3">
-        <a
-          href="#"
-          onClick={(e) => e.preventDefault()}
-          className="text-green hover:text-green-dim text-sm font-medium no-underline transition-colors duration-200"
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          className="text-green hover:text-green-dim text-sm font-medium bg-transparent border-none cursor-pointer p-0 transition-colors duration-200"
         >
           {t('login.forgotPassword')}
-        </a>
+        </button>
       </div>
 
       {error && <p className="form-error mb-3">{error}</p>}

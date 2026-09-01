@@ -170,13 +170,17 @@
     },
     "legal": "By continuing, you agree to our {terms} and {privacy}.",
     "login": {
+      "backToLogin": "Back to login",
       "createAccount": "Create an account",
       "email": {
         "label": "Email",
         "placeholder": "you@example.com"
       },
       "forgotPassword": "Forgot password?",
+      "forgotPasswordHint": "Enter your email and we will send you a link to reset your password.",
+      "forgotPasswordSubmit": "Send the reset link",
       "google": "Continue with Google",
+      "magicLinkSubmit": "Log in with a magic link",
       "noAccount": "Don't have an account?",
       "orMagicLink": "Or log in with a magic link",
       "password": {
@@ -1720,6 +1724,8 @@
       "donor": "Donor"
     },
     "setPassword": {
+      "resetSubtitle": "Set a new password for your account.",
+      "resetTitle": "Reset your password",
       "subtitle": "Set a password to also be able to log in with your email.",
       "success": "Password set successfully.",
       "title": "Secure your account"

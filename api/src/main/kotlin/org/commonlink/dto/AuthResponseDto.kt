@@ -13,5 +13,12 @@ data class AuthResponseDto(
      * explaining why donor history appears under a brand-new association account, instead of the
      * claim happening silently.
      */
-    val donorHistoryClaimed: Boolean = false
+    val donorHistoryClaimed: Boolean = false,
+    /**
+     * True when this response comes from verifying a "forgot password" link: the frontend must
+     * send the caller straight to the set-password screen instead of the dashboard, since
+     * [org.commonlink.service.AuthService.setPassword] will accept one password change without
+     * `currentPassword` while the grace window this flags is open.
+     */
+    val passwordResetPending: Boolean = false
 )

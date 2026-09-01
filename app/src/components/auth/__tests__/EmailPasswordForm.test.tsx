@@ -8,18 +8,18 @@ vi.mock('next-intl', () => ({
 
 describe('EmailPasswordForm', () => {
   it('renders email and password inputs', () => {
-    render(<EmailPasswordForm onSubmit={vi.fn()} />);
+    render(<EmailPasswordForm onSubmit={vi.fn()} onForgotPassword={vi.fn()} />);
     expect(screen.getByLabelText(/login\.email\.label/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/login\.password\.label/i)).toBeInTheDocument();
   });
 
   it('submit button is initially disabled', () => {
-    render(<EmailPasswordForm onSubmit={vi.fn()} />);
+    render(<EmailPasswordForm onSubmit={vi.fn()} onForgotPassword={vi.fn()} />);
     expect(screen.getByRole('button', { name: /login\.submit/i })).toBeDisabled();
   });
 
   it('shows validation error for short password', async () => {
-    render(<EmailPasswordForm onSubmit={vi.fn()} />);
+    render(<EmailPasswordForm onSubmit={vi.fn()} onForgotPassword={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/login\.email\.label/i), {
       target: { value: 'test@example.com' },
     });
@@ -32,7 +32,7 @@ describe('EmailPasswordForm', () => {
   });
 
   it('shows validation error for invalid email', async () => {
-    render(<EmailPasswordForm onSubmit={vi.fn()} />);
+    render(<EmailPasswordForm onSubmit={vi.fn()} onForgotPassword={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/login\.email\.label/i), {
       target: { value: 'not-an-email' },
     });
@@ -43,7 +43,7 @@ describe('EmailPasswordForm', () => {
 
   it('calls onSubmit with email and password when form is valid', async () => {
     const onSubmit = vi.fn();
-    render(<EmailPasswordForm onSubmit={onSubmit} />);
+    render(<EmailPasswordForm onSubmit={onSubmit} onForgotPassword={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/login\.email\.label/i), {
       target: { value: 'test@example.com' },
     });
@@ -57,5 +57,12 @@ describe('EmailPasswordForm', () => {
       fireEvent.click(screen.getByRole('button', { name: /login\.submit/i }));
     });
     expect(onSubmit).toHaveBeenCalledWith('test@example.com', 'password123');
+  });
+
+  it('calls onForgotPassword when the link is clicked', () => {
+    const onForgotPassword = vi.fn();
+    render(<EmailPasswordForm onSubmit={vi.fn()} onForgotPassword={onForgotPassword} />);
+    fireEvent.click(screen.getByRole('button', { name: /login\.forgotPassword/i }));
+    expect(onForgotPassword).toHaveBeenCalledOnce();
   });
 });

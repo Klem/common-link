@@ -124,12 +124,18 @@ object TestFixtures {
         role: UserRole = UserRole.DONOR,
         expiresAt: Instant = Instant.now().plusSeconds(900),   // 15 min
         usedAt: Instant? = null,
+        passwordReset: Boolean = false,
+        passwordResetGraceUntil: Instant? = null,
+        passwordResetConsumedAt: Instant? = null,
     ) = MagicLinkToken(
         email = email,
         tokenHash = tokenHash,
         role = role,
         expiresAt = expiresAt,
         usedAt = usedAt,
+        passwordReset = passwordReset,
+        passwordResetGraceUntil = passwordResetGraceUntil,
+        passwordResetConsumedAt = passwordResetConsumedAt,
     )
 
     fun emailVerificationToken(

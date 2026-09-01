@@ -401,6 +401,49 @@ class AuthService(
     }
 
     /**
+     * Sends a "forgot password" link: the same kind of link as [sendMagicLink]'s login path, marked
+     * [MagicLinkToken.passwordReset] so that verifying it opens a short, single-use grace window
+     * (see [verifyMagicLink] and [setPassword]) letting the caller replace their password without
+     * knowing the one they forgot.
+     *
+     * Existing-account only, like a login magic link — returns silently for an unknown email or a
+     * guest row (never had a password to forget) to avoid leaking which addresses have an account.
+     * Shares [sendMagicLink]'s per-email quota: this issues the same kind of row, so a caller cannot
+     * bypass the 3-per-10-minutes limit by alternating between the two endpoints.
+     *
+     * @param rawEmail The account's email address.
+     * @throws RateLimitException if more than 3 magic links (any purpose) were sent to this email
+     *   in the last 10 minutes.
+     */
+    @Transactional
+    fun sendPasswordResetLink(rawEmail: String) {
+        val email = normalizeEmail(rawEmail)
+
+        val rateLimitWindow = Instant.now().minus(10, ChronoUnit.MINUTES)
+        if (magicLinkTokenRepository.countByEmailAndCreatedAtAfter(email, rateLimitWindow) >= 3) {
+            throw RateLimitException()
+        }
+
+        val existing = userRepository.findByEmailIgnoreCase(email).orElse(null) ?: return
+        if (existing.guest) return
+
+        val rawToken = tokenHashService.generateOpaqueToken()
+        val tokenHash = tokenHashService.hashToken(rawToken)
+
+        magicLinkTokenRepository.save(
+            MagicLinkToken(
+                email = email,
+                tokenHash = tokenHash,
+                role = existing.role,
+                expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES),
+                passwordReset = true
+            )
+        )
+
+        emailService.sendMagicLink(email, "$frontendUrl/auth/verify-token?token=$rawToken&role=${existing.role.name.lowercase()}")
+    }
+
+    /**
      * Verifies a magic-link token and authenticates (or registers) the user.
      *
      * Two resolution paths:
@@ -415,7 +458,9 @@ class AuthService(
      * @param rawToken The raw opaque token from the magic-link URL.
      * @return [AuthResponseDto] with a fresh access token and refresh token.
      *   [AuthResponseDto.donorHistoryClaimed] is `true` exactly when this call just claimed a guest
-     *   row into an ASSOCIATION account.
+     *   row into an ASSOCIATION account. [AuthResponseDto.passwordResetPending] is `true` exactly
+     *   when [rawToken] came from [sendPasswordResetLink] — the frontend must send the caller to
+     *   the set-password screen rather than the dashboard.
      * @throws InvalidTokenException if no unused token matches the hash.
      * @throws TokenExpiredException if the token's 15-minute window has passed.
      * @throws ConflictException if the token's role does not match a non-guest existing account's
@@ -432,8 +477,15 @@ class AuthService(
             throw TokenExpiredException()
         }
 
-        // Mark token as used first to prevent concurrent verification (anti-replay).
+        // Mark token as used first to prevent concurrent verification (anti-replay). A
+        // password-reset token additionally opens its grace window right here: the window's
+        // lifetime starts at verification, not at send time, since the point is to bound how long
+        // the *just-authenticated* session may skip currentPassword — not to give a slow clicker a
+        // shorter allowance.
         token.usedAt = Instant.now()
+        if (token.passwordReset) {
+            token.passwordResetGraceUntil = Instant.now().plus(5, ChronoUnit.MINUTES)
+        }
         magicLinkTokenRepository.save(token)
 
         // Last line of defence: the role comes from a row written at request time, so it is
@@ -498,7 +550,7 @@ class AuthService(
             newUser
         }
 
-        return issueTokens(user, donorHistoryClaimed)
+        return issueTokens(user, donorHistoryClaimed, passwordResetPending = token.passwordReset)
     }
 
     /**
@@ -540,10 +592,13 @@ class AuthService(
      * Two distinct situations:
      * - **Adding a first password** (Google or magic-link account, [User.passwordHash] null):
      *   [currentPassword] is irrelevant and ignored.
-     * - **Replacing an existing password**: [currentPassword] is required and verified. Holding a
-     *   valid access token is not enough — a stolen token lives 30 minutes, whereas a password set
-     *   with it lasts until someone notices. Requiring the current secret is what keeps a token leak
-     *   from becoming lasting account control (security audit 2026-08-20, M7).
+     * - **Replacing an existing password**: [currentPassword] is required and verified, UNLESS the
+     *   account has an open "forgot password" grace window (see [sendPasswordResetLink] and
+     *   [verifyMagicLink]) — spent here, single-use, on first match. Holding a valid access token is
+     *   not enough on its own — a stolen token lives 15 minutes, whereas a password set with it
+     *   lasts until someone notices. Requiring the current secret (or the grace-window equivalent)
+     *   is what keeps a token leak from becoming lasting account control (security audit 2026-08-20,
+     *   M7).
      *
      * In both cases every refresh token is revoked and the holder is notified: a password change
      * must end the sessions that existed before it, otherwise "I changed my password" evicts nobody.
@@ -553,10 +608,12 @@ class AuthService(
      * @param userId UUID of the authenticated user.
      * @param password The new plaintext password.
      * @param confirmPassword Must match [password] exactly.
-     * @param currentPassword Existing password; required only when the account already has one.
+     * @param currentPassword Existing password; required only when the account already has one and
+     *   no password-reset grace window is open for it.
      * @return Raw refresh token replacing the revoked ones; the caller must return it as a cookie.
      * @throws AuthException if the passwords do not match, the user is not found, or
-     *   [currentPassword] is missing or wrong on an account that already has a password.
+     *   [currentPassword] is missing/wrong on an account that already has a password and has no
+     *   open password-reset grace window.
      */
     @Transactional
     fun setPassword(userId: UUID, password: String, confirmPassword: String, currentPassword: String? = null): String {
@@ -568,9 +625,29 @@ class AuthService(
 
         val existingHash = user.passwordHash
         if (existingHash != null) {
-            if (currentPassword.isNullOrBlank() || !passwordEncoder.matches(currentPassword, existingHash)) {
-                logger.warn("Refused password change for user {} — current password missing or wrong", userId)
-                throw AuthException("Mot de passe actuel incorrect")
+            val currentPasswordValid = !currentPassword.isNullOrBlank() &&
+                passwordEncoder.matches(currentPassword, existingHash)
+            if (!currentPasswordValid) {
+                // "I forgot my password" verified a password-reset magic link instead of supplying
+                // the old one — accept that in place of currentPassword, but only within the short
+                // window opened at verification, and only once (audit follow-up to 2026-08-20, M7:
+                // a magic link proves email ownership, which is exactly what currentPassword also
+                // proves, so it is an equivalent — not weaker — factor here).
+                // Normalised: MagicLinkToken.email is always stored normalized (sendPasswordResetLink
+                // does it before saving), but user.email is not guaranteed to be — signUpWithGoogle,
+                // unlike register/verifyMagicLink, stores whatever casing the Google payload carries.
+                val graceToken = magicLinkTokenRepository
+                    .findFirstByEmailAndPasswordResetTrueAndPasswordResetGraceUntilAfterAndPasswordResetConsumedAtIsNullOrderByCreatedAtDesc(
+                        normalizeEmail(user.email), Instant.now()
+                    )
+                    .orElse(null)
+                if (graceToken == null) {
+                    logger.warn("Refused password change for user {} — current password missing or wrong", userId)
+                    throw AuthException("Mot de passe actuel incorrect")
+                }
+                graceToken.passwordResetConsumedAt = Instant.now()
+                magicLinkTokenRepository.save(graceToken)
+                logger.info("Password changed for user {} via magic-link grace window (forgot password)", userId)
             }
         }
 
@@ -763,8 +840,13 @@ class AuthService(
      *
      * @param donorHistoryClaimed See [AuthResponseDto.donorHistoryClaimed]. Only ever `true` from the
      *   call site that just performed the guest-to-ASSOCIATION claim itself.
+     * @param passwordResetPending See [AuthResponseDto.passwordResetPending].
      */
-    private fun issueTokens(user: User, donorHistoryClaimed: Boolean = false): AuthResponseDto {
+    private fun issueTokens(
+        user: User,
+        donorHistoryClaimed: Boolean = false,
+        passwordResetPending: Boolean = false
+    ): AuthResponseDto {
         val rawRefreshToken = tokenHashService.generateOpaqueToken()
         refreshTokenRepository.save(
             RefreshToken(
@@ -777,7 +859,8 @@ class AuthService(
             accessToken = jwtService.generateAccessToken(user),
             refreshToken = rawRefreshToken,
             user = user.toDto(),
-            donorHistoryClaimed = donorHistoryClaimed
+            donorHistoryClaimed = donorHistoryClaimed,
+            passwordResetPending = passwordResetPending
         )
     }
 

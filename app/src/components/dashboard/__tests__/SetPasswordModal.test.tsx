@@ -46,4 +46,11 @@ describe('SetPasswordModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /setPassword\.skip/i }));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('shows the reset-specific copy when variant is "reset"', () => {
+    render(<SetPasswordModal isOpen={true} onClose={vi.fn()} variant="reset" />);
+    expect(screen.getByText('setPassword.resetTitle')).toBeInTheDocument();
+    expect(screen.getByText('setPassword.resetSubtitle')).toBeInTheDocument();
+    expect(screen.queryByText('setPassword.title')).not.toBeInTheDocument();
+  });
 });

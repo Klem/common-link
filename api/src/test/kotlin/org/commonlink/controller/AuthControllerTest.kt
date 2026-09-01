@@ -320,6 +320,35 @@ class AuthControllerTest {
     }
 
     // -------------------------------------------------------------------------
+    // POST /api/auth/forgot-password
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `forgotPassword - 204 happy path`() {
+        justRun { authService.sendPasswordResetLink(any()) }
+
+        mockMvc.perform(
+            post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"test@example.com"}""")
+        )
+            .andExpect(status().isNoContent)
+    }
+
+    @Test
+    fun `forgotPassword - 429 with Retry-After header when rate limited`() {
+        every { authService.sendPasswordResetLink(any()) } throws RateLimitException()
+
+        mockMvc.perform(
+            post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"test@example.com"}""")
+        )
+            .andExpect(status().isTooManyRequests)
+            .andExpect(header().string("Retry-After", "600"))
+    }
+
+    // -------------------------------------------------------------------------
     // POST /api/auth/magic-link/verify
     // -------------------------------------------------------------------------
 

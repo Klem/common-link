@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.commonlink.dto.AuthResponseDto
+import org.commonlink.dto.ForgotPasswordRequestDto
 import org.commonlink.dto.GoogleAuthRequestDto
 import org.commonlink.dto.LoginRequestDto
 import org.commonlink.dto.MagicLinkRequestDto
@@ -207,6 +208,30 @@ class AuthController(
     )
     fun verifyMagicLink(@Valid @RequestBody req: MagicLinkVerifyDto): ResponseEntity<AuthResponseDto> =
         authResponse(authService.verifyMagicLink(req.token))
+
+    @PostMapping("/forgot-password")
+    @Operation(
+        summary = "Request a password-reset link",
+        description = "Sends a magic link to the given email that, once verified, opens a short " +
+            "grace window letting the caller set a new password without knowing the old one. " +
+            "Always responds 204 whether or not the email has an account, to avoid leaking which " +
+            "addresses are registered. Rate-limited to 3 requests per 10 minutes (shared with " +
+            "/magic-link/request)."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Link sent, or silently ignored (unknown email / rate-limited)"),
+        ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Validation errors", content = [Content()]),
+        ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
+    )
+    fun forgotPassword(
+        @Valid @RequestBody req: ForgotPasswordRequestDto,
+        request: HttpServletRequest
+    ): ResponseEntity<Void> {
+        authRateLimiter.check("magic-link:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
+        authService.sendPasswordResetLink(req.email)
+        return ResponseEntity.noContent().build()
+    }
 
     @PostMapping("/login")
     @Operation(

@@ -61,4 +61,9 @@ export interface AuthResponseDto {
    * account is real, not a mistake — surface a one-time explanation rather than leaving it silent.
    */
   donorHistoryClaimed?: boolean;
+  /**
+   * True when this response comes from verifying a "forgot password" link: the caller must be
+   * sent to the set-password screen instead of the dashboard.
+   */
+  passwordResetPending?: boolean;
 }

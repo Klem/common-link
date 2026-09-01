@@ -32,22 +32,26 @@ type VerifyStatus = 'idle' | 'verifying' | 'success' | 'error';
  * - Stores auth state via `useAuthStore.setAuth`.
  * - Shows a one-time `donorHistoryClaimed` toast when the backend reports
  *   `donorHistoryClaimed` (a guest donor row was just claimed into this account).
- * - Calls `onSuccess()` if provided; otherwise redirects to the role-specific dashboard.
+ * - Calls `onSuccess(passwordResetPending)` if provided; otherwise redirects to the role-specific
+ *   dashboard, appending `?resetPassword=1` when `passwordResetPending` is true so `DashboardShell`
+ *   force-opens the set-password modal (see `AuthResponseDto.passwordResetPending`).
  *
  * On failure, maps backend error codes to i18n keys:
  * - `TOKEN_EXPIRED` → `errors.tokenExpired`
- * - `TOKEN_USED` → `errors.tokenUsed` (single-use tokens)
+ * - `TOKEN_INVALID` → `errors.tokenUsed` (the backend returns this same code whether the token
+ *   is malformed or already consumed — GlobalExceptionHandler never emits a distinct "used" code —
+ *   so both read as "this link has already been used" to the user)
  * - `SIREN_ALREADY_REGISTERED` → `errors.sirenAlreadyRegistered` (SIREN claimed since the link was sent)
  * - Other errors → `errors.genericError`
  *
  * @param token - The raw magic link token from the URL query string, or null.
- * @param onSuccess - Optional callback invoked on successful verification instead of
- *                    the default role-based redirect.
+ * @param onSuccess - Optional callback invoked with `passwordResetPending` on successful
+ *                    verification instead of the default role-based redirect.
  * @returns `status` and i18n `error` key.
  */
 export function useMagicLinkVerify(
   token: string | null,
-  onSuccess?: () => void,
+  onSuccess?: (passwordResetPending: boolean) => void,
 ) {
   const router = useRouter();
   const locale = useLocale();
@@ -71,17 +75,19 @@ export function useMagicLinkVerify(
           addToast('success', 'donorHistoryClaimed');
         }
         setStatus('success');
+        const passwordResetPending = data.passwordResetPending ?? false;
         if (onSuccess) {
-          onSuccess();
+          onSuccess(passwordResetPending);
         } else {
-          router.push(getHomePath(locale, data.user.role));
+          const dashboardPath = getHomePath(locale, data.user.role);
+          router.push(passwordResetPending ? `${dashboardPath}?resetPassword=1` : dashboardPath);
         }
       } catch (err) {
         if (isAxiosError(err)) {
           const problemDetail = err.response?.data as ProblemDetail | undefined;
           if (problemDetail?.code === 'TOKEN_EXPIRED') {
             setError('errors.tokenExpired');
-          } else if (problemDetail?.code === 'TOKEN_USED') {
+          } else if (problemDetail?.code === 'TOKEN_INVALID') {
             setError('errors.tokenUsed');
           } else if (problemDetail?.code === 'SIREN_ALREADY_REGISTERED') {
             // Reachable when someone else registers the SIREN between the link being sent and

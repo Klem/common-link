@@ -77,7 +77,9 @@ class UserController(
         summary = "Set or update password",
         description = "Sets or updates the password for the authenticated user. " +
             "Useful for users who signed up via Google or Magic Link and want to add a password. " +
-            "`currentPassword` is required when the account already has a password. " +
+            "`currentPassword` is required when the account already has a password, UNLESS a " +
+            "\"forgot password\" magic link grace window is open for it (see /auth/forgot-password) — " +
+            "spent here, single-use, on first match. " +
             "On success, all refresh tokens are revoked and the account holder is notified by email."
     )
     @ApiResponses(

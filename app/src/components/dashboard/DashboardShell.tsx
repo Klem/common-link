@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
 import { AuthProvider, UserRole } from '@/types/auth';
@@ -21,8 +21,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const locale = useLocale();
   const rawPathname = usePathname();
   const pathname = rawPathname.replace(new RegExp(`^/${locale}`), '') || '/';
+  const searchParams = useSearchParams();
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  // True when the modal was forced open by a "forgot password" magic link (?resetPassword=1)
+  // rather than the passwordless-account nag below — swaps the modal's copy accordingly.
+  const [passwordResetMode, setPasswordResetMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -40,6 +44,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
     }
   }, [user]);
 
+  // Forced open after verifying a "forgot password" magic link — regardless of provider, since the
+  // account already has a password (that's the whole point of resetting it). The query param is
+  // stripped right away so reloading the dashboard doesn't reopen the modal.
+  useEffect(() => {
+    if (searchParams.get('resetPassword') !== '1') return;
+    setPasswordResetMode(true);
+    setShowPasswordModal(true);
+    router.replace(rawPathname);
+  }, [searchParams, router, rawPathname]);
+
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
@@ -49,6 +63,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
       localStorage.setItem(`cl-password-modal-dismissed-${user.id}`, '1');
     }
     setShowPasswordModal(false);
+    setPasswordResetMode(false);
   }, [user]);
 
   const openSidebar = useCallback(() => setSidebarOpen(true), []);
@@ -69,7 +84,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <div className="main-area">
           {children}
         </div>
-        <SetPasswordModal isOpen={showPasswordModal} onClose={dismissModal} />
+        <SetPasswordModal isOpen={showPasswordModal} onClose={dismissModal} variant={passwordResetMode ? 'reset' : 'add'} />
       </div>
     </SidebarToggleContext.Provider>
   );
