@@ -170,13 +170,17 @@
     },
     "legal": "En continuant, vous acceptez nos {terms} et notre {privacy}.",
     "login": {
+      "backToLogin": "Retour à la connexion",
       "createAccount": "Créer un compte",
       "email": {
         "label": "Email",
         "placeholder": "vous@exemple.fr"
       },
       "forgotPassword": "Mot de passe oublié ?",
+      "forgotPasswordHint": "Indiquez votre email, nous vous envoyons un lien pour redéfinir votre mot de passe.",
+      "forgotPasswordSubmit": "Recevoir le lien de réinitialisation",
       "google": "Continuer avec Google",
+      "magicLinkSubmit": "Se connecter par lien magique",
       "noAccount": "Pas encore de compte ?",
       "orMagicLink": "Ou connectez-vous par lien magique",
       "password": {
@@ -313,6 +317,7 @@
     "campaignUpdated": "Campagne mise à jour.",
     "cancel": "Annuler",
     "confirm": "Confirmer",
+    "donorHistoryClaimed": "Nous avons retrouvé un historique de dons associé à cet e-mail : il est désormais rattaché à votre compte association.",
     "errors": {
       "campaignDeleteBlocked": "Seules les campagnes en brouillon peuvent être supprimées.",
       "conflict": "Cette ressource existe déjà.",
@@ -1472,6 +1477,7 @@
         "confirm": "Publier",
         "continueEditing": "Continuer l'édition",
         "fill": "Compléter",
+        "publishRefused": "Publication refusée — vérifiez les conditions ci-dessus.",
         "recommended": {
           "milestones": "Jalons (augmente l'engagement des donateurs)",
           "reason": "« Pourquoi maintenant ? » (renforce la confiance)",
@@ -1718,6 +1724,8 @@
       "donor": "Donateur"
     },
     "setPassword": {
+      "resetSubtitle": "Définissez un nouveau mot de passe pour votre compte.",
+      "resetTitle": "Réinitialisez votre mot de passe",
       "subtitle": "Définissez un mot de passe pour pouvoir aussi vous connecter par email.",
       "success": "Mot de passe défini avec succès.",
       "title": "Sécurisez votre compte"
@@ -2064,6 +2072,7 @@
       "emailRequired": "L'e-mail est requis",
       "fieldRequired": "Ce champ est obligatoire",
       "fieldTooLong": "Ce champ est trop long",
+      "fullNameIncomplete": "Veuillez saisir votre prénom et votre nom",
       "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
       "submitFailed": "Une erreur est survenue. Veuillez réessayer."
     },

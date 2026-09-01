@@ -9,9 +9,15 @@ import api from '@/lib/api';
 interface SetPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * `'add'` (default) — the passwordless-account nag, offering to add a first password.
+   * `'reset'` — forced open after verifying a "forgot password" magic link; the account already
+   * has a password, so the copy must not say "optional".
+   */
+  variant?: 'add' | 'reset';
 }
 
-export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
+export function SetPasswordModal({ isOpen, onClose, variant = 'add' }: SetPasswordModalProps) {
   const t = useTranslations('dashboard');
   const { addToast } = useToastStore();
   const [loading, setLoading] = useState(false);
@@ -39,11 +45,15 @@ export function SetPasswordModal({ isOpen, onClose }: SetPasswordModalProps) {
     <div className="modal-backdrop">
       <div className="modal">
         <div className="modal-header">
-          <h2 className="font-display font-bold text-text">{t('setPassword.title')}</h2>
+          <h2 className="font-display font-bold text-text">
+            {t(variant === 'reset' ? 'setPassword.resetTitle' : 'setPassword.title')}
+          </h2>
           <button className="modal-close" onClick={onClose} aria-label="close">×</button>
         </div>
         <div className="modal-body">
-          <p className="text-sm text-text-2 leading-relaxed mb-4">{t('setPassword.subtitle')}</p>
+          <p className="text-sm text-text-2 leading-relaxed mb-4">
+            {t(variant === 'reset' ? 'setPassword.resetSubtitle' : 'setPassword.subtitle')}
+          </p>
           <SetPasswordForm onSubmit={handleSubmit} onSkip={handleSkip} loading={loading} />
         </div>
       </div>

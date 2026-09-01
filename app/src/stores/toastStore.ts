@@ -10,6 +10,8 @@ export interface Toast {
   type: 'success' | 'error' | 'warning';
   /** i18n key resolved by `useTranslations` in the Toast UI component. */
   messageKey: string;
+  /** Values interpolated into `messageKey`'s placeholders (e.g. `{seconds}`), if any. */
+  values?: Record<string, string | number>;
 }
 
 /**
@@ -22,8 +24,9 @@ interface ToastState {
    * Enqueues a new toast notification.
    * @param type - Visual severity of the notification.
    * @param messageKey - i18n key for the message text.
+   * @param values - Values for `messageKey`'s placeholders, if it has any.
    */
-  addToast: (type: Toast['type'], messageKey: string) => void;
+  addToast: (type: Toast['type'], messageKey: string, values?: Record<string, string | number>) => void;
   /**
    * Removes a toast from the queue by its id.
    * Called by the Toast component after its auto-dismiss timer fires.
@@ -39,11 +42,11 @@ interface ToastState {
  */
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
-  addToast: (type, messageKey) =>
+  addToast: (type, messageKey, values) =>
     set((state) => ({
       toasts: [
         ...state.toasts,
-        { id: crypto.randomUUID(), type, messageKey },
+        { id: crypto.randomUUID(), type, messageKey, values },
       ],
     })),
   removeToast: (id) =>

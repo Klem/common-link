@@ -226,7 +226,7 @@ class ComplianceAuditLogService(
      * @param registryPublicationDate Publication date of the register snapshot consulted, as
      *   returned by `SanctionedEntityRepository.findMaxPublicationDate()`. A null value indicates
      *   the register is empty, which is an [appendFreezeScreeningUnavailable] case — see above.
-     * @param scoreThreshold The JaroWinkler threshold applied during the check.
+     * @param scoreThreshold The similarity score threshold applied during the check.
      * @param nature Optional nature filter applied (e.g. PHYSICAL_PERSON), or null for the full
      *   register.
      */
@@ -259,7 +259,7 @@ class ComplianceAuditLogService(
      * here.
      *
      * @param matchCount  Number of register entries above the threshold.
-     * @param topScore    Highest JaroWinkler score among the matches.
+     * @param topScore    Highest similarity score among the matches.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun appendFreezeScreeningHit(

@@ -25,6 +25,7 @@ import { useMagicLink } from '@/hooks/auth/useMagicLink';
 import { useEmailLogin } from '@/hooks/auth/useEmailLogin';
 import { useEmailRegister } from '@/hooks/auth/useEmailRegister';
 import { useMagicLinkVerify } from '@/hooks/auth/useMagicLinkVerify';
+import { useForgotPassword } from '@/hooks/auth/useForgotPassword';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@/types/auth';
 import { getHomePath } from '@/lib/routes';
@@ -91,21 +92,25 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
   // Step 1 has two mutually exclusive entry points: the RNA (JOAFE) search, and the manual SIREN
   // form for associations that have no RNA and are therefore absent from JOAFE.
   const [assoManualEntry, setAssoManualEntry] = useState(false);
+  // Swaps the login tab's EmailPasswordForm for the "forgot password" mini-form.
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
 
   // Hooks
   const googleAuth = useGoogleAuth();
   const magicLink = useMagicLink();
   const emailLogin = useEmailLogin(redirectAfterLogin);
   const emailRegister = useEmailRegister();
+  const forgotPassword = useForgotPassword();
 
   // Magic link token verification (triggered when ?token is present)
   const { status: verifyStatus, error: verifyError } = useMagicLinkVerify(
     magicLinkToken,
-    () => {
+    (passwordResetPending) => {
       setShowOverlay(false);
       const user = useAuthStore.getState().user;
       const role = user?.role ?? UserRole.DONOR;
-      router.push(redirectAfterLogin ?? getHomePath(locale, role));
+      const dashboardPath = redirectAfterLogin ?? getHomePath(locale, role);
+      router.push(passwordResetPending ? `${dashboardPath}?resetPassword=1` : dashboardPath);
     },
   );
 
@@ -113,6 +118,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
     setActiveView(view);
     setAssoStep(1);
     setSelectedAsso(null);
+    setForgotPasswordMode(false);
     magicLink.reset();
     emailRegister.reset();
   };
@@ -243,33 +249,58 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
                 {t('login.title')}
               </h2>
 
-              {/*<GoogleButton*/}
-              {/*  onSuccess={handleGoogleLogin}*/}
-              {/*  label={t('login.google')}*/}
-              {/*  loading={googleAuth.loading}*/}
-              {/*/>*/}
+              {forgotPasswordMode ? (
+                <>
+                  <p className="text-[12.5px] text-text-2 mb-3">
+                    {t('login.forgotPasswordHint')}
+                  </p>
+                  <MagicLinkForm
+                    onSubmit={(email) => forgotPassword.sendLink(email)}
+                    submitLabel={t('login.forgotPasswordSubmit')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForgotPasswordMode(false)}
+                    className="text-[11.5px] text-cyan bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline mt-3"
+                  >
+                    ← {t('login.backToLogin')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/*<GoogleButton*/}
+                  {/*  onSuccess={handleGoogleLogin}*/}
+                  {/*  label={t('login.google')}*/}
+                  {/*  loading={googleAuth.loading}*/}
+                  {/*/>*/}
 
-              {googleAuth.error && (
-                <p className="text-[11.5px] text-red mt-2">
-                  {t(googleAuth.error as Parameters<typeof t>[0])}
-                </p>
+                  {googleAuth.error && (
+                    <p className="text-[11.5px] text-red mt-2">
+                      {t(googleAuth.error as Parameters<typeof t>[0])}
+                    </p>
+                  )}
+
+                  {/*<Divider />*/}
+
+                  <EmailPasswordForm
+                    onSubmit={handleEmailSubmit}
+                    onForgotPassword={() => setForgotPasswordMode(true)}
+                    loading={emailLogin.loading}
+                    error={emailLogin.error ? t(emailLogin.error as Parameters<typeof t>[0]) : undefined}
+                  />
+
+                  <p className="text-center text-[11.5px] text-muted mt-4">
+                    {t('login.orMagicLink')}
+                  </p>
+
+                  <div className="mt-3">
+                    <MagicLinkForm
+                      onSubmit={(email) => magicLink.sendLink(email)}
+                      submitLabel={t('login.magicLinkSubmit')}
+                    />
+                  </div>
+                </>
               )}
-
-              {/*<Divider />*/}
-
-              <EmailPasswordForm
-                onSubmit={handleEmailSubmit}
-                loading={emailLogin.loading}
-                error={emailLogin.error ? t(emailLogin.error as Parameters<typeof t>[0]) : undefined}
-              />
-
-              <p className="text-center text-[11.5px] text-muted mt-4">
-                {t('login.orMagicLink')}
-              </p>
-
-              <div className="mt-3">
-                <MagicLinkForm onSubmit={(email) => magicLink.sendLink(email)} role={UserRole.DONOR} />
-              </div>
             </>
           )}
 
@@ -299,7 +330,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
 
               <MagicLinkForm
                 onSubmit={(email) => magicLink.sendLink(email, UserRole.DONOR)}
-                role={UserRole.DONOR}
+                submitLabel={t('signup.donor.magicLink')}
               />
 
               <Divider />
@@ -403,7 +434,7 @@ export function LoginScreen({ initialView, initialRole, magicLinkToken, redirect
 
                   <MagicLinkForm
                     onSubmit={handleMagicLinkAsso}
-                    role={UserRole.ASSOCIATION}
+                    submitLabel={t('magicLink.sendButton')}
                   />
 
                   <Divider />

@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl';
 import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import { getHomePath } from '@/lib/routes';
 import type { AuthResponseDto, UserRole } from '@/types/auth';
 
@@ -33,6 +34,8 @@ interface GoogleAuthState {
  *   Stores auth state but does NOT redirect; the caller decides the next step
  *   (e.g. show setPassword or redirect to dashboard).
  *   Maps 409 to `errors.accountExists`.
+ *   Shows a one-time `donorHistoryClaimed` toast when the backend reports
+ *   `donorHistoryClaimed` (a guest donor row was just claimed into this account).
  *
  * Both functions re-throw on error so callers can hide loading overlays.
  *
@@ -42,6 +45,7 @@ export function useGoogleAuth() {
   const router = useRouter();
   const locale = useLocale();
   const { setAuth } = useAuthStore();
+  const { addToast } = useToastStore();
   const [state, setState] = useState<GoogleAuthState>({ loading: false, error: null });
 
   const login = async (idToken: string): Promise<void> => {
@@ -65,6 +69,9 @@ export function useGoogleAuth() {
     try {
       const { data } = await api.post<AuthResponseDto>('/api/auth/signup/google', { idToken, role });
       setAuth(data.accessToken, data.user);
+      if (data.donorHistoryClaimed) {
+        addToast('success', 'donorHistoryClaimed');
+      }
       // Caller is responsible for next navigation (show setPassword or redirect)
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 409) {

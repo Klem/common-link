@@ -3,13 +3,20 @@ import { render, screen, act } from '@testing-library/react';
 import { Toast } from '../Toast';
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations:
+    () =>
+    (key: string, values?: Record<string, string | number>) =>
+      values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
 const removeToastMock = vi.hoisted(() => vi.fn());
 
-let mockToasts: Array<{ id: string; type: 'success' | 'error' | 'warning'; messageKey: string }> =
-  [];
+let mockToasts: Array<{
+  id: string;
+  type: 'success' | 'error' | 'warning';
+  messageKey: string;
+  values?: Record<string, string | number>;
+}> = [];
 
 vi.mock('@/stores/toastStore', () => ({
   useToastStore: (selector: (state: unknown) => unknown) =>
@@ -40,6 +47,14 @@ describe('Toast', () => {
     });
     expect(removeToastMock).toHaveBeenCalledWith('1');
     vi.useRealTimers();
+  });
+
+  it('interpolates values into the message instead of rendering the raw key', () => {
+    mockToasts = [
+      { id: '1', type: 'warning', messageKey: 'errors.rateLimitExceeded', values: { seconds: '42' } },
+    ];
+    render(<Toast />);
+    expect(screen.getByText('errors.rateLimitExceeded:{"seconds":"42"}')).toBeInTheDocument();
   });
 
   it('renders success, error, and warning toasts with distinct border styles', () => {

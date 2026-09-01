@@ -27,6 +27,28 @@ import { useToastStore } from '@/stores/toastStore';
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 const apiBaseURL = rawApiUrl.startsWith('http') ? rawApiUrl : `https://${rawApiUrl}`;
 
+/**
+ * Public, unauthenticated auth endpoints. A 401 from one of these is a domain outcome (wrong
+ * password, invalid/expired/used token, etc.) — never a sign that the caller's session expired,
+ * since there is no session yet. The refresh/logout dance below must not run for them: doing so
+ * masked the real error behind a doomed refresh call and force-logged-out/redirected the browser
+ * (wiping the on-screen error and any other tab's session) instead of just surfacing the failure.
+ */
+const PUBLIC_AUTH_PATHS = [
+  '/api/auth/register',
+  '/api/auth/verify-email',
+  '/api/auth/resend-verification',
+  '/api/auth/signup/google',
+  '/api/auth/login/google',
+  '/api/auth/magic-link/request',
+  '/api/auth/magic-link/verify',
+  '/api/auth/forgot-password',
+  '/api/auth/login',
+];
+
+const isPublicAuthEndpoint = (url?: string): boolean =>
+  !!url && PUBLIC_AUTH_PATHS.some((path) => url.includes(path));
+
 const api = axios.create({
   baseURL: apiBaseURL,
   withCredentials: true,
@@ -96,8 +118,9 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const { addToast } = useToastStore.getState();
 
-    // 401 — attempt silent refresh via HttpOnly cookie
-    if (status === 401 && !originalRequest._retry) {
+    // 401 — attempt silent refresh via HttpOnly cookie (skipped for public auth endpoints, see
+    // isPublicAuthEndpoint above)
+    if (status === 401 && !originalRequest._retry && !isPublicAuthEndpoint(originalRequest.url)) {
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -146,7 +169,7 @@ api.interceptors.response.use(
     if (status === 429) {
       const retryAfter = error.response?.headers['retry-after'];
       const seconds = retryAfter ? String(retryAfter) : '?';
-      addToast('warning', `errors.rateLimitExceeded:${seconds}`);
+      addToast('warning', 'errors.rateLimitExceeded', { seconds });
     }
 
     // 500+ — server error

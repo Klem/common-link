@@ -1,8 +1,10 @@
 package org.commonlink.service
 
 import jakarta.mail.util.ByteArrayDataSource
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
+import org.springframework.core.env.Environment
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
@@ -12,7 +14,17 @@ import org.springframework.stereotype.Service
 class SmtpEmailService(
     private val mailSender: JavaMailSender,
     @Value("\${app.mail.from}") private val from: String,
+    private val env: Environment,
 ) : EmailService {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * True outside `prod`: a magic link is a bearer credential (it logs the caller in on its own),
+     * so it is only ever written to the log on staging — never in production, where log access must
+     * not double as account access.
+     */
+    private val logMagicLinks: Boolean = "prod" !in env.activeProfiles
 
     override fun sendEmailVerification(email: String, verificationUrl: String) {
         val message = mailSender.createMimeMessage()
@@ -107,6 +119,12 @@ class SmtpEmailService(
     }
 
     override fun sendMagicLink(email: String, link: String) {
+        // Logged before the send attempt so the link is captured even if mailSender.send() below
+        // throws (SMTP misconfiguration, provider outage) — the one case "in case of a problem"
+        // actually means something, per the request that introduced this.
+        if (logMagicLinks) {
+            logger.info("Magic link for {}: {}", email, link)
+        }
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
         helper.setFrom(from)

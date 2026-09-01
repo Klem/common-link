@@ -53,7 +53,7 @@ function renderWith(overrides: Partial<React.ComponentProps<typeof PrePublishMod
     mollieResolved: true,
     mollieDashboardUrl: null,
     onClose: vi.fn(),
-    onConfirm: vi.fn(),
+    onConfirm: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
   return render(<PrePublishModal {...props} />);
@@ -125,37 +125,10 @@ describe('PrePublishModal — account status', () => {
     );
   });
 
-  it('disables publishing until the Mollie status is known', () => {
+  it('the publish button is always initially enabled — backend enforces KYB, Mollie and account gates', () => {
     renderWith({ mollieResolved: false });
 
-    expect(screen.getByText('complete').closest('button')).toBeDisabled();
-  });
-
-  it('enables publishing when everything is filled and Mollie is COMPLETED', async () => {
-    renderWith();
-
-    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
-  });
-
-  it('blocks publishing when Mollie is not COMPLETED', () => {
-    renderWith({ bankStatus: BankSetupStatus.IN_REVIEW });
-
-    expect(screen.getByText('complete').closest('button')).toBeDisabled();
-  });
-
-  /**
-   * LCB-FT: a campaign must not go live before the KYB dossier is validated. The KYC rows used to
-   * be informational only, so an unverified association could publish. Mirrored server-side in
-   * `CampaignService.preparePublish` (rule 8).
-   */
-  it.each([
-    VerificationStatus.UNVERIFIED,
-    VerificationStatus.PENDING,
-    VerificationStatus.REJECTED,
-  ])('blocks publishing when the KYB dossier is %s', (verificationStatus) => {
-    renderWith({ verificationStatus });
-
-    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+    expect(screen.getByText('confirm').closest('button')).toBeEnabled();
   });
 });
 
@@ -174,31 +147,24 @@ describe('PrePublishModal — budget and expected outcome are blocking', () => {
     expect(screen.queryByText('recommended.impactGoals')).not.toBeInTheDocument();
   });
 
-  it('blocks publishing when no budget has been entered', () => {
-    renderWith({ campaign: campaign({ budgetSections: [] }) });
-
-    expect(screen.getByText('complete').closest('button')).toBeDisabled();
-  });
-
-  it('blocks publishing when expenses and revenues do not match', () => {
+  it('shows budget as missing when unbalanced', () => {
     renderWith({ campaign: campaign({ budgetSections: balancedBudget(10_000, 8_000) }) });
 
-    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+    expect(screen.getByText('required.budget').closest('.pp-row')).toHaveClass('missing');
   });
 
-  /** Tolerance mirrors the backend: a sub-euro rounding gap must not block a publish. */
-  it('accepts a budget off by less than one euro', async () => {
+  it('shows budget as ok when balanced within one euro tolerance', () => {
     renderWith({ campaign: campaign({ budgetSections: balancedBudget(10_000, 10_000.4) }) });
 
-    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
+    expect(screen.getByText('required.budget').closest('.pp-row')).toHaveClass('ok');
   });
 
   it.each([null, '', 'Trop court'])(
-    'blocks publishing when the expected outcome is %p',
+    'shows expected outcome as missing when %p',
     (impactGoals) => {
       renderWith({ campaign: campaign({ impactGoals }) });
 
-      expect(screen.getByText('complete').closest('button')).toBeDisabled();
+      expect(screen.getByText('required.impactGoals').closest('.pp-row')).toHaveClass('missing');
     },
   );
 });
@@ -208,7 +174,7 @@ describe('PrePublishModal — budget and expected outcome are blocking', () => {
  * `CampaignService.preparePublish` / `LegalAcceptanceService`.
  */
 describe('PrePublishModal — CGU acceptance is blocking', () => {
-  it('blocks publishing until the CGU checkbox is checked, when not yet accepted', async () => {
+  it('the publish button is always enabled — CGU acceptance is enforced by the backend', async () => {
     vi.mocked(getLegalAcceptanceState).mockResolvedValue({
       documentType: 'CGU',
       currentVersion: '2026-08-26',
@@ -217,10 +183,6 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     renderWith();
 
     await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
-    expect(screen.getByText('complete').closest('button')).toBeDisabled();
-
-    fireEvent.click(screen.getByRole('checkbox', { name: /cgu\.label/ }));
-
     expect(screen.getByText('confirm').closest('button')).toBeEnabled();
   });
 
@@ -283,6 +245,42 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
 
     const checkbox = screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
-    expect(screen.getByText('complete').closest('button')).toBeDisabled();
+    expect(screen.getByText('confirm').closest('button')).toBeEnabled();
+  });
+});
+
+/**
+ * One-attempt-per-modal-open protection (art. R.548-4 II CMF logging):
+ * each click is forwarded to the backend; the button disables after the first click
+ * to prevent burst submissions. The backend logs the attempt (retained or refused)
+ * regardless of whether the requirements were met.
+ */
+describe('PrePublishModal — publish attempt behavior', () => {
+  it('disables the button after the first click', async () => {
+    renderWith();
+
+    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
+    fireEvent.click(screen.getByText('confirm'));
+
+    expect(screen.getByText('confirm').closest('button')).toBeDisabled();
+  });
+
+  it('shows publishRefused inline when onConfirm rejects', async () => {
+    const onConfirm = vi.fn().mockRejectedValue(new Error('422'));
+    renderWith({ onConfirm });
+
+    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
+    fireEvent.click(screen.getByText('confirm'));
+
+    await waitFor(() => expect(screen.getByText('publishRefused')).toBeInTheDocument());
+  });
+
+  it('does not show publishRefused when onConfirm resolves', async () => {
+    renderWith();
+
+    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
+    fireEvent.click(screen.getByText('confirm'));
+
+    await waitFor(() => expect(screen.queryByText('publishRefused')).not.toBeInTheDocument());
   });
 });

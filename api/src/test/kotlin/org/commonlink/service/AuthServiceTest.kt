@@ -275,6 +275,28 @@ class AuthServiceTest {
         verify(exactly = 0) { userRepository.save(any()) }
     }
 
+    /**
+     * Magic-link login must work for an existing account regardless of whether it also has a
+     * password: the existing-account branch of verifyMagicLink never reads passwordHash. Added
+     * after a production report that magic-link login "didn't work" once a password had been set —
+     * traced instead to the button on the login tab being mislabelled as a sign-up action.
+     */
+    @Test
+    fun `verifyMagicLink - existing account with a password logs in without touching password or provider`() {
+        val token = TestFixtures.magicLinkToken(email = donorUser.email, role = donorUser.role)
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase(donorUser.email) } returns Optional.of(donorUser)
+
+        val result = authService.verifyMagicLink("rawtoken123")
+
+        assertEquals("jwt.access.token", result.accessToken)
+        assertEquals("hashed", donorUser.passwordHash)
+        assertEquals(AuthProvider.EMAIL, donorUser.provider)
+        assertEquals(UserRole.DONOR, donorUser.role)
+        assertFalse(result.donorHistoryClaimed)
+    }
+
     // -------------------------------------------------------------------------
     // signUpWithGoogle
     // -------------------------------------------------------------------------
@@ -314,6 +336,29 @@ class AuthServiceTest {
         assertThrows<ConflictException> {
             authService.signUpWithGoogle("valid-token", UserRole.DONOR)
         }
+    }
+
+    @Test
+    fun `signUpWithGoogle - claims a guest account into ASSOCIATION and sets donorHistoryClaimed`() {
+        val guest = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.GUEST,
+            guest = true,
+            emailVerified = false,
+        )
+        val payload = buildGooglePayload(sub = "google-sub-999", email = "guest@example.com")
+        every { googleIdTokenVerifier.verify("valid-token") } returns buildGoogleToken(payload)
+        every { userRepository.findByGoogleSub("google-sub-999") } returns Optional.empty()
+        every { userRepository.findByEmailIgnoreCase("guest@example.com") } returns Optional.of(guest)
+        // The guest row already carries the donor profile the donations hang off.
+        every { donorProfileRepository.findByUserId(guest.id!!) } returns Optional.of(mockk(relaxed = true))
+
+        val result = authService.signUpWithGoogle("valid-token", UserRole.ASSOCIATION)
+
+        assertEquals(UserRole.ASSOCIATION, guest.role)
+        assertTrue(result.donorHistoryClaimed)
     }
 
     @Test
@@ -425,12 +470,62 @@ class AuthServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // verifyEmail
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `verifyEmail - happy path does not set donorHistoryClaimed`() {
+        val token = EmailVerificationToken(
+            user = donorUser,
+            tokenHash = "hashedtoken",
+            expiresAt = Instant.now().plus(24, ChronoUnit.HOURS)
+        )
+        every { emailVerificationTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+
+        val result = authService.verifyEmail("rawtoken123")
+
+        assertEquals("jwt.access.token", result.accessToken)
+        assertNotNull(token.usedAt)
+        assertFalse(result.donorHistoryClaimed)
+    }
+
+    /**
+     * A brand-new ASSOCIATION sign-up never has a DonorProfile — one present here is the signal
+     * that register() just claimed a guest row (with donations attached), so the one-time notice
+     * must fire.
+     */
+    @Test
+    fun `verifyEmail - claimed guest account into ASSOCIATION sets donorHistoryClaimed`() {
+        val claimedUser = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.ASSOCIATION,
+            provider = AuthProvider.EMAIL,
+            passwordHash = "hashed",
+            guest = false,
+            emailVerified = false,
+        )
+        val token = EmailVerificationToken(
+            user = claimedUser,
+            tokenHash = "hashedtoken",
+            expiresAt = Instant.now().plus(24, ChronoUnit.HOURS)
+        )
+        every { emailVerificationTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { donorProfileRepository.findByUserId(claimedUser.id!!) } returns Optional.of(mockk(relaxed = true))
+
+        val result = authService.verifyEmail("rawtoken123")
+
+        assertTrue(result.donorHistoryClaimed)
+    }
+
+    // -------------------------------------------------------------------------
     // sendMagicLink
     // -------------------------------------------------------------------------
 
     @Test
     fun `sendMagicLink - happy path for new user with role`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("new@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("new@example.com") } returns Optional.empty()
         every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
         justRun { emailService.sendMagicLink(any(), any()) }
 
@@ -467,6 +562,103 @@ class AuthServiceTest {
 
         // No exception — silent no-op prevents email enumeration
         authService.sendMagicLink("nobody@example.com", null)
+    }
+
+    /**
+     * Sign-up intent (role != null) on an email already owned by a real account must be refused up
+     * front — otherwise the request silently "succeeds" (email sent) and verifyMagicLink later just
+     * logs the caller into the existing account under its original role, discarding the requested
+     * role/association data with no error surfaced anywhere.
+     */
+    @Test
+    fun `sendMagicLink - signup on an email with a real account throws ConflictException`() {
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("donor@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("donor@example.com") } returns Optional.of(donorUser)
+
+        assertThrows<ConflictException> {
+            authService.sendMagicLink("donor@example.com", UserRole.ASSOCIATION)
+        }
+        verify(exactly = 0) { magicLinkTokenRepository.save(any()) }
+        verify(exactly = 0) { emailService.sendMagicLink(any(), any()) }
+    }
+
+    /** A guest row (donation widget) is not a real account yet, so a sign-up may still claim it. */
+    @Test
+    fun `sendMagicLink - signup on an email with only a guest account proceeds`() {
+        val guest = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.GUEST,
+            guest = true,
+            emailVerified = false,
+        )
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("guest@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("guest@example.com") } returns Optional.of(guest)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        justRun { emailService.sendMagicLink(any(), any()) }
+
+        authService.sendMagicLink("guest@example.com", UserRole.ASSOCIATION)
+
+        verify { emailService.sendMagicLink("guest@example.com", any()) }
+    }
+
+    // -------------------------------------------------------------------------
+    // sendPasswordResetLink
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `sendPasswordResetLink - existing account gets a password-reset token and email`() {
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("donor@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("donor@example.com") } returns Optional.of(donorUser)
+        val saved = slot<MagicLinkToken>()
+        every { magicLinkTokenRepository.save(capture(saved)) } answers { firstArg() }
+        justRun { emailService.sendMagicLink(any(), any()) }
+
+        authService.sendPasswordResetLink("donor@example.com")
+
+        assertTrue(saved.captured.passwordReset)
+        assertEquals(UserRole.DONOR, saved.captured.role)
+        verify { emailService.sendMagicLink("donor@example.com", "$frontendUrl/auth/verify-token?token=rawtoken123&role=donor") }
+    }
+
+    @Test
+    fun `sendPasswordResetLink - unknown email returns silently - no token, no email`() {
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("nobody@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("nobody@example.com") } returns Optional.empty()
+
+        authService.sendPasswordResetLink("nobody@example.com")
+
+        verify(exactly = 0) { magicLinkTokenRepository.save(any()) }
+        verify(exactly = 0) { emailService.sendMagicLink(any(), any()) }
+    }
+
+    /** A guest row never had a password, so there is nothing to "forget" — same silent no-op. */
+    @Test
+    fun `sendPasswordResetLink - guest account returns silently`() {
+        val guest = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.GUEST,
+            guest = true,
+            emailVerified = false,
+        )
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("guest@example.com", any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("guest@example.com") } returns Optional.of(guest)
+
+        authService.sendPasswordResetLink("guest@example.com")
+
+        verify(exactly = 0) { magicLinkTokenRepository.save(any()) }
+    }
+
+    @Test
+    fun `sendPasswordResetLink - shares sendMagicLink's rate limit`() {
+        every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter("donor@example.com", any()) } returns 3
+
+        assertThrows<RateLimitException> {
+            authService.sendPasswordResetLink("donor@example.com")
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -518,6 +710,106 @@ class AuthServiceTest {
         assertTrue(googleUser.emailVerified)
         assertEquals(AuthProvider.GOOGLE, googleUser.provider) // provider unchanged
         verify(exactly = 0) { donorProfileRepository.save(any()) }
+    }
+
+    /**
+     * Defence in depth: sendMagicLink now refuses to issue a token like this one (signup role
+     * differing from an existing non-guest account's role), but a token persisted before that guard
+     * existed must not silently log the caller into the wrong account either.
+     */
+    @Test
+    fun `verifyMagicLink - existing non-guest account with mismatched role throws ConflictException`() {
+        val token = MagicLinkToken(
+            email = donorUser.email,
+            tokenHash = "hashedtoken",
+            role = UserRole.ASSOCIATION,
+            expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES)
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { userRepository.findByEmailIgnoreCase(donorUser.email) } returns Optional.of(donorUser)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+
+        assertThrows<ConflictException> { authService.verifyMagicLink("rawtoken123") }
+
+        assertEquals(UserRole.DONOR, donorUser.role, "Existing account's role untouched")
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `verifyMagicLink - claims a guest account into ASSOCIATION and sets donorHistoryClaimed`() {
+        val guest = User(
+            id = UUID.randomUUID(),
+            email = "guest@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.GUEST,
+            guest = true,
+            emailVerified = false,
+        )
+        val token = MagicLinkToken(
+            email = "guest@example.com",
+            tokenHash = "hashedtoken",
+            role = UserRole.ASSOCIATION,
+            expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES),
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase("guest@example.com") } returns Optional.of(guest)
+        every { donorProfileRepository.findByUserId(guest.id!!) } returns Optional.of(mockk(relaxed = true))
+
+        val result = authService.verifyMagicLink("rawtoken123")
+
+        assertEquals(UserRole.ASSOCIATION, guest.role)
+        assertTrue(result.donorHistoryClaimed)
+    }
+
+    @Test
+    fun `verifyMagicLink - plain login does not set donorHistoryClaimed`() {
+        val token = MagicLinkToken(
+            email = donorUser.email,
+            tokenHash = "hashedtoken",
+            role = UserRole.DONOR,
+            expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES),
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase(donorUser.email) } returns Optional.of(donorUser)
+
+        val result = authService.verifyMagicLink("rawtoken123")
+
+        assertFalse(result.donorHistoryClaimed)
+    }
+
+    /** A "forgot password" token opens the grace window setPassword reads, and flags the response. */
+    @Test
+    fun `verifyMagicLink - password-reset token opens grace window and flags the response`() {
+        val token = TestFixtures.magicLinkToken(
+            email = donorUser.email,
+            tokenHash = "hashedtoken",
+            role = donorUser.role,
+            passwordReset = true,
+        )
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase(donorUser.email) } returns Optional.of(donorUser)
+
+        val result = authService.verifyMagicLink("rawtoken123")
+
+        assertTrue(result.passwordResetPending)
+        assertNotNull(token.passwordResetGraceUntil)
+        assertTrue(token.passwordResetGraceUntil!!.isAfter(Instant.now()))
+    }
+
+    @Test
+    fun `verifyMagicLink - plain login token leaves passwordResetPending false`() {
+        val token = TestFixtures.magicLinkToken(email = donorUser.email, tokenHash = "hashedtoken", role = donorUser.role)
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase(donorUser.email) } returns Optional.of(donorUser)
+
+        val result = authService.verifyMagicLink("rawtoken123")
+
+        assertFalse(result.passwordResetPending)
+        assertNull(token.passwordResetGraceUntil)
     }
 
     @Test
@@ -640,6 +932,12 @@ class AuthServiceTest {
     fun `setPassword - refused when the current password is missing or wrong`() {
         every { userRepository.findById(donorUser.id!!) } returns Optional.of(donorUser)
         every { passwordEncoder.matches("wrong", "hashed") } returns false
+        // No open "forgot password" grace window for this account either.
+        every {
+            magicLinkTokenRepository.findFirstByEmailAndPasswordResetTrueAndPasswordResetGraceUntilAfterAndPasswordResetConsumedAtIsNullOrderByCreatedAtDesc(
+                donorUser.email, any()
+            )
+        } returns Optional.empty()
 
         assertThrows<AuthException> {
             authService.setPassword(donorUser.id!!, "newpass123", "newpass123", null)
@@ -676,6 +974,86 @@ class AuthServiceTest {
         assertThrows<AuthException> {
             authService.setPassword(donorUser.id!!, "newpass123", "different")
         }
+    }
+
+    /**
+     * The "forgot password" grace window (opened by verifyMagicLink on a password-reset token,
+     * see the verifyMagicLink tests below) is the one case where an account with a password may
+     * replace it without supplying the old one — the magic link already proved email ownership.
+     */
+    @Test
+    fun `setPassword - open forgot-password grace window allows replacing without currentPassword, and is spent`() {
+        val graceToken = TestFixtures.magicLinkToken(
+            email = donorUser.email,
+            role = donorUser.role,
+            passwordReset = true,
+            passwordResetGraceUntil = Instant.now().plusSeconds(120),
+        )
+        every { userRepository.findById(donorUser.id!!) } returns Optional.of(donorUser)
+        every { passwordEncoder.encode("newpass123") } returns "newhash"
+        every {
+            magicLinkTokenRepository.findFirstByEmailAndPasswordResetTrueAndPasswordResetGraceUntilAfterAndPasswordResetConsumedAtIsNullOrderByCreatedAtDesc(
+                donorUser.email, any()
+            )
+        } returns Optional.of(graceToken)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+
+        authService.setPassword(donorUser.id!!, "newpass123", "newpass123", currentPassword = null)
+
+        assertEquals("newhash", donorUser.passwordHash)
+        assertNotNull(graceToken.passwordResetConsumedAt, "Grace window is spent — single use")
+        verify { refreshTokenRepository.revokeAllByUserId(donorUser.id!!) }
+    }
+
+    /**
+     * user.email is not guaranteed to be lower-cased (signUpWithGoogle stores whatever casing the
+     * Google payload carries), while MagicLinkToken.email always is (sendPasswordResetLink
+     * normalizes before saving). The lookup must normalize its own side to still find the token.
+     */
+    @Test
+    fun `setPassword - grace window lookup normalizes the account's email case`() {
+        val mixedCaseUser = User(
+            id = UUID.randomUUID(),
+            email = "Donor@Example.COM",
+            role = UserRole.DONOR,
+            provider = AuthProvider.EMAIL,
+            passwordHash = "hashed",
+            emailVerified = true,
+        )
+        val graceToken = TestFixtures.magicLinkToken(
+            email = "donor@example.com",
+            role = UserRole.DONOR,
+            passwordReset = true,
+            passwordResetGraceUntil = Instant.now().plusSeconds(120),
+        )
+        every { userRepository.findById(mixedCaseUser.id!!) } returns Optional.of(mixedCaseUser)
+        every { passwordEncoder.encode("newpass123") } returns "newhash"
+        every {
+            magicLinkTokenRepository.findFirstByEmailAndPasswordResetTrueAndPasswordResetGraceUntilAfterAndPasswordResetConsumedAtIsNullOrderByCreatedAtDesc(
+                "donor@example.com", any()
+            )
+        } returns Optional.of(graceToken)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+
+        authService.setPassword(mixedCaseUser.id!!, "newpass123", "newpass123", currentPassword = null)
+
+        assertEquals("newhash", mixedCaseUser.passwordHash)
+        assertNotNull(graceToken.passwordResetConsumedAt)
+    }
+
+    @Test
+    fun `setPassword - no open grace window still requires currentPassword`() {
+        every { userRepository.findById(donorUser.id!!) } returns Optional.of(donorUser)
+        every {
+            magicLinkTokenRepository.findFirstByEmailAndPasswordResetTrueAndPasswordResetGraceUntilAfterAndPasswordResetConsumedAtIsNullOrderByCreatedAtDesc(
+                donorUser.email, any()
+            )
+        } returns Optional.empty()
+
+        assertThrows<AuthException> {
+            authService.setPassword(donorUser.id!!, "newpass123", "newpass123", currentPassword = null)
+        }
+        assertEquals("hashed", donorUser.passwordHash, "Password left untouched")
     }
 
     // -------------------------------------------------------------------------
@@ -922,6 +1300,7 @@ class AuthServiceTest {
     @Test
     fun `sendMagicLink - already registered SIREN is rejected before sending`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter(any(), any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("asso-new@example.com") } returns Optional.empty()
         every { associationProfileRepository.existsByIdentifier("123456789") } returns true
 
         assertThrows<SirenAlreadyRegisteredException> {
@@ -938,6 +1317,7 @@ class AuthServiceTest {
     @Test
     fun `sendMagicLink - already registered RNA still sends - RNA flow untouched`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter(any(), any()) } returns 0
+        every { userRepository.findByEmailIgnoreCase("asso-new@example.com") } returns Optional.empty()
         every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
         justRun { emailService.sendMagicLink(any(), any()) }
         every { associationProfileRepository.existsByIdentifier("W123456789") } returns true

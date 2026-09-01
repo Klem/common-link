@@ -239,12 +239,16 @@ signalé et n'est pas couvert.
 L.561-12 du code monétaire et financier. Le mécanisme de purge effective à l'échéance n'est pas
 réalisé et relève de la responsabilité n° 6 du dispositif.
 
-**Seuil et algorithme de rapprochement.** Le criblage applique une similarité de Jaro-Winkler au
-seuil de 0,85. Cette méthode sur-pondère les préfixes communs : toute dénomination commençant par
-un terme technique générique atteindra le seuil face à plusieurs entrées du registre. Le cas
-« TECHNO + » relève de ce comportement. **Aucune modification du seuil ni de l'algorithme n'est
-proposée ici : abaisser le rappel d'un criblage de sanctions est une décision juridique et non
-ergonomique.** Le point est porté à la connaissance de la commission.
+**Seuil et algorithme de rapprochement.** Le criblage applique un score composite phonétique +
+orthographique par blocs (DoubleMetaphone × Jaro-Winkler, moyenne géométrique pondérée) au seuil
+de 0,85. Le nom est découpé en blocs significatifs (les particules « DE », « AL », « VAN », etc.
+sont filtrées) ; chaque bloc est encodé phonétiquement (DoubleMetaphone) puis comparé aux blocs du
+candidat via une matrice de similarité glouton. Cette approche est insensible à l'ordre des
+prénoms/noms, aux particules, aux variantes phonétiques rapprochées et aux noms cyrilliques ou
+arabes translittérés. Limitation résiduelle : le seuil de 0,85 a été calibré pour le Jaro-Winkler
+initial ; une recalibration empirique sur le registre en production est recommandée avant de le
+considérer comme définitif. **Abaisser le rappel d'un criblage de sanctions est une décision
+juridique.** Le point est porté à la connaissance de la commission.
 
 **Suivi des travaux restants.** La majorité des points ci-dessus n'appelle pas un développement
 mais un **arbitrage de la commission juridique** ou constitue une **limite déclarée et

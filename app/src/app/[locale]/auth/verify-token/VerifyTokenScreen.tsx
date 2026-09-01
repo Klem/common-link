@@ -17,11 +17,12 @@ export function VerifyTokenScreen({ token }: VerifyTokenScreenProps) {
   const locale = useLocale();
   const router = useRouter();
 
-  const { status, error } = useMagicLinkVerify(token, () => {
+  const { status, error } = useMagicLinkVerify(token, (passwordResetPending) => {
     const user = useAuthStore.getState().user;
     const role = user?.role ?? 'DONOR';
     // Use the canonical role→home mapping so CURATOR lands on /admin, not /dashboard/curator (404).
-    router.replace(getHomePath(locale, role));
+    const dashboardPath = getHomePath(locale, role);
+    router.replace(passwordResetPending ? `${dashboardPath}?resetPassword=1` : dashboardPath);
   });
 
   return (

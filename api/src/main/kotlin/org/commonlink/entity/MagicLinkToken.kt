@@ -63,5 +63,27 @@ class MagicLinkToken(
 
     /** Timestamp when this token record was created. */
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Instant = Instant.now()
+    val createdAt: Instant = Instant.now(),
+
+    /**
+     * Marks this token as issued for the "forgot password" flow rather than a plain login/sign-up.
+     * On verification this opens the [passwordResetGraceUntil] window instead of just logging in.
+     */
+    @Column(name = "password_reset", nullable = false)
+    val passwordReset: Boolean = false,
+
+    /**
+     * Set on verification of a [passwordReset] token: until this instant, [AuthService.setPassword]
+     * may skip the currentPassword check for this token's account. Null for a token that either
+     * isn't a password-reset token or hasn't been verified yet.
+     */
+    @Column(name = "password_reset_grace_until")
+    var passwordResetGraceUntil: Instant? = null,
+
+    /**
+     * Set the moment the grace window is spent by a [AuthService.setPassword] call, making it
+     * single-use even though it stays valid (per [passwordResetGraceUntil]) for a few more minutes.
+     */
+    @Column(name = "password_reset_consumed_at")
+    var passwordResetConsumedAt: Instant? = null
 )

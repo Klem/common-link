@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { UserRole } from '@/types/auth';
 type MagicLinkState = 'idle' | 'sending' | 'sent' | 'error';
 
 interface MagicLinkFormProps {
   onSubmit: (email: string) => Promise<void> | void;
-  role: UserRole;
+  /** Button label — the caller owns the wording since the same form serves login and signup. */
+  submitLabel: string;
 }
 
-export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
+export function MagicLinkForm({ onSubmit, submitLabel }: MagicLinkFormProps) {
   const t = useTranslations('auth');
   const [email, setEmail] = useState('');
   const [state, setState] = useState<MagicLinkState>('idle');
@@ -33,12 +33,7 @@ export function MagicLinkForm({ onSubmit, role }: MagicLinkFormProps) {
     setState('idle');
   };
 
-  const buttonLabel =
-    state === 'sending'
-      ? t('magicLink.sending')
-      : role === UserRole.ASSOCIATION
-        ? t('magicLink.sendButton')
-        : t('signup.donor.magicLink');
+  const buttonLabel = state === 'sending' ? t('magicLink.sending') : submitLabel;
 
   return (
     <div className="rounded-[11px] p-[16px_18px] bg-green/[.04] border border-green/[.16]">

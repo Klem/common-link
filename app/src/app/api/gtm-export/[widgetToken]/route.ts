@@ -34,8 +34,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Invalid or missing gtmId' }, { status: 400 });
   }
 
-  const origin = request.nextUrl.origin;
-  const pageUrl = `${origin}/fr/lp/${encodeURIComponent(widgetToken)}`;
+  // The exported file is a permanent artifact — pasted into the association's own site, or just
+  // sitting in a "Downloads" folder — that must keep working regardless of how *this* export
+  // request happened to reach the server. `request.nextUrl.origin` is the Host/proto of that one
+  // request, not the platform's real public address: whoever triggers this export might be going
+  // through a local tunnel, a port-forward, or any other indirection that never matches what a
+  // donor's browser will actually load. NEXT_PUBLIC_APP_URL is the fixed, deploy-time source of
+  // truth instead; the request origin is only a fallback for environments that don't set it
+  // (e.g. local dev).
+  const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+  // Fetching the page itself hairpins back through the platform's reverse proxy — on Clever Cloud
+  // that self-loop is unreachable from inside the very container serving it ("fetch failed"), so
+  // this internal call always goes to the local port instead, independent of `origin` above.
+  const internalOrigin = `http://127.0.0.1:${process.env.PORT || 3000}`;
+  const pageUrl = `${internalOrigin}/fr/lp/${encodeURIComponent(widgetToken)}`;
 
   let pageRes: Response;
   try {
@@ -104,7 +116,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     styleLinks.map(async (link) => {
       const href = link.getAttribute('href');
       if (!href) return '';
-      const absoluteHref = href.startsWith('http') ? href : `${origin}${href}`;
+      const absoluteHref = href.startsWith('http') ? href : `${internalOrigin}${href}`;
       try {
         const cssRes = await fetch(absoluteHref);
         return cssRes.ok ? await cssRes.text() : '';

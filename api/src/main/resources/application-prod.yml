@@ -148,6 +148,14 @@ app:
       #Mock the entire mollie process
       mock: false
       allow-fake-completion: false
+      token-refresh:
+        enabled: true
+        # Gap between the end of one sweep and the start of the next (fixedDelay semantics).
+        fixed-delay-ms: 900000
+        initial-delay-ms: 120000
+        # Renew a token expiring within this window. Keep it >= 2x fixed-delay-ms, otherwise tokens
+        # whose expiry falls between two ticks are missed and get refreshed lazily after all.
+        lookahead-seconds: 1800
 
   curator:
     email: ${APP_CURATOR_EMAIL}
