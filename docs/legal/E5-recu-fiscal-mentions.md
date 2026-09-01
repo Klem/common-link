@@ -152,7 +152,31 @@ prélevée par la plateforme est un point d'appréciation qui n'est pas tranché
 | **Conservation** | colonne `donations.payment_method`, migration `V65__donation_payment_method.sql` |
 | **Contrôles automatisés** | `api/src/test/kotlin/org/commonlink/service/ReceiptServiceTest.kt`, `MollieWebhookServiceTest.kt` |
 
+## 8. Revue complémentaire du 1er septembre 2026
+
+Un second retour, formulé le 14 août 2026, reprenait pour l'essentiel les constats de la section 2
+(déjà corrigés le 17 août, voir ci-dessus) et ajoutait trois points. Aucun n'a donné lieu à une
+modification de code.
+
+**Récépissé de déclaration en préfecture.** Le retour demandait de vérifier si cette mention devait
+figurer au côté du RNA/SIREN déjà affiché (section « BÉNÉFICIAIRE DU VERSEMENT »). Le formulaire
+Cerfa n° 11580*05 ne comporte pas de champ distinct pour un récépissé de préfecture : sa section
+d'identification du bénéficiaire demande dénomination, adresse, objet, catégorie et un identifiant
+RNA ou SIRET/SIREN — c'est ce que le reçu affiche déjà. Point clos, sans changement.
+
+**Adresse postale obligatoire au tunnel de don.** Signalée comme restant à faire, cette exigence est
+en réalité satisfaite depuis le 15 juillet 2026 côté API (`CreateGuestDonationRequest`, champs
+`donorAddressLine1`/`donorPostalCode`/`donorCity` en `@NotBlank`) et depuis le 3 août 2026 côté
+formulaire (`donationSchema.ts`, `DonationForm.tsx`) — donc avant ce retour. La mesure de l'impact
+sur la conversion, mentionnée dans le même retour, reste un sujet analytics hors périmètre de cette
+fiche.
+
+**Orthographe d'un exemple (Vallauris/06220) et graphie « Maïolino ».** Ces deux mentions n'existent
+que dans `landing-page/`, hors du périmètre technique suivi par l'équipe (ne contient ni le
+générateur de reçu ni un document remis à un donateur). Signalé pour correction séparée si la page
+reste en usage.
+
 ---
 
-*Document établi le 17 août 2026. Il décrit l'état des corrections arrêté à cette date et sera mis à
-jour si la rédaction du reçu évolue.*
+*Document établi le 17 août 2026, complété le 1er septembre 2026. Il décrit l'état des corrections
+arrêté à cette date et sera mis à jour si la rédaction du reçu évolue.*
