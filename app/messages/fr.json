@@ -1803,6 +1803,11 @@
     "welcome": "Bienvenue"
   },
   "landing": {
+    "cookieConsent": {
+      "accept": "Accepter",
+      "message": "Nous utilisons des cookies de mesure d'audience et de suivi publicitaire (Google) pour évaluer l'efficacité de nos campagnes. Vous pouvez accepter ou refuser leur dépôt à tout moment.",
+      "refuse": "Refuser"
+    },
     "donate": {
       "eyebrow": "Faire un don",
       "secured": "Paiement sécurisé — technologie propulsée par CommonLink",

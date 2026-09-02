@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parse } from 'node-html-parser';
 import { GTM_ID_PATTERN, gtmHeadScript, gtmNoscriptIframe } from '@/lib/gtm';
+import { consentBannerStandaloneHtml, consentBootstrapScript } from '@/lib/consentMode';
 
 interface RouteParams {
   params: Promise<{ widgetToken: string }>;
@@ -109,8 +110,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 
+  // Appended as the last child of `.lp-root` — same position as the React banner (after
+  // LegalFooter) — not as a sibling in `<body>`: `--lp-primary`/`--lp-bg`/etc. are custom
+  // properties declared on `.lp-root` and its `[data-theme]` variant, and only inherit to
+  // descendants. A sibling would render the banner with none of the theme's colors.
+  lpRoot.innerHTML = lpRoot.innerHTML + consentBannerStandaloneHtml(widgetToken);
+
   // Inline every stylesheet's actual content — not a link to a hashed file — so styling survives
-  // deploys too. landing.css is confirmed self-contained (no @import/url()).
+  // deploys too. landing.css has no @import, but it does declare @font-face rules with
+  // root-relative `url(/_next/static/media/...)` sources: left as-is, those resolve against
+  // whatever origin ends up hosting this exported file (the association's own site), not against
+  // the Next.js app that actually serves the fonts — a silent 404 that falls back to system fonts.
+  // Rewritten to the public origin here, the same way the widget.js and report links already are.
   const styleLinks = doc.querySelectorAll('link[rel="stylesheet"]');
   const cssChunks = await Promise.all(
     styleLinks.map(async (link) => {
@@ -119,7 +130,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       const absoluteHref = href.startsWith('http') ? href : `${internalOrigin}${href}`;
       try {
         const cssRes = await fetch(absoluteHref);
-        return cssRes.ok ? await cssRes.text() : '';
+        if (!cssRes.ok) return '';
+        const css = await cssRes.text();
+        return css.replace(/url\((['"]?)\//g, `url($1${origin}/`);
       } catch {
         return '';
       }
@@ -138,6 +151,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     title && `<title>${title}</title>`,
     description && `<meta name="description" content="${description}">`,
     cssChunks.some(Boolean) && `<style>${cssChunks.join('\n')}</style>`,
+    // Consent default (denied) must be set before gtm.js loads — same ordering constraint as the
+    // live page (see consentMode.ts). Without it, this exported file would load GTM completely
+    // ungated by consent, defeating the whole point of Consent Mode v2 the moment it's pasted onto
+    // the association's own site.
+    `<script>${consentBootstrapScript(widgetToken)}</script>`,
     `<script>${gtmHeadScript(gtmId)}</script>`,
     '</head>',
     '<body>',

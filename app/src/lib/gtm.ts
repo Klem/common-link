@@ -130,6 +130,8 @@ export function pushDonationEvent(
 declare global {
   interface Window {
     dataLayer?: unknown[];
+    /** Set by `consentBootstrapScript` (see `lib/consentMode.ts`) before GTM loads. */
+    gtag?: (...args: unknown[]) => void;
   }
 }
 
