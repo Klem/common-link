@@ -21,9 +21,13 @@ interface UseGuestDonationOptions {
   sourceSite: string | null;
   locale: string;
   tracking: DonationTrackingContext;
+  /** See `DonationEventExtras.parentOrigin` — forwarded as-is to the `begin_checkout` push. */
+  parentOrigin?: string | null;
 }
 
-export function useGuestDonation({ widgetToken, sourceSite, locale, tracking }: UseGuestDonationOptions) {
+export function useGuestDonation({
+  widgetToken, sourceSite, locale, tracking, parentOrigin,
+}: UseGuestDonationOptions) {
   const t = useTranslations('widget');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
@@ -62,7 +66,7 @@ export function useGuestDonation({ widgetToken, sourceSite, locale, tracking }: 
           items: [{ item_id: tracking.campaignId, item_name: tracking.campaignName }],
           affiliation: tracking.associationName,
         },
-        { anonymous: data.anonymousDisplay, utm: captureUtmParams() },
+        { anonymous: data.anonymousDisplay, utm: captureUtmParams(), parentOrigin },
       );
       const top = typeof window !== 'undefined' ? window.top : null;
       if (top) {

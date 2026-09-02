@@ -45,6 +45,8 @@ interface DonationFormProps {
   locale: string;
   /** Campaign/association context for the `begin_checkout` dataLayer push made on submit. */
   tracking: DonationTrackingContext;
+  /** See `DonationEventExtras.parentOrigin` — forwarded to the `begin_checkout` push. */
+  parentOrigin?: string | null;
   skin?: Skin;
   submitLabel?: (amount: number | undefined) => string | undefined;
   /**
@@ -69,6 +71,7 @@ export function DonationForm({
   sourceSite,
   locale,
   tracking,
+  parentOrigin,
   skin = 'default',
   submitLabel,
   disabled = false,
@@ -79,7 +82,7 @@ export function DonationForm({
   const s = SKINS[skin];
 
   const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked } =
-    useGuestDonation({ widgetToken, sourceSite, locale, tracking });
+    useGuestDonation({ widgetToken, sourceSite, locale, tracking, parentOrigin });
 
   const [openLegalDoc, setOpenLegalDoc] = useState<LegalDocumentType | null>(null);
 
