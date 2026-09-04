@@ -22,6 +22,9 @@
 
   var MESSAGE_TYPE = 'cl-widget-height';
 
+  // Mirrors GTM_EVENT_MESSAGE_TYPE in app/src/lib/gtm.ts — must stay a literal match.
+  var GTM_MESSAGE_TYPE = 'cl-widget-gtm-event';
+
   var script = document.currentScript;
   if (!script) return;
 
@@ -129,17 +132,29 @@
     'allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation allow-same-origin'
   );
 
-  // Auto-resize — registered before insertion so the very first message cannot be missed.
-  // Every guard matters: only our own iframe (source), only our own origin, only our own
-  // message shape, only a sane positive number.
+  // Auto-resize and GTM event bridge — registered before insertion so the very first message
+  // cannot be missed. Every guard matters: only our own iframe (source), only our own origin, only
+  // our own message shapes.
   window.addEventListener('message', function (event) {
     if (event.source !== iframe.contentWindow) return;
     if (event.origin !== frontOrigin) return;
     var data = event.data;
-    if (!data || data.type !== MESSAGE_TYPE) return;
-    var reported = Number(data.height);
-    if (!isFinite(reported) || reported <= 0) return;
-    iframe.style.height = Math.ceil(reported) + 'px';
+    if (!data) return;
+
+    if (data.type === MESSAGE_TYPE) {
+      var reported = Number(data.height);
+      if (!isFinite(reported) || reported <= 0) return;
+      iframe.style.height = Math.ceil(reported) + 'px';
+      return;
+    }
+
+    if (data.type === GTM_MESSAGE_TYPE) {
+      // The donation form's GTM container lives inside the iframe, invisible to any GTM the host
+      // page runs on itself. Forward the same GA4 ecommerce payload into the host's own
+      // `dataLayer` so its GTM can pick it up via a Custom Event trigger.
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push(data.payload);
+    }
   });
 
   // Insert immediately after the <script> tag (or at end of parent if last child)

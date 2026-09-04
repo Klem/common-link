@@ -11,9 +11,11 @@ interface Props {
   widgetToken: string;
   sourceSite: string | null;
   locale: string;
+  /** See `DonationEventExtras.parentOrigin` — forwarded to the `begin_checkout` push. */
+  parentOrigin?: string | null;
 }
 
-export function EmbedDonateClient({ widgetToken, sourceSite, locale }: Props) {
+export function EmbedDonateClient({ widgetToken, sourceSite, locale, parentOrigin }: Props) {
   const t = useTranslations('widget');
 
   const [widget, setWidget] = useState<PublicWidgetDto | null>(null);
@@ -82,6 +84,7 @@ export function EmbedDonateClient({ widgetToken, sourceSite, locale }: Props) {
         widgetToken={widgetToken}
         sourceSite={sourceSite}
         locale={locale}
+        parentOrigin={parentOrigin}
         tracking={{
           campaignId: widget.campaignId,
           campaignName: widget.campaignName,

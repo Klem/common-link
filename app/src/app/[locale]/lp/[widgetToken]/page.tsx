@@ -10,7 +10,9 @@ import { LandingClient } from './LandingClient';
 import { LegalFooter } from './LegalFooter';
 import { EmbedHeightReporter } from './EmbedHeightReporter';
 import { PreviewBanner } from './PreviewBanner';
+import { CookieConsentBanner } from './CookieConsentBanner';
 import { GtmSnippet } from '@/components/GtmSnippet';
+import { consentBootstrapScript } from '@/lib/consentMode';
 import './landing.css';
 
 interface Props {
@@ -105,6 +107,14 @@ export default async function LandingPage({ params, searchParams }: Props) {
 
   return (
     <div className="lp-root" data-theme={data.landingTheme}>
+      {/* Must render before GtmSnippet: Google's Consent Mode default has to be set before gtm.js
+          loads (EU User Consent Policy). See lib/consentMode.ts for why the stored-choice restore
+          also lives in this script rather than in CookieConsentBanner. */}
+      {gtmId && (
+        <script
+          dangerouslySetInnerHTML={{ __html: consentBootstrapScript(widgetToken) }}
+        />
+      )}
       <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
       <script
@@ -172,6 +182,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
         legalObject={data.legalObject}
         taxReductionRate={data.taxReductionRate}
       />
+      <CookieConsentBanner widgetToken={widgetToken} gtmId={gtmId} />
     </div>
   );
 }

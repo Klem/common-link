@@ -29,7 +29,11 @@ export default async function EmbedDonateReturnPage({ params, searchParams }: Pr
   try {
     const widget = await getWidget(widgetToken);
     gtmId = widget.gtmContainerId;
-  } catch {
+  } catch (err) {
+    console.warn(
+      `[CommonLink return] Failed to fetch widget config for GTM injection (widgetToken=${widgetToken}) — no GTM will be injected.`,
+      err,
+    );
     gtmId = null;
   }
 

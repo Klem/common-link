@@ -36,13 +36,24 @@ export default async function EmbedDonatePage({ params, searchParams }: Props) {
   // execute (see GtmSnippet), which rules out reusing EmbedDonateClient's client-side fetch.
   const gtmId = await getWidget(widgetToken)
     .then((w) => w.gtmContainerId)
-    .catch(() => null);
+    .catch((err: unknown) => {
+      console.warn(
+        `[CommonLink embed/donate] Failed to fetch widget config for GTM injection (widgetToken=${widgetToken}) — no GTM will be injected.`,
+        err,
+      );
+      return null;
+    });
 
   return (
     <>
       <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedWidgetHeightReporter parentOrigin={parentOrigin} />}
-      <EmbedDonateClient widgetToken={widgetToken} sourceSite={source ?? null} locale={locale} />
+      <EmbedDonateClient
+        widgetToken={widgetToken}
+        sourceSite={source ?? null}
+        locale={locale}
+        parentOrigin={parentOrigin}
+      />
     </>
   );
 }

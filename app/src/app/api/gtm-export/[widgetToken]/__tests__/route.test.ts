@@ -38,7 +38,8 @@ const FAKE_LANDING_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
-const FAKE_CSS = '.lp-root { --lp-primary: #C2410C; }';
+const FAKE_CSS =
+  ".lp-root { --lp-primary: #C2410C; } @font-face { src: url(/_next/static/media/abc123-s.woff2) format('woff2'); }";
 
 function mockFetchSequence() {
   return vi.fn((url: string) => {
@@ -90,6 +91,12 @@ describe('GET /api/gtm-export/[widgetToken]', () => {
     expect(html).not.toContain('_next/static/css');
     expect(html).toContain('--lp-primary: #C2410C');
 
+    // Font (and any other) root-relative url() references rewritten to the public origin — left
+    // as `/_next/...` they'd resolve against whatever site this export gets pasted into, not the
+    // app that actually serves the fonts.
+    expect(html).not.toContain('url(/_next');
+    expect(html).toContain('url(https://app.common-link.org/_next/static/media/abc123-s.woff2)');
+
     // Dead JS-driven chrome removed.
     expect(html).not.toContain('lp-sticky-bar');
 
@@ -117,6 +124,19 @@ describe('GET /api/gtm-export/[widgetToken]', () => {
     // GTM tags present, official placement.
     expect(html).toContain("'GTM-ABC1234'");
     expect(html).toContain('googletagmanager.com/ns.html?id=GTM-ABC1234');
+
+    // No hydration here to run the React banner's useEffect — this export needs its own
+    // vanilla-JS consent gate, wired the same way the live page is: default-denied before gtm.js,
+    // banner nested inside `.lp-root` (not a body sibling) so it inherits the theme's CSS vars.
+    const consentDefaultIdx = html.indexOf("gtag('consent','default'");
+    const gtmLoaderIdx = html.indexOf('GTM-ABC1234');
+    const lpRootCloseIdx = html.lastIndexOf('</div>');
+    const bannerIdx = html.indexOf('id="cl-cookie-consent"');
+    expect(consentDefaultIdx).toBeGreaterThan(-1);
+    expect(consentDefaultIdx).toBeLessThan(gtmLoaderIdx);
+    expect(bannerIdx).toBeGreaterThan(-1);
+    expect(bannerIdx).toBeLessThan(lpRootCloseIdx);
+    expect(html).toContain('cl-consent-clk_abc');
 
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('<title>Ma campagne — Mon Asso</title>');

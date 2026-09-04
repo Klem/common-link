@@ -78,10 +78,28 @@ export interface DonationEventExtras {
   paymentMethod?: string;
   /** See {@link captureUtmParams} — only ever populated on `begin_checkout`. */
   utm?: UtmParams;
+  /**
+   * Validated host origin (scheme://host[:port]) to forward this event to via `postMessage`, when
+   * running inside the `widget.js` iframe — the host page's own GTM cannot see into a cross-origin
+   * child document otherwise. Omit outside that context (e.g. `/return`, which always runs
+   * top-level — see `useGuestDonation`'s `window.top` redirect).
+   */
+  parentOrigin?: string | null;
 }
 
 /**
- * Pushes a GA4 ecommerce donation event (`begin_checkout` or `purchase`) to `window.dataLayer`.
+ * Message contract with `public/widget.js` for forwarding a GA4 ecommerce event to the host page's
+ * own `dataLayer`. Mirrors `EmbedWidgetHeightReporter`'s `cl-widget-height`; a separate constant
+ * for the same reason that one is independent from `cl-landing-height` — `widget.js` is the only
+ * loader this bridges today.
+ */
+export const GTM_EVENT_MESSAGE_TYPE = 'cl-widget-gtm-event';
+
+/**
+ * Pushes a GA4 ecommerce donation event (`begin_checkout` or `purchase`) to `window.dataLayer`, and,
+ * when `extras.parentOrigin` is set and this code is running inside an iframe, forwards the same
+ * payload to the host page via `postMessage` so its own GTM container can push it into its own
+ * `dataLayer` too.
  *
  * Safe to call even when no GTM container is configured for this association: with nothing reading
  * it, the push is a harmless no-op. `window.dataLayer` is guarded rather than assumed present —
@@ -94,19 +112,26 @@ export function pushDonationEvent(
   extras: DonationEventExtras,
 ): void {
   if (typeof window === 'undefined') return;
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
+  const payload = {
     event,
     ecommerce,
     anonymous: extras.anonymous,
     ...(extras.paymentMethod ? { payment_method: extras.paymentMethod } : {}),
     ...extras.utm,
-  });
+  };
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push(payload);
+
+  if (extras.parentOrigin && window.parent !== window) {
+    window.parent.postMessage({ type: GTM_EVENT_MESSAGE_TYPE, payload }, extras.parentOrigin);
+  }
 }
 
 declare global {
   interface Window {
     dataLayer?: unknown[];
+    /** Set by `consentBootstrapScript` (see `lib/consentMode.ts`) before GTM loads. */
+    gtag?: (...args: unknown[]) => void;
   }
 }
 

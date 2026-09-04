@@ -96,6 +96,60 @@
   font-weight: 600;
 }
 
+/* ── Cookie consent banner ───────────────────────────────────────────────
+   Accept/refuse buttons MUST stay equal in size and prominence — CNIL requirement, not a style
+   preference. Never make one a plain link and the other a filled button.
+   ──────────────────────────────────────────────────────────────────────── */
+.lp-cookie-consent {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--lp-bg);
+  border-top: 1px solid var(--lp-border);
+  box-shadow: var(--lp-shadow-soft);
+}
+
+.lp-cookie-consent-message {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--lp-text-mute);
+}
+
+.lp-cookie-consent-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.lp-cookie-consent-btn {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--lp-radius);
+  cursor: pointer;
+  border: 1.5px solid var(--lp-primary);
+}
+
+.lp-cookie-consent-btn--refuse {
+  background: var(--lp-bg);
+  color: var(--lp-primary-dark);
+}
+
+.lp-cookie-consent-btn--accept {
+  background: var(--lp-primary);
+  color: #fff;
+}
+
 /* ── Header logo ─────────────────────────────────────────────────────────── */
 .lp-header-logo {
   height: 32px;
