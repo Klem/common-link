@@ -1,12 +1,17 @@
 import { Nunito_Sans, Inter, Lora } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { ThemeSwitcher } from '@/components/dev/ThemeSwitcher';
 import { Analytics } from '@vercel/analytics/next';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { locales } from '@/i18n/config';
 import './globals.css';
+
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
 
 const nunitoSans = Nunito_Sans({
   subsets: ['latin'],
@@ -37,6 +42,7 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  setRequestLocale(locale);
   const messages = await getMessages();
 
   return (

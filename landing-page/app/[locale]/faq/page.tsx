@@ -8,6 +8,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('title'),
     description: t('description'),
+    alternates: {
+      canonical: 'https://www.common-link.org/faq',
+      languages: { fr: '/faq', en: '/en/faq' },
+    },
   };
 }
 

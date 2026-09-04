@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { LegalContent } from '@/components/layout/LegalContent';
+import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -7,6 +8,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('title'),
     description: t('description'),
+  alternates: {
+    canonical: 'https://www.common-link.org/politique-cookies',
+    languages: { fr: '/politique-cookies', en: '/en/politique-cookies' },
+  },
   };
 }
 
@@ -15,7 +20,9 @@ export default async function PolitiqueCookiesPage({ params }: { params: Promise
   const t = await getTranslations({ locale, namespace: 'legal.politiqueCookies' });
 
   return (
-    <LegalContent title={t('title')} lastUpdated={t('lastUpdated')}>
+    <>
+      <LegalSubnav active="cookies" />
+      <LegalContent title={t('title')} meta={t('lastUpdated')}>
       <p>{t('intro')}</p>
 
       <h2>{t('whatIs.title')}</h2>
@@ -63,6 +70,7 @@ export default async function PolitiqueCookiesPage({ params }: { params: Promise
 
       <h2>{t('changes.title')}</h2>
       <p>{t('changes.p1')}</p>
-    </LegalContent>
+      </LegalContent>
+    </>
   );
 }

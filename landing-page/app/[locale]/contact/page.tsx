@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { LegalContent } from '@/components/layout/LegalContent';
+import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -7,6 +8,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('title'),
     description: t('description'),
+  alternates: {
+    canonical: 'https://www.common-link.org/contact',
+    languages: { fr: '/contact', en: '/en/contact' },
+  },
   };
 }
 
@@ -15,6 +20,8 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
   const t = await getTranslations({ locale, namespace: 'legal.contact' });
 
   return (
+    <>
+    <LegalSubnav active="contact" />
     <LegalContent title={t('title')}>
       <p>{t('intro')}</p>
 
@@ -56,5 +63,6 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
         {t('company.tva')}
       </div>
     </LegalContent>
+    </>
   );
 }

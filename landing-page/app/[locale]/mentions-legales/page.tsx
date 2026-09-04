@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LegalContent } from '@/components/layout/LegalContent';
+import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -8,6 +9,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('title'),
     description: t('description'),
+  alternates: {
+    canonical: 'https://www.common-link.org/mentions-legales',
+    languages: { fr: '/mentions-legales', en: '/en/mentions-legales' },
+  },
   };
 }
 
@@ -16,7 +21,9 @@ export default async function MentionsLegalesPage({ params }: { params: Promise<
   const t = await getTranslations({ locale, namespace: 'legal.mentionsLegales' });
 
   return (
-    <LegalContent title={t('title')} lastUpdated={t('lastUpdated')}>
+    <>
+    <LegalSubnav active="mentions" />
+    <LegalContent title={t('title')} meta={t('lastUpdated')}>
       <p>{t('intro')}</p>
 
       <h2>{t('editor.title')}</h2>
@@ -80,5 +87,6 @@ export default async function MentionsLegalesPage({ params }: { params: Promise<
         <Link href="/politique-cookies">{t('cookies.linkLabel')}</Link>
       </p>
     </LegalContent>
+    </>
   );
 }

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { Button } from '@/components/ui/Button';
+import { APP_URL } from '@/lib/constants';
 
 export function Header() {
   const t = useTranslations('nav');
@@ -19,9 +20,9 @@ export function Header() {
   }, []);
 
   const navLinks = [
-    { href: '/partenaires' as const, label: t('partners') },
-    { href: '/associations' as const, label: t('associations') },
     { href: '/donateurs' as const, label: t('donors') },
+    { href: '/associations' as const, label: t('associations') },
+    { href: '/tarifs' as const, label: t('tarifs') },
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -32,22 +33,15 @@ export function Header() {
         scrolled ? 'shadow-sm' : ''
       }`}
     >
-      <div className="max-w-container mx-auto px-8 h-16 flex items-center justify-between">
+      <div className="max-w-container mx-auto px-8 h-16 flex items-center justify-between gap-6">
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 no-underline text-primary font-ui font-bold text-[1.15rem] hover:text-primary"
+          className="flex items-center gap-1 no-underline text-primary font-ui font-extrabold text-[1.15rem] hover:text-primary flex-shrink-0"
           aria-label={t('home')}
         >
-          <Image
-            src="/logo.png"
-            alt=""
-            width={29}
-            height={36}
-            className="flex-shrink-0"
-            aria-hidden="true"
-          />
-          <span>CommonLink</span>
+          <span>Common</span>
+          <span className="italic-accent text-secondary">Link</span>
         </Link>
 
         {/* Desktop nav */}
@@ -68,8 +62,26 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <LanguageSwitcher />
+          <a
+            href={APP_URL}
+            className="font-ui text-[0.9rem] font-medium px-2 py-1 rounded-sm text-foreground hover:text-primary hover:bg-secondary-pale transition-colors duration-200"
+          >
+            {t('projects')}
+          </a>
         </nav>
+
+        <div className="hidden md:flex items-center gap-4 flex-shrink-0">
+          <a
+            href={APP_URL}
+            className="font-ui text-[0.9rem] font-semibold text-primary hover:text-secondary transition-colors duration-200"
+          >
+            {t('login')}
+          </a>
+          <Button href={APP_URL} external size="sm">
+            {t('donate')}
+          </Button>
+          <LanguageSwitcher />
+        </div>
 
         {/* Mobile menu button */}
         <button
@@ -119,7 +131,16 @@ export function Header() {
             {link.label}
           </Link>
         ))}
-        <div className="mt-3">
+        <a href={APP_URL} className="font-ui text-base font-medium py-2 text-foreground hover:text-primary">
+          {t('projects')}
+        </a>
+        <a href={APP_URL} className="font-ui text-base font-medium py-2 text-primary">
+          {t('login')}
+        </a>
+        <div className="mt-3 flex items-center gap-4">
+          <Button href={APP_URL} external size="sm">
+            {t('donate')}
+          </Button>
           <LanguageSwitcher />
         </div>
       </nav>

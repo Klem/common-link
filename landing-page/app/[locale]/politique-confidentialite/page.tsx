@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LegalContent } from '@/components/layout/LegalContent';
+import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -8,6 +9,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('title'),
     description: t('description'),
+  alternates: {
+    canonical: 'https://www.common-link.org/politique-confidentialite',
+    languages: { fr: '/politique-confidentialite', en: '/en/politique-confidentialite' },
+  },
   };
 }
 
@@ -16,7 +21,9 @@ export default async function PolitiqueConfidentialitePage({ params }: { params:
   const t = await getTranslations({ locale, namespace: 'legal.politiqueConfidentialite' });
 
   return (
-    <LegalContent title={t('title')} lastUpdated={t('lastUpdated')}>
+    <>
+    <LegalSubnav active="privacy" />
+    <LegalContent title={t('title')} meta={t('lastUpdated')}>
       <p>{t('intro')}</p>
 
       <h2>{t('controller.title')}</h2>
@@ -140,5 +147,6 @@ export default async function PolitiqueConfidentialitePage({ params }: { params:
       <h2>{t('changes.title')}</h2>
       <p>{t('changes.p1')}</p>
     </LegalContent>
+    </>
   );
 }

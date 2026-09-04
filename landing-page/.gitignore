@@ -1,3 +1,12 @@
 CLAUDE.md
 .vade-report
 next-env.d.ts
+.claude
+.claudeignore
+.next
+.env.local
+tsconfig.tsbuildinfo
+test-results
+node_modules
+tasks
+.env.*

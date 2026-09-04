@@ -1,130 +1,76 @@
 {
   "associations": {
-    "benefits": {
+    "features": {
       "items": [
         {
-          "title": "Attract more donors",
-          "text": "Transparency reassures. Donors prefer organizations that show how their funds are used."
+          "icon": "🎯",
+          "text": "Photos, budget, goal, your story. Live as soon as your collection account is open.",
+          "title": "Campaign page"
         },
         {
-          "title": "Simplify your reporting",
-          "text": "No financial statement, invoice, or receipt is ever requested from you. Your payments are recorded the moment you make them."
+          "icon": "💳",
+          "text": "Card, SEPA transfer, Apple Pay, with monthly giving coming soon. Funds go to your account, never to ours.",
+          "title": "Multi-channel collection"
         },
         {
-          "title": "Zero technical skills needed",
-          "text": "You manage your association in euros, as usual. The technology is invisible — we handle everything."
+          "icon": "📊",
+          "text": "Pay from CommonLink, publication is automatic. No receipts to provide.",
+          "title": "Automatic publication"
+        },
+        {
+          "icon": "🧾",
+          "text": "Every donor gets their Cerfa receipt within a minute. Nothing to enter, nothing to send.",
+          "title": "Tax receipts"
+        },
+        {
+          "icon": "💬",
+          "text": "Progress, news, results. Your donors stay informed on their own.",
+          "title": "Updates to donors"
         }
       ],
-      "title": "Why join CommonLink?"
-    },
-    "form": {
-      "change": "Change",
-      "consent": "I agree that CommonLink may collect this information to notify me about the platform launch. I can unsubscribe at any time.",
-      "description": "Describe your association in one sentence",
-      "descriptionPlaceholder": "e.g. Food aid in the 13th arrondissement",
-      "email": "Contact email",
-      "emailPlaceholder": "contact@association.org",
-      "formTitle": "Last step: your contact details",
-      "note": "We'll get back to you within two business days. No commitment at this stage.",
-      "responsibleName": "Responsible person's name",
-      "responsibleNamePlaceholder": "First Last",
-      "selectedTitle": "Welcome to the pioneers!",
-      "submit": "Join the pioneers",
-      "success": "We've received your registration. Our team will contact you within 48h to organize your personalized onboarding."
+      "label": "Features",
+      "title": "From the campaign page to the final report"
     },
     "hero": {
-      "badge": "Associations",
-      "description": "Join the first pilot associations of CommonLink. We support you in simplifying your management and strengthening the trust of your supporters.",
-      "title": "Offer transparency to your donors"
-    },
-    "onboarding": {
-      "title": "How does onboarding work?",
-      "steps": [
-        {
-          "title": "Search for your association",
-          "text": "Find it in the official directory above. Your basic information is pre-filled automatically."
-        },
-        {
-          "title": "Leave your contact details",
-          "text": "Responsible person's name, email — that's it. 30 seconds. Zero paperwork at this stage."
-        },
-        {
-          "title": "We support you",
-          "text": "Our team contacts you to finalize your profile, set up your space, and prepare your first project."
-        }
-      ]
-    },
-    "search": {
-      "active": "Active",
-      "advancedToggle": "Filter results",
-      "button": "Search",
-      "city": "City",
-      "clearFilters": "Clear filters",
-      "closed": "Closed",
-      "created": "Created",
-      "dep": "Dept. {code}",
-      "description": "Start by searching for your association in the official directory. This allows us to verify your organization exists and pre-fill your information.",
-      "displayedAll": "{displayed} displayed",
-      "displayedInfo": "{displayed} of {total} displayed",
-      "endOfResults": "End of results",
-      "filters": {
-        "activeCount": "{count} active filter(s)",
-        "city": "City",
-        "cityPlaceholder": "e.g. Paris",
-        "department": "Department",
-        "departmentAll": "All departments",
-        "employees": "Number of employees",
-        "employees0": "0 employees",
-        "employees10to49": "10 to 49 employees",
-        "employees1to9": "1 to 9 employees",
-        "employees200plus": "200+ employees",
-        "employees50to199": "50 to 199 employees",
-        "employeesAll": "All",
-        "postalCode": "Postal Code",
-        "postalCodePlaceholder": "e.g. 75001",
-        "status": "Status",
-        "statusActive": "Active only",
-        "statusAll": "All",
-        "statusClosed": "Closed only"
+      "ctaCreate": "Create my association account",
+      "ctaTarifs": "See pricing",
+      "expense1": {
+        "amount": "€480 ✓",
+        "label": "🍽 Volunteer meals"
       },
-      "loading": "Searching...",
-      "modal": {
-        "activity": "Activity",
-        "activitySection": "Activity section",
-        "address": "Headquarters address",
-        "close": "Close",
-        "commune": "Municipality",
-        "dateCreation": "Date of creation",
-        "department": "Department",
-        "directors": "Directors",
-        "employees": "Employees",
-        "establishments": "Establishments",
-        "fullAddress": "Full address",
-        "identification": "Identification",
-        "naf": "NAF code",
-        "natureJuridique": "Legal form",
-        "noAddress": "Address not available",
-        "region": "Region",
-        "siret": "SIRET (headquarters)",
-        "viewAnnuaire": "View on Annuaire"
+      "expense2": {
+        "amount": "€120 ✓",
+        "label": "🚌 Equipment transport"
       },
-      "noResults": "No associations found. Check the name or SIREN.",
-      "noResultsWithFilters": "No results with these filters. Try modifying or removing some filters.",
-      "placeholder": "Association name, SIREN, city...",
-      "postalCode": "Postal code",
-      "quickFilters": {
-        "culture": "Culture",
-        "education": "Education",
-        "environnement": "Environment",
-        "sante": "Health",
-        "social": "Social",
-        "sport": "Sports"
+      "label": "For associations",
+      "lastExpensesLabel": "Recently published expenses",
+      "progressAmount": "€4,280 / €6,000",
+      "progressLabel": "Campaign progress",
+      "progressPercent": "71%",
+      "stat1": {
+        "num": "10%",
+        "text": "ex-VAT commission, no other fees"
       },
-      "resultsCount": "<strong>{count}</strong> associations found — select yours",
-      "scrollMore": "Scroll for more",
-      "select": "Select",
-      "siren": "SIREN",
-      "title": "Register your association"
+      "stat2": {
+        "num": "€0",
+        "text": "held by CommonLink"
+      },
+      "stat3": {
+        "num": "0",
+        "text": "receipts requested"
+      },
+      "statCollected": {
+        "label": "Donations raised",
+        "value": "€4,280"
+      },
+      "statDonors": {
+        "label": "Active donors",
+        "value": "94"
+      },
+      "text": "Create your page. Receive donations into your account. Pay your suppliers from the platform, and everything publishes itself.",
+      "title": "Raise donations,",
+      "titleAccent": "without the paperwork.",
+      "visualLabel": "Association view — This month"
     }
   },
   "common": {
@@ -132,443 +78,700 @@
     "change": "Change",
     "close": "Close",
     "contact": "Contact us",
+    "home": "Home",
     "learnMore": "Learn more",
+    "legalInfo": "Regulatory information",
     "loading": "Loading...",
-    "search": "Search",
-    "select": "Select",
-    "submit": "Submit"
+    "submit": "Send"
   },
   "donors": {
-    "cta": {
-      "button": "Create my account for free",
-      "description": "Join the first donors who want to know exactly where their money goes.",
-      "title": "Ready to give differently?"
-    },
-    "dashboard": {
-      "activities": [
-        {
-          "badge": "Verified",
-          "text": "School supplies purchase",
-          "amount": "€85",
-          "type": "verified"
-        },
-        {
-          "badge": "Verified",
-          "text": "Rehearsal room rental",
-          "amount": "€120",
-          "type": "verified"
-        },
-        {
-          "badge": "Pending",
-          "text": "Camping equipment",
-          "amount": "€210",
-          "type": "pending"
-        }
-      ],
-      "activityTitle": "Recent activity",
-      "greeting": "Hello, Claire",
-      "label": "Preview of your dashboard",
-      "stats": [
-        {
-          "value": "€1,250",
-          "label": "Donated in 2026"
-        },
-        {
-          "value": "100%",
-          "label": "Traceability"
-        },
-        {
-          "value": "3",
-          "label": "Tax receipts"
-        }
-      ],
-      "subtitle": "3 associations supported"
-    },
-    "faq": {
-      "items": [
-        {
-          "question": "Are my donations tax-deductible?",
-          "answer": "For each donation to an eligible organization, you receive a tax receipt. The tax reduction provided by article 200 of the French general tax code is generally 66% of the amount given, up to 20% of taxable income. Some organizations grant a different rate. It is the beneficiary organization that declares its eligibility and is responsible for it — CommonLink does not assess it."
-        },
-        {
-          "question": "How can I track my donation?",
-          "answer": "From your dashboard, you can see in real time the expenses related to the projects you support. Each expense comes with verifiable proof: receipts, dates, amounts."
-        },
-        {
-          "question": "When do I receive my tax receipt?",
-          "answer": "Instantly. As soon as your donation is confirmed, the tax receipt is available in your account. No more waiting for the association's mail at the end of the year."
-        },
-        {
-          "question": "Can I donate to multiple associations?",
-          "answer": "Of course. You can support as many partner associations as you wish. Each donation is tracked individually and you receive a tax receipt per association."
-        },
-        {
-          "question": "Is my data protected?",
-          "answer": "Absolutely. We comply with GDPR and never share your personal data with third parties. Your tax information is encrypted and used solely to generate your receipts."
-        }
-      ],
-      "title": "Frequently asked questions"
-    },
     "hero": {
-      "badge": "Donors",
-      "description": "See the payments made by the associations you support, with their recipient and amount.",
-      "title": "Give with confidence"
-    },
-    "preview": {
-      "items": [
-        {
-          "title": "Real-time tracking",
-          "text": "See the payments made by the associations you support, linked to a specific project."
-        },
-        {
-          "title": "Digital tax receipt",
-          "text": "Receive your tax receipt instantly in your account. No more waiting months."
-        },
-        {
-          "title": "Verified history",
-          "text": "See all your donations and the payments they funded, at any time."
-        }
-      ],
-      "title": "What you'll see once registered"
-    },
-    "signup": {
-      "apple": "Continue with Apple",
-      "cardTitle": "Create your account, for free",
-      "consent": "I agree that CommonLink may collect my first name and email to notify me about the platform launch. I can unsubscribe at any time.",
-      "description": "Sign up in under a minute. Explore associations and their projects right now.",
-      "divider": "or by email",
-      "email": "Email",
-      "emailPlaceholder": "marie@example.com",
-      "firstName": "First name",
-      "firstNamePlaceholder": "Marie",
-      "google": "Continue with Google",
-      "note": "Your tax information (full name, address) will only be requested at the time of your first donation, to generate your tax receipt.",
-      "submit": "Create my account",
-      "successLaunch": "Opening: September 2026",
-      "successText": "Your account has been created successfully. You'll receive a confirmation email shortly.",
-      "successTitle": "Welcome to CommonLink!",
-      "title": "Create your account"
-    }
-  },
-  "footer": {
-    "brand": {
-      "description": "Traceability of payments made by associations.",
-      "legalNotice": "Social and solidarity economy company, RCS Antibes 105 153 928.",
-      "name": "CommonLink"
-    },
-    "copyright": "© {year} CommonLink",
-    "legal": {
-      "legalNotice": "Publisher: CommonLink SAS, a simplified joint-stock company with variable capital of €10,000, RCS Antibes 105 153 928, registered office at 1047 Chemin des Impiniers, 06220 Vallauris, France. Publication director: Julian Maiolino, President. Contact: contact@common-link.org, +33 4 23 40 02 06 (standard rate). Host: Clever Cloud SAS, 4 rue Voltaire, 44000 Nantes, France, RCS Nantes 524 172 699.",
-      "links": {
-        "cgu": "Terms of use",
-        "contact": "Contact",
-        "cookies": "Cookie policy",
-        "faq": "FAQ",
-        "mentions": "Legal notice",
-        "privacy": "Privacy policy",
-        "tarifs": "Pricing"
+      "cta": "Create my account",
+      "don1": {
+        "amount": "€50",
+        "name": "Sourires Solidaires"
       },
-      "title": "Legal"
-    },
-    "luciole": "Typeface <link>Luciole</link> by the Centre Technique Régional pour la Déficience Visuelle and typographies.fr — CC BY 4.0 license.",
-    "nav": {
-      "associations": "Associations",
-      "donors": "Donors",
-      "partners": "Partners",
-      "title": "Navigation"
-    }
-  },
-  "landing": {
-    "constat": {
-      "associations": {
-        "text": "Tracking and reporting take time away from the field. Small organizations lack the tools to properly account for how funds are used.",
-        "title": "Association side"
+      "don2": {
+        "amount": "€25",
+        "name": "Lire Ensemble"
       },
-      "donors": {
-        "text": "It's hard to know concretely how funds are used. Annual reports arrive late, stay vague, and trust rests on good faith.",
-        "title": "Donor side"
-      },
-      "title": "A shared observation"
-    },
-    "faq": {
       "items": [
         {
-          "question": "What is tracked at launch?",
-          "answer": "The payments made from the platform by associations, for published projects."
+          "icon": "💸",
+          "text": "Card or SEPA transfer, with monthly giving coming soon",
+          "title": "Donate in 3 clicks"
         },
         {
-          "question": "Is this crypto?",
-          "answer": "No. You give in euros, you view in euros. The technology secures verifiable proof in the background, with no jargon or manipulation. It stays invisible to the user."
+          "icon": "📊",
+          "text": "Your dashboard, always up to date",
+          "title": "Live tracking"
         },
         {
-          "question": "Who can become a partner association?",
-          "answer": "Registered associations with a registration number in the national register of associations, and endowment funds, established in France. The association must have a registered office in France, an identified legal representative, and a bank account in its own name."
-        },
-        {
-          "question": "Are there any fees?",
-          "answer": "For donors, the service is free: 100% of the donation amount is collected for the benefit of the association. For associations, CommonLink charges a commission of 10% excluding tax on the amount of donations collected during the month, i.e. 12% including all taxes. This commission covers the entire service, including collection provider fees. It is invoiced separately and is never deducted from donations. There are no other fees."
-        },
-        {
-          "question": "How is my data managed?",
-          "answer": "Your data is processed in accordance with the General Data Protection Regulation. It is used to enable the donation, issue the tax receipt, and comply with our legal obligations. Our privacy policy will be published on the site when the service launches."
-        },
-        {
-          "question": "Why a launch in September 2026?",
-          "answer": "The company is incorporated, the platform is in its final preparation phase, and the first pilot associations have been identified."
+          "icon": "🧾",
+          "text": "Cerfa n° 11580*05, ready to download",
+          "title": "Automatic tax receipt"
         }
       ],
-      "title": "Frequently asked questions"
+      "label": "For donors",
+      "lastDonsLabel": "Recent donations",
+      "profileName": "Marie Lambert",
+      "profileSince": "Donor since March 2024",
+      "statAssosLabel": "Associations",
+      "statAssosText": "actively followed",
+      "statAssosValue": "6",
+      "statDonsChange": "↗ +€120 vs 2023",
+      "statDonsLabel": "2024 donations",
+      "statDonsValue": "€840",
+      "taxAmount": "€554",
+      "taxNote": "estimated at 66%",
+      "taxTitle": "Estimated 2024 tax reduction",
+      "text": "The association pays its suppliers from CommonLink. Every payment appears on the project page. You know what your donation paid for.",
+      "title": "You give. You see",
+      "titleAccent": "where it goes."
     },
-    "features": {
-      "items": [
+    "journey": {
+      "ctaShare": "Share",
+      "ctaTrace": "View traceability",
+      "label": "After your donation",
+      "projectIcon": "📗",
+      "projectMeta": "Les Petits Écoliers · March 15, 2025",
+      "projectTitle": "€50 for renovating the Kaolack school",
+      "steps": [
         {
-          "title": "Transparency",
-          "text": "See the payments made by associations for their projects.",
-          "tag": "Published"
+          "date": "Mar 15, 2:32 PM",
+          "status": "done",
+          "text": "Your €50 donation is confirmed.",
+          "title": "Donation received"
         },
         {
-          "title": "Traceability",
-          "text": "Every payment made from the platform is published with its recipient and amount.",
-          "tag": "Public"
+          "date": "Mar 17, 9:15 AM",
+          "link": "Verify",
+          "status": "done",
+          "text": "The funds have arrived. The donation is sealed in the public ledger.",
+          "title": "Credited to the association's account"
         },
         {
-          "title": "Simplicity",
-          "text": "Donations in euros, a non-technical experience.",
-          "tag": "In euros"
+          "date": "last payment on Mar 22",
+          "link": "View payments",
+          "status": "done",
+          "text": "Your €50 contributed to buying 25 school kits.",
+          "title": "Used for payments"
+        },
+        {
+          "date": "at closing",
+          "status": "todo",
+          "text": "The association publishes its report at closing. You’ll receive an email.",
+          "title": "Impact report"
         }
       ],
-      "title": "What CommonLink brings"
-    },
-    "guarantee": {
-      "text": "We don't ask associations for any receipts and we don't check any invoices. Traceability comes from elsewhere: the association commits to making, from the platform, the payments funded by donations, and each of these payments is published with its recipient and amount. What gets published is the operation itself, not a declarative document.",
-      "title": "How do we guarantee traceability?"
-    },
-    "hero": {
-      "badge": "Payment traceability",
-      "cta": "Discover how it works",
-      "launch": "Opening: September 2026",
-      "subtitle": "Every payment made by an association from the platform is published, with its recipient and amount.",
-      "title": "Transparency on donation usage, euro by euro."
-    },
-    "journal": {
-      "rows": [
-        {
-          "label": "Published payment",
-          "badge": "Published",
-          "amount": "€120"
-        },
-        {
-          "label": "Published payment",
-          "badge": "Published",
-          "amount": "€85"
-        },
-        {
-          "label": "Payment in progress",
-          "badge": "Pending",
-          "amount": "€210"
-        }
-      ],
-      "title": "Published payments",
-      "total": "Project total",
-      "totalAmount": "€415"
-    },
-    "status": {
-      "items": [
-        {
-          "title": "Legal structure",
-          "text": "CommonLink SAS, a social and solidarity economy company, registered with the Antibes trade registry.",
-          "badge": "Incorporated",
-          "badgeType": "in-progress"
-        },
-        {
-          "title": "Pilot associations",
-          "text": "First pilot associations identified, opening planned for September 2026.",
-          "badge": "September 2026",
-          "badgeType": "upcoming"
-        },
-        {
-          "title": "Contact",
-          "text": "A question? Write to us.",
-          "badgeType": "contact",
-          "contactEmail": "contact@common-link.org"
-        }
-      ],
-      "title": "Where are we now?"
+      "subtitle": "Step by step, through to the final report.",
+      "title": "Your donation's journey"
     },
     "steps": {
       "items": [
         {
-          "number": "1",
-          "title": "Publication",
-          "text": "A partner association publishes a budget and milestones for its project."
+          "num": "1",
+          "text": "Browse ongoing campaigns. Choose the one that speaks to you.",
+          "title": "Choose your project"
         },
         {
-          "number": "2",
-          "title": "Recording",
-          "text": "The association makes its payments from the platform. Each payment is recorded with its recipient, amount, and date."
+          "num": "2",
+          "text": "You choose the amount, you pay securely. No fees for you, and the tax receipt is issued instantly.",
+          "title": "Make your donation"
         },
         {
-          "number": "3",
-          "title": "Consultation",
-          "text": "You get a clear view: what was done, when, and for how much."
+          "num": "3",
+          "text": "Your dashboard shows what the association paid, and when.",
+          "title": "Follow the impact"
         }
       ],
-      "title": "How it works"
+      "label": "How it works",
+      "title": "Three steps, two minutes"
+    }
+  },
+  "footer": {
+    "associations": {
+      "createCampaign": "Create a campaign",
+      "tarifs": "Pricing",
+      "title": "For associations"
+    },
+    "bottom": {
+      "legal": "© {year} CommonLink SAS · RCS Antibes 105 153 928 · ORIAS 26010395",
+      "payments": "Payments operated by licensed providers · Data hosted in the European Union"
+    },
+    "brand": {
+      "badgeOrias": "ORIAS 26010395",
+      "badgeSecure": "Secure donation",
+      "description": "The donation platform that publishes every payment made by associations."
+    },
+    "donors": {
+      "donate": "Donate",
+      "howToGive": "How to give",
+      "mySpace": "My account",
+      "title": "For donors"
+    },
+    "legal": {
+      "links": {
+        "cguAssociations": "Association terms",
+        "cguDonors": "Donor terms",
+        "complaints": "Complaints",
+        "contact": "Contact us",
+        "cookies": "Cookie policy",
+        "faq": "FAQ",
+        "mentions": "Legal notice",
+        "modelAgreement": "Model agreement",
+        "privacy": "Privacy policy",
+        "transparency": "Transparency"
+      },
+      "title": "Regulatory information"
+    }
+  },
+  "landing": {
+    "asso": {
+      "ctaCreate": "Create my campaign",
+      "ctaTarifs": "See pricing",
+      "label": "For associations",
+      "monthLabel": "This month",
+      "progressAmount": "€4,280 raised",
+      "progressLabel": "Main campaign progress",
+      "progressPercent": "71%",
+      "statCollected": "Donations raised",
+      "statCollectedValue": "€2,840",
+      "statExpenses": "Published expenses",
+      "statExpensesValue": "4",
+      "statNewDonors": "New donors",
+      "statNewDonorsValue": "+23",
+      "steps": [
+        {
+          "num": "1",
+          "text": "Your story, your budget, your goal. The page goes live as soon as your collection account is open.",
+          "title": "Create your campaign"
+        },
+        {
+          "num": "2",
+          "text": "Card or SEPA transfer, with monthly giving coming soon. The money lands in your bank account, never in ours.",
+          "title": "Receive donations"
+        },
+        {
+          "num": "3",
+          "text": "Pay your suppliers from CommonLink. The payment shows up instantly. No receipts to provide.",
+          "title": "Pay from the platform"
+        }
+      ],
+      "text": "Your page is set up simply. Your payments publish themselves. Your donors see the work progress.",
+      "title": "Raise funds, and show what you do with them",
+      "visualLabel": "Association Dashboard"
+    },
+    "campaigns": {
+      "ctaAll": "See all projects",
+      "emptyText": "The first campaigns are coming. Check back soon.",
+      "emptyTitle": "Nothing yet!",
+      "label": "Ongoing campaigns",
+      "title": "Currently raising funds"
+    },
+    "hero": {
+      "ctaCreate": "Create a campaign",
+      "ctaDonate": "Donate",
+      "eyebrow": "✦ Crowdfunding intermediary",
+      "floatAmount": "€2,840",
+      "floatLabel": "raised this month",
+      "floatLastExpense": "Volunteer meals · €480",
+      "floatLastExpenseLabel": "Last published expense",
+      "floatPublished": "Payment published",
+      "floatRealtime": "In real time",
+      "subtitle": "Give to an association. It pays its suppliers from CommonLink. Every payment appears on the project page.",
+      "title": "The donation platform where every euro",
+      "titleAccent": "reveals its impact.",
+      "trust": [
+        {
+          "strong": "Every expense",
+          "text": "published"
+        },
+        {
+          "strong": "Tax receipt",
+          "text": "instant"
+        },
+        {
+          "strong": "€0",
+          "text": "in fees for you"
+        }
+      ],
+      "visualAssoc": "Sourires Solidaires",
+      "visualProject": "Community canteen — Bordeaux"
+    },
+    "partners": {
+      "items": [
+        {
+          "href": "https://www.ekads.fr/",
+          "name": "ekads",
+          "role": "Online visibility",
+          "text": "A digital agency from Grenoble, specialized in the Google Ad Grants program for nonprofit organizations. Certified Google Partner."
+        },
+        {
+          "href": "https://www.samson-conseil.org/",
+          "name": "Samson Conseil",
+          "role": "Structuring and governance",
+          "text": "A consulting and training firm for social and solidarity economy organizations. Governance, business model, structuring."
+        }
+      ],
+      "label": "Our partners",
+      "note": "Our partners are not involved in collecting or processing donations.",
+      "subtitle": "We work alongside established players in the sector, on online visibility and organizational structuring.",
+      "title": "They know the nonprofit world"
+    },
+    "transparency": {
+      "ctaLabel": "See how to track a donation",
+      "features": [
+        "Every payment published, with its amount and recipient",
+        "Every payment sealed in a public ledger",
+        "A report published by the association at closing",
+        "Automatic tax receipt (Cerfa n° 11580*05)"
+      ],
+      "label": "Transparency",
+      "text": "The association pays a supplier, the payment appears on the project page. Amount and recipient included.",
+      "timeline": [
+        {
+          "date": "Jan 15, 2025 · 2:32 PM",
+          "status": "done",
+          "text": "€50 confirmed by card",
+          "title": "Donation received"
+        },
+        {
+          "date": "Jan 15, 2025 · 2:33 PM",
+          "status": "done",
+          "text": "The donation is sealed in the public ledger",
+          "title": "Credited to the association's account"
+        },
+        {
+          "date": "Jan 18, 2025 · 9:15 AM",
+          "status": "done",
+          "text": "Supplies purchased — €480",
+          "title": "Payment published"
+        },
+        {
+          "date": "Jan 18, 2025 · 10:02 AM",
+          "status": "done",
+          "text": "Recipient and amount on the project page",
+          "title": "Payment published"
+        },
+        {
+          "date": "In progress…",
+          "status": "current",
+          "text": "Published by the association at closing",
+          "title": "Impact report"
+        }
+      ],
+      "timelineLabel": "Your donation’s journey",
+      "title": "Follow the money, step by step"
+    },
+    "trust": {
+      "items": [
+        {
+          "icon": "🧾",
+          "text": "Your receipt is issued as soon as the donation is confirmed. Typically 66% of the amount as a tax reduction, depending on your situation.",
+          "title": "Automatic tax receipt"
+        },
+        {
+          "icon": "📑",
+          "text": "Amount, recipient, date. Visible to everyone, on the project page.",
+          "title": "Published expenses"
+        },
+        {
+          "icon": "🔒",
+          "text": "Every published payment is sealed in a public ledger. No one can alter it afterwards.",
+          "title": "Secure ledger"
+        }
+      ],
+      "label": "Trust & Security",
+      "title": "Three commitments, on every donation"
+    },
+    "why": {
+      "items": [
+        {
+          "icon": "💸",
+          "text": "Card or SEPA transfer, with monthly giving coming soon. Three clicks, and your receipt arrives.",
+          "title": "Give in seconds"
+        },
+        {
+          "icon": "📊",
+          "text": "Your donations and what they funded. Amounts, dates, recipients, updated live.",
+          "title": "Follow the impact"
+        },
+        {
+          "icon": "🔒",
+          "text": "Every published payment is sealed in a public ledger. Neither the association nor we can alter it afterwards.",
+          "title": "Verify it yourself"
+        }
+      ],
+      "label": "Why CommonLink",
+      "subtitle": "Associations pay their suppliers straight from the platform. Every payment is published instantly. You don't have to ask anything.",
+      "title": "Give without wondering",
+      "titleAccent": "where the money goes"
     }
   },
   "legal": {
-    "cgu": {
+    "cguAssociations": {
+      "articles": [
+        {
+          "paragraphs": [
+            "Platform: the digital environment offered by CommonLink enabling beneficiary organisations to present fundraising campaigns and donors to make, track and document their donations."
+          ],
+          "title": "1. Definitions"
+        },
+        {
+          "paragraphs": [
+            "CommonLink is a donation platform enabling associations, foundations, endowment funds, NGOs and corporate donors to collect, track and document the use of collected funds, with transparency and proof-of-use mechanisms.",
+            "The Platform enables in particular:"
+          ],
+          "title": "2. Service description"
+        },
+        {
+          "paragraphs": [
+            "CommonLink is a social and solidarity economy company. An ESUS accreditation application has been submitted.",
+            "CommonLink is registered with ORIAS under number 26010395 as an intermediary in participatory financing.",
+            "CommonLink is not a payment institution. Payment services are provided by authorised providers.",
+            "Donations are made directly for the benefit of beneficiary organisations. CommonLink does not legally collect the funds for its own account."
+          ],
+          "title": "3. CommonLink's status"
+        },
+        {
+          "paragraphs": [
+            "Accessing the Site implies acceptance of these terms and conditions of use.",
+            "To make a donation or create an account, the user must expressly accept these terms and conditions.",
+            "CommonLink may modify these terms and conditions to reflect changes to the service, regulations, technical partners or provider terms of use. The applicable version is the one in force at the time of use."
+          ],
+          "title": "4. Acceptance of the terms and conditions"
+        },
+        {
+          "paragraphs": [
+            "The Site is freely accessible to any user with an internet connection. Certain features require account creation.",
+            "CommonLink may suspend, limit or interrupt access to the Site or Platform for maintenance, security, updates, force majeure or any other legitimate reason."
+          ],
+          "title": "5. Access to the Site and Platform"
+        },
+        {
+          "paragraphs": [
+            "CommonLink charges beneficiary organisations service fees of 8% excl. VAT and payment and technical fees of 2% of donations collected, invoiced monthly.",
+            "Applicable fees are detailed on the Pricing page of the Site."
+          ],
+          "title": "6. Fees applicable to beneficiary organisations"
+        },
+        {
+          "paragraphs": [
+            "Beneficiary organisations wishing to use CommonLink must create an account and provide the information and documents necessary for their identification and validation.",
+            "CommonLink may validate, refuse, suspend or remove a beneficiary organisation or campaign in particular in cases of inaccurate information, KYC/KYB refusal, suspicion of fraud or legal risk."
+          ],
+          "title": "7. Terms applicable to beneficiary organisations"
+        },
+        {
+          "paragraphs": [
+            "The beneficiary organisation grants CommonLink a non-exclusive, royalty-free, worldwide licence to host, reproduce and distribute content transmitted for the purposes of the service."
+          ],
+          "title": "8. Content published by beneficiary organisations"
+        },
+        {
+          "paragraphs": [
+            "The contract between CommonLink and the beneficiary organisation is concluded for an indefinite period. Either party may terminate with 30 days' notice, subject to the processing of ongoing transactions.",
+            "CommonLink may immediately suspend a beneficiary organisation's access in cases of fraud, false information or legal risk."
+          ],
+          "title": "9. Termination and suspension of beneficiary organisations"
+        },
+        {
+          "paragraphs": [
+            "CommonLink provides transparency tools to track certain financial flows and present proof of use based on recorded transactions.",
+            "CommonLink does not guarantee that every euro collected is fully traceable in all situations, and does not guarantee the final use of funds by the beneficiary organisation."
+          ],
+          "title": "10. Transparency and proof of use"
+        },
+        {
+          "paragraphs": [
+            "The user undertakes to use the Site and Platform in accordance with the law and these terms. It is in particular prohibited to use the Site for fraudulent purposes, to impersonate an identity, to disrupt the Site's operation or to circumvent security measures."
+          ],
+          "title": "11. User obligations"
+        },
+        {
+          "paragraphs": [
+            "The Site, the Platform, the CommonLink brand and all content published by CommonLink are protected by applicable intellectual property law. Any unauthorised reproduction or exploitation is prohibited."
+          ],
+          "title": "12. Intellectual property"
+        },
+        {
+          "paragraphs": [
+            "Information on personal data processing is described in the Privacy Policy accessible on the Site.",
+            "To exercise your rights: legal@common-link.org",
+            "Privacy Policy"
+          ],
+          "title": "13. Personal data"
+        },
+        {
+          "paragraphs": [
+            "Applicable rules are described in the Cookie Policy accessible on the Site."
+          ],
+          "title": "14. Cookies"
+        },
+        {
+          "paragraphs": [
+            "CommonLink implements reasonable measures to ensure the Site functions correctly but does not guarantee continuous or error-free availability."
+          ],
+          "title": "15. Availability and security"
+        },
+        {
+          "paragraphs": [
+            "CommonLink does not guarantee the success of a campaign or the final use of funds by the beneficiary organisation. CommonLink shall not be liable for indirect damages or malfunctions attributable to third-party providers."
+          ],
+          "title": "16. Limitation of liability"
+        },
+        {
+          "paragraphs": [
+            "CommonLink shall not be liable for non-performance resulting from force majeure or an event reasonably beyond its control."
+          ],
+          "title": "17. Force majeure"
+        },
+        {
+          "paragraphs": [],
+          "title": "18. Contact"
+        },
+        {
+          "paragraphs": [
+            "These terms and conditions are governed by French law. For disputes between CommonLink and a professional beneficiary organisation, jurisdiction is attributed to the commercial court of Antibes, unless a mandatory rule provides otherwise."
+          ],
+          "title": "19. Applicable law"
+        },
+        {
+          "paragraphs": [
+            "PENDING — This annexe will govern the processing of donor data entered on collection pages hosted by the beneficiary organisation on its own site (see the \"Personal data\" article). It is being drafted as part of compliance fiche DP-04 and is not yet publishable."
+          ],
+          "title": "Annexe. Processing of donor data on pages hosted by the organisation"
+        }
+      ],
       "intro": "These terms and conditions of use define the conditions for accessing and using the site https://www.common-link.org/ and the services offered by CommonLink.",
       "lastUpdated": "29 June 2026",
-      "s1": {
-        "campaign": "Campaign: page or dedicated space for a fundraising operation presented by a beneficiary organisation on the Platform.",
-        "commonlink": "CommonLink: the company CommonLink, SAS, registered with the RCS of Antibes under number 105 153 928, whose registered office is at 1047 Chemin des Impiniers, 06220 Vallauris, France.",
-        "donor": "Donor: any person making a donation for the benefit of a beneficiary organisation via the Platform.",
-        "intro": "In these terms and conditions, the terms below have the following meaning:",
-        "org": "Beneficiary organisation: any association, foundation, endowment fund, NGO or eligible structure using CommonLink to present a campaign, receive donations or document the use of collected funds.",
-        "platform": "Platform: the digital environment offered by CommonLink enabling beneficiary organisations to present fundraising campaigns and donors to make, track and document their donations.",
-        "site": "Site: the website accessible at https://www.common-link.org/.",
-        "title": "1. Definitions",
-        "user": "User: any person accessing the Site or using CommonLink services."
-      },
-      "s10": {
-        "p1": "When making a donation, the donor may leave a voluntary contribution to CommonLink. This contribution is optional and can be reduced to zero before confirming payment.",
-        "title": "10. Voluntary contribution to CommonLink"
-      },
-      "s11": {
-        "p1": "CommonLink charges beneficiary organisations service fees of 8% excl. VAT and payment and technical fees of 2% of donations collected, invoiced monthly.",
-        "p2": "Applicable fees are detailed on the Pricing page of the Site.",
-        "tarifsLinkLabel": "Pricing",
-        "title": "11. Fees applicable to beneficiary organisations"
-      },
-      "s12": {
-        "item0": "double payment;",
-        "item1": "manifest error in amount;",
-        "item2": "fraud;",
-        "item3": "unauthorised payment;",
-        "item4": "cancelled campaign;",
-        "item5": "beneficiary organisation removed from the Platform;",
-        "item6": "exceptional situation assessed by CommonLink.",
-        "p1": "Donations are in principle final and non-refundable. A refund may however be considered in the following cases:",
-        "p2": "Requests should be sent to: contact@common-link.org",
-        "title": "12. Refunds"
-      },
-      "s13": {
-        "p1": "When the beneficiary organisation is eligible, CommonLink generates and transmits tax receipts on behalf of the beneficiary organisation.",
-        "p2": "Digital certificates, NFTs or complementary proof elements do not constitute tax receipts.",
-        "title": "13. Tax receipts"
-      },
-      "s14": {
-        "p1": "CommonLink provides transparency tools to track certain financial flows and present proof of use based on recorded transactions.",
-        "p2": "CommonLink does not guarantee that every euro collected is fully traceable in all situations, and does not guarantee the final use of funds by the beneficiary organisation.",
-        "title": "14. Transparency and proof of use"
-      },
-      "s15": {
-        "p1": "Beneficiary organisations wishing to use CommonLink must create an account and provide the information and documents necessary for their identification and validation.",
-        "p2": "CommonLink may validate, refuse, suspend or remove a beneficiary organisation or campaign in particular in cases of inaccurate information, KYC/KYB refusal, suspicion of fraud or legal risk.",
-        "title": "15. Terms applicable to beneficiary organisations"
-      },
-      "s16": {
-        "p1": "The beneficiary organisation grants CommonLink a non-exclusive, royalty-free, worldwide licence to host, reproduce and distribute content transmitted for the purposes of the service.",
-        "title": "16. Content published by beneficiary organisations"
-      },
-      "s17": {
-        "p1": "The contract between CommonLink and the beneficiary organisation is concluded for an indefinite period. Either party may terminate with 30 days' notice, subject to the processing of ongoing transactions.",
-        "p2": "CommonLink may immediately suspend a beneficiary organisation's access in cases of fraud, false information or legal risk.",
-        "title": "17. Termination and suspension of beneficiary organisations"
-      },
-      "s18": {
-        "p1": "The user undertakes to use the Site and Platform in accordance with the law and these terms. It is in particular prohibited to use the Site for fraudulent purposes, to impersonate an identity, to disrupt the Site's operation or to circumvent security measures.",
-        "title": "18. User obligations"
-      },
-      "s19": {
-        "p1": "The Site, the Platform, the CommonLink brand and all content published by CommonLink are protected by applicable intellectual property law. Any unauthorised reproduction or exploitation is prohibited.",
-        "title": "19. Intellectual property"
-      },
-      "s2": {
-        "item0": "presentation of beneficiary organisations and campaigns;",
-        "item1": "creation of a donor account;",
-        "item2": "making one-off donations;",
-        "item3": "access to a donation history;",
-        "item4": "generation and transmission of tax receipts on behalf of beneficiary organisations, when applicable conditions are met;",
-        "item5": "access to campaign tracking information;",
-        "item6": "access to transparency and proof-of-use elements.",
-        "p1": "CommonLink is a donation platform enabling associations, foundations, endowment funds, NGOs and corporate donors to collect, track and document the use of collected funds, with transparency and proof-of-use mechanisms.",
-        "p2": "The Platform enables in particular:",
-        "title": "2. Service description"
-      },
-      "s20": {
-        "p1": "Information on personal data processing is described in the Privacy Policy accessible on the Site.",
-        "p2": "To exercise your rights: legal@common-link.org",
-        "privacyLinkLabel": "Privacy Policy",
-        "title": "20. Personal data"
-      },
-      "s21": {
-        "cookiesLinkLabel": "Cookie Policy",
-        "p1": "Applicable rules are described in the Cookie Policy accessible on the Site.",
-        "title": "21. Cookies"
-      },
-      "s22": {
-        "p1": "CommonLink implements reasonable measures to ensure the Site functions correctly but does not guarantee continuous or error-free availability.",
-        "title": "22. Availability and security"
-      },
-      "s23": {
-        "p1": "CommonLink does not guarantee the success of a campaign or the final use of funds by the beneficiary organisation. CommonLink shall not be liable for indirect damages or malfunctions attributable to third-party providers.",
-        "title": "23. Limitation of liability"
-      },
-      "s24": {
-        "p1": "CommonLink shall not be liable for non-performance resulting from force majeure or an event reasonably beyond its control.",
-        "title": "24. Force majeure"
-      },
-      "s25": {
-        "email": "contact@common-link.org",
-        "response": "CommonLink aims to respond within 48 business hours.",
-        "title": "25. Contact"
-      },
-      "s26": {
-        "p1": "These terms and conditions are governed by French law. For disputes between CommonLink and a professional beneficiary organisation, jurisdiction is attributed to the commercial court of Antibes, unless a mandatory rule provides otherwise.",
-        "title": "26. Applicable law"
-      },
-      "s3": {
-        "p1": "CommonLink is a social and solidarity economy company. An ESUS accreditation application has been submitted.",
-        "p2": "CommonLink is in the process of registering with ORIAS as an intermediary in participatory financing.",
-        "p3": "CommonLink is not a payment institution. Payment services are provided by authorised providers.",
-        "p4": "Donations are made directly for the benefit of beneficiary organisations. CommonLink does not legally collect the funds for its own account.",
-        "title": "3. CommonLink's status"
-      },
-      "s4": {
-        "p1": "Accessing the Site implies acceptance of these terms and conditions of use.",
-        "p2": "To make a donation or create an account, the user must expressly accept these terms and conditions.",
-        "p3": "CommonLink may modify these terms and conditions to reflect changes to the service, regulations, technical partners or provider terms of use. The applicable version is the one in force at the time of use.",
-        "title": "4. Acceptance of the terms and conditions"
-      },
-      "s5": {
-        "p1": "The Site is freely accessible to any user with an internet connection. Certain features require account creation.",
-        "p2": "CommonLink may suspend, limit or interrupt access to the Site or Platform for maintenance, security, updates, force majeure or any other legitimate reason.",
-        "title": "5. Access to the Site and Platform"
-      },
-      "s6": {
-        "p1": "Creating a donor account is required to make a donation via the Platform.",
-        "p2": "The donor undertakes to provide accurate, complete and up-to-date information and is responsible for the confidentiality of their credentials.",
-        "p3": "In the event of unauthorised use of their account, the donor must notify CommonLink without delay at: contact@common-link.org",
-        "title": "6. Creating a donor account"
-      },
-      "s7": {
-        "p1": "The Platform is intended for adults. Minors may only use the Platform with the authorisation of their legal representative.",
-        "p2": "The donor chooses a campaign presented on the Platform and makes a donation for the benefit of the relevant beneficiary organisation. Selecting a campaign results in a global allocation of the donation to that campaign.",
-        "title": "7. Terms applicable to donors"
-      },
-      "s8": {
-        "p1": "Donations made via CommonLink are one-off at launch. Recurring donation features may be offered later.",
-        "p2": "Donations are made in euros. The donation is legally vested in the beneficiary organisation upon receipt, regardless of whether the displayed campaign goal is reached.",
-        "title": "8. Donations"
-      },
-      "s9": {
-        "p1": "Payment methods offered at launch are bank card and SEPA direct debit. Payments are processed by one or more authorised payment service providers.",
-        "p2": "CommonLink does not collect, store or directly process full credit card data.",
-        "title": "9. Payment"
-      },
-      "title": "Terms and conditions of use"
+      "title": "Terms and conditions of use applicable to beneficiary organisations"
+    },
+    "cguDonors": {
+      "articles": [
+        {
+          "paragraphs": [
+            "Platform: the digital environment offered by CommonLink enabling beneficiary organisations to present fundraising campaigns and donors to make, track and document their donations."
+          ],
+          "title": "1. Definitions"
+        },
+        {
+          "paragraphs": [
+            "CommonLink is a donation platform enabling associations, foundations, endowment funds, NGOs and corporate donors to collect, track and document the use of collected funds, with transparency and proof-of-use mechanisms.",
+            "The Platform enables in particular:"
+          ],
+          "title": "2. Service description"
+        },
+        {
+          "paragraphs": [
+            "CommonLink is a social and solidarity economy company. An ESUS accreditation application has been submitted.",
+            "CommonLink is registered with ORIAS under number 26010395 as an intermediary in participatory financing.",
+            "CommonLink is not a payment institution. Payment services are provided by authorised providers.",
+            "Donations are made directly for the benefit of beneficiary organisations. CommonLink does not legally collect the funds for its own account."
+          ],
+          "title": "3. CommonLink's status"
+        },
+        {
+          "paragraphs": [
+            "Accessing the Site implies acceptance of these terms and conditions of use.",
+            "To make a donation or create an account, the user must expressly accept these terms and conditions.",
+            "CommonLink may modify these terms and conditions to reflect changes to the service, regulations, technical partners or provider terms of use. The applicable version is the one in force at the time of use."
+          ],
+          "title": "4. Acceptance of the terms and conditions"
+        },
+        {
+          "paragraphs": [
+            "The Site is freely accessible to any user with an internet connection. Certain features require account creation.",
+            "CommonLink may suspend, limit or interrupt access to the Site or Platform for maintenance, security, updates, force majeure or any other legitimate reason."
+          ],
+          "title": "5. Access to the Site and Platform"
+        },
+        {
+          "paragraphs": [
+            "Creating a donor account is required to make a donation via the Platform.",
+            "The donor undertakes to provide accurate, complete and up-to-date information and is responsible for the confidentiality of their credentials.",
+            "In the event of unauthorised use of their account, the donor must notify CommonLink without delay at: contact@common-link.org"
+          ],
+          "title": "6. Creating a donor account"
+        },
+        {
+          "paragraphs": [
+            "The Platform is intended for adults. Minors may only use the Platform with the authorisation of their legal representative.",
+            "The donor chooses a campaign presented on the Platform and makes a donation for the benefit of the relevant beneficiary organisation. Selecting a campaign results in a global allocation of the donation to that campaign."
+          ],
+          "title": "7. Terms applicable to donors"
+        },
+        {
+          "paragraphs": [
+            "Donations made via CommonLink are one-off at launch. Recurring donation features may be offered later.",
+            "Donations are made in euros. The donation is legally vested in the beneficiary organisation upon receipt, regardless of whether the displayed campaign goal is reached."
+          ],
+          "title": "8. Donations"
+        },
+        {
+          "paragraphs": [
+            "Payment methods offered at launch are bank card and SEPA direct debit. Payments are processed by one or more authorised payment service providers.",
+            "CommonLink does not collect, store or directly process full credit card data."
+          ],
+          "title": "9. Payment"
+        },
+        {
+          "paragraphs": [
+            "When making a donation, the donor may leave a voluntary contribution to CommonLink. This contribution is optional and can be reduced to zero before confirming payment."
+          ],
+          "title": "10. Voluntary contribution to CommonLink"
+        },
+        {
+          "items": [
+            "double payment;",
+            "manifest error in amount;",
+            "fraud;",
+            "unauthorised payment;",
+            "cancelled campaign;",
+            "beneficiary organisation removed from the Platform;",
+            "exceptional situation assessed by CommonLink."
+          ],
+          "paragraphs": [
+            "Donations are in principle final and non-refundable. A refund may however be considered in the following cases:",
+            "Requests should be sent to: contact@common-link.org"
+          ],
+          "title": "11. Refunds"
+        },
+        {
+          "paragraphs": [
+            "When the beneficiary organisation is eligible, CommonLink generates and transmits tax receipts on behalf of the beneficiary organisation.",
+            "Digital certificates, NFTs or complementary proof elements do not constitute tax receipts."
+          ],
+          "title": "12. Tax receipts"
+        },
+        {
+          "paragraphs": [
+            "CommonLink provides transparency tools to track certain financial flows and present proof of use based on recorded transactions.",
+            "CommonLink does not guarantee that every euro collected is fully traceable in all situations, and does not guarantee the final use of funds by the beneficiary organisation."
+          ],
+          "title": "13. Transparency and proof of use"
+        },
+        {
+          "paragraphs": [
+            "The user undertakes to use the Site and Platform in accordance with the law and these terms. It is in particular prohibited to use the Site for fraudulent purposes, to impersonate an identity, to disrupt the Site's operation or to circumvent security measures."
+          ],
+          "title": "14. User obligations"
+        },
+        {
+          "paragraphs": [
+            "The Site, the Platform, the CommonLink brand and all content published by CommonLink are protected by applicable intellectual property law. Any unauthorised reproduction or exploitation is prohibited."
+          ],
+          "title": "15. Intellectual property"
+        },
+        {
+          "paragraphs": [
+            "Information on personal data processing is described in the Privacy Policy accessible on the Site.",
+            "To exercise your rights: legal@common-link.org",
+            "Privacy Policy"
+          ],
+          "title": "16. Personal data"
+        },
+        {
+          "paragraphs": [
+            "Applicable rules are described in the Cookie Policy accessible on the Site."
+          ],
+          "title": "17. Cookies"
+        },
+        {
+          "paragraphs": [
+            "CommonLink implements reasonable measures to ensure the Site functions correctly but does not guarantee continuous or error-free availability."
+          ],
+          "title": "18. Availability and security"
+        },
+        {
+          "paragraphs": [
+            "CommonLink does not guarantee the success of a campaign or the final use of funds by the beneficiary organisation. CommonLink shall not be liable for indirect damages or malfunctions attributable to third-party providers."
+          ],
+          "title": "19. Limitation of liability"
+        },
+        {
+          "paragraphs": [
+            "CommonLink shall not be liable for non-performance resulting from force majeure or an event reasonably beyond its control."
+          ],
+          "title": "20. Force majeure"
+        },
+        {
+          "paragraphs": [],
+          "title": "21. Contact"
+        },
+        {
+          "paragraphs": [
+            "These terms and conditions are governed by French law. For disputes between CommonLink and a professional beneficiary organisation, jurisdiction is attributed to the commercial court of Antibes, unless a mandatory rule provides otherwise."
+          ],
+          "title": "22. Applicable law"
+        }
+      ],
+      "intro": "These terms and conditions of use define the conditions for accessing and using the site https://www.common-link.org/ and the services offered by CommonLink.",
+      "lastUpdated": "29 June 2026",
+      "title": "Terms and conditions of use applicable to donors"
+    },
+    "complaints": {
+      "intro": "You are not satisfied with a service provided by CommonLink, with information you received, or with how your request was handled. This page explains how to let us know and what happens next.",
+      "meta": "CommonLink complaints service",
+      "sections": [
+        {
+          "paragraphs": [
+            "A complaint is the expression of dissatisfaction with us. You don’t need to use the word \"complaint,\" or to ask for anything in particular.",
+            "You also don't need to have made a donation, or to have an account. Anyone can send us a complaint.",
+            "On the other hand, a request for information, an explanation, or assistance is not a complaint. For these requests, simply write to us at contact@common-link.org"
+          ],
+          "title": "What is a complaint"
+        },
+        {
+          "items": [
+            "By email, at reclamations@common-link.org",
+            "By mail, to CommonLink, Complaints Department, 1047 Chemin des Impiniers, 06220 Vallauris, France",
+            "By phone, at +33 4 23 40 02 06, standard rate from a landline. If we cannot respond to your request immediately, we will ask you to confirm it in writing. The timeframes below then run from your written confirmation."
+          ],
+          "paragraphs": [
+            "If you send your complaint to another one of our contacts, it will be forwarded to our complaints service. You will not need to repeat your request."
+          ],
+          "title": "How to reach us"
+        },
+        {
+          "paragraphs": [
+            "Provide your name, a way to reach you, and describe what dissatisfied you. If your complaint concerns a specific donation or campaign, please specify it — that will save us both time."
+          ],
+          "title": "To help us handle your request"
+        },
+        {
+          "callout": "These two timeframes run from when you send your complaint, not from the date we become aware of it. For mail, the postmark serves as proof.",
+          "paragraphs": [
+            "We acknowledge receipt of your written complaint within a maximum of ten business days. If we are able to provide you with a final response directly within this period, we do not send a separate acknowledgment of receipt.",
+            "We respond to you in writing, with reasons, within a maximum of two months."
+          ],
+          "paragraphsAfter": [
+            "When your complaint concerns an urgent situation, we adapt this timeframe to the nature of your request."
+          ],
+          "title": "Our timeframes"
+        },
+        {
+          "paragraphs": [
+            "You retain the right to bring the matter before the competent courts."
+          ],
+          "title": "If our response does not satisfy you"
+        },
+        {
+          "paragraphs": [
+            "Every complaint is logged and tracked through to its closure.",
+            "We review them regularly to identify what needs to be corrected in our services. When a complaint reveals an error that may have affected people other than you, we extend the correction to everyone concerned."
+          ],
+          "title": "What we do with your complaint"
+        },
+        {
+          "paragraphs": [
+            "The information you provide us as part of a complaint is used to process it and kept for five years from the closing of the case. Details are set out in our privacy policy."
+          ],
+          "title": "Your data"
+        }
+      ],
+      "title": "Complaints"
     },
     "contact": {
       "company": {
@@ -588,7 +791,7 @@
       },
       "general": {
         "email": "contact@common-link.org",
-        "phone": "06 31 63 60 08",
+        "phone": "+33 4 23 40 02 06",
         "response": "CommonLink aims to respond to requests within 48 business hours.",
         "title": "General contact"
       },
@@ -671,7 +874,7 @@
         "q": "Does CommonLink use cookies?"
       },
       "q22": {
-        "a": "Email: contact@common-link.org — Phone: 06 31 63 60 08. CommonLink aims to respond within 48 business hours.",
+        "a": "Email: contact@common-link.org — Phone: +33 4 23 40 02 06. CommonLink aims to respond within 48 business hours.",
         "q": "How can I contact CommonLink?"
       },
       "q23": {
@@ -679,7 +882,7 @@
         "q": "How do I exercise my GDPR rights?"
       },
       "q3": {
-        "a": "CommonLink is in the process of registering with ORIAS as an intermediary in participatory financing.",
+        "a": "CommonLink is registered with ORIAS under number 26010395 as an intermediary in participatory financing.",
         "q": "Is CommonLink registered with ORIAS?"
       },
       "q4": {
@@ -713,7 +916,7 @@
       "contact": {
         "email": "contact@common-link.org",
         "legalEmail": "legal@common-link.org",
-        "phone": "06 31 63 60 08",
+        "phone": "+33 4 23 40 02 06",
         "response": "CommonLink aims to respond to requests received within 48 business hours.",
         "title": "4. Contact"
       },
@@ -736,7 +939,7 @@
         "ess": "CommonLink is a social and solidarity economy company. An ESUS accreditation application has been submitted.",
         "naf": "NAF / APE code: 6201Z",
         "name": "CommonLink",
-        "orias": "CommonLink is in the process of registering with ORIAS as an intermediary in participatory financing.",
+        "orias": "CommonLink is registered with ORIAS under number 26010395 as an intermediary in participatory financing.",
         "rcs": "RCS: Antibes",
         "siren": "SIREN: 105 153 928",
         "siret": "SIRET: 105 153 928 00012",
@@ -774,6 +977,80 @@
         "title": "9. Personal data"
       },
       "title": "Legal notice"
+    },
+    "modelAgreement": {
+      "articles": [
+        {
+          "paragraphs": [
+            "The donor pays a sum of money to the beneficiary organisation, without consideration and with donative intent, to support the campaign they have chosen."
+          ],
+          "title": "1. Purpose of the donation"
+        },
+        {
+          "paragraphs": [
+            "The donation is a voluntary and irrevocable act. It vests in the beneficiary organisation upon receipt and is not refundable."
+          ],
+          "title": "2. Final nature of the donation"
+        },
+        {
+          "paragraphs": [
+            "The donor acquires no rights over the funded project. They cannot demand its completion, claim a share of its results, request the return of their donation, or obtain any form of consideration."
+          ],
+          "title": "3. No rights over the project"
+        },
+        {
+          "paragraphs": [
+            "The beneficiary organisation undertakes to account for the use of collected funds, by making the payments funded by the campaign from the platform and by publishing a report at its closing.",
+            "This undertaking is an information obligation. It constitutes neither a guarantee that the project will be completed nor an obligation of result."
+          ],
+          "title": "4. The organisation's duty to account"
+        },
+        {
+          "paragraphs": [
+            "The beneficiary organisation issues the tax receipt. It is solely responsible for its eligibility for the patronage tax regime and for the accuracy of the document.",
+            "CommonLink provides it with an issuing tool and forwards the receipt to the donor on its behalf. It does not verify the organisation’s eligibility and guarantees neither the validity of the receipt nor the granting of a tax reduction."
+          ],
+          "title": "5. Tax receipt"
+        },
+        {
+          "paragraphs": [
+            "Amounts paid by the donor are collected into an account opened in the beneficiary organisation's name, then transferred to its bank account. They never pass through CommonLink."
+          ],
+          "title": "6. The funds"
+        },
+        {
+          "paragraphs": [
+            "The beneficiary organisation is aware of the donor's identity, in particular to issue their tax receipt. It may make no other use of it than those related to this obligation and to its relationship with its donors.",
+            "The donor may choose not to appear publicly on the campaign page."
+          ],
+          "title": "7. The donor's data"
+        },
+        {
+          "paragraphs": [
+            "A complaint about the service provided by CommonLink is addressed to its complaints service, whose contact details appear at the top of this document.",
+            "A complaint about the use of funds or about the project itself is a matter for the beneficiary organisation."
+          ],
+          "title": "8. Complaints"
+        }
+      ],
+      "complaintsService": {
+        "p1": "CommonLink, Complaints Department, 1047 Chemin des Impiniers, 06220 Vallauris, France. Phone: +33 4 23 40 02 06. Email: reclamations@common-link.org",
+        "title": "The intermediary's complaints service"
+      },
+      "intermediary": {
+        "p1": "CommonLink, a variable-capital simplified joint-stock company, registered office at 1047 Chemin des Impiniers, 06220 Vallauris, France. Phone: +33 4 23 40 02 06. Registered with the single register of insurance, banking and finance intermediaries under number 26010395, as a crowdfunding intermediary.",
+        "p2": "CommonLink makes this framework available to the parties. It is not a party to it and is not a beneficiary of the donation.",
+        "title": "The intermediary"
+      },
+      "intro": "This document describes the framework applicable to any donation made on CommonLink. There is nothing to sign: it is made available to you before your donation, in accordance with the regulations applicable to crowdfunding intermediaries.",
+      "meta": "Made available pursuant to Article R.548-10 I of the French Monetary and Financial Code",
+      "parties": {
+        "donor": "The donor, a natural person identified when making their donation by their name, surname, postal address and email address.",
+        "org": "The beneficiary organisation, a declared association or endowment fund, identified on the campaign page by its corporate name, its registered office address and its national association register number or SIREN number.",
+        "p1": "This framework applies between:",
+        "title": "The parties"
+      },
+      "title": "Model agreement between the donor and the beneficiary organisation"
     },
     "politiqueConfidentialite": {
       "changes": {
@@ -955,65 +1232,6 @@
         "p1": "A cookie is a small file placed or read on the user's device when they visit a website. Cookies can serve different purposes: enabling a site to function correctly, securing a session, remembering preferences, measuring audience or personalising content.",
         "title": "1. What is a cookie?"
       }
-    },
-    "tarifs": {
-      "billing": {
-        "p1": "Fees owed by beneficiary organisations are invoiced monthly, after donations are collected. Invoices are issued by CommonLink and transmitted to the beneficiary organisation according to agreed terms.",
-        "title": "8. Billing"
-      },
-      "donors": {
-        "p1": "Using CommonLink is free for donors.",
-        "p2": "When making a donation, the donor may leave a voluntary contribution to CommonLink. This contribution is optional. It may be dynamically suggested or pre-filled, but the donor can modify it or reduce it to zero before confirming the payment. The voluntary contribution is expressed including all taxes.",
-        "title": "1. Donors"
-      },
-      "example": {
-        "col1": "Item",
-        "col2": "Amount",
-        "intro": "For €100 in donations collected by a beneficiary organisation:",
-        "note": "This example is indicative and does not take into account any specific or negotiated terms.",
-        "row0col1": "Donations collected",
-        "row0col2": "€100.00",
-        "row1col1": "CommonLink service fees",
-        "row1col2": "€8.00 excl. VAT",
-        "row2col1": "VAT on service fees",
-        "row2col2": "€1.60",
-        "row3col1": "Payment and technical fees",
-        "row3col2": "€2.00",
-        "row4col1": "Total charged to the beneficiary organisation",
-        "row4col2": "€11.60 incl. VAT",
-        "title": "4. Indicative example"
-      },
-      "free": {
-        "p1": "CommonLink may offer a free plan allowing certain organisations to benefit from visibility on the Platform. This free offer does not allow donations to be received via CommonLink.",
-        "title": "5. Free visibility offer"
-      },
-      "intro": "CommonLink applies transparent pricing to beneficiary organisations using the Platform to collect, track and document the use of donations.",
-      "lastUpdated": "29 June 2026",
-      "noHidden": {
-        "p1": "CommonLink charges no hidden fees. The fees applicable to beneficiary organisations are indicated on this page or in the applicable contractual terms.",
-        "title": "7. No hidden fees"
-      },
-      "orgs": {
-        "fee": "8% excl. VAT of the donations collected",
-        "p1": "CommonLink charges beneficiary organisations service fees corresponding to:",
-        "p2": "Applicable VAT is added to these fees. These fees are borne by the beneficiary organisation. They are not deducted from the gross donation at the time of the donor's payment. They are invoiced monthly.",
-        "title": "2. Beneficiary organisations"
-      },
-      "payment": {
-        "fee": "2% of the donations collected",
-        "item0": "payment processing;",
-        "item1": "technical infrastructure;",
-        "item2": "operations necessary for the Platform's functioning;",
-        "item3": "where applicable, certain operations related to transparency or blockchain technologies.",
-        "p1": "Payment and technical processing fees corresponding to:",
-        "p2": "are also charged to the beneficiary organisation. These fees cover in particular:",
-        "title": "3. Payment and technical fees"
-      },
-      "specific": {
-        "p1": "CommonLink may offer specific or negotiated pricing terms to certain beneficiary organisations, in particular based on their profile, collection volume, status, Platform usage or a specific contractual agreement.",
-        "title": "6. Specific terms"
-      },
-      "title": "Pricing"
     }
   },
   "metadata": {
@@ -1022,9 +1240,17 @@
       "keywords": "associations, transparency, donations, registration, SIRENE, reporting, donation management",
       "title": "Associations — CommonLink"
     },
-    "cgu": {
-      "description": "Terms of use for the CommonLink platform.",
-      "title": "Terms of use — CommonLink"
+    "cguAssociations": {
+      "description": "Terms and conditions of use applicable to beneficiary organisations on CommonLink.",
+      "title": "Association terms — CommonLink"
+    },
+    "cguDonors": {
+      "description": "Terms and conditions of use applicable to donors on CommonLink.",
+      "title": "Donor terms — CommonLink"
+    },
+    "complaints": {
+      "description": "How to file a complaint with CommonLink and our response timeframes.",
+      "title": "Complaints — CommonLink"
     },
     "contact": {
       "description": "Contact CommonLink for any question about the platform.",
@@ -1054,10 +1280,9 @@
       "description": "Legal notice for CommonLink, the donation transparency platform.",
       "title": "Legal notice — CommonLink"
     },
-    "partners": {
-      "description": "The nonprofit sector faces a trust crisis. CommonLink responds by publishing, for every campaign, the payments made by the association with their recipient and amount.",
-      "keywords": "partners, investors, associations, transparency, payment traceability, social impact",
-      "title": "Partners & Investors — CommonLink"
+    "modelAgreement": {
+      "description": "Model agreement between the donor and the beneficiary organisation, Article R.548-10 I of the French Monetary and Financial Code.",
+      "title": "Model agreement — CommonLink"
     },
     "privacy": {
       "description": "How CommonLink collects and uses your personal data.",
@@ -1066,176 +1291,162 @@
     "tarifs": {
       "description": "Transparent pricing for associations and nonprofits using CommonLink.",
       "title": "Pricing — CommonLink"
+    },
+    "transparency": {
+      "description": "Who can raise funds on CommonLink, what we don't fund, and how funds circulate through to the association.",
+      "title": "Transparency — CommonLink"
     }
   },
   "nav": {
     "associations": "Associations",
+    "donate": "Donate",
     "donors": "Donors",
     "home": "CommonLink — Home",
+    "login": "Log in",
     "main": "Main navigation",
     "menuClose": "Close menu",
     "menuOpen": "Open menu",
     "mobile": "Mobile navigation",
-    "partners": "Partners"
+    "projects": "Projects",
+    "tarifs": "Pricing"
   },
-  "partners": {
-    "architecture": {
-      "description": "CommonLink never receives, holds, or transfers any donation. Funds never appear in its accounts at any point.",
-      "steps": [
-        {
-          "title": "The donation is collected in the association's name",
-          "text": "The donor gives in euros. Funds are collected by our payment provider into an account opened in the association's name, then transferred to its bank account."
-        },
-        {
-          "title": "The tax receipt is issued immediately",
-          "text": "CommonLink issues the receipt on behalf of the association, under a mandate. It is sent by email as soon as the donation is confirmed. The association remains the declarant."
-        },
-        {
-          "title": "The association keeps control of its money",
-          "text": "It holds its own payment account and bank account, and keeps the use of them even if it leaves the platform."
-        },
-        {
-          "title": "Outgoing payments are initiated by the association",
-          "text": "Each payment is authorized by its legal representative, who authenticates with their bank. The payment initiation service is provided by a licensed payment institution, which never holds the funds at any point."
-        },
-        {
-          "title": "The payment is published",
-          "text": "Recipient, amount, and the share of collected funds it represents are published on the campaign page. No receipt is requested from the association — what is published is the operation itself."
-        }
+  "tarifs": {
+    "asso": {
+      "billedText": "Based on donations collected during the month. Paid by bank transfer, no later than the end of the following month.",
+      "billedTitle": "Billed at month end",
+      "flowClaimPre": "On €100 raised,",
+      "flowClaimStrong": "your association receives €100.",
+      "flowNote": "The commission is never deducted from donations. It is billed separately, at month end.",
+      "flowTitle": "What lands in your account",
+      "footNote": "* Commission subject to standard-rate VAT.",
+      "notPayItems": [
+        "Subscription",
+        "Setup fee",
+        "Per-transaction fee",
+        "Transfer fee",
+        "Exit fee",
+        "Minimum billing amount"
       ],
-      "title": "Architecture and fund flow"
+      "notPayTitle": "What you don't pay",
+      "soloText": "You can stop using CommonLink at any time, and you only pay for the months you actually raised funds.",
+      "soloTitle": "No commitment",
+      "subNote": "The payment provider’s fees are included in the commission and are never re-billed."
     },
-    "contact": {
-      "email": "Professional email",
-      "emailPlaceholder": "you@company.com",
-      "message": "Message (optional)",
-      "messagePlaceholder": "How would you like to contribute?",
-      "name": "Full name",
-      "namePlaceholder": "Your name",
-      "note": "We respond within two business days. Your data is processed in compliance with GDPR.",
-      "org": "Organization",
-      "orgPlaceholder": "Your organization name",
-      "submit": "Send my request",
-      "success": "Thank you! Your request has been sent. We'll get back to you within 48h.",
-      "title": "Get in touch",
-      "type": "Partnership type",
-      "typeOptions": [
-        {
-          "value": "",
-          "label": "Select..."
-        },
-        {
-          "value": "investisseur",
-          "label": "Investor / Business Angel"
-        },
-        {
-          "value": "institutionnel",
-          "label": "Institutional partner"
-        },
-        {
-          "value": "tech",
-          "label": "Technology partner"
-        },
-        {
-          "value": "autre",
-          "label": "Other"
-        }
-      ]
-    },
-    "cta": {
-      "description": "Investor, institutional or technology partner — let's discuss our shared vision.",
-      "title": "Let's build nonprofit transparency together"
+    "donor": {
+      "badge": "CommonLink never holds funds and never deducts anything from donations.",
+      "bigNum": "0",
+      "bigUnit": "€",
+      "label": "For donors",
+      "text1": "One hundred percent of your donation goes to the association. Your receipt covers the full amount.",
+      "text2": "CommonLink is paid by the association, at 10% ex-VAT of what it raises. Never by you.",
+      "title": "You pay no fees at all"
     },
     "hero": {
-      "badge": "Partners & Investors",
-      "description": "The nonprofit sector faces a trust crisis. CommonLink responds by publishing, for every campaign, the payments made by the association with their recipient and amount.",
-      "title": "Restoring donor trust through fund transparency"
-    },
-    "infrastructure": {
-      "description": "CommonLink holds no funds and provides no payment service. Collecting donations and initiating payments are handled by licensed providers.",
-      "items": [
+      "bigLine1": "of the amount of donations raised",
+      "bigLine2": "billed at month end, never deducted from donations",
+      "bigNum": "10",
+      "bigSub": "ex-VAT *",
+      "bigUnit": "%",
+      "label": "Pricing",
+      "subtitle": "No subscription, no setup fee, no per-transaction fee. You only pay in months when you actually raise funds.",
+      "switchAsso": "Associations",
+      "switchDonor": "Donors",
+      "title": "One single commission.",
+      "titleAccent": "Nothing else."
+    }
+  },
+  "transparency": {
+    "exclus": {
+      "cards": [
         {
-          "title": "Compliance",
-          "text": "Verifying associations' existence and identity in public registries, anti-money-laundering vigilance obligations.",
-          "tag": "Public registries"
+          "items": [
+            "A project with an unlawful purpose.",
+            "A dissolved structure, or one whose assets are subject to a freezing order.",
+            "Funding a political party, a candidate, or an electoral campaign. The law reserves this type of funding for a specific channel, with a financial agent and receipts issued under the supervision of the national campaign accounts commission, which we do not handle. On the other hand, an association advocating for a cause — including seeking to change a law or public policy — is fully welcome."
+          ],
+          "title": "The law forbids it"
         },
         {
-          "title": "Financial flows",
-          "text": "Payment accounts opened in the name of associations at a licensed institution. Outgoing payments initiated by the association's legal representative.",
-          "tag": "No funds held"
+          "items": [
+            "A collection for the benefit of an identified individual or family. A tax receipt requires that the donation serve a general interest, not an individual situation. That's what distinguishes a donation from a whip-round.",
+            "A collection that promises the donor something in exchange for their donation — an item, a place, a service. On CommonLink, a donation entitles you to nothing other than the tax receipt."
+          ],
+          "title": "It would jeopardize the donor's tax receipt"
         },
         {
-          "title": "Transparency",
-          "text": "Publication of the recipient and amount of every payment on the campaign page, with a cryptographic fingerprint recorded in a public register.",
-          "tag": "Public"
+          "items": [
+            "Funding the practice of a religion, for example maintaining a place of worship or paying a minister of religion. The social, educational, or cultural activities of a religious association remain eligible.",
+            "Funding an identified individual's legal costs.",
+            "A collection that in reality funds a commercial activity."
+          ],
+          "title": "We chose not to accept it"
         }
       ],
-      "title": "Infrastructure & compliance"
+      "label": "Exclusions",
+      "title": "What we don't fund",
+      "withdrawText1": "A published campaign can be withdrawn if it falls under an excluded case.",
+      "withdrawText2": "From your account, on a campaign page, you can flag what seems problematic to you and explain it freely. The report goes directly to our compliance team.",
+      "withdrawText3": "We review it against the excluded cases described above. The association is informed of the decision, may present its observations, and may contest it. Every withdrawal is logged with its reason and date.",
+      "withdrawText4": "If you don't have an account, write to us at contact@common-link.org",
+      "withdrawTitle": "Withdrawing a campaign"
     },
-    "roadmap": {
-      "steps": [
-        {
-          "title": "First half of 2026 — Structure and compliance",
-          "text": "Company incorporated, professional liability insurance taken out, registration in progress, first pilot associations identified."
-        },
-        {
-          "title": "September 2026 — Opening with pilot associations",
-          "text": "Service opens to the first associations, first donations collected and first payments published."
-        },
-        {
-          "title": "Late 2026 — Gradual rollout",
-          "text": "Gradual opening to associations and donors, product iterations, acquisition campaigns."
-        }
+    "fonds": {
+      "callout": "A campaign's goal is not a threshold to cross. An association that has raised €8,000 out of a €10,000 goal has those €8,000 and can use them as soon as they are transferred. A donation belongs to it as soon as it is received.",
+      "capText1": "The goal is also a cap. A campaign does not raise more than the need it announced.",
+      "capText2": "Once the cap is reached, the campaign no longer accepts donations. A donation that would exceed this cap is not collected: you are informed before any payment, and we suggest another project from the same association or a comparable one.",
+      "capTitle": "When the goal is reached",
+      "closeText1": "The association publishes a closing report accounting for the use of funds.",
+      "closeText2": "If part of the funds was not spent, for example because the project cost less than expected, those funds remain the association's, and it states in its report what it does with them. They are not returned to donors: a donation is final as soon as it is received.",
+      "closeTitle": "When a campaign closes",
+      "label": "Fund circulation",
+      "spendText1": "A campaign’s expenses are charged against donations received in the order they arrived, oldest first.",
+      "spendText2": "An association can only commit, from CommonLink, the amounts actually available for the campaign in question.",
+      "spendTitle": "How expenses are attributed to a campaign",
+      "text1": "Donations are collected into an account opened in the association's name, then transferred to its bank account. No payout is conditional on reaching the fundraising goal.",
+      "text2": "The payout schedule depends on the payment method chosen by the donor. The association can see, at any time from its dashboard, the amounts pending and the amounts available.",
+      "title": "How funds reach the association"
+    },
+    "hero": {
+      "label": "Transparency",
+      "switchExclus": "What we don't fund",
+      "switchFonds": "How funds circulate",
+      "switchQui": "Who can raise funds",
+      "text": "We ask associations for no supporting documents and verify no invoices. What we publish are the payments they make from the platform, with their recipient and amount.",
+      "title": "Who can raise funds,",
+      "titleAccent": "and how the money moves."
+    },
+    "qui": {
+      "acceptText1": "CommonLink does not judge the merit of a project and ranks no cause above another. Our role is to verify that a campaign is presented completely, and that it does not fall under an excluded case.",
+      "acceptText2": "A campaign cannot be published without the following five elements, and this check is automatic.",
+      "acceptTitle": "How a project gets approved",
+      "checkCallout": "You enter your project’s projected budget directly in the campaign form. No document is required: no balance sheet, no income statement, no invoice, no expense receipt, no activity report.",
+      "checkText": "Before any fundraising, we verify the existence and identity of your structure against public registers. To do so, we collect your name, registered office address, legal form, national association register number or SIREN number, the identity of your legal representative, and your bank details.",
+      "checkTitle": "What we check and what we ask of you",
+      "criteriaItems": [
+        "Its purpose",
+        "Its target amount",
+        "Its timeline",
+        "The projected budget for the use of funds",
+        "The expected outcome"
       ],
-      "title": "Roadmap"
-    },
-    "stats": [
-      {
-        "number": "10%",
-        "label": "excluding tax, our single commission, with no other fees"
-      },
-      {
-        "number": "€0",
-        "label": "held by CommonLink: accounts belong to associations"
-      },
-      {
-        "number": "1.5M",
-        "label": "associations in France, most of them small organizations"
-      }
-    ],
-    "team": {
-      "members": [
-        {
-          "initials": "JM",
-          "role": "Chief Executive Officer",
-          "name": "Julian Maïolino",
-          "bio": "Management and development of nonprofit projects. 5+ years in France and internationally. Strategic vision and partnerships."
-        },
-        {
-          "initials": "CL",
-          "role": "Chief Operations Officer",
-          "name": "Colin Lalouette",
-          "bio": "Expert in operational structuring and growth. 20+ years in startups and consulting. Steering, scalability and execution."
-        },
-        {
-          "initials": "CP",
-          "role": "Chief Technology Officer",
-          "name": "Clément Pignon",
-          "bio": "Architect of Web2/3 digital trust systems. 20+ years of development. Regulated & critical environments."
-        }
+      "generalInterest": "A project must address a need of general interest, whether it benefits individuals, legal entities, animals, or the environment.",
+      "intro": "CommonLink is open to declared associations holding a registration number in the national register of associations, and to endowment funds, established in France.",
+      "label": "Eligibility",
+      "noItems": [
+        "Structures established outside France",
+        "Commercial companies",
+        "Individuals",
+        "Structures dissolved or in the process of being dissolved"
       ],
-      "title": "A team committed to social economy"
-    },
-    "vision": {
-      "mission": {
-        "text": "Restoring donor trust through total fund transparency. Providing traceability tools for clear and verifiable management. Offering an intuitive donation platform and dedicated support services.",
-        "title": "Our mission"
-      },
-      "promote": {
-        "text": "Inspiring donor confidence by making the use of every euro visible. Stimulating generosity to multiply the impact of associations.",
-        "title": "Promoting transparency"
-      },
-      "title": "Our vision"
+      "noTitle": "Not eligible",
+      "okItems": [
+        "Be duly declared and have a verifiable legal existence in public registers",
+        "Have its registered office in France",
+        "Designate an identified legal representative",
+        "Hold a bank account opened in its name"
+      ],
+      "okTitle": "Requirements",
+      "title": "Who can raise funds on CommonLink"
     }
   }
 }
