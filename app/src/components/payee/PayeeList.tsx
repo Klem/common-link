@@ -14,6 +14,7 @@ interface PayeeListProps {
   onAddIban: (payeeId: string, iban: string) => void;
   onDeleteIban: (payeeId: string, ibanId: string) => void;
   onVerifyVop: (payeeId: string, ibanId: string) => void;
+  onToggleIbanActive: (payeeId: string, ibanId: string, active: boolean) => void;
   verifyingIbanId: string | null;
 }
 
@@ -27,6 +28,7 @@ export function PayeeList({
   onAddIban,
   onDeleteIban,
   onVerifyVop,
+  onToggleIbanActive,
   verifyingIbanId,
 }: PayeeListProps) {
   const t = useTranslations('dashboard');
@@ -77,6 +79,7 @@ export function PayeeList({
               onAddIban={onAddIban}
               onDeleteIban={onDeleteIban}
               onVerifyVop={onVerifyVop}
+              onToggleIbanActive={onToggleIbanActive}
               verifyingIbanId={verifyingIbanId}
             />
           ))}

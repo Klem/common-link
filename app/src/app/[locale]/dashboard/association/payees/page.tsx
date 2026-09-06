@@ -27,7 +27,7 @@ export default function PayeesPage() {
   const t = useTranslations('dashboard');
   const { addToast } = useToastStore();
 
-  const { payees, isLoading, fetchPayees, addPayeeIban, removePayeeIban, removePayee, setPayeeActive } = usePayees();
+  const { payees, isLoading, fetchPayees, addPayeeIban, removePayeeIban, removePayee, setPayeeActive, togglePayeeIbanActive } = usePayees();
   const { verifyingIbanId, verify } = useVopVerify();
 
   const [mode, setMode] = useState<'company' | 'person'>('company');
@@ -102,6 +102,10 @@ export default function PayeesPage() {
 
   const handleVerifyVop = async (payeeId: string, ibanId: string) => {
     await verify(payeeId, ibanId, fetchPayees);
+  };
+
+  const handleToggleIbanActive = async (payeeId: string, ibanId: string, active: boolean) => {
+    try { await togglePayeeIbanActive(payeeId, ibanId, active); } catch { addToast('error', 'errors.serverError'); }
   };
 
   return (
@@ -196,6 +200,7 @@ export default function PayeesPage() {
         onAddIban={handleAddIban}
         onDeleteIban={handleDeleteIban}
         onVerifyVop={handleVerifyVop}
+        onToggleIbanActive={handleToggleIbanActive}
         verifyingIbanId={verifyingIbanId}
       />
     </div>

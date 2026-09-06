@@ -1,9 +1,18 @@
 package org.commonlink.service
 
+import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.IbanVerificationStatus
+import org.commonlink.entity.Payout
+import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.CampaignRepository
+import org.commonlink.repository.PayeeRepository
+import org.commonlink.repository.PayeeIbanRepository
+import org.commonlink.repository.PayoutRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
@@ -43,7 +52,20 @@ class PayeeServiceTest {
     @Autowired
     private lateinit var associationProfileRepository: AssociationProfileRepository
 
+    @Autowired
+    private lateinit var campaignRepository: CampaignRepository
+
+    @Autowired
+    private lateinit var payeeRepository: PayeeRepository
+
+    @Autowired
+    private lateinit var payeeIbanRepository: PayeeIbanRepository
+
+    @Autowired
+    private lateinit var payoutRepository: PayoutRepository
+
     private lateinit var userId: UUID
+    private lateinit var association: AssociationProfile
 
     /** Valid French IBAN (DE89, ends in '0' → MATCH in demo VOP). */
     private val validIban = "DE89370400440532013000"
@@ -54,7 +76,7 @@ class PayeeServiceTest {
     @BeforeEach
     fun setUpAssociation() {
         val user = userRepository.save(TestFixtures.associationUser())
-        associationProfileRepository.save(TestFixtures.associationProfile(user))
+        association = associationProfileRepository.save(TestFixtures.associationProfile(user))
         userId = user.id!!
     }
 
@@ -238,6 +260,74 @@ class PayeeServiceTest {
 
         assertThrows<UnprocessableEntityException> {
             payeeService.verifyIbanVop(userId, payee.id, ibanId)
+        }
+    }
+
+    // ── setIbanActive ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `setIbanActive - disables then re-enables an IBAN`() {
+        val payee = payeeService.createPayee(
+            userId,
+            org.commonlink.dto.CreatePayeeRequest(name = "Test Org", identifier1 = "775671356")
+        )
+        val withIban = payeeService.addIban(userId, payee.id, org.commonlink.dto.AddIbanRequest(iban = validIban))
+        val ibanId = withIban.ibans[0].id
+        assertTrue(withIban.ibans[0].active)
+
+        val disabled = payeeService.setIbanActive(userId, payee.id, ibanId, org.commonlink.dto.PatchIbanRequest(active = false))
+        assertFalse(disabled.ibans[0].active)
+
+        val reEnabled = payeeService.setIbanActive(userId, payee.id, ibanId, org.commonlink.dto.PatchIbanRequest(active = true))
+        assertTrue(reEnabled.ibans[0].active)
+    }
+
+    // ── deleteIban guard (audit trail) ──────────────────────────────────────
+
+    @Test
+    fun `deleteIban - VERIFIED IBAN without payouts can still be deleted`() {
+        val payee = payeeService.createPayee(
+            userId,
+            org.commonlink.dto.CreatePayeeRequest(name = "Test Org", identifier1 = "775671356")
+        )
+        val withIban = payeeService.addIban(userId, payee.id, org.commonlink.dto.AddIbanRequest(iban = validIban))
+        val ibanId = withIban.ibans[0].id
+        payeeService.verifyIbanVop(userId, payee.id, ibanId) // ends in '0' → MATCH → VERIFIED in demo mode
+
+        payeeService.deleteIban(userId, payee.id, ibanId)
+
+        assertTrue(payeeService.listPayees(userId)[0].ibans.isEmpty())
+    }
+
+    @Test
+    fun `deleteIban - VERIFIED IBAN with an existing payout throws ConflictException`() {
+        val payeeDto = payeeService.createPayee(
+            userId,
+            org.commonlink.dto.CreatePayeeRequest(name = "Test Org", identifier1 = "775671356")
+        )
+        val withIban = payeeService.addIban(userId, payeeDto.id, org.commonlink.dto.AddIbanRequest(iban = validIban))
+        val ibanId = withIban.ibans[0].id
+        payeeService.verifyIbanVop(userId, payeeDto.id, ibanId) // → VERIFIED in demo mode
+
+        val payeeEntity = payeeRepository.findById(payeeDto.id).get()
+        val ibanEntity = payeeIbanRepository.findByIdAndPayeeId(ibanId, payeeDto.id).get()
+        val campaign = campaignRepository.save(TestFixtures.campaign(association, status = CampaignStatus.LIVE))
+        payoutRepository.save(
+            Payout(
+                campaign = campaign,
+                payee = payeeEntity,
+                payeeIbanId = ibanEntity.id!!,
+                payeeIbanValue = ibanEntity.iban,
+                amount = java.math.BigDecimal("100.00"),
+                kind = PayoutKind.EXPENSE,
+                typeCode = "60-mat",
+                label = "Achat matériel pédagogique — facture FAC-001",
+                status = PayoutStatus.CONFIRMED,
+            )
+        )
+
+        assertThrows<ConflictException> {
+            payeeService.deleteIban(userId, payeeDto.id, ibanId)
         }
     }
 }

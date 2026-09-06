@@ -34,7 +34,7 @@ import java.util.UUID
  * - payee IBAN belongs to the requested payee
  * - campaign belongs to the requesting association
  * - only PENDING payouts can be confirmed
- * - no active [PayoutBlockingReason] (IBAN unverified, insufficient balance, description too short) — see [computeBlockingReasons]
+ * - no active [PayoutBlockingReason] (IBAN unverified or disabled, insufficient balance, description too short) — see [computeBlockingReasons]
  */
 @Service
 class PayoutService(
@@ -118,7 +118,7 @@ class PayoutService(
         // Re-validate at confirm time: the IBAN may have been downgraded/removed and other payouts
         // may have consumed the balance since this one was created (create-time check is not enough).
         val payeeIban = payeeIbanRepository.findById(payout.payeeIbanId).orElse(null)
-        if (payeeIban == null || payeeIban.status != IbanVerificationStatus.VERIFIED) {
+        if (payeeIban == null || payeeIban.status != IbanVerificationStatus.VERIFIED || !payeeIban.active) {
             throw ConflictException("Payout blocked: ${PayoutBlockingReason.IBAN_NOT_VERIFIED}")
         }
         if (payout.amount > computeConfirmableBalance(campaignId)) {
@@ -192,7 +192,7 @@ class PayoutService(
 
     private fun blockingReasonsFor(campaignId: UUID, payeeIban: PayeeIban, amount: BigDecimal, label: String): List<PayoutBlockingReason> {
         val reasons = mutableListOf<PayoutBlockingReason>()
-        if (payeeIban.status != IbanVerificationStatus.VERIFIED) {
+        if (payeeIban.status != IbanVerificationStatus.VERIFIED || !payeeIban.active) {
             reasons += PayoutBlockingReason.IBAN_NOT_VERIFIED
         }
         if (amount > computeAvailableBalance(campaignId)) {

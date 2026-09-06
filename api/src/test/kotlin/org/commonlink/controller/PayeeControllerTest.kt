@@ -26,6 +26,7 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -65,7 +66,8 @@ class PayeeControllerTest {
         status = IbanVerificationStatus.FORMAT_VALID,
         vopResult = null,
         vopSuggestedName = null,
-        verifiedAt = null
+        verifiedAt = null,
+        active = true
     )
 
     private val samplePayee = PayeeDto(
@@ -297,6 +299,33 @@ class PayeeControllerTest {
     fun `deleteIban - 401 without JWT`() {
         mockMvc.perform(
             delete("/api/association/payees/$payeeId/ibans/$ibanId")
+        )
+            .andExpect(status().isUnauthorized)
+    }
+
+    // ── PATCH /api/association/payees/{id}/ibans/{ibanId} ──────────────────────
+
+    @Test
+    fun `patchIban - 200 when disabling`() {
+        val disabled = samplePayee.copy(ibans = listOf(sampleIban.copy(active = false)))
+        every { payeeService.setIbanActive(userId, payeeId, ibanId, any()) } returns disabled
+
+        mockMvc.perform(
+            patch("/api/association/payees/$payeeId/ibans/$ibanId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"active":false}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.ibans[0].active").value(false))
+    }
+
+    @Test
+    fun `patchIban - 401 without JWT`() {
+        mockMvc.perform(
+            patch("/api/association/payees/$payeeId/ibans/$ibanId")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"active":false}""")
         )
             .andExpect(status().isUnauthorized)
     }

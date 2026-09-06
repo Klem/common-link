@@ -1417,8 +1417,6 @@
           "title": "📋 Payment history"
         },
         "ibanSelect": "IBAN",
-        "noIban": "No IBAN registered for this recipient.",
-        "noVerifiedIban": "No verified IBAN registered for this beneficiary.",
         "stats": {
           "availableBalance": "Available balance",
           "confirmed": "Confirmed",
@@ -1604,7 +1602,10 @@
         "addIban": "Add an IBAN",
         "cancel": "Cancel",
         "copy": "Copy IBAN",
+        "disable": "Disable",
+        "enable": "Enable",
         "inputPlaceholder": "Enter an IBAN",
+        "invalidFormat": "This doesn't look like a valid IBAN.",
         "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
         "verified": "Verified",
         "verify": "Verify",

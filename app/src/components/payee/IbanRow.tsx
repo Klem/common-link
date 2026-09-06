@@ -12,21 +12,31 @@ interface IbanRowProps {
   payeeId: string;
   /** True when this specific IBAN's VOP verification is in-flight. */
   isVerifyingVop: boolean;
+  /** True when the parent payee already has at least one payout — gates whether a VERIFIED
+   *  IBAN can still be hard-deleted or must be disabled instead (audit trail). */
+  payeeHasPayouts: boolean;
   /** Called when the user clicks the delete button. */
   onDeleteIban: (ibanId: string) => void;
   /** Called when the user clicks the VOP verify button. */
   onVerifyVop: (ibanId: string) => void;
+  /** Called when the user enables/disables this IBAN. */
+  onToggleActive: (ibanId: string, active: boolean) => void;
 }
 
 /**
  * Single IBAN row displaying the IBAN value, its verification status,
- * action buttons (copy / verify / delete), and an optional VOP banner.
+ * action buttons (copy / verify / disable / delete), and an optional VOP banner.
+ *
+ * A VERIFIED IBAN can be disabled instead of deleted to preserve the audit trail once payouts
+ * exist; a disabled IBAN is shown greyed out and excluded from payout selection.
  */
 export function IbanRow({
   iban,
   isVerifyingVop,
+  payeeHasPayouts,
   onDeleteIban,
   onVerifyVop,
+  onToggleActive,
 }: IbanRowProps) {
   const t = useTranslations('dashboard');
   const [pendingDelete, setPendingDelete] = useState(false);
@@ -85,8 +95,72 @@ export function IbanRow({
     }
   };
 
+  /** Trailing action area: delete, disable, both, or re-enable, depending on status/active/payouts. */
+  const renderTrailingAction = () => {
+    if (!iban.active) {
+      return (
+        <button
+          onClick={() => onToggleActive(iban.id, true)}
+          className="btn btn-secondary btn-sm flex-shrink-0"
+          title={t('payees.iban.enable')}
+        >
+          {t('payees.iban.enable')}
+        </button>
+      );
+    }
+
+    if (pendingDelete) {
+      return (
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => setPendingDelete(false)}
+            className="rm-btn-cancel-iban-del"
+            title={t('payees.iban.cancel')}
+          >
+            ✕
+          </button>
+          <button
+            onClick={() => { setPendingDelete(false); onDeleteIban(iban.id); }}
+            className="rm-btn-confirm-iban-del"
+            title={t('payees.list.delete')}
+          >
+            ✓
+          </button>
+        </div>
+      );
+    }
+
+    const disableButton = (
+      <button
+        onClick={() => onToggleActive(iban.id, false)}
+        className="btn btn-secondary btn-sm flex-shrink-0"
+        title={t('payees.iban.disable')}
+      >
+        {t('payees.iban.disable')}
+      </button>
+    );
+
+    if (iban.status === IbanVerificationStatus.VERIFIED && payeeHasPayouts) {
+      // Audit trail: a VERIFIED IBAN that already received a payout can only be disabled.
+      return disableButton;
+    }
+
+    return (
+      <div className="flex items-center gap-1 flex-shrink-0">
+        {iban.status === IbanVerificationStatus.VERIFIED && disableButton}
+        <button
+          onClick={() => setPendingDelete(true)}
+          className="rm-btn-del-iban flex-shrink-0"
+          title={t('payees.list.delete')}
+        >
+          🗑
+        </button>
+      </div>
+    );
+  };
+
   return (
-    <div className="mt-2">
+    <div className={`mt-2${!iban.active ? ' rm-iban-disabled' : ''}`}>
       <div className="flex items-center gap-2">
         <input
           type="text"
@@ -110,32 +184,7 @@ export function IbanRow({
           {renderActions()}
         </div>
 
-        {pendingDelete ? (
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={() => setPendingDelete(false)}
-              className="rm-btn-cancel-iban-del"
-              title={t('payees.iban.cancel')}
-            >
-              ✕
-            </button>
-            <button
-              onClick={() => { setPendingDelete(false); onDeleteIban(iban.id); }}
-              className="rm-btn-confirm-iban-del"
-              title={t('payees.list.delete')}
-            >
-              ✓
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setPendingDelete(true)}
-            className="rm-btn-del-iban flex-shrink-0"
-            title={t('payees.list.delete')}
-          >
-            🗑
-          </button>
-        )}
+        {renderTrailingAction()}
       </div>
     </div>
   );
