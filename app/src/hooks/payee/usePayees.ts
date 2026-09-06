@@ -7,6 +7,7 @@ import {
   deleteIban,
   deletePayee,
   patchPayeeActive,
+  setIbanActive,
 } from '@/lib/api/payee';
 import type { PayeeDto } from '@/types/payee';
 
@@ -43,6 +44,13 @@ export interface UsePayeesReturn {
    * @param active - New active state.
    */
   setPayeeActive: (id: string, active: boolean) => Promise<void>;
+  /**
+   * Enables or disables a single IBAN (without deleting it) and refreshes the list.
+   * @param payeeId - UUID of the payee.
+   * @param ibanId - UUID of the IBAN to toggle.
+   * @param active - New active state.
+   */
+  togglePayeeIbanActive: (payeeId: string, ibanId: string, active: boolean) => Promise<void>;
   /**
    * Re-fetches the full list (simpler than a partial update).
    * @param id - UUID of the payee to refresh (triggers a full list reload).
@@ -111,6 +119,15 @@ export function usePayees(): UsePayeesReturn {
     [],
   );
 
+  /** Toggles a single IBAN's active state with local in-place update (no full reload). */
+  const togglePayeeIbanActive = useCallback(
+    async (payeeId: string, ibanId: string, active: boolean): Promise<void> => {
+      const updated = await setIbanActive(payeeId, ibanId, active);
+      setPayees((prev) => prev.map((p) => (p.id === payeeId ? updated : p)));
+    },
+    [],
+  );
+
   /** Re-fetches the full list (full reload, no partial update). */
   const refreshPayee = useCallback(
     async (_id: string): Promise<void> => {
@@ -132,6 +149,7 @@ export function usePayees(): UsePayeesReturn {
     removePayeeIban,
     removePayee,
     setPayeeActive,
+    togglePayeeIbanActive,
     refreshPayee,
   };
 }

@@ -7,6 +7,7 @@ vi.mock('@/lib/api/payee', () => ({
   addIban: vi.fn(),
   deleteIban: vi.fn(),
   deletePayee: vi.fn(),
+  setIbanActive: vi.fn(),
 }));
 
 import {
@@ -14,12 +15,14 @@ import {
   addIban,
   deleteIban,
   deletePayee,
+  setIbanActive,
 } from '@/lib/api/payee';
 
 const mockGetPayees = getPayees as ReturnType<typeof vi.fn>;
 const mockAddIban = addIban as ReturnType<typeof vi.fn>;
 const mockDeleteIban = deleteIban as ReturnType<typeof vi.fn>;
 const mockDeletePayee = deletePayee as ReturnType<typeof vi.fn>;
+const mockSetIbanActive = setIbanActive as ReturnType<typeof vi.fn>;
 
 const sampleIban = {
   id: 'iban-uuid-1',
@@ -28,6 +31,7 @@ const sampleIban = {
   vopResult: null,
   vopSuggestedName: null,
   verifiedAt: null,
+  active: true,
 };
 
 const samplePayee = {
@@ -149,5 +153,25 @@ describe('usePayees', () => {
 
     expect(mockDeletePayee).toHaveBeenCalledWith('payee-uuid-1');
     expect(result.current.payees).toEqual([]);
+  });
+
+  // ── togglePayeeIbanActive ─────────────────────────────────────────────────
+
+  it('togglePayeeIbanActive calls setIbanActive API and updates the payee in-place', async () => {
+    const disabledPayee = { ...samplePayee, ibans: [{ ...sampleIban, active: false }] };
+    mockGetPayees.mockResolvedValue([samplePayee]);
+    mockSetIbanActive.mockResolvedValue(disabledPayee);
+
+    const { result } = renderHook(() => usePayees());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.togglePayeeIbanActive('payee-uuid-1', 'iban-uuid-1', false);
+    });
+
+    expect(mockSetIbanActive).toHaveBeenCalledWith('payee-uuid-1', 'iban-uuid-1', false);
+    expect(result.current.payees).toEqual([disabledPayee]);
+    // in-place update, not a full reload
+    expect(mockGetPayees).toHaveBeenCalledTimes(1);
   });
 });

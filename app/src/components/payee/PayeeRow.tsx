@@ -7,6 +7,7 @@ import { IbanVerificationStatus } from '@/types/payee';
 import type { PayoutDto } from '@/types/payment';
 import { PayoutStatus } from '@/types/payment';
 import { getPayeePayouts } from '@/lib/api/payee';
+import { isValidIbanFormat } from '@/lib/iban';
 import { IbanRow } from './IbanRow';
 
 interface PayeeRowProps {
@@ -16,6 +17,7 @@ interface PayeeRowProps {
   onAddIban: (payeeId: string, iban: string) => void;
   onDeleteIban: (payeeId: string, ibanId: string) => void;
   onVerifyVop: (payeeId: string, ibanId: string) => void;
+  onToggleIbanActive: (payeeId: string, ibanId: string, active: boolean) => void;
   verifyingIbanId: string | null;
 }
 
@@ -77,11 +79,13 @@ export function PayeeRow({
   onAddIban,
   onDeleteIban,
   onVerifyVop,
+  onToggleIbanActive,
   verifyingIbanId,
 }: PayeeRowProps) {
   const t = useTranslations('dashboard');
   const [showIbanInput, setShowIbanInput] = useState(false);
   const [ibanValue, setIbanValue] = useState('');
+  const [ibanFormatError, setIbanFormatError] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [payouts, setPayouts] = useState<PayoutDto[]>([]);
@@ -109,6 +113,11 @@ export function PayeeRow({
   const handleAddIban = () => {
     const trimmed = ibanValue.trim();
     if (!trimmed) return;
+    if (!isValidIbanFormat(trimmed)) {
+      setIbanFormatError(true);
+      return;
+    }
+    setIbanFormatError(false);
     onAddIban(payee.id, trimmed);
     setIbanValue('');
     setShowIbanInput(false);
@@ -153,8 +162,10 @@ export function PayeeRow({
                   iban={iban}
                   payeeId={payee.id}
                   isVerifyingVop={verifyingIbanId === iban.id}
+                  payeeHasPayouts={payee.hasPayouts}
                   onDeleteIban={(ibanId) => onDeleteIban(payee.id, ibanId)}
                   onVerifyVop={(ibanId) => onVerifyVop(payee.id, ibanId)}
+                  onToggleActive={(ibanId, active) => onToggleIbanActive(payee.id, ibanId, active)}
                 />
               ))}
             </div>
@@ -163,25 +174,30 @@ export function PayeeRow({
           {/* Add IBAN */}
           <div className="rm-add-iban-wrap">
             {showIbanInput ? (
-              <div className="rm-add-iban-row">
-                <input
-                  type="text"
-                  autoFocus
-                  value={ibanValue}
-                  onChange={(e) => setIbanValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAddIban();
-                    if (e.key === 'Escape') { setIbanValue(''); setShowIbanInput(false); }
-                  }}
-                  placeholder={t('payees.iban.inputPlaceholder')}
-                  className="cm-fi-mono cm-fi-mono-flex"
-                />
-                <button onClick={handleAddIban} className="cm-btn cm-btn-primary cm-btn-sm">
-                  {t('payees.iban.add')}
-                </button>
-                <button onClick={() => { setIbanValue(''); setShowIbanInput(false); }} className="cm-btn cm-btn-ghost cm-btn-sm">
-                  {t('payees.iban.cancel')}
-                </button>
+              <div>
+                <div className="rm-add-iban-row">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={ibanValue}
+                    onChange={(e) => { setIbanValue(e.target.value); setIbanFormatError(false); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddIban();
+                      if (e.key === 'Escape') { setIbanValue(''); setIbanFormatError(false); setShowIbanInput(false); }
+                    }}
+                    placeholder={t('payees.iban.inputPlaceholder')}
+                    className="cm-fi-mono cm-fi-mono-flex"
+                  />
+                  <button onClick={handleAddIban} className="cm-btn cm-btn-primary cm-btn-sm">
+                    {t('payees.iban.add')}
+                  </button>
+                  <button onClick={() => { setIbanValue(''); setIbanFormatError(false); setShowIbanInput(false); }} className="cm-btn cm-btn-ghost cm-btn-sm">
+                    {t('payees.iban.cancel')}
+                  </button>
+                </div>
+                {ibanFormatError && (
+                  <p className="cm-field-error">{t('payees.iban.invalidFormat')}</p>
+                )}
               </div>
             ) : (
               <button

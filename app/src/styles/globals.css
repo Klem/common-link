@@ -2362,6 +2362,8 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .rm-iban-input[readonly] { color: var(--slate-lavender); cursor: default; background: rgba(78,205,196,.04); border-color: rgba(78,205,196,.2); }
 .rm-iban-input.iban-verified     { border-color: rgba(78,205,196,.4)!important; }
 .rm-iban-input.iban-format-valid { border-color: rgba(78,205,196,.4)!important; }
+.rm-iban-disabled { opacity: .55; }
+.rm-iban-disabled .cm-fi-readonly { text-decoration: line-through; }
 .rm-iban-input.iban-close-match  { border-color: rgba(255,179,71,.4)!important; }
 .rm-iban-input.iban-no-match,
 .rm-iban-input.iban-invalid      { border-color: rgba(255,107,91,.4)!important; }

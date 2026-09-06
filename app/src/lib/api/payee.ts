@@ -79,6 +79,20 @@ export const verifyIbanVop = (
     .then((r) => r.data);
 
 /**
+ * Enables or disables an IBAN without deleting it.
+ * Calls `PATCH /api/association/payees/:payeeId/ibans/:ibanId`.
+ *
+ * @param payeeId - UUID of the payee.
+ * @param ibanId - UUID of the IBAN to toggle.
+ * @param active - New active state.
+ * @returns The updated payee DTO.
+ */
+export const setIbanActive = (payeeId: string, ibanId: string, active: boolean): Promise<PayeeDto> =>
+  api
+    .patch<PayeeDto>(`/api/association/payees/${payeeId}/ibans/${ibanId}`, { active })
+    .then((r) => r.data);
+
+/**
  * Searches the INSEE Sirene directory by SIREN (9 digits) or SIRET (14 digits).
  * Calls `GET /api/association/sirene/search?q={query}`.
  *

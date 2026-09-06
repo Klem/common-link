@@ -116,7 +116,7 @@ app:
     base-url: ${RECHERCHE_ENTREPRISES_BASE_URL:https://recherche-entreprises.api.gouv.fr}
   vop:
     demo-mode: true
-    api-url: ${VOP_BASE_URL:https://thirdparty.qonto.com/v2/sepa/verify_payee}
+    api-url: ${VOP_BASE_URL:https://api.mollie.com/v2/business-accounts/payee-verifications}
     api-token: ${VOP_API_TOKEN}
   mollie:
     api-key: ${MOLLIE_API_KEY}

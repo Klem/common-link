@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.AddIbanRequest
+import org.commonlink.dto.PatchIbanRequest
 import org.commonlink.dto.PatchPayeeRequest
 import org.commonlink.dto.PayeeDto
 import org.commonlink.dto.CreatePayeeRequest
@@ -202,6 +203,41 @@ class PayeeController(
         payeeService.deleteIban(UUID.fromString(principal.username), id, ibanId)
         return ResponseEntity.noContent().build()
     }
+
+    /**
+     * Enables or disables an IBAN entry.
+     *
+     * A VERIFIED IBAN that already has payouts cannot be deleted (see [deleteIban]) — this is
+     * the only way to stop it from being offered for future payouts while preserving its history.
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the payee.
+     * @param ibanId UUID of the IBAN entry to toggle.
+     * @param req New active state.
+     * @return 200 with the updated payee DTO.
+     */
+    @PatchMapping("/{id}/ibans/{ibanId}")
+    @Operation(
+        summary = "Enable/disable an IBAN",
+        description = "Toggles whether an IBAN can still be used for payouts, without deleting it."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "IBAN updated",
+            content = [Content(schema = Schema(implementation = PayeeDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Payee or IBAN not found", content = [Content()])
+    )
+    fun patchIban(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+        @PathVariable ibanId: UUID,
+        @RequestBody req: PatchIbanRequest
+    ): ResponseEntity<PayeeDto> =
+        ResponseEntity.ok(
+            payeeService.setIbanActive(UUID.fromString(principal.username), id, ibanId, req)
+        )
 
     /**
      * Returns all payouts sent to a given payee, scoped to the authenticated association.

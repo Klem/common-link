@@ -550,7 +550,7 @@ The data object representing a user in API responses. Contains: id, email, role,
 ## V
 
 ### VOP (Verification of Payee)
-Service de vérification de l'identité du titulaire d'un compte bancaire via son IBAN. Permet de confirmer que le nom enregistré sur le compte correspond bien à l'organisation bénéficiaire déclarée. Sur CommonLink, le service VOP est intégré via l'API Qonto SEPA VOP. Résultats possibles : **MATCH** (correspondance exacte), **CLOSE_MATCH** (correspondance approximative avec nom suggéré), **NO_MATCH** (pas de correspondance), **NOT_POSSIBLE** (la banque ne supporte pas VOP pour cet IBAN). Un mode démo simule les résultats selon le dernier chiffre de l'IBAN.
+Service de vérification de l'identité du titulaire d'un compte bancaire via son IBAN. Permet de confirmer que le nom enregistré sur le compte correspond bien à l'organisation bénéficiaire déclarée. Sur CommonLink, le service VOP est intégré via l'API Mollie Verify Payee (`POST /v2/business-accounts/payee-verifications`, fonctionnalité bêta de Mollie Business Accounts). Résultats possibles : **MATCH** (correspondance exacte), **CLOSE_MATCH** (correspondance approximative avec nom suggéré), **NO_MATCH** (pas de correspondance), **NOT_POSSIBLE** (la banque ne supporte pas VOP pour cet IBAN, ou le service Mollie est indisponible). Un mode démo simule les résultats selon le dernier chiffre de l'IBAN — actif par défaut en local et staging ; désactivé en production, où un jeton Mollie réel (`VOP_API_TOKEN`) est requis. Un IBAN VERIFIED ayant déjà reçu un paiement ne peut plus être supprimé : il peut seulement être désactivé (`active=false`), ce qui l'exclut de la sélection de paiement sans perdre l'historique.
 `technical` `functional` `security`
 
 ### Verified Association

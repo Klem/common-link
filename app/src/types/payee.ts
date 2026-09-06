@@ -46,6 +46,8 @@ export interface PayeeIbanDto {
   vopSuggestedName: string | null;
   /** ISO-8601 timestamp of the last VOP check. */
   verifiedAt: string | null;
+  /** Whether this IBAN can still be used to receive payouts (false = disabled). */
+  active: boolean;
 }
 
 /**

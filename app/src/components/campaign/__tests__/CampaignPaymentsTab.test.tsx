@@ -87,7 +87,7 @@ const samplePayee: PayeeDto = {
   postalCode: '75001',
   active: true,
   hasPayouts: false,
-  ibans: [{ id: 'iban-1', iban: 'FR76 0000 0000', status: 'VERIFIED', vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+  ibans: [{ id: 'iban-1', iban: 'FR76 0000 0000', status: 'VERIFIED', vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true }],
   createdAt: '2026-01-01T00:00:00Z',
 };
 
@@ -96,7 +96,7 @@ const samplePayeeUnverifiedIban = {
   ...samplePayee,
   id: 'payee-2',
   name: 'Unverified Payee',
-  ibans: [{ id: 'iban-2', iban: 'FR76 1111 1111', status: 'PENDING' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+  ibans: [{ id: 'iban-2', iban: 'FR76 1111 1111', status: 'PENDING' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true }],
 };
 
 /** PERSON-type payee, required for REMUNERATION typeCodes. */
@@ -106,7 +106,15 @@ const samplePayeePerson = {
   payeeType: 'PERSON' as const,
   name: 'Marie Dupont',
   identifier1: null,
-  ibans: [{ id: 'iban-person-1', iban: 'FR76 4444 4444', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+  ibans: [{ id: 'iban-person-1', iban: 'FR76 4444 4444', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true }],
+};
+
+/** Payee whose only IBAN is VERIFIED but disabled. */
+const samplePayeeDisabledIban = {
+  ...samplePayee,
+  id: 'payee-4',
+  name: 'Disabled Iban Payee',
+  ibans: [{ id: 'iban-5', iban: 'FR76 5555 5555', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: false }],
 };
 
 /** Payee with one VERIFIED and one non-VERIFIED IBAN. */
@@ -115,8 +123,8 @@ const samplePayeeMixedIbans = {
   id: 'payee-3',
   name: 'Mixed Payee',
   ibans: [
-    { id: 'iban-3', iban: 'FR76 2222 2222', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null },
-    { id: 'iban-4', iban: 'FR76 3333 3333', status: 'INVALID' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null },
+    { id: 'iban-3', iban: 'FR76 2222 2222', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true },
+    { id: 'iban-4', iban: 'FR76 3333 3333', status: 'INVALID' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true },
   ],
 };
 
@@ -313,13 +321,21 @@ describe('CampaignPaymentsTab', () => {
 
   // ── Lot 1: verified-IBAN-only selector ─────────────────────────────────────
 
-  it('shows "no verified IBAN" message when the payee only has an unverified IBAN', () => {
+  it('excludes a payee with no VERIFIED IBAN from the payee dropdown entirely', () => {
     setupMocks([samplePayeeUnverifiedIban]);
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-2' } });
+    const payeeSelect = screen.getAllByRole('combobox')[1];
+    expect(screen.queryByRole('option', { name: 'Unverified Payee' })).toBeNull();
+    fireEvent.change(payeeSelect, { target: { value: 'payee-2' } });
+    expect((payeeSelect as HTMLSelectElement).value).toBe('');
+  });
 
-    expect(screen.getByText('noVerifiedIban')).toBeDefined();
+  it('excludes a payee whose only VERIFIED IBAN is disabled from the payee dropdown', () => {
+    setupMocks([samplePayeeDisabledIban]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    expect(screen.queryByRole('option', { name: 'Disabled Iban Payee' })).toBeNull();
   });
 
   it('does not auto-select and excludes non-VERIFIED IBANs from the multi-IBAN selector', () => {

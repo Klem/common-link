@@ -71,13 +71,17 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const isRemunerationType = REMUNERATION_CODES.has(effectiveTypeCode);
 
   const filteredPayees = useMemo(
-    () => payees.filter((p) => p.active && p.payeeType === (isRemunerationType ? 'PERSON' : 'COMPANY')),
+    () => payees.filter((p) =>
+      p.active
+      && p.payeeType === (isRemunerationType ? 'PERSON' : 'COMPANY')
+      && p.ibans.some((i) => i.status === IbanVerificationStatus.VERIFIED && i.active),
+    ),
     [payees, isRemunerationType],
   );
 
   const selectedPayee = useMemo(() => filteredPayees.find((p) => p.id === payeeId), [filteredPayees, payeeId]);
   const verifiedIbans = useMemo(
-    () => selectedPayee?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED) ?? [],
+    () => selectedPayee?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED && i.active) ?? [],
     [selectedPayee],
   );
   const selectedIban = useMemo(
@@ -130,7 +134,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     setPayeeId(id);
     setPayeeIbanId('');
     const p = filteredPayees.find((x) => x.id === id);
-    const verified = p?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED) ?? [];
+    const verified = p?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED && i.active) ?? [];
     if (verified.length === 1) setPayeeIbanId(verified[0].id);
   }
 
@@ -299,16 +303,6 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                 {t('form.addPayee')}
               </button>
             </div>
-
-            {/* No IBAN at all */}
-            {selectedPayee && selectedPayee.ibans.length === 0 && (
-              <p className="cm-field-error">{t('noIban')}</p>
-            )}
-
-            {/* Has IBAN(s) but none VERIFIED */}
-            {selectedPayee && selectedPayee.ibans.length > 0 && verifiedIbans.length === 0 && (
-              <p className="cm-field-error">{t('noVerifiedIban')}</p>
-            )}
 
             {/* Single verified IBAN preview */}
             {selectedPayee && verifiedIbans.length === 1 && selectedIban && (

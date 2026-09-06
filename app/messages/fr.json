@@ -1415,8 +1415,6 @@
           "title": "📋 Historique paiements"
         },
         "ibanSelect": "IBAN",
-        "noIban": "Aucun IBAN enregistré pour ce bénéficiaire.",
-        "noVerifiedIban": "Aucun IBAN vérifié enregistré pour ce bénéficiaire.",
         "stats": {
           "availableBalance": "Solde disponible",
           "confirmed": "Confirmées",
@@ -1602,7 +1600,10 @@
         "addIban": "Ajouter un IBAN",
         "cancel": "Annuler",
         "copy": "Copier l'IBAN",
+        "disable": "Désactiver",
+        "enable": "Activer",
         "inputPlaceholder": "Saisissez un IBAN",
+        "invalidFormat": "Ceci ne ressemble pas à un IBAN valide.",
         "placeholder": "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
         "verified": "Vérifié",
         "verify": "Vérifier",

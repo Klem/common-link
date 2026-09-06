@@ -215,6 +215,19 @@ class PayoutServiceTest {
     }
 
     @Test
+    fun `confirm - IBAN disabled after create throws ConflictException (H2)`() {
+        val disabledIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.VERIFIED, active = false)
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
+
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(disabledIban)
+
+        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
+    }
+
+    @Test
     fun `confirm - balance consumed by other confirmed payouts throws ConflictException (H2)`() {
         // 500 payout, but only 100 confirmable (raised 1000 − 900 already confirmed) → over-withdrawal blocked at confirm.
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
@@ -270,6 +283,21 @@ class PayoutServiceTest {
             org.commonlink.entity.PayoutBlockingReason.IBAN_NOT_VERIFIED,
             org.commonlink.entity.PayoutBlockingReason.INSUFFICIENT_BALANCE,
         )
+    }
+
+    @Test
+    fun `computeBlockingReasons - disabled VERIFIED iban returns IBAN_NOT_VERIFIED`() {
+        val disabledIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.VERIFIED, active = false)
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
+
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(disabledIban)
+        stubBalance(confirmed = "0", raised = "1000")
+
+        val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "Achat matériel pédagogique", userId)
+
+        assertThat(reasons).containsExactly(org.commonlink.entity.PayoutBlockingReason.IBAN_NOT_VERIFIED)
     }
 
     @Test
