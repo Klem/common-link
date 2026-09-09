@@ -8,7 +8,6 @@ const routes: { fr: string; en: string; priority: number }[] = [
   { fr: '/associations', en: '/associations', priority: 0.9 },
   { fr: '/tarifs', en: '/tarifs', priority: 0.8 },
   { fr: '/transparence', en: '/transparence', priority: 0.7 },
-  { fr: '/faq', en: '/faq', priority: 0.5 },
   { fr: '/contact', en: '/contact', priority: 0.4 },
   { fr: '/mentions-legales', en: '/mentions-legales', priority: 0.2 },
   { fr: '/conditions-generales-utilisation', en: '/conditions-generales-utilisation', priority: 0.2 },

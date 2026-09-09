@@ -56,7 +56,6 @@ export function Footer() {
             <Link href="/politique-confidentialite" className={linkClass}>{t('legal.links.privacy')}</Link>
             <Link href="/politique-cookies" className={linkClass}>{t('legal.links.cookies')}</Link>
             <Link href="/contact" className={linkClass}>{t('legal.links.contact')}</Link>
-            <Link href="/faq" className={linkClass}>{t('legal.links.faq')}</Link>
           </div>
         </div>
 

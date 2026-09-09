@@ -1,1 +1,1 @@
-export const APP_URL = 'https://commonlink.cleverapps.io';
+export const APP_URL = 'https://app.common-link.org';
