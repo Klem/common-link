@@ -344,7 +344,9 @@
     "mollieErrorMissingContactEmail": "Please fill in your contact email in the Infos tab before connecting Mollie.",
     "mollieErrorMissingContactName": "Please fill in your contact name in the Infos tab before connecting Mollie.",
     "payeeCreated": "Beneficiary added successfully.",
+    "paymentAwaitingBank": "Redirecting to your bank to authorise the transfer…",
     "paymentError": "Payment failed. Please try again.",
+    "paymentSubmitted": "Transfer authorised. The beneficiary will be credited within 1-2 business days.",
     "paymentSuccess": "Payment issued!",
     "profileUpdated": "Profile updated.",
     "publishCampaignError": "Publication failed. Please try again.",
@@ -1411,7 +1413,10 @@
           "typeCodePlaceholder": "— Type —"
         },
         "history": {
+          "authorise": "Authorise",
+          "authoriseHint": "Authorise this transfer with your bank",
           "empty": "No payments issued.",
+          "inTransit": "Transfer being executed by the bank",
           "title": "📋 Payment history"
         },
         "ibanSelect": "IBAN",

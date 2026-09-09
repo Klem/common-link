@@ -344,7 +344,9 @@
     "mollieErrorMissingContactEmail": "Renseignez l'email de contact dans l'onglet Informations avant de connecter Mollie.",
     "mollieErrorMissingContactName": "Renseignez le nom du contact dans l'onglet Informations avant de connecter Mollie.",
     "payeeCreated": "Bénéficiaire ajouté avec succès.",
+    "paymentAwaitingBank": "Redirection vers votre banque pour autoriser le virement…",
     "paymentError": "Échec du paiement. Veuillez réessayer.",
+    "paymentSubmitted": "Virement autorisé. Le bénéficiaire sera crédité sous 1 à 2 jours ouvrés.",
     "paymentSuccess": "Paiement émis !",
     "profileUpdated": "Profil mis à jour.",
     "publishCampaignError": "Échec de la publication. Veuillez réessayer.",
@@ -1411,7 +1413,10 @@
           "typeCodePlaceholder": "— Type —"
         },
         "history": {
+          "authorise": "Autoriser",
+          "authoriseHint": "Autoriser ce virement auprès de votre banque",
           "empty": "Aucun paiement émis.",
+          "inTransit": "Virement en cours d'exécution par la banque",
           "title": "📋 Historique paiements"
         },
         "ibanSelect": "IBAN",

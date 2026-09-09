@@ -73,6 +73,28 @@ const samplePayout: PayoutDto = {
   createdAt: '2026-06-01T10:00:00Z',
   confirmedAt: '2026-06-01T10:05:00Z',
   onchainJobId: null,
+  bridgeStatus: 'ACSC',
+  bridgeLastError: null,
+  bridgeCheckoutUrl: null,
+};
+
+/** Transfer authorised at the bank but not settled yet — still PENDING for accounting. */
+const inFlightPayout: PayoutDto = {
+  ...samplePayout,
+  id: 'payout-2',
+  status: 'PENDING',
+  confirmedAt: null,
+  bridgeStatus: 'PDNG',
+};
+
+/** Confirmed order still waiting for the association to authorise it at its own bank. */
+const awaitingBankPayout: PayoutDto = {
+  ...samplePayout,
+  id: 'payout-3',
+  status: 'PENDING',
+  confirmedAt: null,
+  bridgeStatus: 'CREA',
+  bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
 };
 
 const samplePayee: PayeeDto = {
@@ -382,6 +404,59 @@ describe('CampaignPaymentsTab', () => {
 
     expect(screen.getByText('blocking.descriptionTooShort')).toBeDefined();
     expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  // ── Bridge transfer state ──────────────────────────────────────────────────
+
+  it('marks a settled payout as confirmed', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    expect(document.querySelector('.pay-chip.confirmed')).toBeTruthy();
+    expect(document.querySelector('.pay-chip.pending')).toBeNull();
+  });
+
+  it('shows an authorised but unsettled transfer as in-transit, not settled', () => {
+    // The bank has the order but the beneficiary is credited days later — a check mark here would
+    // claim the money arrived.
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [inFlightPayout] })} />);
+
+    const chip = document.querySelector('.pay-chip.pending');
+    expect(chip).toBeTruthy();
+    expect(chip?.getAttribute('title')).toBe('history.inTransit');
+    expect(document.querySelector('.pay-chip.confirmed')).toBeNull();
+  });
+
+  it('offers a bank-authorisation link while the transfer awaits the association', () => {
+    // The association is the debtor: an initiation it never authorised moves no money, so the tab
+    // must let it resume instead of stranding the payout.
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [awaitingBankPayout] })} />);
+
+    const link = screen.getByRole('link', { name: 'history.authorise' });
+    expect(link.getAttribute('href')).toBe('https://pay.bridgeapi.io/link/abc');
+  });
+
+  it('offers no authorisation link once the transfer is settled', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    expect(screen.queryByRole('link', { name: 'history.authorise' })).toBeNull();
+  });
+
+  it('surfaces the bank rejection reason on a failed payout', () => {
+    setupMocks();
+    const failed: PayoutDto = {
+      ...samplePayout,
+      status: 'FAILED',
+      bridgeStatus: 'RJCT',
+      bridgeLastError: 'debit_account_insufficient_funds',
+    };
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [failed] })} />);
+
+    expect(document.querySelector('.pay-chip.failed')?.getAttribute('title'))
+      .toBe('debit_account_insufficient_funds');
   });
 
   it('shows no pills when there are no active blocking reasons', async () => {
