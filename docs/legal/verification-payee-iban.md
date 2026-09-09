@@ -95,6 +95,45 @@ deviner. Tant que ce remplacement n'est pas fait :
   pas résolu — ce qui, par construction (point 3), signifie qu'**aucun bénéficiaire ne serait
   sélectionnable pour un paiement en production** avant ce remplacement.
 
+### 4.4 Aucune dérogation au statut *vérifié*
+
+Il n'existe **aucun mécanisme, dans aucun environnement, permettant de porter un IBAN au statut
+*vérifié* sans passer par le contrôle décrit au point 3.** Le seul assouplissement est celui du
+point 4.1 : en local et en staging, le résultat de la vérification du titulaire est simulé (mode
+démo) au lieu d'être demandé à la banque. Le statut *vérifié* obtenu dans ces environnements ne
+constitue donc pas la preuve d'une vérification bancaire, mais il résulte bien du même chemin de
+code et des mêmes règles.
+
+Un endpoint de forçage manuel a été envisagé pendant l'intégration de Bridge, pour contourner le
+fait que l'IBAN de démonstration du sandbox Bridge se termine par `5` — caractère que la simulation
+du mode démo mappe sur *correspondance approximative*, laquelle ne produit pas le statut *vérifié*.
+Il a été **retiré** : le modèle d'initiation retenu (point 4.5) accepte n'importe quel IBAN comme
+destination, il suffit donc d'utiliser un IBAN de test dont le dernier caractère est un chiffre pair
+pour dérouler le parcours complet. Aucun contournement n'est nécessaire, donc aucun n'est conservé.
+
+### 4.5 Ce que ce contrôle est devenu depuis l'intégration de Bridge
+
+Le virement est désormais réellement exécuté, par **initiation de paiement Open Banking à
+bénéficiaire dynamique** : l'association est le débiteur, elle autorise le virement auprès de sa
+propre banque, et les fonds vont directement de son compte vers l'IBAN du bénéficiaire. L'IBAN
+vérifié est transmis tel quel comme destination du virement ; il n'existe aucun enregistrement
+préalable ailleurs, donc aucun contrôle supplémentaire entre la saisie de l'IBAN et le virement.
+
+Deux conséquences à assumer explicitement :
+
+- **la vérification du titulaire est le seul filtre** entre l'enregistrement d'un IBAN et un
+  virement réel vers cet IBAN, ce qui rend le point 4.3 d'autant plus déterminant ;
+- l'association conserve la maîtrise finale : aucun mouvement de fonds n'a lieu sans son
+  authentification forte auprès de sa banque, laquelle lui réaffiche le montant et le destinataire.
+  Un virement non autorisé par elle n'est jamais exécuté.
+
+Par ailleurs, la destination effectivement enregistrée par Bridge est **relue et comparée** à celle
+transmise avant que l'URL d'autorisation ne soit remise à l'association ; en cas d'écart, le
+virement est refusé. Ce contrôle existe parce que Bridge substitue l'IBAN configuré dans son tableau
+de bord lorsque aucun IBAN de bénéficiaire n'est fourni, et que la fonctionnalité de bénéficiaire
+dynamique doit être activée sur le compte : une activation manquante ne doit pas pouvoir aboutir à
+un virement vers un compte que l'association n'a pas choisi.
+
 ## 5. Traçabilité et audit
 
 La réponse brute de Mollie (`PayeeIban.vopRawResponse`) est conservée intégralement pour chaque
@@ -108,6 +147,13 @@ encore reçu aucun paiement peut, lui, être soit désactivé soit supprimé.
 
 - **Aucune revérification périodique** d'un IBAN déjà vérifié — si le compte est fermé ou renommé
   chez la banque après coup, CommonLink ne le détecte pas automatiquement.
+- **En local et en staging, le statut *vérifié* résulte d'une simulation** et non d'une
+  vérification auprès de la banque (points 4.1 et 4.4).
+- **Ce contrôle ne porte pas sur l'exécution du virement.** Depuis l'intégration de Bridge, l'IBAN
+  vérifié est transmis tel quel comme destination du virement (bénéficiaire dynamique) : il n'y a
+  aucun enregistrement préalable ailleurs, mais aucun contrôle supplémentaire non plus. La
+  vérification du titulaire est donc le seul filtre entre la saisie d'un IBAN et un virement réel
+  vers cet IBAN — ce qui renforce l'importance du point 4.3.
 - **La vérification du titulaire ne garantit pas la légitimité du bénéficiaire** — elle établit que
   le nom déclaré correspond au nom tenu par la banque, non que ce bénéficiaire est autorisé ou
   attendu par l'association. Un compte associatif compromis pourrait toujours enregistrer un
@@ -127,9 +173,16 @@ reçu un paiement et son inverse (deux cas ; désactivation testée séparément
 blocage d'un paiement sur IBAN désactivé est couvert côté création et côté confirmation. L'ensemble
 des tests concernés a été exécuté après la modification, sans régression.
 
+S'y ajoutent, depuis l'intégration de Bridge, la vérification que l'IBAN vérifié est bien transmis
+tel quel comme destination du virement (bénéficiaire dynamique), le refus du virement lorsque la
+destination relue auprès de Bridge diffère de celle transmise, et la garantie qu'aucune attestation
+on-chain n'est émise avant le règlement effectif constaté par la banque.
+
 ---
 
-*Document établi le 6 septembre 2026. Ce contrôle a remplacé un fournisseur de vérification
-antérieur (Qonto) par Mollie ; toutes les références à l'ancien fournisseur ont été retirées du
-code, de la configuration applicative et du glossaire (`docs/glossary.md`), à l'exception des
-fichiers d'environnement dont la rotation du jeton reste à faire (point 4.3).*
+*Document établi le 6 septembre 2026, mis à jour le 8 septembre 2026 (points 4.4, 4.5, 6 et 7) lors
+de l'intégration de Bridge API pour l'exécution réelle des virements par initiation de paiement. Ce contrôle a remplacé un
+fournisseur de vérification antérieur (Qonto) par Mollie ; toutes les références à l'ancien
+fournisseur ont été retirées du code, de la configuration applicative et du glossaire
+(`docs/glossary.md`), à l'exception des fichiers d'environnement dont la rotation du jeton reste à
+faire (point 4.3).*
