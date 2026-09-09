@@ -1,5 +1,6 @@
 package org.commonlink.dto
 
+import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
@@ -40,6 +41,19 @@ data class PayoutDto(
     val createdAt: Instant,
     val confirmedAt: Instant?,
     val onchainJobId: UUID?,
+    /**
+     * State of the real SEPA transfer at Bridge, or null when no transfer has been initiated.
+     * Distinct from [status]: it lets the UI show "awaiting bank authorisation" or "in transit"
+     * without altering the three-state lifecycle that balance and KPI computations depend on.
+     */
+    val bridgeStatus: BridgePaymentStatus? = null,
+    /** Message of the last Bridge failure, surfaced so a failure is explainable to the user. */
+    val bridgeLastError: String? = null,
+    /**
+     * URL the association must open to authorise the transfer at its own bank. Non-null while a
+     * confirmed payout still awaits that authorisation.
+     */
+    val bridgeCheckoutUrl: String? = null,
 )
 
 fun Payout.toDto() = PayoutDto(
@@ -57,4 +71,7 @@ fun Payout.toDto() = PayoutDto(
     createdAt = createdAt,
     confirmedAt = confirmedAt,
     onchainJobId = onchainJobId,
+    bridgeStatus = bridgeStatus,
+    bridgeLastError = bridgeLastError,
+    bridgeCheckoutUrl = bridgeCheckoutUrl,
 )

@@ -68,4 +68,27 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
     /** Distinct payee IDs that have at least one payout in the given association — for bulk listing. */
     @Query("SELECT DISTINCT p.payee.id FROM Payout p WHERE p.payee.association.id = :associationId")
     fun findDistinctPayeeIdsByAssociationId(@Param("associationId") associationId: UUID): Set<UUID>
+
+    /**
+     * Sum of amounts for payouts still PENDING but whose Bridge transfer is already engaged (a
+     * non-null [Payout.bridgeStatus], set inside the locked confirm transaction before Bridge is
+     * called).
+     *
+     * These amounts must be treated as spent: the association may already have authorised the
+     * transfer at its bank even though this row has not yet been promoted to CONFIRMED. Without
+     * this, two concurrent confirmations could each pass the balance check and both be authorised.
+     *
+     * Returns null when no rows match; treat as zero.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(p.amount), 0)
+        FROM Payout p
+        WHERE p.campaign.id     = :campaignId
+          AND p.status          = org.commonlink.entity.PayoutStatus.PENDING
+          AND p.bridgeStatus IS NOT NULL
+    """)
+    fun sumInFlightAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
+
+    /** The payout attached to a Bridge payment link, for webhook reconciliation. */
+    fun findByBridgePaymentLinkId(bridgePaymentLinkId: String): Payout?
 }

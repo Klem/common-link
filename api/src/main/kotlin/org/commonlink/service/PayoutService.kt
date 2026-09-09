@@ -19,6 +19,7 @@ import org.commonlink.repository.PayeeIbanRepository
 import org.commonlink.repository.PayeeRepository
 import org.commonlink.repository.PayoutRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -45,15 +46,18 @@ class PayoutService(
     private val payeeIbanRepository: PayeeIbanRepository,
     private val donationRepository: DonationRepository,
     private val confirmer: PayoutConfirmer,
+    private val bridgeInitiation: BridgePaymentInitiationService,
+    @Value("\${app.frontend-url:http://localhost:3000}") private val frontendUrl: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * Creates a new PENDING payout for [campaignId].
      *
-     * @throws NotFoundException if campaign, payee, or IBAN do not belong to [associationId].
+     * @throws NotFoundException if campaign, payee, or IBAN do not belong to the user's association.
      * @throws IllegalArgumentException if the IBAN does not belong to the requested payee.
-     * @throws ConflictException if a [PayoutBlockingReason] applies (unverified IBAN, insufficient balance).
+     * @throws ConflictException if a [PayoutBlockingReason] applies (unverified IBAN, insufficient
+     *         balance, description too short).
      */
     @Transactional
     fun create(campaignId: UUID, request: CreatePayoutRequest, userId: UUID): PayoutDto {
@@ -93,40 +97,63 @@ class PayoutService(
     }
 
     /**
-     * Confirms a PENDING payout, setting it to CONFIRMED and enqueuing an on-chain job.
+     * Confirms a PENDING payout by initiating the real SEPA transfer at Bridge.
      *
-     * @throws NotFoundException if payout or campaign cannot be found for [associationId].
-     * @throws ConflictException if the payout is not PENDING, its IBAN is no longer VERIFIED,
-     *         or confirming it would exceed the confirmable balance (re-validated here — H2).
+     * The association is the debtor: the returned [PayoutDto.bridgeCheckoutUrl] must be opened so
+     * it can authorise the transfer with its own bank, after which the funds move directly to the
+     * payee's IBAN. The payout therefore stays **PENDING** here — it only becomes CONFIRMED, and
+     * the on-chain attestation only gets published, once Bridge reports the transfer settled
+     * through [BridgeWebhookService].
+     *
+     * Deliberately **not** `@Transactional`: the Bridge call must not run inside a database
+     * transaction. The phases and the reasoning behind their order are documented on
+     * [PayoutConfirmer]; this method only sequences them.
+     *
+     * @param campaignId Campaign owning the payout.
+     * @param payoutId Payout to confirm.
+     * @param userId Authenticated association user.
+     * @return the payout, carrying the bank-authorisation URL.
+     * @throws NotFoundException if payout or campaign cannot be found for the user's association.
+     * @throws ConflictException if the payout is not PENDING, its IBAN is no longer VERIFIED, or
+     *         confirming it would exceed the confirmable balance.
+     * @throws org.commonlink.exception.BadGatewayException if Bridge is unreachable — the payout is
+     *         left FAILED and nothing has been debited.
      */
-    @Transactional
     fun confirm(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
         val associationId = resolveAssociationId(userId)
-        // Lock the campaign row so concurrent confirms serialize against the balance re-check (H2).
-        val campaign = campaignRepository.findByIdForUpdate(campaignId)
-            ?: throw NotFoundException("Campaign not found: $campaignId")
-        if (campaign.association.id != associationId) throw NotFoundException("Campaign not found: $campaignId")
+        assertCampaignOwnership(campaignId, associationId)
 
-        val payout = payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(
-            campaignId, payoutId, associationId
-        ) ?: throw NotFoundException("Payout not found: $payoutId")
+        // Phase 1 — validate and read what the initiation needs; the transaction ends here.
+        val context = confirmer.loadForConfirm(campaignId, payoutId, associationId)
 
-        if (payout.status != PayoutStatus.PENDING) {
-            throw ConflictException("Payout $payoutId is already ${payout.status}")
+        // Phase 2 — engage the amount under the campaign lock: last point at which nothing is initiated.
+        confirmer.reserve(campaignId, payoutId)
+
+        // Phase 3 — create the initiation, then record the outcome.
+        val link = try {
+            bridgeInitiation.createPaymentLink(
+                payoutId = payoutId,
+                payeeName = context.payeeName,
+                payeeIban = context.payeeIban,
+                amount = context.amount,
+                label = context.label,
+                senderIban = null,
+                callbackUrl = bridgeCallbackUrl(campaignId),
+            )
+        } catch (ex: Exception) {
+            // Safe to release the reservation: with Open Banking initiation nothing can be debited
+            // until the association authorises the transfer at its bank, and that requires the
+            // authorisation URL — which this failure means we never obtained.
+            confirmer.finaliseFailed(payoutId, ex.message ?: "Bridge initiation failed", null)
+            throw ex
         }
 
-        // Re-validate at confirm time: the IBAN may have been downgraded/removed and other payouts
-        // may have consumed the balance since this one was created (create-time check is not enough).
-        val payeeIban = payeeIbanRepository.findById(payout.payeeIbanId).orElse(null)
-        if (payeeIban == null || payeeIban.status != IbanVerificationStatus.VERIFIED || !payeeIban.active) {
-            throw ConflictException("Payout blocked: ${PayoutBlockingReason.IBAN_NOT_VERIFIED}")
-        }
-        if (payout.amount > computeConfirmableBalance(campaignId)) {
-            throw ConflictException("Payout blocked: ${PayoutBlockingReason.INSUFFICIENT_BALANCE}")
-        }
-
-        return confirmer.confirmAndEnqueue(payout).toDto()
+        return confirmer.attachPaymentLink(payoutId, link).toDto()
     }
+
+    /** Where Bridge returns the association once the bank flow is over. */
+    private fun bridgeCallbackUrl(campaignId: UUID) =
+        "$frontendUrl/dashboard/association/campaigns/$campaignId?tab=payments"
 
     /**
      * Returns a paginated list of payouts for [campaignId], ordered by creation date descending.
@@ -190,7 +217,17 @@ class PayoutService(
         return blockingReasonsFor(campaignId, payeeIban, amount, label)
     }
 
-    private fun blockingReasonsFor(campaignId: UUID, payeeIban: PayeeIban, amount: BigDecimal, label: String): List<PayoutBlockingReason> {
+    /**
+     * No Bridge-side precondition is checked here: the beneficiary is passed inline to Bridge at
+     * initiation time (dynamic beneficiary), so a VERIFIED IBAN is on its own a valid transfer
+     * destination — nothing has to be pre-registered anywhere.
+     */
+    private fun blockingReasonsFor(
+        campaignId: UUID,
+        payeeIban: PayeeIban,
+        amount: BigDecimal,
+        label: String,
+    ): List<PayoutBlockingReason> {
         val reasons = mutableListOf<PayoutBlockingReason>()
         if (payeeIban.status != IbanVerificationStatus.VERIFIED || !payeeIban.active) {
             reasons += PayoutBlockingReason.IBAN_NOT_VERIFIED
