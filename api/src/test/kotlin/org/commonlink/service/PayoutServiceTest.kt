@@ -2,10 +2,14 @@ package org.commonlink.service
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.dto.CreatePayoutRequest
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.BridgePaymentStatus
+import org.commonlink.exception.BadGatewayException
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.IbanVerificationStatus
@@ -40,10 +44,12 @@ class PayoutServiceTest {
     private val payeeIbanRepository           = mockk<PayeeIbanRepository>()
     private val donationRepository            = mockk<DonationRepository>()
     private val confirmer                     = mockk<PayoutConfirmer>()
+    private val bridgeInitiation              = mockk<BridgePaymentInitiationService>()
 
     private val service = PayoutService(
         payoutRepository, campaignRepository, associationProfileRepository,
-        payeeRepository, payeeIbanRepository, donationRepository, confirmer
+        payeeRepository, payeeIbanRepository, donationRepository, confirmer,
+        bridgeInitiation, FRONTEND_URL
     )
 
     private val userId     = UUID.randomUUID()   // JWT subject (User.id)
@@ -162,81 +168,98 @@ class PayoutServiceTest {
         assertThrows<NotFoundException> { service.create(campaignId, request, userId) }
     }
 
-    @Test
-    fun `confirm - transitions PENDING to CONFIRMED via confirmer`() {
-        val confirmedPayout = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
-            amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel", status = PayoutStatus.CONFIRMED)
-
+    /**
+     * Stubs phase 1 of confirmation. The per-payout validations it performs (status, IBAN,
+     * balance under lock) are covered by [PayoutConfirmerTest] — here the confirmer is a mock,
+     * so this test class only asserts how [PayoutService] sequences the phases.
+     */
+    private fun stubLoadForConfirm() {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
-        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
-        stubBalance(confirmed = "0", raised = "1000")
-        every { confirmer.confirmAndEnqueue(pendingPayout) } returns confirmedPayout
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForConfirm(campaignId, payoutId, assocId) } returns PayoutConfirmContext(
+            payoutId = pendingPayout.id,
+            campaignId = campaignId,
+            amount = pendingPayout.amount,
+            label = pendingPayout.label,
+            payeeName = payee.name,
+            payeeIban = payeeIban.iban,
+        )
+    }
+
+    @Test
+    fun `confirm - initiates the transfer and returns the bank authorisation url`() {
+        val link = BridgePaymentLink("pl_1", "https://pay.bridgeapi.io/link/abc")
+        val awaiting = Payout(
+            campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
+            amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat",
+            label = "Achat matériel", status = PayoutStatus.PENDING,
+            bridgePaymentLinkId = link.id, bridgeCheckoutUrl = link.url,
+            bridgeStatus = BridgePaymentStatus.CREA,
+        )
+
+        stubLoadForConfirm()
+        every { confirmer.reserve(campaignId, payoutId) } returns Unit
+        every {
+            bridgeInitiation.createPaymentLink(
+                payoutId = payoutId,
+                payeeName = payee.name,
+                payeeIban = payeeIban.iban,
+                amount = BigDecimal("500"),
+                label = "Achat matériel",
+                senderIban = null,
+                callbackUrl = any(),
+            )
+        } returns link
+        every { confirmer.attachPaymentLink(payoutId, link) } returns awaiting
 
         val result = service.confirm(campaignId, payoutId, userId)
 
-        assertThat(result.status).isEqualTo(PayoutStatus.CONFIRMED)
-        verify { confirmer.confirmAndEnqueue(pendingPayout) }
+        // Still PENDING: nothing moves until the association authorises at its own bank.
+        assertThat(result.status).isEqualTo(PayoutStatus.PENDING)
+        assertThat(result.bridgeCheckoutUrl).isEqualTo(link.url)
+        // The amount must be engaged before the initiation exists, never after.
+        verifyOrder {
+            confirmer.reserve(campaignId, payoutId)
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any())
+            confirmer.attachPaymentLink(payoutId, link)
+        }
+        // The attestation belongs to settlement, which only the webhook can establish.
+        verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
     }
 
     @Test
-    fun `confirm - already CONFIRMED throws ConflictException`() {
-        val alreadyConfirmed = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
-            amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Done", status = PayoutStatus.CONFIRMED)
+    fun `confirm - sends the campaign payments tab as the bank return url`() {
+        val link = BridgePaymentLink("pl_1", "https://pay.bridgeapi.io/link/abc")
+        val callbackSlot = slot<String>()
 
-        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns alreadyConfirmed
+        stubLoadForConfirm()
+        every { confirmer.reserve(campaignId, payoutId) } returns Unit
+        every {
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), capture(callbackSlot))
+        } returns link
+        every { confirmer.attachPaymentLink(payoutId, link) } returns pendingPayout
 
-        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
+        service.confirm(campaignId, payoutId, userId)
+
+        assertThat(callbackSlot.captured)
+            .isEqualTo("$FRONTEND_URL/dashboard/association/campaigns/$campaignId?tab=payments")
     }
 
     @Test
-    fun `confirm - not found throws NotFoundException`() {
-        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns null
+    fun `confirm - unreachable Bridge fails the payout and emits no attestation`() {
+        // Safe to fail here: without the authorisation URL no debit can ever happen, so releasing
+        // the reservation cannot lead to a double payment.
+        stubLoadForConfirm()
+        every { confirmer.reserve(campaignId, payoutId) } returns Unit
+        every { bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any()) } throws
+            BadGatewayException("Bridge payment initiation unavailable: timeout")
+        every { confirmer.finaliseFailed(payoutId, any(), null) } returns Unit
 
-        assertThrows<NotFoundException> { service.confirm(campaignId, payoutId, userId) }
-    }
+        assertThrows<BadGatewayException> { service.confirm(campaignId, payoutId, userId) }
 
-    @Test
-    fun `confirm - IBAN downgraded after create throws ConflictException (H2)`() {
-        val downgradedIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.NO_MATCH)
-            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
-
-        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
-        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(downgradedIban)
-
-        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
-    }
-
-    @Test
-    fun `confirm - IBAN disabled after create throws ConflictException (H2)`() {
-        val disabledIban = PayeeIban(payee = payee, iban = "FR7630006000011234567890189", status = IbanVerificationStatus.VERIFIED, active = false)
-            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, ibanId) }
-
-        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
-        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(disabledIban)
-
-        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
-    }
-
-    @Test
-    fun `confirm - balance consumed by other confirmed payouts throws ConflictException (H2)`() {
-        // 500 payout, but only 100 confirmable (raised 1000 − 900 already confirmed) → over-withdrawal blocked at confirm.
-        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
-        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId) } returns pendingPayout
-        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
-        stubBalance(confirmed = "900", raised = "1000")
-
-        assertThrows<ConflictException> { service.confirm(campaignId, payoutId, userId) }
+        verify { confirmer.finaliseFailed(payoutId, any(), null) }
+        verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
+        verify(exactly = 0) { confirmer.attachPaymentLink(any(), any()) }
     }
 
     @Test
@@ -310,5 +333,9 @@ class PayoutServiceTest {
         val reasons = service.computeBlockingReasons(campaignId, ibanId, BigDecimal("500"), "trop court", userId)
 
         assertThat(reasons).containsExactly(org.commonlink.entity.PayoutBlockingReason.DESCRIPTION_TOO_SHORT)
+    }
+
+    private companion object {
+        const val FRONTEND_URL = "http://localhost:3000"
     }
 }

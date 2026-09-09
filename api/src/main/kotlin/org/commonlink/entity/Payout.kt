@@ -79,4 +79,50 @@ class Payout(
     /** UUID of the [OnchainJob] enqueued on confirmation; null until confirmed. */
     @Column(name = "onchain_job_id")
     var onchainJobId: UUID? = null,
+
+    /**
+     * Identifier of the Bridge payment link created for this payout; null until initiated.
+     *
+     * This is the key carried by Bridge's webhook notification, hence the lookup path used to
+     * reconcile an incoming notification with a payout.
+     */
+    @Column(name = "bridge_payment_link_id", length = 64)
+    var bridgePaymentLinkId: String? = null,
+
+    /**
+     * Identifier of the Bridge transaction, known only once the association has authenticated the
+     * transfer at its own bank. Kept for bank reconciliation: it is the only link between this row
+     * and the money that actually left the account.
+     */
+    @Column(name = "bridge_payment_transaction_id", length = 64)
+    var bridgePaymentTransactionId: String? = null,
+
+    /**
+     * URL the association must be redirected to in order to authorise the transfer at its bank.
+     *
+     * Stored rather than merely returned so an interrupted authorisation can be resumed instead of
+     * stranding the payout.
+     */
+    @Column(name = "bridge_checkout_url", length = 512)
+    var bridgeCheckoutUrl: String? = null,
+
+    /**
+     * Last known Bridge initiation state — a *separate* lifecycle from [status].
+     *
+     * [status] stays the three-state CommonLink lifecycle that balance computation, KPIs and the
+     * breakdown donut all rely on; Bridge's states are tracked here so that widening one does not
+     * silently change the meaning of the other. A non-null value on a PENDING payout means the
+     * amount is already engaged and must stay reserved.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "bridge_status", length = 32)
+    var bridgeStatus: BridgePaymentStatus? = null,
+
+    /** Message of the last failed Bridge call, for diagnosis without digging through logs. */
+    @Column(name = "bridge_last_error", length = 500)
+    var bridgeLastError: String? = null,
+
+    /** When [bridgeStatus] was last reconciled with Bridge (see BridgePayoutPoller). */
+    @Column(name = "bridge_synced_at")
+    var bridgeSyncedAt: Instant? = null,
 )
