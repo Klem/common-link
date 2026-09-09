@@ -19,6 +19,34 @@ export const PayoutStatus = {
 } as const;
 export type PayoutStatus = (typeof PayoutStatus)[keyof typeof PayoutStatus];
 
+/**
+ * State of the Bridge payment initiation for a payout — mirrors backend BridgePaymentStatus.
+ *
+ * Deliberately separate from {@link PayoutStatus}: the accounting lifecycle stays three-state so
+ * balance, KPI and breakdown computations keep their meaning, while the bank's own view is carried
+ * here for display. The first six values are Bridge's ISO 20022 transaction statuses; the last two
+ * are payment-link terminal states.
+ */
+export const BridgePaymentStatus = {
+  CREA: 'CREA',
+  ACTC: 'ACTC',
+  PDNG: 'PDNG',
+  ACSC: 'ACSC',
+  RJCT: 'RJCT',
+  PART: 'PART',
+  LINK_EXPIRED: 'LINK_EXPIRED',
+  LINK_REVOKED: 'LINK_REVOKED',
+} as const;
+export type BridgePaymentStatus = (typeof BridgePaymentStatus)[keyof typeof BridgePaymentStatus];
+
+/** Bridge states in which the transfer is engaged but not settled. */
+export const BRIDGE_IN_FLIGHT_STATUSES: readonly BridgePaymentStatus[] = [
+  BridgePaymentStatus.CREA,
+  BridgePaymentStatus.ACTC,
+  BridgePaymentStatus.PDNG,
+  BridgePaymentStatus.PART,
+];
+
 /** Single payout as returned by the API. */
 export interface PayoutDto {
   id: string;
@@ -36,6 +64,31 @@ export interface PayoutDto {
   createdAt: string;
   confirmedAt: string | null;
   onchainJobId: string | null;
+  /** State of the Bridge initiation; null when no transfer has been initiated. */
+  bridgeStatus: BridgePaymentStatus | null;
+  /** Message of the last Bridge failure, so a failure can be explained rather than guessed. */
+  bridgeLastError: string | null;
+  /**
+   * URL the association must open to authorise the transfer with its own bank. Non-null while a
+   * payout awaits that authorisation.
+   */
+  bridgeCheckoutUrl: string | null;
+}
+
+/** True while the payout's transfer is engaged but not yet settled by the bank. */
+export function isPayoutInFlight(payout: PayoutDto): boolean {
+  return payout.bridgeStatus !== null && BRIDGE_IN_FLIGHT_STATUSES.includes(payout.bridgeStatus);
+}
+
+/**
+ * True while the payout is waiting for the association to authorise the transfer at its bank.
+ *
+ * Distinct from {@link isPayoutInFlight}: here nothing has been debited yet and the association
+ * still has an action to take, so the UI must offer the authorisation link rather than merely
+ * report progress.
+ */
+export function needsBankAuthorisation(payout: PayoutDto): boolean {
+  return payout.bridgeStatus === BridgePaymentStatus.CREA && payout.bridgeCheckoutUrl !== null;
 }
 
 /**

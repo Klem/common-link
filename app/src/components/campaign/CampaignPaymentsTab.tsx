@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Donut } from '@/components/ui/Donut';
 import { useToastStore } from '@/stores/toastStore';
 import { getBlockingReasons } from '@/lib/api/payment';
-import { PayoutKind, PayoutStatus } from '@/types/payment';
+import { PayoutKind, PayoutStatus, isPayoutInFlight, needsBankAuthorisation } from '@/types/payment';
 import { IbanVerificationStatus } from '@/types/payee';
 import { ROUTES } from '@/lib/routes';
 import type { CampaignDto } from '@/types/campaign';
@@ -41,12 +41,22 @@ function fmtDate(iso: string) {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(iso));
 }
 
-function StatusChip({ status }: { status: PayoutDto['status'] }) {
-  if (status === PayoutStatus.CONFIRMED) {
+/**
+ * Payout state chip.
+ *
+ * A payout only shows as settled once the bank has actually executed the transfer. Between
+ * confirmation and settlement it is either awaiting the association's authorisation at its bank, or
+ * in transit — showing a check mark for either would claim the beneficiary has been credited.
+ */
+function StatusChip({ payout, inTransitLabel }: { payout: PayoutDto; inTransitLabel: string }) {
+  if (payout.status === PayoutStatus.FAILED) {
+    return <span className="pay-chip failed" title={payout.bridgeLastError ?? undefined}>✗</span>;
+  }
+  if (payout.status === PayoutStatus.CONFIRMED) {
     return <span className="pay-chip confirmed">✓</span>;
   }
-  if (status === PayoutStatus.FAILED) {
-    return <span className="pay-chip failed">✗</span>;
+  if (isPayoutInFlight(payout)) {
+    return <span className="pay-chip pending" title={inTransitLabel}>→</span>;
   }
   return <span className="pay-chip pending">⏳</span>;
 }
@@ -146,7 +156,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
   async function handleConfirm() {
     setShowConfirm(false);
     try {
-      await submit({
+      const initiated = await submit({
         payeeId, payeeIbanId, amount: amountNum,
         kind: kindFromTypeCode(effectiveTypeCode),
         typeCode: effectiveTypeCode,
@@ -154,7 +164,15 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
       });
       setPayeeId(''); setPayeeIbanId(''); setTypeCodeRaw('');
       setCustomTypeCode(''); setAmount(''); setLabel('');
-      addToast('success', 'paymentSuccess');
+
+      // The association is the debtor: nothing moves until it authorises the transfer with its own
+      // bank. Send it straight there rather than reporting a payment that has not happened.
+      if (needsBankAuthorisation(initiated) && initiated.bridgeCheckoutUrl) {
+        addToast('success', 'paymentAwaitingBank');
+        window.location.href = initiated.bridgeCheckoutUrl;
+        return;
+      }
+      addToast('success', isPayoutInFlight(initiated) ? 'paymentSubmitted' : 'paymentSuccess');
     } catch {
       addToast('error', 'paymentError');
     }
@@ -409,7 +427,16 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                   >
                     {fmtEur(p.amount)}
                   </span>
-                  <StatusChip status={p.status} />
+                  {needsBankAuthorisation(p) && p.bridgeCheckoutUrl ? (
+                    <a
+                      className="cm-btn cm-btn-ghost cm-btn-sm"
+                      href={p.bridgeCheckoutUrl}
+                      title={t('history.authoriseHint')}
+                    >
+                      {t('history.authorise')}
+                    </a>
+                  ) : null}
+                  <StatusChip payout={p} inTransitLabel={t('history.inTransit')} />
                 </div>
               ))
             )}
