@@ -1,6 +1,12 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
+/**
+ * Sous-navigation des pages réglementaires (fil d'ariane + pastilles).
+ * Markup et classes repris à l'identique de la maquette (`div.legal-subnav`,
+ * pages p6 et p13 à p20). Ne pas remplacer par des classes Tailwind :
+ * le CSS de la maquette est la source de vérité.
+ */
 const links = [
   { href: '/mentions-legales', key: 'mentions' },
   { href: '/transparence', key: 'transparency' },
@@ -13,31 +19,29 @@ const links = [
   { href: '/contact', key: 'contact' },
 ] as const;
 
-export function LegalSubnav({ active }: { active: (typeof links)[number]['key'] }) {
-  const t = useTranslations('footer.legal.links');
+export type LegalSubnavKey = (typeof links)[number]['key'];
+
+export function LegalSubnav({ active }: { active: LegalSubnavKey }) {
+  const t = useTranslations('legal.subnav');
   const tc = useTranslations('common');
 
   return (
-    <div className="bg-white border-b border-border sticky top-16 z-40">
-      <div className="max-w-container mx-auto px-8 py-3">
-        <div className="text-[0.75rem] text-foreground-muted mb-2">
-          <Link href="/" className="hover:text-primary">{tc('home')}</Link> › {tc('legalInfo')}
-        </div>
-        <nav className="flex items-center gap-5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="legal-subnav">
+      <div className="max-w">
+        <span className="legal-crumb">
+          <Link href="/">{tc('home')}</Link> › {tc('legalInfo')}
+        </span>
+        <div className="legal-subnav-links">
           {links.map((link) => (
             <Link
               key={link.key}
               href={link.href}
-              className={`text-[0.85rem] font-ui font-medium flex-shrink-0 transition-colors ${
-                active === link.key
-                  ? 'text-primary font-semibold'
-                  : 'text-foreground-muted hover:text-primary'
-              }`}
+              className={active === link.key ? 'active' : undefined}
             >
               {t(link.key)}
             </Link>
           ))}
-        </nav>
+        </div>
       </div>
     </div>
   );

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "compare:maquette": "node scripts/compare-maquette.js"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
@@ -22,8 +23,8 @@
     "autoprefixer": "^10.4.24",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.12",
+    "playwright": "^1.63.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3"
   }
 }

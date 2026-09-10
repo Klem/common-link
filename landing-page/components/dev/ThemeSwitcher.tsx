@@ -8,14 +8,38 @@ export function ThemeSwitcher() {
   if (process.env.NODE_ENV === 'production') return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-white border border-border rounded-lg shadow-lg p-3">
-      <label className="text-xs font-ui text-foreground-muted block mb-2">
+    <div
+      style={{
+        position: 'fixed',
+        bottom: '16px',
+        right: '16px',
+        zIndex: 50,
+        background: 'var(--white)',
+        border: '1px solid var(--mist-lavender)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-lg)',
+        padding: '12px',
+      }}
+    >
+      <label
+        style={{
+          display: 'block',
+          fontSize: '12px',
+          color: 'var(--slate-lavender)',
+          marginBottom: '8px',
+        }}
+      >
         Thème (dev)
       </label>
       <select
         value={themeName}
         onChange={(e) => setTheme(e.target.value)}
-        className="text-sm font-ui border border-border rounded-sm px-2 py-1"
+        style={{
+          fontSize: '14px',
+          border: '1px solid var(--mist-lavender)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '4px 8px',
+        }}
       >
         {availableThemes.map((t) => (
           <option key={t.name} value={t.name}>
