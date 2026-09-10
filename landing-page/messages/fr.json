@@ -1,130 +1,76 @@
 {
   "associations": {
-    "benefits": {
+    "features": {
       "items": [
         {
-          "title": "Attirez plus de donateurs",
-          "text": "La transparence rassure. Les donateurs privilégient les structures qui montrent comment leurs fonds sont utilisés."
+          "icon": "🎯",
+          "text": "Photos, budget, objectif, votre histoire. En ligne dès l'ouverture de votre compte d'encaissement.",
+          "title": "Page de campagne"
         },
         {
-          "title": "Simplifiez votre reporting",
-          "text": "Aucun bilan, aucune facture, aucun justificatif ne vous est demandé. Vos paiements sont enregistrés au moment où vous les effectuez."
+          "icon": "💳",
+          "text": "Carte, virement SEPA, Apple Pay, et bientôt le don mensuel. Les fonds vont sur votre compte, jamais sur le nôtre.",
+          "title": "Collecte multi-canaux"
         },
         {
-          "title": "Zéro compétence technique",
-          "text": "Vous gérez votre association en euros, comme d'habitude. La technologie est invisible — on s'occupe de tout."
+          "icon": "📊",
+          "text": "Payez depuis CommonLink, la publication est automatique. Aucun justificatif à fournir.",
+          "title": "Publication automatique"
+        },
+        {
+          "icon": "🧾",
+          "text": "Chaque donateur reçoit son Cerfa dans la minute. Rien à saisir, rien à envoyer.",
+          "title": "Reçus fiscaux"
+        },
+        {
+          "icon": "💬",
+          "text": "Avancement, nouvelles, résultats. Vos donateurs restent au courant tout seuls.",
+          "title": "Nouvelles aux donateurs"
         }
       ],
-      "title": "Pourquoi rejoindre CommonLink ?"
-    },
-    "form": {
-      "change": "Changer",
-      "consent": "J'accepte que CommonLink collecte ces informations pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
-      "description": "Décrivez votre association en une phrase",
-      "descriptionPlaceholder": "Ex: Aide alimentaire dans le 13e arrondissement",
-      "email": "Email de contact",
-      "emailPlaceholder": "contact@association.org",
-      "formTitle": "Dernière étape : vos coordonnées",
-      "note": "Nous vous recontacterons sous deux jours ouvrés. Aucun engagement à ce stade.",
-      "responsibleName": "Nom du responsable",
-      "responsibleNamePlaceholder": "Prénom Nom",
-      "selectedTitle": "Bienvenue parmi les pionniers !",
-      "submit": "Rejoindre la liste des pionniers",
-      "success": "Nous avons bien reçu votre inscription. Notre équipe vous contactera sous 48h pour organiser votre onboarding personnalisé."
+      "label": "Fonctionnalités",
+      "title": "De la page de collecte au bilan final"
     },
     "hero": {
-      "badge": "Associations",
-      "description": "Rejoignez les premières associations pilotes de CommonLink. Nous vous accompagnons pour simplifier votre gestion et renforcer la confiance de vos soutiens.",
-      "title": "Offrez la transparence à vos donateurs"
-    },
-    "onboarding": {
-      "title": "Comment se passe l'onboarding ?",
-      "steps": [
-        {
-          "title": "Recherchez votre association",
-          "text": "Trouvez-la dans le répertoire officiel ci-dessus. Vos informations de base sont pré-remplies automatiquement."
-        },
-        {
-          "title": "Laissez vos coordonnées",
-          "text": "Nom du responsable, email — c'est tout. 30 secondes. Zéro paperasse à ce stade."
-        },
-        {
-          "title": "On vous accompagne",
-          "text": "Notre équipe vous contacte pour finaliser votre profil, configurer votre espace et préparer votre premier projet."
-        }
-      ]
-    },
-    "search": {
-      "active": "Active",
-      "advancedToggle": "Filtrer les résultats",
-      "button": "Rechercher",
-      "city": "Ville",
-      "clearFilters": "Effacer les filtres",
-      "closed": "Cessée",
-      "created": "Création",
-      "dep": "Dép. {code}",
-      "description": "Commencez par rechercher votre association dans le répertoire officiel. Cela nous permet de vérifier que votre structure existe et de pré-remplir vos informations.",
-      "displayedAll": "{displayed} affichées",
-      "displayedInfo": "{displayed} sur {total} affichées",
-      "endOfResults": "Fin des résultats",
-      "filters": {
-        "activeCount": "{count} filtre(s) actif(s)",
-        "city": "Ville",
-        "cityPlaceholder": "ex : Paris",
-        "department": "Département",
-        "departmentAll": "Tous les départements",
-        "employees": "Nombre de salariés",
-        "employees0": "0 salarié",
-        "employees10to49": "10 à 49 salariés",
-        "employees1to9": "1 à 9 salariés",
-        "employees200plus": "200+ salariés",
-        "employees50to199": "50 à 199 salariés",
-        "employeesAll": "Tous",
-        "postalCode": "Code Postal",
-        "postalCodePlaceholder": "ex : 75001",
-        "status": "Statut",
-        "statusActive": "Actives uniquement",
-        "statusAll": "Tous",
-        "statusClosed": "Cessées uniquement"
+      "ctaCreate": "Créer mon compte association",
+      "ctaTarifs": "Voir les tarifs",
+      "expense1": {
+        "amount": "480 € ✓",
+        "label": "🍽 Repas bénévoles"
       },
-      "loading": "Recherche en cours...",
-      "modal": {
-        "activity": "Activité",
-        "activitySection": "Section d'activité",
-        "address": "Adresse du siège",
-        "close": "Fermer",
-        "commune": "Commune",
-        "dateCreation": "Date de création",
-        "department": "Département",
-        "directors": "Dirigeants",
-        "employees": "Effectif",
-        "establishments": "Nb. établissements",
-        "fullAddress": "Adresse complète",
-        "identification": "Identification",
-        "naf": "Code NAF",
-        "natureJuridique": "Nature juridique",
-        "noAddress": "Adresse non disponible",
-        "region": "Région",
-        "siret": "SIRET (siège)",
-        "viewAnnuaire": "Voir sur l'Annuaire"
+      "expense2": {
+        "amount": "120 € ✓",
+        "label": "🚌 Transport matériel"
       },
-      "noResults": "Aucune association trouvée. Vérifiez le nom ou le SIREN.",
-      "noResultsWithFilters": "Aucun résultat avec ces filtres. Essayez de modifier ou supprimer certains filtres.",
-      "placeholder": "Nom de votre association, SIREN, ville...",
-      "postalCode": "CP",
-      "quickFilters": {
-        "culture": "Culture",
-        "education": "Éducation",
-        "environnement": "Environnement",
-        "sante": "Santé",
-        "social": "Social",
-        "sport": "Sport"
+      "label": "Pour les associations",
+      "lastExpensesLabel": "Dernières dépenses publiées",
+      "progressAmount": "4 280 / 6 000 €",
+      "progressLabel": "Progression campagne",
+      "progressPercent": "71%",
+      "stat1": {
+        "num": "10 %",
+        "text": "HT de commission, sans autre frais"
       },
-      "resultsCount": "<strong>{count}</strong> associations trouvées — sélectionnez la vôtre",
-      "scrollMore": "Scroll pour plus",
-      "select": "Sélectionner",
-      "siren": "SIREN",
-      "title": "Inscrivez votre association"
+      "stat2": {
+        "num": "0 €",
+        "text": "détenu par CommonLink"
+      },
+      "stat3": {
+        "num": "0",
+        "text": "justificatif demandé"
+      },
+      "statCollected": {
+        "label": "Dons collectés",
+        "value": "4 280 €"
+      },
+      "statDonors": {
+        "label": "Donateurs actifs",
+        "value": "94"
+      },
+      "text": "Créez votre page. Recevez les dons sur votre compte. Payez vos fournisseurs depuis la plateforme, et tout se publie tout seul.",
+      "title": "Collectez des dons,",
+      "titleAccent": "sans la paperasse.",
+      "visualLabel": "Vue association — Ce mois"
     }
   },
   "common": {
@@ -132,888 +78,1265 @@
     "change": "Changer",
     "close": "Fermer",
     "contact": "Nous contacter",
+    "home": "Accueil",
     "learnMore": "En savoir plus",
+    "legalInfo": "Informations réglementaires",
     "loading": "Chargement...",
-    "search": "Rechercher",
-    "select": "Sélectionner",
     "submit": "Envoyer"
   },
   "donors": {
-    "cta": {
-      "button": "Créer mon compte gratuitement",
-      "description": "Rejoignez les premiers donateurs qui veulent savoir exactement où va leur argent.",
-      "title": "Prêt à donner autrement ?"
-    },
-    "dashboard": {
-      "activities": [
-        {
-          "badge": "Vérifié",
-          "text": "Achat de fournitures scolaires",
-          "amount": "85 €",
-          "type": "verified"
-        },
-        {
-          "badge": "Vérifié",
-          "text": "Location salle de répétition",
-          "amount": "120 €",
-          "type": "verified"
-        },
-        {
-          "badge": "En cours",
-          "text": "Matériel de camping",
-          "amount": "210 €",
-          "type": "pending"
-        }
-      ],
-      "activityTitle": "Dernières activités",
-      "greeting": "Bonjour, Claire",
-      "label": "Aperçu de votre tableau de bord",
-      "stats": [
-        {
-          "value": "1 250 €",
-          "label": "Donné en 2026"
-        },
-        {
-          "value": "100%",
-          "label": "Traçabilité"
-        },
-        {
-          "value": "3",
-          "label": "Reçus fiscaux"
-        }
-      ],
-      "subtitle": "3 associations soutenues"
-    },
-    "faq": {
-      "items": [
-        {
-          "question": "Mes dons sont-ils déductibles des impôts ?",
-          "answer": "Pour chaque don à un organisme éligible, vous recevez un reçu fiscal. La réduction d'impôt prévue par l'article 200 du code général des impôts est en principe de 66 % du montant versé, dans la limite de 20 % du revenu imposable. Certains organismes ouvrent droit à un taux différent. C'est l'organisme bénéficiaire qui déclare son éligibilité et qui en répond, CommonLink ne l'apprécie pas."
-        },
-        {
-          "question": "Comment suivre l'utilisation de mon don ?",
-          "answer": "Depuis votre tableau de bord, vous voyez en temps réel les dépenses liées aux projets que vous soutenez. Chaque dépense est accompagnée de preuves vérifiables : justificatifs, dates, montants."
-        },
-        {
-          "question": "Quand reçois-je mon reçu fiscal ?",
-          "answer": "Instantanément. Dès que votre don est confirmé, le reçu fiscal est disponible dans votre espace. Plus besoin d'attendre le courrier de l'association en fin d'année."
-        },
-        {
-          "question": "Puis-je donner à plusieurs associations ?",
-          "answer": "Bien sûr. Vous pouvez soutenir autant d'associations partenaires que vous le souhaitez. Chaque don est tracé individuellement et vous recevez un reçu fiscal par association."
-        },
-        {
-          "question": "Mes données sont-elles protégées ?",
-          "answer": "Absolument. Nous respectons le RGPD et ne partageons jamais vos données personnelles avec des tiers. Vos informations fiscales sont chiffrées et utilisées uniquement pour générer vos reçus."
-        }
-      ],
-      "title": "Questions fréquentes"
-    },
     "hero": {
-      "badge": "Donateurs",
-      "description": "Consultez les paiements effectués par les associations que vous soutenez, avec leur destinataire et leur montant.",
-      "title": "Donnez en toute confiance"
-    },
-    "preview": {
-      "items": [
-        {
-          "title": "Suivi en temps réel",
-          "text": "Voyez les paiements effectués par les associations que vous soutenez, rattachés à un projet précis."
-        },
-        {
-          "title": "Reçu fiscal numérique",
-          "text": "Recevez votre reçu fiscal instantanément dans votre espace. Plus besoin d'attendre des mois."
-        },
-        {
-          "title": "Historique vérifié",
-          "text": "Consultez l'ensemble de vos dons et les paiements qu'ils ont financés, à tout moment."
-        }
-      ],
-      "title": "Ce que vous verrez une fois inscrit"
-    },
-    "signup": {
-      "apple": "Continuer avec Apple",
-      "cardTitle": "Créer votre compte, gratuitement",
-      "consent": "J'accepte que CommonLink collecte mon prénom et email pour m'informer du lancement de la plateforme. Je pourrai me désinscrire à tout moment.",
-      "description": "Inscription en moins d'une minute. Explorez les associations et leurs projets dès maintenant.",
-      "divider": "ou par email",
-      "email": "Email",
-      "emailPlaceholder": "marie@exemple.fr",
-      "firstName": "Prénom",
-      "firstNamePlaceholder": "Marie",
-      "google": "Continuer avec Google",
-      "note": "Vos informations fiscales (nom complet, adresse) seront demandées uniquement au moment de votre premier don, pour générer votre reçu fiscal.",
-      "submit": "Créer mon compte",
-      "successLaunch": "Ouverture : septembre 2026",
-      "successText": "Votre compte a été créé avec succès. Vous recevrez un email de confirmation sous quelques instants.",
-      "successTitle": "Bienvenue chez CommonLink !",
-      "title": "Créez votre compte"
-    }
-  },
-  "footer": {
-    "brand": {
-      "description": "Traçabilité des paiements effectués par les associations.",
-      "legalNotice": "Société de l'économie sociale et solidaire, RCS Antibes 105 153 928.",
-      "name": "CommonLink"
-    },
-    "copyright": "© {year} CommonLink",
-    "legal": {
-      "legalNotice": "Éditeur : CommonLink SAS, société par actions simplifiée à capital variable au capital de 10 000 euros, RCS Antibes 105 153 928, siège social 1047 Chemin des Impiniers, 06220 Vallauris. Directeur de la publication : Julian Maiolino, Président. Contact : contact@common-link.org, 04 23 40 02 06, appel non surtaxé. Hébergeur : Clever Cloud SAS, 4 rue Voltaire, 44000 Nantes, RCS Nantes 524 172 699.",
-      "links": {
-        "cgu": "Conditions générales",
-        "contact": "Contact",
-        "cookies": "Politique cookies",
-        "faq": "FAQ",
-        "mentions": "Mentions légales",
-        "privacy": "Politique de confidentialité",
-        "tarifs": "Tarifs"
+      "cta": "Créer mon compte",
+      "don1": {
+        "amount": "50 €",
+        "name": "Sourires Solidaires"
       },
-      "title": "Légal"
-    },
-    "luciole": "Police <link>Luciole</link> par le Centre Technique Régional pour la Déficience Visuelle et typographies.fr — licence CC BY 4.0.",
-    "nav": {
-      "associations": "Associations",
-      "donors": "Donateurs",
-      "partners": "Partenaires",
-      "title": "Navigation"
-    }
-  },
-  "landing": {
-    "constat": {
-      "associations": {
-        "text": "Le suivi et le reporting prennent du temps, au détriment du terrain. Les petites structures manquent d'outils adaptés pour rendre compte de l'usage des fonds.",
-        "title": "Côté associations"
+      "don2": {
+        "amount": "25 €",
+        "name": "Lire Ensemble"
       },
-      "donors": {
-        "text": "Difficile de savoir concrètement comment les fonds sont utilisés. Les rapports annuels arrivent tard, restent vagues, et la confiance repose sur la bonne foi.",
-        "title": "Côté donateurs"
-      },
-      "title": "Un constat partagé"
-    },
-    "faq": {
       "items": [
         {
-          "question": "Qu'est-ce qui est tracé au lancement ?",
-          "answer": "Les paiements effectués depuis la plateforme par les associations, pour les projets publiés."
+          "icon": "💸",
+          "text": "Carte ou virement SEPA, et bientôt le don mensuel",
+          "title": "Don en 3 clics"
         },
         {
-          "question": "Est-ce de la crypto ?",
-          "answer": "Non. Vous donnez en euros, vous consultez en euros. La technologie sert à sécuriser des preuves vérifiables, sans jargon ni manipulation. Elle reste invisible pour l'utilisateur."
+          "icon": "📊",
+          "text": "Votre espace, à jour en permanence",
+          "title": "Suivi en direct"
         },
         {
-          "question": "Qui peut devenir association partenaire ?",
-          "answer": "Les associations déclarées disposant d'un numéro d'enregistrement au répertoire national des associations, et les fonds de dotation, établis en France. L'association doit avoir un siège en France, un représentant légal identifié et un compte bancaire ouvert à son nom."
-        },
-        {
-          "question": "Y a-t-il des frais ?",
-          "answer": "Pour le donateur, le service est gratuit : 100 % du montant du don est encaissé au bénéfice de l'association. Pour l'association, CommonLink perçoit une commission de 10 % hors taxes du montant des dons encaissés dans le mois, soit 12 % toutes taxes comprises. Cette commission couvre l'intégralité du service, frais du prestataire d'encaissement compris. Elle est facturée séparément et n'est jamais prélevée sur les dons. Il n'existe aucun autre frais."
-        },
-        {
-          "question": "Comment sont gérées mes données ?",
-          "answer": "Vos données sont traitées conformément au règlement général sur la protection des données. Elles servent à permettre le don, à émettre le reçu fiscal et à respecter nos obligations légales. Notre politique de confidentialité est publiée sur le site à l'ouverture du service."
-        },
-        {
-          "question": "Pourquoi une ouverture en septembre 2026 ?",
-          "answer": "La société est constituée, la plateforme est en phase finale de préparation et les premières associations pilotes sont identifiées."
+          "icon": "🧾",
+          "text": "Cerfa n° 11580*05, prêt à télécharger",
+          "title": "Reçu fiscal automatique"
         }
       ],
-      "title": "Questions fréquentes"
+      "label": "Pour les donateurs",
+      "lastDonsLabel": "Derniers dons",
+      "profileName": "Marie Lambert",
+      "profileSince": "Donateur depuis mars 2024",
+      "statAssosLabel": "Associations",
+      "statAssosText": "suivies activement",
+      "statAssosValue": "6",
+      "statDonsChange": "↗ +120 € vs 2023",
+      "statDonsLabel": "Dons 2024",
+      "statDonsValue": "840 €",
+      "taxAmount": "554 €",
+      "taxNote": "estimation à 66 %",
+      "taxTitle": "Réduction d'impôt estimée 2024",
+      "text": "L'association paie ses fournisseurs depuis CommonLink. Chaque paiement s'affiche sur la page du projet. Vous savez ce que votre don a payé.",
+      "title": "Vous donnez. Vous voyez",
+      "titleAccent": "où ça va."
     },
-    "features": {
-      "items": [
+    "journey": {
+      "ctaShare": "Partager",
+      "ctaTrace": "Voir la traçabilité",
+      "label": "Après votre don",
+      "projectIcon": "📗",
+      "projectMeta": "Les Petits Écoliers · 15 mars 2025",
+      "projectTitle": "50 € pour la rénovation de l'école de Kaolack",
+      "steps": [
         {
-          "title": "Transparence",
-          "text": "Visualisez les paiements effectués par les associations pour leurs projets.",
-          "tag": "Publié"
+          "date": "15 mars, 14h32",
+          "status": "done",
+          "text": "Votre don de 50 € est confirmé.",
+          "title": "Don reçu"
         },
         {
-          "title": "Traçabilité",
-          "text": "Chaque paiement effectué depuis la plateforme est publié avec son destinataire et son montant.",
-          "tag": "Public"
+          "date": "17 mars, 09h15",
+          "link": "Vérifier",
+          "status": "done",
+          "text": "Les fonds sont arrivés. Le don est scellé dans le registre public.",
+          "title": "Crédité sur le compte de l'association"
         },
         {
-          "title": "Simplicité",
-          "text": "Dons en euros, expérience non-technique.",
-          "tag": "En euros"
+          "date": "dernier paiement le 22 mars",
+          "link": "Voir les paiements",
+          "status": "done",
+          "text": "Vos 50 € ont contribué à l’achat de 25 kits scolaires.",
+          "title": "Utilisé pour des paiements"
+        },
+        {
+          "date": "à la clôture",
+          "status": "todo",
+          "text": "L'association publie son bilan à la clôture. Vous recevrez un email.",
+          "title": "Bilan d'impact"
         }
       ],
-      "title": "Ce que CommonLink apporte"
-    },
-    "guarantee": {
-      "text": "Nous ne demandons aucun justificatif à l'association et nous ne vérifions aucune facture. La traçabilité vient d'ailleurs : l'association s'engage à effectuer depuis la plateforme les paiements financés par les dons, et chacun de ces paiements est publié avec son destinataire et son montant. Ce qui est publié est donc l'opération elle-même, et non un document déclaratif.",
-      "title": "Comment garantissons-nous la traçabilité ?"
-    },
-    "hero": {
-      "badge": "Traçabilité des paiements",
-      "cta": "Découvrir le fonctionnement",
-      "launch": "Ouverture : septembre 2026",
-      "subtitle": "Chaque paiement effectué par une association depuis la plateforme est publié, avec son destinataire et son montant.",
-      "title": "La transparence sur l'usage des dons, euro par euro."
-    },
-    "journal": {
-      "rows": [
-        {
-          "label": "Paiement publié",
-          "badge": "Publié",
-          "amount": "120 €"
-        },
-        {
-          "label": "Paiement publié",
-          "badge": "Publié",
-          "amount": "85 €"
-        },
-        {
-          "label": "Paiement en cours",
-          "badge": "En cours",
-          "amount": "210 €"
-        }
-      ],
-      "title": "Paiements publiés",
-      "total": "Total projet",
-      "totalAmount": "415 €"
-    },
-    "status": {
-      "items": [
-        {
-          "title": "Structure juridique",
-          "text": "CommonLink SAS, société de l'économie sociale et solidaire, immatriculée au RCS d'Antibes.",
-          "badge": "Constituée",
-          "badgeType": "in-progress"
-        },
-        {
-          "title": "Associations pilotes",
-          "text": "Premières associations pilotes identifiées, ouverture prévue en septembre 2026.",
-          "badge": "Septembre 2026",
-          "badgeType": "upcoming"
-        },
-        {
-          "title": "Contact",
-          "text": "Une question ? Écrivez-nous.",
-          "badgeType": "contact",
-          "contactEmail": "contact@common-link.org"
-        }
-      ],
-      "title": "Où en sommes-nous ?"
+      "subtitle": "Étape par étape, jusqu'au bilan final.",
+      "title": "Le parcours de votre don"
     },
     "steps": {
       "items": [
         {
-          "number": "1",
-          "title": "Publication",
-          "text": "Une association partenaire publie un budget et des étapes pour son projet."
+          "num": "1",
+          "text": "Parcourez les campagnes en cours. Choisissez celle qui vous parle.",
+          "title": "Choisissez votre projet"
         },
         {
-          "number": "2",
-          "title": "Enregistrement",
-          "text": "L'association effectue ses paiements depuis la plateforme. Chaque paiement est enregistré avec son destinataire, son montant et sa date."
+          "num": "2",
+          "text": "Vous choisissez le montant, vous payez en sécurité. Aucun frais pour vous, et le reçu fiscal part aussitôt.",
+          "title": "Faites votre don"
         },
         {
-          "number": "3",
-          "title": "Consultation",
-          "text": "Vous consultez un suivi clair : ce qui a été fait, quand, et avec quel montant."
+          "num": "3",
+          "text": "Votre espace vous montre ce que l'association a payé, et quand.",
+          "title": "Suivez l'impact"
         }
       ],
-      "title": "Comment ça marche"
+      "label": "Comment ça marche",
+      "title": "Trois étapes, deux minutes"
+    }
+  },
+  "footer": {
+    "associations": {
+      "createCampaign": "Créer une campagne",
+      "tarifs": "Tarifs",
+      "title": "Pour associations"
+    },
+    "bottom": {
+      "legal": "© {year} CommonLink SAS · RCS Antibes 105 153 928 · ORIAS 26010395",
+      "payments": "Paiements opérés par des prestataires agréés · Données hébergées dans l’Union européenne"
+    },
+    "brand": {
+      "badgeOrias": "ORIAS 26010395",
+      "badgeSecure": "Don sécurisé",
+      "description": "La plateforme de dons qui publie chaque paiement effectué par les associations."
+    },
+    "donors": {
+      "donate": "Faire un don",
+      "howToGive": "Comment donner",
+      "mySpace": "Mon espace",
+      "title": "Pour donateurs"
+    },
+    "legal": {
+      "links": {
+        "cguAssociations": "CGU association",
+        "cguDonors": "CGU donateur",
+        "complaints": "Réclamations",
+        "contact": "Nous contacter",
+        "cookies": "Politique cookies",
+        "mentions": "Mentions légales",
+        "modelAgreement": "Contrat type",
+        "privacy": "Politique de confidentialité",
+        "transparency": "Transparence"
+      },
+      "title": "Informations réglementaires"
+    }
+  },
+  "landing": {
+    "asso": {
+      "ctaCreate": "Créer ma campagne",
+      "ctaTarifs": "Voir les tarifs",
+      "label": "Pour les associations",
+      "monthLabel": "Ce mois-ci",
+      "progressAmount": "4 280 € collectés",
+      "progressLabel": "Avancement campagne principale",
+      "progressPercent": "71%",
+      "statCollected": "Dons collectés",
+      "statCollectedValue": "2 840 €",
+      "statExpenses": "Dépenses publiées",
+      "statExpensesValue": "4",
+      "statNewDonors": "Nouveaux donateurs",
+      "statNewDonorsValue": "+23",
+      "steps": [
+        {
+          "num": "1",
+          "text": "Votre histoire, votre budget, votre objectif. La page part en ligne dès que votre compte d'encaissement est ouvert.",
+          "title": "Créez votre campagne"
+        },
+        {
+          "num": "2",
+          "text": "Carte ou virement SEPA, et bientôt le don mensuel. L'argent arrive sur votre compte bancaire, jamais sur le nôtre.",
+          "title": "Recevez les dons"
+        },
+        {
+          "num": "3",
+          "text": "Payez vos fournisseurs depuis CommonLink. Le paiement s'affiche aussitôt. Aucun justificatif à fournir.",
+          "title": "Payez depuis la plateforme"
+        }
+      ],
+      "text": "Votre page se monte simplement. Vos paiements se publient tout seuls. Vos donateurs voient le travail avancer.",
+      "title": "Collectez, et montrez ce que vous en faites",
+      "visualLabel": "Dashboard Association"
+    },
+    "campaigns": {
+      "ctaAll": "Voir tous les projets",
+      "emptyText": "Les premières campagnes arrivent. Revenez très vite.",
+      "emptyTitle": "Rien pour l'instant !",
+      "label": "Campagnes en cours",
+      "title": "Ils collectent en ce moment"
+    },
+    "hero": {
+      "ctaCreate": "Créer une campagne",
+      "ctaDonate": "Faire un don",
+      "eyebrow": "✦ Intermédiaire en financement participatif",
+      "floatAmount": "2 840 €",
+      "floatLabel": "collectés ce mois",
+      "floatLastExpense": "Repas bénévoles · 480 €",
+      "floatLastExpenseLabel": "Dernière dépense publiée",
+      "floatPublished": "Paiement publié",
+      "floatRealtime": "En temps réel",
+      "subtitle": "Donnez à une association. Elle paie ses fournisseurs depuis CommonLink. Chaque paiement s'affiche sur la page du projet.",
+      "title": "La plateforme de dons où chaque euro",
+      "titleAccent": "révèle son impact.",
+      "trust": [
+        {
+          "strong": "Chaque dépense",
+          "text": "publiée"
+        },
+        {
+          "strong": "Reçu fiscal",
+          "text": "immédiat"
+        },
+        {
+          "strong": "0 €",
+          "text": "de frais pour vous"
+        }
+      ],
+      "visualAssoc": "Sourires Solidaires",
+      "visualProject": "Cantine solidaire — Bordeaux"
+    },
+    "partners": {
+      "items": [
+        {
+          "href": "https://www.ekads.fr/",
+          "name": "ekads",
+          "role": "Visibilité en ligne",
+          "text": "Agence digitale de Grenoble, spécialisée dans la bourse Google Ad Grants pour les organisations à but non lucratif. Certifiée Google Partner."
+        },
+        {
+          "href": "https://www.samson-conseil.org/",
+          "name": "Samson Conseil",
+          "role": "Structuration et gouvernance",
+          "text": "Cabinet de conseil et de formation pour les organismes de l'économie sociale et solidaire. Gouvernance, modèle économique, structuration."
+        }
+      ],
+      "label": "Nos partenaires",
+      "note": "Nos partenaires n'interviennent ni dans la collecte, ni dans le traitement des dons.",
+      "subtitle": "Nous avançons avec des acteurs installés dans le secteur, sur la visibilité en ligne et sur la structuration des organisations.",
+      "title": "Ils connaissent le monde associatif"
+    },
+    "transparency": {
+      "ctaLabel": "Voir comment suivre un don",
+      "features": [
+        "Chaque paiement publié, avec son montant et son destinataire",
+        "Chaque paiement scellé dans un registre public",
+        "Un bilan publié par l’association à la clôture",
+        "Reçu fiscal automatique (Cerfa n° 11580*05)"
+      ],
+      "label": "Transparence",
+      "text": "L'association paie un fournisseur, le paiement apparaît sur la page du projet. Montant et bénéficiaire compris.",
+      "timeline": [
+        {
+          "date": "15 jan. 2025 · 14:32",
+          "status": "done",
+          "text": "50 € confirmés par carte",
+          "title": "Don reçu"
+        },
+        {
+          "date": "15 jan. 2025 · 14:33",
+          "status": "done",
+          "text": "Le don est scellé dans le registre public",
+          "title": "Crédité sur le compte de l'association"
+        },
+        {
+          "date": "18 jan. 2025 · 09:15",
+          "status": "done",
+          "text": "Achat de denrées — 480 €",
+          "title": "Paiement publié"
+        },
+        {
+          "date": "18 jan. 2025 · 10:02",
+          "status": "done",
+          "text": "Destinataire et montant sur la page du projet",
+          "title": "Paiement publié"
+        },
+        {
+          "date": "En cours…",
+          "status": "current",
+          "text": "Publié par l'association à la clôture",
+          "title": "Bilan d'impact"
+        }
+      ],
+      "timelineLabel": "Le parcours de votre don",
+      "title": "Suivez l'argent, étape par étape"
+    },
+    "trust": {
+      "items": [
+        {
+          "icon": "🧾",
+          "text": "Votre reçu part dès que le don est confirmé. En général 66 % du montant en réduction d'impôt, selon votre situation.",
+          "title": "Reçu fiscal automatique"
+        },
+        {
+          "icon": "📑",
+          "text": "Montant, destinataire, date. Visible par tous, sur la page du projet.",
+          "title": "Dépenses publiées"
+        },
+        {
+          "icon": "🔒",
+          "text": "Chaque paiement publié est scellé dans un registre public. Personne ne peut le modifier ensuite.",
+          "title": "Registre sécurisé"
+        }
+      ],
+      "label": "Confiance & Sécurité",
+      "title": "Trois engagements, sur chaque don"
+    },
+    "why": {
+      "items": [
+        {
+          "icon": "💸",
+          "text": "Carte ou virement SEPA, et bientôt le don mensuel. Trois clics, et votre reçu arrive.",
+          "title": "Donnez simplement"
+        },
+        {
+          "icon": "📊",
+          "text": "Vos dons et ce qu’ils ont financé. Montants, dates, destinataires, à jour en direct.",
+          "title": "Suivez l'impact"
+        },
+        {
+          "icon": "🔒",
+          "text": "Chaque paiement publié est scellé dans un registre public. Ni l'association ni nous ne pouvons le modifier ensuite.",
+          "title": "Vérifiez par vous-même"
+        }
+      ],
+      "label": "Pourquoi CommonLink",
+      "subtitle": "Les associations paient leurs fournisseurs depuis la plateforme. Chaque paiement est publié aussitôt. Vous n'avez rien à demander.",
+      "title": "Donner sans se demander",
+      "titleAccent": "où va l'argent"
     }
   },
   "legal": {
-    "cgu": {
-      "intro": "Les présentes conditions générales d'utilisation ont pour objet de définir les conditions d'accès et d'utilisation du site https://www.common-link.org/ et des services proposés par CommonLink.",
+    "cguAssociations": {
+      "articles": [
+        {
+          "paragraphs": [
+            "Les présentes conditions régissent l’utilisation du service CommonLink par les organismes qui y présentent des campagnes de collecte de dons.",
+            "Elles comprennent les conditions financières du service. Les relations entre CommonLink et les donateurs font l’objet de conditions distinctes."
+          ],
+          "title": "Article 1. Objet"
+        },
+        {
+          "paragraphs": [
+            "CommonLink : la société identifiée en tête des présentes. Plateforme : l’environnement numérique permettant de présenter des campagnes, de recevoir des dons et de tracer les paiements. Organisme : l’association ou le fonds de dotation utilisant le service. Campagne : l’opération de collecte présentée par l’organisme. Don : le versement effectué sans contrepartie par un donateur au bénéfice de l’organisme. Bénéficiaire : la personne ou l’entité à laquelle l’organisme verse des fonds dans le cadre d’une campagne. Paiement tracé : un paiement effectué par l’organisme depuis la plateforme, enregistré et publié."
+          ],
+          "title": "Article 2. Définitions"
+        },
+        {
+          "paragraphs": [
+            "L’acceptation des présentes conditions est nécessaire pour utiliser le service. Elle est recueillie de manière expresse à l’inscription, avant toute collecte.",
+            "La version acceptée, sa date et son heure sont conservées."
+          ],
+          "title": "Article 3. Acceptation"
+        },
+        {
+          "paragraphs": [
+            "CommonLink est un intermédiaire en financement participatif. Son rôle est de mettre en relation des donateurs et des organismes porteurs de projets d’intérêt général, de permettre le traçage des paiements et de publier les informations correspondantes.",
+            "CommonLink n’est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires habilités.",
+            "CommonLink ne dirige pas l’activité de l’organisme et ne se substitue pas à lui dans la conduite de ses projets."
+          ],
+          "title": "Article 4. Statut et rôle de CommonLink"
+        },
+        {
+          "paragraphs": [
+            "Le service est ouvert aux associations déclarées disposant d’un numéro d’enregistrement au répertoire national des associations, et aux fonds de dotation, établis en France.",
+            "L’organisme doit disposer d’une existence juridique vérifiable dans les registres publics, avoir son siège en France, désigner un représentant légal identifié et disposer d’un compte bancaire ouvert à son nom.",
+            "L’organisme informe CommonLink de tout changement affectant ces conditions."
+          ],
+          "title": "Article 5. Conditions d’éligibilité"
+        },
+        {
+          "paragraphs": [
+            "CommonLink vérifie l’existence et l’identité de l’organisme auprès des registres publics, et procède aux vérifications que lui imposent ses obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
+            "L’organisme fournit les informations demandées et s’engage à leur exactitude. Aucun document comptable, justificatif de dépense ou rapport d’activité ne lui est demandé.",
+            "Tant que ces vérifications ne sont pas achevées, l’organisme ne peut pas collecter de dons."
+          ],
+          "title": "Article 6. Inscription et vérifications"
+        },
+        {
+          "paragraphs": [
+            "Les dons sont encaissés sur un compte de paiement ouvert au nom de l’organisme auprès du prestataire d’encaissement, dont les conditions sont acceptées par l’organisme lors de son inscription.",
+            "L’organisme est titulaire de ce compte. Il en conserve la propriété et l’usage, y compris après la fin des présentes."
+          ],
+          "title": "Article 7. Compte de paiement"
+        },
+        {
+          "paragraphs": [
+            "Les paiements effectués par l’organisme depuis la plateforme sont exécutés depuis son propre compte bancaire, au moyen du service d’initiation de paiement fourni par Perspecteev, exerçant sous la marque Bridge, établissement de paiement agréé par l’Autorité de contrôle prudentiel et de résolution sous le numéro 16918.",
+            "Chaque paiement est autorisé par le représentant légal de l’organisme, qui s’authentifie auprès de sa banque dans l’environnement technique de Bridge. CommonLink ne peut ni déclencher un paiement à sa place, ni l’annuler une fois autorisé. Bridge ne détient à aucun moment les fonds.",
+            "Les données nécessaires à l’exécution de ces paiements sont traitées par Bridge en qualité de responsable de traitement, dans les conditions prévues par sa documentation. Les données traitées par CommonLink le sont dans les conditions prévues à l’article 22."
+          ],
+          "title": "Article 8. Paiements sortants"
+        },
+        {
+          "paragraphs": [
+            "Les dons ne transitent jamais par CommonLink. Elle n’encaisse, ne conserve et ne reverse aucun don, et les sommes collectées ne figurent à aucun moment dans ses comptes.",
+            "Ni CommonLink, ni le prestataire d’initiation de paiement ne détiennent les fonds à un quelconque moment.",
+            "Les dons sont acquis à l’organisme dès leur réception."
+          ],
+          "title": "Article 9. Les fonds"
+        },
+        {
+          "paragraphs": [
+            "L’organisme crée ses campagnes sous sa responsabilité. Il est seul auteur des informations qu’il y publie et en garantit l’exactitude.",
+            "Une campagne ne peut être publiée qu’après renseignement de son objet, de son montant cible, de son calendrier, du budget prévisionnel de l’utilisation des fonds et du résultat attendu. Cette vérification est automatique.",
+            "L’organisme s’engage à ce que l’objet de chaque campagne relève de son objet statutaire et corresponde à un besoin d’intérêt général."
+          ],
+          "title": "Article 10. Création d’une campagne"
+        },
+        {
+          "paragraphs": [
+            "Ne peuvent pas être présentées sur la plateforme les campagnes dont l’objet est illicite, celles au profit d’un parti politique, d’un candidat ou d’une campagne électorale, celles au bénéfice d’une personne ou d’une famille identifiée, celles proposant une contrepartie au donateur, celles finançant l’exercice d’un culte, celles finançant les frais de justice d’une personne identifiée, et celles finançant en réalité une activité commerciale.",
+            "La liste complète et son détail figurent sur la page publique consacrée à la transparence."
+          ],
+          "title": "Article 11. Campagnes exclues"
+        },
+        {
+          "paragraphs": [
+            "CommonLink n’exerce aucun contrôle éditorial préalable sur les campagnes et n’apprécie pas la valeur des projets présentés.",
+            "Une campagne publiée peut être retirée si elle relève d’un cas exclu. L’organisme est informé de la décision, peut présenter ses observations et la contester. Chaque retrait est consigné avec son motif et sa date."
+          ],
+          "title": "Article 12. Publication et retrait"
+        },
+        {
+          "paragraphs": [
+            "L’objectif annoncé par une campagne constitue un plafond. Lorsqu’il est atteint, la campagne cesse d’accepter des dons.",
+            "L’objectif n’est pas un seuil de mise à disposition : l’organisme dispose des dons reçus même s’il n’est pas atteint."
+          ],
+          "title": "Article 13. Objectif de collecte"
+        },
+        {
+          "paragraphs": [
+            "L’organisme s’engage à effectuer depuis la plateforme les paiements financés par les dons collectés pour une campagne.",
+            "Cet engagement est au cœur du service : c’est lui qui permet aux donateurs de voir l’usage des sommes qu’ils ont versées."
+          ],
+          "title": "Article 14. Traçage des paiements"
+        },
+        {
+          "paragraphs": [
+            "CommonLink publie, sur la page de chaque campagne, les paiements effectués par l’organisme depuis la plateforme, avec leur destinataire et leur montant, ainsi que la part des fonds collectés qu’ils représentent.",
+            "Cette publication est une modalité du service, acceptée par l’organisme. Elle est factuelle et ne comporte aucune appréciation de son comportement.",
+            "L’organisme peut à tout moment ajouter un commentaire expliquant tout ou partie du montant non tracé. Ce commentaire est publié avec l’information."
+          ],
+          "title": "Article 15. Publication de l’utilisation des fonds"
+        },
+        {
+          "paragraphs": [
+            "À la clôture d’une campagne, l’organisme publie un bilan rendant compte de l’utilisation des fonds collectés.",
+            "Si une partie des fonds n’a pas été dépensée, l’organisme indique dans ce bilan ce qu’il en fait. Ces fonds lui restent acquis et ne sont pas restitués aux donateurs."
+          ],
+          "title": "Article 16. Clôture d’une campagne et bilan"
+        },
+        {
+          "paragraphs": [
+            "L’organisme déclare relever des catégories mentionnées aux articles 200 et 238 bis du code général des impôts, et être en mesure de délivrer des reçus fiscaux. CommonLink ne vérifie pas cette éligibilité.",
+            "L’organisme donne mandat à CommonLink d’établir et de transmettre les reçus fiscaux en son nom et pour son compte, à partir des informations qu’il fournit. Les reçus sont émis sous la seule responsabilité de l’organisme, qui en est le déclarant.",
+            "L’organisme demeure seul redevable des obligations déclaratives lui incombant, notamment de la déclaration annuelle du montant global des dons et du nombre de reçus délivrés."
+          ],
+          "title": "Article 17. Reçus fiscaux"
+        },
+        {
+          "paragraphs": [
+            "L’organisme garantit CommonLink contre les conséquences d’une déclaration inexacte de sa part relative à son éligibilité ou aux informations portées sur les reçus.",
+            "Cette garantie est limitée à ces conséquences. Elle ne couvre pas les manquements imputables à CommonLink."
+          ],
+          "title": "Article 18. Garantie sur les reçus fiscaux"
+        },
+        {
+          "paragraphs": [
+            "Les données des donateurs sont traitées par CommonLink pour permettre la réalisation des dons et l’émission des reçus fiscaux. L’organisme y accède pour les finalités liées à ses obligations de déclarant et à la relation avec ses donateurs.",
+            "L’organisme s’interdit tout autre usage de ces données, notamment leur cession ou leur utilisation à des fins étrangères à son objet."
+          ],
+          "title": "Article 19. Données personnelles des donateurs"
+        },
+        {
+          "paragraphs": [
+            "Lorsque l’organisme met en ligne, sur son propre nom de domaine, une page de collecte alimentée par CommonLink, il en est l’éditeur.",
+            "Il y fait figurer ses propres mentions légales et indique que le service de collecte est fourni par CommonLink.",
+            "Les données saisies par les donateurs sur cette page sont traitées dans les conditions convenues entre les parties, précisées en annexe."
+          ],
+          "title": "Article 20. Pages de collecte hébergées par l’organisme"
+        },
+        {
+          "paragraphs": [
+            "CommonLink perçoit une commission de 10 % hors taxes du montant des dons encaissés au cours du mois, soit 12 % toutes taxes comprises au taux de taxe sur la valeur ajoutée en vigueur.",
+            "Cette commission couvre l’intégralité du service, y compris les frais du prestataire d’encaissement, qui ne sont jamais refacturés à l’organisme.",
+            "Il n’existe aucun autre frais : ni abonnement, ni frais d’ouverture, ni frais par transaction, ni frais de virement, ni frais de sortie. Il n’existe aucun montant minimum de facturation."
+          ],
+          "title": "Article 21. Prix"
+        },
+        {
+          "paragraphs": [
+            "La commission est facturée en fin de mois sur la base des dons encaissés au cours du mois. Aucune facture n’est émise pour un mois sans collecte.",
+            "La facture est réglée par virement, au plus tard à la fin du mois suivant celui de son émission.",
+            "La commission n’est jamais prélevée sur les dons.",
+            "Un don annulé après facturation donne lieu à régularisation sur la facture suivante."
+          ],
+          "title": "Article 22. Facturation et règlement"
+        },
+        {
+          "paragraphs": [
+            "En cas de retard de paiement, des pénalités sont exigibles de plein droit, sans mise en demeure préalable, au taux d’intérêt appliqué par la Banque centrale européenne à son opération de refinancement la plus récente, majoré de dix points de pourcentage.",
+            "Une indemnité forfaitaire pour frais de recouvrement de quarante euros est également due par facture en retard. Lorsque les frais de recouvrement exposés sont supérieurs à ce montant, une indemnisation complémentaire peut être demandée sur justificatifs."
+          ],
+          "title": "Article 23. Retard de paiement"
+        },
+        {
+          "paragraphs": [
+            "CommonLink peut modifier ses conditions financières. Toute modification est notifiée à l’organisme au moins trois mois avant son entrée en vigueur.",
+            "L’organisme qui n’accepte pas les nouvelles conditions peut mettre fin aux présentes avant leur entrée en vigueur, sans frais ni pénalité."
+          ],
+          "title": "Article 24. Évolution du prix"
+        },
+        {
+          "paragraphs": [
+            "L’organisme s’engage à utiliser le service conformément à la loi et aux présentes conditions, à fournir des informations exactes et à jour, à ne pas utiliser le service à des fins frauduleuses ou illicites, à ne pas perturber son fonctionnement et à ne pas contourner ses mesures de sécurité.",
+            "Il est responsable de la confidentialité des accès de ses utilisateurs."
+          ],
+          "title": "Article 25. Obligations de l’organisme"
+        },
+        {
+          "paragraphs": [
+            "L’organisme conserve ses droits sur les contenus qu’il publie. Il concède à CommonLink, pour la durée des présentes et pour les besoins du service, le droit de les reproduire et de les représenter sur la plateforme et sur les supports de promotion des campagnes.",
+            "Il garantit détenir les droits nécessaires sur ces contenus, notamment sur les images représentant des personnes."
+          ],
+          "title": "Article 26. Contenus publiés par l’organisme"
+        },
+        {
+          "paragraphs": [
+            "La plateforme, ses dénominations, signes distinctifs, logos, contenus éditoriaux et développements sont protégés au titre de la propriété intellectuelle. Toute reproduction ou exploitation non autorisée est interdite."
+          ],
+          "title": "Article 27. Propriété intellectuelle de CommonLink"
+        },
+        {
+          "paragraphs": [
+            "CommonLink met en œuvre les moyens raisonnables pour assurer le bon fonctionnement du service. Elle peut l’interrompre pour maintenance, sécurité ou mise à jour, en s’efforçant d’en informer les organismes et d’en limiter la durée."
+          ],
+          "title": "Article 28. Disponibilité du service"
+        },
+        {
+          "paragraphs": [
+            "CommonLink s’engage à fournir le service avec diligence et selon les règles de l’art. Il pèse sur elle une obligation de moyens, à l’exclusion de toute obligation de résultat.",
+            "Le service consiste à permettre la présentation de campagnes, la réception de dons et le traçage des paiements. CommonLink ne garantit ni un volume de dons, ni l’atteinte d’un objectif de collecte, ni un résultat de visibilité, ni une disponibilité ininterrompue.",
+            "CommonLink répond des manquements à ses propres obligations dans les conditions du droit commun. Les présentes conditions ne limitent ni ne suppriment le droit à réparation de l’organisme."
+          ],
+          "title": "Article 29. Engagements de CommonLink et périmètre du service"
+        },
+        {
+          "paragraphs": [
+            "Aucune des parties ne peut être tenue responsable de l’inexécution de ses obligations résultant d’un cas de force majeure au sens de l’article 1218 du code civil."
+          ],
+          "title": "Article 30. Force majeure"
+        },
+        {
+          "paragraphs": [
+            "CommonLink peut suspendre tout ou partie de l’accès au service dans les cas suivants : soupçon de fraude ou d’usage illicite, non-respect répété de l’obligation de traçage prévue à l’article 14, information d’inscription inexacte ou devenue caduque, perte des conditions d’éligibilité, impayé persistant, ou lorsqu’une obligation légale l’impose.",
+            "La suspension est notifiée et motivée. Sauf en cas de fraude, d’usage illicite ou d’obligation légale, elle ne prend effet qu’à l’expiration d’un délai de quinze jours permettant à l’organisme de régulariser.",
+            "L’organisme est informé des mesures prises, sauf lorsque la loi l’interdit."
+          ],
+          "title": "Article 31. Suspension"
+        },
+        {
+          "paragraphs": [
+            "CommonLink peut refuser d’exécuter une opération ou de donner suite à une demande de paiement, notamment au titre de ses obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme."
+          ],
+          "title": "Article 32. Refus d’opération"
+        },
+        {
+          "paragraphs": [
+            "Les présentes sont conclues pour une durée indéterminée, sans engagement de durée minimale.",
+            "L’organisme peut y mettre fin à tout moment, sans motif, moyennant un préavis d’un mois.",
+            "CommonLink peut y mettre fin moyennant un préavis d’un mois. En cas de manquement de l’organisme, la résiliation est précédée d’une mise en demeure et d’un délai de quinze jours pour régulariser.",
+            "CommonLink peut résilier sans préavis en cas de fraude, d’usage illicite du service, de perte des conditions d’éligibilité, ou lorsqu’une obligation légale l’impose."
+          ],
+          "title": "Article 33. Durée et résiliation"
+        },
+        {
+          "paragraphs": [
+            "Les campagnes en cours sont clôturées. L’organisme publie le bilan prévu à l’article 16.",
+            "Les dons déjà reçus lui demeurent acquis. Les dons récurrents en cours prennent fin, et les donateurs concernés en sont informés.",
+            "Les pages des campagnes restent accessibles.",
+            "Le compte de paiement ouvert au nom de l’organisme lui demeure acquis.",
+            "Les commissions dues au titre des dons encaissés avant la fin du contrat restent exigibles.",
+            "En cas de cessation d’activité de CommonLink, l’organisme conserve son compte de paiement, son compte bancaire et les fonds qu’il a collectés. Les organismes et les donateurs sont informés préalablement, et les pages des campagnes restent accessibles.",
+            "La fin du contrat n’entraîne pas la suppression immédiate des données de l’organisme. CommonLink conserve celles que la loi lui impose de conserver, notamment pendant cinq ans au titre de ses obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme. À l’expiration de ces durées, les données sont supprimées."
+          ],
+          "title": "Article 34. Effets de la fin du contrat"
+        },
+        {
+          "paragraphs": [
+            "Un organisme qui n’a engagé aucune collecte peut résilier son inscription à tout moment, sans motif et sans frais, en écrivant à contact@common-link.org. La résiliation est effectuée dans un délai de trente jours à compter de la demande et confirmée par courrier électronique.",
+            "Les effets prévus à l’article 34 en matière de conservation des données s’appliquent."
+          ],
+          "title": "Article 35. Résiliation de l’inscription"
+        },
+        {
+          "paragraphs": [
+            "CommonLink, 1047 Chemin des Impiniers, 06220 Vallauris. Téléphone : 04 23 40 02 06, appel non surtaxé. Courriel : contact@common-link.org",
+            "Une réclamation est l’expression d’un mécontentement à l’égard de CommonLink. Il n’est pas nécessaire d’employer le mot réclamation.",
+            "Toute réclamation peut être adressée par courriel à reclamations@common-link.org, par courrier à CommonLink, Service Réclamations, 1047 Chemin des Impiniers, 06220 Vallauris, ou par téléphone au 04 23 40 02 06. Une réclamation formulée par téléphone et non résolue immédiatement doit être confirmée par écrit.",
+            "CommonLink accuse réception de toute réclamation écrite dans un délai maximal de dix jours ouvrables à compter de son envoi, sauf si une réponse définitive est apportée dans ce même délai, et y répond de façon motivée dans un délai maximal de deux mois à compter de l’envoi de la première réclamation écrite.",
+            "Ces délais courent à compter de l’envoi de la réclamation, et non de la date à laquelle CommonLink en prend connaissance.",
+            "Une réclamation portant sur un service opéré par un prestataire de CommonLink, notamment l’encaissement des dons ou l’exécution d’un paiement, est traitée par CommonLink et n’est pas renvoyée vers ce prestataire.",
+            "Les modalités complètes sont décrites sur la page Réclamations du site."
+          ],
+          "title": "Article 36. Nous contacter et réclamations"
+        },
+        {
+          "paragraphs": [
+            "CommonLink peut modifier les présentes conditions, notamment pour tenir compte de l’évolution du service ou de la réglementation.",
+            "Toute modification est notifiée à l’organisme avant son entrée en vigueur. L’organisme qui ne l’accepte pas peut mettre fin aux présentes dans les conditions de l’article 33. Les modifications des conditions financières relèvent de l’article 24."
+          ],
+          "title": "Article 37. Modification des présentes conditions"
+        },
+        {
+          "paragraphs": [
+            "Les enregistrements informatiques conservés par CommonLink, notamment ceux relatifs à l’acceptation des présentes, aux campagnes, aux dons et aux paiements, font foi entre les parties, sauf preuve contraire."
+          ],
+          "title": "Article 38. Convention de preuve"
+        },
+        {
+          "paragraphs": [
+            "Si une clause des présentes est déclarée nulle ou réputée non écrite, les autres clauses conservent leur plein effet.",
+            "Les présentes sont rédigées en français. En cas de traduction, la version française prévaut."
+          ],
+          "title": "Article 39. Dispositions diverses"
+        },
+        {
+          "paragraphs": [
+            "Toute question peut être adressée à contact@common-link.org. CommonLink s’efforce de répondre dans un délai de deux jours ouvrés."
+          ],
+          "title": "Article 40. Contact"
+        },
+        {
+          "paragraphs": [
+            "Les présentes sont soumises au droit français.",
+            "Les parties s’efforcent de résoudre à l’amiable tout différend. À défaut, le litige est porté devant la juridiction compétente en application des règles de droit commun."
+          ],
+          "title": "Article 41. Droit applicable et litiges"
+        },
+        {
+          "paragraphs": [
+            "Le contrat type est consultable sur la page dédiée du site."
+          ],
+          "title": "Annexe 1. Contrat type entre le donateur et l’organisme bénéficiaire"
+        },
+        {
+          "callout": "EN ATTENTE : encadrement du traitement des données des donateurs saisies sur les pages hébergées par l’organisme, voir article 20. Cette annexe est produite dans le cadre de la fiche DP-04 et n’est pas encore publiable.",
+          "title": "Annexe 2. Traitement des données personnelles"
+        }
+      ],
+      "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d’Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
       "lastUpdated": "29 juin 2026",
-      "s1": {
-        "campaign": "Campagne : page ou espace dédié à une opération de collecte présentée par un organisme bénéficiaire sur la Plateforme.",
-        "commonlink": "CommonLink : la société CommonLink, SAS, immatriculée au RCS d'Antibes sous le numéro 105 153 928, dont le siège social est situé 1047 Chemin des Impiniers, 06220 Vallauris, France.",
-        "donor": "Donateur : toute personne réalisant un don au bénéfice d'un organisme bénéficiaire via la Plateforme.",
-        "intro": "Dans les présentes conditions générales, les termes ci-dessous ont la signification suivante :",
-        "org": "Organisme bénéficiaire : toute association, fondation, fonds de dotation, ONG ou structure éligible utilisant CommonLink pour présenter une campagne, recevoir des dons ou documenter l'utilisation des fonds collectés.",
-        "platform": "Plateforme : l'environnement numérique proposé par CommonLink permettant notamment à des organismes bénéficiaires de présenter des campagnes de collecte et à des donateurs de réaliser, suivre et documenter leurs dons.",
-        "site": "Site : le site internet accessible à l'adresse https://www.common-link.org/.",
-        "title": "1. Définitions",
-        "user": "Utilisateur : toute personne accédant au Site ou utilisant les services CommonLink."
-      },
-      "s10": {
-        "p1": "Lors de la réalisation d'un don, le donateur peut laisser une contribution volontaire à CommonLink. Cette contribution est facultative et peut être ramenée à zéro avant validation du paiement.",
-        "title": "10. Contribution volontaire à CommonLink"
-      },
-      "s11": {
-        "p1": "CommonLink facture aux organismes bénéficiaires des frais de service de 8 % HT et des frais de paiement et techniques de 2 % du montant des dons collectés, facturés mensuellement.",
-        "p2": "Les tarifs applicables sont précisés sur la page Tarifs du Site.",
-        "tarifsLinkLabel": "Tarifs",
-        "title": "11. Frais applicables aux organismes bénéficiaires"
-      },
-      "s12": {
-        "item0": "double paiement ;",
-        "item1": "erreur manifeste de montant ;",
-        "item2": "fraude ;",
-        "item3": "paiement non autorisé ;",
-        "item4": "campagne annulée ;",
-        "item5": "organisme bénéficiaire retiré de la Plateforme ;",
-        "item6": "situation exceptionnelle appréciée par CommonLink.",
-        "p1": "Les dons sont en principe définitifs et non remboursables. Un remboursement peut toutefois être étudié dans les cas suivants :",
-        "p2": "Les demandes doivent être adressées à : contact@common-link.org",
-        "title": "12. Remboursements"
-      },
-      "s13": {
-        "p1": "Lorsque l'organisme bénéficiaire est éligible, CommonLink génère et transmet des reçus fiscaux pour le compte de l'organisme bénéficiaire.",
-        "p2": "Les certificats numériques, NFT ou éléments de preuve complémentaires ne constituent pas des reçus fiscaux.",
-        "title": "13. Reçus fiscaux"
-      },
-      "s14": {
-        "p1": "CommonLink met à disposition des outils de transparence permettant de suivre certains flux financiers et de présenter des preuves d'utilisation fondées sur les opérations enregistrées.",
-        "p2": "CommonLink ne garantit pas que chaque euro collecté soit traçable de manière exhaustive dans toutes les situations, et ne garantit pas l'usage final des fonds par l'organisme bénéficiaire.",
-        "title": "14. Transparence et preuve d'utilisation"
-      },
-      "s15": {
-        "p1": "Les organismes bénéficiaires souhaitant utiliser CommonLink doivent créer un compte et fournir les informations et justificatifs nécessaires à leur identification et validation.",
-        "p2": "CommonLink peut valider, refuser, suspendre ou retirer un organisme bénéficiaire ou une campagne notamment en cas d'informations inexactes, de refus KYC/KYB, de soupçon de fraude ou de risque juridique.",
-        "title": "15. Conditions applicables aux organismes bénéficiaires"
-      },
-      "s16": {
-        "p1": "L'organisme bénéficiaire accorde à CommonLink une licence non exclusive, gratuite et mondiale permettant d'héberger, reproduire et diffuser les contenus transmis pour les besoins du service.",
-        "title": "16. Contenus publiés par les organismes bénéficiaires"
-      },
-      "s17": {
-        "p1": "Le contrat entre CommonLink et l'organisme bénéficiaire est conclu pour une durée indéterminée. Chaque partie peut résilier avec un préavis de 30 jours, sous réserve du traitement des opérations en cours.",
-        "p2": "CommonLink peut suspendre immédiatement l'accès d'un organisme bénéficiaire en cas de fraude, information fausse ou risque légal.",
-        "title": "17. Résiliation et suspension des organismes bénéficiaires"
-      },
-      "s18": {
-        "p1": "L'utilisateur s'engage à utiliser le Site et la Plateforme conformément à la loi et aux présentes conditions. Il est notamment interdit d'utiliser le Site à des fins frauduleuses, d'usurper une identité, de perturber le fonctionnement du Site ou de contourner les mesures de sécurité.",
-        "title": "18. Obligations des utilisateurs"
-      },
-      "s19": {
-        "p1": "Le Site, la Plateforme, la marque CommonLink et l'ensemble des contenus édités par CommonLink sont protégés par les règles applicables en matière de propriété intellectuelle. Toute reproduction ou exploitation non autorisée est interdite.",
-        "title": "19. Propriété intellectuelle"
-      },
-      "s2": {
-        "item0": "la présentation d'organismes bénéficiaires et de campagnes ;",
-        "item1": "la création d'un compte donateur ;",
-        "item2": "la réalisation de dons ponctuels ;",
-        "item3": "l'accès à un historique de dons ;",
-        "item4": "la génération et la transmission de reçus fiscaux pour le compte des organismes bénéficiaires, lorsque les conditions applicables sont réunies ;",
-        "item5": "l'accès à des informations de suivi relatives aux campagnes ;",
-        "item6": "la mise à disposition d'éléments de transparence et de preuve d'utilisation des fonds.",
-        "p1": "CommonLink est une plateforme de dons permettant aux associations, fondations, fonds de dotation, ONG et entreprises mécènes de collecter, suivre et documenter l'utilisation des fonds collectés, avec des mécanismes de transparence et de preuve d'utilisation.",
-        "p2": "La Plateforme permet notamment :",
-        "title": "2. Objet du service"
-      },
-      "s20": {
-        "p1": "Les informations relatives aux traitements de données personnelles sont décrites dans la Politique de confidentialité accessible sur le Site.",
-        "p2": "Pour exercer vos droits : legal@common-link.org",
-        "privacyLinkLabel": "Politique de confidentialité",
-        "title": "20. Données personnelles"
-      },
-      "s21": {
-        "cookiesLinkLabel": "Politique cookies",
-        "p1": "Les règles applicables sont décrites dans la Politique cookies accessible sur le Site.",
-        "title": "21. Cookies"
-      },
-      "s22": {
-        "p1": "CommonLink met en œuvre des mesures raisonnables pour assurer le bon fonctionnement du Site mais ne garantit pas une disponibilité continue ou sans erreur.",
-        "title": "22. Disponibilité et sécurité"
-      },
-      "s23": {
-        "p1": "CommonLink ne garantit pas le succès d'une campagne ni l'usage final des fonds par l'organisme bénéficiaire. CommonLink ne saurait être tenue responsable des dommages indirects ou des dysfonctionnements imputables à des prestataires tiers.",
-        "title": "23. Limitation de responsabilité"
-      },
-      "s24": {
-        "p1": "CommonLink ne saurait être tenue responsable en cas d'inexécution résultant d'un cas de force majeure ou d'un événement échappant raisonnablement à son contrôle.",
-        "title": "24. Force majeure"
-      },
-      "s25": {
-        "email": "contact@common-link.org",
-        "response": "CommonLink s'efforce de répondre dans un délai de 48 heures ouvrées.",
-        "title": "25. Contact"
-      },
-      "s26": {
-        "p1": "Les présentes conditions générales sont soumises au droit français. Pour les litiges entre CommonLink et un organisme bénéficiaire professionnel, compétence est attribuée au tribunal de commerce d'Antibes, sauf règle impérative contraire.",
-        "title": "26. Droit applicable"
-      },
-      "s3": {
-        "p1": "CommonLink est une société commerciale de l'économie sociale et solidaire. Une demande d'agrément ESUS a été déposée.",
-        "p2": "CommonLink est en cours de démarche d'immatriculation auprès de l'ORIAS en qualité d'intermédiaire en financement participatif.",
-        "p3": "CommonLink n'est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires habilités.",
-        "p4": "Les dons sont réalisés directement au bénéfice des organismes bénéficiaires. CommonLink n'encaisse pas juridiquement les fonds pour son propre compte.",
-        "title": "3. Statut de CommonLink"
-      },
-      "s4": {
-        "p1": "L'accès au Site implique l'acceptation des présentes conditions générales d'utilisation.",
-        "p2": "Pour réaliser un don ou créer un compte, l'utilisateur doit accepter expressément les présentes conditions générales.",
-        "p3": "CommonLink peut modifier les présentes conditions générales afin de tenir compte notamment de l'évolution du service, de la réglementation, des partenaires techniques ou des conditions d'utilisation des prestataires. La version applicable est celle en vigueur à la date d'utilisation du service.",
-        "title": "4. Acceptation des conditions générales"
-      },
-      "s5": {
-        "p1": "Le Site est accessible librement à tout utilisateur disposant d'un accès internet. Certaines fonctionnalités nécessitent la création d'un compte.",
-        "p2": "CommonLink peut suspendre, limiter ou interrompre l'accès au Site ou à la Plateforme pour des raisons de maintenance, sécurité, mise à jour, force majeure ou tout autre motif légitime.",
-        "title": "5. Accès au Site et à la Plateforme"
-      },
-      "s6": {
-        "p1": "La création d'un compte donateur est nécessaire pour réaliser un don via la Plateforme.",
-        "p2": "Le donateur s'engage à fournir des informations exactes, complètes et à jour, et est responsable de la confidentialité de ses identifiants.",
-        "p3": "En cas d'utilisation non autorisée de son compte, le donateur doit en informer CommonLink sans délai à l'adresse : contact@common-link.org",
-        "title": "6. Création de compte donateur"
-      },
-      "s7": {
-        "p1": "La Plateforme est destinée aux personnes majeures. Les mineurs ne peuvent utiliser la Plateforme qu'avec l'autorisation de leur représentant légal.",
-        "p2": "Le donateur choisit une campagne présentée sur la Plateforme et réalise un don au bénéfice de l'organisme bénéficiaire concerné. La sélection d'une campagne entraîne une affectation globale du don à cette campagne.",
-        "title": "7. Conditions applicables aux donateurs"
-      },
-      "s8": {
-        "p1": "Les dons réalisés via CommonLink sont ponctuels au lancement. Des fonctionnalités de dons récurrents pourront être proposées ultérieurement.",
-        "p2": "Les dons sont réalisés en euros. Le don est juridiquement acquis à l'organisme bénéficiaire dès sa réception, indépendamment de l'atteinte éventuelle de l'objectif affiché pour une campagne.",
-        "title": "8. Dons"
-      },
-      "s9": {
-        "p1": "Les moyens de paiement proposés au lancement sont la carte bancaire et le prélèvement SEPA. Les paiements sont traités par un ou plusieurs prestataires de services de paiement habilités.",
-        "p2": "CommonLink ne collecte pas, ne stocke pas et ne traite pas directement les données complètes de carte bancaire.",
-        "title": "9. Paiement"
-      },
-      "title": "Conditions générales d'utilisation"
+      "title": "Conditions générales d’utilisation applicables aux organismes bénéficiaires"
+    },
+    "cguDonors": {
+      "articles": [
+        {
+          "paragraphs": [
+            "Les présentes conditions régissent l’utilisation du service CommonLink par toute personne qui effectue un don au bénéfice d’un organisme présent sur la plateforme.",
+            "Les relations entre CommonLink et les organismes bénéficiaires font l’objet de conditions générales distinctes.",
+            "Les relations entre le donateur et l’organisme bénéficiaire font l’objet du contrat type figurant en annexe des présentes."
+          ],
+          "title": "Article 1. Objet"
+        },
+        {
+          "paragraphs": [
+            "CommonLink : la société identifiée en tête des présentes. Site : le site accessible à l’adresse www.common-link.org. Plateforme : l’environnement numérique proposé par CommonLink permettant aux organismes bénéficiaires de présenter des campagnes et aux donateurs de réaliser et de suivre leurs dons. Donateur : toute personne réalisant un don via la plateforme. Organisme bénéficiaire : l’association ou le fonds de dotation bénéficiaire du don. Campagne : la page dédiée à une opération de collecte présentée par un organisme bénéficiaire. Don : le versement effectué sans contrepartie, avec une intention libérale, au bénéfice d’un organisme."
+          ],
+          "title": "Article 2. Définitions"
+        },
+        {
+          "paragraphs": [
+            "L’acceptation des présentes conditions est nécessaire pour effectuer un don. Elle est recueillie de manière expresse, avant tout paiement.",
+            "Le contrat type figurant en annexe fait partie intégrante des présentes conditions. Il est accessible avant l’acceptation, et le donateur reconnaît en avoir pris connaissance.",
+            "La version acceptée, sa date et son heure sont conservées."
+          ],
+          "title": "Article 3. Acceptation des présentes conditions"
+        },
+        {
+          "paragraphs": [
+            "CommonLink est un intermédiaire en financement participatif. Son rôle est de mettre en relation des donateurs et des organismes porteurs de projets d’intérêt général, et de publier les informations relatives à l’utilisation des dons collectés.",
+            "CommonLink n’est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires habilités.",
+            "CommonLink n’est pas le bénéficiaire du don. Elle ne dirige pas l’activité des organismes présents sur la plateforme et ne se substitue pas à eux."
+          ],
+          "title": "Article 4. Statut et rôle de CommonLink"
+        },
+        {
+          "paragraphs": [
+            "Les dons ne transitent jamais par CommonLink. Ils sont encaissés sur un compte ouvert au nom de l’organisme bénéficiaire auprès du prestataire d’encaissement, puis versés sur son compte bancaire.",
+            "CommonLink n’encaisse, ne conserve et ne reverse aucun don. Les sommes collectées ne figurent à aucun moment dans ses comptes, et elle ne peut ni se les approprier ni en disposer.",
+            "CommonLink ne collecte, ne stocke et ne traite pas directement les données complètes de carte bancaire."
+          ],
+          "title": "Article 5. Les fonds"
+        },
+        {
+          "paragraphs": [
+            "Le site est accessible librement à toute personne disposant d’un accès à internet.",
+            "CommonLink peut suspendre, limiter ou interrompre l’accès au site ou à la plateforme pour des raisons de maintenance, de sécurité ou de mise à jour. Elle s’efforce d’en informer les utilisateurs et de limiter la durée de ces interruptions."
+          ],
+          "title": "Article 6. Accès au service"
+        },
+        {
+          "paragraphs": [
+            "Un don ne peut pas être effectué de manière anonyme. Le donateur communique son nom, son prénom, son adresse postale et son adresse électronique.",
+            "Ces informations sont nécessaires à l’émission du reçu fiscal et à l’identification du donateur, que la réglementation applicable aux intermédiaires en financement participatif impose.",
+            "Le donateur s’engage à fournir des informations exactes et à jour."
+          ],
+          "title": "Article 7. Identification du donateur"
+        },
+        {
+          "paragraphs": [
+            "La création d’un espace personnel n’est pas nécessaire pour effectuer un don.",
+            "Le donateur qui choisit d’en créer un accède au suivi de ses dons, à ses reçus fiscaux, au détail de l’utilisation des fonds des campagnes qu’il a soutenues, et à la gestion de ses dons récurrents.",
+            "Le donateur est responsable de la confidentialité de ses identifiants. En cas d’utilisation non autorisée de son espace, il en informe CommonLink sans délai à l’adresse contact@common-link.org"
+          ],
+          "title": "Article 8. Espace personnel"
+        },
+        {
+          "paragraphs": [
+            "La plateforme est destinée aux personnes majeures. Un mineur ne peut effectuer un don qu’avec l’autorisation de son représentant légal.",
+            "Les dons effectués par des personnes morales ne sont pas pris en charge à ce jour, le régime fiscal du mécénat d’entreprise faisant appel à un formulaire de reçu distinct."
+          ],
+          "title": "Article 9. Personnes pouvant effectuer un don"
+        },
+        {
+          "paragraphs": [
+            "Le donateur choisit une campagne, un montant et un moyen de paiement. Le don est réalisé lorsque le paiement est autorisé.",
+            "Les dons sont réalisés en euros. Les moyens de paiement proposés sont indiqués au moment du don."
+          ],
+          "title": "Article 10. Réalisation d’un don ponctuel"
+        },
+        {
+          "callout": "Les dons récurrents seront disponibles à compter de leur mise en service, annoncée sur le site. Jusqu’à cette date, seuls les dons ponctuels peuvent être effectués.",
+          "paragraphs": [
+            "Le donateur peut choisir d’effectuer un don mensuel au bénéfice d’une campagne. Il est informé du montant et de la date de chaque prélèvement.",
+            "Le donateur peut à tout moment, depuis son espace personnel, modifier le montant de son don récurrent ou y mettre fin, sans motif ni frais. La modification ou la résiliation prend effet à la prochaine échéance. CommonLink ne peut à aucun moment modifier unilatéralement le montant d’un don récurrent.",
+            "Lorsque la campagne soutenue se termine ou atteint son objectif, le don récurrent prend fin. CommonLink en informe le donateur et lui propose d’affecter son don à un autre projet. Aucun report n’est effectué sans son accord.",
+            "Lorsque le montant restant pour atteindre l’objectif d’une campagne est inférieur au montant du don récurrent, seul le montant restant est prélevé. Le donateur en est informé lors du prélèvement, et son reçu fiscal porte sur le montant effectivement versé."
+          ],
+          "title": "Article 11. Dons récurrents"
+        },
+        {
+          "paragraphs": [
+            "L’objectif affiché par une campagne est un plafond. Une campagne ne collecte pas plus que le besoin qu’elle a annoncé.",
+            "Lorsque cet objectif est atteint, la campagne n’accepte plus de dons. Un don qui ferait dépasser ce plafond n’est pas encaissé : le donateur en est informé avant tout paiement et se voit proposer un autre projet.",
+            "L’objectif n’est pas un seuil : l’organisme bénéficiaire dispose des dons reçus même si l’objectif n’est pas atteint."
+          ],
+          "title": "Article 12. Objectif de collecte"
+        },
+        {
+          "paragraphs": [
+            "Un don est un acte volontaire et irrévocable. Il est acquis à l’organisme bénéficiaire dès sa réception et ne donne pas lieu à remboursement.",
+            "Le droit de rétractation prévu par le code de la consommation ne s’applique pas, l’organisme bénéficiaire n’étant pas un professionnel au sens de ce code."
+          ],
+          "title": "Article 13. Caractère définitif du don"
+        },
+        {
+          "paragraphs": [
+            "L’article précédent ne fait pas obstacle à la régularisation de ce qui n’est pas un don.",
+            "Un double paiement ou une erreur technique constitue un paiement indu et donne lieu à régularisation.",
+            "Une opération de paiement non autorisée, notamment en cas d’utilisation frauduleuse d’un moyen de paiement, relève de la réglementation applicable aux services de paiement, et les droits que le donateur en tire ne sont pas affectés par les présentes.",
+            "Toute demande est adressée à contact@common-link.org"
+          ],
+          "title": "Article 14. Paiements indus et opérations non autorisées"
+        },
+        {
+          "paragraphs": [
+            "Un don effectué sur CommonLink ne donne droit à aucune contrepartie, en dehors du reçu fiscal. Les campagnes proposant une contrepartie au donateur ne sont pas admises sur la plateforme."
+          ],
+          "title": "Article 15. Absence de contrepartie"
+        },
+        {
+          "paragraphs": [
+            "Le reçu fiscal est établi et délivré par l’organisme bénéficiaire, qui est seul responsable de son éligibilité au régime fiscal du mécénat et de la régularité du document.",
+            "CommonLink met à sa disposition un outil d’émission et transmet le reçu au donateur pour son compte. CommonLink ne vérifie pas l’éligibilité fiscale de l’organisme et ne garantit ni la validité du reçu ni l’obtention d’une réduction d’impôt.",
+            "L’organisme bénéficiaire atteste relever des catégories mentionnées aux articles 200 et 238 bis du code général des impôts.",
+            "Les certificats numériques et éléments de preuve complémentaires éventuellement mis à disposition ne constituent pas des reçus fiscaux."
+          ],
+          "title": "Article 16. Reçu fiscal"
+        },
+        {
+          "paragraphs": [
+            "Le donateur choisit si son nom apparaît sur la page publique de la campagne. S’il choisit de ne pas apparaître, son don est comptabilisé sans que son identité soit rendue publique.",
+            "Ce choix ne porte que sur l’affichage public. L’organisme bénéficiaire a connaissance de l’identité du donateur, notamment pour émettre le reçu fiscal."
+          ],
+          "title": "Article 17. Affichage du don"
+        },
+        {
+          "paragraphs": [
+            "CommonLink publie, pour chaque campagne, les versements effectués par l’organisme bénéficiaire vers ses propres bénéficiaires, avec leur destinataire et leur montant, ainsi que le bilan de clôture établi par l’organisme.",
+            "Cette information porte sur les mouvements que CommonLink constate. Elle ne constitue ni un audit, ni une certification, ni une vérification de l’usage réel des sommes versées, qui relèvent de la seule responsabilité de l’organisme bénéficiaire.",
+            "Les informations descriptives d’une campagne, notamment son objet, son budget prévisionnel et son résultat attendu, sont fournies par l’organisme bénéficiaire sous sa responsabilité."
+          ],
+          "title": "Article 18. Information sur l’utilisation des dons"
+        },
+        {
+          "paragraphs": [
+            "Lorsqu’une campagne est annulée par l’organisme bénéficiaire, ou lorsqu’un organisme est retiré de la plateforme, les dons déjà effectués demeurent acquis à cet organisme et ne sont pas remboursés, conformément à l’article 13.",
+            "La page publique de la campagne reste accessible, avec les informations publiées sur l’utilisation des fonds à la date de l’annulation ou du retrait.",
+            "Les dons récurrents en cours prennent fin. Les donateurs concernés en sont informés et se voient proposer d’affecter leur don à un autre projet."
+          ],
+          "title": "Article 19. Campagne annulée ou organisme retiré de la plateforme"
+        },
+        {
+          "paragraphs": [
+            "L’utilisation de CommonLink est gratuite pour le donateur. Aucun frais ne lui est facturé et aucune somme n’est prélevée sur son don.",
+            "CommonLink est rémunérée par les organismes bénéficiaires, selon les modalités publiées sur sa page tarifaire."
+          ],
+          "title": "Article 20. Gratuité pour le donateur"
+        },
+        {
+          "paragraphs": [
+            "Le donateur s’engage à utiliser le site et la plateforme conformément à la loi et aux présentes conditions.",
+            "Il lui est notamment interdit d’utiliser le service à des fins frauduleuses, d’usurper l’identité d’un tiers, d’utiliser un moyen de paiement dont il n’est pas titulaire ou autorisé, de perturber le fonctionnement du service ou de contourner ses mesures de sécurité."
+          ],
+          "title": "Article 21. Obligations du donateur"
+        },
+        {
+          "paragraphs": [
+            "Les données du donateur sont traitées pour permettre la réalisation du don, l’émission du reçu fiscal, l’exécution des obligations légales de CommonLink et, le cas échéant, la gestion de son espace personnel.",
+            "Les finalités, les durées de conservation et les moyens d’exercer ses droits figurent dans la politique de confidentialité accessible sur le site. Toute demande peut être adressée à contact@common-link.org"
+          ],
+          "title": "Article 22. Données personnelles"
+        },
+        {
+          "paragraphs": [
+            "Les règles applicables aux cookies et traceurs sont décrites dans la politique cookies accessible sur le site."
+          ],
+          "title": "Article 23. Cookies"
+        },
+        {
+          "paragraphs": [
+            "Le site, la plateforme, les dénominations, signes distinctifs, logos, contenus éditoriaux et développements édités par CommonLink sont protégés au titre de la propriété intellectuelle. Toute reproduction ou exploitation non autorisée est interdite."
+          ],
+          "title": "Article 24. Propriété intellectuelle"
+        },
+        {
+          "paragraphs": [
+            "CommonLink met en œuvre les moyens raisonnables pour assurer le bon fonctionnement du service. Elle ne garantit pas une disponibilité continue et sans interruption, le service dépendant notamment de prestataires techniques et de réseaux tiers."
+          ],
+          "title": "Article 25. Disponibilité du service"
+        },
+        {
+          "paragraphs": [
+            "Le site et les pages de campagne peuvent comporter des liens vers des sites édités par des tiers, notamment par les organismes bénéficiaires.",
+            "CommonLink n’édite pas ces contenus et n’en contrôle ni l’exactitude ni la disponibilité."
+          ],
+          "title": "Article 26. Liens vers des sites tiers"
+        },
+        {
+          "paragraphs": [
+            "CommonLink s’engage à fournir le service avec diligence, à publier les informations prévues à l’article 18 et à permettre la réalisation des dons dans les conditions prévues à l’article 5.",
+            "Le service consiste en une mise en relation et en une publication d’informations. CommonLink ne garantit pas la réalisation du projet présenté par un organisme bénéficiaire, ni l’affectation effective des sommes versées, ni l’exactitude des informations descriptives fournies par celui-ci.",
+            "CommonLink répond des manquements à ses propres obligations dans les conditions du droit commun. Les présentes conditions ne limitent ni ne suppriment le droit à réparation du donateur, et ne font pas obstacle à sa participation à une action de groupe."
+          ],
+          "title": "Article 27. Engagements de CommonLink et périmètre du service"
+        },
+        {
+          "paragraphs": [
+            "Aucune des parties ne peut être tenue responsable de l’inexécution de ses obligations résultant d’un cas de force majeure au sens de l’article 1218 du code civil."
+          ],
+          "title": "Article 28. Force majeure"
+        },
+        {
+          "paragraphs": [
+            "CommonLink peut refuser une opération, ne pas donner suite à une demande de paiement, retirer une campagne relevant d’un cas exclu, ou suspendre l’accès à ses services.",
+            "Ces mesures sont motivées et le donateur en est informé, sauf lorsque la loi l’interdit. Elles interviennent notamment au titre des obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme."
+          ],
+          "title": "Article 29. Suspension et refus"
+        },
+        {
+          "paragraphs": [
+            "Le contrat conclu avec un donateur qui n’a pas créé d’espace personnel prend fin avec la réalisation de son don. Le contrat conclu avec un donateur disposant d’un espace personnel est à durée indéterminée.",
+            "Le donateur peut demander la clôture de son espace personnel à tout moment, sans motif ni frais, en écrivant à contact@common-link.org. La clôture est effectuée dans un délai de trente jours à compter de la demande et confirmée par courrier électronique.",
+            "La clôture met fin aux dons récurrents en cours à compter de la prochaine échéance. Elle n’a pas d’effet sur les dons déjà effectués, qui demeurent définitifs.",
+            "La clôture n’entraîne pas la suppression immédiate des données du donateur. CommonLink conserve celles que la loi lui impose de conserver, notamment pendant cinq ans au titre de ses obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme, et au titre des reçus fiscaux émis en son nom. À l’expiration de ces durées, les données sont supprimées. Les organismes bénéficiaires conservent de leur côté les données nécessaires à leurs propres obligations."
+          ],
+          "title": "Article 30. Durée et résiliation de l’espace personnel"
+        },
+        {
+          "paragraphs": [
+            "CommonLink, 1047 Chemin des Impiniers, 06220 Vallauris. Téléphone : 04 23 40 02 06, appel non surtaxé. Courriel : contact@common-link.org",
+            "Une réclamation est l’expression d’un mécontentement à l’égard de CommonLink. Il n’est pas nécessaire d’employer le mot réclamation, ni d’avoir effectué un don, ni de disposer d’un compte.",
+            "Toute réclamation peut être adressée par courriel à reclamations@common-link.org, par courrier à CommonLink, Service Réclamations, 1047 Chemin des Impiniers, 06220 Vallauris, ou par téléphone au 04 23 40 02 06. Une réclamation formulée par téléphone et non résolue immédiatement doit être confirmée par écrit.",
+            "CommonLink accuse réception de toute réclamation écrite dans un délai maximal de dix jours ouvrables à compter de son envoi, sauf si une réponse définitive est apportée dans ce même délai, et y répond de façon motivée dans un délai maximal de deux mois à compter de l’envoi de la première réclamation écrite.",
+            "Ces délais courent à compter de l’envoi de la réclamation, et non de la date à laquelle CommonLink en prend connaissance.",
+            "Les modalités complètes sont décrites sur la page Réclamations du site."
+          ],
+          "title": "Article 31. Nous contacter et réclamations"
+        },
+        {
+          "paragraphs": [
+            "CommonLink peut modifier les présentes conditions, notamment pour tenir compte de l’évolution du service ou de la réglementation.",
+            "Toute modification est portée à la connaissance du donateur disposant d’un espace personnel avant son entrée en vigueur. Le donateur qui n’accepte pas les nouvelles conditions peut clôturer son espace personnel et mettre fin à ses dons récurrents.",
+            "Les conditions acceptées lors d’un don restent celles applicables à ce don."
+          ],
+          "title": "Article 32. Modification des présentes conditions"
+        },
+        {
+          "paragraphs": [
+            "Les enregistrements informatiques conservés par CommonLink, notamment ceux relatifs à l’acceptation des présentes conditions, aux dons réalisés et aux opérations effectuées, font foi entre les parties, sauf preuve contraire."
+          ],
+          "title": "Article 33. Convention de preuve"
+        },
+        {
+          "paragraphs": [
+            "Si une clause des présentes est déclarée nulle ou réputée non écrite, les autres clauses conservent leur plein effet.",
+            "Les présentes conditions sont rédigées en français. En cas de traduction, la version française prévaut."
+          ],
+          "title": "Article 34. Dispositions diverses"
+        },
+        {
+          "paragraphs": [
+            "Toute question relative aux présentes conditions ou au service peut être adressée à contact@common-link.org. CommonLink s’efforce de répondre dans un délai de deux jours ouvrés."
+          ],
+          "title": "Article 35. Contact"
+        },
+        {
+          "paragraphs": [
+            "Les présentes conditions sont soumises au droit français.",
+            "En cas de litige, le donateur peut saisir la juridiction de son choix parmi celles compétentes en application du code de procédure civile."
+          ],
+          "title": "Article 36. Droit applicable et litiges"
+        },
+        {
+          "paragraphs": [
+            "Le contrat type est consultable sur la page dédiée du site."
+          ],
+          "title": "Annexe. Contrat type entre le donateur et l’organisme bénéficiaire"
+        }
+      ],
+      "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d’Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
+      "lastUpdated": "29 juin 2026",
+      "title": "Conditions générales d’utilisation applicables aux donateurs"
+    },
+    "complaints": {
+      "intro": "Vous n'êtes pas satisfait d'un service rendu par CommonLink, d'une information reçue ou de la façon dont votre demande a été traitée. Cette page vous explique comment nous le faire savoir et ce qui se passe ensuite.",
+      "meta": "Service réclamations de CommonLink",
+      "sections": [
+        {
+          "paragraphs": [
+            "Une réclamation est l’expression d’un mécontentement à notre égard. Vous n’avez pas besoin d’employer le mot « réclamation », ni de demander quoi que ce soit en particulier.",
+            "Vous n'avez pas non plus besoin d'avoir effectué un don, ni de disposer d'un compte. Toute personne peut nous adresser une réclamation.",
+            "En revanche, une demande d’information, une demande d’explication ou une demande d’assistance n’est pas une réclamation. Pour ces demandes, écrivez-nous simplement à contact@common-link.org"
+          ],
+          "title": "Ce qu'est une réclamation"
+        },
+        {
+          "items": [
+            "Par email, à reclamations@common-link.org",
+            "Par courrier, à CommonLink, Service Réclamations, 1047 Chemin des Impiniers, 06220 Vallauris",
+            "Par téléphone, au 04 23 40 02 06, au tarif normal depuis un poste fixe. Si nous ne pouvons pas répondre immédiatement à votre demande, nous vous inviterons à nous la confirmer par écrit. Les délais ci-dessous courent alors à compter de votre écrit."
+          ],
+          "paragraphs": [
+            "Si vous adressez votre réclamation à un autre de nos contacts, elle sera transmise à notre service réclamations. Vous n’aurez pas à refaire votre démarche."
+          ],
+          "title": "Comment nous saisir"
+        },
+        {
+          "paragraphs": [
+            "Indiquez vos nom et prénom, un moyen de vous recontacter, et décrivez ce qui vous a mécontenté. Si votre réclamation concerne un don ou une campagne en particulier, précisez-le, cela nous fera gagner du temps à tous les deux."
+          ],
+          "title": "Pour nous permettre de traiter votre demande"
+        },
+        {
+          "callout": "Ces deux délais courent à compter de l’envoi de votre réclamation, et non de la date à laquelle nous en prenons connaissance. Pour un courrier, le cachet de la poste fait foi.",
+          "paragraphs": [
+            "Nous accusons réception de votre réclamation écrite dans un délai maximal de dix jours ouvrables. Si nous sommes en mesure de vous apporter directement une réponse définitive dans ce délai, nous ne vous adressons pas d’accusé de réception séparé.",
+            "Nous vous répondons par écrit, de façon motivée, dans un délai maximal de deux mois."
+          ],
+          "paragraphsAfter": [
+            "Lorsque votre réclamation porte sur une situation urgente, nous adaptons ce délai à l'objet de votre demande."
+          ],
+          "title": "Nos délais"
+        },
+        {
+          "paragraphs": [
+            "Vous conservez la possibilité de saisir les tribunaux compétents."
+          ],
+          "title": "Si notre réponse ne vous satisfait pas"
+        },
+        {
+          "paragraphs": [
+            "Chaque réclamation est enregistrée et suivie jusqu’à sa clôture.",
+            "Nous les examinons régulièrement pour identifier ce qui doit être corrigé dans nos services. Lorsqu'une réclamation révèle une erreur susceptible d'avoir affecté d'autres personnes que vous, nous étendons la correction à toutes les personnes concernées."
+          ],
+          "title": "Ce que nous faisons de votre réclamation"
+        },
+        {
+          "paragraphs": [
+            "Les informations que vous nous transmettez dans le cadre d’une réclamation sont utilisées pour son traitement et conservées cinq ans à compter de la clôture du dossier. Les modalités figurent dans notre politique de confidentialité."
+          ],
+          "title": "Vos données"
+        }
+      ],
+      "title": "Réclamations"
     },
     "contact": {
-      "company": {
-        "capital": "Capital social : 10 000 €",
-        "name": "CommonLink",
-        "rcs": "RCS : Antibes",
-        "siren": "SIREN : 105 153 928",
-        "title": "Informations société",
-        "tva": "TVA intracommunautaire : FR45105153928",
-        "type": "SAS, société commerciale de l'économie sociale et solidaire"
+      "complaint": {
+        "linkLabel": "page Réclamations",
+        "p1": "Une réclamation est l’expression d’un mécontentement à notre égard. Une demande d’information, une demande d’explication ou une demande d’assistance n’est pas une réclamation : pour celles-ci, écrivez-nous à contact@common-link.org",
+        "p2": "Pour une réclamation, écrivez à reclamations@common-link.org, ou consultez la",
+        "p2After": ", qui détaille les modalités et les délais.",
+        "title": "Une réclamation"
       },
-      "gdpr": {
-        "email": "legal@common-link.org",
-        "intro": "Pour exercer vos droits relatifs à vos données personnelles :",
-        "response": "CommonLink s'efforce de répondre dans un délai de 7 jours ouvrés. En tout état de cause, CommonLink répond dans les délais prévus par la réglementation applicable.",
-        "title": "Données personnelles"
+      "details": {
+        "p1": "CommonLink, 1047 Chemin des Impiniers, 06220 Vallauris.",
+        "p2": "Téléphone : 04 23 40 02 06, appel non surtaxé.",
+        "p3": "Courriel : contact@common-link.org",
+        "p4": "Toute question relative aux conditions générales ou au service peut être adressée à contact@common-link.org. CommonLink s’efforce de répondre dans un délai de deux jours ouvrés.",
+        "title": "Nos coordonnées"
       },
-      "general": {
-        "email": "contact@common-link.org",
-        "phone": "06 31 63 60 08",
-        "response": "CommonLink s'efforce de répondre aux demandes dans un délai de 48 heures ouvrées.",
-        "title": "Contact général"
+      "meta": "CommonLink SAS",
+      "reportCampaign": {
+        "p1": "En bas de chaque page de campagne, un lien permet à toute personne de nous la signaler, qu’elle ait donné ou non, et sans avoir besoin de compte. Vous pouvez aussi nous écrire à contact@common-link.org",
+        "title": "Signaler une campagne"
       },
-      "intro": "Vous pouvez contacter CommonLink pour toute question relative au Site, à la Plateforme, aux dons, aux organismes bénéficiaires, aux partenariats ou aux demandes légales.",
-      "legal": {
-        "email": "legal@common-link.org",
-        "intro": "Pour toute demande juridique, administrative ou relative aux mentions légales :",
-        "title": "Demandes légales"
-      },
-      "postal": {
-        "line1": "CommonLink",
-        "line2": "1047 Chemin des Impiniers",
-        "line3": "06220 Vallauris",
-        "line4": "France",
-        "title": "Adresse postale"
-      },
-      "title": "Contact"
-    },
-    "faq": {
-      "cookiesLinkLabel": "Politique cookies",
-      "intro": "Retrouvez ci-dessous les réponses aux questions les plus fréquentes sur CommonLink.",
-      "q0": {
-        "a": "CommonLink est une plateforme de dons permettant aux associations, fondations, fonds de dotation, ONG et entreprises mécènes de collecter, suivre et documenter l'utilisation des fonds collectés, avec des mécanismes de transparence et de preuve d'utilisation.",
-        "q": "Qu'est-ce que CommonLink ?"
-      },
-      "q1": {
-        "a": "CommonLink s'adresse notamment aux associations, fondations, fonds de dotation, ONG, entreprises mécènes, et aux donateurs souhaitant suivre l'utilisation des fonds. Le service est destiné au marché français au lancement.",
-        "q": "À qui s'adresse CommonLink ?"
-      },
-      "q10": {
-        "a": "En principe, un don est définitif et non remboursable. Un remboursement peut toutefois être étudié en cas de double paiement, erreur manifeste, fraude, paiement non autorisé, campagne annulée ou organisme bénéficiaire retiré de la Plateforme. Les demandes doivent être adressées à contact@common-link.org.",
-        "q": "Le don est-il remboursable ?"
-      },
-      "q11": {
-        "a": "Sauf mention contraire, le don est juridiquement acquis à l'organisme bénéficiaire dès sa réception, indépendamment de l'atteinte de l'objectif affiché.",
-        "q": "Que se passe-t-il si une campagne n'atteint pas son objectif ?"
-      },
-      "q12": {
-        "a": "Le don est réalisé directement au bénéfice de l'organisme bénéficiaire. CommonLink n'encaisse pas juridiquement les fonds pour son propre compte.",
-        "q": "Qui reçoit juridiquement le don ?"
-      },
-      "q13": {
-        "a": "CommonLink facture aux organismes bénéficiaires 8 % HT de frais de service et 2 % de frais de paiement et de traitement technique, facturés mensuellement. Le donateur peut également laisser une contribution volontaire facultative. Voir la page Tarifs pour le détail.",
-        "q": "CommonLink prend-elle une commission sur les dons ?"
-      },
-      "q14": {
-        "a": "Lorsque l'organisme bénéficiaire est éligible, les reçus fiscaux sont générés par CommonLink pour le compte de l'organisme bénéficiaire. Ils peuvent être transmis par email et/ou mis à disposition dans le compte du donateur.",
-        "q": "Les reçus fiscaux sont-ils fournis ?"
-      },
-      "q15": {
-        "a": "Non. Un certificat numérique, NFT ou élément de preuve complémentaire ne constitue pas un reçu fiscal. Le reçu fiscal est un document distinct, généré pour le compte de l'organisme bénéficiaire lorsque les conditions applicables sont réunies.",
-        "q": "Le certificat numérique ou NFT est-il un reçu fiscal ?"
-      },
-      "q16": {
-        "a": "Non. CommonLink ne garantit pas l'usage final des fonds par l'organisme bénéficiaire. CommonLink met à disposition des outils de transparence permettant de suivre certains flux financiers et de présenter des preuves d'utilisation.",
-        "q": "CommonLink garantit-elle l'utilisation des fonds ?"
-      },
-      "q17": {
-        "a": "La preuve d'utilisation désigne les éléments permettant de documenter l'usage des fonds : opérations enregistrées, justificatifs transmis, données techniques ou blockchain lorsque ces fonctionnalités sont activées. Ces éléments ne constituent pas une certification comptable ou juridique exhaustive.",
-        "q": "Que signifie « preuve d'utilisation » ?"
-      },
-      "q18": {
-        "a": "Certaines fonctionnalités de CommonLink peuvent utiliser des technologies blockchain, notamment Polygon, afin de contribuer à la transparence et à la documentation des flux.",
-        "q": "CommonLink utilise-t-elle la blockchain ?"
-      },
-      "q19": {
-        "a": "Oui. CommonLink peut utiliser les services de Monerium pour certaines fonctionnalités liées à la monnaie électronique, à l'EURe et à la transparence des flux. Monerium est un établissement de monnaie électronique autorisé.",
-        "q": "CommonLink utilise-t-elle Monerium ?"
-      },
-      "q2": {
-        "a": "Oui. CommonLink est une société commerciale de l'économie sociale et solidaire. Une demande d'agrément ESUS a été déposée.",
-        "q": "CommonLink est-elle une société de l'économie sociale et solidaire ?"
-      },
-      "q20": {
-        "a": "Oui. CommonLink peut refuser, suspendre ou retirer un organisme bénéficiaire ou une campagne notamment en cas d'informations inexactes, de refus KYC/KYB, de soupçon de fraude, de litige sérieux ou de risque juridique.",
-        "q": "CommonLink peut-elle refuser ou suspendre un organisme ?"
-      },
-      "q21": {
-        "a": "Au lancement, CommonLink utilise uniquement des cookies strictement nécessaires au fonctionnement du Site. Les cookies analytics, marketing ou publicitaires ne sont pas actifs au lancement. Voir la Politique cookies.",
-        "q": "CommonLink utilise-t-elle des cookies ?"
-      },
-      "q22": {
-        "a": "Email : contact@common-link.org — Téléphone : 06 31 63 60 08. CommonLink s'efforce de répondre sous 48 heures ouvrées.",
-        "q": "Comment contacter CommonLink ?"
-      },
-      "q23": {
-        "a": "Pour exercer vos droits relatifs à vos données personnelles, écrivez à legal@common-link.org. CommonLink s'efforce de répondre sous 7 jours ouvrés.",
-        "q": "Comment exercer mes droits RGPD ?"
-      },
-      "q3": {
-        "a": "CommonLink est en cours de démarche d'immatriculation auprès de l'ORIAS en qualité d'intermédiaire en financement participatif.",
-        "q": "CommonLink est-elle enregistrée à l'ORIAS ?"
-      },
-      "q4": {
-        "a": "Non. CommonLink n'est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires habilités.",
-        "q": "CommonLink est-elle un établissement de paiement ?"
-      },
-      "q5": {
-        "a": "Le donateur crée un compte, sélectionne une campagne, réalise un don, reçoit une confirmation de paiement et peut accéder au suivi de son don depuis son compte. Lorsque les conditions applicables sont réunies, un reçu fiscal est généré par CommonLink pour le compte de l'organisme bénéficiaire.",
-        "q": "Comment fonctionne un don ?"
-      },
-      "q6": {
-        "a": "Non. La création d'un compte est nécessaire pour réaliser un don via CommonLink.",
-        "q": "Peut-on donner sans créer de compte ?"
-      },
-      "q7": {
-        "a": "Non. Le donateur choisit une campagne, mais ne choisit pas une affectation individuelle détaillée des fonds. L'affectation est globale à la campagne sélectionnée.",
-        "q": "Peut-on choisir précisément l'usage des fonds ?"
-      },
-      "q8": {
-        "a": "Les dons sont ponctuels au lancement. Des fonctionnalités de dons récurrents pourront être proposées ultérieurement.",
-        "q": "Les dons sont-ils ponctuels ou récurrents ?"
-      },
-      "q9": {
-        "a": "Au lancement, CommonLink prévoit d'accepter la carte bancaire et le prélèvement SEPA. D'autres moyens de paiement pourront être ajoutés ultérieurement.",
-        "q": "Quels moyens de paiement sont acceptés ?"
-      },
-      "tarifsLinkLabel": "Tarifs",
-      "title": "FAQ"
+      "title": "Nous contacter"
     },
     "mentionsLegales": {
-      "contact": {
-        "email": "contact@common-link.org",
-        "legalEmail": "legal@common-link.org",
-        "phone": "06 31 63 60 08",
-        "response": "CommonLink s'efforce de répondre aux demandes reçues dans un délai de 48 heures ouvrées.",
-        "title": "4. Contact"
-      },
-      "cookies": {
-        "linkLabel": "Politique cookies",
-        "p1": "Les règles applicables aux cookies et autres traceurs sont décrites dans la Politique cookies accessible sur le site.",
-        "title": "10. Cookies"
-      },
-      "director": {
-        "content": "Le directeur de la publication est : Julian Maiolino, Président de CommonLink",
-        "title": "2. Directeur de la publication"
-      },
-      "domain": {
-        "content": "Le nom de domaine common-link.org est géré techniquement auprès d'OVH.",
-        "title": "6. Nom de domaine"
-      },
-      "editor": {
-        "address": "Siège social : 1047 Chemin des Impiniers, 06220 Vallauris, France",
-        "capital": "Capital social : 10 000 €",
-        "ess": "CommonLink est une société commerciale de l'économie sociale et solidaire. Une demande d'agrément ESUS a été déposée.",
-        "naf": "Code NAF / APE : 6201Z",
-        "name": "CommonLink",
-        "orias": "CommonLink est en cours de démarche d'immatriculation auprès de l'ORIAS en qualité d'intermédiaire en financement participatif.",
-        "rcs": "RCS : Antibes",
-        "siren": "SIREN : 105 153 928",
-        "siret": "SIRET : 105 153 928 00012",
-        "title": "1. Éditeur du site",
-        "tva": "Numéro de TVA intracommunautaire : FR45105153928",
-        "type": "Société par actions simplifiée (SAS), société commerciale de l'économie sociale et solidaire (ESS)"
-      },
-      "editorial": {
-        "content": "Le responsable du contenu éditorial du site est : Julian Maiolino",
-        "title": "3. Responsable éditorial"
-      },
-      "hosting": {
-        "address": "4 rue Voltaire, 44000 Nantes, France",
-        "name": "Clever Cloud",
-        "title": "5. Hébergement",
-        "type": "Société par actions simplifiée (SAS)",
-        "url": "https://www.clever.cloud/"
-      },
-      "intro": "Le présent site internet, accessible à l'adresse https://www.common-link.org/, est édité par CommonLink.",
-      "ip": {
-        "p1": "L'ensemble des éléments présents sur le site, notamment les textes, logos, marques, éléments graphiques, interfaces, bases de données, images, vidéos, icônes, codes, structures, dénominations et contenus, sont protégés par les dispositions applicables en matière de propriété intellectuelle.",
-        "p2": "Toute reproduction, représentation, modification, adaptation, extraction, diffusion ou exploitation, totale ou partielle, du site ou de ses éléments, sans autorisation préalable écrite de CommonLink, est interdite.",
-        "title": "7. Propriété intellectuelle"
-      },
       "lastUpdated": "29 juin 2026",
-      "liability": {
-        "p1": "CommonLink s'efforce de fournir sur le site des informations exactes, à jour et accessibles. Toutefois, CommonLink ne peut garantir l'absence d'erreur, d'omission, d'interruption ou d'indisponibilité temporaire du site.",
-        "p2": "Les informations présentées sur le site ont une finalité générale de présentation du service CommonLink. Elles ne constituent pas un conseil juridique, fiscal, financier ou comptable personnalisé.",
-        "title": "8. Responsabilité"
-      },
-      "privacy": {
-        "linkLabel": "Politique de confidentialité",
-        "p1": "Les traitements de données personnelles réalisés par CommonLink sont décrits dans la Politique de confidentialité accessible sur le site.",
-        "p2": "Pour toute demande relative aux données personnelles : legal@common-link.org",
-        "title": "9. Données personnelles"
-      },
+      "sections": [
+        {
+          "paragraphs": [
+            "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros.",
+            "Siège social : 1047 Chemin des Impiniers, 06220 Vallauris, France.",
+            "Immatriculée au registre du commerce et des sociétés d’Antibes sous le numéro 105 153 928.",
+            "Directeur de la publication : Julian Maiolino, Président.",
+            "Courriel : contact@common-link.org",
+            "Téléphone : 04 23 40 02 06, appel non surtaxé.",
+            "Hébergeur : Clever Cloud SAS, 4 rue Voltaire, 44000 Nantes, RCS Nantes 524 172 699."
+          ],
+          "title": "Éditeur"
+        },
+        {
+          "paragraphs": [
+            "CommonLink est immatriculée sous le numéro 26010395 au registre unique des intermédiaires en assurance, banque et finance tenu par l’ORIAS, en qualité d’intermédiaire en financement participatif au sens des articles L.548-1 et suivants du code monétaire et financier. Le registre est consultable sur www.orias.fr",
+            "L’activité d’intermédiaire en financement participatif est soumise au contrôle de l’Autorité de contrôle prudentiel et de résolution.",
+            "CommonLink ne reçoit à aucun moment les dons collectés."
+          ],
+          "title": "Statut réglementaire"
+        },
+        {
+          "paragraphs": [
+            "Les dons ne transitent jamais par CommonLink. Chaque association dispose d’un compte ouvert à son nom auprès de Mollie, établissement de monnaie électronique agréé aux Pays-Bas et supervisé par la banque centrale néerlandaise. Les dons y sont encaissés pour le compte de l’association, sur des fonds cantonnés et séparés de ceux de Mollie, puis versés sur son compte bancaire.",
+            "CommonLink n’encaisse, ne conserve et ne reverse aucun don. Les sommes collectées ne figurent à aucun moment dans ses comptes, et elle ne peut ni se les approprier, ni en disposer.",
+            "CommonLink est rémunérée par l’association au moyen d’une facture mensuelle, réglée séparément des dons. Aucun montant n’est prélevé sur les dons collectés.",
+            "Lorsqu’une association paie un bénéficiaire depuis la plateforme, le virement part de son propre compte bancaire, par l’intermédiaire de Bridge, établissement de paiement agréé par l’Autorité de contrôle prudentiel et de résolution sous le numéro 16918. Il est autorisé par son représentant légal, qui s’authentifie auprès de sa banque. Ni CommonLink, ni Bridge ne détiennent les fonds à un quelconque moment. CommonLink ne peut pas déclencher ce virement à la place du représentant légal, ni l’annuler une fois qu’il a été autorisé."
+          ],
+          "title": "Circuit des fonds"
+        },
+        {
+          "paragraphs": [
+            "En qualité d’intermédiaire en financement participatif, CommonLink est soumise aux obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme prévues par le code monétaire et financier. À ce titre, elle procède aux vérifications requises sur les associations qui utilisent la plateforme, et peut être tenue de refuser une opération, de ne pas donner suite à une demande de paiement, ou de suspendre l’accès à ses services."
+          ],
+          "title": "Obligations de vigilance"
+        },
+        {
+          "paragraphs": [
+            "La plateforme, ses dénominations, signes distinctifs, logos, contenus éditoriaux et développements sont protégés au titre de la propriété intellectuelle. Toute reproduction ou exploitation non autorisée est interdite."
+          ],
+          "title": "Propriété intellectuelle"
+        }
+      ],
       "title": "Mentions légales"
     },
-    "politiqueConfidentialite": {
-      "changes": {
-        "p1": "CommonLink peut modifier la présente Politique de confidentialité afin de tenir compte de l'évolution du Site, de la Plateforme, des traitements réalisés, des prestataires utilisés ou de la réglementation applicable. La version applicable est celle publiée sur le Site.",
-        "title": "13. Modification de la Politique de confidentialité"
+    "modelAgreement": {
+      "articles": [
+        {
+          "paragraphs": [
+            "Le donateur verse une somme d'argent à l'organisme bénéficiaire, sans contrepartie et avec une intention libérale, afin de soutenir la campagne qu'il a choisie."
+          ],
+          "title": "1. Objet du don"
+        },
+        {
+          "paragraphs": [
+            "Le don est un acte volontaire et irrévocable. Il est acquis à l’organisme bénéficiaire dès sa réception et ne donne pas lieu à remboursement."
+          ],
+          "title": "2. Caractère définitif du don"
+        },
+        {
+          "paragraphs": [
+            "Le donateur n'acquiert aucun droit sur le projet financé. Il ne peut ni en exiger la réalisation, ni prétendre à une part des résultats, ni réclamer la restitution de son don, ni obtenir une contrepartie de quelque nature que ce soit."
+          ],
+          "title": "3. Absence de droit sur le projet"
+        },
+        {
+          "paragraphs": [
+            "L'organisme bénéficiaire s'engage à rendre compte de l'utilisation des fonds collectés, en effectuant depuis la plateforme les paiements financés par la campagne et en publiant un bilan à sa clôture.",
+            "Cet engagement est une obligation d’information. Il ne constitue ni une garantie de réalisation du projet, ni une obligation de résultat."
+          ],
+          "title": "4. Obligation de rendre compte de l'organisme"
+        },
+        {
+          "paragraphs": [
+            "L’organisme bénéficiaire établit et délivre le reçu fiscal. Il est seul responsable de son éligibilité au régime fiscal du mécénat et de la régularité du document.",
+            "CommonLink met à sa disposition un outil d’émission et transmet le reçu au donateur pour son compte. Elle ne vérifie pas l’éligibilité de l’organisme et ne garantit ni la validité du reçu, ni l’obtention d’une réduction d’impôt."
+          ],
+          "title": "5. Reçu fiscal"
+        },
+        {
+          "paragraphs": [
+            "Les sommes versées par le donateur sont encaissées sur un compte ouvert au nom de l’organisme bénéficiaire, puis versées sur son compte bancaire. Elles ne transitent à aucun moment par CommonLink."
+          ],
+          "title": "6. Les fonds"
+        },
+        {
+          "paragraphs": [
+            "L'organisme bénéficiaire a connaissance de l'identité du donateur, notamment pour établir son reçu fiscal. Il ne peut en faire aucun autre usage que ceux liés à cette obligation et à la relation avec ses donateurs.",
+            "Le donateur peut choisir de ne pas apparaître publiquement sur la page de la campagne."
+          ],
+          "title": "7. Données du donateur"
+        },
+        {
+          "paragraphs": [
+            "Une réclamation portant sur le service fourni par CommonLink est adressée à son service de réclamations, dont les coordonnées figurent en tête du présent document.",
+            "Une réclamation portant sur l'utilisation des fonds ou sur le projet lui-même relève de l'organisme bénéficiaire."
+          ],
+          "title": "8. Réclamations"
+        }
+      ],
+      "complaintsService": {
+        "p1": "CommonLink, Service Réclamations, 1047 Chemin des Impiniers, 06220 Vallauris. Téléphone : 04 23 40 02 06. Courriel : reclamations@common-link.org",
+        "title": "Service de réclamations de l'intermédiaire"
       },
-      "cnil": {
-        "p1": "Si une personne estime que ses droits ne sont pas respectés, elle peut introduire une réclamation auprès de la CNIL.",
-        "title": "12. Réclamation auprès de la CNIL"
+      "intermediary": {
+        "p1": "CommonLink, société par actions simplifiée à capital variable, siège social 1047 Chemin des Impiniers, 06220 Vallauris. Téléphone : 04 23 40 02 06. Immatriculée au registre unique des intermédiaires en assurance, banque et finance sous le numéro 26010395, en qualité d'intermédiaire en financement participatif.",
+        "p2": "CommonLink met le présent cadre à disposition des parties. Elle n'y est pas partie et n'est pas bénéficiaire du don.",
+        "title": "L'intermédiaire"
+      },
+      "intro": "Ce document décrit le cadre applicable à tout don effectué sur CommonLink. Il n'y a rien à signer : il est mis à votre disposition avant votre don, conformément à la réglementation applicable aux intermédiaires en financement participatif.",
+      "meta": "Mis à disposition en application de l’article R.548-10 I du code monétaire et financier",
+      "parties": {
+        "donor": "Le donateur, personne physique identifiée lors de son don par ses nom, prénom, adresse postale et adresse électronique.",
+        "org": "L'organisme bénéficiaire, association déclarée ou fonds de dotation, identifié sur la page de la campagne par sa dénomination sociale, l'adresse de son siège social et son numéro d'enregistrement au répertoire national des associations ou son numéro SIREN.",
+        "p1": "Le présent cadre s'applique entre :",
+        "title": "Les parties"
+      },
+      "title": "Contrat type entre le donateur et l’organisme bénéficiaire"
+    },
+    "politiqueConfidentialite": {
+      "automated": {
+        "p1": "Aucune décision produisant des effets juridiques à votre égard n’est prise sans intervention humaine. Notre dispositif de vigilance peut signaler une situation, mais la décision est toujours prise par une personne.",
+        "title": "Décisions automatisées"
+      },
+      "basis": {
+        "p1": "Nous traitons vos données pour exécuter le contrat qui nous lie, lorsqu’il s’agit de réaliser votre don ou de faire fonctionner votre espace personnel. Pour respecter une obligation légale, lorsqu’il s’agit du reçu fiscal, des vérifications de vigilance ou de la conservation des dossiers. Et au titre de notre intérêt légitime à assurer la sécurité du service et à prévenir la fraude.",
+        "p2": "Nous ne vous demandons pas votre consentement pour ces traitements, car ils ne reposent pas dessus. Vous demander un accord que nous ne pourrions pas respecter, puisque la loi nous impose de conserver certaines données, serait trompeur.",
+        "title": "Sur quelle base"
+      },
+      "changes": {
+        "p1": "Cette page peut évoluer. La date de dernière mise à jour figure en tête. En cas de changement important, nous en informons les personnes disposant d’un espace personnel.",
+        "title": "Modifications"
+      },
+      "collected": {
+        "browsing": {
+          "linkLabel": "page dédiée",
+          "p1": "Notre hébergeur conserve des journaux techniques pendant sept jours : date et heure de connexion, adresse IP, page demandée, type de navigateur. Ils servent uniquement à diagnostiquer un incident et à détecter une utilisation anormale du service. Au-delà de sept jours, ils sont supprimés.",
+          "p2": "Les cookies utilisés sont décrits sur notre",
+          "title": "En naviguant sur le site"
+        },
+        "donation": {
+          "p1": "Nous collectons vos nom, prénom, adresse postale et adresse électronique, ainsi que la date, le montant et le moyen de paiement de votre don, et la version des conditions générales que vous avez acceptée avec sa date.",
+          "p2": "Ces informations servent à réaliser votre don, à établir votre reçu fiscal, à vous permettre de suivre l’utilisation des fonds si vous créez un espace personnel, et à respecter nos obligations légales.",
+          "p3": "Vous pouvez également renseigner votre date de naissance. Elle est facultative, elle n’est pas conservée, et elle sert uniquement à éviter qu’une homonymie avec une personne figurant sur une liste de gel des avoirs fasse refuser votre don.",
+          "title": "Si vous faites un don"
+        },
+        "org": {
+          "p1": "Nous collectons la dénomination, l’adresse du siège, la forme juridique, l’année de création, le numéro d’enregistrement au répertoire national des associations ou le numéro SIREN, l’identité du représentant légal, les coordonnées bancaires, et la version des conditions générales acceptée avec sa date.",
+          "p2": "Nous vous demandons également trois documents : vos statuts, votre récépissé de déclaration ou votre insertion au Journal officiel, et la pièce d’identité de votre représentant légal.",
+          "p3": "Ces informations et ces documents servent à vérifier l’existence et l’identité de la structure, à permettre la collecte, et à respecter nos obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
+          "p4": "Nous produisons également, à partir de ces informations, des alertes de vigilance lorsqu’un contrôle le nécessite.",
+          "title": "Si vous inscrivez une association ou un fonds de dotation"
+        },
+        "title": "Ce que nous collectons, et pourquoi"
       },
       "controller": {
-        "address": "Siège social : 1047 Chemin des Impiniers, 06220 Vallauris, France",
-        "email": "legal@common-link.org",
-        "name": "CommonLink",
-        "noDpo": "CommonLink n'a pas désigné de délégué à la protection des données.",
-        "referent": "Le référent données personnelles est : Julian Maiolino",
-        "siren": "SIREN : 105 153 928",
-        "title": "1. Responsable de traitement",
-        "type": "SAS, société commerciale de l'économie sociale et solidaire"
+        "p1": "CommonLink SAS, 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d’Antibes sous le numéro 105 153 928.",
+        "p2": "Pour toute question relative à vos données : contact@common-link.org",
+        "title": "Qui est responsable"
       },
-      "cookies": {
-        "linkLabel": "Politique cookies",
-        "p1": "Au lancement, CommonLink utilise uniquement les cookies strictement nécessaires au fonctionnement du Site. Pour plus d'informations, l'utilisateur peut consulter la Politique cookies.",
-        "title": "9. Cookies et mesure d'audience"
+      "hostedPages": {
+        "p1": "Une association peut mettre en ligne, sur son propre site, une page de collecte fournie par CommonLink. Elle en est alors l’éditrice, et ce sont ses propres mentions légales et sa propre politique de confidentialité qui s’appliquent à cette page.",
+        "p2": "Les données que vous saisissez pour effectuer votre don y sont traitées dans les conditions décrites sur la présente page.",
+        "title": "Les pages de collecte hébergées par une association"
       },
-      "data": {
-        "donors": {
-          "p1": "CommonLink peut collecter notamment : prénom, nom, adresse email, adresse postale, pays de résidence, informations relatives au compte utilisateur, données relatives aux dons (date, montant, organisme, campagne, moyen de paiement), numéro d'ordre des reçus fiscaux, historique des dons, adresse IP, logs techniques, échanges avec le support.",
-          "p2": "CommonLink ne collecte pas directement les données complètes de carte bancaire.",
-          "title": "2.1 Données des donateurs"
-        },
-        "orgs": {
-          "p1": "CommonLink peut collecter notamment : dénomination, forme juridique, adresse, numéro d'identification, informations relatives aux représentants, documents KYB, informations bancaires, données relatives aux campagnes et justificatifs d'utilisation des fonds.",
-          "title": "2.2 Données des organismes bénéficiaires"
-        },
-        "technical": {
-          "p1": "CommonLink peut collecter : adresse IP, logs de connexion, données relatives au navigateur et au terminal, données de sécurité, données relatives aux cookies strictement nécessaires.",
-          "title": "2.3 Données techniques"
-        },
-        "title": "2. Données collectées"
-      },
-      "intro": "CommonLink attache une importance particulière à la protection des données personnelles. La présente Politique de confidentialité explique quelles données personnelles sont collectées, pour quelles finalités, sur quelles bases juridiques, pendant combien de temps elles sont conservées, avec qui elles peuvent être partagées et quels droits peuvent être exercés.",
       "lastUpdated": "29 juin 2026",
-      "legalBasis": {
-        "intro": "Les traitements reposent, selon les cas, sur :",
-        "item0": "l'exécution d'un contrat ou de mesures précontractuelles ;",
-        "item1": "le respect d'obligations légales ;",
-        "item2": "l'intérêt légitime de CommonLink (sécurité, prévention de la fraude, prospection B2B) ;",
-        "item3": "le consentement de la personne concernée (newsletter, certains cookies) ;",
-        "item4": "la constatation, l'exercice ou la défense de droits en justice.",
-        "title": "4. Bases juridiques"
-      },
-      "newsletter": {
-        "p1": "CommonLink peut envoyer une newsletter aux personnes ayant donné leur consentement (opt-in). Chaque email contient un lien de désinscription.",
-        "p2": "CommonLink peut réaliser de la prospection B2B auprès d'organismes susceptibles d'être intéressés par ses services.",
-        "title": "8. Newsletter et prospection"
-      },
-      "purposes": {
-        "intro": "Les données personnelles peuvent être traitées pour :",
-        "item0": "création et gestion des comptes utilisateurs et organismes bénéficiaires ;",
-        "item1": "présentation des campagnes et traitement des dons ;",
-        "item10": "envoi de newsletters aux personnes ayant donné leur consentement.",
-        "item2": "génération et transmission des reçus fiscaux ;",
-        "item3": "mise à disposition d'informations de transparence et de preuve d'utilisation ;",
-        "item4": "conformité KYC, KYB, lutte contre la fraude et obligations applicables ;",
-        "item5": "gestion du support et des demandes de contact ;",
-        "item6": "facturation des organismes bénéficiaires et tenue comptable ;",
-        "item7": "respect des obligations légales et réglementaires ;",
-        "item8": "sécurité du Site et prévention de la fraude ;",
-        "item9": "prospection B2B auprès d'organismes susceptibles d'utiliser CommonLink ;",
-        "title": "3. Finalités des traitements"
+      "protection": {
+        "p1": "Cette page explique quelles informations nous collectons, pourquoi, combien de temps nous les gardons, qui y a accès et comment vous pouvez agir dessus.",
+        "title": "Protection de vos données personnelles"
       },
       "recipients": {
-        "intro": "Les données personnelles peuvent être transmises, selon les cas, aux :",
-        "item0": "équipes internes habilitées de CommonLink ;",
-        "item1": "organismes bénéficiaires concernés par les dons ;",
-        "item2": "prestataires de paiement et de monnaie électronique ;",
-        "item3": "prestataires KYC ou KYB ;",
-        "item4": "prestataires d'hébergement (Clever Cloud) ;",
-        "item5": "prestataires techniques, d'email transactionnel et de support ;",
-        "item6": "autorités administratives, judiciaires ou fiscales lorsque la loi l'exige.",
-        "monerium": "CommonLink peut utiliser les services de Monerium pour certaines fonctionnalités liées à la monnaie électronique et à la transparence des flux.",
-        "title": "5. Destinataires des données"
+        "p1": "L’organisme bénéficiaire de votre don. Il connaît votre identité, notamment parce que c’est lui le déclarant de votre reçu fiscal. Il ne peut en faire aucun autre usage que ceux liés à cette obligation et à la relation avec ses donateurs. Si vous avez choisi de ne pas apparaître publiquement sur la page de campagne, votre nom n’est pas affiché, mais l’organisme le connaît.",
+        "p2": "Nos prestataires techniques. Clever Cloud, qui héberge la plateforme en France. Proton, qui achemine nos courriers électroniques, y compris votre reçu fiscal.",
+        "p3": "Les prestataires de paiement. Le prestataire qui encaisse les dons et l’établissement de paiement qui exécute les virements traitent vos données pour leur propre compte, dans les conditions qu’ils publient. Ils ne sont pas nos sous-traitants.",
+        "p4": "Nous ne vendons ni ne louons vos données. La plateforme est hébergée dans l’Union européenne. Notre service de messagerie est établi en Suisse, pays reconnu par la Commission européenne comme offrant un niveau de protection adéquat. Aucun autre transfert en dehors de l’Union européenne n’est effectué.",
+        "title": "Qui d’autre y accède"
       },
       "retention": {
-        "col1": "Catégorie de données",
-        "col2": "Durée de conservation",
-        "row0col1": "Données de compte donateur",
-        "row0col2": "Durée d'existence du compte, puis archivage si nécessaire",
-        "row1col1": "Données relatives aux dons, reçus fiscaux et obligations comptables",
-        "row1col2": "Jusqu'à 10 ans à compter de la clôture de l'exercice concerné",
-        "row2col1": "Données relatives aux organismes bénéficiaires",
-        "row2col2": "Durée de la relation contractuelle, puis archivage selon obligations légales",
-        "row3col1": "Logs techniques et données de sécurité",
-        "row3col2": "6 à 12 mois, sauf nécessité plus longue en cas d'incident",
-        "row4col1": "Données de prospection B2B",
-        "row4col2": "3 ans à compter du dernier contact actif",
-        "row5col1": "Données newsletter",
-        "row5col2": "Jusqu'au retrait du consentement ou 3 ans après le dernier contact",
-        "row6col1": "Demandes relatives aux droits RGPD",
-        "row6col2": "Durée nécessaire au traitement, puis archivage probatoire jusqu'à 5 ans",
-        "title": "7. Durées de conservation"
+        "col1": "Ce que nous gardons",
+        "col2": "Combien de temps",
+        "p1": "Clôturer un espace personnel ne supprime pas immédiatement toutes les données. Nous conservons celles que la loi nous impose de garder, pendant les durées ci-dessus, puis nous les supprimons.",
+        "row0col1": "Les données de votre don et votre reçu fiscal",
+        "row0col2": "six ans à compter du don, puis suppression",
+        "row1col1": "Les informations recueillies au titre de la vigilance, pour les organismes et leurs représentants",
+        "row1col2": "cinq ans à compter de la fin de la relation, puis suppression",
+        "row2col1": "Les dossiers de réclamation",
+        "row2col2": "cinq ans à compter de la clôture du dossier, puis suppression",
+        "row3col1": "Les journaux techniques de connexion",
+        "row3col2": "sept jours",
+        "row4col1": "Les données de votre espace personnel",
+        "row4col2": "jusqu’à sa clôture, sous réserve des durées ci-dessus",
+        "title": "Combien de temps"
       },
       "rights": {
-        "contact": "Ces droits peuvent être exercés en écrivant à : legal@common-link.org",
-        "intro": "Conformément à la réglementation applicable, toute personne concernée peut exercer :",
-        "item0": "droit d'accès ;",
-        "item1": "droit de rectification ;",
-        "item2": "droit d'effacement ;",
-        "item3": "droit d'opposition ;",
-        "item4": "droit à la limitation du traitement ;",
-        "item5": "droit à la portabilité ;",
-        "item6": "droit de retirer son consentement à tout moment ;",
-        "item7": "droit de définir des directives relatives au sort de ses données après son décès.",
-        "response": "CommonLink s'efforce de répondre dans un délai de 7 jours ouvrés.",
-        "title": "11. Droits des personnes"
+        "p1": "Vous pouvez demander à accéder à vos données, à les faire corriger, à en obtenir une copie, à en limiter l’usage, à vous opposer à certains traitements, ou à les faire supprimer.",
+        "p2": "Sur la suppression, nous devons être précis. Nous supprimons ce que nous pouvons supprimer. Nous ne pouvons pas supprimer ce que la loi nous impose de conserver, notamment les informations recueillies au titre de la vigilance et les éléments liés à un reçu fiscal déjà émis. Nous vous indiquons alors ce qui a été supprimé et ce qui a été conservé, avec le motif.",
+        "p3": "Écrivez à contact@common-link.org. Nous répondons dans un délai d’un mois, qui peut être porté à trois mois si la demande est complexe, auquel cas nous vous le disons.",
+        "p4": "Si notre réponse ne vous satisfait pas, vous pouvez saisir la Commission nationale de l’informatique et des libertés, 3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, ou sur",
+        "title": "Vos droits"
       },
-      "security": {
-        "p1": "CommonLink met en œuvre des mesures techniques et organisationnelles raisonnables pour protéger les données personnelles : contrôle des accès, hébergement sécurisé, chiffrement, journalisation, séparation des rôles, limitation des accès aux personnes habilitées.",
-        "title": "10. Sécurité"
-      },
-      "title": "Politique de confidentialité",
-      "transfers": {
-        "p1": "CommonLink privilégie des prestataires situés dans l'Union européenne. Au lancement, CommonLink n'a pas vocation à transférer les données personnelles hors de l'Union européenne.",
-        "title": "6. Transferts hors Union européenne"
-      }
+      "title": "Politique de confidentialité"
     },
     "politiqueCookies": {
-      "browser": {
-        "p1": "L'utilisateur peut configurer son navigateur pour bloquer ou supprimer certains cookies. La désactivation de cookies strictement nécessaires peut toutefois empêcher le bon fonctionnement du Site ou de certaines fonctionnalités de la Plateforme.",
-        "title": "7. Gestion des cookies depuis le navigateur"
+      "cookies": {
+        "p1": "Un cookie est un petit fichier déposé sur votre appareil quand vous visitez un site. Certains sont indispensables au fonctionnement du site, d’autres servent à vous suivre. Voici ce qu’il en est chez nous.",
+        "title": "Cookies"
       },
-      "changes": {
-        "p1": "CommonLink peut modifier la présente Politique cookies afin de tenir compte de l'évolution du Site, de la Plateforme, des outils utilisés ou de la réglementation applicable. La version applicable est celle publiée sur le Site.",
-        "title": "8. Modification de la Politique cookies"
+      "deposited": {
+        "p1": "Deux choses, et rien d’autre.",
+        "p2": "Un identifiant de session. Il permet au site de vous reconnaître d’une page à l’autre pendant votre visite, par exemple pour garder votre don en cours ou vous maintenir connecté à votre espace. Il disparaît à la fin de votre session.",
+        "p3": "Votre choix de langue. Pour ne pas avoir à le refaire à chaque page.",
+        "p4": "Ces deux cookies sont nécessaires au fonctionnement du site. La loi n’exige pas votre accord pour les déposer, et c’est pourquoi vous ne voyez pas de bandeau en arrivant.",
+        "title": "Ce que nous déposons sur common-link.org"
       },
-      "consent": {
-        "p1": "Si CommonLink active ultérieurement des cookies analytics, marketing ou de personnalisation nécessitant le consentement, l'utilisateur pourra accepter, refuser ou paramétrer ses choix, et retirer son consentement à tout moment. CommonLink mettra alors à disposition un outil de gestion du consentement accessible depuis le Site.",
-        "title": "5. Consentement"
+      "hostedPages": {
+        "p1": "Une association peut mettre en ligne, sur son propre site, une page de collecte fournie par CommonLink. Elle en est alors l’éditrice, et ce sont ses propres mentions légales et sa propre politique de confidentialité qui s’appliquent.",
+        "p2": "Si cette association a choisi d’y activer un outil de mesure publicitaire, des traceurs peuvent y être déposés. Ils ne relèvent pas de la présente page. Adressez-vous à l’association concernée, dont les coordonnées figurent sur sa page.",
+        "title": "Les pages de collecte hébergées par une association"
       },
-      "duration": {
-        "p1": "Les cookies strictement nécessaires sont conservés pour une durée limitée à ce qui est nécessaire à leur finalité. Les durées précises peuvent varier selon le type de cookie utilisé.",
-        "title": "6. Durée de conservation"
-      },
-      "intro": "La présente Politique cookies explique comment CommonLink utilise les cookies et autres traceurs sur le site https://www.common-link.org/.",
       "lastUpdated": "29 juin 2026",
-      "notUsed": {
-        "item0": "Google Analytics ;",
-        "item1": "cookies de mesure d'audience non exemptés ;",
-        "item2": "cookies marketing ;",
-        "item3": "pixels publicitaires ;",
-        "item4": "retargeting ;",
-        "item5": "cookies de réseaux sociaux ;",
-        "item6": "outils de suivi comportemental ;",
-        "item7": "outils d'enregistrement de session ;",
-        "item8": "outils de heatmap.",
-        "p1": "Au lancement, CommonLink n'utilise pas :",
-        "p2": "Ces outils pourront être activés ultérieurement uniquement après information des utilisateurs et mise en place d'un mécanisme de consentement conforme lorsque celui-ci est requis.",
-        "title": "3. Cookies non utilisés au lancement"
+      "logs": {
+        "linkLabel": "politique de confidentialité",
+        "p1": "Indépendamment des cookies, notre hébergeur conserve pendant sept jours des journaux de connexion contenant notamment votre adresse IP. Ils ne servent qu’au diagnostic d’incident et à la sécurité du service. Le détail figure dans notre",
+        "title": "Les journaux techniques"
       },
-      "payment": {
-        "p1": "Certains prestataires de paiement peuvent utiliser des cookies ou traceurs nécessaires au traitement sécurisé des paiements. Lorsque ces cookies sont strictement nécessaires à l'exécution du paiement demandé par l'utilisateur, ils peuvent être déposés sans consentement préalable.",
-        "title": "4. Cookies de paiement"
+      "notDeposited": {
+        "p1": "Nous n’utilisons ni traceur publicitaire, ni outil de mesure d’audience, ni technique d’empreinte numérique, ni cookie de réseau social. Nous ne suivons pas votre navigation en dehors de notre site, et nous ne revendons aucune donnée de navigation.",
+        "title": "Ce que nous ne déposons pas"
       },
-      "title": "Politique cookies",
-      "used": {
-        "item0": "permettre l'accès au Site ;",
-        "item1": "assurer la sécurité du Site ;",
-        "item2": "maintenir une session utilisateur ;",
-        "item3": "mémoriser certaines préférences strictement nécessaires ;",
-        "item4": "prévenir les abus ou accès non autorisés ;",
-        "item5": "assurer le bon fonctionnement technique de la Plateforme.",
-        "p1": "Au lancement, CommonLink utilise uniquement des cookies strictement nécessaires au fonctionnement du Site.",
-        "p2": "Ces cookies peuvent être nécessaires pour :",
-        "p3": "Ces cookies ne nécessitent pas le consentement préalable de l'utilisateur lorsqu'ils sont strictement nécessaires au service demandé.",
-        "title": "2. Cookies utilisés au lancement"
+      "questions": {
+        "p1": "contact@common-link.org",
+        "title": "Questions"
       },
-      "whatIs": {
-        "p1": "Un cookie est un petit fichier déposé ou lu sur le terminal de l'utilisateur lorsqu'il consulte un site internet. Les cookies peuvent avoir différentes finalités : permettre le bon fonctionnement d'un site, sécuriser une session, mémoriser des préférences, mesurer l'audience ou personnaliser des contenus.",
-        "title": "1. Qu'est-ce qu'un cookie ?"
-      }
-    },
-    "tarifs": {
-      "billing": {
-        "p1": "Les frais dus par les organismes bénéficiaires sont facturés mensuellement, après collecte des dons. Les factures sont émises par CommonLink et transmises à l'organisme bénéficiaire selon les modalités convenues.",
-        "title": "8. Facturation"
+      "refuse": {
+        "p1": "Ces cookies étant nécessaires au fonctionnement, les refuser empêche le site de fonctionner correctement. Vous pouvez néanmoins les bloquer ou les supprimer depuis les réglages de votre navigateur, qui proposent tous une gestion des cookies.",
+        "title": "Comment les refuser"
       },
-      "donors": {
-        "p1": "L'utilisation de CommonLink est gratuite pour les donateurs.",
-        "p2": "Lors d'un don, le donateur peut laisser une contribution volontaire à CommonLink. Cette contribution est facultative. Elle peut être suggérée dynamiquement ou préremplie, mais le donateur peut la modifier ou la ramener à zéro avant validation du paiement. La contribution volontaire est exprimée toutes taxes comprises.",
-        "title": "1. Donateurs"
-      },
-      "example": {
-        "col1": "Élément",
-        "col2": "Montant",
-        "intro": "Pour 100 € de dons collectés par un organisme bénéficiaire :",
-        "note": "Cet exemple est indicatif et ne tient pas compte d'éventuelles conditions particulières ou négociées.",
-        "row0col1": "Dons collectés",
-        "row0col2": "100,00 €",
-        "row1col1": "Frais de service CommonLink",
-        "row1col2": "8,00 € HT",
-        "row2col1": "TVA sur frais de service",
-        "row2col2": "1,60 €",
-        "row3col1": "Frais de paiement et techniques",
-        "row3col2": "2,00 €",
-        "row4col1": "Total facturé à l'organisme bénéficiaire",
-        "row4col2": "11,60 € TTC",
-        "title": "4. Exemple indicatif"
-      },
-      "free": {
-        "p1": "CommonLink peut proposer une offre gratuite permettant à certains organismes de bénéficier d'une visibilité sur la Plateforme. Cette offre gratuite ne permet pas de recevoir des dons via CommonLink.",
-        "title": "5. Offre de visibilité gratuite"
-      },
-      "intro": "CommonLink applique une tarification transparente aux organismes bénéficiaires utilisant la Plateforme pour collecter, suivre et documenter l'utilisation des dons.",
-      "lastUpdated": "29 juin 2026",
-      "noHidden": {
-        "p1": "CommonLink ne facture aucun frais caché. Les frais applicables aux organismes bénéficiaires sont indiqués sur cette page ou dans les conditions contractuelles applicables.",
-        "title": "7. Aucun frais caché"
-      },
-      "orgs": {
-        "fee": "8 % HT du montant des dons collectés",
-        "p1": "CommonLink facture aux organismes bénéficiaires des frais de service correspondant à :",
-        "p2": "La TVA applicable est ajoutée à ces frais. Ces frais sont supportés par l'organisme bénéficiaire. Ils ne sont pas prélevés sur le don brut au moment du paiement du donateur. Ils font l'objet d'une facturation mensuelle.",
-        "title": "2. Organismes bénéficiaires"
-      },
-      "payment": {
-        "fee": "2 % du montant des dons collectés",
-        "item0": "le traitement des paiements ;",
-        "item1": "les infrastructures techniques ;",
-        "item2": "les opérations nécessaires au fonctionnement de la Plateforme ;",
-        "item3": "le cas échéant, certaines opérations liées à la transparence ou aux technologies blockchain.",
-        "p1": "Des frais de paiement et de traitement technique correspondant à :",
-        "p2": "sont également facturés à l'organisme bénéficiaire. Ces frais couvrent notamment :",
-        "title": "3. Frais de paiement et frais techniques"
-      },
-      "specific": {
-        "p1": "CommonLink peut proposer des conditions tarifaires spécifiques ou négociées à certains organismes bénéficiaires, notamment selon leur profil, leur volume de collecte, leur statut, leur usage de la Plateforme ou un accord contractuel spécifique.",
-        "title": "6. Conditions spécifiques"
-      },
-      "title": "Tarifs"
+      "title": "Politique cookies"
     }
   },
   "metadata": {
@@ -1022,9 +1345,17 @@
       "keywords": "associations, transparence, dons, inscription, SIRENE, reporting, gestion donations",
       "title": "Associations — CommonLink"
     },
-    "cgu": {
-      "description": "Conditions générales d'utilisation de la plateforme CommonLink.",
-      "title": "Conditions générales d'utilisation — CommonLink"
+    "cguAssociations": {
+      "description": "Conditions générales d’utilisation applicables aux organismes bénéficiaires sur CommonLink.",
+      "title": "CGU associations — CommonLink"
+    },
+    "cguDonors": {
+      "description": "Conditions générales d’utilisation applicables aux donateurs sur CommonLink.",
+      "title": "CGU donateurs — CommonLink"
+    },
+    "complaints": {
+      "description": "Comment adresser une réclamation à CommonLink et connaître nos délais de traitement.",
+      "title": "Réclamations — CommonLink"
     },
     "contact": {
       "description": "Contactez CommonLink pour toute question sur la plateforme.",
@@ -1039,10 +1370,6 @@
       "keywords": "donateurs, dons, suivi, reçu fiscal, transparence, traçabilité des paiements, philanthropie",
       "title": "Donateurs — CommonLink"
     },
-    "faq": {
-      "description": "Questions fréquentes sur CommonLink, les dons et la transparence.",
-      "title": "FAQ — CommonLink"
-    },
     "landing": {
       "description": "Chaque paiement effectué par une association depuis la plateforme est publié, avec son destinataire et son montant. Transparence euro par euro.",
       "keywords": "dons associations, traçabilité des dons, reçu fiscal, financement participatif, ESS",
@@ -1054,10 +1381,9 @@
       "description": "Mentions légales de CommonLink, la plateforme de transparence des dons.",
       "title": "Mentions légales — CommonLink"
     },
-    "partners": {
-      "description": "Le secteur associatif fait face à une crise de confiance. CommonLink y répond en publiant, pour chaque campagne, les paiements effectués par l'association avec leur destinataire et leur montant.",
-      "keywords": "partenaires, investisseurs, associations, transparence, traçabilité des paiements, impact social",
-      "title": "Partenaires & Investisseurs — CommonLink"
+    "modelAgreement": {
+      "description": "Contrat type entre le donateur et l’organisme bénéficiaire, article R.548-10 I du code monétaire et financier.",
+      "title": "Contrat type — CommonLink"
     },
     "privacy": {
       "description": "Comment CommonLink collecte et utilise vos données personnelles.",
@@ -1066,176 +1392,162 @@
     "tarifs": {
       "description": "Tarifs transparents pour les organismes utilisant CommonLink.",
       "title": "Tarifs — CommonLink"
+    },
+    "transparency": {
+      "description": "Qui peut collecter sur CommonLink, ce que nous ne finançons pas, et comment les fonds circulent jusqu'à l'association.",
+      "title": "Transparence — CommonLink"
     }
   },
   "nav": {
     "associations": "Associations",
+    "donate": "Faire un don",
     "donors": "Donateurs",
     "home": "CommonLink — Accueil",
+    "login": "Connexion",
     "main": "Navigation principale",
     "menuClose": "Fermer le menu",
     "menuOpen": "Ouvrir le menu",
     "mobile": "Navigation mobile",
-    "partners": "Partenaires"
+    "projects": "Projets",
+    "tarifs": "Tarifs"
   },
-  "partners": {
-    "architecture": {
-      "description": "CommonLink ne reçoit, ne conserve et ne reverse aucun don. Les fonds ne figurent à aucun moment dans ses comptes.",
-      "steps": [
-        {
-          "title": "Le don est encaissé au nom de l'association",
-          "text": "Le donateur donne en euros. Les fonds sont encaissés par notre prestataire de paiement sur un compte ouvert au nom de l'association, puis versés sur son compte bancaire."
-        },
-        {
-          "title": "Le reçu fiscal est émis immédiatement",
-          "text": "CommonLink établit le reçu pour le compte de l'association, en vertu d'un mandat. Il part par courrier électronique dès la confirmation du don. L'association reste le déclarant."
-        },
-        {
-          "title": "L'association garde la main sur son argent",
-          "text": "Elle est titulaire de son compte de paiement et de son compte bancaire, et en conserve l'usage y compris si elle quitte la plateforme."
-        },
-        {
-          "title": "Les paiements sortants sont initiés par l'association",
-          "text": "Chaque paiement est autorisé par son représentant légal, qui s'authentifie auprès de sa banque. Le service d'initiation de paiement est fourni par un établissement de paiement agréé, qui ne détient à aucun moment les fonds."
-        },
-        {
-          "title": "Le paiement est publié",
-          "text": "Destinataire, montant et part des fonds collectés qu'il représente sont publiés sur la page de la campagne. Aucun justificatif n'est demandé à l'association, ce qui est publié est l'opération elle-même."
-        }
+  "tarifs": {
+    "asso": {
+      "billedText": "Sur la base des dons encaissés dans le mois. Réglé par virement, au plus tard à la fin du mois suivant.",
+      "billedTitle": "Facturé en fin de mois",
+      "flowClaimPre": "Sur 100 € collectés,",
+      "flowClaimStrong": "votre association reçoit 100 €.",
+      "flowNote": "La commission n'est jamais prélevée sur les dons. Elle est facturée à part, en fin de mois.",
+      "flowTitle": "Ce qui arrive sur votre compte",
+      "footNote": "* Commission soumise à la TVA au taux normal.",
+      "notPayItems": [
+        "Abonnement",
+        "Frais d'ouverture",
+        "Frais par transaction",
+        "Frais de virement",
+        "Frais de sortie",
+        "Minimum de facturation"
       ],
-      "title": "Architecture et flux des fonds"
+      "notPayTitle": "Ce que vous ne payez pas",
+      "soloText": "Vous pouvez cesser d’utiliser CommonLink à tout moment, et vous ne payez que les mois où vous avez collecté.",
+      "soloTitle": "Sans engagement",
+      "subNote": "Les frais du prestataire d'encaissement sont inclus dans la commission et ne sont jamais refacturés."
     },
-    "contact": {
-      "email": "Email professionnel",
-      "emailPlaceholder": "vous@entreprise.com",
-      "message": "Message (optionnel)",
-      "messagePlaceholder": "En quoi souhaitez-vous contribuer ?",
-      "name": "Nom complet",
-      "namePlaceholder": "Votre nom",
-      "note": "Nous répondons sous deux jours ouvrés. Vos données sont traitées conformément au RGPD.",
-      "org": "Organisation",
-      "orgPlaceholder": "Nom de votre structure",
-      "submit": "Envoyer ma demande",
-      "success": "Merci ! Votre demande a bien été envoyée. Nous vous recontacterons sous 48h.",
-      "title": "Prenons contact",
-      "type": "Type de partenariat",
-      "typeOptions": [
-        {
-          "value": "",
-          "label": "Sélectionnez..."
-        },
-        {
-          "value": "investisseur",
-          "label": "Investisseur / Business Angel"
-        },
-        {
-          "value": "institutionnel",
-          "label": "Partenaire institutionnel"
-        },
-        {
-          "value": "tech",
-          "label": "Partenaire technologique"
-        },
-        {
-          "value": "autre",
-          "label": "Autre"
-        }
-      ]
-    },
-    "cta": {
-      "description": "Investisseur, partenaire institutionnel ou technologique — échangeons sur notre vision commune.",
-      "title": "Construisons ensemble la transparence associative"
+    "donor": {
+      "badge": "CommonLink ne détient jamais les fonds et ne prélève rien sur les dons.",
+      "bigNum": "0",
+      "bigUnit": "€",
+      "label": "Pour les donateurs",
+      "text1": "100 % de votre don part à l'association. Votre reçu porte sur le montant total.",
+      "text2": "CommonLink est rémunérée par l'association, à hauteur de 10 % hors taxes de sa collecte. Jamais par vous.",
+      "title": "Vous ne payez aucun frais"
     },
     "hero": {
-      "badge": "Partenaires & Investisseurs",
-      "description": "Le secteur associatif fait face à une crise de confiance. CommonLink y répond en publiant, pour chaque campagne, les paiements effectués par l'association avec leur destinataire et leur montant.",
-      "title": "Restaurer la confiance des donateurs grâce à la transparence des fonds"
-    },
-    "infrastructure": {
-      "description": "CommonLink ne détient aucun fonds et ne fournit aucun service de paiement. L'encaissement des dons et l'initiation des paiements sont assurés par des prestataires agréés.",
-      "items": [
+      "bigLine1": "du montant des dons collectés",
+      "bigLine2": "facturés en fin de mois, jamais prélevés sur les dons",
+      "bigNum": "10",
+      "bigSub": "hors taxes *",
+      "bigUnit": "%",
+      "label": "Tarifs",
+      "subtitle": "Pas d'abonnement, pas de frais d'ouverture, pas de frais par transaction. Vous ne payez que les mois où vous collectez.",
+      "switchAsso": "Associations",
+      "switchDonor": "Donateurs",
+      "title": "Une commission unique.",
+      "titleAccent": "Rien d'autre."
+    }
+  },
+  "transparency": {
+    "exclus": {
+      "cards": [
         {
-          "title": "Conformité",
-          "text": "Vérification de l'existence et de l'identité des associations dans les registres publics, obligations de vigilance en matière de lutte contre le blanchiment.",
-          "tag": "Registres publics"
+          "items": [
+            "Un projet dont l'objet est illicite.",
+            "Une structure dissoute, ou dont les avoirs font l’objet d’une mesure de gel.",
+            "Le financement d'un parti politique, d'un candidat ou d'une campagne électorale. La loi réserve ce type de financement à un circuit spécifique, avec mandataire financier et reçus délivrés sous le contrôle de la Commission nationale des comptes de campagne, que nous ne prenons pas en charge. En revanche, une association qui défend une cause, y compris en cherchant à faire évoluer une loi ou une politique publique, est pleinement bienvenue."
+          ],
+          "title": "La loi nous l'interdit"
         },
         {
-          "title": "Flux financiers",
-          "text": "Comptes de paiement ouverts au nom des associations chez un établissement agréé. Paiements sortants initiés par le représentant légal de l'association.",
-          "tag": "Aucun fonds détenu"
+          "items": [
+            "Une collecte au profit d'une personne ou d'une famille identifiée. Un reçu fiscal suppose que le don serve un intérêt général, pas une situation individuelle. C'est ce qui distingue un don d'une cagnotte.",
+            "Une collecte qui promet quelque chose au donateur en échange de son don, un objet, une place, un service. Sur CommonLink, un don ne donne droit à rien d'autre qu'au reçu fiscal."
+          ],
+          "title": "Cela mettrait en danger le reçu fiscal du donateur"
         },
         {
-          "title": "Transparence",
-          "text": "Publication du destinataire et du montant de chaque paiement sur la page de campagne, et empreinte cryptographique inscrite dans un registre public.",
-          "tag": "Public"
+          "items": [
+            "Le financement de l'exercice d'un culte, par exemple l'entretien d'un lieu de culte ou la rémunération d'un ministre du culte. Les activités sociales, éducatives ou culturelles d'une association cultuelle restent éligibles.",
+            "Le financement des frais de justice d'une personne identifiée.",
+            "Une collecte qui finance en réalité une activité commerciale."
+          ],
+          "title": "Nous avons choisi de ne pas l'accepter"
         }
       ],
-      "title": "Infrastructure & conformité"
+      "label": "Exclusions",
+      "title": "Ce que nous ne finançons pas",
+      "withdrawText1": "Une campagne publiée peut être retirée si elle relève d'un cas exclu.",
+      "withdrawText2": "Depuis votre compte, sur la page d'une campagne, vous pouvez nous signaler ce qui vous semble poser problème et nous l'expliquer librement. Le signalement arrive directement à notre équipe conformité.",
+      "withdrawText3": "Nous l'examinons au regard des cas exclus décrits ci-dessus. L'association est informée de la décision, peut présenter ses observations et la contester. Chaque retrait est consigné avec son motif et sa date.",
+      "withdrawText4": "Si vous n'avez pas de compte, écrivez-nous à contact@common-link.org",
+      "withdrawTitle": "Retrait d'une campagne"
     },
-    "roadmap": {
-      "steps": [
-        {
-          "title": "Premier semestre 2026 — Structure et conformité",
-          "text": "Société constituée, assurance de responsabilité civile professionnelle souscrite, immatriculation en cours, premières associations pilotes identifiées."
-        },
-        {
-          "title": "Septembre 2026 — Ouverture avec les associations pilotes",
-          "text": "Ouverture du service aux premières associations, premiers dons collectés et premiers paiements publiés."
-        },
-        {
-          "title": "Fin 2026 — Ouverture progressive",
-          "text": "Ouverture progressive aux associations et donateurs, itérations produit, campagnes d'acquisition."
-        }
+    "fonds": {
+      "callout": "L'objectif d'une campagne n'est pas un seuil à franchir. Une association qui a collecté 8 000 euros sur un objectif de 10 000 euros dispose de ses 8 000 euros et peut les utiliser dès qu'ils sont versés. Un don lui est acquis dès sa réception.",
+      "capText1": "L'objectif est aussi un plafond. Une campagne ne collecte pas plus que le besoin qu'elle a annoncé.",
+      "capText2": "Lorsque le plafond est atteint, la campagne n'accepte plus de dons. Un don qui ferait dépasser ce plafond n'est pas encaissé : vous êtes informé avant tout paiement, et nous vous proposons un autre projet de la même association ou un projet comparable.",
+      "capTitle": "Lorsque l'objectif est atteint",
+      "closeText1": "L'association publie un bilan de clôture qui rend compte de l'utilisation des fonds.",
+      "closeText2": "Si une partie des fonds n'a pas été dépensée, par exemple parce que le projet a coûté moins que prévu, ces fonds restent acquis à l'association, qui indique dans son bilan ce qu'elle en fait. Ils ne sont pas restitués aux donateurs : un don est définitif dès sa réception.",
+      "closeTitle": "À la clôture d'une campagne",
+      "label": "Circulation des fonds",
+      "spendText1": "Les dépenses d'une campagne sont imputées aux dons reçus dans leur ordre d'arrivée, du plus ancien au plus récent.",
+      "spendText2": "Une association ne peut engager, depuis CommonLink, que les montants effectivement disponibles sur la campagne concernée.",
+      "spendTitle": "Comment les dépenses sont rattachées à une campagne",
+      "text1": "Les dons sont encaissés sur un compte ouvert au nom de l'association, puis versés sur son compte bancaire. Aucun versement n'est conditionné à l'atteinte de l'objectif de collecte.",
+      "text2": "Le calendrier de versement dépend du moyen de paiement choisi par le donateur. L'association suit à tout moment, depuis son espace, les montants en attente et les montants disponibles.",
+      "title": "Comment les fonds arrivent à l’association"
+    },
+    "hero": {
+      "label": "Transparence",
+      "switchExclus": "Ce que nous ne finançons pas",
+      "switchFonds": "La circulation des fonds",
+      "switchQui": "Qui peut collecter",
+      "text": "Nous ne demandons aucun justificatif aux associations et nous ne vérifions aucune facture. Ce que nous publions, ce sont les paiements qu'elles effectuent depuis la plateforme, avec leur destinataire et leur montant.",
+      "title": "Qui peut collecter,",
+      "titleAccent": "et comment l'argent circule."
+    },
+    "qui": {
+      "acceptText1": "CommonLink ne juge pas la valeur d'un projet et n'établit aucun classement entre les causes soutenues. Notre rôle est de vérifier qu'une campagne est présentée de façon complète, et qu'elle ne relève pas d'un cas exclu.",
+      "acceptText2": "Une campagne ne peut pas être publiée sans les cinq éléments suivants, et cette vérification est automatique.",
+      "acceptTitle": "Comment un projet est accepté",
+      "checkCallout": "Vous renseignez le budget prévisionnel de votre projet directement dans le formulaire de campagne. Aucun document ne vous est demandé : ni bilan, ni compte de résultat, ni facture, ni justificatif de dépense, ni rapport d’activité.",
+      "checkText": "Avant toute collecte, nous vérifions l'existence et l'identité de votre structure auprès des registres publics. Nous recueillons à cette fin votre dénomination, l'adresse de votre siège, votre forme juridique, votre numéro d'enregistrement au répertoire national des associations ou votre numéro SIREN, l'identité de votre représentant légal et vos coordonnées bancaires.",
+      "checkTitle": "Ce que nous vérifions et ce que nous vous demandons",
+      "criteriaItems": [
+        "Son objet",
+        "Son montant cible",
+        "Son calendrier",
+        "Le budget prévisionnel de l’utilisation des fonds",
+        "Le résultat attendu"
       ],
-      "title": "Feuille de route"
-    },
-    "stats": [
-      {
-        "number": "10 %",
-        "label": "hors taxes, notre commission unique, sans aucun autre frais"
-      },
-      {
-        "number": "0 €",
-        "label": "détenu par CommonLink : les comptes sont au nom des associations"
-      },
-      {
-        "number": "1,5M",
-        "label": "d'associations en France, dont une grande majorité de petites structures"
-      }
-    ],
-    "team": {
-      "members": [
-        {
-          "initials": "JM",
-          "role": "Chief Executive Officer",
-          "name": "Julian Maïolino",
-          "bio": "Direction et développement de projets associatifs. + 5 ans en France et à l'international. Vision stratégique et partenariats."
-        },
-        {
-          "initials": "CL",
-          "role": "Chief Operations Officer",
-          "name": "Colin Lalouette",
-          "bio": "Expert en structuration et croissance opérationnelle. + 20 ans en startups et conseil. Pilotage, scalabilité et exécution."
-        },
-        {
-          "initials": "CP",
-          "role": "Chief Technology Officer",
-          "name": "Clément Pignon",
-          "bio": "Architecte de systèmes numériques de confiance Web2/3. + 20 ans de développement. Environnements régulés & critiques."
-        }
+      "generalInterest": "Un projet doit répondre à un besoin d'intérêt général, qu'il agisse au bénéfice de personnes physiques, de personnes morales, d'animaux ou de l'environnement.",
+      "intro": "CommonLink est ouverte aux associations déclarées disposant d'un numéro d'enregistrement au répertoire national des associations, et aux fonds de dotation, établis en France.",
+      "label": "Éligibilité",
+      "noItems": [
+        "Les structures établies hors de France",
+        "Les sociétés commerciales",
+        "Les personnes physiques",
+        "Les structures dissoutes ou en cours de dissolution"
       ],
-      "title": "Une équipe engagée pour l'ESS"
-    },
-    "vision": {
-      "mission": {
-        "text": "Restaurer la confiance des donateurs grâce à une transparence totale des fonds. Offrir des outils de traçabilité pour une gestion claire et vérifiable. Proposer une plateforme de dons intuitive et des services de support dédiés.",
-        "title": "Notre mission"
-      },
-      "promote": {
-        "text": "Inspirer la confiance des donateurs en rendant visible l'utilisation de chaque euro. Stimuler la générosité afin de démultiplier l'impact des associations.",
-        "title": "Promouvoir la transparence"
-      },
-      "title": "Notre vision"
+      "noTitle": "Ne sont pas éligibles",
+      "okItems": [
+        "Être régulièrement déclarée et disposer d’une existence juridique vérifiable dans les registres publics",
+        "Avoir son siège en France",
+        "Désigner un représentant légal identifié",
+        "Disposer d’un compte bancaire ouvert à son nom"
+      ],
+      "okTitle": "Conditions à remplir",
+      "title": "Qui peut collecter sur CommonLink"
     }
   }
 }

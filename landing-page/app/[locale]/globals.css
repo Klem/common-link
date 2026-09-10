@@ -251,6 +251,16 @@ details summary {
   background: var(--color-background);
 }
 
+.legal-prose .legal-callout {
+  background: var(--color-background);
+  border-left: 3px solid var(--color-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-body);
+}
+
 .legal-prose .contact-block {
   background: var(--color-background-alt);
   border: 1px solid var(--color-border-light);

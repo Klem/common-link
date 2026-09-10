@@ -4,10 +4,6 @@ export type Locale = (typeof locales)[number];
 
 export const pathnames = {
   '/': '/',
-  '/partenaires': {
-    fr: '/partenaires',
-    en: '/partners',
-  },
   '/associations': {
     fr: '/associations',
     en: '/associations',

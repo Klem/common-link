@@ -1,18 +1,16 @@
 interface LegalContentProps {
   title: string;
-  lastUpdated?: string;
+  meta?: string;
   children: React.ReactNode;
 }
 
-export function LegalContent({ title, lastUpdated, children }: LegalContentProps) {
+export function LegalContent({ title, meta, children }: LegalContentProps) {
   return (
     <main>
-      <section className="bg-primary-dark text-white py-16">
+      <section className="bg-background-alt py-14">
         <div className="max-w-container mx-auto px-8">
-          <h1 className="font-ui text-[2rem] md:text-[2.5rem] font-bold text-white mb-2">{title}</h1>
-          {lastUpdated && (
-            <p className="text-white/60 text-[0.9rem]">Dernière mise à jour : {lastUpdated}</p>
-          )}
+          <h1 className="font-ui text-[2rem] md:text-[2.5rem] font-extrabold text-foreground-dark mb-2">{title}</h1>
+          {meta && <p className="text-foreground-muted text-[0.9rem]">{meta}</p>}
         </div>
       </section>
 
