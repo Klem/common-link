@@ -4,16 +4,19 @@ import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.repository.PayoutRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 /**
  * Applies a Bridge payment-status notification to the corresponding payout.
  *
- * Bridge documents no webhook signature, so the notification is treated as a bare trigger: the
- * only thing taken from it is the payment-link id, and the authoritative state is then re-read
- * from Bridge with [BridgePaymentInitiationService.getPaymentLink]. Acting on the notification body
- * would let anyone who can reach the endpoint mark a payout settled — and settling a payout
- * publishes an on-chain attestation that cannot be retracted. Same rationale as
- * [MollieWebhookService].
+ * Bridge signs its webhooks (`BridgeApi-Signature`, verified by [BridgeWebhookSignatureVerifier]
+ * before this class is ever reached), but the notification *content* is still treated as a bare
+ * trigger: the only things taken from it are the payment-link id and, as a fallback, the client
+ * reference, and the authoritative state is then re-read from Bridge with
+ * [BridgePaymentInitiationService.getPaymentLink]. Acting on the notification body would let
+ * anyone who can reach the endpoint mark a payout settled — and settling a payout publishes an
+ * on-chain attestation that cannot be retracted. Same rationale as [MollieWebhookService], which
+ * faces the same choice despite Mollie's webhook carrying no signature at all.
  *
  * This is the sole driver of payout settlement: there is no polling loop. A Bridge notification is
  * retried for one to two days on a non-2xx response, which covers transient failures on our side.
@@ -27,23 +30,40 @@ class BridgeWebhookService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
-     * Reconciles the payout attached to [paymentLinkId] with Bridge's current view of it.
+     * Reconciles the payout targeted by the notification with Bridge's current view of it.
      *
-     * @param paymentLinkId Bridge payment-link id taken from the notification.
+     * @param paymentLinkId Bridge payment-link id taken from the notification, when present.
+     * @param clientReference `client_reference` from the notification — the payoutId as a string.
+     *   Used only when [paymentLinkId] is absent, which Bridge documents as possible on
+     *   `payment.transaction.created`/`.updated` (unlike `payment.link.updated`, where the link id
+     *   is always present).
      * @throws org.commonlink.exception.BadGatewayException if Bridge cannot be reached — the caller
      *   must answer non-2xx so Bridge retries, rather than silently dropping the update.
      */
-    fun handlePaymentLinkNotification(paymentLinkId: String) {
-        val payout = payoutRepository.findByBridgePaymentLinkId(paymentLinkId)
+    fun handlePaymentLinkNotification(paymentLinkId: String?, clientReference: String? = null) {
+        val payout = paymentLinkId?.takeIf { it.isNotBlank() }?.let { payoutRepository.findByBridgePaymentLinkId(it) }
+            ?: clientReference?.takeIf { it.isNotBlank() }
+                ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                ?.let { payoutRepository.findById(it).orElse(null) }
+
         if (payout == null) {
             // Not an error: Bridge also notifies for payment links this instance never created
             // (another environment sharing the sandbox app, or a link created outside CommonLink).
-            log.info("No payout attached to Bridge payment link {} — notification ignored", paymentLinkId)
+            log.info(
+                "No payout resolved for Bridge notification (paymentLinkId={}, clientReference={}) — ignored",
+                paymentLinkId, clientReference,
+            )
+            return
+        }
+
+        val linkId = payout.bridgePaymentLinkId
+        if (linkId == null) {
+            log.error("Payout {} resolved via client_reference has no bridgePaymentLinkId recorded — cannot reconcile", payout.id)
             return
         }
 
         // Never trust the notification body: read the state from Bridge itself.
-        val state = bridgeInitiation.getPaymentLink(paymentLinkId)
+        val state = bridgeInitiation.getPaymentLink(linkId)
 
         when (state.status) {
             BridgePaymentStatus.ACSC ->
@@ -76,7 +96,7 @@ class BridgeWebhookService(
                 log.error(
                     "Bridge reported PART on payment link {} for payout {} — a payout has a single " +
                         "transaction, so this needs manual reconciliation",
-                    paymentLinkId, payout.id,
+                    linkId, payout.id,
                 )
                 confirmer.recordInFlight(payout.id, BridgePaymentStatus.PART, state.transactionId)
             }

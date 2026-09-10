@@ -173,6 +173,27 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `bridge demo-mode is false in prod`() {
+        assertEquals(false, prop("app.bridge.demo-mode"))
+    }
+
+    @Test
+    fun `bridge base-url placeholder is well-formed in prod`() {
+        // Regression guard: this was previously `${BRIDGE_BASE_URLhttps://api.bridgeapi.io}` (no
+        // `:` separator) — a startup-failing placeholder that this raw-string-comparison test
+        // suite would otherwise never catch, since resolving it requires an actual app boot.
+        assertEquals("\${BRIDGE_BASE_URL:https://api.bridgeapi.io}", prop("app.bridge.base-url"))
+    }
+
+    @Disabled("app.bridge.webhook-secret stays blank-tolerant until the webhook is created on " +
+        "Bridge's PRODUCTION dashboard and BRIDGE_WEBHOOK_SECRET is set on Clever Cloud — " +
+        "enable once that is done, mirroring the MOLLIE_API_KEY / COMPLIANCE_ENCRYPTION_KEY pattern.")
+    @Test
+    fun `bridge webhook-secret is required with no blank-fallback default in prod`() {
+        assertEquals("\${BRIDGE_WEBHOOK_SECRET}", prop("app.bridge.webhook-secret"))
+    }
+
+    @Test
     fun `trusted-proxy-count is set in prod`() {
         // Rate limiting keys on the client address resolved by ClientIpResolver. Leaving the count
         // unset would fall back to the base-profile value of 0, i.e. every request behind the Clever

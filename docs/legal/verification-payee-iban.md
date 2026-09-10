@@ -71,9 +71,14 @@ d'un jeton d'API dont l'état diffère.
 
 ### 4.1 Local et staging — mode démo
 
-`demo-mode: true`. Aucun appel n'est fait à Mollie : le résultat est simulé à partir du dernier
-caractère de l'IBAN. Ce mode permet de dérouler le parcours sans dépendre d'un compte Mollie réel,
-mais **ne constitue pas une preuve que l'appel réel fonctionne**.
+`demo-mode: true`. Aucun appel n'est fait à Mollie : `VopService.verify` retourne
+inconditionnellement une correspondance exacte (*MATCH*), quel que soit le contenu de l'IBAN ou du
+nom du bénéficiaire. Ce mode permet de dérouler le parcours de bout en bout sans dépendre d'un
+compte Mollie réel, mais **ne constitue en aucun cas une preuve que l'appel réel fonctionne, ni une
+vérification quelconque du titulaire** : dans ces deux environnements, seul le contrôle de format
+(étape 1, mod-97) protège réellement contre une erreur de saisie ou un IBAN inventé. L'étape 2
+(déclenchement du bouton « Vérifier ») y reste présente dans le parcours, pour ne pas diverger de
+la production, mais elle y est un no-op qui réussit toujours.
 
 ### 4.2 Production — mode réel, mais jeton non remplacé
 
@@ -98,11 +103,14 @@ deviner. Tant que ce remplacement n'est pas fait :
 ### 4.4 Aucune dérogation au statut *vérifié*
 
 Il n'existe **aucun mécanisme, dans aucun environnement, permettant de porter un IBAN au statut
-*vérifié* sans passer par le contrôle décrit au point 3.** Le seul assouplissement est celui du
-point 4.1 : en local et en staging, le résultat de la vérification du titulaire est simulé (mode
-démo) au lieu d'être demandé à la banque. Le statut *vérifié* obtenu dans ces environnements ne
-constitue donc pas la preuve d'une vérification bancaire, mais il résulte bien du même chemin de
-code et des mêmes règles.
+*vérifié* sans passer par l'action explicite décrite au point 3** (le bouton « Vérifier » reste
+requis, aucun IBAN ne passe automatiquement de *format validé* à *vérifié* à l'ajout). En revanche,
+ce que cette action vérifie effectivement diffère selon l'environnement : en local et en staging
+(point 4.1), elle ne demande rien à une banque et réussit inconditionnellement — **le statut
+*vérifié* obtenu dans ces deux environnements ne repose donc que sur le contrôle de format
+(mod-97) et ne doit jamais être interprété comme une preuve que le nom du titulaire a été
+confirmé.** Seule la production (une fois le point 4.3 résolu) fait réellement porter ce statut sur
+une correspondance de nom constatée par une banque.
 
 Un endpoint de forçage manuel a été envisagé pendant l'intégration de Bridge, pour contourner le
 fait que l'IBAN de démonstration du sandbox Bridge se termine par `5` — caractère que la simulation
@@ -147,8 +155,10 @@ encore reçu aucun paiement peut, lui, être soit désactivé soit supprimé.
 
 - **Aucune revérification périodique** d'un IBAN déjà vérifié — si le compte est fermé ou renommé
   chez la banque après coup, CommonLink ne le détecte pas automatiquement.
-- **En local et en staging, le statut *vérifié* résulte d'une simulation** et non d'une
-  vérification auprès de la banque (points 4.1 et 4.4).
+- **En local et en staging, le statut *vérifié* ne résulte d'aucune vérification, même simulée,
+  du titulaire** — l'action réussit inconditionnellement, sans considérer l'IBAN ni le nom déclaré
+  (points 4.1 et 4.4). Seul le contrôle de format (mod-97) est réellement actif dans ces deux
+  environnements.
 - **Ce contrôle ne porte pas sur l'exécution du virement.** Depuis l'intégration de Bridge, l'IBAN
   vérifié est transmis tel quel comme destination du virement (bénéficiaire dynamique) : il n'y a
   aucun enregistrement préalable ailleurs, mais aucun contrôle supplémentaire non plus. La
@@ -165,8 +175,9 @@ encore reçu aucun paiement peut, lui, être soit désactivé soit supprimé.
 
 ## 7. Éléments de preuve
 
-Seize scénarios automatisés couvrent ce travail : simulation du mode démo (huit cas déjà
-pré-existants), appel réel à l'API Mollie mocké (transmission du corps de requête et du jeton,
+Dix scénarios automatisés couvrent ce travail : mode démo (deux cas — retour MATCH inconditionnel
+quel que soit l'IBAN, y compris un IBAN qui aurait échoué à un contrôle réel), appel réel à l'API
+Mollie mocké (transmission du corps de requête et du jeton,
 correspondance exacte, correspondante approximative avec nom suggéré, absence de correspondance,
 vérification impossible, échec réseau — six cas), blocage de la suppression d'un IBAN vérifié ayant
 reçu un paiement et son inverse (deux cas ; désactivation testée séparément côté service). Le

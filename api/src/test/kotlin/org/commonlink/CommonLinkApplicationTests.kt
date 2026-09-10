@@ -20,6 +20,7 @@ import org.commonlink.service.AssociationLandingService
 import org.commonlink.service.CampaignReportService
 import org.commonlink.service.LegalAcceptanceService
 import org.commonlink.service.BridgeWebhookService
+import org.commonlink.service.BridgeWebhookSignatureVerifier
 import org.commonlink.service.MollieWebhookService
 import org.commonlink.service.PublicCampaignDirectoryService
 import org.commonlink.service.PublicWidgetService
@@ -87,6 +88,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var publicCampaignDirectoryService: PublicCampaignDirectoryService
     @MockkBean private lateinit var mollieWebhookService: MollieWebhookService
     @MockkBean private lateinit var bridgeWebhookService: BridgeWebhookService
+    @MockkBean private lateinit var bridgeWebhookSignatureVerifier: BridgeWebhookSignatureVerifier
     @MockkBean private lateinit var mollieConnectService: MollieConnectService
     @MockkBean private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
     @MockkBean private lateinit var freezeScreeningOnboardingService: FreezeScreeningOnboardingService

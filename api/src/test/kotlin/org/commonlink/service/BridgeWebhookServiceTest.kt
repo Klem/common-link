@@ -18,6 +18,7 @@ import org.commonlink.repository.PayoutRepository
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
+import java.util.Optional
 import java.util.UUID
 
 /**
@@ -143,6 +144,27 @@ class BridgeWebhookServiceTest {
         verify(exactly = 0) { bridgeInitiation.getPaymentLink(any()) }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
         verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+    }
+
+    @Test
+    fun `resolves the payout via client_reference when payment_link_id is absent`() {
+        // payment.transaction.* documents payment_link_id as optional, unlike payment.link.updated.
+        stubState(BridgePaymentStatus.ACSC)
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+
+        service.handlePaymentLinkNotification(null, payout.id.toString())
+
+        verify { confirmer.finaliseSettled(payout.id, "tx_1") }
+    }
+
+    @Test
+    fun `ignores a notification with neither a resolvable payment_link_id nor client_reference`() {
+        every { payoutRepository.findByBridgePaymentLinkId("pl_unknown") } returns null
+
+        service.handlePaymentLinkNotification("pl_unknown", "not-a-uuid")
+
+        verify(exactly = 0) { bridgeInitiation.getPaymentLink(any()) }
+        verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
     }
 
     @Test

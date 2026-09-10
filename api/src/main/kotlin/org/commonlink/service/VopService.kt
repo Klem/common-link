@@ -29,11 +29,14 @@ data class VopVerificationResult(
  * (`POST /v2/business-accounts/payee-verifications` — a Mollie Business Accounts beta feature,
  * see https://docs.mollie.com/reference/verify-payee).
  *
- * When [demoMode] is `true` (default), verification is simulated based on the last
- * alphanumeric character of the IBAN so the feature can be exercised without real bank
- * credentials. When [demoMode] is `false`, the real Mollie Verify Payee endpoint is called.
+ * When [demoMode] is `true` (default), no real verification is performed: [verify] always
+ * returns [VopResult.MATCH] with no API call, so the feature can be exercised without real bank
+ * credentials or a Mollie Business Account. Format validation (mod-97, see
+ * [PayeeService.addIban]) remains the only real guarantee in this mode — the VOP step itself is
+ * a no-op that unconditionally passes. When [demoMode] is `false`, the real Mollie Verify Payee
+ * endpoint is called.
  *
- * @param demoMode Whether to use demo simulation instead of the real API.
+ * @param demoMode Whether to skip real verification and unconditionally return MATCH.
  * @param apiUrl Mollie Verify Payee endpoint URL.
  * @param apiToken Bearer token for the Mollie API, scoped `business-account-payee-verifications.write`
  *   (empty string in demo mode).
@@ -61,7 +64,8 @@ class VopService(
     /**
      * Verifies the given IBAN against the payee name using VOP.
      *
-     * Routes to [simulateVop] when [demoMode] is active, otherwise calls [callVerifyPayeeApi].
+     * Returns an unconditional [VopResult.MATCH] when [demoMode] is active, otherwise calls
+     * [callVerifyPayeeApi].
      *
      * @param iban The IBAN to verify (normalised, no spaces).
      * @param payeeName The expected account holder name.
@@ -69,59 +73,15 @@ class VopService(
      */
     fun verify(iban: String, payeeName: String): VopVerificationResult {
         return if (demoMode) {
-            log.debug("VOP demo mode — simulating for IBAN ending '{}'", iban.lastOrNull())
-            simulateVop(iban, payeeName)
+            log.debug("VOP demo mode — skipping real verification for IBAN, returning MATCH unconditionally")
+            VopVerificationResult(
+                result = VopResult.MATCH,
+                suggestedName = null,
+                rawResponse = """{"simulation":true,"verification":"skipped"}"""
+            )
         } else {
             log.debug("VOP real mode — calling Mollie Verify Payee API for IBAN {}", iban)
             callVerifyPayeeApi(iban, payeeName)
-        }
-    }
-
-    /**
-     * Simulates a VOP check based on the last alphanumeric character of the IBAN.
-     *
-     * Outcome mapping (last char of stripped IBAN):
-     * - `0,2,4,6,8` → [VopResult.MATCH]
-     * - `1,3,5` → [VopResult.CLOSE_MATCH] — [suggestedName] = words of [payeeName] reversed
-     * - `7,9` → [VopResult.NO_MATCH]
-     * - anything else (e.g. letter) → [VopResult.NOT_POSSIBLE]
-     *
-     * A 500 ms delay simulates real network latency. This delay is present **only** in this
-     * demo path; [callQontoApi] has no artificial delay.
-     *
-     * @param iban The IBAN to simulate against.
-     * @param payeeName Payee name used to produce the reversed close-match suggestion.
-     * @return Simulated [VopVerificationResult].
-     */
-    private fun simulateVop(iban: String, payeeName: String): VopVerificationResult {
-        Thread.sleep(500)
-        val stripped = iban.replace(Regex("[^A-Za-z0-9]"), "")
-        val lastChar = stripped.lastOrNull()
-
-        return when (lastChar) {
-            '0', '2', '4', '6', '8' -> VopVerificationResult(
-                result = VopResult.MATCH,
-                suggestedName = null,
-                rawResponse = """{"simulation":true,"match_result":"MATCH","last_char":"$lastChar"}"""
-            )
-            '1', '3', '5' -> {
-                val suggested = payeeName.split(" ").reversed().joinToString(" ")
-                VopVerificationResult(
-                    result = VopResult.CLOSE_MATCH,
-                    suggestedName = suggested,
-                    rawResponse = """{"simulation":true,"match_result":"CLOSE_MATCH","last_char":"$lastChar","suggested_name":"$suggested"}"""
-                )
-            }
-            '7', '9' -> VopVerificationResult(
-                result = VopResult.NO_MATCH,
-                suggestedName = null,
-                rawResponse = """{"simulation":true,"match_result":"NO_MATCH","last_char":"$lastChar"}"""
-            )
-            else -> VopVerificationResult(
-                result = VopResult.NOT_POSSIBLE,
-                suggestedName = null,
-                rawResponse = """{"simulation":true,"match_result":"NOT_POSSIBLE","last_char":"$lastChar"}"""
-            )
         }
     }
 

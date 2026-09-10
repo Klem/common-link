@@ -115,14 +115,16 @@ app:
   recherche-entreprises:
     base-url: ${RECHERCHE_ENTREPRISES_BASE_URL:https://recherche-entreprises.api.gouv.fr}
   # Bridge API — voir application.yml pour le détail des clés.
-  # demo-mode reste à true jusqu'à ce que BRIDGE_CLIENT_ID / BRIDGE_CLIENT_SECRET soient
-  # provisionnés sur Clever Cloud : le service refuse de démarrer en mode réel sans credentials.
+  # BRIDGE_CLIENT_ID / BRIDGE_CLIENT_SECRET (sandbox) sont provisionnés sur Clever Cloud : le
+  # staging pointe désormais sur le vrai sandbox Bridge, plus sur la simulation en mémoire.
   bridge:
-    demo-mode: true
+    demo-mode: ${BRIDGE_DEMO_MODE:false}
     base-url: ${BRIDGE_BASE_URL:https://api.bridgeapi.io}
     api-version: ${BRIDGE_API_VERSION:2025-01-15}
     client-id: ${BRIDGE_CLIENT_ID}
     client-secret: ${BRIDGE_CLIENT_SECRET}
+    webhook-secret: ${BRIDGE_WEBHOOK_SECRET:}
+    webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
     allow-fake-verify: true
   vop:
     demo-mode: true
