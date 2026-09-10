@@ -1,20 +1,36 @@
 import { useTranslations } from 'next-intl';
 
+/**
+ * Section « Fonctionnalités » de la page Associations.
+ * Markup, classes et styles inline repris à l'identique de la maquette
+ * (`CommonLink UI V2 Julian.html`, page 3 — `p3-associations.html`).
+ * Le hover des cartes vient de `.card:hover` : ne pas remplacer par du Tailwind.
+ */
 export function AssociationFeatures() {
   const t = useTranslations('associations.features');
   const items = t.raw('items') as { icon: string; title: string; text: string }[];
 
   return (
-    <section className="py-20 px-8 bg-background">
-      <div className="max-w-container mx-auto text-center">
-        <div className="font-ui text-[0.8rem] font-semibold text-secondary uppercase tracking-wider mb-2">{t('label')}</div>
-        <h2 className="font-ui text-[1.7rem] font-extrabold text-foreground-dark mb-10">{t('title')}</h2>
-        <div className="grid md:grid-cols-3 gap-6 text-left">
+    <section className="section bg-cream">
+      <div className="max-w">
+        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <div className="section-label">{t('label')}</div>
+          <h2 style={{ fontSize: '36px' }}>{t('title')}</h2>
+        </div>
+        <div className="grid-3">
           {items.map((item, i) => (
-            <div key={i} className="bg-white border border-border rounded-lg p-7">
-              <div className="text-[1.6rem] mb-3">{item.icon}</div>
-              <h3 className="font-ui font-bold text-foreground-dark mb-2 text-[1rem]">{item.title}</h3>
-              <p className="text-foreground-muted text-[0.85rem] leading-relaxed">{item.text}</p>
+            <div className="card" style={{ padding: '28px' }} key={i}>
+              <div style={{ fontSize: '28px', marginBottom: '16px' }}>{item.icon}</div>
+              <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>{item.title}</h3>
+              <p
+                style={{
+                  fontSize: '14px',
+                  color: 'var(--slate-lavender)',
+                  lineHeight: 1.6,
+                }}
+              >
+                {item.text}
+              </p>
             </div>
           ))}
         </div>

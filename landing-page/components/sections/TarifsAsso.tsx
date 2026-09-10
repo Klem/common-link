@@ -1,45 +1,57 @@
 import { useTranslations } from 'next-intl';
 
+/**
+ * Section « Pour les associations » de la page Tarifs (ancre `#tarif-asso`).
+ * Markup, classes et styles inline repris à l'identique de la maquette
+ * (`section.section.bg-cream#tarif-asso`, `p7-tarifs.html`).
+ * Le « ✕ » des `.tarif-item` vient du CSS (`::before`) : ne pas l'écrire ici.
+ * Ne pas remplacer par du Tailwind.
+ */
 export function TarifsAsso() {
   const t = useTranslations('tarifs.asso');
   const notPayItems = t.raw('notPayItems') as string[];
 
   return (
-    <section id="tarif-asso" className="py-20 px-8 bg-white">
-      <div className="max-w-narrow mx-auto">
-        <div className="bg-background border border-border rounded-xl p-8 text-center mb-12">
-          <div className="text-foreground-muted text-[0.85rem] font-ui font-semibold uppercase tracking-wide mb-3">
-            {t('flowTitle')}
+    <section className="section bg-cream" id="tarif-asso">
+      <div className="max-w" style={{ maxWidth: '960px' }}>
+        <div className="section-label">{t('label')}</div>
+        <h2 className="tarif-h2" style={{ marginTop: '8px' }}>
+          {t('title')}
+        </h2>
+
+        <div className="tarif-flow">
+          <div className="tarif-flow-title">{t('flowTitle')}</div>
+          <div className="tarif-claim">
+            {t('flowClaimPre')}
+            <br />
+            <strong>{t('flowClaimStrong')}</strong>
           </div>
-          <div className="font-ui text-[1.3rem] text-foreground-dark leading-snug">
-            {t('flowClaimPre')} <strong className="text-secondary-light">{t('flowClaimStrong')}</strong>
-          </div>
-          <p className="text-foreground-muted text-[0.85rem] mt-3">{t('flowNote')}</p>
+          <p className="tarif-flow-note">{t('flowNote')}</p>
         </div>
 
-        <h2 className="font-ui text-[1.4rem] font-extrabold text-foreground-dark text-center mb-6">{t('notPayTitle')}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2">
+        <h3 style={{ fontSize: '22px', margin: '48px 0 18px' }}>{t('notPayTitle')}</h3>
+        <div className="tarif-grid">
           {notPayItems.map((item, i) => (
-            <div key={i} className="bg-background rounded-lg px-4 py-3 text-center text-[0.85rem] font-ui font-semibold text-foreground-dark">
-              ✕ {item}
+            <div className="tarif-item" key={i}>
+              {item}
             </div>
           ))}
         </div>
-        <p className="text-foreground-muted text-[0.8rem] text-center mb-12">{t('subNote')}</p>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div className="border border-border rounded-lg p-6">
-            <div className="text-[1.4rem] mb-2">🔓</div>
-            <h3 className="font-ui font-bold text-foreground-dark mb-1.5">{t('soloTitle')}</h3>
-            <p className="text-foreground-muted text-[0.85rem] leading-relaxed">{t('soloText')}</p>
+        <div className="tarif-duo">
+          <div className="tarif-mini">
+            <div className="tarif-mini-icon">🔓</div>
+            <h3>{t('soloTitle')}</h3>
+            <p>{t('soloText')}</p>
           </div>
-          <div className="border border-border rounded-lg p-6">
-            <div className="text-[1.4rem] mb-2">🧾</div>
-            <h3 className="font-ui font-bold text-foreground-dark mb-1.5">{t('billedTitle')}</h3>
-            <p className="text-foreground-muted text-[0.85rem] leading-relaxed">{t('billedText')}</p>
+          <div className="tarif-mini">
+            <div className="tarif-mini-icon">🧾</div>
+            <h3>{t('billedTitle')}</h3>
+            <p>{t('billedText')}</p>
           </div>
         </div>
-        <p className="text-foreground-muted text-[0.75rem] text-center">{t('footNote')}</p>
+
+        <p className="tarif-foot">{t('footNote')}</p>
       </div>
     </section>
   );

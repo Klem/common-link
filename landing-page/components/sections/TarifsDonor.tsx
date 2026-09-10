@@ -1,21 +1,28 @@
 import { useTranslations } from 'next-intl';
 
+/**
+ * Section « Pour les donateurs » de la page Tarifs (ancre `#tarif-don`).
+ * Markup, classes et styles inline repris à l'identique de la maquette
+ * (`section.section.bg-white#tarif-don`, `p7-tarifs.html`).
+ * Ne pas remplacer par du Tailwind.
+ */
 export function TarifsDonor() {
   const t = useTranslations('tarifs.donor');
 
   return (
-    <section id="tarif-don" className="bg-primary text-white py-20 px-8">
-      <div className="max-w-narrow mx-auto grid md:grid-cols-[auto_1fr] gap-10 items-center">
-        <div className="font-ui font-black text-[3.5rem] leading-none text-secondary text-center">
-          {t('bigNum')}<span className="text-[1.8rem] align-top">{t('bigUnit')}</span>
-        </div>
-        <div>
-          <div className="font-ui text-[0.8rem] font-semibold text-secondary uppercase tracking-wider mb-2">{t('label')}</div>
-          <h2 className="font-ui text-[1.7rem] font-extrabold text-white mb-3">{t('title')}</h2>
-          <p className="text-white/75 leading-relaxed mb-2">{t('text1')}</p>
-          <p className="text-white/75 leading-relaxed mb-5">{t('text2')}</p>
-          <div className="inline-block bg-white/10 rounded-full px-5 py-2 text-[0.85rem] font-ui font-semibold text-secondary">
-            {t('badge')}
+    <section className="section bg-white" id="tarif-don">
+      <div className="max-w" style={{ maxWidth: '900px' }}>
+        <div className="section-label">{t('label')}</div>
+        <h2 className="tarif-h2" style={{ marginTop: '8px' }}>
+          {t('title')}
+        </h2>
+        <p>{t('text1')}</p>
+        <p>{t('text2')}</p>
+        <div className="tarif-claim-box">
+          <div className="tarif-claim">
+            {t('claimPre')}
+            <br />
+            <strong>{t('claimStrong')}</strong>
           </div>
         </div>
       </div>

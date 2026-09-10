@@ -1,10 +1,20 @@
 import { getTranslations } from 'next-intl/server';
 import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
+/**
+ * Page Transparence.
+ * Markup, classes et styles inline repris à l'identique de la maquette
+ * (`p6-transparence.html` : `.transparency-page-hero`, `.tp-switch`, `.tp-two`,
+ * `.tp-box`, `.tp-five`, `.grid-3`, `.proof-card`).
+ * Ne pas remplacer par des classes Tailwind : le CSS de la maquette est la source de vérité.
+ */
 interface ExclusionCard {
   title: string;
   items: string[];
 }
+
+const H3_48 = { fontSize: '22px', margin: '48px 0 12px' } as const;
+const H3_44 = { fontSize: '22px', margin: '44px 0 12px' } as const;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -31,80 +41,95 @@ export default async function TransparencyPage({ params }: { params: Promise<{ l
     <main>
       <LegalSubnav active="transparency" />
 
-      <section className="bg-primary text-white text-center py-20 px-8">
-        <div className="max-w-narrow mx-auto">
-          <div className="font-ui text-[0.85rem] font-semibold text-secondary uppercase tracking-wider mb-3">
+      <div className="transparency-page-hero" style={{ paddingBottom: '40px' }}>
+        <div className="max-w" style={{ textAlign: 'center' }}>
+          <div className="section-label" style={{ color: 'var(--bright-teal)' }}>
             {t('hero.label')}
           </div>
-          <h1 className="font-ui text-[2.2rem] md:text-[3.1rem] font-extrabold text-white mb-4">
+          <h1 style={{ fontSize: '50px', color: 'var(--white)', marginBottom: '18px' }}>
             {t('hero.title')}
             <br />
-            <span className="italic-accent text-secondary">{t('hero.titleAccent')}</span>
+            <span className="italic-accent" style={{ color: 'var(--bright-teal)' }}>
+              {t('hero.titleAccent')}
+            </span>
           </h1>
-          <p className="text-white/70 text-[1.05rem] leading-relaxed mb-6">{t('hero.text')}</p>
-          <div className="flex flex-wrap justify-center gap-6 text-[0.9rem] font-ui font-semibold">
-            <a href="#tp-qui" className="text-secondary hover:text-white transition-colors">{t('hero.switchQui')}</a>
-            <a href="#tp-exclus" className="text-secondary hover:text-white transition-colors">{t('hero.switchExclus')}</a>
-            <a href="#tp-fonds" className="text-secondary hover:text-white transition-colors">{t('hero.switchFonds')}</a>
+          <p
+            style={{
+              fontSize: '17px',
+              color: 'rgba(255,255,255,0.72)',
+              maxWidth: '640px',
+              margin: '0 auto 28px',
+              lineHeight: 1.7,
+            }}
+          >
+            {t('hero.text')}
+          </p>
+          <div className="tp-switch">
+            <a href="#tp-qui">{t('hero.switchQui')}</a>
+            <a href="#tp-exclus">{t('hero.switchExclus')}</a>
+            <a href="#tp-fonds">{t('hero.switchFonds')}</a>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section id="tp-qui" className="py-20 px-8 bg-white">
-        <div className="max-w-narrow mx-auto legal-prose">
-          <div className="font-ui text-[0.8rem] font-semibold text-secondary uppercase tracking-wider mb-2">{t('qui.label')}</div>
-          <h2>{t('qui.title')}</h2>
+      <section className="section bg-white" id="tp-qui">
+        <div className="max-w" style={{ maxWidth: '900px' }}>
+          <div className="section-label">{t('qui.label')}</div>
+          <h2 style={{ fontSize: '30px', marginBottom: '20px' }}>{t('qui.title')}</h2>
           <p>{t('qui.intro')}</p>
-
-          <div className="grid md:grid-cols-2 gap-6 my-8">
-            <div className="rounded-lg border border-border bg-background p-6">
-              <div className="font-ui font-bold text-foreground-dark mb-3">{t('qui.okTitle')}</div>
-              <ul className="space-y-2 text-[0.9rem] text-foreground">
-                {okItems.map((item, i) => <li key={i}>{item}</li>)}
+          <div className="tp-two">
+            <div className="tp-box ok">
+              <div className="tp-box-title">{t('qui.okTitle')}</div>
+              <ul className="legal-list">
+                {okItems.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
               </ul>
             </div>
-            <div className="rounded-lg border border-border bg-background p-6">
-              <div className="font-ui font-bold text-foreground-dark mb-3">{t('qui.noTitle')}</div>
-              <ul className="space-y-2 text-[0.9rem] text-foreground">
-                {noItems.map((item, i) => <li key={i}>{item}</li>)}
+            <div className="tp-box no">
+              <div className="tp-box-title">{t('qui.noTitle')}</div>
+              <ul className="legal-list">
+                {noItems.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
               </ul>
             </div>
           </div>
 
-          <h3>{t('qui.checkTitle')}</h3>
+          <h3 style={H3_48}>{t('qui.checkTitle')}</h3>
           <p>{t('qui.checkText')}</p>
           <div className="legal-callout">{t('qui.checkCallout')}</div>
 
-          <h3>{t('qui.acceptTitle')}</h3>
+          <h3 style={H3_48}>{t('qui.acceptTitle')}</h3>
           <p>{t('qui.acceptText1')}</p>
           <p>{t('qui.acceptText2')}</p>
-          <div className="flex flex-wrap gap-2 my-4">
+          <div className="tp-five">
             {criteriaItems.map((item, i) => (
-              <span key={i} className="inline-flex px-3 py-1.5 rounded-full bg-background-alt text-foreground-dark text-[0.85rem] font-ui font-medium">
-                {item}
-              </span>
+              <span key={i}>{item}</span>
             ))}
           </div>
           <p>{t('qui.generalInterest')}</p>
         </div>
       </section>
 
-      <section id="tp-exclus" className="py-20 px-8 bg-background">
-        <div className="max-w-container mx-auto legal-prose">
-          <div className="font-ui text-[0.8rem] font-semibold text-secondary uppercase tracking-wider mb-2">{t('exclus.label')}</div>
-          <h2>{t('exclus.title')}</h2>
-          <div className="grid md:grid-cols-3 gap-6 my-8">
+      <section className="section bg-cream" id="tp-exclus">
+        <div className="max-w" style={{ maxWidth: '1040px' }}>
+          <div className="section-label">{t('exclus.label')}</div>
+          <h2 style={{ fontSize: '30px', marginBottom: '32px' }}>{t('exclus.title')}</h2>
+          <div className="grid-3">
             {cards.map((card, i) => (
-              <div key={i} className="rounded-lg border border-border bg-white p-6">
-                <div className="font-ui font-bold text-foreground-dark mb-3 text-[1.05rem]">{card.title}</div>
-                <ul className="space-y-3 text-[0.85rem] text-foreground leading-relaxed">
-                  {card.items.map((item, j) => <li key={j}>{item}</li>)}
+              <div className="proof-card" key={i}>
+                <h3 style={{ fontSize: '17px', marginBottom: '14px' }}>{card.title}</h3>
+                <ul className="legal-list" style={{ fontSize: '14px' }}>
+                  {card.items.map((item, j) => (
+                    <li key={j}>{item}</li>
+                  ))}
                 </ul>
               </div>
             ))}
           </div>
 
-          <h3>{t('exclus.withdrawTitle')}</h3>
+          <h3 style={H3_48}>{t('exclus.withdrawTitle')}</h3>
           <p>{t('exclus.withdrawText1')}</p>
           <p>{t('exclus.withdrawText2')}</p>
           <p>{t('exclus.withdrawText3')}</p>
@@ -112,23 +137,23 @@ export default async function TransparencyPage({ params }: { params: Promise<{ l
         </div>
       </section>
 
-      <section id="tp-fonds" className="py-20 px-8 bg-white">
-        <div className="max-w-narrow mx-auto legal-prose">
-          <div className="font-ui text-[0.8rem] font-semibold text-secondary uppercase tracking-wider mb-2">{t('fonds.label')}</div>
-          <h2>{t('fonds.title')}</h2>
+      <section className="section bg-white" id="tp-fonds">
+        <div className="max-w" style={{ maxWidth: '900px' }}>
+          <div className="section-label">{t('fonds.label')}</div>
+          <h2 style={{ fontSize: '30px', marginBottom: '20px' }}>{t('fonds.title')}</h2>
           <p>{t('fonds.text1')}</p>
           <div className="legal-callout">{t('fonds.callout')}</div>
           <p>{t('fonds.text2')}</p>
 
-          <h3>{t('fonds.capTitle')}</h3>
+          <h3 style={H3_44}>{t('fonds.capTitle')}</h3>
           <p>{t('fonds.capText1')}</p>
           <p>{t('fonds.capText2')}</p>
 
-          <h3>{t('fonds.spendTitle')}</h3>
+          <h3 style={H3_44}>{t('fonds.spendTitle')}</h3>
           <p>{t('fonds.spendText1')}</p>
           <p>{t('fonds.spendText2')}</p>
 
-          <h3>{t('fonds.closeTitle')}</h3>
+          <h3 style={H3_44}>{t('fonds.closeTitle')}</h3>
           <p>{t('fonds.closeText1')}</p>
           <p>{t('fonds.closeText2')}</p>
         </div>

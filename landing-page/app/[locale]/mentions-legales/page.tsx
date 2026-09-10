@@ -1,7 +1,13 @@
+import { Fragment } from 'react';
 import { getTranslations } from 'next-intl/server';
-import { LegalContent } from '@/components/layout/LegalContent';
 import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
+/**
+ * Mentions légales.
+ * Markup et classes repris à l'identique de la maquette (`p13-mentions.html` :
+ * `.legal-subnav`, `.legal-hero`, `.legal-body`).
+ * Ne pas remplacer par des classes Tailwind : le CSS de la maquette est la source de vérité.
+ */
 interface MentionsSection {
   title: string;
   paragraphs: string[];
@@ -13,10 +19,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('title'),
     description: t('description'),
-  alternates: {
-    canonical: 'https://www.common-link.org/mentions-legales',
-    languages: { fr: '/mentions-legales', en: '/en/mentions-legales' },
-  },
+    alternates: {
+      canonical: 'https://www.common-link.org/mentions-legales',
+      languages: { fr: '/mentions-legales', en: '/en/mentions-legales' },
+    },
   };
 }
 
@@ -26,16 +32,26 @@ export default async function MentionsLegalesPage({ params }: { params: Promise<
   const sections = t.raw('sections') as MentionsSection[];
 
   return (
-    <>
-    <LegalSubnav active="mentions" />
-    <LegalContent title={t('title')} meta={t('lastUpdated')}>
-      {sections.map((section, i) => (
-        <div key={i}>
-          <h2>{section.title}</h2>
-          {section.paragraphs.map((p, j) => <p key={j}>{p}</p>)}
+    <main>
+      <LegalSubnav active="mentions" />
+
+      <div className="legal-hero">
+        <div className="max-w">
+          <h1>{t('title')}</h1>
+          <p className="legal-meta">{t('lastUpdated')}</p>
         </div>
-      ))}
-    </LegalContent>
-    </>
+      </div>
+
+      <div className="legal-body">
+        {sections.map((section, i) => (
+          <Fragment key={i}>
+            <h2>{section.title}</h2>
+            {section.paragraphs.map((paragraph, j) => (
+              <p key={j}>{paragraph}</p>
+            ))}
+          </Fragment>
+        ))}
+      </div>
+    </main>
   );
 }
