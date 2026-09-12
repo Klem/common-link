@@ -126,6 +126,12 @@ WHERE landing_show_project = false OR landing_show_transparency = false;
 
 **Le widget de don embarqué (`/embed/donate/[widgetToken]`) n'affiche aucun des cinq éléments dans leur ensemble.** C'est une page distincte de la landing page, plus compacte, destinée à être intégrée directement sur le site de l'association (`EmbedDonateClient.tsx`). Elle affiche l'objet (nom et description de la campagne) et une barre de progression donnant le montant cible et le montant collecté, mais ni calendrier, ni répartition budgétaire, ni résultat attendu. Un donateur qui donne exclusivement via ce widget, sans jamais visiter la landing page, n'est donc pas exposé aux cinq éléments requis par la notice. Ce point n'a pas été tranché : il appelle un arbitrage de la commission juridique (Julian) pour déterminer si le widget embarqué constitue lui aussi une « collecte ouverte au public » au sens de la notice, ou si la landing page en est le point d'exposition légal unique.
 
+**L'annuaire public des projets (`/projets` sur la landing page marketing) n'affiche aucun des cinq éléments, à l'exception du montant cible.** Ajouté le 12 septembre 2026, il liste sous forme de cartes les campagnes actuellement ouvertes aux dons (`landing-page/app/[locale]/projets/page.tsx`, `components/campaign/CampaignCard.tsx`), alimentées par `GET /api/public/campaigns`. Une carte porte le nom de la campagne, l'association porteuse, la catégorie, le montant collecté, le montant cible et le nombre de jalons — ni description, ni calendrier, ni répartition budgétaire, ni résultat attendu.
+
+Sa situation diffère toutefois de celle du widget embarqué : **on ne peut pas donner depuis l'annuaire.** Le bouton « Faire un don » d'une carte ouvre la landing page de la campagne (`/lp/{widgetToken}`), qui porte les cinq éléments ; aucun parcours de don ne part de l'annuaire lui-même. L'annuaire est donc un renvoi vers le point d'exposition légal, non un point de collecte. Le DTO exposé (`PublicCampaignListItemDto`) ne porte volontairement aucun statut de campagne ni identifiant interne, et la liste applique le même prédicat d'éligibilité que la landing page (association non SUSPENDED, campagne LIVE désignée comme destination du widget) : une campagne listée est nécessairement une campagne dont la page de don répond.
+
+Si la commission juridique (Julian) retient que toute surface présentant une campagne au public doit porter les cinq éléments — question déjà ouverte pour le widget embarqué ci-dessus —, alors l'annuaire devra soit les porter, soit être retiré. En l'état, aucun arbitrage n'a été rendu et la question est la même pour les deux surfaces.
+
 **Le calendrier n'est pas re-vérifié au moment d'une reprise (PAUSED → LIVE).** `preparePublish` — et donc le nouveau contrôle du calendrier — ne s'exécute que sur la transition DRAFT → LIVE (`CampaignService.kt`, `previousStatus == CampaignStatus.DRAFT`). Une campagne mise en pause puis relancée ne repasse pas par ce contrôle. Ce n'est pas une régression introduite par cette correction : le contrôle du budget et celui du résultat attendu, déjà bloquants depuis le 17 août 2026, ont exactement la même portée. Le calendrier hérite du même point ouvert.
 
 ### Suivi des travaux restants
@@ -133,6 +139,7 @@ WHERE landing_show_project = false OR landing_show_transparency = false;
 | Point ouvert | Tâche de suivi |
 |---|---|
 | Statut du widget embarqué au regard de la notice de collecte publique | *Aucune tâche identifiée — décision à demander à Julian* |
+| Statut de l'annuaire public `/projets` au regard de la notice (ajouté le 12 septembre 2026) | *Aucune tâche identifiée — même arbitrage que le widget embarqué, à demander à Julian* |
 | Calendrier non re-vérifié sur reprise PAUSED → LIVE | *Aucune tâche identifiée — partagé avec les gates budget/résultat attendu, non traité pour eux non plus* |
 
 ## 7. Éléments de traçabilité
@@ -145,6 +152,7 @@ WHERE landing_show_project = false OR landing_show_transparency = false;
 | **Landing page publique** | `app/src/app/[locale]/lp/[widgetToken]/page.tsx`, `ProjectSection.tsx`, `TransparencySection.tsx`, `landing.css` |
 | **Réglages association** | `app/src/components/settings/LandingTab.tsx` |
 | **Widget embarqué (hors périmètre, section 6)** | `app/src/app/[locale]/embed/donate/[widgetToken]/EmbedDonateClient.tsx` |
+| **Annuaire public des projets (section 6)** | `api/src/main/kotlin/org/commonlink/dto/PublicCampaignListItemDto.kt`, `controller/PublicCampaignDirectoryController.kt`, `service/PublicCampaignDirectoryService.kt`, `repository/CampaignRepository.kt` (`findPublicLive`) ; `landing-page/app/[locale]/projets/page.tsx`, `components/campaign/CampaignCard.tsx`, `lib/api/campaigns.ts` |
 | **Contrôles automatisés** | `PublicWidgetServiceIntegrationTest.kt`, `PublicWidgetControllerTest.kt`, `CampaignServiceTest.kt`, `AssociationLandingServiceTest.kt`, `AssociationControllerTest.kt`, `FlywayMigrationTest.kt`, `ProjectSection.test.tsx`, `TransparencySection.test.tsx`, `LandingTab.test.tsx` |
 | **Traductions** | `app/messages/fr.json`, `app/messages/en.json` (clés `landing.project.*`) |
 | **Suppression complète (4.5)** | Migration `api/src/main/resources/db/migration/V71__drop_landing_section_toggles.sql` (+ rollback `U71`) ; `entity/AssociationProfile.kt` ; `dto/AssociationProfileDto.kt`, `dto/UpdateLandingConfigRequest.kt` ; `service/AssociationLandingService.kt` ; `types/association.ts`, `lib/api/public.ts` ; `api/.http/AssociationController.http` (scénario 11 corrigé, envoyait un champ supprimé) |
@@ -152,3 +160,5 @@ WHERE landing_show_project = false OR landing_show_transparency = false;
 ---
 
 *Document établi le 26 août 2026. Il décrit l'état de la correction arrêté à cette date et sera mis à jour si le périmètre de la landing page ou du widget embarqué évolue.*
+
+*Mise à jour du 12 septembre 2026 : ajout en section 6 de l'annuaire public `/projets`, troisième surface présentant des campagnes au public. La correction décrite aux sections 2 à 5 est inchangée.*
