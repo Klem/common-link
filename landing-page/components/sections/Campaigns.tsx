@@ -1,5 +1,5 @@
 import { useTranslations } from 'next-intl';
-import { APP_URL } from '@/lib/constants';
+import { Link } from '@/i18n/navigation';
 
 /**
  * Section « Campagnes en cours » de la page d'accueil.
@@ -18,9 +18,9 @@ export function Campaigns() {
             <div className="section-label">{t('label')}</div>
             <h2 style={{ fontSize: '36px' }}>{t('title')}</h2>
           </div>
-          <a href={APP_URL} className="btn btn-secondary">
+          <Link href="/projets" className="btn btn-secondary">
             {t('ctaAll')} →
-          </a>
+          </Link>
         </div>
         <div className="empty-state">
           <div className="empty-emoji">🌱</div>

@@ -263,9 +263,11 @@
     },
     "campaigns": {
       "ctaAll": "Voir tous les projets",
+      "ctaDonate": "Faire un don",
       "emptyText": "Les premières campagnes arrivent. Revenez très vite.",
       "emptyTitle": "Rien pour l'instant !",
       "label": "Campagnes en cours",
+      "milestones": "{count, plural, =0 {aucun jalon} one {# jalon} other {# jalons}}",
       "title": "Ils collectent en ce moment"
     },
     "hero": {
@@ -316,6 +318,14 @@
       "note": "Nos partenaires n'interviennent ni dans la collecte, ni dans le traitement des dons.",
       "subtitle": "Nous avançons avec des acteurs installés dans le secteur, sur la visibilité en ligne et sur la structuration des organisations.",
       "title": "Ils connaissent le monde associatif"
+    },
+    "projects": {
+      "breadcrumbCurrent": "Projets",
+      "breadcrumbHome": "Accueil",
+      "emptyText": "Les premières campagnes arrivent. Revenez très vite.",
+      "emptyTitle": "Rien pour l'instant !",
+      "subtitle": "Chaque page indique le budget prévu, le résultat attendu et les dépenses déjà publiées.",
+      "title": "Tous les projets"
     },
     "transparency": {
       "ctaLabel": "Voir comment suivre un don",
@@ -1350,18 +1360,18 @@
       },
       "title": "Politique cookies"
     },
-    "tocTitle": "Sommaire",
     "subnav": {
-      "mentions": "Mentions légales",
-      "transparency": "Transparence",
-      "cguDonors": "CGU donateur",
       "cguAssociations": "CGU association",
-      "modelAgreement": "Contrat type",
+      "cguDonors": "CGU donateur",
       "complaints": "Réclamations",
-      "privacy": "Confidentialité",
+      "contact": "Nous contacter",
       "cookies": "Cookies",
-      "contact": "Nous contacter"
-    }
+      "mentions": "Mentions légales",
+      "modelAgreement": "Contrat type",
+      "privacy": "Confidentialité",
+      "transparency": "Transparence"
+    },
+    "tocTitle": "Sommaire"
   },
   "metadata": {
     "associations": {
@@ -1413,6 +1423,10 @@
       "description": "Comment CommonLink collecte et utilise vos données personnelles.",
       "title": "Politique de confidentialité — CommonLink"
     },
+    "projects": {
+      "description": "Les campagnes actuellement ouvertes aux dons sur CommonLink : objectif, montant collecté et association porteuse.",
+      "title": "Projets — CommonLink"
+    },
     "tarifs": {
       "description": "Tarifs transparents pour les organismes utilisant CommonLink.",
       "title": "Tarifs — CommonLink"
@@ -1445,6 +1459,7 @@
       "flowNote": "La commission n'est jamais prélevée sur les dons. Elle est facturée à part, en fin de mois, et réglée par virement au plus tard à la fin du mois suivant.",
       "flowTitle": "Ce qui arrive sur votre compte",
       "footNote": "* Commission soumise à la TVA au taux normal.",
+      "label": "Pour les associations",
       "notPayItems": [
         "Abonnement",
         "Frais d'ouverture",
@@ -1456,29 +1471,28 @@
       "notPayTitle": "Ce que vous ne payez pas",
       "soloText": "Vous pouvez cesser d'utiliser CommonLink à tout moment, et vous ne payez que les mois où vous collectez.",
       "soloTitle": "Sans engagement",
-      "label": "Pour les associations",
       "title": "Une commission unique, rien d'autre"
     },
     "donor": {
+      "claimPre": "Vous donnez 100 €,",
+      "claimStrong": "l'association reçoit 100 €.",
       "label": "Pour les donateurs",
       "text1": "100 % de votre don part à l'association que vous soutenez. Votre reçu fiscal porte sur le montant total.",
       "text2": "CommonLink est rémunérée par l'association, à hauteur de 10 % hors taxes de sa collecte, soit 10 euros pour un don de 100 euros. Cette somme lui est facturée à part, elle n'est jamais retirée de votre don.",
-      "title": "Donner ne vous coûte rien",
-      "claimPre": "Vous donnez 100 €,",
-      "claimStrong": "l'association reçoit 100 €."
+      "title": "Donner ne vous coûte rien"
     },
     "hero": {
-      "label": "Tarifs",
-      "subtitle": "Deux réponses, selon que vous donnez ou que vous collectez.",
-      "title": "Qui paie quoi",
-      "donWho": "Vous faites un don",
-      "donNum": "0",
-      "donUnit": "€",
-      "donLine": "Vous ne payez rien. 100 % de votre don part à l'association.",
-      "assoWho": "Vous êtes une association",
+      "assoLine": "Hors taxes, sur les dons collectés. Aucun autre frais.",
       "assoNum": "10",
       "assoUnit": "%",
-      "assoLine": "Hors taxes, sur les dons collectés. Aucun autre frais."
+      "assoWho": "Vous êtes une association",
+      "donLine": "Vous ne payez rien. 100 % de votre don part à l'association.",
+      "donNum": "0",
+      "donUnit": "€",
+      "donWho": "Vous faites un don",
+      "label": "Tarifs",
+      "subtitle": "Deux réponses, selon que vous donnez ou que vous collectez.",
+      "title": "Qui paie quoi"
     }
   },
   "transparency": {
