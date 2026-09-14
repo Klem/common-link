@@ -18,7 +18,7 @@ export function Header() {
     { href: '/' as const, label: t('accueil') },
     { href: '/donateurs' as const, label: t('donors') },
     { href: '/associations' as const, label: t('associations') },
-    { href: APP_URL, label: t('projects'), external: true },
+    { href: '/projets' as const, label: t('projects') },
     { href: '/tarifs' as const, label: t('tarifs') },
   ];
 
@@ -31,21 +31,15 @@ export function Header() {
         </span>
       </Link>
       <div className="nav-links" id="global-nav-links">
-        {navLinks.map((link) =>
-          link.external ? (
-            <a key={link.href} href={link.href}>
-              {link.label}
-            </a>
-          ) : (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={pathname === link.href ? 'active' : undefined}
-            >
-              {link.label}
-            </Link>
-          )
-        )}
+        {navLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={pathname === link.href ? 'active' : undefined}
+          >
+            {link.label}
+          </Link>
+        ))}
       </div>
       <div className="nav-actions">
         <a className="btn btn-outline btn-sm nav-login" href={APP_URL}>

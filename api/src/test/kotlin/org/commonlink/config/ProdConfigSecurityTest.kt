@@ -86,8 +86,11 @@ class ProdConfigSecurityTest {
         // isn't wired up, so a dev placeholder here — like the sibling onchain.* keys
         // (donor-address-secret, recorder-pk, curator-pk, registry-address) — is accepted rather
         // than enforced via env-only injection the way app.jwt.secret / MOLLIE_API_KEY are.
+        // La valeur attendue est celle de application-prod.yml, qui surcharge la base
+        // (application.yml porte « change-in-staging »). Assertion sur la valeur exacte, comme
+        // les autres contrôles de ce fichier : changer ce placeholder doit obliger à repasser ici.
         val secret = prop("onchain.association-address-secret") as? String ?: ""
-        assertEquals("\${ASSOCIATION_ADDRESS_SECRET:dev-placeholder-change-in-staging}", secret)
+        assertEquals("\${ASSOCIATION_ADDRESS_SECRET:dev-placeholder-change-in-prod}", secret)
     }
 
     @Test

@@ -1,8 +1,10 @@
 package org.commonlink.repository
 
+import org.commonlink.dto.PublicCampaignRow
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import jakarta.persistence.LockModeType
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
@@ -96,4 +98,39 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE Campaign c SET c.raised = c.raised + :amount WHERE c.id = :id")
     fun addToRaised(@Param("id") id: UUID, @Param("amount") amount: BigDecimal): Int
+
+    /**
+     * Returns the campaigns that are publicly listable, newest first, for the landing-page directory.
+     *
+     * The WHERE clause is the exact eligibility rule already enforced one campaign at a time by
+     * [org.commonlink.service.PublicWidgetService] (`resolveLanding` / `resolveWidget`):
+     * association not [org.commonlink.entity.AssociationStatus.SUSPENDED], widget token issued, the
+     * campaign is the association's widget destination, and it is
+     * [org.commonlink.entity.CampaignStatus.LIVE]. Listing on `status = LIVE` alone would advertise
+     * campaigns whose landing page answers 409 — a suspended association keeps LIVE campaigns.
+     *
+     * Loading strategy: one bounded query. The constructor expression projects scalars only, so
+     * neither `association` nor `milestones` is ever lazily initialised, and `size(c.milestones)`
+     * resolves to a correlated subquery instead of N per-row counts. No collection is JOIN FETCHed,
+     * so [Pageable] paginates in the database rather than in memory.
+     *
+     * @param pageable bound on the number of rows returned; ordering is fixed by the query.
+     */
+    @Query(
+        """
+        SELECT new org.commonlink.dto.PublicCampaignRow(
+            c.id, c.name, c.emoji, c.category, c.coverImage,
+            c.goal, c.raised, size(c.milestones),
+            a.name, a.landingLogo, a.widgetToken
+        )
+        FROM Campaign c
+        JOIN c.association a
+        WHERE c.status = org.commonlink.entity.CampaignStatus.LIVE
+          AND a.status <> org.commonlink.entity.AssociationStatus.SUSPENDED
+          AND a.widgetToken IS NOT NULL
+          AND a.widgetDestinationCampaign = c
+        ORDER BY c.createdAt DESC
+        """
+    )
+    fun findPublicLive(pageable: Pageable): List<PublicCampaignRow>
 }

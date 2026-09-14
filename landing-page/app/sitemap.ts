@@ -6,6 +6,7 @@ const routes: { fr: string; en: string; priority: number }[] = [
   { fr: '/', en: '/', priority: 1 },
   { fr: '/donateurs', en: '/donors', priority: 0.9 },
   { fr: '/associations', en: '/associations', priority: 0.9 },
+  { fr: '/projets', en: '/projets', priority: 0.9 },
   { fr: '/tarifs', en: '/tarifs', priority: 0.8 },
   { fr: '/transparence', en: '/transparence', priority: 0.7 },
   { fr: '/contact', en: '/contact', priority: 0.4 },

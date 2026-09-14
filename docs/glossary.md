@@ -408,6 +408,10 @@ The standardized error response format used by the API. Every error includes a t
 The visual indicator showing how much of a campaign's goal has been reached. Live campaigns show an animated gradient bar (green to cyan). The bar appears both on association cards in the discovery grid and in campaign detail views.
 `functional`
 
+### Public Campaign Directory (Annuaire des projets)
+The `/projets` page of the marketing landing page, listing every campaign currently open to donations as a card (association, category, name, raised vs. goal, milestone count). Served by the unauthenticated `GET /api/public/campaigns`, which applies the same eligibility rule as a single campaign landing page — association not `SUSPENDED`, widget token issued, campaign `LIVE` and designated as the widget destination — so a listed campaign always has a donation page that answers. Donating is not possible from the directory itself: each card links out to `/lp/{widgetToken}`, which carries the mandatory public-collection notice. See `docs/legal/notice-collecte-publique-mentions-obligatoires.md`, §6.
+`functional` `business`
+
 ### Public Page (Espace public)
 A customizable, publicly visible page for each association. Showcases campaigns, milestones, impact metrics, budget transparency, badges, and payment history. Associations can toggle section visibility and customize their tagline.
 `functional` `business`

@@ -1,5 +1,78 @@
 # CLAUDE.md — Projet Lien commun (Next.js)
 
+> ## ⚠️ CONVENTION DE STYLE ACTUELLE — LIRE EN PREMIER
+>
+> **Ce document décrit plus bas une architecture Tailwind + multi-thèmes qui n'est
+> plus celle du projet.** Tout ce qui parle de « classes Tailwind thémées »,
+> « jamais de couleurs en dur », `tailwind.config.ts`, `bg-primary`, `font-ui`,
+> `rounded-md` est **obsolète** et ne doit pas être suivi.
+>
+> ### Ce qui fait foi aujourd'hui
+>
+> 1. **La maquette `CommonLink UI V2 Julian.html` (racine du dépôt) est la source
+>    de vérité du design.** Son bloc `<style>` complet est copié **verbatim** dans
+>    `app/[locale]/globals.css`, entre les balises `MAQUETTE — DÉBUT/FIN DU BLOC
+>    VERBATIM`. **Ne jamais retoucher les valeurs à l'intérieur de ce bloc.**
+>    Seules adaptations autorisées, déjà appliquées et documentées en tête du
+>    fichier : les 3 familles de police pointent vers les variables `next/font`,
+>    et les règles `.page{display:none}` du navigateur SPA de la démo ont été
+>    retirées.
+>
+> 2. **Les composants réutilisent le markup et les noms de classes de la
+>    maquette** (`.hero-title`, `.why-card`, `.tarif-split`, `.legal-body`…),
+>    y compris les `style="…"` inline convertis en `style={{}}`. On ne
+>    « simplifie » pas l'arborescence : plusieurs sections sont stylées par des
+>    sélecteurs d'éléments imbriqués (`.journey-steps h4`, `.why-card h3`),
+>    supprimer un `div` les casse silencieusement.
+>
+> 3. **Tailwind a été retiré du projet** (`postcss.config.js`, plus de
+>    `tailwind.config.ts`, plus de directives `@tailwind`). Ne pas le
+>    réintroduire : il a causé deux régressions silencieuses coûteuses —
+>    `border-none` dans une classe de base annulait `border-style` et rendait
+>    invisibles **toutes** les bordures des boutons ; et les modificateurs
+>    d'opacité (`bg-secondary/10`) rendent **transparent** quand la couleur est
+>    une variable CSS hexadécimale, sans aucune erreur. Il générait aussi des
+>    utilitaires pour des noms de classes absents de la maquette (`mb-20`),
+>    écrasant le rendu attendu.
+>
+> 4. **Les textes restent dans `messages/fr.json`** via `next-intl`. Si un texte
+>    de `fr.json` diverge de la maquette, **la maquette gagne**. La maquette
+>    n'emploie que l'apostrophe droite `'` et pas la ligature `œ` — `fr.json` a
+>    été aligné dessus.
+>
+> 5. **Le site est monolingue français.** `locales = ['fr']`, il n'y a plus de
+>    `messages/en.json` ni de sélecteur de langue.
+>
+> ### Vérifier une modification
+>
+> Ne jamais se fier à l'œil : `scripts/compare-maquette.js` confronte la maquette
+> et l'implémentation élément par élément (43 propriétés calculées + géométrie +
+> texte). Toute PR touchant au rendu doit le laisser à zéro écart, hors écarts
+> connus et documentés ci-dessous.
+>
+> ```bash
+> npm run dev                                              # dans un terminal
+> npm run compare:maquette p3 http://localhost:3001/associations
+> npm run compare:maquette p1 http://localhost:3001/ -- --full   # détail complet
+> ```
+>
+> Correspondance page maquette → route : `p1`→`/` · `p2`→`/donateurs` ·
+> `p3`→`/associations` · `p6`→`/transparence` · `p7`→`/tarifs` ·
+> `p13`→`/mentions-legales` · `p14`→`/conditions-generales-utilisation` ·
+> `p15`→`/conditions-generales-utilisation-associations` · `p16`→`/contrat-type` ·
+> `p17`→`/reclamations` · `p18`→`/contact` · `p19`→`/politique-confidentialite` ·
+> `p20`→`/politique-cookies`.
+>
+> Si le comparateur signale soudain des dizaines d'écarts avec des polices
+> `Times New Roman` et des liens bleus, ce n'est pas le code : le serveur de dev
+> a corrompu son manifeste webpack. `rm -rf .next` puis relancer.
+>
+> **Écarts connus et assumés :**
+> - Le logo de la barre de navigation est un `<a>` (maquette : `<div onclick>`) —
+>   accessibilité, zéro différence visuelle.
+> - `grid-2 mb-20` de la maquette rendu `grid-2` (page Donateurs) : `mb-20`
+>   n'existe pas dans le CSS de la maquette et y vaut donc `margin-bottom:0`.
+
 ## GETTING STARTED
 
 ### Structure monorepo
