@@ -23,7 +23,10 @@ import java.util.UUID
  * @param startDate Optional start date for donation acceptance.
  * @param endDate Optional end date for donation acceptance.
  * @param milestoneCount Total number of milestones defined for this campaign.
+ * @param coverImage Public serving path of the cover image, or null if none was uploaded.
  * @param createdAt Timestamp of record creation.
+ * @param updatedAt Timestamp of last modification — used by the frontend as a cache-busting
+ *   version token when resolving [coverImage] into an `<img src>` (see `campaignCoverUrl`).
  */
 data class CampaignSummaryDto(
     val id: UUID,
@@ -36,7 +39,9 @@ data class CampaignSummaryDto(
     val startDate: LocalDate?,
     val endDate: LocalDate?,
     val milestoneCount: Int,
-    val createdAt: Instant
+    val coverImage: String?,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 /**
@@ -53,5 +58,7 @@ fun Campaign.toSummaryDto() = CampaignSummaryDto(
     startDate = startDate,
     endDate = endDate,
     milestoneCount = milestones.size,
-    createdAt = createdAt
+    coverImage = coverImage,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )

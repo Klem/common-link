@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 @WebMvcTest(PublicCampaignDirectoryController::class)
@@ -56,6 +57,7 @@ class PublicCampaignDirectoryControllerTest {
                 campaignEmoji = "🍽",
                 campaignCategory = "Solidarité",
                 coverImage = "/api/public/campaigns/$campaignId/cover",
+                campaignUpdatedAt = Instant.parse("2026-01-01T00:00:00Z"),
                 goal = BigDecimal("10000"),
                 raised = BigDecimal("4200"),
                 milestoneCount = 4,
@@ -83,6 +85,7 @@ class PublicCampaignDirectoryControllerTest {
                 campaignEmoji = "🍽",
                 campaignCategory = null,
                 coverImage = null,
+                campaignUpdatedAt = Instant.parse("2026-01-01T00:00:00Z"),
                 goal = BigDecimal("10000"),
                 raised = BigDecimal.ZERO,
                 milestoneCount = 0,

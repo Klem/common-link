@@ -17,6 +17,12 @@ export interface PublicCampaign {
    * Ne jamais construire d'`<img>` quand la valeur est nulle : l'URL répond 404, pas un placeholder.
    */
   coverImage: string | null;
+  /**
+   * Horodatage ISO-8601 de la dernière modification de la campagne. `coverImage` est servie sur
+   * une URL stable (ne varie pas au remplacement) avec un cache public de 5 minutes côté API :
+   * ce champ sert de jeton de cache-busting, voir {@link coverImageUrl}.
+   */
+  campaignUpdatedAt: string;
   goal: number;
   raised: number;
   milestoneCount: number;
@@ -25,6 +31,21 @@ export interface PublicCampaign {
   associationLogo: string | null;
   /** URL absolue de la page de don publique, construite par l'API sur `app.frontend-url`. */
   donationUrl: string;
+}
+
+/**
+ * Résout `coverImage` en URL absolue avec un paramètre de cache-busting.
+ *
+ * L'endpoint de service est public et stable (ne porte que l'id de campagne), servi avec
+ * `Cache-Control: max-age=300, public` côté API — sans version, un navigateur ou un CDN peut
+ * continuer à afficher l'ancienne image jusqu'à 5 minutes après un remplacement.
+ *
+ * @param coverImage - Chemin renvoyé par l'API (`PublicCampaign.coverImage`), jamais `null` ici :
+ *   vérifier `coverImage !== null` avant d'appeler cette fonction.
+ * @param version - Jeton de cache-busting, `PublicCampaign.campaignUpdatedAt`.
+ */
+export function coverImageUrl(coverImage: string, version: string): string {
+  return `${API_URL}${coverImage}?v=${encodeURIComponent(version)}`;
 }
 
 /**

@@ -279,7 +279,7 @@ textarea.form-input{resize:vertical;min-height:100px;}
 .campaigns-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px;}
 .campaign-card{background:var(--white);border-radius:var(--radius-xl);border:1px solid var(--mist-lavender);box-shadow:var(--shadow-sm);overflow:hidden;transition:all 0.3s;}
 .campaign-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
-.campaign-img{height:180px;overflow:hidden;position:relative;}
+.campaign-img{aspect-ratio:16/9;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(78,205,196,.18),rgba(50,50,125,.12));}
 .campaign-img .photo-placeholder{height:100%;}
 .campaign-img .category-badge{position:absolute;top:12px;left:12px;}
 .campaign-body{padding:20px;}
@@ -631,8 +631,12 @@ textarea.form-input{resize:vertical;min-height:100px;}
    pas de règle de référence pour une image réellement chargée, pour le
    logo de l'association, ni pour le passage de la grille en mobile.
    Ces quatre règles couvrent exactement ce manque, rien de plus.
+   `object-fit: contain` (pas `cover`) : la couverture uploadée peut avoir
+   n'importe quel ratio, `cover` rognait le contenu utile sur les bords —
+   même choix que `.camp-card-img`/`.upload-preview` côté dashboard et
+   `.lp-hero-cover` côté landing widget, pour un rendu cohérent partout.
    ------------------------------------------------------------ */
-.campaign-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.campaign-img img{width:100%;height:100%;object-fit:contain;display:block;}
 .campaign-asso-logo{width:28px;height:28px;border-radius:50%;flex-shrink:0;font-size:14px;object-fit:cover;}
 @media(max-width:980px){.campaigns-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:700px){.campaigns-grid{grid-template-columns:1fr;}}

@@ -263,6 +263,7 @@ class PublicWidgetService(
             startDate = campaign.startDate,
             endDate = campaign.endDate,
             coverImage = campaign.coverImage,
+            campaignUpdatedAt = campaign.updatedAt,
             budget = budget,
             budgetHash = campaign.budgetHash,
             milestones = milestones,

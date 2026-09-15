@@ -137,6 +137,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
         taxReductionRate={data.taxReductionRate}
         campaignId={data.campaignId}
         coverImage={data.coverImage}
+        campaignUpdatedAt={data.campaignUpdatedAt}
       />
       <LandingClient
         widgetToken={widgetToken}

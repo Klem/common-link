@@ -119,7 +119,7 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
     @Query(
         """
         SELECT new org.commonlink.dto.PublicCampaignRow(
-            c.id, c.name, c.emoji, c.category, c.coverImage,
+            c.id, c.name, c.emoji, c.category, c.coverImage, c.updatedAt,
             c.goal, c.raised, size(c.milestones),
             a.name, a.landingLogo, a.widgetToken
         )

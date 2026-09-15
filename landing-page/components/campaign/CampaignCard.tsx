@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { API_URL } from '@/lib/constants';
-import type { PublicCampaign } from '@/lib/api/campaigns';
+import { coverImageUrl, type PublicCampaign } from '@/lib/api/campaigns';
 
 interface CampaignCardProps {
   campaign: PublicCampaign;
@@ -35,7 +35,7 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
     <article className="campaign-card">
       <div className="campaign-img">
         {campaign.coverImage ? (
-          <img src={`${API_URL}${campaign.coverImage}`} alt="" />
+          <img src={coverImageUrl(campaign.coverImage, campaign.campaignUpdatedAt)} alt="" />
         ) : (
           <div className="photo-placeholder">{campaign.campaignEmoji}</div>
         )}

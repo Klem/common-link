@@ -35,6 +35,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 @WebMvcTest(PublicWidgetController::class)
@@ -450,6 +451,7 @@ class PublicWidgetControllerTest {
         startDate = null,
         endDate = null,
         coverImage = null,
+        campaignUpdatedAt = Instant.parse("2026-01-01T00:00:00Z"),
         budget = emptyList(),
         budgetHash = null,
         milestones = emptyList(),

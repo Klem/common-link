@@ -228,11 +228,12 @@
 
 .lp-hero-cover {
   width: 100%;
-  height: 260px;
+  aspect-ratio: 16/9;
   border-radius: var(--lp-radius);
   box-shadow: var(--lp-shadow-soft);
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  background: linear-gradient(135deg, rgba(78,205,196,.18), rgba(50,50,125,.12));
 }
 
 .lp-hero-cover--gradient {

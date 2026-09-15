@@ -465,7 +465,9 @@ class ComplianceControllerTest {
             startDate = null,
             endDate = null,
             milestoneCount = 0,
+            coverImage = null,
             createdAt = Instant.parse("2026-01-01T00:00:00Z"),
+            updatedAt = Instant.parse("2026-01-01T00:00:00Z"),
         )
         every { complianceAssociationService.listCampaigns(associationId) } returns listOf(campaign)
 
