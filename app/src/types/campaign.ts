@@ -164,8 +164,12 @@ export interface CampaignSummaryDto {
   endDate: string | null;
   /** Total number of milestones defined for this campaign. */
   milestoneCount: number;
+  /** URL or path of the cover image, or null. */
+  coverImage: string | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
+  /** ISO-8601 last update timestamp — pass to `campaignCoverUrl` as the cache-busting version. */
+  updatedAt: string;
 }
 
 /**

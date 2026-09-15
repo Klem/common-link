@@ -41,6 +41,7 @@ class PublicCampaignDirectoryService(
                 campaignEmoji = row.campaignEmoji,
                 campaignCategory = row.campaignCategory,
                 coverImage = row.coverImage,
+                campaignUpdatedAt = row.campaignUpdatedAt,
                 goal = row.goal,
                 raised = row.raised,
                 milestoneCount = row.milestoneCount,

@@ -121,7 +121,9 @@ class CampaignControllerTest {
         startDate = null,
         endDate = null,
         milestoneCount = 1,
-        createdAt = Instant.now()
+        coverImage = null,
+        createdAt = Instant.now(),
+        updatedAt = Instant.now()
     )
 
     // ── GET /api/association/campaigns ────────────────────────────────────────

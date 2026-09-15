@@ -129,6 +129,8 @@ export interface PublicLandingDto {
   startDate: string | null;
   endDate: string | null;
   coverImage: string | null;
+  /** ISO-8601 timestamp of the campaign's last update — cache-busting version for `coverImage`. */
+  campaignUpdatedAt: string;
   budget: LandingBudgetPostDto[];
   budgetHash: string | null;
   milestones: MilestoneDto[];

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { apiUrl } from '@/lib/api';
+import { campaignCoverUrl } from '@/lib/api/campaign';
 
 interface LandingHeroProps {
   campaignName: string;
@@ -13,6 +13,7 @@ interface LandingHeroProps {
   taxReductionRate: number;
   campaignId: string;
   coverImage: string | null;
+  campaignUpdatedAt: string;
 }
 
 export function LandingHero({
@@ -23,6 +24,7 @@ export function LandingHero({
   associationRna,
   taxReductionRate,
   coverImage,
+  campaignUpdatedAt,
 }: LandingHeroProps) {
   const t = useTranslations('landing');
   const [imgError, setImgError] = useState(false);
@@ -50,7 +52,7 @@ export function LandingHero({
         <div className="lp-hero-visual">
           {coverImage !== null && !imgError ? (
             <img
-              src={apiUrl(coverImage)}
+              src={campaignCoverUrl(coverImage, campaignUpdatedAt)}
               alt={campaignName}
               className="lp-hero-cover"
               onError={() => setImgError(true)}

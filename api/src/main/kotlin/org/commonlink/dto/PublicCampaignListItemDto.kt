@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -17,6 +18,9 @@ import java.util.UUID
  * @param campaignEmoji Visual icon of the campaign, used as placeholder when no cover image is set.
  * @param campaignCategory Free-text category set by the association, or null.
  * @param coverImage Public serving path of the cover image, or null if none was uploaded.
+ * @param campaignUpdatedAt Timestamp of the campaign's last modification — used as a
+ *   cache-busting version token for [coverImage], which is served from a stable, publicly
+ *   cached URL (see [PublicCampaignListItemDto.campaignUpdatedAt]).
  * @param goal Total fundraising goal in euros.
  * @param raised Amount raised so far in euros.
  * @param milestoneCount Number of milestones defined for this campaign.
@@ -30,6 +34,7 @@ data class PublicCampaignRow(
     val campaignEmoji: String,
     val campaignCategory: String?,
     val coverImage: String?,
+    val campaignUpdatedAt: Instant,
     val goal: BigDecimal,
     val raised: BigDecimal,
     val milestoneCount: Int,
@@ -55,6 +60,9 @@ data class PublicCampaignRow(
  * @param campaignCategory Free-text category badge, or null when the association set none.
  * @param coverImage Public serving path of the cover image (`/api/public/campaigns/{id}/cover`),
  *   or null. Never call that URL when this is null — it answers 404, not a placeholder.
+ * @param campaignUpdatedAt Timestamp of the campaign's last modification. The cover-image URL is
+ *   stable (campaign id only) and served with a 5-minute public cache, so the frontend must append
+ *   this as a cache-busting version token rather than requesting [coverImage] as-is.
  * @param goal Total fundraising goal in euros.
  * @param raised Amount raised so far in euros.
  * @param milestoneCount Number of milestones, shown in the card footer.
@@ -70,6 +78,7 @@ data class PublicCampaignListItemDto(
     val campaignEmoji: String,
     val campaignCategory: String?,
     val coverImage: String?,
+    val campaignUpdatedAt: Instant,
     val goal: BigDecimal,
     val raised: BigDecimal,
     val milestoneCount: Int,

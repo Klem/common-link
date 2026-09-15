@@ -33,7 +33,9 @@ const baseCampaign: CampaignSummaryDto = {
   startDate: null,
   endDate: null,
   milestoneCount: 2,
+  coverImage: null,
   createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
 describe('CampaignCard', () => {
@@ -50,9 +52,21 @@ describe('CampaignCard', () => {
     expect(screen.getByText('Hiver Solidaire 2025')).toBeInTheDocument();
   });
 
-  it('renders campaign emoji', () => {
+  it('renders campaign emoji when no cover image was uploaded', () => {
     render(<CampaignCard campaign={baseCampaign} onDelete={onDelete} />);
     expect(screen.getByText('🌍')).toBeInTheDocument();
+  });
+
+  it('renders the uploaded cover image instead of the emoji when present', () => {
+    const withCover = { ...baseCampaign, coverImage: '/api/public/campaigns/campaign-uuid-1/cover' };
+    const { container } = render(<CampaignCard campaign={withCover} onDelete={onDelete} />);
+    const img = container.querySelector('.camp-card-img img');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute(
+      'src',
+      expect.stringContaining('/api/public/campaigns/campaign-uuid-1/cover'),
+    );
+    expect(screen.queryByText('🌍')).not.toBeInTheDocument();
   });
 
   it('renders DRAFT badge label', () => {

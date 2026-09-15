@@ -5,6 +5,7 @@ import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.LandingTheme
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -24,6 +25,10 @@ import java.util.UUID
  *   endpoint would refuse the payment, so the form must be rendered disabled instead of failing on
  *   submit. Always true on a normally served landing page, so nothing about the campaign lifecycle
  *   leaks to donors.
+ * @param campaignUpdatedAt Timestamp of the campaign's last modification. The cover image is
+ *   served from a stable URL (campaign id only) with a 5-minute public cache, so the frontend must
+ *   append it as a cache-busting version token — same pattern as `campaignCoverUrl` in the
+ *   association dashboard.
  */
 data class PublicLandingDto(
     val associationName: String,
@@ -48,6 +53,7 @@ data class PublicLandingDto(
     val startDate: LocalDate?,
     val endDate: LocalDate?,
     val coverImage: String?,
+    val campaignUpdatedAt: Instant,
     val budget: List<LandingBudgetPostDto>,
     val budgetHash: String?,
     val milestones: List<MilestoneDto>,

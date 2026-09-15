@@ -10,6 +10,7 @@ import org.commonlink.repository.CampaignRepository
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.Pageable
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -26,6 +27,7 @@ class PublicCampaignDirectoryServiceTest {
         campaignEmoji = "🍽",
         campaignCategory = "Solidarité",
         coverImage = "/api/public/campaigns/00000000-0000-0000-0000-000000000001/cover",
+        campaignUpdatedAt = Instant.parse("2026-01-01T00:00:00Z"),
         goal = BigDecimal("10000"),
         raised = BigDecimal("4200"),
         milestoneCount = 4,

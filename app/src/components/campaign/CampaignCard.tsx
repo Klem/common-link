@@ -7,6 +7,7 @@ import { ROUTES } from '@/lib/routes';
 import type { CampaignSummaryDto } from '@/types/campaign';
 import { CampaignStatus } from '@/types/campaign';
 import { useToastStore } from '@/stores/toastStore';
+import { campaignCoverUrl } from '@/lib/api/campaign';
 
 interface CampaignCardProps {
   campaign: CampaignSummaryDto;
@@ -88,7 +89,12 @@ export function CampaignCard({ campaign, onDelete }: CampaignCardProps) {
     >
       {/* Image / placeholder */}
       <div className="camp-card-img">
-        <span className="camp-card-img-emoji">{campaign.emoji}</span>
+        {campaign.coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element -- served by the API, not by Next
+          <img src={campaignCoverUrl(campaign.coverImage, campaign.updatedAt)} alt="" />
+        ) : (
+          <span className="camp-card-img-emoji">{campaign.emoji}</span>
+        )}
         <div className="camp-card-badge-row">
           <span className={STATUS_BADGE_CLASS[campaign.status]}>
             {t(STATUS_BADGE_I18N[campaign.status])}
