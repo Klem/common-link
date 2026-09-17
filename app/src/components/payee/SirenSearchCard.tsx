@@ -33,7 +33,7 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
   return (
     <div>
       <div className="siren-search-row">
-        <div className="flex-1">
+        <div className="fg">
           <label className="fl">{t('payees.search.label')}</label>
           <input
             id="siren-search-input"
@@ -52,7 +52,7 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
         <button
           onClick={search}
           disabled={!detectedType || isLoading}
-          className="btn btn-primary siren-search-btn"
+          className="btn btn-primary"
           aria-busy={isLoading}
         >
           {isLoading
@@ -62,27 +62,30 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
         </button>
       </div>
 
-      {/* Detection / hint pill */}
-      <div className="siren-hint-row">
-        {detectedType === 'siren' && (
-          <span className="payee-dpill siren">
-            <span className="payee-dpill-d" />
-            {t('payees.search.detected.siren')}
-          </span>
-        )}
-        {detectedType === 'siret' && (
-          <span className="payee-dpill siret">
-            <span className="payee-dpill-d" />
-            {t('payees.search.detected.siret')}
-          </span>
-        )}
-        {!detectedType && query.length > 0 && (
-          <span className="payee-dpill hint">
-            <span className="payee-dpill-d" />
-            {t('payees.search.hint', { remaining })}
-          </span>
-        )}
-      </div>
+      {/* Detection / hint pill — only mounted once the user types, so the card
+          keeps the same compact height as the "personne physique" form. */}
+      {query.length > 0 && (
+        <div className="siren-hint-row">
+          {detectedType === 'siren' && (
+            <span className="payee-dpill siren">
+              <span className="payee-dpill-d" />
+              {t('payees.search.detected.siren')}
+            </span>
+          )}
+          {detectedType === 'siret' && (
+            <span className="payee-dpill siret">
+              <span className="payee-dpill-d" />
+              {t('payees.search.detected.siret')}
+            </span>
+          )}
+          {!detectedType && (
+            <span className="payee-dpill hint">
+              <span className="payee-dpill-d" />
+              {t('payees.search.hint', { remaining })}
+            </span>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="alert alert-error">

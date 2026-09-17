@@ -38,11 +38,9 @@ export function SireneResultPanel({ result, onSelect, onClose, isLoading = false
     <div className="card card-no-hover animate-slide-up-step">
       {/* Header bar: name + status badges */}
       <div className="card-h">
-        <div className="flex-1 min-w-0">
-          <h2 className="font-display font-bold text-lg text-text leading-tight truncate">
-            {result.name}
-          </h2>
-          <div className="flex flex-wrap gap-1.5 mt-2">
+        <div className="sirene-head">
+          <h3 className="sirene-name">{result.name}</h3>
+          <div className="sirene-badges">
             {result.active ? (
               <span className="badge badge-active">● {t('payees.result.active')}</span>
             ) : (
@@ -57,53 +55,49 @@ export function SireneResultPanel({ result, onSelect, onClose, isLoading = false
 
       {/* Body: DL grid + address + actions */}
       <div className="card-b">
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <dl className="frow sirene-grid">
           <div>
-            <dt className="text-text-2 text-xs uppercase tracking-wide">{t('payees.result.siren')}</dt>
-            <dd className="font-mono font-semibold text-sm text-text mt-0.5">{result.siren}</dd>
+            <dt className="sirene-dt">{t('payees.result.siren')}</dt>
+            <dd className="sirene-dd mono">{result.siren}</dd>
           </div>
           {result.creationDate && (
             <div>
-              <dt className="text-text-2 text-xs uppercase tracking-wide">{t('payees.result.created')}</dt>
-              <dd className="font-semibold text-sm text-text mt-0.5">{result.creationDate}</dd>
+              <dt className="sirene-dt">{t('payees.result.created')}</dt>
+              <dd className="sirene-dd">{result.creationDate}</dd>
             </div>
           )}
           {result.nafCode && (
             <div>
-              <dt className="text-text-2 text-xs uppercase tracking-wide">{t('payees.result.naf')}</dt>
-              <dd className="font-mono font-semibold text-sm text-text mt-0.5">{result.nafCode}</dd>
+              <dt className="sirene-dt">{t('payees.result.naf')}</dt>
+              <dd className="sirene-dd mono">{result.nafCode}</dd>
             </div>
           )}
           {result.employeeRange && (
             <div>
-              <dt className="text-text-2 text-xs uppercase tracking-wide">{t('payees.result.employees')}</dt>
-              <dd className="font-semibold text-sm text-text mt-0.5">{result.employeeRange}</dd>
+              <dt className="sirene-dt">{t('payees.result.employees')}</dt>
+              <dd className="sirene-dd">{result.employeeRange}</dd>
             </div>
           )}
           {address && (
-            <div className="md:col-span-2">
-              <dt className="text-text-2 text-xs uppercase tracking-wide">{t('payees.result.address')}</dt>
-              <dd className="text-sm text-text mt-0.5">📍 {address}</dd>
+            <div className="sirene-grid-full">
+              <dt className="sirene-dt">{t('payees.result.address')}</dt>
+              <dd className="sirene-dd">📍 {address}</dd>
             </div>
           )}
         </dl>
 
         {/* Action buttons */}
-        <div className="flex gap-3 mt-5">
+        <div className="sirene-actions">
           <button
             onClick={onSelect}
             disabled={isLoading}
-            className="btn btn-primary btn-md flex items-center gap-2"
+            className="btn btn-primary"
             aria-busy={isLoading}
           >
-            {isLoading ? (
-              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              '✚'
-            )}
+            {isLoading ? <span className="spinner" /> : '✚'}
             {t('payees.result.select')}
           </button>
-          <button onClick={onClose} className="btn btn-ghost btn-md">
+          <button onClick={onClose} className="btn btn-ghost">
             {t('payees.result.close')}
           </button>
         </div>

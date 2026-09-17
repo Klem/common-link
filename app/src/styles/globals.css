@@ -2246,7 +2246,9 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .payee-iban-input.iban-no-match,
 .payee-add-iban-wrap { margin-top: 8px; }
 .payee-add-iban-row { display: flex; gap: 6px; align-items: center; }
-.payee-list-body { padding: 8px 0; }
+/* Same 24px inset as `.card-b`, so the payee cards sit flush with the rest of
+   the dashboard's card content instead of hugging the container border. */
+.payee-list-body { padding: 24px; }
 .payee-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 3px; }
 .payee-action-with-tip { position: relative; display: inline-block; }
 .payee-action-with-tip:hover .payee-status-tooltip { display: block; }
@@ -2257,7 +2259,7 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .payee-history-btn .ht-chev { color: var(--bright-teal); transition: transform .25s; }
 .payee-history-btn[aria-expanded="true"] .ht-chev { transform: rotate(180deg); }
 .payee-history-btn .badge-count { background: var(--deep-indigo); margin-left: 6px; }
-.badge-count.indigo { background: var(--deep-indigo); }
+.payee-list-count { color: var(--slate-lavender); font-weight: 700; }
 .payee-history-body { display: none; border-top: 1px solid var(--mist-lavender); padding: 16px 22px; background: rgba(98,98,125,.03); }
 .payee-history-body.open { display: block; }
 .payee-hist-entry { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: var(--radius-sm); background: var(--soft-cream); border: 1px solid var(--mist-lavender); margin-bottom: 5px; font-size: 12.5px; gap: 10px; }
@@ -2285,15 +2287,31 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 
 .payees-add-card { margin-bottom: 24px; }
 .payee-mode-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
-.payee-person-row { display: flex; gap: 10px; align-items: flex-end; }
+.payee-person-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; align-items: end; }
 .payee-person-error { margin-top: 8px; color: var(--warm-coral); font-size: 13px; }
+/* Inline add-forms reuse `.fg`, whose 20px bottom margin is redundant in a row. */
+.siren-search-row .fg,
+.payee-person-row .fg { margin-bottom: 0; }
 .sirene-panel-wrap { margin-bottom: 24px; }
+
+/* ── Sirene result panel ──────────────────────────────────────────────────── */
+
+.sirene-head { flex: 1; min-width: 0; }
+.sirene-name { font-family: var(--font-display); font-weight: 800; line-height: 1.25; color: var(--ink-navy); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sirene-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sirene-grid { gap: 16px 20px; }
+.sirene-grid-full { grid-column: 1 / -1; }
+.sirene-dt { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--slate-lavender); }
+.sirene-dd { font-size: 13px; font-weight: 600; color: var(--ink-navy); margin-top: 2px; }
+.sirene-dd.mono { font-family: monospace; }
+.sirene-actions { display: flex; gap: 12px; margin-top: 20px; }
 
 /* ── Siren search ─────────────────────────────────────────────────────────── */
 
-.siren-search-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 8px; }
-.siren-search-btn { height: 44px; flex-shrink: 0; }
-.siren-hint-row { margin-bottom: 8px; min-height: 24px; }
+/* No bottom margin: the row must leave exactly the same gap to the card edge as
+   `.payee-person-row` does. The 8px belongs to the pill row, which is optional. */
+.siren-search-row { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end; }
+.siren-hint-row { margin-top: 8px; }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 
@@ -2491,6 +2509,8 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .camp-grid { grid-template-columns: 1fr; }
   .pay-form-grid { grid-template-columns: 1fr; }
   .budget-cols { grid-template-columns: 1fr; }
+  .siren-search-row,
+  .payee-person-row { grid-template-columns: 1fr; }
 }
 
 /* ── Payee-specific layer ─────────────────────────────────────────────────────
