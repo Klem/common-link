@@ -119,11 +119,11 @@ app:
   # staging pointe désormais sur le vrai sandbox Bridge, plus sur la simulation en mémoire.
   bridge:
     demo-mode: ${BRIDGE_DEMO_MODE:false}
-    base-url: ${BRIDGE_BASE_URL:https://api.bridgeapi.io}
-    api-version: ${BRIDGE_API_VERSION:2025-01-15}
+    base-url: ${BRIDGE_BASE_URL}
+    api-version: ${BRIDGE_API_VERSION}
     client-id: ${BRIDGE_CLIENT_ID}
     client-secret: ${BRIDGE_CLIENT_SECRET}
-    webhook-secret: ${BRIDGE_WEBHOOK_SECRET:}
+    webhook-secret: ${BRIDGE_WEBHOOK_SECRET}
     webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
     allow-fake-verify: true
   vop:

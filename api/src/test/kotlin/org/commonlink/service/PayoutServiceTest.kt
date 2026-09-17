@@ -181,6 +181,8 @@ class PayoutServiceTest {
             campaignId = campaignId,
             amount = pendingPayout.amount,
             label = pendingPayout.label,
+            payerName = assoc.name,
+            payerReference = assocId.toString(),
             payeeName = payee.name,
             payeeIban = payeeIban.iban,
         )
@@ -202,6 +204,8 @@ class PayoutServiceTest {
         every {
             bridgeInitiation.createPaymentLink(
                 payoutId = payoutId,
+                payerName = assoc.name,
+                payerReference = assocId.toString(),
                 payeeName = payee.name,
                 payeeIban = payeeIban.iban,
                 amount = BigDecimal("500"),
@@ -220,7 +224,7 @@ class PayoutServiceTest {
         // The amount must be engaged before the initiation exists, never after.
         verifyOrder {
             confirmer.reserve(campaignId, payoutId)
-            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any())
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any())
             confirmer.attachPaymentLink(payoutId, link)
         }
         // The attestation belongs to settlement, which only the webhook can establish.
@@ -235,7 +239,7 @@ class PayoutServiceTest {
         stubLoadForConfirm()
         every { confirmer.reserve(campaignId, payoutId) } returns Unit
         every {
-            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), capture(callbackSlot))
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), capture(callbackSlot))
         } returns link
         every { confirmer.attachPaymentLink(payoutId, link) } returns pendingPayout
 
@@ -246,18 +250,20 @@ class PayoutServiceTest {
     }
 
     @Test
-    fun `confirm - unreachable Bridge fails the payout and emits no attestation`() {
-        // Safe to fail here: without the authorisation URL no debit can ever happen, so releasing
-        // the reservation cannot lead to a double payment.
+    fun `confirm - unreachable Bridge releases the reservation and emits no attestation`() {
+        // The payout must stay PENDING: without the authorisation URL no debit can ever happen, so
+        // releasing cannot lead to a double payment — and failing it would be terminal, because
+        // loadForConfirm only accepts PENDING.
         stubLoadForConfirm()
         every { confirmer.reserve(campaignId, payoutId) } returns Unit
-        every { bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any()) } throws
+        every { bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any()) } throws
             BadGatewayException("Bridge payment initiation unavailable: timeout")
-        every { confirmer.finaliseFailed(payoutId, any(), null) } returns Unit
+        every { confirmer.releaseReservation(payoutId, any()) } returns Unit
 
         assertThrows<BadGatewayException> { service.confirm(campaignId, payoutId, userId) }
 
-        verify { confirmer.finaliseFailed(payoutId, any(), null) }
+        verify { confirmer.releaseReservation(payoutId, any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
         verify(exactly = 0) { confirmer.attachPaymentLink(any(), any()) }
     }

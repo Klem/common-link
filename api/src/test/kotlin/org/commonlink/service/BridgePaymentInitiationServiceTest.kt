@@ -31,6 +31,7 @@ class BridgePaymentInitiationServiceTest {
     // Spring-configured mapper injected in production does.
     private val objectMapper = jacksonObjectMapper()
     private val payoutId = UUID.randomUUID()
+    private val associationId = UUID.randomUUID().toString()
 
     private fun demoService() = BridgePaymentInitiationService(
         props = BridgeProperties(demoMode = true),
@@ -73,6 +74,8 @@ class BridgePaymentInitiationServiceTest {
 
     private fun createLink(service: BridgePaymentInitiationService) = service.createPaymentLink(
         payoutId = payoutId,
+        payerName = "Association Test",
+        payerReference = associationId,
         payeeName = "Croix-Rouge Francaise",
         payeeIban = "FR05 3000 3000 4029 1646 5922 J55",
         amount = BigDecimal("500.00"),
@@ -215,6 +218,23 @@ class BridgePaymentInitiationServiceTest {
     }
 
     @Test
+    fun `real mode - sends the paying association as Bridge's mandatory user object`() {
+        // Regression: the body used to carry no `user` at all. Bridge answered every initiation
+        // 400 invalid_request / "Invalid body content", naming no field, and no payout ever went
+        // through. Assert the object is on the wire, not merely that the request succeeded.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andExpect(jsonPath("$.user.company_name").value("Association Test"))
+            .andExpect(jsonPath("$.user.external_reference").value(associationId))
+            .andRespond(withSuccess("""{"id":"pl_123","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR0530003000402916465922J55")
+
+        createLink(service)
+
+        server.verify()
+    }
+
+    @Test
     fun `real mode - truncates the label to Bridge's 50-character limit`() {
         val (service, server) = realService()
         server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
@@ -223,8 +243,8 @@ class BridgePaymentInitiationServiceTest {
         expectReadBack(server, "FR7630006000011234567890189", id = "pl_1")
 
         service.createPaymentLink(
-            payoutId, "Payee", "FR7630006000011234567890189", BigDecimal("10.00"),
-            "x".repeat(200), null, "https://app.example.org/return",
+            payoutId, "Association Test", associationId, "Payee", "FR7630006000011234567890189",
+            BigDecimal("10.00"), "x".repeat(200), null, "https://app.example.org/return",
         )
 
         server.verify()
@@ -239,8 +259,8 @@ class BridgePaymentInitiationServiceTest {
         expectReadBack(server, "FR7630006000011234567890189", id = "pl_1")
 
         service.createPaymentLink(
-            payoutId, "y".repeat(80), "FR7630006000011234567890189", BigDecimal("10.00"),
-            "Achat materiel", null, "https://app.example.org/return",
+            payoutId, "Association Test", associationId, "y".repeat(80), "FR7630006000011234567890189",
+            BigDecimal("10.00"), "Achat materiel", null, "https://app.example.org/return",
         )
 
         server.verify()
