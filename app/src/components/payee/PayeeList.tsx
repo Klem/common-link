@@ -38,7 +38,7 @@ export function PayeeList({
     : payees.filter((p) => p.payeeType === (filter === 'company' ? 'COMPANY' : 'PERSON'));
 
   return (
-    <div className="card no-hover">
+    <div className="card card-no-hover">
       <div className="card-h">
         <h3>
           {t('payees.list.title')}{' '}
@@ -63,13 +63,13 @@ export function PayeeList({
       </div>
 
       {isLoading ? (
-        <div className="rm-empty-recip"><span className="rm-spinner" /></div>
+        <div className="payee-empty"><span className="spinner" /></div>
       ) : filtered.length === 0 ? (
-        <div className="rm-empty-recip">
+        <div className="payee-empty">
           {filter === 'all' ? t('payees.list.empty') : t('payees.list.emptyFiltered')}
         </div>
       ) : (
-        <div className="rm-list-body">
+        <div className="payee-list-body">
           {filtered.map((payee) => (
             <PayeeRow
               key={payee.id}

@@ -124,38 +124,38 @@ export function PayeeRow({
   };
 
   return (
-    <div className={`rm-recip-card${!payee.active ? ' rm-deactivated' : ''}`}>
-      <div className="rm-recip-row">
+    <div className={`payee-card${!payee.active ? ' payee-deactivated' : ''}`}>
+      <div className="payee-row">
         {/* Col 1 — status icon */}
-        <div className="rm-status-col">
-          <div className={`rm-status-icon ${statusClass}`}>
+        <div className="payee-status-col">
+          <div className={`payee-status-icon ${statusClass}`}>
             {STATUS_ICON[aggregatedStatus]}
           </div>
-          <span className={`rm-status-lbl ${statusClass}`}>
+          <span className={`payee-status-lbl ${statusClass}`}>
             {t(STATUS_LABEL_KEY[aggregatedStatus] as Parameters<typeof t>[0])}
           </span>
-          <div className="rm-status-tooltip">
+          <div className="payee-status-tooltip">
             {t(STATUS_TOOLTIP_KEY[aggregatedStatus] as Parameters<typeof t>[0])}
           </div>
         </div>
 
         {/* Col 2 — name + chips */}
         <div>
-          <p className="rm-recip-name">{payee.name}</p>
-          <div className="rm-chips">
-            {payee.identifier1 && <span className="rm-chip">{payee.identifier1}</span>}
-            {payee.identifier2 && <span className="rm-chip">{payee.identifier2}</span>}
-            {payee.activityCode && <span className="rm-chip">{payee.activityCode}</span>}
-            {payee.category && <span className="rm-chip">{payee.category}</span>}
-            {payee.city && <span className="rm-chip">📍 {payee.city}</span>}
+          <p className="payee-name">{payee.name}</p>
+          <div className="payee-chips">
+            {payee.identifier1 && <span className="payee-chip">{payee.identifier1}</span>}
+            {payee.identifier2 && <span className="payee-chip">{payee.identifier2}</span>}
+            {payee.activityCode && <span className="payee-chip">{payee.activityCode}</span>}
+            {payee.category && <span className="payee-chip">{payee.category}</span>}
+            {payee.city && <span className="payee-chip">📍 {payee.city}</span>}
             {payee.payeeType === 'PERSON' && (
-              <span className="rm-chip">👤 {t('payees.mode.person')}</span>
+              <span className="payee-chip">👤 {t('payees.mode.person')}</span>
             )}
           </div>
 
           {/* IBANs */}
           {payee.ibans.length > 0 && (
-            <div className="rm-iban-fields">
+            <div className="payee-iban-fields">
               {payee.ibans.map((iban) => (
                 <IbanRow
                   key={iban.id}
@@ -172,10 +172,10 @@ export function PayeeRow({
           )}
 
           {/* Add IBAN */}
-          <div className="rm-add-iban-wrap">
+          <div className="payee-add-iban-wrap">
             {showIbanInput ? (
               <div>
-                <div className="rm-add-iban-row">
+                <div className="payee-add-iban-row">
                   <input
                     type="text"
                     autoFocus
@@ -186,23 +186,23 @@ export function PayeeRow({
                       if (e.key === 'Escape') { setIbanValue(''); setIbanFormatError(false); setShowIbanInput(false); }
                     }}
                     placeholder={t('payees.iban.inputPlaceholder')}
-                    className="cm-fi-mono cm-fi-mono-flex"
+                    className="fi payee-fi-mono payee-fi-inline"
                   />
-                  <button onClick={handleAddIban} className="cm-btn cm-btn-primary cm-btn-sm">
+                  <button onClick={handleAddIban} className="btn btn-primary btn-sm">
                     {t('payees.iban.add')}
                   </button>
-                  <button onClick={() => { setIbanValue(''); setIbanFormatError(false); setShowIbanInput(false); }} className="cm-btn cm-btn-ghost cm-btn-sm">
+                  <button onClick={() => { setIbanValue(''); setIbanFormatError(false); setShowIbanInput(false); }} className="btn btn-secondary btn-sm">
                     {t('payees.iban.cancel')}
                   </button>
                 </div>
                 {ibanFormatError && (
-                  <p className="cm-field-error">{t('payees.iban.invalidFormat')}</p>
+                  <p className="fhint error">{t('payees.iban.invalidFormat')}</p>
                 )}
               </div>
             ) : (
               <button
                 onClick={() => setShowIbanInput(true)}
-                className="cm-btn cm-btn-ghost cm-btn-sm rm-add-iban-btn"
+                className="btn btn-ghost btn-sm payee-add-iban-btn"
               >
                 ＋ {t('payees.iban.addIban')}
               </button>
@@ -211,39 +211,39 @@ export function PayeeRow({
         </div>
 
         {/* Col 3 — actions */}
-        <div className="rm-recip-actions">
+        <div className="payee-actions">
           {payee.hasPayouts ? (
-            <div className="rm-action-with-tip">
+            <div className="payee-action-with-tip">
               <button
-                className={payee.active ? 'rm-btn-deactivate' : 'rm-btn-reactivate'}
+                className={`btn btn-xs payee-icon-btn ${payee.active ? 'btn-secondary' : 'btn-primary'}`}
                 onClick={() => onToggleActive(payee.id, !payee.active)}
               >
                 {payee.active ? '⏸' : '▶'}
               </button>
-              <div className="rm-status-tooltip">
+              <div className="payee-status-tooltip">
                 {t('payees.list.hasPayoutsTooltip')}
               </div>
             </div>
           ) : pendingDelete ? (
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
-                className="rm-btn-cancel-iban-del"
+                className="btn btn-secondary btn-xs payee-icon-btn"
                 onClick={() => setPendingDelete(false)}
                 title={t('payees.iban.cancel')}
               >✕</button>
               <button
-                className="rm-btn-confirm-iban-del"
+                className="btn btn-coral btn-xs payee-icon-btn"
                 onClick={() => { setPendingDelete(false); onDeletePayee(payee.id); }}
                 title={t('payees.list.delete')}
               >✓</button>
             </div>
           ) : (
-            <div className="rm-action-with-tip">
+            <div className="payee-action-with-tip">
               <button
-                className="rm-btn-delete"
+                className="btn btn-ghost payee-btn-danger"
                 onClick={() => setPendingDelete(true)}
               >✕</button>
-              <div className="rm-status-tooltip">
+              <div className="payee-status-tooltip">
                 {t('payees.list.delete')}
               </div>
             </div>
@@ -253,7 +253,7 @@ export function PayeeRow({
 
       {/* Transfer history */}
       <button
-        className="rm-history-btn"
+        className="payee-history-btn"
         aria-expanded={historyOpen}
         onClick={toggleHistory}
       >
@@ -268,11 +268,11 @@ export function PayeeRow({
         <span className="ht-chev">▾</span>
       </button>
 
-      <div className={`rm-history-body${historyOpen ? ' open' : ''}`}>
+      <div className={`payee-history-body${historyOpen ? ' open' : ''}`}>
         {historyLoading ? (
-          <div className="rm-empty-recip"><span className="rm-spinner" /></div>
+          <div className="payee-empty"><span className="spinner" /></div>
         ) : payouts.length === 0 ? (
-          <div className="rm-empty-recip">{t('payees.history.empty')}</div>
+          <div className="payee-empty">{t('payees.history.empty')}</div>
         ) : (
           <>
             {payouts.map((p) => {
@@ -281,19 +281,19 @@ export function PayeeRow({
               });
               const isDone = p.status === PayoutStatus.CONFIRMED;
               return (
-                <div key={p.id} className="rm-hist-entry">
-                  <span className="rm-hist-entry-date">{date}</span>
-                  <span className="rm-hist-entry-ref">{p.label}</span>
-                  <span className={`rm-hist-status ${isDone ? 'rm-hist-done' : 'rm-hist-pending'}`}>
+                <div key={p.id} className="payee-hist-entry">
+                  <span className="payee-hist-entry-date">{date}</span>
+                  <span className="payee-hist-entry-ref">{p.label}</span>
+                  <span className={`payee-hist-status ${isDone ? 'payee-hist-done' : 'payee-hist-pending'}`}>
                     {isDone ? t('payees.history.statusDone') : t('payees.history.statusPending')}
                   </span>
-                  <span className="rm-hist-entry-amt">
+                  <span className="payee-hist-entry-amt">
                     {p.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </span>
                 </div>
               );
             })}
-            <div className="rm-hist-total">
+            <div className="payee-hist-total">
               {t('payees.history.total')} :{' '}
               <strong>
                 {payouts

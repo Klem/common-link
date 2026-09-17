@@ -37,7 +37,7 @@ export function SireneResultPanel({ result, onSelect, onClose, isLoading = false
   return (
     <div className="card card-no-hover animate-slide-up-step">
       {/* Header bar: name + status badges */}
-      <div className="card-header-bar">
+      <div className="card-h">
         <div className="flex-1 min-w-0">
           <h2 className="font-display font-bold text-lg text-text leading-tight truncate">
             {result.name}
@@ -56,7 +56,7 @@ export function SireneResultPanel({ result, onSelect, onClose, isLoading = false
       </div>
 
       {/* Body: DL grid + address + actions */}
-      <div className="card-body">
+      <div className="card-b">
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <dt className="text-text-2 text-xs uppercase tracking-wide">{t('payees.result.siren')}</dt>

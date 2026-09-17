@@ -88,7 +88,7 @@ describe('IbanRow', () => {
       />,
     );
 
-    expect(container.firstChild).toHaveClass('rm-iban-disabled');
+    expect(container.firstChild).toHaveClass('payee-iban-disabled');
     expect(screen.queryByTitle('payees.iban.disable')).toBeNull();
     expect(screen.queryByTitle('payees.list.delete')).toBeNull();
 

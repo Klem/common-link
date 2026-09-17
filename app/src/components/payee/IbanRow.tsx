@@ -44,7 +44,7 @@ export function IbanRow({
   const renderActions = () => {
     if (isVerifyingVop) {
       return (
-        <span className="rm-spinner" />
+        <span className="spinner" />
       );
     }
     switch (iban.status) {
@@ -70,7 +70,7 @@ export function IbanRow({
         );
       case IbanVerificationStatus.VERIFIED:
         return (
-          <span className="badge badge-success text-xs">
+          <span className="badge badge-success">
             ✓ {t('payees.iban.verified')}
           </span>
         );
@@ -88,7 +88,7 @@ export function IbanRow({
         );
       case IbanVerificationStatus.INVALID:
         return (
-          <span className="badge badge-error text-xs">{t('payees.status.invalid')}</span>
+          <span className="badge badge-error">{t('payees.status.invalid')}</span>
         );
       default:
         return null;
@@ -114,14 +114,14 @@ export function IbanRow({
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => setPendingDelete(false)}
-            className="rm-btn-cancel-iban-del"
+            className="btn btn-secondary btn-xs payee-icon-btn"
             title={t('payees.iban.cancel')}
           >
             ✕
           </button>
           <button
             onClick={() => { setPendingDelete(false); onDeleteIban(iban.id); }}
-            className="rm-btn-confirm-iban-del"
+            className="btn btn-coral btn-xs payee-icon-btn"
             title={t('payees.list.delete')}
           >
             ✓
@@ -150,7 +150,7 @@ export function IbanRow({
         {iban.status === IbanVerificationStatus.VERIFIED && disableButton}
         <button
           onClick={() => setPendingDelete(true)}
-          className="rm-btn-del-iban flex-shrink-0"
+          className="btn btn-ghost payee-btn-danger flex-shrink-0"
           title={t('payees.list.delete')}
         >
           🗑
@@ -160,7 +160,7 @@ export function IbanRow({
   };
 
   return (
-    <div className={`mt-2${!iban.active ? ' rm-iban-disabled' : ''}`}>
+    <div className={`mt-2${!iban.active ? ' payee-iban-disabled' : ''}`}>
       <div className="flex items-center gap-2">
         <input
           type="text"
@@ -168,7 +168,7 @@ export function IbanRow({
           value={iban.iban}
           onChange={() => {}}
           placeholder={t('payees.iban.placeholder')}
-          className="cm-fi-mono cm-fi-readonly"
+          className="fi payee-fi-mono payee-iban-readonly"
         />
 
         {/* Copy button */}

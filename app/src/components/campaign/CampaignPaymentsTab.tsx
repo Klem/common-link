@@ -406,7 +406,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
             <div className="cm-card-title">{t('history.title')}</div>
             {isLoading ? (
               <div className="cm-loading-center">
-                <div className="animate-spin rm-spinner lg" />
+                <div className="animate-spin spinner lg" />
               </div>
             ) : error ? (
               <p className="cm-error-center">{error}</p>

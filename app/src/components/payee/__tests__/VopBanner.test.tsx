@@ -16,10 +16,7 @@ describe('VopBanner', () => {
   it('renders green banner for MATCH', () => {
     const { container } = render(<VopBanner vopResult={VopResult.MATCH} />);
 
-    const div = container.firstChild as HTMLElement;
-    expect(div).toHaveClass('bg-green/8');
-    expect(div).toHaveClass('border-green');
-    expect(div).toHaveClass('text-green');
+    expect(container.firstChild).toHaveClass('alert-success');
   });
 
   it('renders check mark and translation key for MATCH', () => {
@@ -35,10 +32,7 @@ describe('VopBanner', () => {
       <VopBanner vopResult={VopResult.CLOSE_MATCH} suggestedName="Dupont Jean" />,
     );
 
-    const div = container.firstChild as HTMLElement;
-    expect(div).toHaveClass('bg-yellow/8');
-    expect(div).toHaveClass('border-yellow');
-    expect(div).toHaveClass('text-yellow');
+    expect(container.firstChild).toHaveClass('alert-warning');
   });
 
   it('includes suggested name in CLOSE_MATCH message', () => {
@@ -57,10 +51,7 @@ describe('VopBanner', () => {
   it('renders red banner for NO_MATCH', () => {
     const { container } = render(<VopBanner vopResult={VopResult.NO_MATCH} />);
 
-    const div = container.firstChild as HTMLElement;
-    expect(div).toHaveClass('bg-red/8');
-    expect(div).toHaveClass('border-red');
-    expect(div).toHaveClass('text-red');
+    expect(container.firstChild).toHaveClass('alert-error');
   });
 
   it('renders cross and translation key for NO_MATCH', () => {
@@ -74,10 +65,9 @@ describe('VopBanner', () => {
   it('renders muted banner for NOT_POSSIBLE', () => {
     const { container } = render(<VopBanner vopResult={VopResult.NOT_POSSIBLE} />);
 
-    const div = container.firstChild as HTMLElement;
-    expect(div).toHaveClass('bg-muted/8');
-    expect(div).toHaveClass('border-muted');
-    expect(div).toHaveClass('text-text-2');
+    // NOT_POSSIBLE is neither success nor failure, so it carries the one payee-specific
+    // modifier rather than an alert-* variant.
+    expect(container.firstChild).toHaveClass('payee-alert-neutral');
   });
 
   it('renders question mark and translation key for NOT_POSSIBLE', () => {
@@ -88,13 +78,13 @@ describe('VopBanner', () => {
 
   // ── Shared structure ───────────────────────────────────────────────────────
 
-  it('always renders with shared base classes', () => {
+  it('always renders on the shared alert primitive', () => {
+    // The banner must stay part of the dashboard `alert` family rather than drift back to
+    // one-off Tailwind colours, which is what made the payee screens look foreign.
     const { container } = render(<VopBanner vopResult={VopResult.MATCH} />);
 
     const div = container.firstChild as HTMLElement;
-    expect(div).toHaveClass('rounded-[8px]');
-    expect(div).toHaveClass('p-[10px]');
-    expect(div).toHaveClass('text-[12px]');
-    expect(div).toHaveClass('mt-[6px]');
+    expect(div).toHaveClass('alert');
+    expect(div).toHaveClass('payee-alert-inline');
   });
 });

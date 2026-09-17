@@ -20,11 +20,14 @@ interface VopBannerProps {
 export function VopBanner({ vopResult, suggestedName }: VopBannerProps) {
   const t = useTranslations('dashboard');
 
+  // Reuses the dashboard `alert` family rather than ad-hoc Tailwind colours, so this banner reads
+  // like every other inline notice in the association dashboard. NOT_POSSIBLE has no `alert-*`
+  // equivalent — it is neither success nor failure — hence the one payee-specific modifier.
   const styles: Record<VopResult, string> = {
-    MATCH: 'bg-green/8 border-l-[3px] border-green text-green',
-    CLOSE_MATCH: 'bg-yellow/8 border-l-[3px] border-yellow text-yellow',
-    NO_MATCH: 'bg-red/8 border-l-[3px] border-red text-red',
-    NOT_POSSIBLE: 'bg-muted/8 border-l-[3px] border-muted text-text-2',
+    MATCH: 'alert-success',
+    CLOSE_MATCH: 'alert-warning',
+    NO_MATCH: 'alert-error',
+    NOT_POSSIBLE: 'payee-alert-neutral',
   };
 
   const getMessage = (): string => {
@@ -41,7 +44,7 @@ export function VopBanner({ vopResult, suggestedName }: VopBannerProps) {
   };
 
   return (
-    <div className={`rounded-[8px] p-[10px] text-[12px] mt-[6px] ${styles[vopResult]}`}>
+    <div className={`alert payee-alert-inline ${styles[vopResult]}`}>
       {getMessage()}
     </div>
   );

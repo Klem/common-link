@@ -115,24 +115,24 @@ export default function PayeesPage() {
           <h1>{t('payees.pageTitle')}</h1>
           <p>{t('payees.pageSubtitle')}</p>
         </div>
-        <div className="rm-help-wrap">
-          <button className="rm-help-btn" onClick={() => setHelpOpen(!helpOpen)}>?</button>
-          <div className={`rm-help-panel${helpOpen ? ' open' : ''}`}>
-            <div className="rm-help-header">
-              <span className="rm-help-title">{t('payees.help.title')}</span>
+        <div className="payee-help-wrap">
+          <button className="payee-help-btn" onClick={() => setHelpOpen(!helpOpen)}>?</button>
+          <div className={`payee-help-panel${helpOpen ? ' open' : ''}`}>
+            <div className="payee-help-header">
+              <span className="payee-help-title">{t('payees.help.title')}</span>
               <button
                 onClick={() => setHelpOpen(false)}
-                className="rm-help-close"
+                className="payee-help-close"
               >✕</button>
             </div>
-            <p className="rm-help-text">{t('payees.help.text1')}</p>
-            <p className="rm-help-text">{t('payees.help.text2')}</p>
+            <p className="payee-help-text">{t('payees.help.text1')}</p>
+            <p className="payee-help-text">{t('payees.help.text2')}</p>
           </div>
         </div>
       </div>
 
       {/* Add card */}
-      <div className="card no-hover payees-add-card">
+      <div className="card card-no-hover payees-add-card">
         <div className="card-h">
           <h3>{mode === 'company' ? t('payees.search.title') : t('payees.person.cardTitle')}</h3>
         </div>
@@ -154,18 +154,18 @@ export default function PayeesPage() {
             <div>
               <div className="payee-person-row">
                 <div className="flex-1">
-                  <label className="cm-label">{t('payees.person.firstName')}</label>
-                  <input className="cm-fi" type="text" placeholder="Marie" value={firstName}
+                  <label className="fl">{t('payees.person.firstName')}</label>
+                  <input className="fi" type="text" placeholder="Marie" value={firstName}
                     onChange={(e) => setFirstName(e.target.value)} autoComplete="off" />
                 </div>
                 <div className="flex-1">
-                  <label className="cm-label">{t('payees.person.lastName')}</label>
-                  <input className="cm-fi" type="text" placeholder="Dupont" value={lastName}
+                  <label className="fl">{t('payees.person.lastName')}</label>
+                  <input className="fi" type="text" placeholder="Dupont" value={lastName}
                     onChange={(e) => { setLastName(e.target.value); setPersonError(''); }}
                     autoComplete="off" />
                 </div>
                 <button
-                  className="cm-btn cm-btn-primary siren-search-btn"
+                  className="btn btn-primary siren-search-btn"
                   disabled={!lastName.trim() || isCreating}
                   onClick={handleAddPerson}
                 >✚ {t('payees.person.add')}</button>
