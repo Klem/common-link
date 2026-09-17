@@ -133,7 +133,7 @@ export function VerificationDocumentRow(props: Props) {
         {isUploaded && (
           <>
             {isDownloading ? (
-              <span className="rm-spinner" />
+              <span className="spinner" />
             ) : (
               <>
                 {canPreviewInline && (
