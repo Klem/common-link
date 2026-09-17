@@ -269,6 +269,36 @@ class PayoutConfirmerTest {
     }
 
     @Test
+    fun `releaseReservation - returns the payout to a confirmable state, keeping the diagnostic`() {
+        // A Bridge refusal before any link exists must not retire the payout: loadForConfirm only
+        // accepts PENDING with a null bridgeStatus, so a FAILED stamp here would be terminal and
+        // the association could never retry. Clearing bridgeStatus also returns the amount to the
+        // confirmable balance, since sumInFlightAmount counts exactly the non-null ones.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.releaseReservation(payout.id, "Bridge payment initiation unavailable: timeout")
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.PENDING)
+        assertThat(payout.bridgeStatus).isNull()
+        assertThat(payout.bridgeLastError).isEqualTo("Bridge payment initiation unavailable: timeout")
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+    }
+
+    @Test
+    fun `releaseReservation - never touches a payout that already left PENDING`() {
+        val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+
+        confirmer.releaseReservation(payout.id, "late failure")
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.ACSC)
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
     fun `finaliseFailed - fails the payout without emitting any attestation`() {
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
         every { payoutRepository.findById(payout.id) } returns Optional.of(payout)

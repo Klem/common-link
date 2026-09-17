@@ -116,8 +116,9 @@ class PayoutService(
      * @throws NotFoundException if payout or campaign cannot be found for the user's association.
      * @throws ConflictException if the payout is not PENDING, its IBAN is no longer VERIFIED, or
      *         confirming it would exceed the confirmable balance.
-     * @throws org.commonlink.exception.BadGatewayException if Bridge is unreachable — the payout is
-     *         left FAILED and nothing has been debited.
+     * @throws org.commonlink.exception.BadGatewayException if Bridge is unreachable or refuses the
+     *         initiation — nothing has been debited, the reservation is released and the payout is
+     *         left PENDING so it can be confirmed again.
      */
     fun confirm(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
         val associationId = resolveAssociationId(userId)
@@ -133,6 +134,8 @@ class PayoutService(
         val link = try {
             bridgeInitiation.createPaymentLink(
                 payoutId = payoutId,
+                payerName = context.payerName,
+                payerReference = context.payerReference,
                 payeeName = context.payeeName,
                 payeeIban = context.payeeIban,
                 amount = context.amount,
@@ -141,10 +144,12 @@ class PayoutService(
                 callbackUrl = bridgeCallbackUrl(campaignId),
             )
         } catch (ex: Exception) {
-            // Safe to release the reservation: with Open Banking initiation nothing can be debited
-            // until the association authorises the transfer at its bank, and that requires the
-            // authorisation URL — which this failure means we never obtained.
-            confirmer.finaliseFailed(payoutId, ex.message ?: "Bridge initiation failed", null)
+            // Release the reservation rather than fail the payout: with Open Banking initiation
+            // nothing can be debited until the association authorises the transfer at its bank, and
+            // that requires the authorisation URL — which this failure means we never obtained. The
+            // payout stays PENDING so the association can retry once Bridge answers again; FAILED
+            // would be terminal, because loadForConfirm only accepts PENDING.
+            confirmer.releaseReservation(payoutId, ex.message ?: "Bridge initiation failed")
             throw ex
         }
 

@@ -96,6 +96,8 @@ class BridgePaymentInitiationService(
      * can always be traced back to the payout it settles — including from a bank statement.
      *
      * @param payoutId CommonLink payout id, used as the reconciliation reference.
+     * @param payerName Name of the association paying — required by Bridge
+     * @param payerReference Association id, echoed as `user.external_reference`.
      * @param payeeName Beneficiary name shown to the association and sent to the bank.
      * @param payeeIban Beneficiary IBAN — the dynamic beneficiary, credited directly.
      * @param amount Transfer amount in euros.
@@ -108,6 +110,8 @@ class BridgePaymentInitiationService(
      */
     fun createPaymentLink(
         payoutId: UUID,
+        payerName: String,
+        payerReference: String,
         payeeName: String,
         payeeIban: String,
         amount: BigDecimal,
@@ -135,6 +139,12 @@ class BridgePaymentInitiationService(
             // A bounded one expires, Bridge emits payment.link.updated, and the reserved amount is
             // released by the LINK_EXPIRED arm of BridgeWebhookService.
             expiredDate = Instant.now().plus(LINK_VALIDITY).toString(),
+            // Bridge rejects the whole body with a bare `invalid_request` when `user` is absent —
+            // it never names the field. The association is the payer here, so it is a company.
+            user = UserJson(
+                companyName = payerName.take(BRIDGE_PAYER_NAME_MAX_LENGTH),
+                externalReference = payerReference,
+            ),
             transactions = listOf(
                 TransactionJson(
                     amount = amount,
@@ -288,6 +298,16 @@ class BridgePaymentInitiationService(
         /** Bridge caps a beneficiary name at 35 characters. */
         const val BRIDGE_NAME_MAX_LENGTH = 35
 
+        /**
+         * Length at which the payer's name is truncated.
+         *
+         * Bridge documents no limit on `user.company_name`, so this is a deliberate guess: 70 is
+         * the SEPA debtor-name ceiling every bank enforces anyway. It is kept separate from
+         * [BRIDGE_NAME_MAX_LENGTH] rather than reusing the beneficiary's 35 — that one comes from
+         * the documentation and must not be silently attributed to a field it never covered.
+         */
+        const val BRIDGE_PAYER_NAME_MAX_LENGTH = 70
+
         /** Prefix marking simulated Bridge data, so it can never pass for a real transfer. */
         const val DEMO_ID_PREFIX = "demo_"
 
@@ -318,12 +338,26 @@ private data class TransactionJson(
     val beneficiary: BeneficiaryJson,
 )
 
+/**
+ * Bridge's `user` object — the payer. Mandatory on every payment link: omitting it is answered
+ * `400 invalid_request` / "Invalid body content", with no indication of which field is missing.
+ *
+ * Bridge accepts either a `first_name`/`last_name` pair or a `company_name`; an association is a
+ * legal entity, so only the latter is sent.
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+private data class UserJson(
+    @JsonProperty("company_name") val companyName: String,
+    @JsonProperty("external_reference") val externalReference: String,
+)
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 private data class CreatePaymentLinkRequestJson(
     @JsonProperty("client_reference") val clientReference: String,
     @JsonProperty("callback_url") val callbackUrl: String,
     @JsonProperty("sender_iban") val senderIban: String?,
     @JsonProperty("expired_date") val expiredDate: String,
+    val user: UserJson,
     val transactions: List<TransactionJson>,
 )
 

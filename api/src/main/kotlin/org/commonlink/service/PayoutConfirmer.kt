@@ -27,6 +27,8 @@ import java.util.UUID
  * @param campaignId Campaign owning it, used to build the return URL.
  * @param amount Transfer amount.
  * @param label Statement label.
+ * @param payerName Name of the association paying, sent as Bridge's mandatory `user` object.
+ * @param payerReference Association id, echoed to Bridge as `user.external_reference`.
  * @param payeeName Beneficiary name sent to Bridge.
  * @param payeeIban Beneficiary IBAN — the dynamic beneficiary.
  */
@@ -35,6 +37,8 @@ data class PayoutConfirmContext(
     val campaignId: UUID,
     val amount: BigDecimal,
     val label: String,
+    val payerName: String,
+    val payerReference: String,
     val payeeName: String,
     val payeeIban: String,
 )
@@ -112,6 +116,8 @@ class PayoutConfirmer(
             campaignId = campaignId,
             amount = payout.amount,
             label = payout.label,
+            payerName = payout.campaign.association.name,
+            payerReference = associationId.toString(),
             payeeName = payout.payee.name,
             payeeIban = payeeIban.iban,
         )
@@ -229,6 +235,33 @@ class PayoutConfirmer(
             saved.id, transactionId, job.id,
         )
         return saved
+    }
+
+    /**
+     * Undoes [reserve] after an initiation that never reached Bridge, leaving the payout PENDING.
+     *
+     * Nothing was created at Bridge, so nothing can be debited: the amount must return to the
+     * campaign's confirmable balance and the association must be able to click confirm again.
+     * [finaliseFailed] would be wrong here — it stamps FAILED, which [loadForConfirm] refuses, so a
+     * transient Bridge outage or a rejected request would retire the payout for good.
+     *
+     * The diagnostic is still kept on the row: only the reservation is released.
+     *
+     * @param payoutId Payout whose reservation is released.
+     * @param message Why the initiation failed, stored on the row for support.
+     */
+    @Transactional
+    fun releaseReservation(payoutId: UUID, message: String) {
+        val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+        if (payout.status != PayoutStatus.PENDING) {
+            log.warn("Refusing to release payout {} — it is {}", payoutId, payout.status)
+            return
+        }
+        payout.bridgeStatus = null
+        payout.bridgeLastError = message.take(BRIDGE_ERROR_MAX_LENGTH)
+        payout.bridgeSyncedAt = Instant.now()
+        payoutRepository.save(payout)
+        log.warn("Payout {} released back to PENDING — Bridge initiation never happened: {}", payoutId, message)
     }
 
     /**
