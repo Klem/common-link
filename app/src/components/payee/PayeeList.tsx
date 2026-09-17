@@ -42,9 +42,7 @@ export function PayeeList({
       <div className="card-h">
         <h3>
           {t('payees.list.title')}{' '}
-          <span className="badge-count indigo">
-            {payees.length}
-          </span>
+          <span className="payee-list-count">{filtered.length}</span>
         </h3>
         <div className="col-filter">
           <button
