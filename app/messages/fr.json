@@ -142,6 +142,8 @@
       "noResults": "Aucune association trouvée.",
       "noResultsHint": "Vérifiez l'orthographe ou essayez votre RNA.",
       "noRna": "Je n'ai pas de numéro RNA",
+      "resolvingRna": "Vérification…",
+      "rnaUnresolved": "Nous n'avons pas pu confirmer le numéro RNA de cette association auprès du registre national. Utilisez « Je n'ai pas de numéro RNA » ci-dessous pour saisir votre SIREN. Si vous n'avez aucun des 2, vous devez terminer le parcours administratif afin que votre structure soit trouvée",
       "searchHint": "Recherchez votre association dans le répertoire officiel."
     },
     "divider": {

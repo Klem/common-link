@@ -142,6 +142,8 @@
       "noResults": "No association found.",
       "noResultsHint": "Check the spelling or try your RNA.",
       "noRna": "I don't have an RNA number",
+      "resolvingRna": "Checking…",
+      "rnaUnresolved": "We could not confirm this association's RNA number in the national registry. Use \"I have no RNA number\" below to enter your SIREN instead. If you do not have any of them, you must complete your administrative registration process in order for your structure to be found",
       "searchHint": "Search your association in the official directory."
     },
     "divider": {
