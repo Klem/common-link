@@ -1971,19 +1971,39 @@
       }
     },
     "mollie": {
+      "checklist": {
+        "intro": "Mollie est notre prestataire de paiement agréé. Son formulaire emploie un vocabulaire d'entreprise : c'est normal, et cela ne remet pas en cause votre statut associatif. Voici les trois pièces à préparer.",
+        "items": {
+          "bank": {
+            "meaning": "Un RIB au nom de l'association, avec un IBAN français.",
+            "mollieLabel": "« Associez un compte bancaire »"
+          },
+          "identity": {
+            "meaning": "La carte d'identité ou le passeport du représentant légal (le président), pas un document de l'association.",
+            "mollieLabel": "« Pièce d'identité »"
+          },
+          "registration": {
+            "link": "Retrouver ma fiche sur l'Annuaire des Entreprises",
+            "meaning": "Votre récépissé de déclaration en préfecture, votre extrait de publication au JOAFE, ou votre avis de situation SIRENE.",
+            "mollieLabel": "« Certificat d'immatriculation de votre entreprise »"
+          }
+        },
+        "note": "Selon votre dossier, Mollie peut demander des pièces complémentaires, comme vos statuts ou la liste de vos dirigeants."
+      },
       "completeOnboarding": "Compléter mon dossier",
       "connect": "Connecter Mollie",
       "description": "Connectez votre compte Mollie pour recevoir des dons.",
       "devForceComplete": "Simuler la validation KYC (dev)",
       "modal": {
         "cancel": "Annuler",
-        "connect": "Connecter",
+        "connect": "J'ai mes documents, continuer",
         "description": "Vous allez être redirigé vers Mollie pour autoriser la connexion.",
         "missingContactEmail": "Un email de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Email de contact dans l'onglet Informations et enregistrer.",
         "missingContactName": "Un nom de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Nom du contact dans l'onglet Informations et enregistrer.",
         "title": "Connecter Mollie",
         "waiting": "En attente d'autorisation…"
       },
+      "needsDataHint": "Vous pouvez reprendre plus tard : le bouton « Compléter mon dossier » vous ramène directement à votre dossier Mollie.",
       "reconnect": "Reconnecter",
       "status": {
         "broken": "Reconnexion requise",

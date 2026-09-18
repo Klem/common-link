@@ -14,6 +14,7 @@ import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
+import MollieDocumentChecklist from '@/components/dashboard/MollieDocumentChecklist';
 import { forceCompleteMollieOnboarding } from '@/lib/api/mollie-connect';
 import { MollieOnboardingStatus } from '@/types/mollie-connect';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
@@ -627,19 +628,23 @@ export default function AssociationProfilePage() {
               ) : mollieConnected && onboardingStatus === 'IN_REVIEW' ? (
                 <span className="badge badge-warning">{tM('mollie.status.inReview')}</span>
               ) : mollieConnected && onboardingStatus === 'NEEDS_DATA' ? (
-                <div className="flex items-center gap-3">
-                  <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
-                  {mollieDashboardUrl && (
-                    <a
-                      href={mollieDashboardUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary btn-sm"
-                    >
-                      {tM('mollie.completeOnboarding')}
-                    </a>
-                  )}
-                </div>
+                <>
+                  <div className="flex items-center gap-3">
+                    <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
+                    {mollieDashboardUrl && (
+                      <a
+                        href={mollieDashboardUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-sm"
+                      >
+                        {tM('mollie.completeOnboarding')}
+                      </a>
+                    )}
+                  </div>
+                  <p className="mollie-desc mt-4">{tM('mollie.needsDataHint')}</p>
+                  <MollieDocumentChecklist siren={profile?.siren} identifier={profile?.identifier} />
+                </>
               ) : mollieInterrupted ? (
                 <button
                   type="button"
@@ -779,6 +784,8 @@ export default function AssociationProfilePage() {
         onPopupClosed={handleMolliePopupClosed}
         contactEmail={profile?.contactEmail}
         contactName={profile?.contactName}
+        siren={profile?.siren}
+        identifier={profile?.identifier}
       />
     </div>
   );

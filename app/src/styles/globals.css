@@ -2541,6 +2541,16 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .verif-msg.pending { color: var(--slate-lavender); }
 .mollie-desc { font-size: 14px; color: var(--slate-lavender); margin-bottom: 16px; line-height: 1.6; }
 .mollie-spinner { width: 20px; height: 20px; border: 2px solid var(--deep-indigo); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+/* Mollie KYB checklist — translates Mollie's hosted wizard wording for associations */
+.mollie-checklist { border: 1px solid var(--mist-lavender); border-radius: var(--radius-md); padding: 16px; background: var(--soft-cream); }
+.mollie-checklist-intro { font-size: 13px; color: var(--slate-lavender); line-height: 1.6; margin-bottom: 14px; }
+.mollie-checklist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.mollie-checklist-item { display: flex; flex-direction: column; gap: 2px; }
+.mollie-checklist-label { font-size: 13px; font-weight: 600; color: var(--ink-navy); }
+.mollie-checklist-meaning { font-size: 13px; color: var(--slate-lavender); line-height: 1.5; }
+.mollie-checklist-link { font-size: 13px; color: var(--deep-indigo); text-decoration: underline; margin-top: 2px; }
+.mollie-checklist-note { font-size: 12px; color: var(--slate-lavender); line-height: 1.5; margin-top: 14px; }
 .security-row { display: flex; align-items: center; justify-content: space-between; }
 .security-value { font-size: 14px; }
 

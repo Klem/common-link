@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getMollieAuthUrl } from '@/lib/api/mollie-connect';
+import MollieDocumentChecklist from '@/components/dashboard/MollieDocumentChecklist';
 import { MolliePopupMessage } from '@/types/mollie-connect';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -17,14 +18,22 @@ interface MollieOnboardModalProps {
   contactEmail?: string | null;
   /** Association contact name — required by Mollie. If missing, the connect flow is blocked. */
   contactName?: string | null;
+  /** Association SIREN, forwarded to the document checklist for the registry deep link. */
+  siren?: string | null;
+  /** Association RNA or legacy SIREN, used by the checklist when no SIREN is recorded. */
+  identifier?: string | null;
 }
 
 /**
  * Guides the user through the Mollie Connect OAuth2 onboarding flow.
  * Opens a popup window for the OAuth consent screen and listens for a postMessage
  * from the success popup page to update the connection state without a full page reload.
+ *
+ * Before the popup opens, [MollieDocumentChecklist] states which association document answers
+ * each requirement of Mollie's hosted wizard — that wizard is not configurable and uses company
+ * wording, so the association knows what to prepare instead of discovering it mid-flow.
  */
-export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail, contactName }: MollieOnboardModalProps) {
+export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail, contactName, siren, identifier }: MollieOnboardModalProps) {
   const t = useTranslations('settings');
   const { addToast } = useToastStore();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -117,6 +126,7 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
               {t('mollie.modal.missingContactName')}
             </p>
           )}
+          {contactEmail && contactName && !isConnecting && <MollieDocumentChecklist siren={siren} identifier={identifier} />}
           {contactEmail && contactName && isConnecting && (
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />

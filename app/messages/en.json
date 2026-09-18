@@ -1971,19 +1971,39 @@
       }
     },
     "mollie": {
+      "checklist": {
+        "intro": "Mollie is our licensed payment provider. Its form uses business wording: that is normal, and it does not call your non-profit status into question. Here are the three documents to prepare.",
+        "items": {
+          "bank": {
+            "meaning": "Bank details (RIB) in the association's name, with a French IBAN.",
+            "mollieLabel": "Bank account"
+          },
+          "identity": {
+            "meaning": "The ID card or passport of the legal representative (the chair), not a document belonging to the association.",
+            "mollieLabel": "Proof of identity"
+          },
+          "registration": {
+            "link": "Find my record on the Annuaire des Entreprises",
+            "meaning": "Your prefecture declaration receipt (récépissé de déclaration), your JOAFE publication extract, or your SIRENE status notice (avis de situation).",
+            "mollieLabel": "Registration certificate"
+          }
+        },
+        "note": "Depending on your case, Mollie may ask for additional documents, such as your statutes or the list of your officers."
+      },
       "completeOnboarding": "Complete my onboarding",
       "connect": "Connect Mollie",
       "description": "Connect your Mollie account to receive donations.",
       "devForceComplete": "Simulate KYC validation (dev)",
       "modal": {
         "cancel": "Cancel",
-        "connect": "Connect",
+        "connect": "I have my documents, continue",
         "description": "You will be redirected to Mollie to authorize the connection.",
         "missingContactEmail": "A contact email is required to start the Mollie onboarding. Please fill in the Contact Email field in the Infos tab and save first.",
         "missingContactName": "A contact name is required to start the Mollie onboarding. Please fill in the Contact Name field in the Infos tab and save first.",
         "title": "Connect Mollie",
         "waiting": "Waiting for authorization…"
       },
+      "needsDataHint": "You can come back later: the \"Complete my onboarding\" button takes you straight back to your Mollie file.",
       "reconnect": "Reconnect",
       "status": {
         "broken": "Reconnect required",
