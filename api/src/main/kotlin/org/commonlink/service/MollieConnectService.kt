@@ -506,6 +506,12 @@ class MollieConnectService(
      * - Phase 2: HTTP — token exchange, org fetch, onboarding status fetch (no transaction open)
      * - Phase 3: DB writes — uniqueness guard, persist connection, delete consumed state
      *
+     * The onboarding status fetch of phase 2 is best-effort: it is the only one of the three calls
+     * whose failure would throw away an authorisation that already works. When it fails the
+     * connection is still persisted, with `lastSyncedAt = null` so the next status read
+     * resynchronises immediately; the status fields are left to the entity defaults on a new row
+     * and untouched on an existing one.
+     *
      * LCB-FT boundary: this method writes exclusively to [MollieConnection] — access token,
      * refresh token, expiry, connection state, onboarding status, canReceivePayments,
      * canReceiveSettlements, onboardingDashboardUrl, mollieOrganizationId, lastSyncedAt.
@@ -531,7 +537,22 @@ class MollieConnectService(
         // Phase 2 — HTTP calls (no transaction open)
         val tokenResponse = exchangeCode(code)
         val organizationId = fetchOrganizationId(tokenResponse.accessToken)
-        val snapshot = fetchOnboardingSnapshot(tokenResponse.accessToken)
+        // Of the three calls, only this one is dispensable: the grant is already valid and the
+        // organization identified. A Mollie hiccup here (5xx, timeout, or the 403 that
+        // /v2/capabilities returns while the feature flag is off on the partner organization) must
+        // not discard a working authorisation and send the association back through the whole
+        // tunnel. The status is re-read by the next poll. exchangeCode and fetchOrganizationId stay
+        // fatal: without the organization id there is no uniqueness key and the column is NOT NULL.
+        val snapshot = try {
+            fetchOnboardingSnapshot(tokenResponse.accessToken)
+        } catch (ex: Exception) {
+            logger.warn(
+                "Mollie onboarding snapshot unavailable during callback for association {} via {} API: {} " +
+                    "— persisting the connection without it, the next status poll resynchronises",
+                associationId, config.onboardingApi, ex.message,
+            )
+            null
+        }
 
         // Phase 3 — persist
         val existingForOrg = connectionRepo.findByMollieOrganizationId(organizationId)
@@ -557,18 +578,27 @@ class MollieConnectService(
         connection.refreshToken = tokenResponse.refreshToken
         connection.expiresAt = Instant.now().plusSeconds(tokenResponse.expiresIn.toLong())
         connection.state = MollieConnectionState.ACTIVE
-        connection.onboardingStatus = snapshot.onboardingStatus
-        connection.canReceivePayments = snapshot.canReceivePayments
-        connection.canReceiveSettlements = snapshot.canReceiveSettlements
-        connection.onboardingDashboardUrl = snapshot.dashboardUrl
+        // Left untouched when the snapshot is missing. A brand-new row then keeps the entity
+        // defaults (NEEDS_DATA, cannot receive payments or settlements, no dashboard URL) — never
+        // claim a collection capability Mollie has not confirmed. An existing row keeps its last
+        // known status, so a transient Mollie failure cannot downgrade a COMPLETED connection.
+        if (snapshot != null) {
+            connection.onboardingStatus = snapshot.onboardingStatus
+            connection.canReceivePayments = snapshot.canReceivePayments
+            connection.canReceiveSettlements = snapshot.canReceiveSettlements
+            connection.onboardingDashboardUrl = snapshot.dashboardUrl
+        }
         connection.mollieOrganizationId = organizationId
-        connection.lastSyncedAt = Instant.now()
+        // null rather than now() when the snapshot is missing: refreshOnboardingStatusIfStale
+        // treats a null lastSyncedAt as stale, so the very next status read resynchronises instead
+        // of waiting out the 5-minute throttle.
+        connection.lastSyncedAt = if (snapshot != null) Instant.now() else null
         connectionRepo.save(connection)
 
         stateRepo.deleteById(state)
         logger.info(
             "Mollie Connect callback successful for association {}, status={}",
-            associationId, snapshot.onboardingStatus,
+            associationId, connection.onboardingStatus,
         )
     }
 

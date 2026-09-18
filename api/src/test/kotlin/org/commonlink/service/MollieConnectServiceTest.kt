@@ -280,6 +280,81 @@ class MollieConnectServiceTest {
         assertFalse(mollieOAuthStateRepository.existsById(stateId))
     }
 
+    @Test
+    fun `handleCallback - persists the connection when the onboarding read fails`() {
+        val stateId = UUID.randomUUID().toString()
+        mollieOAuthStateRepository.save(MollieOAuthState(
+            state = stateId,
+            association = association,
+            expiresAt = Instant.now().plusSeconds(600),
+        ))
+
+        stubTokenExchange()
+        mockServer.expect(requestTo("https://api.mollie.com/v2/organizations/me"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess("""{"id":"org_xyz"}""", MediaType.APPLICATION_JSON))
+        // What Mollie really answers on an organization whose capabilities feature flag is off.
+        mockServer.expect(requestTo("https://api.mollie.com/v2/capabilities"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withStatus(HttpStatus.FORBIDDEN))
+
+        mollieConnectService.handleCallback("code123", stateId)
+
+        // The grant is valid and the organization identified — throwing here would have discarded
+        // both and sent the association back through the whole tunnel.
+        val conn = mollieConnectionRepository.findByAssociationId(associationId)
+        assertNotNull(conn)
+        assertEquals(MollieConnectionState.ACTIVE, conn!!.state)
+        assertEquals("org_xyz", conn.mollieOrganizationId)
+        // No capability is claimed that Mollie has not confirmed.
+        assertEquals(MollieOnboardingStatus.NEEDS_DATA, conn.onboardingStatus)
+        assertFalse(conn.canReceivePayments)
+        assertFalse(conn.canReceiveSettlements)
+        // Null, not now(): the next status read must resynchronise rather than wait out the throttle.
+        assertNull(conn.lastSyncedAt)
+        assertFalse(mollieOAuthStateRepository.existsById(stateId))
+    }
+
+    @Test
+    fun `handleCallback - a failed onboarding read never downgrades an existing connection`() {
+        mollieConnectionRepository.save(MollieConnection(
+            association = association,
+            accessToken = "old_acc",
+            refreshToken = "old_ref",
+            expiresAt = Instant.now().plusSeconds(3600),
+            mollieOrganizationId = "org_xyz",
+            onboardingStatus = MollieOnboardingStatus.COMPLETED,
+            canReceivePayments = true,
+            canReceiveSettlements = true,
+        ))
+
+        val stateId = UUID.randomUUID().toString()
+        mollieOAuthStateRepository.save(MollieOAuthState(
+            state = stateId,
+            association = association,
+            expiresAt = Instant.now().plusSeconds(600),
+        ))
+
+        stubTokenExchange()
+        mockServer.expect(requestTo("https://api.mollie.com/v2/organizations/me"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess("""{"id":"org_xyz"}""", MediaType.APPLICATION_JSON))
+        mockServer.expect(requestTo("https://api.mollie.com/v2/capabilities"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE))
+
+        mollieConnectService.handleCallback("code123", stateId)
+
+        val conn = mollieConnectionRepository.findByAssociationId(associationId)!!
+        // A transient Mollie outage must not close a collection Mollie has actually authorised.
+        assertEquals(MollieOnboardingStatus.COMPLETED, conn.onboardingStatus)
+        assertTrue(conn.canReceivePayments)
+        assertTrue(conn.canReceiveSettlements)
+        // Tokens are still rotated — that half of the callback succeeded.
+        assertEquals("acc123", conn.accessToken)
+        assertNull(conn.lastSyncedAt)
+    }
+
     // ── getConnectionStatus ───────────────────────────────────────────────────
 
     @Test
