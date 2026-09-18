@@ -1974,8 +1974,12 @@
     },
     "mollie": {
       "checklist": {
-        "intro": "Mollie est notre prestataire de paiement agréé. Son formulaire emploie un vocabulaire d'entreprise : c'est normal, et cela ne remet pas en cause votre statut associatif. Voici les trois pièces à préparer.",
+        "intro": "Mollie est notre prestataire de paiement agréé. Son formulaire emploie un vocabulaire d'entreprise : c'est normal, et cela ne remet pas en cause votre statut associatif. Voici les pièces à préparer.",
         "items": {
+          "activity": {
+            "meaning": "L'objet réel de votre association et la nature des fonds collectés. Décrivez votre activité en clair : Mollie attend une description, pas un code NAF.",
+            "mollieLabel": "« Activité de l'entreprise »"
+          },
           "bank": {
             "meaning": "Un RIB au nom de l'association, avec un IBAN français.",
             "mollieLabel": "« Associez un compte bancaire »"
@@ -1988,6 +1992,10 @@
             "link": "Retrouver ma fiche sur l'Annuaire des Entreprises",
             "meaning": "Votre récépissé de déclaration en préfecture, votre extrait de publication au JOAFE, ou votre avis de situation SIRENE.",
             "mollieLabel": "« Certificat d'immatriculation de votre entreprise »"
+          },
+          "stakeholders": {
+            "meaning": "Les dirigeants et les bénéficiaires effectifs de l'association : président, trésorier, et toute personne exerçant un contrôle effectif. Pour une association, ce sont les membres du bureau, avec leur date de naissance et leur adresse.",
+            "mollieLabel": "« Informations relatives aux parties prenantes »"
           }
         },
         "note": "Selon votre dossier, Mollie peut demander des pièces complémentaires, comme vos statuts ou la liste de vos dirigeants."

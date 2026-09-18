@@ -70,4 +70,44 @@ describe('MollieDocumentChecklist', () => {
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
+
+  it('adds the stakeholder and activity requirements when the association holds a SIREN', () => {
+    render(<MollieDocumentChecklist siren="775672272" />);
+
+    expect(screen.getByText('items.stakeholders.mollieLabel')).toBeInTheDocument();
+    expect(screen.getByText('items.stakeholders.meaning')).toBeInTheDocument();
+    expect(screen.getByText('items.activity.mollieLabel')).toBeInTheDocument();
+    expect(screen.getByText('items.activity.meaning')).toBeInTheDocument();
+    // Listed after the registration item and before the personal ones, as Mollie orders them.
+    const labels = screen.getAllByText(/^items\..*\.mollieLabel$/).map((n) => n.textContent);
+    expect(labels).toEqual([
+      'items.registration.mollieLabel',
+      'items.stakeholders.mollieLabel',
+      'items.activity.mollieLabel',
+      'items.identity.mollieLabel',
+      'items.bank.mollieLabel',
+    ]);
+  });
+
+  it('keeps the three-item list when the association has no SIREN', () => {
+    render(<MollieDocumentChecklist siren={null} identifier="W751004076" />);
+
+    expect(screen.queryByText('items.stakeholders.mollieLabel')).not.toBeInTheDocument();
+    expect(screen.queryByText('items.activity.mollieLabel')).not.toBeInTheDocument();
+  });
+
+  it('does not add them for a SIREN-shaped identifier, which the backend never sends to Mollie', () => {
+    // createClientLink reads AssociationProfile.siren and nothing else, so a legacy SIREN sitting
+    // in `identifier` produces no registrationNumber and no commercial-registry match.
+    render(<MollieDocumentChecklist siren={null} identifier="775672272" />);
+
+    expect(screen.queryByText('items.stakeholders.mollieLabel')).not.toBeInTheDocument();
+    expect(screen.queryByText('items.activity.mollieLabel')).not.toBeInTheDocument();
+  });
+
+  it('ignores a blank SIREN rather than treating it as one', () => {
+    render(<MollieDocumentChecklist siren="   " identifier="W751004076" />);
+
+    expect(screen.queryByText('items.stakeholders.mollieLabel')).not.toBeInTheDocument();
+  });
 });

@@ -1974,8 +1974,12 @@
     },
     "mollie": {
       "checklist": {
-        "intro": "Mollie is our licensed payment provider. Its form uses business wording: that is normal, and it does not call your non-profit status into question. Here are the three documents to prepare.",
+        "intro": "Mollie is our licensed payment provider. Its form uses business wording: that is normal, and it does not call your non-profit status into question. Here are the documents to prepare.",
         "items": {
+          "activity": {
+            "meaning": "What your association actually does and where the collected funds come from. Describe it in plain words: Mollie expects a description, not an NAF code.",
+            "mollieLabel": "Business activity"
+          },
           "bank": {
             "meaning": "Bank details (RIB) in the association's name, with a French IBAN.",
             "mollieLabel": "Bank account"
@@ -1988,6 +1992,10 @@
             "link": "Find my record on the Annuaire des Entreprises",
             "meaning": "Your prefecture declaration receipt (récépissé de déclaration), your JOAFE publication extract, or your SIRENE status notice (avis de situation).",
             "mollieLabel": "Registration certificate"
+          },
+          "stakeholders": {
+            "meaning": "The association's officers and beneficial owners: chair, treasurer, and anyone exercising effective control. For an association these are the board members, with their date of birth and address.",
+            "mollieLabel": "Stakeholder information"
           }
         },
         "note": "Depending on your case, Mollie may ask for additional documents, such as your statutes or the list of your officers."
