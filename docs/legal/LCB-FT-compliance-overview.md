@@ -165,7 +165,7 @@ examinés. Aucune contrainte de schéma ne double ce contrôle : un enregistreme
 autre chemin n'est pas couvert. La voie d'entrée par numéro RNA conserve son comportement antérieur
 et n'oppose aucun refus en cas de doublon.
 
-**Deux écarts de conception sont signalés.** La garantie de correspondance exacte énoncée au point 1
+**Deux écarts de conception avaient été signalés ; le premier est corrigé depuis.** La garantie de correspondance exacte énoncée au point 1
 — un enregistrement du registre des entreprises n'est retenu que si son numéro RNA correspond
 exactement à celui du dossier — n'a pas d'équivalent sur la voie du numéro SIREN : le premier
 enregistrement retourné par le moteur de recherche est retenu sans vérification de son numéro. Par
@@ -173,8 +173,59 @@ ailleurs, la consultation du Journal officiel s'effectuant sur le numéro RNA, u
 identifiée par son seul numéro SIREN dont l'enregistrement ne porte aucun numéro RNA échappe à cette
 consultation : ni publication ni avis de dissolution ne sont recherchés pour elle. Ces deux écarts
 n'ont produit aucune erreur constatée ; ils sont repris en section 7.2 comme développements
-restants. Le premier importe parce qu'un enregistrement erroné entraînerait un verdict de périmètre
+restants. *(Mise à jour du 18 septembre 2026 : le premier de ces deux écarts — la correspondance
+exacte sur la voie du numéro SIREN — est corrigé ; voir le complément du 18 septembre 2026
+ci-dessous. Le second demeure.)* Le premier importe parce qu'un enregistrement erroné entraînerait un verdict de périmètre
 et un périmètre de criblage portant sur la mauvaise personne morale.
+
+**Complément du 18 septembre 2026 — l'identifiant capté à la création de compte**
+
+La création de compte propose à l'association de se chercher dans le Journal officiel des
+associations ; le numéro retenu au dossier était le champ `numero_rna` de l'annonce trouvée.
+
+Ce champ ne porte un numéro RNA que pour les annonces publiées après la création du répertoire
+(2009-2010). Pour les annonces antérieures il porte le numéro d'ordre de l'annonce dans son numéro
+de parution, préfixé `ASS`, et ce numéro d'ordre recommence à chaque parution. Relevé du
+18 septembre 2026 : la valeur `ASS01469` est portée par 806 annonces appartenant à des associations
+distinctes, et 3 198 411 des 5 189 401 annonces du jeu de données — 62 % — portent une valeur de
+cette forme. Une telle valeur n'identifie aucune personne morale.
+
+**Conséquence sur les contrôles.** N'étant pas reconnue comme un numéro RNA, cette valeur était
+traitée comme un numéro SIREN : elle empruntait donc la voie sur laquelle, ainsi que l'expose le
+complément du 21 août 2026, la correspondance exacte n'est pas vérifiée et le premier enregistrement
+retourné par le moteur de recherche est retenu. La consultation du Journal officiel, qui s'effectue
+sur le numéro RNA, n'avait pas lieu pour ces dossiers. **Aucun dossier existant n'est concerné** :
+aucune association enregistrée à ce jour ne porte une valeur de cette forme, et aucune reprise de
+données n'est nécessaire.
+
+**Ce qui a été corrigé le 18 septembre 2026**, à la création de compte : une valeur qui n'est pas un
+numéro RNA n'est plus présentée comme telle ni enregistrée ; le numéro RNA est recherché au registre
+national des entreprises à partir du nom et du code postal portés par l'annonce, et n'est retenu que
+si un seul numéro y répond ; à défaut la création s'interrompt sans rien enregistrer. Ce registre ne
+recensant que les titulaires d'un numéro SIREN, cette recherche n'aboutit que pour les associations
+qui en détiennent un : pour les autres, l'interruption est l'issue ordinaire et non le cas limite.
+Un second défaut, sans effet sur les données enregistrées mais qui empêchait l'entrée en relation, a
+été corrigé au passage : toute recherche par un nom comportant une apostrophe échouait.
+
+**Deux corrections complémentaires ont été apportées le même jour, côté serveur.** Le format de
+l'identifiant y est désormais contrôlé : une valeur qui n'est ni un numéro RNA ni un numéro SIREN est
+refusée à la création comme à la mise à jour du profil, de sorte qu'une requête adressée directement
+au serveur ne contourne plus la règle de l'écran. Et le contrôle des registres n'interprète plus une
+telle valeur comme un numéro SIREN : les deux clés restent alors absentes et le contrôle se déclare
+inexploitable plutôt que de chercher au hasard.
+
+**L'écart de correspondance exacte signalé le 21 août 2026 est fermé.** La voie du numéro SIREN
+n'accepte plus l'enregistrement le mieux classé par le moteur de recherche : elle retient uniquement
+celui dont le numéro SIREN est exactement celui du dossier, comme le faisait déjà la voie du numéro
+RNA. En l'absence de correspondance, aucune donnée n'est retenue. C'était le mécanisme par lequel
+l'anomalie ci-dessus produisait ses effets.
+
+**Un point reste ouvert.** Le registre national des entreprises ne
+recensant que les titulaires d'un numéro SIREN, une association qui n'en détient aucun et dont les
+annonces sont antérieures à 2010 ne peut plus créer son compte : son numéro RNA n'est retrouvable
+par aucune des sources consultées — aucune des cinq annonces anciennes éprouvées le 18 septembre
+2026 n'a pu être résolue. Cette restriction est en tension avec le point 2 ci-dessus, qui inclut les
+dossiers identifiés par leur seul numéro RNA ; elle est portée à l'arbitrage en section 7.3.
 
 **Exigence couverte** : Responsabilité n° 3 — Entrée en relation et vérification de l'association. *(Partiellement — vérifications à l'entrée livrées ; surveillance périodique et révision des dossiers existants restent à compléter.)*
 
@@ -386,9 +437,9 @@ L'infrastructure est livrée. Le seul travail restant est le prérequis non tech
 | Traçage des refus d'ouverture de collecte et métriques du rapport annuel | [1217152626184665](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1217152626184665) |
 | Reconsultation périodique programmée des registres publics — détection d'un changement de dirigeant, d'une dissolution ou d'une radiation | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Collecte d'une pièce d'identité propre à chaque bénéficiaire effectif | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
-| Vérification que l'enregistrement retenu au registre des entreprises est bien celui du dossier lorsque l'entrée se fait par un numéro SIREN — la correspondance exacte n'est contrôlée que sur la voie du numéro RNA | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Contrainte d'unicité du numéro SIREN au niveau du schéma de base de données — l'unicité n'est aujourd'hui assurée que par le logiciel, sur la seule voie de création de compte | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Statut d'activité des associations identifiées par leur seul numéro SIREN sans numéro RNA connu — la consultation du Journal officiel, qui s'effectue sur le numéro RNA, n'a pas lieu pour elles | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Voie d'entrée pour les associations dépourvues de numéro SIREN dont les annonces au Journal officiel sont antérieures à 2010 — leur numéro RNA n'est retrouvable par aucune source consultée ; conditionné à l'arbitrage de la section 7.3 | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 **Responsabilité n° 4 — Gel des avoirs**
 
@@ -443,6 +494,7 @@ Ces points ne sont pas des tâches de développement et ne portent aucune réfé
 | **Statut d'adoption du document de classification des risques** — la version en vigueur porte une date d'adoption renseignée au 7 août 2026, la révision rédigée le 18 août 2026 porte la mention « à valider par le conseil », et le présent document comme le suivi de projet décrivent l'adoption comme un prérequis non satisfait. Ces trois énoncés ne peuvent être simultanément exacts ; la commission doit qualifier ce qui s'est tenu le 7 août 2026. | Version du document à mettre en vigueur, date d'adoption à retenir, et levée ou maintien du prérequis bloquant de la section 7.1 |
 | **Contenu de la révision `2026-08-v2`** — retrait des fréquences chiffrées de réexamen au profit de la seule obligation de mise à jour continue et de réexamen sur événement, retrait de deux pièces jugées non imposées, statut du niveau « faible » comme allègement à justifier client par client. Ces choix réduisent des exigences internes en s'appuyant sur une lecture des textes qu'il appartient à la commission de valider. | Mise en vigueur de la révision ; contenu des mesures de vigilance opposables |
 | **Acceptation des trois risques de sécurité maintenus** — cloisonnement inter-associations sur les bénéficiaires de virement, durée de validité des jetons d'accès et profil de base permissif, simulation de la chaîne en production. Acceptés par décision technique hors production ; leur maintien à l'ouverture de l'encaissement relève d'une appréciation qui dépasse la seule technique. | Conditions de la mise en production |
+| **Entrée en relation des associations sans numéro SIREN et sans annonce récente** — leur numéro RNA n'est retrouvable par aucune source consultée. Deux issues : l'association saisit elle-même son numéro RNA, ce qui fait reposer l'identifiant sur une déclaration et non sur un registre, ou ces dossiers sont pris en charge hors parcours autonome. La première modifie la provenance de l'identifiant décrite au point 1 de l'épique E3. | Maintien effectif dans le périmètre des associations identifiées par leur seul numéro RNA |
 
 ### 7.4 Portes de mise en production
 
