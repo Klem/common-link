@@ -17,6 +17,8 @@ import java.util.UUID
  * @param vopResult Raw outcome of the last VOP check, null if not yet attempted.
  * @param vopSuggestedName Account holder name suggested by the bank, null if not available.
  * @param verifiedAt Timestamp of the last VOP check completion, null if not yet run.
+ * @param active Whether this IBAN can still be used to receive payouts. A VERIFIED IBAN that has
+ *   already received a payout can only be disabled (not deleted); see [PayeeIban.active].
  */
 data class PayeeIbanDto(
     val id: UUID,
@@ -24,7 +26,8 @@ data class PayeeIbanDto(
     val status: IbanVerificationStatus,
     val vopResult: VopResult?,
     val vopSuggestedName: String?,
-    val verifiedAt: Instant?
+    val verifiedAt: Instant?,
+    val active: Boolean
 )
 
 /**
@@ -36,5 +39,6 @@ fun PayeeIban.toDto() = PayeeIbanDto(
     status = status,
     vopResult = vopResult,
     vopSuggestedName = vopSuggestedName,
-    verifiedAt = verifiedAt
+    verifiedAt = verifiedAt,
+    active = active
 )

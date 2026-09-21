@@ -81,9 +81,26 @@ app:
     base-url: ${BODACC_BASE_URL:https://bodacc-datadila.opendatasoft.com/api/explore/v2.0}
   recherche-entreprises:
     base-url: ${RECHERCHE_ENTREPRISES_BASE_URL:https://recherche-entreprises.api.gouv.fr}
+  bridge:
+    # Safe default: boots with zero setup locally. Set BRIDGE_DEMO_MODE=false as an actual
+    # environment variable (IDE run config / shell) to hit the real sandbox locally — never flip
+    # this file's default, or every context-loading test that doesn't override it starts failing
+    # (see BridgePaymentInitiationService's required-credentials check).
+    demo-mode: ${BRIDGE_DEMO_MODE:true}
+    base-url: ${BRIDGE_BASE_URL:https://api.bridgeapi.io}
+    api-version: ${BRIDGE_API_VERSION:2025-01-15}
+    client-id: ${BRIDGE_CLIENT_ID:}
+    client-secret: ${BRIDGE_CLIENT_SECRET:}
+    connect-timeout: ${BRIDGE_CONNECT_TIMEOUT:5s}
+    read-timeout: ${BRIDGE_READ_TIMEOUT:15s}
+    # Bridge webhook signing secret(s) — BridgeApi-Signature header, HMAC-SHA256 over the raw
+    # body. Retrieve from the Bridge dashboard when creating/rotating the webhook. Previous stays
+    # valid 24h after a rotation, hence the two slots.
+    webhook-secret: ${BRIDGE_WEBHOOK_SECRET:}
+    webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
   vop:
     demo-mode: true
-    api-url: ${VOP_BASE_URL=https://thirdparty.qonto.com/v2/sepa/verify_payee}
+    api-url: ${VOP_BASE_URL:https://api.mollie.com/v2/business-accounts/payee-verifications}
     api-token: ${VOP_API_TOKEN:}
   mollie:
     api-key: ${MOLLIE_API_KEY:}

@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.dto.AddIbanRequest
+import org.commonlink.dto.PatchIbanRequest
 import org.commonlink.dto.PatchPayeeRequest
 import org.commonlink.dto.PayeeDto
 import org.commonlink.dto.CreatePayeeRequest
@@ -159,10 +160,14 @@ class PayeeService(
     /**
      * Removes an IBAN entry from a payee, scoped to the authenticated association.
      *
+     * A [IbanVerificationStatus.VERIFIED] IBAN that has already received at least one payout
+     * cannot be deleted — the audit trail must be preserved. Use [setIbanActive] instead.
+     *
      * @param userId UUID of the authenticated association user.
      * @param payeeId UUID of the payee that owns the IBAN.
      * @param ibanId UUID of the IBAN entry to remove.
      * @throws UserNotFoundException if any of the expected records are not found.
+     * @throws ConflictException if the IBAN is VERIFIED and the payee already has payouts.
      */
     @Transactional
     fun deleteIban(userId: UUID, payeeId: UUID, ibanId: UUID) {
@@ -171,7 +176,39 @@ class PayeeService(
             .orElseThrow { UserNotFoundException("Payee not found") }
         val ibanEntry = payeeIbanRepository.findByIdAndPayeeId(ibanId, payeeId)
             .orElseThrow { UserNotFoundException("IBAN not found") }
+
+        if (ibanEntry.status == IbanVerificationStatus.VERIFIED &&
+            payoutRepository.existsByPayeeIdAndPayeeAssociationId(payeeId, associationId)
+        ) {
+            throw ConflictException("Verified IBAN with existing payouts cannot be deleted — disable it instead")
+        }
         payee.ibans.remove(ibanEntry)
+    }
+
+    /**
+     * Enables or disables an IBAN entry, scoped to the authenticated association.
+     *
+     * A disabled IBAN is excluded from payout selection ([org.commonlink.service.PayoutService])
+     * but its history and VOP audit trail are preserved.
+     *
+     * @param userId UUID of the authenticated association user.
+     * @param payeeId UUID of the payee that owns the IBAN.
+     * @param ibanId UUID of the IBAN entry to toggle.
+     * @param req New active state.
+     * @return Updated [PayeeDto].
+     * @throws UserNotFoundException if any of the expected records are not found.
+     */
+    @Transactional
+    fun setIbanActive(userId: UUID, payeeId: UUID, ibanId: UUID, req: PatchIbanRequest): PayeeDto {
+        val associationId = resolveAssociationId(userId)
+        val payee = payeeRepository.findByIdAndAssociationId(payeeId, associationId)
+            .orElseThrow { UserNotFoundException("Payee not found") }
+        val ibanEntry = payeeIbanRepository.findByIdAndPayeeId(ibanId, payeeId)
+            .orElseThrow { UserNotFoundException("IBAN not found") }
+        ibanEntry.active = req.active
+        payeeIbanRepository.save(ibanEntry)
+        val hasPayouts = payoutRepository.existsByPayeeIdAndPayeeAssociationId(payeeId, associationId)
+        return payee.toDto(hasPayouts = hasPayouts)
     }
 
     /**

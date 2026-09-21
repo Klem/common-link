@@ -162,7 +162,7 @@ class PayoutControllerTest {
         val summary = PayoutSummaryDto(
             confirmedAmount = BigDecimal("1000"), confirmedCount = 2L,
             pendingAmount = BigDecimal("200"), txTotal = 5L, txConfirmed = 2L,
-            availableBalance = BigDecimal("4000"),
+            availableBalance = BigDecimal("4000"), paymentsEnabled = true,
         )
         every { payoutService.getSummary(campaignId, any()) } returns summary
 

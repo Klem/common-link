@@ -68,5 +68,15 @@ class PayeeIban(
 
     /** Timestamp of record creation; immutable after insert. */
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Instant = Instant.now()
+    val createdAt: Instant = Instant.now(),
+
+    /**
+     * Whether this IBAN can still be used to receive payouts.
+     *
+     * A [IbanVerificationStatus.VERIFIED] IBAN that has already received a payout cannot be
+     * deleted (audit trail) — it can only be disabled via this flag, which excludes it from
+     * payout selection ([org.commonlink.service.PayoutService.blockingReasonsFor]).
+     */
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
 )

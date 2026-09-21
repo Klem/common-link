@@ -1,5 +1,6 @@
 package org.commonlink
 
+import org.commonlink.config.BridgeProperties
 import org.commonlink.config.DonationCapProperties
 import org.commonlink.config.MollieConnectConfig
 import org.commonlink.config.MollieProperties
@@ -22,6 +23,7 @@ import org.springframework.boot.runApplication
     SanctionsSyncProperties::class,
     DonationCapProperties::class,
     TechnicalAlertProperties::class,
+    BridgeProperties::class,
 )
 class CommonLinkApplication
 

@@ -173,6 +173,53 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `bridge demo-mode is env-overridable in prod`() {
+        // Les identifiants Bridge de PRODUCTION ne sont pas encore provisionnés. Pinner
+        // `demo-mode: false` ici rendait la prod non démarrable (client-id / client-secret /
+        // api-version étaient trois `${...}` sans défaut). La prod démarre donc en mode démo et
+        // bascule par variable d'environnement — même forme que app.security.trusted-proxy-count.
+        // Condition de sortie : le jour où les identifiants existent, repasser le défaut de ce
+        // fichier à false et réactiver le test désactivé ci-dessous — comme pour webhook-secret,
+        // la garantie doit redevenir portée par le yml, pas par une variable d'environnement.
+        assertEquals("\${BRIDGE_DEMO_MODE:true}", prop("app.bridge.demo-mode"))
+    }
+
+    @Disabled("app.bridge.demo-mode reste tolérant au mode démo tant que les identifiants Bridge " +
+        "de PRODUCTION ne sont pas provisionnés sur Clever Cloud — ce jour-là, poser " +
+        "`demo-mode: \${BRIDGE_DEMO_MODE:false}` dans application-prod.yml et réactiver ce test, " +
+        "comme le test webhook-secret ci-dessous.")
+    @Test
+    fun `bridge demo-mode defaults to false in prod`() {
+        assertEquals("\${BRIDGE_DEMO_MODE:false}", prop("app.bridge.demo-mode"))
+    }
+
+    @Test
+    fun `bridge credentials tolerate a blank default in prod`() {
+        // Corollaire du mode démo autorisé en prod : sans défaut, le placeholder non résolu fait
+        // échouer le démarrage avant même le contrôle de BridgePaymentInitiationService, qui lui
+        // n'exige les identifiants que lorsque demo-mode est false.
+        assertEquals("\${BRIDGE_CLIENT_ID:}", prop("app.bridge.client-id"))
+        assertEquals("\${BRIDGE_CLIENT_SECRET:}", prop("app.bridge.client-secret"))
+        assertEquals("\${BRIDGE_API_VERSION:2025-01-15}", prop("app.bridge.api-version"))
+    }
+
+    @Test
+    fun `bridge base-url placeholder is well-formed in prod`() {
+        // Regression guard: this was previously `${BRIDGE_BASE_URLhttps://api.bridgeapi.io}` (no
+        // `:` separator) — a startup-failing placeholder that this raw-string-comparison test
+        // suite would otherwise never catch, since resolving it requires an actual app boot.
+        assertEquals("\${BRIDGE_BASE_URL:https://api.bridgeapi.io}", prop("app.bridge.base-url"))
+    }
+
+    @Disabled("app.bridge.webhook-secret stays blank-tolerant until the webhook is created on " +
+        "Bridge's PRODUCTION dashboard and BRIDGE_WEBHOOK_SECRET is set on Clever Cloud — " +
+        "enable once that is done, mirroring the MOLLIE_API_KEY / COMPLIANCE_ENCRYPTION_KEY pattern.")
+    @Test
+    fun `bridge webhook-secret is required with no blank-fallback default in prod`() {
+        assertEquals("\${BRIDGE_WEBHOOK_SECRET}", prop("app.bridge.webhook-secret"))
+    }
+
+    @Test
     fun `trusted-proxy-count is set in prod`() {
         // Rate limiting keys on the client address resolved by ClientIpResolver. Leaving the count
         // unset would fall back to the base-profile value of 0, i.e. every request behind the Clever

@@ -33,8 +33,8 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
   return (
     <div>
       <div className="siren-search-row">
-        <div className="flex-1">
-          <label className="cm-label">{t('payees.search.label')}</label>
+        <div className="fg">
+          <label className="fl">{t('payees.search.label')}</label>
           <input
             id="siren-search-input"
             type="text"
@@ -44,7 +44,7 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={t('payees.search.placeholder')}
-            className="cm-fi cm-fi-mono"
+            className="fi payee-fi-mono"
             aria-label={t('payees.search.title')}
             autoComplete="off"
           />
@@ -52,40 +52,43 @@ export function SirenSearchCard({ onResult }: SirenSearchCardProps) {
         <button
           onClick={search}
           disabled={!detectedType || isLoading}
-          className="cm-btn cm-btn-primary siren-search-btn"
+          className="btn btn-primary"
           aria-busy={isLoading}
         >
           {isLoading
-            ? <><span className="rm-spinner rm-spinner-inline" />{t('payees.search.loading')}</>
+            ? <><span className="spinner spinner-inline" />{t('payees.search.loading')}</>
             : <>🔍 {t('payees.search.button')}</>
           }
         </button>
       </div>
 
-      {/* Detection / hint pill */}
-      <div className="siren-hint-row">
-        {detectedType === 'siren' && (
-          <span className="rm-dpill siren">
-            <span className="rm-dpill-d" />
-            {t('payees.search.detected.siren')}
-          </span>
-        )}
-        {detectedType === 'siret' && (
-          <span className="rm-dpill siret">
-            <span className="rm-dpill-d" />
-            {t('payees.search.detected.siret')}
-          </span>
-        )}
-        {!detectedType && query.length > 0 && (
-          <span className="rm-dpill hint">
-            <span className="rm-dpill-d" />
-            {t('payees.search.hint', { remaining })}
-          </span>
-        )}
-      </div>
+      {/* Detection / hint pill — only mounted once the user types, so the card
+          keeps the same compact height as the "personne physique" form. */}
+      {query.length > 0 && (
+        <div className="siren-hint-row">
+          {detectedType === 'siren' && (
+            <span className="payee-dpill siren">
+              <span className="payee-dpill-d" />
+              {t('payees.search.detected.siren')}
+            </span>
+          )}
+          {detectedType === 'siret' && (
+            <span className="payee-dpill siret">
+              <span className="payee-dpill-d" />
+              {t('payees.search.detected.siret')}
+            </span>
+          )}
+          {!detectedType && (
+            <span className="payee-dpill hint">
+              <span className="payee-dpill-d" />
+              {t('payees.search.hint', { remaining })}
+            </span>
+          )}
+        </div>
+      )}
 
       {error && (
-        <div className="rm-error-inline">
+        <div className="alert alert-error">
           {t(error as Parameters<typeof t>[0])}
         </div>
       )}

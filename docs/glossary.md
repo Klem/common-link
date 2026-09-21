@@ -550,7 +550,7 @@ The data object representing a user in API responses. Contains: id, email, role,
 ## V
 
 ### VOP (Verification of Payee)
-Service de vérification de l'identité du titulaire d'un compte bancaire via son IBAN. Permet de confirmer que le nom enregistré sur le compte correspond bien à l'organisation bénéficiaire déclarée. Sur CommonLink, le service VOP est intégré via l'API Qonto SEPA VOP. Résultats possibles : **MATCH** (correspondance exacte), **CLOSE_MATCH** (correspondance approximative avec nom suggéré), **NO_MATCH** (pas de correspondance), **NOT_POSSIBLE** (la banque ne supporte pas VOP pour cet IBAN). Un mode démo simule les résultats selon le dernier chiffre de l'IBAN.
+Service de vérification de l'identité du titulaire d'un compte bancaire via son IBAN. Permet de confirmer que le nom enregistré sur le compte correspond bien à l'organisation bénéficiaire déclarée. Sur CommonLink, le service VOP est intégré via l'API Mollie Verify Payee (`POST /v2/business-accounts/payee-verifications`, fonctionnalité bêta de Mollie Business Accounts). Résultats possibles : **MATCH** (correspondance exacte), **CLOSE_MATCH** (correspondance approximative avec nom suggéré), **NO_MATCH** (pas de correspondance), **NOT_POSSIBLE** (la banque ne supporte pas VOP pour cet IBAN, ou le service Mollie est indisponible). Un mode démo simule les résultats selon le dernier chiffre de l'IBAN — actif par défaut en local et staging ; désactivé en production, où un jeton Mollie réel (`VOP_API_TOKEN`) est requis. Un IBAN VERIFIED ayant déjà reçu un paiement ne peut plus être supprimé : il peut seulement être désactivé (`active=false`), ce qui l'exclut de la sélection de paiement sans perdre l'historique.
 `technical` `functional` `security`
 
 ### Verified Association
@@ -618,15 +618,31 @@ Google Analytics 4 ecommerce events pushed to `window.dataLayer` (via `app/src/l
 ## P (continued)
 
 ### Payout
-An outgoing payment from a campaign to a payee (beneficiary). Created as `PENDING` when the association initiates it, then transitioned to `CONFIRMED` by the association which simultaneously enqueues a `RECORD_PAYOUT` on-chain job. Terminal failure state is `FAILED`.
+An outgoing payment from a campaign to a payee (beneficiary). Created as `PENDING` when the association initiates it. Confirmation initiates a real SEPA transfer through **Bridge API**, and the payout stays `PENDING` until the association has authorised that transfer with its own bank and the bank has settled it; only then does it become `CONFIRMED` and a `RECORD_PAYOUT` on-chain job get enqueued. Terminal failure state is `FAILED`.
 `domain` `backend` `association`
+
+### Bridge API
+Open Banking provider used to initiate the outgoing SEPA transfer of a confirmed payout (`POST /v3/payment/payment-links`). The **association is the debtor**: it authorises the transfer with its own bank, and the funds move directly from its account to the payee IBAN. Bridge never holds the funds and CommonLink holds no payment account, which is why no account provisioning or beneficiary registration is required. Authenticated with `Client-Id` / `Client-Secret` / `Bridge-Version` headers — server-side only, never exposed to the frontend. Sandbox and production share the same host and differ only by credentials, so the environment is selected by `app.bridge.demo-mode` rather than by URL. Distinct from **Mollie**, which handles incoming donations: Bridge is used only for disbursement.
+`technical` `backend` `external`
+
+### Dynamic beneficiary
+Bridge feature by which the destination IBAN travels inside the payment-initiation request (`transactions[].beneficiary.iban`) instead of referencing a pre-registered beneficiary. This is what makes the CommonLink flow a direct IBAN → IBAN transfer: a payee IBAN that is VERIFIED is on its own a valid destination, with nothing to register anywhere. Requires activation by Bridge on the account.
+`technical` `backend` `external`
+
+### BridgePaymentStatus
+State of the Bridge initiation for a payout. The first six values are Bridge's ISO 20022 transaction statuses: `CREA` (link created, not yet authorised at the bank), `ACTC` (accepted, awaiting bank authorisation), `PDNG` (authorised, settling), `ACSC` (settled — terminal success), `RJCT` (rejected by the bank — terminal failure), `PART` (partial, only meaningful for bulk transfers). The last two are payment-link terminal failures: `LINK_EXPIRED`, `LINK_REVOKED`. Kept deliberately separate from **PayoutStatus** so the three-state accounting lifecycle that balance, KPI and breakdown computations rely on keeps its meaning. Only `ACSC` promotes a payout to `CONFIRMED`.
+`technical` `backend`
+
+### Bank authorisation URL
+The `url` returned by Bridge when a payment link is created (`bridgeCheckoutUrl` on a payout), where the association authenticates with its bank to authorise the transfer. Stored rather than merely returned, so an interrupted authorisation can be resumed from the Payments tab instead of stranding the payout. Bridge expires these links after 15 minutes.
+`technical` `association`
 
 ### PayoutKind
 High-level category of a payout used for budget variance reporting: `REMUNERATION` (personnel, category 64) or `EXPENSE` (all other operational charges, categories 60–65). Derived from the French plan comptable `typeCode`.
 `technical` `backend`
 
 ### PayoutStatus
-Lifecycle state of a payout: `PENDING` (created, awaiting confirmation) → `CONFIRMED` (approved by the association, on-chain job enqueued) or `FAILED` (terminal error).
+CommonLink's accounting lifecycle for a payout: `PENDING` (created, awaiting confirmation) → `CONFIRMED` (bank accepted the transfer order, on-chain job enqueued) or `FAILED` (terminal error, including a transfer Bridge refused). `CONFIRMED` means the order was accepted, **not** that the beneficiary has been credited — see **BridgePayoutStatus** for the bank-side state.
 `technical` `backend`
 
 ### typeCode (payout)

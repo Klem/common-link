@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Donut } from '@/components/ui/Donut';
 import { useToastStore } from '@/stores/toastStore';
 import { getBlockingReasons } from '@/lib/api/payment';
-import { PayoutKind, PayoutStatus } from '@/types/payment';
+import { PayoutKind, PayoutStatus, isPayoutInFlight, needsBankAuthorisation } from '@/types/payment';
 import { IbanVerificationStatus } from '@/types/payee';
 import { ROUTES } from '@/lib/routes';
 import type { CampaignDto } from '@/types/campaign';
@@ -41,12 +41,22 @@ function fmtDate(iso: string) {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(iso));
 }
 
-function StatusChip({ status }: { status: PayoutDto['status'] }) {
-  if (status === PayoutStatus.CONFIRMED) {
+/**
+ * Payout state chip.
+ *
+ * A payout only shows as settled once the bank has actually executed the transfer. Between
+ * confirmation and settlement it is either awaiting the association's authorisation at its bank, or
+ * in transit — showing a check mark for either would claim the beneficiary has been credited.
+ */
+function StatusChip({ payout, inTransitLabel }: { payout: PayoutDto; inTransitLabel: string }) {
+  if (payout.status === PayoutStatus.FAILED) {
+    return <span className="pay-chip failed" title={payout.bridgeLastError ?? undefined}>✗</span>;
+  }
+  if (payout.status === PayoutStatus.CONFIRMED) {
     return <span className="pay-chip confirmed">✓</span>;
   }
-  if (status === PayoutStatus.FAILED) {
-    return <span className="pay-chip failed">✗</span>;
+  if (isPayoutInFlight(payout)) {
+    return <span className="pay-chip pending" title={inTransitLabel}>→</span>;
   }
   return <span className="pay-chip pending">⏳</span>;
 }
@@ -71,13 +81,17 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const isRemunerationType = REMUNERATION_CODES.has(effectiveTypeCode);
 
   const filteredPayees = useMemo(
-    () => payees.filter((p) => p.active && p.payeeType === (isRemunerationType ? 'PERSON' : 'COMPANY')),
+    () => payees.filter((p) =>
+      p.active
+      && p.payeeType === (isRemunerationType ? 'PERSON' : 'COMPANY')
+      && p.ibans.some((i) => i.status === IbanVerificationStatus.VERIFIED && i.active),
+    ),
     [payees, isRemunerationType],
   );
 
   const selectedPayee = useMemo(() => filteredPayees.find((p) => p.id === payeeId), [filteredPayees, payeeId]);
   const verifiedIbans = useMemo(
-    () => selectedPayee?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED) ?? [],
+    () => selectedPayee?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED && i.active) ?? [],
     [selectedPayee],
   );
   const selectedIban = useMemo(
@@ -113,7 +127,16 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     return reasons;
   }, [blockingReasons, isDescriptionTooShort]);
 
-  const isValid = !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
+  /**
+   * The backend reports payouts as not issuable — production running Bridge in demo mode, where a
+   * transfer would be simulated, never sent to a bank, yet shown as settled. Better an explicitly
+   * disabled button than a payment that never happened. Local and staging stay enabled, so the
+   * demo journey remains exercisable. Stays enabled while the summary loads, so no misleading
+   * tooltip flashes on mount.
+   */
+  const paymentsDisabled = summary?.paymentsEnabled === false;
+
+  const isValid = !paymentsDisabled && !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
     && label.trim().length >= MIN_LABEL_LENGTH && displayedBlockingReasons.length === 0;
 
   function handleTypeChange(value: string) {
@@ -130,7 +153,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     setPayeeId(id);
     setPayeeIbanId('');
     const p = filteredPayees.find((x) => x.id === id);
-    const verified = p?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED) ?? [];
+    const verified = p?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED && i.active) ?? [];
     if (verified.length === 1) setPayeeIbanId(verified[0].id);
   }
 
@@ -142,7 +165,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
   async function handleConfirm() {
     setShowConfirm(false);
     try {
-      await submit({
+      const initiated = await submit({
         payeeId, payeeIbanId, amount: amountNum,
         kind: kindFromTypeCode(effectiveTypeCode),
         typeCode: effectiveTypeCode,
@@ -150,7 +173,15 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
       });
       setPayeeId(''); setPayeeIbanId(''); setTypeCodeRaw('');
       setCustomTypeCode(''); setAmount(''); setLabel('');
-      addToast('success', 'paymentSuccess');
+
+      // The association is the debtor: nothing moves until it authorises the transfer with its own
+      // bank. Send it straight there rather than reporting a payment that has not happened.
+      if (needsBankAuthorisation(initiated) && initiated.bridgeCheckoutUrl) {
+        addToast('success', 'paymentAwaitingBank');
+        window.location.href = initiated.bridgeCheckoutUrl;
+        return;
+      }
+      addToast('success', isPayoutInFlight(initiated) ? 'paymentSubmitted' : 'paymentSuccess');
     } catch {
       addToast('error', 'paymentError');
     }
@@ -300,16 +331,6 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
               </button>
             </div>
 
-            {/* No IBAN at all */}
-            {selectedPayee && selectedPayee.ibans.length === 0 && (
-              <p className="cm-field-error">{t('noIban')}</p>
-            )}
-
-            {/* Has IBAN(s) but none VERIFIED */}
-            {selectedPayee && selectedPayee.ibans.length > 0 && verifiedIbans.length === 0 && (
-              <p className="cm-field-error">{t('noVerifiedIban')}</p>
-            )}
-
             {/* Single verified IBAN preview */}
             {selectedPayee && verifiedIbans.length === 1 && selectedIban && (
               <div className="bene-preview show">
@@ -368,13 +389,20 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
             </label>
           </div>
 
-          <button
-            className="cm-btn cm-btn-primary w-full"
-            disabled={!isValid || isSaving}
-            onClick={() => setShowConfirm(true)}
+          {/* The title sits on the wrapper: a disabled button receives no pointer event, so its
+              own tooltip would never show. */}
+          <span
+            className="block w-full"
+            title={paymentsDisabled ? t('form.paymentsDisabled') : undefined}
           >
-            {isSaving ? '…' : t('form.submit')}
-          </button>
+            <button
+              className="cm-btn cm-btn-primary w-full"
+              disabled={!isValid || isSaving}
+              onClick={() => setShowConfirm(true)}
+            >
+              {isSaving ? '…' : t('form.submit')}
+            </button>
+          </span>
 
           {displayedBlockingReasons.length > 0 && (
             <div className="blocking-reasons">
@@ -394,7 +422,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
             <div className="cm-card-title">{t('history.title')}</div>
             {isLoading ? (
               <div className="cm-loading-center">
-                <div className="animate-spin rm-spinner lg" />
+                <div className="animate-spin spinner lg" />
               </div>
             ) : error ? (
               <p className="cm-error-center">{error}</p>
@@ -415,7 +443,16 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                   >
                     {fmtEur(p.amount)}
                   </span>
-                  <StatusChip status={p.status} />
+                  {needsBankAuthorisation(p) && p.bridgeCheckoutUrl ? (
+                    <a
+                      className="cm-btn cm-btn-ghost cm-btn-sm"
+                      href={p.bridgeCheckoutUrl}
+                      title={t('history.authoriseHint')}
+                    >
+                      {t('history.authorise')}
+                    </a>
+                  ) : null}
+                  <StatusChip payout={p} inTransitLabel={t('history.inTransit')} />
                 </div>
               ))
             )}

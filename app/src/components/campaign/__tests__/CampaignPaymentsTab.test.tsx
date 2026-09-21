@@ -56,7 +56,15 @@ const sampleSummary = {
   txTotal: 3,
   txConfirmed: 2,
   availableBalance: 4400,
+  paymentsEnabled: true,
 };
+
+/**
+ * Backend reports payouts as not issuable — production running Bridge in demo mode, where a
+ * payout would be simulated rather than executed. Demo mode alone does not disable the button:
+ * local and staging stay enabled.
+ */
+const paymentsDisabledSummary = { ...sampleSummary, paymentsEnabled: false };
 
 const samplePayout: PayoutDto = {
   id: 'payout-1',
@@ -73,6 +81,28 @@ const samplePayout: PayoutDto = {
   createdAt: '2026-06-01T10:00:00Z',
   confirmedAt: '2026-06-01T10:05:00Z',
   onchainJobId: null,
+  bridgeStatus: 'ACSC',
+  bridgeLastError: null,
+  bridgeCheckoutUrl: null,
+};
+
+/** Transfer authorised at the bank but not settled yet — still PENDING for accounting. */
+const inFlightPayout: PayoutDto = {
+  ...samplePayout,
+  id: 'payout-2',
+  status: 'PENDING',
+  confirmedAt: null,
+  bridgeStatus: 'PDNG',
+};
+
+/** Confirmed order still waiting for the association to authorise it at its own bank. */
+const awaitingBankPayout: PayoutDto = {
+  ...samplePayout,
+  id: 'payout-3',
+  status: 'PENDING',
+  confirmedAt: null,
+  bridgeStatus: 'CREA',
+  bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
 };
 
 const samplePayee: PayeeDto = {
@@ -87,7 +117,7 @@ const samplePayee: PayeeDto = {
   postalCode: '75001',
   active: true,
   hasPayouts: false,
-  ibans: [{ id: 'iban-1', iban: 'FR76 0000 0000', status: 'VERIFIED', vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+  ibans: [{ id: 'iban-1', iban: 'FR76 0000 0000', status: 'VERIFIED', vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true }],
   createdAt: '2026-01-01T00:00:00Z',
 };
 
@@ -96,7 +126,7 @@ const samplePayeeUnverifiedIban = {
   ...samplePayee,
   id: 'payee-2',
   name: 'Unverified Payee',
-  ibans: [{ id: 'iban-2', iban: 'FR76 1111 1111', status: 'PENDING' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+  ibans: [{ id: 'iban-2', iban: 'FR76 1111 1111', status: 'PENDING' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true }],
 };
 
 /** PERSON-type payee, required for REMUNERATION typeCodes. */
@@ -106,7 +136,15 @@ const samplePayeePerson = {
   payeeType: 'PERSON' as const,
   name: 'Marie Dupont',
   identifier1: null,
-  ibans: [{ id: 'iban-person-1', iban: 'FR76 4444 4444', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null }],
+  ibans: [{ id: 'iban-person-1', iban: 'FR76 4444 4444', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true }],
+};
+
+/** Payee whose only IBAN is VERIFIED but disabled. */
+const samplePayeeDisabledIban = {
+  ...samplePayee,
+  id: 'payee-4',
+  name: 'Disabled Iban Payee',
+  ibans: [{ id: 'iban-5', iban: 'FR76 5555 5555', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: false }],
 };
 
 /** Payee with one VERIFIED and one non-VERIFIED IBAN. */
@@ -115,8 +153,8 @@ const samplePayeeMixedIbans = {
   id: 'payee-3',
   name: 'Mixed Payee',
   ibans: [
-    { id: 'iban-3', iban: 'FR76 2222 2222', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null },
-    { id: 'iban-4', iban: 'FR76 3333 3333', status: 'INVALID' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null },
+    { id: 'iban-3', iban: 'FR76 2222 2222', status: 'VERIFIED' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true },
+    { id: 'iban-4', iban: 'FR76 3333 3333', status: 'INVALID' as const, vopResult: null, vopSuggestedName: null, verifiedAt: null, active: true },
   ],
 };
 
@@ -197,6 +235,27 @@ describe('CampaignPaymentsTab', () => {
       const btn = screen.getByRole('button', { name: /form.submit/i });
       expect((btn as HTMLButtonElement).disabled).toBe(false);
     });
+  });
+
+  it('submit button stays disabled with an explanatory tooltip when payments are not enabled', async () => {
+    setupMocks();
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ summary: paymentsDisabledSummary })} />,
+    );
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
+    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
+    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
+      target: { value: 'Achat de fournitures diverses' },
+    });
+
+    await waitFor(() => {
+      expect(mockGetBlockingReasons).toHaveBeenCalled();
+    });
+    const btn = screen.getByRole('button', { name: /form.submit/i });
+    expect((btn as HTMLButtonElement).disabled).toBe(true);
+    expect(btn.parentElement?.getAttribute('title')).toBe('form.paymentsDisabled');
   });
 
   it('clicking submit shows the confirm dialog', async () => {
@@ -313,13 +372,21 @@ describe('CampaignPaymentsTab', () => {
 
   // ── Lot 1: verified-IBAN-only selector ─────────────────────────────────────
 
-  it('shows "no verified IBAN" message when the payee only has an unverified IBAN', () => {
+  it('excludes a payee with no VERIFIED IBAN from the payee dropdown entirely', () => {
     setupMocks([samplePayeeUnverifiedIban]);
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
 
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-2' } });
+    const payeeSelect = screen.getAllByRole('combobox')[1];
+    expect(screen.queryByRole('option', { name: 'Unverified Payee' })).toBeNull();
+    fireEvent.change(payeeSelect, { target: { value: 'payee-2' } });
+    expect((payeeSelect as HTMLSelectElement).value).toBe('');
+  });
 
-    expect(screen.getByText('noVerifiedIban')).toBeDefined();
+  it('excludes a payee whose only VERIFIED IBAN is disabled from the payee dropdown', () => {
+    setupMocks([samplePayeeDisabledIban]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    expect(screen.queryByRole('option', { name: 'Disabled Iban Payee' })).toBeNull();
   });
 
   it('does not auto-select and excludes non-VERIFIED IBANs from the multi-IBAN selector', () => {
@@ -366,6 +433,59 @@ describe('CampaignPaymentsTab', () => {
 
     expect(screen.getByText('blocking.descriptionTooShort')).toBeDefined();
     expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  // ── Bridge transfer state ──────────────────────────────────────────────────
+
+  it('marks a settled payout as confirmed', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    expect(document.querySelector('.pay-chip.confirmed')).toBeTruthy();
+    expect(document.querySelector('.pay-chip.pending')).toBeNull();
+  });
+
+  it('shows an authorised but unsettled transfer as in-transit, not settled', () => {
+    // The bank has the order but the beneficiary is credited days later — a check mark here would
+    // claim the money arrived.
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [inFlightPayout] })} />);
+
+    const chip = document.querySelector('.pay-chip.pending');
+    expect(chip).toBeTruthy();
+    expect(chip?.getAttribute('title')).toBe('history.inTransit');
+    expect(document.querySelector('.pay-chip.confirmed')).toBeNull();
+  });
+
+  it('offers a bank-authorisation link while the transfer awaits the association', () => {
+    // The association is the debtor: an initiation it never authorised moves no money, so the tab
+    // must let it resume instead of stranding the payout.
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [awaitingBankPayout] })} />);
+
+    const link = screen.getByRole('link', { name: 'history.authorise' });
+    expect(link.getAttribute('href')).toBe('https://pay.bridgeapi.io/link/abc');
+  });
+
+  it('offers no authorisation link once the transfer is settled', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    expect(screen.queryByRole('link', { name: 'history.authorise' })).toBeNull();
+  });
+
+  it('surfaces the bank rejection reason on a failed payout', () => {
+    setupMocks();
+    const failed: PayoutDto = {
+      ...samplePayout,
+      status: 'FAILED',
+      bridgeStatus: 'RJCT',
+      bridgeLastError: 'debit_account_insufficient_funds',
+    };
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [failed] })} />);
+
+    expect(document.querySelector('.pay-chip.failed')?.getAttribute('title'))
+      .toBe('debit_account_insufficient_funds');
   });
 
   it('shows no pills when there are no active blocking reasons', async () => {

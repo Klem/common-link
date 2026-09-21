@@ -27,7 +27,7 @@ export default function PayeesPage() {
   const t = useTranslations('dashboard');
   const { addToast } = useToastStore();
 
-  const { payees, isLoading, fetchPayees, addPayeeIban, removePayeeIban, removePayee, setPayeeActive } = usePayees();
+  const { payees, isLoading, fetchPayees, addPayeeIban, removePayeeIban, removePayee, setPayeeActive, togglePayeeIbanActive } = usePayees();
   const { verifyingIbanId, verify } = useVopVerify();
 
   const [mode, setMode] = useState<'company' | 'person'>('company');
@@ -46,6 +46,29 @@ export default function PayeesPage() {
   }, []);
 
   const handleClose = () => setShowPanel(false);
+
+  /**
+   * Switches the "add beneficiary" form mode. The list filter follows the mode
+   * so the list below always shows the type the user is currently adding.
+   */
+  const handleModeChange = (next: 'company' | 'person') => {
+    setMode(next);
+    setPayeeFilter(next);
+    setPersonError('');
+    if (next === 'person') setShowPanel(false);
+  };
+
+  /**
+   * Switches the list filter. A typed filter mirrors back onto the form mode;
+   * "all" is exempt and leaves the form mode untouched.
+   */
+  const handleFilterChange = (f: PayeeFilter) => {
+    if (f === 'all') {
+      setPayeeFilter('all');
+      return;
+    }
+    handleModeChange(f);
+  };
 
   const handleSelect = async () => {
     if (!sireneResult) return;
@@ -104,6 +127,10 @@ export default function PayeesPage() {
     await verify(payeeId, ibanId, fetchPayees);
   };
 
+  const handleToggleIbanActive = async (payeeId: string, ibanId: string, active: boolean) => {
+    try { await togglePayeeIbanActive(payeeId, ibanId, active); } catch { addToast('error', 'errors.serverError'); }
+  };
+
   return (
     <div className="page">
       <div className="page-head">
@@ -111,24 +138,24 @@ export default function PayeesPage() {
           <h1>{t('payees.pageTitle')}</h1>
           <p>{t('payees.pageSubtitle')}</p>
         </div>
-        <div className="rm-help-wrap">
-          <button className="rm-help-btn" onClick={() => setHelpOpen(!helpOpen)}>?</button>
-          <div className={`rm-help-panel${helpOpen ? ' open' : ''}`}>
-            <div className="rm-help-header">
-              <span className="rm-help-title">{t('payees.help.title')}</span>
+        <div className="payee-help-wrap">
+          <button className="payee-help-btn" onClick={() => setHelpOpen(!helpOpen)}>?</button>
+          <div className={`payee-help-panel${helpOpen ? ' open' : ''}`}>
+            <div className="payee-help-header">
+              <span className="payee-help-title">{t('payees.help.title')}</span>
               <button
                 onClick={() => setHelpOpen(false)}
-                className="rm-help-close"
+                className="payee-help-close"
               >✕</button>
             </div>
-            <p className="rm-help-text">{t('payees.help.text1')}</p>
-            <p className="rm-help-text">{t('payees.help.text2')}</p>
+            <p className="payee-help-text">{t('payees.help.text1')}</p>
+            <p className="payee-help-text">{t('payees.help.text2')}</p>
           </div>
         </div>
       </div>
 
       {/* Add card */}
-      <div className="card no-hover payees-add-card">
+      <div className="card card-no-hover payees-add-card">
         <div className="card-h">
           <h3>{mode === 'company' ? t('payees.search.title') : t('payees.person.cardTitle')}</h3>
         </div>
@@ -136,11 +163,11 @@ export default function PayeesPage() {
           <div className="payee-mode-tabs">
             <button
               className={`btn btn-sm ${mode === 'company' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => { setMode('company'); setPersonError(''); }}
+              onClick={() => handleModeChange('company')}
             >🏢 {t('payees.mode.company')}</button>
             <button
               className={`btn btn-sm ${mode === 'person' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => { setMode('person'); setShowPanel(false); }}
+              onClick={() => handleModeChange('person')}
             >👤 {t('payees.mode.person')}</button>
           </div>
 
@@ -149,19 +176,19 @@ export default function PayeesPage() {
           {mode === 'person' && (
             <div>
               <div className="payee-person-row">
-                <div className="flex-1">
-                  <label className="cm-label">{t('payees.person.firstName')}</label>
-                  <input className="cm-fi" type="text" placeholder="Marie" value={firstName}
+                <div className="fg">
+                  <label className="fl">{t('payees.person.firstName')}</label>
+                  <input className="fi" type="text" placeholder="Marie" value={firstName}
                     onChange={(e) => setFirstName(e.target.value)} autoComplete="off" />
                 </div>
-                <div className="flex-1">
-                  <label className="cm-label">{t('payees.person.lastName')}</label>
-                  <input className="cm-fi" type="text" placeholder="Dupont" value={lastName}
+                <div className="fg">
+                  <label className="fl">{t('payees.person.lastName')}</label>
+                  <input className="fi" type="text" placeholder="Dupont" value={lastName}
                     onChange={(e) => { setLastName(e.target.value); setPersonError(''); }}
                     autoComplete="off" />
                 </div>
                 <button
-                  className="cm-btn cm-btn-primary siren-search-btn"
+                  className="btn btn-primary"
                   disabled={!lastName.trim() || isCreating}
                   onClick={handleAddPerson}
                 >✚ {t('payees.person.add')}</button>
@@ -190,12 +217,13 @@ export default function PayeesPage() {
         payees={payees}
         isLoading={isLoading}
         filter={payeeFilter}
-        onFilterChange={setPayeeFilter}
+        onFilterChange={handleFilterChange}
         onDeletePayee={handleDeletePayee}
         onToggleActive={handleToggleActive}
         onAddIban={handleAddIban}
         onDeleteIban={handleDeleteIban}
         onVerifyVop={handleVerifyVop}
+        onToggleIbanActive={handleToggleIbanActive}
         verifyingIbanId={verifyingIbanId}
       />
     </div>

@@ -14,6 +14,7 @@ interface PayeeListProps {
   onAddIban: (payeeId: string, iban: string) => void;
   onDeleteIban: (payeeId: string, ibanId: string) => void;
   onVerifyVop: (payeeId: string, ibanId: string) => void;
+  onToggleIbanActive: (payeeId: string, ibanId: string, active: boolean) => void;
   verifyingIbanId: string | null;
 }
 
@@ -27,6 +28,7 @@ export function PayeeList({
   onAddIban,
   onDeleteIban,
   onVerifyVop,
+  onToggleIbanActive,
   verifyingIbanId,
 }: PayeeListProps) {
   const t = useTranslations('dashboard');
@@ -36,13 +38,11 @@ export function PayeeList({
     : payees.filter((p) => p.payeeType === (filter === 'company' ? 'COMPANY' : 'PERSON'));
 
   return (
-    <div className="card no-hover">
+    <div className="card card-no-hover">
       <div className="card-h">
         <h3>
           {t('payees.list.title')}{' '}
-          <span className="badge-count indigo">
-            {payees.length}
-          </span>
+          <span className="payee-list-count">{filtered.length}</span>
         </h3>
         <div className="col-filter">
           <button
@@ -61,13 +61,13 @@ export function PayeeList({
       </div>
 
       {isLoading ? (
-        <div className="rm-empty-recip"><span className="rm-spinner" /></div>
+        <div className="payee-empty"><span className="spinner" /></div>
       ) : filtered.length === 0 ? (
-        <div className="rm-empty-recip">
+        <div className="payee-empty">
           {filter === 'all' ? t('payees.list.empty') : t('payees.list.emptyFiltered')}
         </div>
       ) : (
-        <div className="rm-list-body">
+        <div className="payee-list-body">
           {filtered.map((payee) => (
             <PayeeRow
               key={payee.id}
@@ -77,6 +77,7 @@ export function PayeeList({
               onAddIban={onAddIban}
               onDeleteIban={onDeleteIban}
               onVerifyVop={onVerifyVop}
+              onToggleIbanActive={onToggleIbanActive}
               verifyingIbanId={verifyingIbanId}
             />
           ))}

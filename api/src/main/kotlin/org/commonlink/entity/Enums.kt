@@ -240,6 +240,61 @@ enum class PayoutBlockingReason {
 }
 
 /**
+ * State of a Bridge payment initiation for a payout.
+ *
+ * Deliberately distinct from [PayoutStatus]: this is the bank's view of the transfer, whereas
+ * [PayoutStatus] is CommonLink's accounting lifecycle. Only [ACSC] promotes a payout to
+ * [PayoutStatus.CONFIRMED]; [RJCT], [LINK_EXPIRED] and [LINK_REVOKED] demote it to
+ * [PayoutStatus.FAILED].
+ *
+ * The first six values are Bridge's ISO 20022 transaction statuses. The last two are payment-link
+ * terminal states, kept in the same enum because exactly one of the two levels is meaningful at a
+ * time: before the association has authenticated at its bank there is no transaction yet, only a
+ * link that can expire or be revoked.
+ */
+enum class BridgePaymentStatus {
+    /** Link created, the association has not authenticated at its bank yet. */
+    CREA,
+    /** Accepted by Bridge, awaiting bank-side authorisation. */
+    ACTC,
+    /** Authorised and pending settlement — funds are on their way. */
+    PDNG,
+    /** Terminal success: the transfer was accepted and settled by the bank. */
+    ACSC,
+    /**
+     * Terminal failure: rejected by the bank. Bridge's `status_reason` carries the cause
+     * (e.g. `debit_account_insufficient_funds`) and is stored in [Payout.bridgeLastError].
+     */
+    RJCT,
+    /** Partial execution — only meaningful for bulk transfers; a payout carries a single transaction. */
+    PART,
+    /** Terminal failure: the link expired before the association authenticated the transfer. */
+    LINK_EXPIRED,
+    /** Terminal failure: the link was revoked before use. */
+    LINK_REVOKED,
+    ;
+
+    /** Whether no further state change is expected. */
+    val isTerminal: Boolean
+        get() = this == ACSC || this == RJCT || this == LINK_EXPIRED || this == LINK_REVOKED
+
+    /** Whether the transfer is engaged: the amount must stay reserved on the campaign. */
+    val isInFlight: Boolean
+        get() = !isTerminal
+
+    companion object {
+        /**
+         * Maps a Bridge transaction status wire value to this enum.
+         *
+         * @return the matching constant, or null for an unrecognised or absent value — an unknown
+         *   state must never be mistaken for a terminal one.
+         */
+        fun fromTransactionWire(value: String?): BridgePaymentStatus? =
+            entries.firstOrNull { it.name.equals(value, ignoreCase = true) && it != LINK_EXPIRED && it != LINK_REVOKED }
+    }
+}
+
+/**
  * AML/CFT (LCB-FT) risk level assigned to an association or a donation.
  *
  * Capturing the level without the associated [AssociationProfile.riskClassificationVersion]
