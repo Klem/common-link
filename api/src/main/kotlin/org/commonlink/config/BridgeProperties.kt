@@ -17,6 +17,11 @@ import java.time.Duration
  *
  * @param demoMode When true, transfers are simulated in-process and Bridge is never called.
  *   Defaults to true: the Payments tab must work end-to-end before any Bridge credential exists.
+ *   Production accepts it too — `application-prod.yml` binds `${BRIDGE_DEMO_MODE:true}` — because
+ *   the production Bridge credentials are not provisioned yet and a prod boot must not depend on
+ *   variables nobody can set. Every credential below therefore tolerates a blank, and
+ *   [org.commonlink.service.BridgePaymentInitiationService] fails fast at startup if demo mode is
+ *   switched off while they are still blank.
  * @param baseUrl Bridge API root. Sandbox and production share this host and differ only by
  *   credentials — hence the explicit [demoMode] guard rather than a URL-based heuristic.
  * @param apiVersion Value of the mandatory `Bridge-Version` header.
