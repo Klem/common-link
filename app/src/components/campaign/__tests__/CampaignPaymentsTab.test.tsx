@@ -56,7 +56,15 @@ const sampleSummary = {
   txTotal: 3,
   txConfirmed: 2,
   availableBalance: 4400,
+  paymentsEnabled: true,
 };
+
+/**
+ * Backend reports payouts as not issuable — production running Bridge in demo mode, where a
+ * payout would be simulated rather than executed. Demo mode alone does not disable the button:
+ * local and staging stay enabled.
+ */
+const paymentsDisabledSummary = { ...sampleSummary, paymentsEnabled: false };
 
 const samplePayout: PayoutDto = {
   id: 'payout-1',
@@ -227,6 +235,27 @@ describe('CampaignPaymentsTab', () => {
       const btn = screen.getByRole('button', { name: /form.submit/i });
       expect((btn as HTMLButtonElement).disabled).toBe(false);
     });
+  });
+
+  it('submit button stays disabled with an explanatory tooltip when payments are not enabled', async () => {
+    setupMocks();
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ summary: paymentsDisabledSummary })} />,
+    );
+
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
+    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
+    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
+      target: { value: 'Achat de fournitures diverses' },
+    });
+
+    await waitFor(() => {
+      expect(mockGetBlockingReasons).toHaveBeenCalled();
+    });
+    const btn = screen.getByRole('button', { name: /form.submit/i });
+    expect((btn as HTMLButtonElement).disabled).toBe(true);
+    expect(btn.parentElement?.getAttribute('title')).toBe('form.paymentsDisabled');
   });
 
   it('clicking submit shows the confirm dialog', async () => {

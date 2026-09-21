@@ -110,6 +110,11 @@ export interface PayoutSummaryDto {
   txTotal: number;
   txConfirmed: number;
   availableBalance: number;
+  /**
+   * Whether a payout would actually be executed. False while the backend runs Bridge in demo
+   * mode: the transfer would be simulated, never sent to a bank, yet reported as settled.
+   */
+  paymentsEnabled: boolean;
 }
 
 /** Request body for creating a payout. */
