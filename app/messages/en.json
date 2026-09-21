@@ -1407,6 +1407,7 @@
           "methodSub": "1–2 business days",
           "payee": "Recipient",
           "payeePlaceholder": "— Select —",
+          "paymentsDisabled": "Payments are not enabled yet",
           "submit": "Issue payment →",
           "title": "Issue a payment",
           "typeCode": "Expense type",

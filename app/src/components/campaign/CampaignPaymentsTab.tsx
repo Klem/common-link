@@ -127,7 +127,16 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     return reasons;
   }, [blockingReasons, isDescriptionTooShort]);
 
-  const isValid = !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
+  /**
+   * The backend reports payouts as not issuable — production running Bridge in demo mode, where a
+   * transfer would be simulated, never sent to a bank, yet shown as settled. Better an explicitly
+   * disabled button than a payment that never happened. Local and staging stay enabled, so the
+   * demo journey remains exercisable. Stays enabled while the summary loads, so no misleading
+   * tooltip flashes on mount.
+   */
+  const paymentsDisabled = summary?.paymentsEnabled === false;
+
+  const isValid = !paymentsDisabled && !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
     && label.trim().length >= MIN_LABEL_LENGTH && displayedBlockingReasons.length === 0;
 
   function handleTypeChange(value: string) {
@@ -380,13 +389,20 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
             </label>
           </div>
 
-          <button
-            className="cm-btn cm-btn-primary w-full"
-            disabled={!isValid || isSaving}
-            onClick={() => setShowConfirm(true)}
+          {/* The title sits on the wrapper: a disabled button receives no pointer event, so its
+              own tooltip would never show. */}
+          <span
+            className="block w-full"
+            title={paymentsDisabled ? t('form.paymentsDisabled') : undefined}
           >
-            {isSaving ? '…' : t('form.submit')}
-          </button>
+            <button
+              className="cm-btn cm-btn-primary w-full"
+              disabled={!isValid || isSaving}
+              onClick={() => setShowConfirm(true)}
+            >
+              {isSaving ? '…' : t('form.submit')}
+            </button>
+          </span>
 
           {displayedBlockingReasons.length > 0 && (
             <div className="blocking-reasons">

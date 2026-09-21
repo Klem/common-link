@@ -31,6 +31,7 @@ import org.commonlink.repository.PayeeRepository
 import org.commonlink.repository.PayoutRepository
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.mock.env.MockEnvironment
 import java.math.BigDecimal
 import java.util.Optional
 import java.util.UUID
@@ -49,7 +50,14 @@ class PayoutServiceTest {
     private val service = PayoutService(
         payoutRepository, campaignRepository, associationProfileRepository,
         payeeRepository, payeeIbanRepository, donationRepository, confirmer,
-        bridgeInitiation, FRONTEND_URL
+        bridgeInitiation, FRONTEND_URL, MockEnvironment()
+    )
+
+    /** Same service under the prod profile, where a simulated payout must not be offered. */
+    private val prodService = PayoutService(
+        payoutRepository, campaignRepository, associationProfileRepository,
+        payeeRepository, payeeIbanRepository, donationRepository, confirmer,
+        bridgeInitiation, FRONTEND_URL, MockEnvironment().apply { setActiveProfiles("prod") }
     )
 
     private val userId     = UUID.randomUUID()   // JWT subject (User.id)
@@ -96,6 +104,50 @@ class PayoutServiceTest {
 
         assertThat(result.amount).isEqualByComparingTo("500")
         assertThat(result.status).isEqualTo(PayoutStatus.PENDING)
+    }
+
+    @Test
+    fun `create - refused in prod while Bridge runs in demo mode`() {
+        // Mirror of the disabled submit button: every click is replayable, so the server must
+        // refuse too — otherwise a crafted request produces, in production, a payout that would
+        // be reported as settled without any bank ever executing a transfer.
+        every { bridgeInitiation.isDemoMode } returns true
+
+        val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
+        assertThrows<ConflictException> { prodService.create(campaignId, request, userId) }
+
+        // Refused before anything is read or written: no repository is even touched.
+        verify(exactly = 0) { payoutRepository.save(any()) }
+        verify(exactly = 0) { associationProfileRepository.findByUserId(any()) }
+    }
+
+    @Test
+    fun `create - allowed in prod once demo mode is off`() {
+        every { bridgeInitiation.isDemoMode } returns false
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        stubBalance(confirmed = "0", raised = "1000")
+        every { payoutRepository.save(any()) } returnsArgument 0
+
+        val request = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "60-mat", "Achat matériel pédagogique")
+
+        assertThat(prodService.create(campaignId, request, userId).status).isEqualTo(PayoutStatus.PENDING)
+    }
+
+    @Test
+    fun `confirm - refused in prod while Bridge runs in demo mode`() {
+        // A payout created before the environment was closed must not become settleable either:
+        // confirm is where the simulated link is produced and the payout reported as paid.
+        every { bridgeInitiation.isDemoMode } returns true
+
+        assertThrows<ConflictException> { prodService.confirm(campaignId, payoutId, userId) }
+
+        verify(exactly = 0) { confirmer.loadForConfirm(any(), any(), any()) }
+        verify(exactly = 0) {
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -275,6 +327,7 @@ class PayoutServiceTest {
         stubBalance(confirmed = "1000", pending = "200", raised = "5000")
         every { payoutRepository.countByCampaignId(campaignId) } returns 5L
         every { payoutRepository.countByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns 3L
+        every { bridgeInitiation.isDemoMode } returns false
 
         val summary = service.getSummary(campaignId, userId)
 
@@ -282,6 +335,45 @@ class PayoutServiceTest {
         assertThat(summary.pendingAmount).isEqualByComparingTo("200")
         assertThat(summary.txTotal).isEqualTo(5L)
         assertThat(summary.availableBalance).isEqualByComparingTo("3800") // 5000 - 1000 confirmed - 200 pending
+        assertThat(summary.paymentsEnabled).isTrue()
+    }
+
+    @Test
+    fun `getSummary - paymentsEnabled is false in prod while Bridge runs in demo mode`() {
+        // The Payments tab disables its submit button on this flag: in demo mode the transfer is
+        // simulated and reported as settled, so an enabled button would claim to a real
+        // association a payment that no bank ever executed.
+        stubSummaryQueries()
+        every { bridgeInitiation.isDemoMode } returns true
+
+        assertThat(prodService.getSummary(campaignId, userId).paymentsEnabled).isFalse()
+    }
+
+    @Test
+    fun `getSummary - paymentsEnabled stays true outside prod while Bridge runs in demo mode`() {
+        // Local and staging must keep exercising the payout journey without Bridge credentials —
+        // that is what demo mode exists for.
+        stubSummaryQueries()
+        every { bridgeInitiation.isDemoMode } returns true
+
+        assertThat(service.getSummary(campaignId, userId).paymentsEnabled).isTrue()
+    }
+
+    @Test
+    fun `getSummary - paymentsEnabled is true in prod once demo mode is off`() {
+        stubSummaryQueries()
+        every { bridgeInitiation.isDemoMode } returns false
+
+        assertThat(prodService.getSummary(campaignId, userId).paymentsEnabled).isTrue()
+    }
+
+    /** Minimal stubbing for a [PayoutService.getSummary] call on an empty campaign. */
+    private fun stubSummaryQueries() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        stubBalance(confirmed = "0", pending = "0", raised = "1000")
+        every { payoutRepository.countByCampaignId(campaignId) } returns 0L
+        every { payoutRepository.countByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns 0L
     }
 
     @Test

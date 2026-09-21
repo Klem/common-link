@@ -20,6 +20,7 @@ import org.commonlink.repository.PayeeRepository
 import org.commonlink.repository.PayoutRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.env.Environment
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -31,6 +32,7 @@ import java.util.UUID
  * Business logic for campaign outgoing payments (payouts).
  *
  * Validation rules mirrored in the frontend (Step 5):
+ * - payouts are issuable on this environment — see [assertPaymentsEnabled]
  * - amount > 0 (enforced by [CreatePayoutRequest] @DecimalMin)
  * - payee IBAN belongs to the requested payee
  * - campaign belongs to the requesting association
@@ -48,19 +50,58 @@ class PayoutService(
     private val confirmer: PayoutConfirmer,
     private val bridgeInitiation: BridgePaymentInitiationService,
     @Value("\${app.frontend-url:http://localhost:3000}") private val frontendUrl: String,
+    environment: Environment,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * Whether a simulated payout is acceptable on this environment.
+     *
+     * In local and staging the demo path is the point: the Payments tab must be exercisable before
+     * any Bridge credential exists. In production a simulated transfer would be shown to a real
+     * association as a real payment, so there the demo mode closes the feature instead of faking it.
+     */
+    private val demoPayoutsAcceptable = "prod" !in environment.activeProfiles
+
+    /**
+     * Whether a payout can be issued on this environment at all.
+     *
+     * Reported to the frontend as [PayoutSummaryDto.paymentsEnabled], which greys out the submit
+     * button, and enforced server-side by [assertPaymentsEnabled].
+     */
+    private val paymentsEnabled: Boolean
+        get() = demoPayoutsAcceptable || !bridgeInitiation.isDemoMode
+
+    /**
+     * Refuses to move a payout while payouts cannot be issued on this environment.
+     *
+     * The Payments tab disables its submit button on the same condition, but every click is
+     * replayable: without this check a crafted request would still produce, in production, a
+     * payout reported as settled that no bank ever executed.
+     *
+     * @throws ConflictException if payouts are disabled here — production with Bridge in demo mode.
+     */
+    private fun assertPaymentsEnabled() {
+        if (!paymentsEnabled) {
+            throw ConflictException(
+                "Payouts are disabled on this environment: Bridge runs in demo mode, a transfer " +
+                    "would be simulated rather than executed"
+            )
+        }
+    }
 
     /**
      * Creates a new PENDING payout for [campaignId].
      *
      * @throws NotFoundException if campaign, payee, or IBAN do not belong to the user's association.
      * @throws IllegalArgumentException if the IBAN does not belong to the requested payee.
-     * @throws ConflictException if a [PayoutBlockingReason] applies (unverified IBAN, insufficient
-     *         balance, description too short).
+     * @throws ConflictException if payouts are disabled on this environment (see
+     *         [assertPaymentsEnabled]), or if a [PayoutBlockingReason] applies (unverified IBAN,
+     *         insufficient balance, description too short).
      */
     @Transactional
     fun create(campaignId: UUID, request: CreatePayoutRequest, userId: UUID): PayoutDto {
+        assertPaymentsEnabled()
         val associationId = resolveAssociationId(userId)
         // Lock the campaign row for the duration of the transaction so concurrent create/confirm
         // requests serialize and each sees the balance already reserved by the others (H2 TOCTOU).
@@ -114,13 +155,16 @@ class PayoutService(
      * @param userId Authenticated association user.
      * @return the payout, carrying the bank-authorisation URL.
      * @throws NotFoundException if payout or campaign cannot be found for the user's association.
-     * @throws ConflictException if the payout is not PENDING, its IBAN is no longer VERIFIED, or
-     *         confirming it would exceed the confirmable balance.
+     * @throws ConflictException if payouts are disabled on this environment (see
+     *         [assertPaymentsEnabled] — a payout created before the environment was closed must
+     *         not be settleable either), if the payout is not PENDING, if its IBAN is no longer
+     *         VERIFIED, or if confirming it would exceed the confirmable balance.
      * @throws org.commonlink.exception.BadGatewayException if Bridge is unreachable or refuses the
      *         initiation — nothing has been debited, the reservation is released and the payout is
      *         left PENDING so it can be confirmed again.
      */
     fun confirm(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
+        assertPaymentsEnabled()
         val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
 
@@ -183,7 +227,11 @@ class PayoutService(
     }
 
     /**
-     * Returns aggregated KPIs for the Payments tab.
+     * Returns aggregated KPIs for the Payments tab, plus whether payouts can be issued
+     * ([PayoutSummaryDto.paymentsEnabled]) — false only under the prod profile while Bridge runs in
+     * demo mode, so the tab disables its submit button rather than simulating a transfer a real
+     * association would believe real. Local and staging keep the demo path open (see
+     * [demoPayoutsAcceptable]).
      *
      * @throws NotFoundException if campaign does not belong to [associationId].
      */
@@ -205,6 +253,7 @@ class PayoutService(
             txTotal          = txTotal,
             txConfirmed      = txConfirmed,
             availableBalance = computeAvailableBalance(campaignId),
+            paymentsEnabled  = this.paymentsEnabled,
         )
     }
 

@@ -1407,6 +1407,7 @@
           "methodSub": "1–2 jours ouvrés",
           "payee": "Bénéficiaire",
           "payeePlaceholder": "— Sélectionner —",
+          "paymentsDisabled": "Les paiements ne sont pas encore activés",
           "submit": "Émettre le paiement →",
           "title": "Émettre un paiement",
           "typeCode": "Type de dépense",
