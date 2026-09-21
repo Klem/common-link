@@ -173,8 +173,34 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `bridge demo-mode is false in prod`() {
-        assertEquals(false, prop("app.bridge.demo-mode"))
+    fun `bridge demo-mode is env-overridable in prod`() {
+        // Les identifiants Bridge de PRODUCTION ne sont pas encore provisionnés. Pinner
+        // `demo-mode: false` ici rendait la prod non démarrable (client-id / client-secret /
+        // api-version étaient trois `${...}` sans défaut). La prod démarre donc en mode démo et
+        // bascule par variable d'environnement — même forme que app.security.trusted-proxy-count.
+        // Condition de sortie : le jour où les identifiants existent, repasser le défaut de ce
+        // fichier à false et réactiver le test désactivé ci-dessous — comme pour webhook-secret,
+        // la garantie doit redevenir portée par le yml, pas par une variable d'environnement.
+        assertEquals("\${BRIDGE_DEMO_MODE:true}", prop("app.bridge.demo-mode"))
+    }
+
+    @Disabled("app.bridge.demo-mode reste tolérant au mode démo tant que les identifiants Bridge " +
+        "de PRODUCTION ne sont pas provisionnés sur Clever Cloud — ce jour-là, poser " +
+        "`demo-mode: \${BRIDGE_DEMO_MODE:false}` dans application-prod.yml et réactiver ce test, " +
+        "comme le test webhook-secret ci-dessous.")
+    @Test
+    fun `bridge demo-mode defaults to false in prod`() {
+        assertEquals("\${BRIDGE_DEMO_MODE:false}", prop("app.bridge.demo-mode"))
+    }
+
+    @Test
+    fun `bridge credentials tolerate a blank default in prod`() {
+        // Corollaire du mode démo autorisé en prod : sans défaut, le placeholder non résolu fait
+        // échouer le démarrage avant même le contrôle de BridgePaymentInitiationService, qui lui
+        // n'exige les identifiants que lorsque demo-mode est false.
+        assertEquals("\${BRIDGE_CLIENT_ID:}", prop("app.bridge.client-id"))
+        assertEquals("\${BRIDGE_CLIENT_SECRET:}", prop("app.bridge.client-secret"))
+        assertEquals("\${BRIDGE_API_VERSION:2025-01-15}", prop("app.bridge.api-version"))
     }
 
     @Test

@@ -127,11 +127,21 @@ app:
   recherche-entreprises:
     base-url: ${RECHERCHE_ENTREPRISES_BASE_URL:https://recherche-entreprises.api.gouv.fr}
   bridge:
-    demo-mode: false
+    # Exception assumée à la règle « tout drapeau de sûreté est explicite en prod » de l'en-tête :
+    # les identifiants Bridge de PRODUCTION ne sont pas encore provisionnés. Avec l'ancien
+    # `demo-mode: false` + les trois `${...}` sans valeur par défaut ci-dessous, un déploiement
+    # sans ces variables ne démarrait pas du tout (placeholder non résolu, puis `require()` de
+    # BridgePaymentInitiationService). La prod démarre donc en mode démo — virement simulé, aucun
+    # appel à Bridge — et bascule sur l'exécution réelle en posant BRIDGE_DEMO_MODE=false +
+    # BRIDGE_CLIENT_ID / BRIDGE_CLIENT_SECRET sur Clever Cloud. Tant que le mode démo est actif en
+    # production, aucun virement réel n'est initié : voir docs/legal/LCB-FT-compliance-overview.md.
+    demo-mode: ${BRIDGE_DEMO_MODE:true}
     base-url: ${BRIDGE_BASE_URL:https://api.bridgeapi.io}
-    api-version: ${BRIDGE_API_VERSION}
-    client-id: ${BRIDGE_CLIENT_ID}
-    client-secret: ${BRIDGE_CLIENT_SECRET}
+    api-version: ${BRIDGE_API_VERSION:2025-01-15}
+    # Blancs tolérés : seuls requis quand demo-mode est false, et dans ce cas
+    # BridgePaymentInitiationService échoue au démarrage avec un message explicite.
+    client-id: ${BRIDGE_CLIENT_ID:}
+    client-secret: ${BRIDGE_CLIENT_SECRET:}
     # Blank until the webhook is created on Bridge's PRODUCTION dashboard and the signing secret
     # retrieved from there — BridgeWebhookSignatureVerifier logs a warning and skips verification
     # while blank, it does not fail closed. Set BRIDGE_WEBHOOK_SECRET on Clever Cloud once available.
