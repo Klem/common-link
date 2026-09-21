@@ -89,6 +89,19 @@ class AssociationRegistryCheckServiceTest {
         siren = "",
     )
 
+    /**
+     * A legacy JOAFE announcement number. The dataset reuses its RNA column for announcements
+     * predating the registry, where it holds `ASS` + the announcement number within its issue —
+     * long enough to pass for a SIREN, and identifying no legal entity.
+     */
+    private val profileLegacyAnnouncementNumber = AssociationProfile(
+        id = associationId,
+        user = mockUser,
+        name = "Test Association",
+        identifier = "ASS02290",
+        siren = "",
+    )
+
     /** `identifier` is NOT NULL in the schema, but nothing stops it holding an empty string. */
     private val profileNoIdentifier = AssociationProfile(
         id = associationId,
@@ -116,6 +129,12 @@ class AssociationRegistryCheckServiceTest {
         """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9230","dirigeants":[{"nom":"WRONG","prenoms":"Person"}]},{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220","dirigeants":[{"nom":"DUPONT","prenoms":"Jean"}]}]}"""
     private val rechercheRnaMismatch =
         """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9230","dirigeants":[{"nom":"WRONG","prenoms":"Person"}]}]}"""
+    /** Full-text search on a SIREN: the engine ranks by relevance, the dossier's entity may be absent. */
+    private val rechercheSirenMismatch =
+        """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9220"}]}"""
+    /** Same, but the dossier's entity is present — second, behind a more relevant one. */
+    private val rechercheSirenNotFirst =
+        """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9230"},{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220"}]}"""
     private val rechercheEmpty =
         """{"results":[]}"""
     private val inseeOk =
@@ -641,6 +660,58 @@ class AssociationRegistryCheckServiceTest {
         assertThat(result.associationExists).isNull()
         assertThat(result.rnaActive).isNull()
         assertThat(result.scopeVerdict).isEqualTo(ScopeVerdict.UNDETERMINED)
+    }
+
+    @Test
+    fun `a legacy JOAFE announcement number is never searched as a SIREN`() {
+        every { repository.findById(associationId) } returns Optional.of(profileLegacyAnnouncementNumber)
+
+        val result = service.scan(associationId, curatorId)
+
+        // Unstubbed: querying Recherche d'entreprises at all fails the test. The value is long enough
+        // to clear MIN_SEARCH_KEY_LENGTH, so before the format guard it was searched as a SIREN — on
+        // the branch that accepted whichever record the engine ranked first.
+        verify(exactly = 0) { restTemplate.getForObject(any<String>(), String::class.java) }
+        assertThat(result.warnings).anyMatch { it.startsWith("recherche-entreprises:") }
+        assertThat(result.siren).isNull()
+        assertThat(result.rna).isNull()
+        assertThat(result.associationExists).isNull()
+        assertThat(result.rnaActive).isNull()
+        assertThat(result.scopeVerdict).isEqualTo(ScopeVerdict.UNDETERMINED)
+    }
+
+    @Test
+    fun `the SIREN branch keeps no record when none carries the dossier's SIREN`() {
+        every { repository.findById(associationId) } returns Optional.of(profileNoRna)
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheSirenMismatch
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+
+        val result = service.scan(associationId, curatorId)
+
+        // Retaining the top hit would bind an unrelated legal entity, then drive the perimeter verdict
+        // and the screening scope from its category and its officers. The registry was consulted and
+        // answered without the dossier's entity, which reads as "not found", never as another entity.
+        assertThat(result.associationExists).isFalse()
+        assertThat(result.legalCategory).isNull()
+        assertThat(result.officers).isEmpty()
+        assertThat(result.scopeVerdict).isEqualTo(ScopeVerdict.UNDETERMINED)
+    }
+
+    @Test
+    fun `the SIREN branch finds its record even when the engine ranks another first`() {
+        every { repository.findById(associationId) } returns Optional.of(profileNoRna)
+        every { restTemplate.getForObject(match<String> { it.contains("recherche-entreprises") }, String::class.java) } returns rechercheSirenNotFirst
+        stubInsee()
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("journal-officiel") }, String::class.java) } returns joafeCreation
+        every { restTemplate.getForObject(match<URI> { it.toString().contains("bodacc") }, String::class.java) } returns bodaccEmpty
+
+        val result = service.scan(associationId, curatorId)
+
+        assertThat(result.siren).isEqualTo("123456789")
+        assertThat(result.rna).isEqualTo("W123456789")
+        assertThat(result.legalCategory).isEqualTo("9220")
+        assertThat(result.associationExists).isTrue()
     }
 
     @Test

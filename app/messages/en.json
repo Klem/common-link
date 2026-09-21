@@ -142,6 +142,8 @@
       "noResults": "No association found.",
       "noResultsHint": "Check the spelling or try your RNA.",
       "noRna": "I don't have an RNA number",
+      "resolvingRna": "Checking…",
+      "rnaUnresolved": "We could not confirm this association's RNA number in the national registry. Use \"I have no RNA number\" below to enter your SIREN instead. If you do not have any of them, you must complete your administrative registration process in order for your structure to be found",
       "searchHint": "Search your association in the official directory."
     },
     "divider": {
@@ -1971,19 +1973,132 @@
       }
     },
     "mollie": {
+      "checklist": {
+        "intro": "Mollie is our licensed payment provider. Its form uses business wording: that is normal, and it does not call your non-profit status into question. Here are the documents to prepare.",
+        "items": {
+          "activity": {
+            "meaning": "What your association actually does and where the collected funds come from. Describe it in plain words: Mollie expects a description, not an NAF code.",
+            "mollieLabel": "Business activity"
+          },
+          "bank": {
+            "meaning": "Bank details (RIB) in the association's name, with a French IBAN.",
+            "mollieLabel": "Bank account"
+          },
+          "identity": {
+            "meaning": "The ID card or passport of the legal representative (the chair), not a document belonging to the association.",
+            "mollieLabel": "Proof of identity"
+          },
+          "registration": {
+            "link": "Find my record on the Annuaire des Entreprises",
+            "meaning": "Your prefecture declaration receipt (récépissé de déclaration), your JOAFE publication extract, or your SIRENE status notice (avis de situation).",
+            "mollieLabel": "Registration certificate"
+          },
+          "stakeholders": {
+            "meaning": "The association's officers and beneficial owners: chair, treasurer, and anyone exercising effective control. For an association these are the board members, with their date of birth and address.",
+            "mollieLabel": "Stakeholder information"
+          }
+        },
+        "note": "Depending on your case, Mollie may ask for additional documents, such as your statutes or the list of your officers."
+      },
       "completeOnboarding": "Complete my onboarding",
       "connect": "Connect Mollie",
       "description": "Connect your Mollie account to receive donations.",
       "devForceComplete": "Simulate KYC validation (dev)",
+      "guide": {
+        "copied": "Copied",
+        "copy": "Copy",
+        "intro": "The form is hosted by Mollie and written in company vocabulary. Here is, screen by screen, what is expected from an association - and the information you already gave us, ready to copy. The order of the screens may vary slightly depending on your file.",
+        "note": "Mollie may ask for extra documents depending on your file. You can close its window at any time and come back later: the « Complete my file » button takes you straight back to it.",
+        "prefilled": "Already pre-filled",
+        "steps": {
+          "account": {
+            "meaning": "Mollie opens an account in the name of the person driving the connection. We passed on your association's contact name and email: check them, they identify who Mollie will deal with.",
+            "mollieLabel": "Creating your Mollie account"
+          },
+          "activity": {
+            "meaning": "Describe in plain words the purpose of your association and the nature of the funds you collect. Mollie expects a description, not an activity code. Your stated purpose, as recorded on CommonLink, answers the question.",
+            "mollieLabel": "« Business activity »"
+          },
+          "bank": {
+            "meaning": "The IBAN of the association's account, held in the association's name. This is the account Mollie will pay the donations into.",
+            "mollieLabel": "« Link a bank account »"
+          },
+          "identity": {
+            "meaning": "An identity document of the legal representative: a personal document, not one of the association. Mollie asks for it because the law requires it to verify the identity of the individuals behind the organisation.",
+            "mollieLabel": "« Identity document »"
+          },
+          "legalForm": {
+            "meaning": "We declared your organisation as a French association. Should Mollie ask again for a legal form, pick \"association\" rather than \"sole trader\": the rest of the form depends on it.",
+            "mollieLabel": "« Type of business »"
+          },
+          "organization": {
+            "meaning": "The exact name and registered address of your association, as they appear on your declaration to the prefecture.",
+            "mollieLabel": "« Business details »"
+          },
+          "registration": {
+            "meaning": "Mollie queries official registers with this number. We only forward a SIREN: an RNA number (W...) is not recognised by those registers. If your association has no SIREN, do not invent one - your receipt of declaration to the prefecture, or your publication in the Journal officiel, is what proves its existence. Should the field be mandatory, enter your RNA number and attach that document.",
+            "mollieLabel": "« Registration number »"
+          },
+          "review": {
+            "meaning": "Once the file is submitted, Mollie reviews it. The status shown here moves from \"Onboarding required\" to \"Verification in progress\", then to \"Active\" as soon as Mollie allows you to collect. Nothing else is expected from you in the meantime.",
+            "mollieLabel": "Submission and review"
+          },
+          "stakeholders": {
+            "meaning": "The officers and beneficial owners: chair, treasurer, and anyone exercising effective control over the association - in practice, the members of the board. Have their name, date of birth and address at hand for each of them.",
+            "mollieLabel": "« Stakeholder information »"
+          }
+        },
+        "title": "Step by step: filling in the Mollie form",
+        "values": {
+          "activity": "Purpose of the association",
+          "address": "Registered address",
+          "contactEmail": "Contact email",
+          "contactName": "Contact name",
+          "name": "Association name",
+          "rna": "RNA number",
+          "siren": "SIREN"
+        }
+      },
+      "info": {
+        "close": "Got it",
+        "intro": "You are about to hand documents to a company you may never have heard of. Here is who Mollie is, why this step cannot be skipped, and what becomes of your documents.",
+        "sections": {
+          "documents": {
+            "body": "The documents you upload in the Mollie form go to Mollie alone. CommonLink does not receive them, does not store them and has no access to them: of this connection, the platform records only technical items - access tokens, your Mollie account identifier, the state of the connection and the address of your Mollie dashboard. Mollie encrypts data, meets the highest certification level for card payment security (PCI DSS) and acts as data controller under the GDPR.",
+            "title": "Where do your documents go?"
+          },
+          "funds": {
+            "body": "Donations are collected on your own Mollie account, opened in your association's name, then paid out to the bank account you register there. CommonLink never holds your funds and cannot move them.",
+            "title": "Where does the money go?"
+          },
+          "verify": {
+            "body": "Do not take our word for it: Mollie's licence is public, and its security commitments are published.",
+            "registerLink": "Mollie B.V. in the Dutch central bank's public register",
+            "securityLink": "Mollie's security commitments (mollie.com)",
+            "title": "Check for yourself"
+          },
+          "who": {
+            "body": "Mollie B.V. is a Dutch payment provider, licensed as an electronic money institution by the central bank of the Netherlands (De Nederlandsche Bank) under the European payment services directive (PSD2). That licence is recorded in the central bank's public register and covers France, where Mollie operates under the European freedom to provide services.",
+            "title": "Who is Mollie?"
+          },
+          "why": {
+            "body": "No payment institution may let an organisation collect funds without having verified its identity, its officers and the nature of its activity. That obligation falls on Mollie, not on your association: it is not a CommonLink requirement, and no serious platform can avoid it. CommonLink separately runs its own review of your file: the two checks are independent and add up to each other.",
+            "title": "Why this verification is mandatory"
+          }
+        },
+        "title": "Why Mollie?"
+      },
+      "learnMore": "Learn more",
       "modal": {
         "cancel": "Cancel",
-        "connect": "Connect",
+        "connect": "I have my documents, continue",
         "description": "You will be redirected to Mollie to authorize the connection.",
         "missingContactEmail": "A contact email is required to start the Mollie onboarding. Please fill in the Contact Email field in the Infos tab and save first.",
         "missingContactName": "A contact name is required to start the Mollie onboarding. Please fill in the Contact Name field in the Infos tab and save first.",
         "title": "Connect Mollie",
         "waiting": "Waiting for authorization…"
       },
+      "needsDataHint": "You can come back later: the \"Complete my onboarding\" button takes you straight back to your Mollie file.",
       "reconnect": "Reconnect",
       "status": {
         "broken": "Reconnect required",

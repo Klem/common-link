@@ -10,7 +10,7 @@
 | **Référence de suivi interne** | Tâche Asana n° `1216210976716067` — « Intégrer l'API Entreprise (RNA + SIRENE, DJEPVA) » |
 | **Lien de suivi** | https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210976716067 |
 | **Priorité assignée** | P1 |
-| **Date d'établissement** | 7 août 2026 — état décrit arrêté au 13 août 2026 |
+| **Date d'établissement** | 7 août 2026 — état décrit arrêté au 18 septembre 2026 |
 | **État** | Réalisé et vérifié par contrôles automatisés. Non encore déployé — la mise en production de la plateforme est conditionnée à l'achèvement de l'ensemble du dispositif. |
 | **Rédacteur** | Équipe technique CommonLink |
 
@@ -168,7 +168,7 @@ base — n'est donc pas couvert. Le contrôle est par ailleurs délibérément l
 voie d'entrée par numéro RNA conserve son comportement antérieur et n'oppose aucun refus en cas de
 doublon.
 
-**Point ouvert — la garantie de correspondance exacte n'est pas symétrique.** Le point 4.2 énonce
+**Écart signalé le 21 août 2026, corrigé le 18 septembre 2026 — la garantie de correspondance exacte n'était pas symétrique.** Le point 4.2 énonce
 qu'un enregistrement du registre national des entreprises n'est retenu que si son numéro RNA
 correspond exactement à celui du dossier. Cette vérification n'a pas d'équivalent sur la voie du
 numéro SIREN : l'interrogation étant faite par un moteur de recherche en texte intégral, c'est le
@@ -180,6 +180,58 @@ catégorie juridique, du statut et des dirigeants d'une autre entité — c'est-
 verdict de périmètre et un périmètre de criblage portant sur la mauvaise personne morale. Aucune
 correspondance erronée n'a été constatée ; le point est signalé comme un écart de conception à
 corriger, non comme un incident.
+
+*Mise à jour du 18 septembre 2026 — cet écart est corrigé.* La voie du numéro SIREN retient
+désormais, comme la voie du numéro RNA, uniquement l'enregistrement dont le numéro SIREN est
+exactement celui du dossier ; en l'absence de correspondance, aucune donnée n'est retenue. La
+garantie énoncée en 4.2 vaut donc sur les deux voies.
+
+### 4.2 ter Complément du 18 septembre 2026 — ce que contenait réellement l'identifiant du dossier
+
+Les garanties énoncées en 4.2 supposent que le numéro RNA porté au dossier en soit un. Un relevé du
+18 septembre 2026 établit que ce n'était pas toujours le cas.
+
+À la création de compte, l'association se cherche dans le Journal officiel des associations et le
+numéro retenu était le champ `numero_rna` de l'annonce. Ce champ ne porte un numéro RNA que pour les
+annonces publiées après la création du répertoire (2009-2010) ; pour les annonces antérieures il
+porte le numéro d'ordre de l'annonce dans son numéro de parution, préfixé `ASS`, lequel recommence à
+chaque parution. La valeur `ASS01469` est ainsi portée par 806 annonces appartenant à des
+associations distinctes, et 3 198 411 des 5 189 401 annonces du jeu de données — 62 % — sont de
+cette forme.
+
+**Effet sur le présent contrôle.** Une telle valeur n'étant pas reconnue comme un numéro RNA, le
+contrôle n'empruntait pas la voie décrite en 4.2 : elle était traitée comme un numéro SIREN,
+c'est-à-dire versée sur la voie dépourvue de vérification de correspondance exacte signalée en
+4.2 bis, et la consultation du Journal officiel — qui s'effectue sur le numéro RNA — n'avait pas
+lieu. La garantie de correspondance exacte du numéro RNA énoncée en 4.2 restait exacte en elle-même,
+mais ne s'appliquait pas à ces dossiers.
+
+**Aucun dossier existant n'est concerné.** Aucune association enregistrée à ce jour ne porte une
+valeur de cette forme ; aucune reprise de données n'est nécessaire et aucune correspondance erronée
+n'a été constatée.
+
+**Correction apportée le 18 septembre 2026.** À la création de compte, une valeur qui n'est pas un
+numéro RNA n'est plus présentée comme telle ni enregistrée. Le numéro RNA est recherché au registre
+national des entreprises à partir du nom et du code postal portés par l'annonce et n'est retenu que
+si un seul numéro y répond ; à défaut la création s'interrompt sans rien enregistrer. Ce registre ne
+recensant que les titulaires d'un numéro SIREN, cette recherche n'aboutit que pour les associations
+qui en détiennent un : pour les autres, l'interruption est l'issue ordinaire et non le cas limite.
+
+**Deux corrections complémentaires ont été apportées le même jour, côté serveur.** Le format de
+l'identifiant y est désormais contrôlé — une valeur qui n'est ni un numéro RNA ni un numéro SIREN est
+refusée à la création comme à la mise à jour du profil, de sorte qu'une requête adressée directement
+au serveur ne contourne plus la règle de l'écran — et le présent contrôle n'interprète plus une telle
+valeur comme un numéro SIREN : les deux clés restent absentes et le contrôle se déclare
+inexploitable, au lieu d'interroger le registre au hasard. La vérification de correspondance exacte
+sur la voie du numéro SIREN, signalée en 4.2 bis, est fermée le même jour.
+
+**Ce que la correction ne couvre pas.** Le registre
+national des entreprises ne recensant que les titulaires d'un numéro SIREN, une association qui n'en
+détient aucun et dont les annonces sont antérieures à 2010 ne peut plus créer son compte : son
+numéro RNA n'est retrouvable par aucune des sources consultées — aucune des cinq annonces anciennes
+éprouvées le 18 septembre 2026 n'a pu être résolue. Cette restriction contredit le principe énoncé
+en 4.2, selon lequel une association identifiée par son seul numéro RNA accède à la totalité des
+consultations ; elle appelle un arbitrage, porté en section 7.3 de la synthèse fonctionnelle.
 
 ### 4.3 Deux caractéristiques à souligner devant la commission
 
@@ -263,11 +315,10 @@ particulier, il ne couvre pas :
   bénéficiaires effectifs d'une association, livrée* ;
 - les **effets du verdict de périmètre** et la liste des formes juridiques acceptées, qui relèvent
   de la fiche *E3 — Contrôle automatique du périmètre d'intervention de la plateforme*, **livrée** ;
-- la **vérification que l'enregistrement retenu est bien celui du dossier lorsque l'entrée se fait
-  par un numéro SIREN** — la correspondance exacte n'est contrôlée que sur la voie du numéro RNA
-  *(voir le point 4.2 bis)* ;
-- la **vérification du numéro déclaré au moment de la création du compte** — elle n'a pas lieu ; la
-  vérification est portée par la consultation décrite ici, déclenchée ultérieurement par le curateur ;
+- la **vérification du numéro déclaré au moment de la création du compte** — depuis le 18 septembre
+  2026 son **format** est contrôlé à la création comme à la mise à jour du profil, mais aucun registre
+  n'est consulté à ce moment : la vérification reste portée par la consultation décrite ici,
+  déclenchée ultérieurement par le curateur ;
 - l'**unicité du numéro SIREN au niveau de la base de données** — elle est assurée par le logiciel
   sur la seule voie de création de compte, sans contrainte de schéma *(voir le point 4.2 bis)* ;
 - la **reconsultation périodique des registres** pour les associations déjà en relation d'affaires

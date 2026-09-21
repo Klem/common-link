@@ -50,6 +50,18 @@ class AssociationRegistryCheckService(
     private companion object {
         /** Recherche d'entreprises rejects query terms shorter than this with a 400. */
         const val MIN_SEARCH_KEY_LENGTH = 3
+
+        /**
+         * A RNA: `W` then 9 alphanumerics (Corsican départements use `W2A`/`W2B`).
+         *
+         * Matched in full rather than by its `W` prefix: the JOAFE dataset reuses its RNA column for
+         * announcements predating the registry, where it holds `ASS` + the announcement number within
+         * its issue — a counter that restarts at every issue and identifies no legal entity.
+         */
+        val RNA_PATTERN = Regex("^W[0-9A-Za-z]{9}$")
+
+        /** A SIREN: 9 digits. */
+        val SIREN_PATTERN = Regex("^[0-9]{9}$")
     }
 
     /**
@@ -93,9 +105,12 @@ class AssociationRegistryCheckService(
         // field untouched, so blank must be read as absent — an elvis on null alone would carry ""
         // into the query and get rejected by the registry.
         val identifier = profile.identifier.trim()
-        val rnaFromProfile = identifier.takeIf { it.startsWith("W", ignoreCase = true) }
+        val rnaFromProfile = identifier.takeIf { RNA_PATTERN.matches(it) }
+        // An identifier that is neither a RNA nor a SIREN is not silently read as a SIREN: it would be
+        // searched as one, on the branch that accepts a registry record by name alone, and could attach
+        // an unrelated legal entity to the dossier. Both keys stay null and the scan reads inconclusive.
         val sirenFromProfile = profile.siren?.trim()?.takeIf { it.isNotEmpty() }
-            ?: identifier.takeIf { it.isNotEmpty() && rnaFromProfile == null }
+            ?: identifier.takeIf { rnaFromProfile == null && SIREN_PATTERN.matches(it) }
 
         // ── Step 1: Recherche d'entreprises (searched by SIREN when known, by RNA otherwise) ──
         var associationExists: Boolean? = null
@@ -119,11 +134,14 @@ class AssociationRegistryCheckService(
                 restTemplate.getForObject(url, String::class.java)?.let { body ->
                     val results: JsonNode = objectMapper.readTree(body).path("results")
                     val candidates = if (results.isArray) (0 until results.size()).map { results[it] } else emptyList()
-                    // The endpoint is a full-text search: a W-number query is not guaranteed to rank the
-                    // right entity first, so the RNA path only accepts a record whose RNA matches exactly.
-                    // A declared SIREN is unambiguous and keeps the historical top-hit behaviour.
+                    // The endpoint is a full-text search: it is not guaranteed to rank the right entity
+                    // first, on either key. Both paths therefore accept only a record whose own identifier
+                    // matches the dossier exactly — the SIREN path used to keep the top hit, which could
+                    // bind an unrelated entity and then drive the perimeter verdict and the screening scope.
                     val match: JsonNode? = if (sirenFromProfile != null) {
-                        candidates.firstOrNull()
+                        candidates.firstOrNull {
+                            it.path("siren").asText("") == sirenFromProfile
+                        }
                     } else {
                         candidates.firstOrNull {
                             it.path("identifiant_association").asText("").equals(rnaFromProfile, ignoreCase = true)

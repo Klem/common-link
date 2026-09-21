@@ -71,6 +71,13 @@ Un point mérite d'être souligné : la catégorie juridique est accessible **y 
 association dépourvue de numéro SIREN**, identifiée par son seul numéro RNA. Le présent verrou
 s'applique donc à ces dossiers.
 
+*Complément du 18 septembre 2026.* Cet énoncé reste exact pour les dossiers existants : le verrou
+s'applique bien à une association identifiée par son seul numéro RNA. En revanche, l'entrée en
+relation de telles associations est aujourd'hui restreinte lorsque leurs annonces au Journal
+officiel sont antérieures à 2010, leur numéro RNA n'étant alors retrouvable par aucune des sources
+consultées. Le constat, la correction apportée et l'arbitrage demandé sont exposés à la
+section 4.2 ter de la fiche *E3 — Contrôle des registres publics d'associations*.
+
 ### 4.2 Le périmètre accepté
 
 Le périmètre est défini par l'ensemble des **formes déclarées de la famille INSEE `92`** (« association

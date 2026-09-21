@@ -14,6 +14,9 @@ import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
+import MollieDocumentChecklist from '@/components/dashboard/MollieDocumentChecklist';
+import MollieOnboardingGuide from '@/components/dashboard/MollieOnboardingGuide';
+import MollieInfoModal from '@/components/dashboard/MollieInfoModal';
 import { forceCompleteMollieOnboarding } from '@/lib/api/mollie-connect';
 import { MollieOnboardingStatus } from '@/types/mollie-connect';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
@@ -116,6 +119,7 @@ export default function AssociationProfilePage() {
   const [verifStatus, setVerifStatus] = useState<VerificationStatus | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMollieModal, setShowMollieModal] = useState(false);
+  const [showMollieInfoModal, setShowMollieInfoModal] = useState(false);
   const [mollieInterrupted, setMollieInterrupted] = useState(false);
   const {
     connected: mollieConnected,
@@ -185,6 +189,19 @@ export default function AssociationProfilePage() {
       await refreshMollie();
     }
   }, [refreshMollie]);
+
+  // Rendu dans les trois branches d'action de l'onglet banque : avant la première connexion, mais
+  // aussi quand le dossier est incomplet ou la connexion cassée — c'est là que l'association doute
+  // le plus de ce prestataire qu'elle ne connaît pas.
+  const mollieLearnMoreButton = (
+    <button
+      type="button"
+      onClick={() => setShowMollieInfoModal(true)}
+      className="btn btn-ghost btn-sm"
+    >
+      {tM('mollie.learnMore')}
+    </button>
+  );
 
   const { onSubmit: submitPassword, loading: passwordLoading } = useSetPassword();
 
@@ -623,23 +640,40 @@ export default function AssociationProfilePage() {
                   >
                     {tM('mollie.reconnect')}
                   </button>
+                  {mollieLearnMoreButton}
                 </div>
               ) : mollieConnected && onboardingStatus === 'IN_REVIEW' ? (
                 <span className="badge badge-warning">{tM('mollie.status.inReview')}</span>
               ) : mollieConnected && onboardingStatus === 'NEEDS_DATA' ? (
-                <div className="flex items-center gap-3">
-                  <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
-                  {mollieDashboardUrl && (
-                    <a
-                      href={mollieDashboardUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary btn-sm"
-                    >
-                      {tM('mollie.completeOnboarding')}
-                    </a>
-                  )}
-                </div>
+                <>
+                  <div className="flex items-center gap-3">
+                    <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
+                    {mollieDashboardUrl && (
+                      <a
+                        href={mollieDashboardUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-sm"
+                      >
+                        {tM('mollie.completeOnboarding')}
+                      </a>
+                    )}
+                    {mollieLearnMoreButton}
+                  </div>
+                  <p className="mollie-desc mt-4">{tM('mollie.needsDataHint')}</p>
+                  <MollieDocumentChecklist siren={profile?.siren} identifier={profile?.identifier} />
+                  <MollieOnboardingGuide
+                    name={profile?.name}
+                    addressLine1={profile?.addressLine1}
+                    postalCode={profile?.postalCode}
+                    city={profile?.city}
+                    siren={profile?.siren}
+                    identifier={profile?.identifier}
+                    legalObject={profile?.legalObject}
+                    contactName={profile?.contactName}
+                    contactEmail={profile?.contactEmail}
+                  />
+                </>
               ) : mollieInterrupted ? (
                 <button
                   type="button"
@@ -654,23 +688,26 @@ export default function AssociationProfilePage() {
               ) : molliePending ? (
                 <span className="badge badge-warning">{tM('mollie.status.pending')}</span>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!profile?.contactEmail) {
-                      addToast('error', 'mollieErrorMissingContactEmail');
-                      return;
-                    }
-                    if (!profile?.contactName) {
-                      addToast('error', 'mollieErrorMissingContactName');
-                      return;
-                    }
-                    setShowMollieModal(true);
-                  }}
-                  className="btn btn-primary btn-sm"
-                >
-                  {tM('mollie.connect')}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!profile?.contactEmail) {
+                        addToast('error', 'mollieErrorMissingContactEmail');
+                        return;
+                      }
+                      if (!profile?.contactName) {
+                        addToast('error', 'mollieErrorMissingContactName');
+                        return;
+                      }
+                      setShowMollieModal(true);
+                    }}
+                    className="btn btn-primary btn-sm"
+                  >
+                    {tM('mollie.connect')}
+                  </button>
+                  {mollieLearnMoreButton}
+                </div>
               )}
               {mollieCanForceComplete && mollieConnected && onboardingStatus !== 'COMPLETED' && (
                 <button
@@ -779,7 +816,16 @@ export default function AssociationProfilePage() {
         onPopupClosed={handleMolliePopupClosed}
         contactEmail={profile?.contactEmail}
         contactName={profile?.contactName}
+        siren={profile?.siren}
+        identifier={profile?.identifier}
+        name={profile?.name}
+        addressLine1={profile?.addressLine1}
+        postalCode={profile?.postalCode}
+        city={profile?.city}
+        legalObject={profile?.legalObject}
       />
+
+      <MollieInfoModal isOpen={showMollieInfoModal} onClose={() => setShowMollieInfoModal(false)} />
     </div>
   );
 }

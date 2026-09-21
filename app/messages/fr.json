@@ -142,6 +142,8 @@
       "noResults": "Aucune association trouvée.",
       "noResultsHint": "Vérifiez l'orthographe ou essayez votre RNA.",
       "noRna": "Je n'ai pas de numéro RNA",
+      "resolvingRna": "Vérification…",
+      "rnaUnresolved": "Nous n'avons pas pu confirmer le numéro RNA de cette association auprès du registre national. Utilisez « Je n'ai pas de numéro RNA » ci-dessous pour saisir votre SIREN. Si vous n'avez aucun des 2, vous devez terminer le parcours administratif afin que votre structure soit trouvée",
       "searchHint": "Recherchez votre association dans le répertoire officiel."
     },
     "divider": {
@@ -1971,19 +1973,132 @@
       }
     },
     "mollie": {
+      "checklist": {
+        "intro": "Mollie est notre prestataire de paiement agréé. Son formulaire emploie un vocabulaire d'entreprise : c'est normal, et cela ne remet pas en cause votre statut associatif. Voici les pièces à préparer.",
+        "items": {
+          "activity": {
+            "meaning": "L'objet réel de votre association et la nature des fonds collectés. Décrivez votre activité en clair : Mollie attend une description, pas un code NAF.",
+            "mollieLabel": "« Activité de l'entreprise »"
+          },
+          "bank": {
+            "meaning": "Un RIB au nom de l'association, avec un IBAN français.",
+            "mollieLabel": "« Associez un compte bancaire »"
+          },
+          "identity": {
+            "meaning": "La carte d'identité ou le passeport du représentant légal (le président), pas un document de l'association.",
+            "mollieLabel": "« Pièce d'identité »"
+          },
+          "registration": {
+            "link": "Retrouver ma fiche sur l'Annuaire des Entreprises",
+            "meaning": "Votre récépissé de déclaration en préfecture, votre extrait de publication au JOAFE, ou votre avis de situation SIRENE.",
+            "mollieLabel": "« Certificat d'immatriculation de votre entreprise »"
+          },
+          "stakeholders": {
+            "meaning": "Les dirigeants et les bénéficiaires effectifs de l'association : président, trésorier, et toute personne exerçant un contrôle effectif. Pour une association, ce sont les membres du bureau, avec leur date de naissance et leur adresse.",
+            "mollieLabel": "« Informations relatives aux parties prenantes »"
+          }
+        },
+        "note": "Selon votre dossier, Mollie peut demander des pièces complémentaires, comme vos statuts ou la liste de vos dirigeants."
+      },
       "completeOnboarding": "Compléter mon dossier",
       "connect": "Connecter Mollie",
       "description": "Connectez votre compte Mollie pour recevoir des dons.",
       "devForceComplete": "Simuler la validation KYC (dev)",
+      "guide": {
+        "copied": "Copié",
+        "copy": "Copier",
+        "intro": "Le formulaire est hébergé par Mollie et rédigé en vocabulaire d'entreprise. Voici, écran par écran, ce qui est attendu d'une association - et les informations que vous nous avez déjà données, prêtes à recopier. L'ordre des écrans peut varier légèrement selon votre dossier.",
+        "note": "Mollie peut demander des pièces complémentaires selon votre dossier. Vous pouvez fermer sa fenêtre à tout moment et reprendre plus tard : le bouton « Compléter mon dossier » vous y ramène.",
+        "prefilled": "Déjà pré-rempli",
+        "steps": {
+          "account": {
+            "meaning": "Mollie ouvre un compte au nom de la personne qui pilote la connexion. Nous avons transmis le nom et l'email de contact de votre association : vérifiez-les, ils identifient l'interlocuteur du dossier.",
+            "mollieLabel": "Création de votre compte Mollie"
+          },
+          "activity": {
+            "meaning": "Décrivez en clair l'objet de votre association et la nature des fonds collectés. Mollie attend une description, pas un code d'activité. Votre objet social, tel qu'enregistré sur CommonLink, répond à la question.",
+            "mollieLabel": "« Activité de l'entreprise »"
+          },
+          "bank": {
+            "meaning": "L'IBAN du compte de l'association, ouvert au nom de l'association. C'est sur ce compte que Mollie reversera les dons.",
+            "mollieLabel": "« Associez un compte bancaire »"
+          },
+          "identity": {
+            "meaning": "Une pièce d'identité du représentant légal : c'est un document personnel, pas un document de l'association. Mollie la demande parce que la loi lui impose de vérifier l'identité des personnes physiques derrière la structure.",
+            "mollieLabel": "« Pièce d'identité »"
+          },
+          "legalForm": {
+            "meaning": "Nous avons déclaré votre structure comme association française. Si Mollie vous redemande une forme juridique, choisissez « association » et non « entreprise individuelle » : la suite du formulaire en dépend.",
+            "mollieLabel": "« Type d'entreprise »"
+          },
+          "organization": {
+            "meaning": "Le nom exact et l'adresse du siège de votre association, tels qu'ils figurent sur votre déclaration en préfecture.",
+            "mollieLabel": "« Coordonnées de l'entreprise »"
+          },
+          "registration": {
+            "meaning": "Mollie interroge les registres officiels avec ce numéro. Nous ne lui transmettons que le SIREN : le numéro RNA (W...) n'y est pas reconnu. Si votre association n'a pas de SIREN, n'en inventez pas : c'est votre récépissé de déclaration en préfecture, ou votre publication au Journal officiel, qui atteste de son existence. Si le champ est obligatoire, saisissez votre numéro RNA et joignez ce justificatif.",
+            "mollieLabel": "« Numéro d'immatriculation »"
+          },
+          "review": {
+            "meaning": "Une fois le dossier envoyé, Mollie l'examine. Le statut affiché ici passera de « Onboarding requis » à « En cours de vérification », puis à « Actif » dès que Mollie autorise l'encaissement. Vous n'avez rien d'autre à faire pendant ce temps.",
+            "mollieLabel": "Envoi et vérification"
+          },
+          "stakeholders": {
+            "meaning": "Les dirigeants et bénéficiaires effectifs : président, trésorier, et toute personne exerçant un contrôle effectif sur l'association - en pratique, les membres du bureau. Prévoyez pour chacun nom, date de naissance et adresse.",
+            "mollieLabel": "« Informations relatives aux parties prenantes »"
+          }
+        },
+        "title": "Pas à pas : remplir le formulaire Mollie",
+        "values": {
+          "activity": "Objet de l'association",
+          "address": "Adresse du siège",
+          "contactEmail": "Email de contact",
+          "contactName": "Nom du contact",
+          "name": "Nom de l'association",
+          "rna": "Numéro RNA",
+          "siren": "SIREN"
+        }
+      },
+      "info": {
+        "close": "J'ai compris",
+        "intro": "Vous allez confier des documents à une société que vous ne connaissez peut-être pas. Voici qui est Mollie, pourquoi cette étape est obligatoire, et ce que deviennent vos pièces.",
+        "sections": {
+          "documents": {
+            "body": "Les pièces que vous déposez dans le formulaire Mollie sont transmises à Mollie seul. CommonLink ne les reçoit pas, ne les conserve pas et n'y a pas accès : de cette connexion, la plateforme n'enregistre que des éléments techniques - jetons d'accès, identifiant de votre compte Mollie, état de la connexion, adresse de votre tableau de bord Mollie. Mollie chiffre les données, répond au plus haut niveau de certification de sécurité des paiements par carte (PCI DSS) et agit comme responsable de traitement au sens du RGPD.",
+            "title": "Où vont vos documents ?"
+          },
+          "funds": {
+            "body": "Les dons sont encaissés sur votre compte Mollie, ouvert au nom de votre association, puis reversés sur le compte bancaire que vous y aurez renseigné. CommonLink ne détient jamais vos fonds et ne peut pas les déplacer.",
+            "title": "Où va l'argent ?"
+          },
+          "verify": {
+            "body": "Ne nous croyez pas sur parole : l'agrément de Mollie est public, et ses engagements de sécurité sont publiés.",
+            "registerLink": "Fiche Mollie B.V. au registre public de la banque centrale néerlandaise",
+            "securityLink": "Les engagements de sécurité de Mollie (mollie.com)",
+            "title": "Vérifiez par vous-même"
+          },
+          "who": {
+            "body": "Mollie B.V. est un prestataire de paiement néerlandais, agréé comme établissement de monnaie électronique par la banque centrale des Pays-Bas (De Nederlandsche Bank) au titre de la directive européenne sur les services de paiement (DSP2). Cet agrément est inscrit au registre public de la banque centrale et couvre la France, où Mollie intervient en libre prestation de services.",
+            "title": "Qui est Mollie ?"
+          },
+          "why": {
+            "body": "Aucun établissement de paiement n'a le droit d'autoriser une structure à encaisser des fonds sans avoir vérifié son identité, celle de ses dirigeants et la nature de son activité. Cette obligation pèse sur Mollie, pas sur votre association : ce n'est pas une exigence de CommonLink, et aucune plateforme sérieuse ne peut s'en dispenser. CommonLink conduit par ailleurs sa propre vérification de votre dossier : les deux sont indépendantes et s'ajoutent l'une à l'autre.",
+            "title": "Pourquoi cette vérification est obligatoire"
+          }
+        },
+        "title": "Pourquoi Mollie ?"
+      },
+      "learnMore": "En savoir plus",
       "modal": {
         "cancel": "Annuler",
-        "connect": "Connecter",
+        "connect": "J'ai mes documents, continuer",
         "description": "Vous allez être redirigé vers Mollie pour autoriser la connexion.",
         "missingContactEmail": "Un email de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Email de contact dans l'onglet Informations et enregistrer.",
         "missingContactName": "Un nom de contact est requis pour démarrer l'intégration Mollie. Veuillez d'abord renseigner le champ Nom du contact dans l'onglet Informations et enregistrer.",
         "title": "Connecter Mollie",
         "waiting": "En attente d'autorisation…"
       },
+      "needsDataHint": "Vous pouvez reprendre plus tard : le bouton « Compléter mon dossier » vous ramène directement à votre dossier Mollie.",
       "reconnect": "Reconnecter",
       "status": {
         "broken": "Reconnexion requise",
