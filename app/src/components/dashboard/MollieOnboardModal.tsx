@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getMollieAuthUrl } from '@/lib/api/mollie-connect';
 import MollieDocumentChecklist from '@/components/dashboard/MollieDocumentChecklist';
+import MollieOnboardingGuide from '@/components/dashboard/MollieOnboardingGuide';
 import { MolliePopupMessage } from '@/types/mollie-connect';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -22,6 +23,14 @@ interface MollieOnboardModalProps {
   siren?: string | null;
   /** Association RNA or legacy SIREN, used by the checklist when no SIREN is recorded. */
   identifier?: string | null;
+  /** Official name, forwarded to the onboarding guide as a copyable value. */
+  name?: string | null;
+  /** Registered-office address, forwarded to the onboarding guide as a copyable value. */
+  addressLine1?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  /** Objet social, forwarded to the onboarding guide to answer Mollie's activity screen. */
+  legalObject?: string | null;
 }
 
 /**
@@ -32,8 +41,12 @@ interface MollieOnboardModalProps {
  * Before the popup opens, [MollieDocumentChecklist] states which association document answers
  * each requirement of Mollie's hosted wizard — that wizard is not configurable and uses company
  * wording, so the association knows what to prepare instead of discovering it mid-flow.
+ *
+ * Once the popup is open, the same modal switches to [MollieOnboardingGuide]: the wizard is being
+ * filled in at that very moment, in another window, so the waiting screen is where the field-by-
+ * field guidance is worth the most. It used to hold a bare spinner.
  */
-export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail, contactName, siren, identifier }: MollieOnboardModalProps) {
+export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail, contactName, siren, identifier, name, addressLine1, postalCode, city, legalObject }: MollieOnboardModalProps) {
   const t = useTranslations('settings');
   const { addToast } = useToastStore();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -109,7 +122,7 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal modal-scroll" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="font-semibold text-text">{t('mollie.modal.title')}</h2>
           <button className="modal-close" onClick={onClose} aria-label="close">×</button>
@@ -128,10 +141,23 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
           )}
           {contactEmail && contactName && !isConnecting && <MollieDocumentChecklist siren={siren} identifier={identifier} />}
           {contactEmail && contactName && isConnecting && (
-            <div className="flex flex-col items-center gap-3 py-4">
-              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-text-2">{t('mollie.modal.waiting')}</p>
-            </div>
+            <>
+              <div className="flex flex-col items-center gap-3 py-4">
+                <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-text-2">{t('mollie.modal.waiting')}</p>
+              </div>
+              <MollieOnboardingGuide
+                name={name}
+                addressLine1={addressLine1}
+                postalCode={postalCode}
+                city={city}
+                siren={siren}
+                identifier={identifier}
+                legalObject={legalObject}
+                contactName={contactName}
+                contactEmail={contactEmail}
+              />
+            </>
           )}
         </div>
         {contactEmail && contactName && !isConnecting && (

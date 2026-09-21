@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MollieOnboardModal from '../MollieOnboardModal';
 
 vi.mock('next-intl', () => ({
@@ -7,7 +7,7 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('@/lib/api/mollie-connect', () => ({
-  getMollieAuthUrl: vi.fn(),
+  getMollieAuthUrl: vi.fn().mockResolvedValue({ authUrl: 'https://my.mollie.com/oauth2/authorize' }),
 }));
 
 vi.mock('@/stores/toastStore', () => ({
@@ -43,6 +43,18 @@ describe('MollieOnboardModal', () => {
 
     expect(screen.queryByText('intro')).not.toBeInTheDocument();
     expect(screen.getByText('mollie.modal.missingContactEmail')).toBeInTheDocument();
+  });
+
+  it('swaps the checklist for the step-by-step guide once the Mollie window is open', async () => {
+    vi.spyOn(window, 'open').mockReturnValue({ closed: false, close: vi.fn() } as unknown as Window);
+    renderModal({ name: 'Fondation Lumiere' });
+
+    fireEvent.click(screen.getByText('mollie.modal.connect'));
+
+    // The wizard is being filled in right now, in the other window: guidance beats a bare spinner.
+    await waitFor(() => expect(screen.getByText('title')).toBeInTheDocument());
+    expect(screen.getByText('mollie.modal.waiting')).toBeInTheDocument();
+    expect(screen.queryByText('items.registration.mollieLabel')).not.toBeInTheDocument();
   });
 
   it('renders nothing when closed', () => {

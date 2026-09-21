@@ -95,6 +95,18 @@ Le seul flux de données d'identification entre CommonLink et le prestataire va 
 vers le prestataire** : lors du premier rattachement, les données que l'association a déjà
 fournies à CommonLink sont transmises pour pré-remplir le formulaire du prestataire.
 
+**Complément du 21 septembre 2026.** L'espace de l'association affiche désormais, à côté du
+formulaire du prestataire, une aide au remplissage : chaque écran du prestataire y est expliqué en
+langage associatif, et les informations que l'association a elle-même fournies à CommonLink — nom,
+adresse du siège, numéro d'identification, coordonnées du contact, objet de l'association — sont
+présentées avec une fonction de copie, afin qu'elle les reporte sans les ressaisir. Cet affichage ne
+crée aucun flux nouveau : les données présentées sont celles que CommonLink détient déjà et
+transmet, pour partie, au titre du pré-remplissage décrit ci-dessus. Le sens de la circulation reste
+inchangé — de CommonLink vers le prestataire, et jamais l'inverse — et la recopie est le fait de
+l'association elle-même. Une modale d'information, accessible depuis le même écran, expose par
+ailleurs le statut réglementaire du prestataire et le fait que les pièces déposées chez lui ne sont
+ni reçues ni conservées par CommonLink, ce qui est exactement le constat établi au présent point.
+
 Lors du retour du prestataire après sa propre procédure de vérification, le traitement effectué
 par la plateforme n'écrit que des données techniques liées à la connexion elle-même : jetons
 d'accès, identifiant de l'organisation chez le prestataire, indicateurs d'état de la connexion,
@@ -282,5 +294,5 @@ issue de la lecture directe du traitement correspondant dans le code source au 1
 
 ---
 
-*Document établi le 10 août 2026, complété le 21 août 2026 (point 4.4 — retrait intégral du prestataire antérieur). Une fiche de même nature sera produite pour chaque contrôle
+*Document établi le 10 août 2026, complété le 21 août 2026 (point 4.4 — retrait intégral du prestataire antérieur) puis le 21 septembre 2026 (point 4.2 — aide au remplissage et modale d'information affichées à l'association). Une fiche de même nature sera produite pour chaque contrôle
 du dispositif LCB-FT au fur et à mesure de sa réalisation.*

@@ -39,16 +39,14 @@ interface MollieDocumentChecklistProps {
  * The registration item carries a lookup link when the association can be found in the public
  * directory, by SIREN when there is one, by RNA otherwise.
  *
- * Two further items — stakeholder information and business activity — are listed only when the
- * association holds a SIREN, because that is the only case where the client-link carried a
- * `registrationNumber` and Mollie matched the dossier against the commercial registry.
- *
- * ⚠ That condition is inferred from two onboarding screens observed at different stages, not from
- *   a Mollie API: neither `/v2/onboarding/me` nor `/v2/capabilities` exposes the requirement list
- *   on our partner account. Stakeholders and business activity are ordinary KYB requirements, so
- *   Mollie plausibly asks every association for them and the condition should then be dropped.
- *   Settle it by completing those two steps on a SIREN-bearing dossier and checking whether the
- *   registration certificate appears afterwards.
+ * Every item is listed for every association. Stakeholder information and business activity were
+ * briefly conditioned on the association holding a SIREN — the case where the client link carries
+ * a `registrationNumber` — but that condition came from two onboarding screens observed at
+ * different stages, not from any Mollie API: neither `/v2/onboarding/me` nor `/v2/capabilities`
+ * exposes the requirement list (`requirements[].id` only ever holds coarse values such as
+ * `needs-data`). Both are ordinary KYB requirements, and omitting a document the wizard then asks
+ * for is the costlier mistake: the association discovers it mid-flow, which is exactly what this
+ * component exists to prevent. [MollieOnboardingGuide] takes the same unconditional stance.
  */
 export default function MollieDocumentChecklist({ siren, identifier }: MollieDocumentChecklistProps) {
   const t = useTranslations('settings.mollie.checklist');
@@ -63,32 +61,22 @@ export default function MollieDocumentChecklist({ siren, identifier }: MollieDoc
     fallback && (SIREN_PATTERN.test(fallback) || RNA_PATTERN.test(fallback)) ? fallback : null;
   const registryTerm = siren?.trim() || searchableFallback;
 
-  // Deliberately keyed on `siren` alone, never on a SIREN-shaped `identifier`: the backend sends
-  // `registrationNumber` to Mollie from `AssociationProfile.siren` and from nothing else
-  // (MollieConnectService.createClientLink), so this is exactly the set of associations whose
-  // dossier Mollie matched against the commercial registry.
-  const hasSiren = Boolean(siren?.trim());
-
   const items = [
     {
       id: 'registration',
       mollieLabel: t('items.registration.mollieLabel'),
       meaning: t('items.registration.meaning'),
     },
-    ...(hasSiren
-      ? [
-          {
-            id: 'stakeholders',
-            mollieLabel: t('items.stakeholders.mollieLabel'),
-            meaning: t('items.stakeholders.meaning'),
-          },
-          {
-            id: 'activity',
-            mollieLabel: t('items.activity.mollieLabel'),
-            meaning: t('items.activity.meaning'),
-          },
-        ]
-      : []),
+    {
+      id: 'stakeholders',
+      mollieLabel: t('items.stakeholders.mollieLabel'),
+      meaning: t('items.stakeholders.meaning'),
+    },
+    {
+      id: 'activity',
+      mollieLabel: t('items.activity.mollieLabel'),
+      meaning: t('items.activity.meaning'),
+    },
     {
       id: 'identity',
       mollieLabel: t('items.identity.mollieLabel'),

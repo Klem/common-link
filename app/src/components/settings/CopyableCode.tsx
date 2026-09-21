@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCopyToClipboard } from '@/hooks/ui/useCopyToClipboard';
 
 interface CopyableCodeProps {
   /** Text shown in the code box and written to the clipboard. */
@@ -17,13 +17,9 @@ interface CopyableCodeProps {
  * Labels are injected so the component stays i18n-namespace agnostic.
  */
 export function CopyableCode({ value, copyLabel, copiedLabel }: CopyableCodeProps) {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const handleCopy = () => copy(value);
 
   return (
     <div className="copyable-code">
