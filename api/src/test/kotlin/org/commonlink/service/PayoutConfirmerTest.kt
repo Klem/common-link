@@ -239,7 +239,7 @@ class PayoutConfirmerTest {
         val job = mockk<OnchainJob>()
         val payloadSlot = slot<Any>()
 
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
         every { job.id } returns jobId
         every {
@@ -260,9 +260,14 @@ class PayoutConfirmerTest {
     fun `finaliseSettled - a webhook replay does not re-enqueue the attestation`() {
         // Bridge retries a notification for up to two days, so the same settlement arrives twice.
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
         confirmer.finaliseSettled(payout.id, "tx_1")
+
+        // The guard only holds under the row lock: Bridge delivers its notifications in parallel,
+        // and an unlocked read let two threads both settle and both enqueue, the second dying on
+        // the outbox unique constraint and answering 502 for a settlement that had succeeded.
+        verify(exactly = 0) { payoutRepository.findById(any()) }
 
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
         verify(exactly = 0) { payoutRepository.save(any()) }
@@ -275,7 +280,7 @@ class PayoutConfirmerTest {
         // the association could never retry. Clearing bridgeStatus also returns the amount to the
         // confirmable balance, since sumInFlightAmount counts exactly the non-null ones.
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
         confirmer.releaseReservation(payout.id, "Bridge payment initiation unavailable: timeout")
@@ -289,7 +294,7 @@ class PayoutConfirmerTest {
     @Test
     fun `releaseReservation - never touches a payout that already left PENDING`() {
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
         confirmer.releaseReservation(payout.id, "late failure")
 
@@ -301,7 +306,7 @@ class PayoutConfirmerTest {
     @Test
     fun `finaliseFailed - fails the payout without emitting any attestation`() {
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
         confirmer.finaliseFailed(payout.id, "debit_account_insufficient_funds", BridgePaymentStatus.RJCT)
@@ -316,7 +321,7 @@ class PayoutConfirmerTest {
     fun `finaliseFailed - refuses to un-settle a payout already confirmed`() {
         // A late RJCT after an ACSC must not retract a payout whose attestation is already public.
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
         confirmer.finaliseFailed(payout.id, "late rejection", BridgePaymentStatus.RJCT)
 
@@ -327,7 +332,7 @@ class PayoutConfirmerTest {
     @Test
     fun `recordInFlight - keeps the amount engaged without confirming the payout`() {
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
         confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1")
@@ -346,7 +351,7 @@ class PayoutConfirmerTest {
         // second thread can still read PDNG after the first one settled the payout. Writing it
         // would leave a CONFIRMED payout displaying "in progress" for good.
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
         confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1")
 

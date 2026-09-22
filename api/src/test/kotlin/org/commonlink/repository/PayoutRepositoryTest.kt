@@ -72,6 +72,35 @@ class PayoutRepositoryTest(
     }
 
     @Test
+    fun `routing projections bind their aliases and never manage the payout`() {
+        // Mocked repositories cannot catch an alias that does not match a getter, and the identity
+        // map is exactly what these projections exist to avoid: returning the entity here loaded it
+        // into the request-scoped persistence context, and the confirmer's later `SELECT … FOR
+        // UPDATE` was then answered from that map with a state read before the concurrent thread
+        // committed. Only a real database exercises the binding.
+        val payout = payoutRepository.findByCampaignIdOrderByCreatedAtDesc(campaignId, PageRequest.of(0, 1))
+            .content.first()
+        payout.bridgePaymentLinkId = "pl_routing_1"
+        payoutRepository.saveAndFlush(payout)
+
+        val byLink = payoutRepository.findRoutingByBridgePaymentLinkId("pl_routing_1")
+        assertThat(byLink).isNotNull
+        assertThat(byLink!!.id).isEqualTo(payout.id)
+        assertThat(byLink.bridgePaymentLinkId).isEqualTo("pl_routing_1")
+
+        val byId = payoutRepository.findRoutingById(payout.id)
+        assertThat(byId).isNotNull
+        assertThat(byId!!.bridgePaymentLinkId).isEqualTo("pl_routing_1")
+
+        assertThat(payoutRepository.findRoutingByBridgePaymentLinkId("pl_unknown")).isNull()
+    }
+
+    // No test covers findByIdForUpdate: this slice rejects the `for no key update` Hibernate emits
+    // for a PESSIMISTIC_WRITE, with error `[42000-240]` — an H2 code, so it is not running on the
+    // PostgreSQL container its own KDoc describes. CampaignRepository.findByIdForUpdate is
+    // untested for the same reason. Worth sorting out, but as its own task.
+
+    @Test
     fun `empty campaign - sums return zero`() {
         val assocUser2 = userRepository.save(TestFixtures.associationUser(email = "other@test.com"))
         val assoc2 = associationProfileRepository.save(TestFixtures.associationProfile(assocUser2))

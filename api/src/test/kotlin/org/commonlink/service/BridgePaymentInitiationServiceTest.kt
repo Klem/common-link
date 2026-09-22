@@ -8,6 +8,7 @@ import org.commonlink.exception.BadGatewayException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.content
@@ -16,6 +17,7 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPat
 import org.springframework.test.web.client.match.MockRestRequestMatchers.method
 import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import org.springframework.test.web.client.response.MockRestResponseCreators.withServerError
+import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
 import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import org.springframework.web.client.RestClient
 import java.math.BigDecimal
@@ -414,6 +416,132 @@ class BridgePaymentInitiationServiceTest {
 
         assertThat(state.status).isEqualTo(BridgePaymentStatus.ACSC)
         assertThat(state.transactionId).isEqualTo("tx_1")
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - reads the payment request the notification named, and never lists`() {
+        // A link can hold several payment requests: Bridge leaves it usable after a rejection, so
+        // authorising again adds a second one beside the first. When the notification names which
+        // one moved, that one is read directly — no list, hence no ordering question at all.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess("""{"id":"pl_1","status":"completed"}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests/pr_2"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(
+                withSuccess(
+                    """{"id":"pr_2","status":"ACSC","payment_link_id":"pl_1","transactions":[{"id":"tx_2"}]}""",
+                    MediaType.APPLICATION_JSON,
+                ),
+            )
+
+        val state = service.getPaymentLink("pl_1", "pr_2")
+
+        assertThat(state.status).isEqualTo(BridgePaymentStatus.ACSC)
+        assertThat(state.transactionId).isEqualTo("tx_2")
+        // Fails if the list endpoint was called: MockRestServiceServer allows no unexpected request.
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - a payment request belonging to another link is never acted on`() {
+        // The id comes from the notification body. The list endpoint is filtered by link and could
+        // not return a foreign request; this one returns whatever id it is given, and settling on
+        // it would settle the wrong payout. So the read degrades to the scoped list.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess("""{"id":"pl_1","status":"valid"}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests/pr_9"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(
+                withSuccess(
+                    """{"id":"pr_9","status":"ACSC","payment_link_id":"pl_other"}""",
+                    MediaType.APPLICATION_JSON,
+                ),
+            )
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests?payment_link_id=pl_1"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess("""{"resources":[]}""", MediaType.APPLICATION_JSON))
+
+        val state = service.getPaymentLink("pl_1", "pr_9")
+
+        // Nothing has been authorised on our link: the foreign ACSC must not leak in.
+        assertThat(state.status).isEqualTo(BridgePaymentStatus.CREA)
+        assertThat(state.transactionId).isNull()
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - an unknown payment request id falls back to the link's own requests`() {
+        // A 404 is permanent: answering 502 would have Bridge retry for two days and raise a
+        // technical alert on each attempt, for an id no retry can make it know.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess("""{"id":"pl_1","status":"valid"}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests/pr_gone"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withStatus(HttpStatus.NOT_FOUND))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests?payment_link_id=pl_1"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(
+                withSuccess(
+                    """{"resources":[{"id":"pr_1","status":"PDNG","payment_link_id":"pl_1",
+                       "transactions":[{"id":"tx_1"}]}]}""",
+                    MediaType.APPLICATION_JSON,
+                ),
+            )
+
+        val state = service.getPaymentLink("pl_1", "pr_gone")
+
+        assertThat(state.status).isEqualTo(BridgePaymentStatus.PDNG)
+        assertThat(state.transactionId).isEqualTo("tx_1")
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - a settled request outranks a rejected sibling whatever the list order`() {
+        // The 2026-09-22 regression, pinned in both directions. Bridge returned the link's two
+        // requests newest-first, `resources.last()` therefore took the older rejection, and four
+        // consecutive notifications each re-stamped FAILED over a transfer the bank had executed.
+        val settled = """{"id":"pr_2","status":"ACSC","transactions":[{"id":"tx_2"}]}"""
+        val rejected = """{"id":"pr_1","status":"RJCT","status_reason":"AC01"}"""
+
+        listOf("$settled,$rejected", "$rejected,$settled").forEach { ordering ->
+            val (service, server) = realService()
+            expectState(
+                server,
+                link = """{"id":"pl_1","status":"completed"}""",
+                requests = """{"resources":[$ordering]}""",
+            )
+
+            val state = service.getPaymentLink("pl_1")
+
+            assertThat(state.status).isEqualTo(BridgePaymentStatus.ACSC)
+            assertThat(state.transactionId).isEqualTo("tx_2")
+            server.verify()
+        }
+    }
+
+    @Test
+    fun `real mode - a retry in flight outranks the rejection it followed`() {
+        // Ranking is not "most recent" but "what the payout is waiting on": a running attempt
+        // beside a dead one means the association retried, and PDNG is the honest state.
+        val (service, server) = realService()
+        expectState(
+            server,
+            link = """{"id":"pl_1","status":"valid"}""",
+            requests = """{"resources":[{"id":"pr_1","status":"RJCT","status_reason":"AC01"},
+                         {"id":"pr_2","status":"PDNG","transactions":[{"id":"tx_2"}]}]}""",
+        )
+
+        val state = service.getPaymentLink("pl_1")
+
+        assertThat(state.status).isEqualTo(BridgePaymentStatus.PDNG)
+        assertThat(state.statusReason).isNull()
         server.verify()
     }
 

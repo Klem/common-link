@@ -1,10 +1,12 @@
 package org.commonlink.repository
 
+import jakarta.persistence.LockModeType
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.math.BigDecimal
@@ -89,6 +91,55 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
     """)
     fun sumInFlightAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 
-    /** The payout attached to a Bridge payment link, for webhook reconciliation. */
-    fun findByBridgePaymentLinkId(bridgePaymentLinkId: String): Payout?
+    /**
+     * Everything webhook routing needs of a payout, and deliberately nothing more.
+     *
+     * Returning the entity here loaded it into the request-scoped persistence context
+     * (`open-in-view: true`) *before* any transaction. The transactional step that follows then
+     * joined that context, and JPA answered its locked read from the identity map instead of the
+     * database — so the row lock was taken while the state examined was the one read before the
+     * concurrent thread committed. On 2026-09-22 at 13:50:27Z that made two notifications both
+     * settle the same payout, the second one's "already CONFIRMED" guard reading a stale PENDING.
+     * A projection cannot become managed, so the locked read inside the transaction is the first
+     * load of that row and is necessarily fresh.
+     */
+    interface PayoutRouting {
+        val id: UUID
+        val bridgePaymentLinkId: String?
+    }
+
+    /** Routes a notification carrying a Bridge payment-link id. */
+    @Query(
+        """
+        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId
+        FROM Payout p WHERE p.bridgePaymentLinkId = :bridgePaymentLinkId
+        """,
+    )
+    fun findRoutingByBridgePaymentLinkId(@Param("bridgePaymentLinkId") bridgePaymentLinkId: String): PayoutRouting?
+
+    /** Routes a notification that carried only `client_reference`, i.e. the payout id. */
+    @Query("SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId FROM Payout p WHERE p.id = :id")
+    fun findRoutingById(@Param("id") id: UUID): PayoutRouting?
+
+    /**
+     * Loads a payout holding a pessimistic write lock on its row.
+     *
+     * Only ever call this on a payout that is **not** already in the persistence context, or the
+     * lock is taken while the state examined comes from the identity map: see [PayoutRouting].
+     *
+     * Bridge delivers its notifications concurrently — `payment.transaction.updated` and
+     * `payment.link.updated` for one settlement arrived 7 ms apart on 2026-09-22 — so two threads
+     * reached [org.commonlink.service.PayoutConfirmer.finaliseSettled] before either had committed,
+     * both read a payout that was not yet CONFIRMED, and both enqueued the on-chain job. The second
+     * insert hit the `onchain_jobs_correlation_key_key` unique constraint and the webhook answered
+     * 502 with a technical alert, on a settlement that had in fact succeeded.
+     *
+     * Every webhook-driven transition takes this lock, not settlement alone: each one guards itself
+     * by reading [Payout.status] first, and an unlocked read makes every one of those guards a
+     * race. The costly variant is not the duplicate job but a stale reader stamping `FAILED` or
+     * `PDNG` over a payout already CONFIRMED, whose on-chain attestation is public and final.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payout p WHERE p.id = :id")
+    fun findByIdForUpdate(@Param("id") id: UUID): Payout?
 }

@@ -118,6 +118,23 @@ class BridgeWebhookControllerTest {
     }
 
     @Test
+    fun `forwards the payment_request_id so the right request is read back`() {
+        // A link can hold several payment requests once a rejected one has been retried, and the
+        // list comes back in no documented order. The notification names the one that moved; that
+        // name is an address, never a state — the status is still re-read from Bridge.
+        every { signatureVerifier.isValid(any(), any()) } returns true
+        every { bridgeWebhookService.handlePaymentLinkNotification("pl_1", "payout-42", "pr_2") } just Runs
+
+        postWebhook(
+            """{"content":{"payment_transaction_id":"tx_2","payment_request_id":"pr_2",
+               "payment_link_id":"pl_1","client_reference":"payout-42","status":"ACSC"},
+               "timestamp":1612783550980,"type":"payment.transaction.updated"}"""
+        ).andExpect(status().isOk)
+
+        verify(exactly = 1) { bridgeWebhookService.handlePaymentLinkNotification("pl_1", "payout-42", "pr_2") }
+    }
+
+    @Test
     fun `dispatches to the service with the payment_link_id when present`() {
         every { signatureVerifier.isValid(any(), any()) } returns true
         every { bridgeWebhookService.handlePaymentLinkNotification("pl_1", null) } just Runs

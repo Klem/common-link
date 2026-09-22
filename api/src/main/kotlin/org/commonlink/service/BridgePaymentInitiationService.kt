@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import java.math.BigDecimal
@@ -48,7 +49,9 @@ data class BridgePaymentLinkState(
  *
  * Endpoints used:
  * - `POST /v3/payment/payment-links` — create the initiation and get the bank-authorisation URL
- * - `GET  /v3/payment/payment-links/{id}` — read the authoritative state
+ * - `GET  /v3/payment/payment-links/{id}` — whether the link itself is still usable
+ * - `GET  /v3/payment/payment-requests/{id}` — the execution state of the request a notification named
+ * - `GET  /v3/payment/payment-requests?payment_link_id={id}` — same, when it named none
  *
  * Status is driven by Bridge's webhook. Because Bridge documents no webhook signature, the
  * notification is treated as a bare trigger and the state is always re-read with [getPaymentLink]
@@ -243,19 +246,28 @@ class BridgePaymentInitiationService(
      * (`expired`/`revoked`) is reported as such, and a still-usable link with no payment request
      * stays [BridgePaymentStatus.CREA] — nothing has been authorised yet.
      *
+     * **Which** payment request is read matters, because a link can hold several: Bridge does not
+     * burn a link on a rejection, so re-opening it and authorising again adds a second request
+     * beside the first. When [paymentRequestId] names one, it is read directly; without it the
+     * list is ranked by [supersedes], never by its order. Taking `resources.last()` reported a
+     * settled 120 € transfer as rejected on 2026-09-22: Bridge had returned both requests, newest
+     * first, and four consecutive notifications each re-stamped the older rejection over it.
+     *
      * @param paymentLinkId Identifier returned by [createPaymentLink].
+     * @param paymentRequestId Payment request the notification is about, when it named one.
      * @return the current state.
      * @throws BadGatewayException if Bridge is unreachable or the response is unparsable — the
      *   caller must then leave the payout untouched rather than infer an outcome.
      */
-    fun getPaymentLink(paymentLinkId: String): BridgePaymentLinkState {
+    fun getPaymentLink(paymentLinkId: String, paymentRequestId: String? = null): BridgePaymentLinkState {
         if (props.demoMode) {
             log.debug("Bridge demo mode — simulated link {} reported as settled", paymentLinkId)
             return BridgePaymentLinkState(BridgePaymentStatus.ACSC, "$DEMO_ID_PREFIX$paymentLinkId", null)
         }
 
         val link = fetchLink(paymentLinkId)
-        val request = fetchPaymentRequest(paymentLinkId)
+        val request = paymentRequestId?.let { fetchPaymentRequestById(it, paymentLinkId) }
+            ?: fetchPaymentRequest(paymentLinkId)
         val requestStatus = BridgePaymentStatus.fromTransactionWire(request?.status)
 
         val status = when {
@@ -302,13 +314,62 @@ class BridgePaymentInitiationService(
     }
 
     /**
-     * Reads the payment request Bridge created for this link, or null while there is none.
+     * Reads the one payment request a notification named, through
+     * `GET /v3/payment/payment-requests/{id}`, or null to fall back to [fetchPaymentRequest].
      *
-     * A link the association has not authorised yet simply has no payment request; that is not an
-     * error, it is [BridgePaymentStatus.CREA]. Bridge marks a link `completed` once one has been
-     * initiated from it, so a second one is not expected — Bridge documents no ordering for the
-     * list, so when several do come back the last is taken and the ambiguity is logged rather than
-     * settled silently.
+     * Preferred over the list whenever the notification carries the id: it answers "what happened
+     * to *this* request" instead of "what is on this link", which is the only question with a
+     * single answer once a link holds several requests.
+     *
+     * The id comes from the notification body, so it is checked against the link the payout was
+     * resolved from before its status is used. The list endpoint could not return a foreign
+     * request — it is filtered by link — whereas this one returns whatever id it is given, and
+     * settling on it would settle the wrong payout. A mismatch, a request Bridge does not know, or
+     * a resource carrying no link id is therefore not fatal: it degrades to the scoped list rather
+     * than deciding on an unverified resource.
+     */
+    private fun fetchPaymentRequestById(paymentRequestId: String, paymentLinkId: String): PaymentRequestJson? {
+        val raw = try {
+            restClient.get()
+                .uri("/v3/payment/payment-requests/{id}", paymentRequestId)
+                .headers { it.addAll(bridgeHeaders()) }
+                .retrieve()
+                .body(String::class.java) ?: "{}"
+        } catch (ex: HttpClientErrorException.NotFound) {
+            // Retrying for two days would not make Bridge know this id; read the link instead.
+            log.warn("Bridge does not know payment request {} named by a notification on link {}", paymentRequestId, paymentLinkId)
+            return null
+        } catch (ex: RestClientException) {
+            log.error("Bridge payment-request read failed for {}: {}", paymentRequestId, ex.message)
+            throw BadGatewayException("Bridge payment initiation unavailable: ${ex.message}")
+        }
+
+        val request = try {
+            objectMapper.readValue(raw, PaymentRequestJson::class.java)
+        } catch (ex: Exception) {
+            log.warn("Failed to parse Bridge payment request {}: {}", paymentRequestId, ex.message)
+            throw BadGatewayException("Bridge returned an unparsable payment request $paymentRequestId")
+        }
+
+        if (request.paymentLinkId != paymentLinkId) {
+            log.warn(
+                "Bridge payment request {} belongs to link {}, not {} — falling back to the link's own requests",
+                paymentRequestId, request.paymentLinkId, paymentLinkId,
+            )
+            return null
+        }
+        return request
+    }
+
+    /**
+     * Reads the payment requests of a link and keeps the one that decides its fate, or null while
+     * there is none.
+     *
+     * Fallback for a notification that names no payment request. A link the association has not
+     * authorised yet simply has no request; that is not an error, it is
+     * [BridgePaymentStatus.CREA]. Several can coexist — a rejection leaves the link usable, so a
+     * second authorisation adds a second request — and Bridge documents no order for the list, so
+     * the winner is chosen by [supersedes] and never by position.
      */
     private fun fetchPaymentRequest(paymentLinkId: String): PaymentRequestJson? {
         val raw = try {
@@ -331,12 +392,37 @@ class BridgePaymentInitiationService(
 
         if (resources != null && resources.size > 1) {
             log.warn(
-                "Bridge returned {} payment requests for link {} — order is undocumented, taking the last",
+                "Bridge returned {} payment requests for link {} and the notification named none — " +
+                    "ranking them by status",
                 resources.size, paymentLinkId,
             )
         }
-        return resources?.lastOrNull()
+        return resources?.reduceOrNull { kept, candidate -> if (supersedes(candidate, kept)) candidate else kept }
     }
+
+    /**
+     * Whether [candidate] describes the fate of the link better than [kept] does.
+     *
+     * Ranking, highest first — deliberately order-independent, because Bridge's list order is
+     * undocumented and was observed to be newest-first, i.e. the reverse of what positional
+     * selection assumed:
+     *  1. `ACSC` — the bank executed a transfer. That is a fact no sibling request can undo, and
+     *     reporting it as anything else loses money from the ledger.
+     *  2. in flight (`CREA`/`ACTC`/`PDNG`/`PART`) — an attempt still running supersedes an older
+     *     rejection: the association retried, and that retry is what the payout is waiting on.
+     *  3. anything else, `RJCT` included — every attempt failed.
+     *
+     * An unrecognised status ranks lowest: an unknown state must never outrank a known one.
+     */
+    private fun supersedes(candidate: PaymentRequestJson, kept: PaymentRequestJson): Boolean =
+        rank(candidate.status) > rank(kept.status)
+
+    private fun rank(wireStatus: String?): Int =
+        when (val status = BridgePaymentStatus.fromTransactionWire(wireStatus)) {
+            null -> 0
+            BridgePaymentStatus.ACSC -> 3
+            else -> if (status.isInFlight) 2 else 1
+        }
 
     private fun normalise(iban: String) = iban.uppercase().replace(Regex("[^A-Z0-9]"), "")
 
@@ -499,12 +585,17 @@ private data class PaymentRequestTransactionJson(
  *
  * Its [status] is the authoritative execution state, in the same vocabulary as
  * [BridgePaymentStatus]: `CREA`, `ACTC`, `PDNG`, `ACSC`, `RJCT`, `PART`.
+ *
+ * [paymentLinkId] is what scopes a request read by id back to the link it belongs to. The list
+ * endpoint cannot return a foreign request, being filtered by link; reading one by an id taken
+ * from a notification body can, so that read is only trusted once this matches.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 private data class PaymentRequestJson(
     val id: String?,
     val status: String?,
     @JsonProperty("status_reason") val statusReason: String?,
+    @JsonProperty("payment_link_id") val paymentLinkId: String?,
     val transactions: List<PaymentRequestTransactionJson>?,
 )
 

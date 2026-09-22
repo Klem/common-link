@@ -29,7 +29,14 @@ import org.springframework.web.bind.annotation.RestController
  * `payment_link_client_reference` on `payment.link.updated`. Both are read; neither is trusted for
  * anything beyond routing, the state being re-read from Bridge (see [BridgeWebhookService]).
  *
+ * [paymentRequestId] names *which* payment request this notification is about. A link can carry
+ * several — Bridge does not burn it on a rejection, so a second authorisation creates a second
+ * request — and listing them back gives no usable order, so naming the one that moved is the only
+ * unambiguous way to read the right state. It is used for addressing only, exactly like
+ * [paymentLinkId]: the body says which resource to look at, Bridge's API says what its state is.
+ *
  * @param paymentLinkId Bridge payment-link id, `content.payment_link_id`.
+ * @param paymentRequestId Bridge payment-request id, `content.payment_request_id`.
  * @param clientReference `content.client_reference` — the payoutId, as a string.
  * @param paymentLinkClientReference `content.payment_link_client_reference`, same value under the
  *   name `payment.link.updated` uses.
@@ -37,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class BridgeWebhookContent(
     @JsonProperty("payment_link_id") val paymentLinkId: String?,
+    @JsonProperty("payment_request_id") val paymentRequestId: String?,
     @JsonProperty("client_reference") val clientReference: String?,
     @JsonProperty("payment_link_client_reference") val paymentLinkClientReference: String?,
 ) {
@@ -153,7 +161,9 @@ class BridgeWebhookController(
             payload.type, paymentLinkId, clientReference,
         )
         return try {
-            bridgeWebhookService.handlePaymentLinkNotification(paymentLinkId, clientReference)
+            bridgeWebhookService.handlePaymentLinkNotification(
+                paymentLinkId, clientReference, payload.content?.paymentRequestId,
+            )
             ResponseEntity.ok().build()
         } catch (ex: Exception) {
             logger.error("Bridge webhook processing error for paymentLinkId={} clientReference={}", paymentLinkId, clientReference, ex)

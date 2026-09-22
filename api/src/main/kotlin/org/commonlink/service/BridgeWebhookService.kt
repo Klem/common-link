@@ -37,14 +37,24 @@ class BridgeWebhookService(
      *   Used only when [paymentLinkId] is absent, which Bridge documents as possible on
      *   `payment.transaction.created`/`.updated` (unlike `payment.link.updated`, where the link id
      *   is always present).
+     * @param paymentRequestId `payment_request_id` from the notification, naming which of the
+     *   link's payment requests moved. Passed through as an address, never as a state.
      * @throws org.commonlink.exception.BadGatewayException if Bridge cannot be reached — the caller
      *   must answer non-2xx so Bridge retries, rather than silently dropping the update.
      */
-    fun handlePaymentLinkNotification(paymentLinkId: String?, clientReference: String? = null) {
-        val payout = paymentLinkId?.takeIf { it.isNotBlank() }?.let { payoutRepository.findByBridgePaymentLinkId(it) }
+    fun handlePaymentLinkNotification(
+        paymentLinkId: String?,
+        clientReference: String? = null,
+        paymentRequestId: String? = null,
+    ) {
+        // Projections, not entities: loading the Payout here would put it in the request-scoped
+        // persistence context, and the confirmer's locked read would then be answered from the
+        // identity map with the state as of *this* line — see [PayoutRepository.PayoutRouting].
+        val payout = paymentLinkId?.takeIf { it.isNotBlank() }
+            ?.let { payoutRepository.findRoutingByBridgePaymentLinkId(it) }
             ?: clientReference?.takeIf { it.isNotBlank() }
                 ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-                ?.let { payoutRepository.findById(it).orElse(null) }
+                ?.let { payoutRepository.findRoutingById(it) }
 
         if (payout == null) {
             // Not an error: Bridge also notifies for payment links this instance never created
@@ -63,7 +73,7 @@ class BridgeWebhookService(
         }
 
         // Never trust the notification body: read the state from Bridge itself.
-        val state = bridgeInitiation.getPaymentLink(linkId)
+        val state = bridgeInitiation.getPaymentLink(linkId, paymentRequestId?.takeIf { it.isNotBlank() })
 
         when (state.status) {
             BridgePaymentStatus.ACSC ->

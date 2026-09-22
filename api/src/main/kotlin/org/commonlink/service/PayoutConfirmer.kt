@@ -191,8 +191,13 @@ class PayoutConfirmer(
      *
      * Both writes happen in one transaction, so a crash never leaves a payout CONFIRMED without its
      * [OnchainJobAction.RECORD_PAYOUT] job. Idempotent: a payout already CONFIRMED is returned
-     * untouched, because Bridge retries a webhook for up to two days and the outbox deduplicates on
-     * `correlationKey` anyway.
+     * untouched, because Bridge retries a webhook for up to two days.
+     *
+     * The row is locked for the whole transaction. That guard is a read-then-write, and Bridge
+     * delivers its notifications in parallel: without the lock two threads both read a payout that
+     * was not yet CONFIRMED and both enqueued the job, the second one dying on the outbox's unique
+     * constraint and answering Bridge 502 for a settlement that had succeeded — see
+     * [PayoutRepository.findByIdForUpdate].
      *
      * @param payoutId Payout to settle.
      * @param transactionId Bridge transaction id, for bank reconciliation.
@@ -201,8 +206,8 @@ class PayoutConfirmer(
      */
     @Transactional
     fun finaliseSettled(payoutId: UUID, transactionId: String?): Payout {
-        val payout = payoutRepository.findById(payoutId)
-            .orElseThrow { NotFoundException("Payout not found: $payoutId") }
+        val payout = payoutRepository.findByIdForUpdate(payoutId)
+            ?: throw NotFoundException("Payout not found: $payoutId")
 
         if (payout.status == PayoutStatus.CONFIRMED) {
             log.debug("Payout {} already confirmed — webhook replay ignored", payoutId)
@@ -252,7 +257,7 @@ class PayoutConfirmer(
      */
     @Transactional
     fun releaseReservation(payoutId: UUID, message: String) {
-        val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
         if (payout.status != PayoutStatus.PENDING) {
             log.warn("Refusing to release payout {} — it is {}", payoutId, payout.status)
             return
@@ -278,7 +283,7 @@ class PayoutConfirmer(
      */
     @Transactional
     fun finaliseFailed(payoutId: UUID, message: String, bridgeStatus: BridgePaymentStatus?) {
-        val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
         if (payout.status == PayoutStatus.CONFIRMED) {
             log.warn("Refusing to fail payout {} — it is already confirmed as settled", payoutId)
             return
@@ -310,7 +315,7 @@ class PayoutConfirmer(
      */
     @Transactional
     fun recordInFlight(payoutId: UUID, bridgeStatus: BridgePaymentStatus, transactionId: String?) {
-        val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
         if (payout.status == PayoutStatus.CONFIRMED) {
             log.warn("Refusing to record {} on payout {} — it is already confirmed as settled", bridgeStatus, payoutId)
             return

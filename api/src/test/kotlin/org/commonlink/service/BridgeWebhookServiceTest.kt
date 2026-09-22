@@ -47,12 +47,23 @@ class BridgeWebhookServiceTest {
         bridgePaymentLinkId = LINK_ID, bridgeStatus = BridgePaymentStatus.CREA,
     )
 
+    /**
+     * What routing is allowed to know. Deliberately not the [Payout] entity: loading it here is
+     * what let the confirmer's locked read be answered from the persistence context instead of the
+     * database, so this test pins the projection rather than merely accepting it.
+     */
+    private fun routing(payoutId: UUID = payout.id, linkId: String? = LINK_ID) =
+        object : PayoutRepository.PayoutRouting {
+            override val id = payoutId
+            override val bridgePaymentLinkId = linkId
+        }
+
     private fun stubState(
         status: BridgePaymentStatus,
         transactionId: String? = "tx_1",
         statusReason: String? = null,
     ) {
-        every { payoutRepository.findByBridgePaymentLinkId(LINK_ID) } returns payout
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns routing()
         every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
             BridgePaymentLinkState(status, transactionId, statusReason)
     }
@@ -137,7 +148,7 @@ class BridgeWebhookServiceTest {
     @Test
     fun `ignores a notification for a payment link this instance never created`() {
         // Bridge also notifies for links created by another environment sharing the sandbox app.
-        every { payoutRepository.findByBridgePaymentLinkId("pl_unknown") } returns null
+        every { payoutRepository.findRoutingByBridgePaymentLinkId("pl_unknown") } returns null
 
         service.handlePaymentLinkNotification("pl_unknown")
 
@@ -150,7 +161,7 @@ class BridgeWebhookServiceTest {
     fun `resolves the payout via client_reference when payment_link_id is absent`() {
         // payment.transaction.* documents payment_link_id as optional, unlike payment.link.updated.
         stubState(BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findRoutingById(payout.id) } returns routing()
 
         service.handlePaymentLinkNotification(null, payout.id.toString())
 
@@ -159,7 +170,7 @@ class BridgeWebhookServiceTest {
 
     @Test
     fun `ignores a notification with neither a resolvable payment_link_id nor client_reference`() {
-        every { payoutRepository.findByBridgePaymentLinkId("pl_unknown") } returns null
+        every { payoutRepository.findRoutingByBridgePaymentLinkId("pl_unknown") } returns null
 
         service.handlePaymentLinkNotification("pl_unknown", "not-a-uuid")
 
@@ -170,7 +181,7 @@ class BridgeWebhookServiceTest {
     @Test
     fun `propagates an unreachable Bridge so the notification is retried`() {
         // Swallowing this would strand the payout PENDING with its balance engaged forever.
-        every { payoutRepository.findByBridgePaymentLinkId(LINK_ID) } returns payout
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns routing()
         every { bridgeInitiation.getPaymentLink(LINK_ID) } throws BadGatewayException("unreachable")
 
         assertThrows<BadGatewayException> { service.handlePaymentLinkNotification(LINK_ID) }
