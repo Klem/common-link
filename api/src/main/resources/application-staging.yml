@@ -131,6 +131,8 @@ app:
     client-secret: ${BRIDGE_CLIENT_SECRET}
     webhook-secret: ${BRIDGE_WEBHOOK_SECRET}
     webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
+    # Shorten to a few minutes (e.g. 5m) to observe the expiry path without a 24-hour wait.
+    link-validity: ${BRIDGE_LINK_VALIDITY:5m}
     allow-fake-verify: true
   vop:
     demo-mode: true

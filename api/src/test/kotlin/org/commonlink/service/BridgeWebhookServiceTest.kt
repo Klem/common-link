@@ -156,21 +156,25 @@ class BridgeWebhookServiceTest {
     }
 
     @Test
-    fun `fails the payout when the authorisation window expired`() {
+    fun `returns the payout to a retryable state when the authorisation window expired`() {
+        // An expiry is nobody ever asking, not the bank refusing. Nothing was debited, so failing
+        // the payout would retire it for good because the association closed the tab.
         stubState(BridgePaymentStatus.LINK_EXPIRED, transactionId = null)
 
         service.handlePaymentLinkNotification(LINK_ID)
 
-        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.LINK_EXPIRED) }
+        verify { confirmer.releaseReservation(payout.id, any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
     }
 
     @Test
-    fun `fails the payout when the link was revoked`() {
+    fun `returns the payout to a retryable state when the link was revoked unused`() {
         stubState(BridgePaymentStatus.LINK_REVOKED, transactionId = null)
 
         service.handlePaymentLinkNotification(LINK_ID)
 
-        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.LINK_REVOKED) }
+        verify { confirmer.releaseReservation(payout.id, any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
     }
 
     @Test

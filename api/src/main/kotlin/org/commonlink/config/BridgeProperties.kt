@@ -36,6 +36,13 @@ import java.time.Duration
  *   [org.commonlink.service.BridgeWebhookSignatureVerifier].
  * @param webhookSecretPrevious Prior signing secret, kept valid by Bridge for 24h after a
  *   rotation. Both are checked so a rotation never causes a silent verification gap.
+ * @param linkValidity How long a payment link stays authorisable, sent as Bridge's `expired_date`.
+ *   Bridge's own default is 15 minutes when the field is omitted, which is short for an
+ *   association that has to authenticate at its bank; a day is the working figure. Configurable
+ *   because the expiry path — does Bridge notify, and does the payout come back to a retryable
+ *   PENDING — is otherwise a 24-hour feedback loop: set a handful of minutes on staging and the
+ *   same scenario is observable immediately. It bounds how long a payout's amount can stay
+ *   engaged on the campaign, so it is never zero.
  */
 @ConfigurationProperties(prefix = "app.bridge")
 data class BridgeProperties(
@@ -48,4 +55,5 @@ data class BridgeProperties(
     val readTimeout: Duration = Duration.ofSeconds(15),
     val webhookSecret: String = "",
     val webhookSecretPrevious: String = "",
+    val linkValidity: Duration = Duration.ofDays(1),
 )

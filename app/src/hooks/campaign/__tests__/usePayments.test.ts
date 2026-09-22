@@ -57,6 +57,22 @@ const samplePage = {
   size: 20,
 };
 
+/** The page as it reads when the association has just returned from its bank. */
+const awaitingReturnPage = {
+  ...samplePage,
+  content: [
+    {
+      ...samplePage.content[0],
+      id: 'payout-9',
+      status: 'PENDING',
+      confirmedAt: null,
+      bridgeStatus: 'CREA',
+      bridgeLastError: null,
+      bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
+    },
+  ],
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockList.mockResolvedValue(samplePage);
@@ -139,6 +155,45 @@ describe('usePayments', () => {
 
     expect(result.current.isSaving).toBe(true);
     await waitFor(() => expect(result.current.isSaving).toBe(false));
+  });
+
+  it('polls fast for the payout the association just came back from its bank for', async () => {
+    // The 30-second in-flight cadence is right for a SEPA settlement and far too slow here: on
+    // 2026-09-22 a transfer went CREA -> ACTC -> PDNG in 24 seconds, entirely inside one window,
+    // so the page the association returns to would keep showing the state it loaded with.
+    vi.useFakeTimers();
+    try {
+      mockList.mockResolvedValue(awaitingReturnPage);
+      const { result } = renderHook(() => usePayments(campaignId, 'payout-9'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.awaitingReturnPayoutId).toBe('payout-9');
+      const callsAfterMount = mockList.mock.calls.length;
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
+
+      // Three two-second ticks, where the ordinary cadence would not have fired once.
+      expect(mockList.mock.calls.length).toBeGreaterThanOrEqual(callsAfterMount + 3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stops watching the return once the fast window has lapsed', async () => {
+    vi.useFakeTimers();
+    try {
+      mockList.mockResolvedValue(awaitingReturnPage);
+      const { result } = renderHook(() => usePayments(campaignId, 'payout-9'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(21_000); });
+
+      // An abandoned payout is CREA too, and indistinguishable from here: keeping the window open
+      // tells someone who pressed back to wait for a bank it never reached, with no way to resume.
+      expect(result.current.awaitingReturnPayoutId).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('setPage triggers a new fetch with updated page number', async () => {

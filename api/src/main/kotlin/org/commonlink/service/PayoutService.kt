@@ -185,7 +185,7 @@ class PayoutService(
                 amount = context.amount,
                 label = context.label,
                 senderIban = null,
-                callbackUrl = bridgeCallbackUrl(campaignId),
+                callbackUrl = bridgeCallbackUrl(campaignId, payoutId),
             )
         } catch (ex: Exception) {
             // Release the reservation rather than fail the payout: with Open Banking initiation
@@ -201,8 +201,16 @@ class PayoutService(
     }
 
     /** Where Bridge returns the association once the bank flow is over. */
-    private fun bridgeCallbackUrl(campaignId: UUID) =
-        "$frontendUrl/dashboard/association/campaigns/$campaignId?tab=payments"
+    /**
+     * Where Bridge returns the association once it is done at its bank.
+     *
+     * Carries the payout so the tab can watch that one settle. The association comes back while
+     * Bridge is still notifying — CREA, ACTC and PDNG landed within 24 seconds of each other on
+     * 2026-09-22 — so without it the page shows the state as of the instant it loaded and offers
+     * an authorisation link for a transfer that is already on its way.
+     */
+    private fun bridgeCallbackUrl(campaignId: UUID, payoutId: UUID) =
+        "$frontendUrl/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId"
 
     /**
      * Returns a paginated list of payouts for [campaignId], ordered by creation date descending.

@@ -292,6 +292,35 @@ class PayoutConfirmerTest {
     }
 
     @Test
+    fun `releaseReservation - drops the dead checkout url and leaves the payout confirmable again`() {
+        // The expiry path: the association never authenticated, the link died, and the URL on the
+        // row now leads nowhere. Leaving it would offer a dead end; leaving bridgeStatus set would
+        // keep the amount engaged on the campaign for ever.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        payout.bridgePaymentLinkId = "pl_1"
+        payout.bridgeCheckoutUrl = "https://pay.bridgeapi.io/link/dead"
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.releaseReservation(payout.id, "Bank authorisation window expired before the transfer was authorised")
+
+        assertThat(payout.bridgeCheckoutUrl).isNull()
+        // Kept: the audit trail of the attempt, and the routing key for a notification still in
+        // flight for that link.
+        assertThat(payout.bridgePaymentLinkId).isEqualTo("pl_1")
+
+        // The state loadForConfirm demands — proven by running it rather than by asserting fields.
+        every {
+            payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payout.id, assocId)
+        } returns payout
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(verifiedIban)
+
+        val context = confirmer.loadForConfirm(campaignId, payout.id, assocId)
+
+        assertThat(context.payoutId).isEqualTo(payout.id)
+    }
+
+    @Test
     fun `releaseReservation - never touches a payout that already left PENDING`() {
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout

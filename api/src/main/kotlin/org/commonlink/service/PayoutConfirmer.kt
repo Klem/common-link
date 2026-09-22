@@ -50,7 +50,7 @@ data class PayoutConfirmContext(
  * Confirmation runs in three phases, orchestrated by [PayoutService.confirm]:
  *  1. [loadForConfirm] — validate and read what the initiation needs
  *  2. [reserve] — lock the campaign, re-check the balance, mark the amount engaged
- *  3. Bridge call, then [attachPaymentLink] or [finaliseFailed]
+ *  3. Bridge call, then [attachPaymentLink] or [releaseReservation]
  *
  * The payout stays PENDING throughout: with Open Banking initiation, nothing moves until the
  * association authorises the transfer at its own bank. Settlement arrives later, through Bridge's
@@ -243,17 +243,25 @@ class PayoutConfirmer(
     }
 
     /**
-     * Undoes [reserve] after an initiation that never reached Bridge, leaving the payout PENDING.
+     * Returns a payout to a retryable PENDING state, its amount back on the campaign's balance.
      *
-     * Nothing was created at Bridge, so nothing can be debited: the amount must return to the
-     * campaign's confirmable balance and the association must be able to click confirm again.
-     * [finaliseFailed] would be wrong here — it stamps FAILED, which [loadForConfirm] refuses, so a
-     * transient Bridge outage or a rejected request would retire the payout for good.
+     * For every outcome where **no transfer was ever authorised**: an initiation that never
+     * reached Bridge, and a link that died unused — expired or revoked before the association
+     * authenticated at its bank. In all of them nothing can have been debited, so the amount must
+     * return to the confirmable balance and the association must be able to click confirm again.
      *
-     * The diagnostic is still kept on the row: only the reservation is released.
+     * [finaliseFailed] would be wrong here — it stamps FAILED, which [loadForConfirm] refuses, so
+     * closing the tab on the bank's page would retire a payout for good over an outcome that moved
+     * no money. That distinction is the whole point: a rejection is the bank refusing, an expiry is
+     * nobody ever asking. Only the first is terminal.
+     *
+     * The diagnostic is kept on the row so the association is told why, and
+     * [Payout.bridgeCheckoutUrl] is cleared: it points at a link that can no longer be used.
+     * [Payout.bridgePaymentLinkId] stays, as the audit trail of the attempt and as the routing key
+     * for any notification Bridge still has in flight for it.
      *
      * @param payoutId Payout whose reservation is released.
-     * @param message Why the initiation failed, stored on the row for support.
+     * @param message Why it is being released, stored on the row for support.
      */
     @Transactional
     fun releaseReservation(payoutId: UUID, message: String) {
@@ -263,19 +271,27 @@ class PayoutConfirmer(
             return
         }
         payout.bridgeStatus = null
+        payout.bridgeCheckoutUrl = null
         payout.bridgeLastError = message.take(BRIDGE_ERROR_MAX_LENGTH)
         payout.bridgeSyncedAt = Instant.now()
         payoutRepository.save(payout)
-        log.warn("Payout {} released back to PENDING — Bridge initiation never happened: {}", payoutId, message)
+        log.warn("Payout {} released back to a retryable PENDING: {}", payoutId, message)
     }
 
     /**
-     * Marks the payout FAILED — the transfer was refused, or its authorisation window closed.
+     * Marks the payout FAILED — the bank refused the transfer.
+     *
+     * Reserved for a refusal, which is terminal: the bank was asked and said no. A link that
+     * merely died unused goes through [releaseReservation] instead, because nobody ever asked.
      *
      * The reservation is released and the amount returns to the campaign's confirmable balance.
      * This is safe in the initiation model: no money can move without the association authorising
-     * it at its bank, so a refused or dead initiation moved nothing. No on-chain attestation is
-     * emitted — nothing certifies a transfer that did not happen.
+     * it at its bank, so a refused initiation moved nothing. No on-chain attestation is emitted —
+     * nothing certifies a transfer that did not happen.
+     *
+     * [Payout.bridgeCheckoutUrl] is cleared: the caller revokes the link before failing the payout,
+     * precisely so it cannot be authorised after the amount has gone back to the balance, and an
+     * URL kept on the row would only point at that dead link.
      *
      * @param payoutId Payout to fail.
      * @param message Diagnostic message stored on the row.
@@ -290,6 +306,7 @@ class PayoutConfirmer(
         }
         payout.status = PayoutStatus.FAILED
         payout.bridgeStatus = bridgeStatus
+        payout.bridgeCheckoutUrl = null
         payout.bridgeLastError = message.take(BRIDGE_ERROR_MAX_LENGTH)
         payout.bridgeSyncedAt = Instant.now()
         payoutRepository.save(payout)

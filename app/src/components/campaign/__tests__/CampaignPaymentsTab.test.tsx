@@ -172,6 +172,7 @@ function setupPayments(overrides: Partial<UsePaymentsReturn> = {}): UsePaymentsR
     setPage: vi.fn(),
     submit: defaultSubmit,
     refetch: vi.fn(),
+    awaitingReturnPayoutId: null,
     ...overrides,
   };
 }
@@ -465,6 +466,25 @@ describe('CampaignPaymentsTab', () => {
 
     const link = screen.getByRole('link', { name: 'history.authorise' });
     expect(link.getAttribute('href')).toBe('https://pay.bridgeapi.io/link/abc');
+  });
+
+  it('states the wait instead of the link right after the return from the bank', () => {
+    // Coming back from the bank the payout is still CREA only because Bridge has not finished
+    // notifying — CREA, ACTC and PDNG landed within 24 seconds of each other on 2026-09-22. The
+    // link here would re-open one being consumed, and re-clicking it is the natural reflex.
+    setupMocks();
+    render(
+      <CampaignPaymentsTab
+        campaign={campaign}
+        payments={setupPayments({
+          payouts: [awaitingBankPayout],
+          awaitingReturnPayoutId: awaitingBankPayout.id,
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole('link', { name: 'history.authorise' })).toBeNull();
+    expect(screen.getByText('history.awaitingBank')).toBeTruthy();
   });
 
   it('offers no authorisation link once the transfer is settled', () => {

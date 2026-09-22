@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.mock.http.client.MockClientHttpRequest
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.content
 import org.springframework.test.web.client.match.MockRestRequestMatchers.header
@@ -21,6 +22,8 @@ import org.springframework.test.web.client.response.MockRestResponseCreators.wit
 import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import org.springframework.web.client.RestClient
 import java.math.BigDecimal
+import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -42,7 +45,9 @@ class BridgePaymentInitiationServiceTest {
     )
 
     /** Builds a real-mode service whose HTTP calls are intercepted, plus the interceptor itself. */
-    private fun realService(): Pair<BridgePaymentInitiationService, MockRestServiceServer> {
+    private fun realService(
+        linkValidity: Duration = Duration.ofDays(1),
+    ): Pair<BridgePaymentInitiationService, MockRestServiceServer> {
         val builder = RestClient.builder().baseUrl(BASE_URL)
         val server = MockRestServiceServer.bindTo(builder).build()
         val service = BridgePaymentInitiationService(
@@ -51,6 +56,7 @@ class BridgePaymentInitiationServiceTest {
                 baseUrl = BASE_URL,
                 clientId = "cid",
                 clientSecret = "csecret",
+                linkValidity = linkValidity,
             ),
             objectMapper = objectMapper,
             restClient = builder.build(),
@@ -173,6 +179,28 @@ class BridgePaymentInitiationServiceTest {
         val (service, server) = realService()
         server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
             .andExpect(jsonPath("$.expired_date").exists())
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR0530003000402916465922J55", id = "pl_1")
+
+        createLink(service)
+
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - the authorisation window is the configured one`() {
+        // Configurable so the expiry path is observable in minutes instead of a day: whether Bridge
+        // notifies an expiry, and whether the payout comes back to a retryable PENDING, is
+        // otherwise a 24-hour feedback loop.
+        val validity = Duration.ofMinutes(5)
+        val (service, server) = realService(linkValidity = validity)
+        val before = Instant.now()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andExpect { request ->
+                val body = (request as MockClientHttpRequest).bodyAsString
+                val expiry = Instant.parse(objectMapper.readTree(body).get("expired_date").asText())
+                assertThat(expiry).isBetween(before.plus(validity), Instant.now().plus(validity))
+            }
             .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
         expectReadBack(server, "FR0530003000402916465922J55", id = "pl_1")
 
@@ -543,6 +571,46 @@ class BridgePaymentInitiationServiceTest {
         assertThat(state.status).isEqualTo(BridgePaymentStatus.PDNG)
         assertThat(state.statusReason).isNull()
         server.verify()
+    }
+
+    @Test
+    fun `real mode - an unauthorised request on an expired link is reported as expired`() {
+        // The 2026-09-23 staging run: the payer entered the tunnel, a payment request was created,
+        // the payer abandoned, and five minutes later the link expired. Bridge notified it — but
+        // letting the request's ACTC win reported the payout in flight for ever and kept its amount
+        // engaged, which is exactly what bounding the link's life was meant to prevent.
+        listOf("CREA", "ACTC").forEach { wire ->
+            val (service, server) = realService()
+            expectState(
+                server,
+                link = """{"id":"pl_1","status":"expired"}""",
+                requests = """{"resources":[{"id":"pr_1","status":"$wire","payment_link_id":"pl_1"}]}""",
+            )
+
+            val state = service.getPaymentLink("pl_1")
+
+            assertThat(state.status).isEqualTo(BridgePaymentStatus.LINK_EXPIRED)
+            server.verify()
+        }
+    }
+
+    @Test
+    fun `real mode - a transfer past authorisation outranks a dead link`() {
+        // From PDNG on the bank is executing: the link expiring cannot call the money back, and
+        // releasing the payout would hand its amount back while the transfer is under way.
+        listOf("PDNG" to BridgePaymentStatus.PDNG, "ACSC" to BridgePaymentStatus.ACSC).forEach { (wire, expected) ->
+            val (service, server) = realService()
+            expectState(
+                server,
+                link = """{"id":"pl_1","status":"expired"}""",
+                requests = """{"resources":[{"id":"pr_1","status":"$wire","payment_link_id":"pl_1"}]}""",
+            )
+
+            val state = service.getPaymentLink("pl_1")
+
+            assertThat(state.status).isEqualTo(expected)
+            server.verify()
+        }
     }
 
     @Test

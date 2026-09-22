@@ -137,17 +137,18 @@ class BridgePaymentInitiationService(
             // An explicit expiry is what is meant to keep the payout from staying engaged forever.
             // If the association closes the tab without authorising, nothing else would ever change
             // the state: there is no polling loop, and an unbounded link may never produce an event.
-            // A bounded one expires, and the reserved amount is released by the LINK_EXPIRED arm of
-            // BridgeWebhookService — provided Bridge emits payment.link.updated on that transition.
+            // A bounded one expires, and the LINK_EXPIRED arm of BridgeWebhookService returns the
+            // payout to a retryable PENDING with its amount back on the campaign — provided Bridge
+            // emits payment.link.updated on that transition.
             //
             // UNVERIFIED (2026-09-22). Bridge documents that `expired`/`revoked` are carried by
             // payment.link.updated, but never that ageing past `expired_date` emits an event at all,
-            // and the revoke endpoint mentions no webhook. Two links created on 2026-09-22 at 10:37Z
-            // and 11:49Z expire a day later: if they are not FAILED/LINK_EXPIRED by then, this whole
-            // release path does not exist and a sweeper is required. Bridge's own default is 15
-            // minutes, deliberately overridden here — an association needs longer than that to
-            // authorise at its bank.
-            expiredDate = Instant.now().plus(LINK_VALIDITY).toString(),
+            // and the revoke endpoint mentions no webhook. A link created on 2026-09-22 at 10:37Z
+            // expires a day later: if its payout is not back to PENDING with a null Bridge status
+            // by then, this whole release path does not exist and a sweeper is required. Bridge's
+            // own default is 15 minutes, deliberately overridden here — an association needs longer
+            // than that to authorise at its bank.
+            expiredDate = Instant.now().plus(props.linkValidity).toString(),
             // Bridge rejects the whole body with a bare `invalid_request` when `user` is absent —
             // it never names the field. The association is the payer here, so it is a company.
             user = UserJson(
@@ -243,9 +244,11 @@ class BridgePaymentInitiationService(
      * state from the link alone reported every transfer as [BridgePaymentStatus.CREA] for ever, so
      * no payout could settle and none ever did.
      *
-     * The payment request's status wins whenever one exists; otherwise a dead link
-     * (`expired`/`revoked`) is reported as such, and a still-usable link with no payment request
-     * stays [BridgePaymentStatus.CREA] — nothing has been authorised yet.
+     * The payment request's status wins over the link's, but only once the transfer is past
+     * authorisation — see [BridgePaymentStatus.survivesLinkDeath]. A `CREA` or `ACTC` request on a
+     * dead link is itself dead, because the URL that would let the association authorise no longer
+     * works, so the link's `expired`/`revoked` is what gets reported. A still-usable link with no
+     * payment request stays [BridgePaymentStatus.CREA] — nothing has been authorised yet.
      *
      * **Which** payment request is read matters, because a link can hold several: Bridge does not
      * burn a link on a rejection, so re-opening it and authorising again adds a second request
@@ -272,9 +275,13 @@ class BridgePaymentInitiationService(
         val requestStatus = BridgePaymentStatus.fromTransactionWire(request?.status)
 
         val status = when {
-            requestStatus != null -> requestStatus
+            // A request the association has yet to authorise loses to a dead link: the URL that
+            // would let it authorise no longer works, so that request can never go anywhere. Only
+            // a transfer already past authorisation outranks the link's fate.
+            requestStatus?.survivesLinkDeath == true -> requestStatus
             link.status.equals("expired", ignoreCase = true) -> BridgePaymentStatus.LINK_EXPIRED
             link.status.equals("revoked", ignoreCase = true) -> BridgePaymentStatus.LINK_REVOKED
+            requestStatus != null -> requestStatus
             else -> {
                 if (request?.status != null) {
                     log.warn(
@@ -541,13 +548,6 @@ class BridgePaymentInitiationService(
          */
         const val IBAN_DISCLOSED_PREFIX_LENGTH = 4
 
-        /**
-         * How long the association has to authorise a transfer before the link dies.
-         *
-         * Bridge accepts up to 60 days; a day is ample for a deliberate action and keeps a
-         * forgotten payout from holding a campaign's balance for weeks.
-         */
-        val LINK_VALIDITY: Duration = Duration.ofDays(1)
     }
 }
 

@@ -77,7 +77,7 @@ function StatusChip({
 export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
   const router = useRouter();
-  const { payouts, summary, isLoading, isSaving, error, submit } = payments;
+  const { payouts, summary, isLoading, isSaving, error, submit, awaitingReturnPayoutId } = payments;
   const { payees } = usePayees();
   const addToast = useToastStore((s) => s.addToast);
 
@@ -456,7 +456,14 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                   >
                     {fmtEur(p.amount)}
                   </span>
-                  {needsBankAuthorisation(p) && p.bridgeCheckoutUrl ? (
+                  {/*
+                    Just back from the bank: the payout is still CREA only because Bridge has not
+                    finished notifying. Offering the link here invites re-opening one already being
+                    consumed, so the wait is stated instead.
+                  */}
+                  {p.id === awaitingReturnPayoutId ? (
+                    <span className="cm-hint-sm">{t('history.awaitingBank')}</span>
+                  ) : needsBankAuthorisation(p) && p.bridgeCheckoutUrl ? (
                     <a
                       className="cm-btn cm-btn-ghost cm-btn-sm"
                       href={p.bridgeCheckoutUrl}

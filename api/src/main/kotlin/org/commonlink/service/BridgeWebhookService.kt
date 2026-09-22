@@ -98,18 +98,24 @@ class BridgeWebhookService(
                 )
             }
 
+            // A dead link is not a refusal. These two states are only ever reached when no payment
+            // request exists at all — the request's status wins whenever there is one — so nobody
+            // ever authorised anything and nothing can have been debited. Failing the payout would
+            // stamp FAILED, which loadForConfirm refuses, retiring it for good because the
+            // association closed the tab. It goes back to a retryable PENDING with its amount
+            // returned to the campaign instead. releaseReservation refuses to touch a payout that
+            // already left PENDING, so a link we revoked ourselves after a rejection cannot
+            // resurrect the payout it was revoked for.
             BridgePaymentStatus.LINK_EXPIRED ->
-                confirmer.finaliseFailed(
+                confirmer.releaseReservation(
                     payout.id,
                     "Bank authorisation window expired before the transfer was authorised",
-                    BridgePaymentStatus.LINK_EXPIRED,
                 )
 
             BridgePaymentStatus.LINK_REVOKED ->
-                confirmer.finaliseFailed(
+                confirmer.releaseReservation(
                     payout.id,
                     "Payment link revoked before the transfer was authorised",
-                    BridgePaymentStatus.LINK_REVOKED,
                 )
 
             BridgePaymentStatus.PART -> {

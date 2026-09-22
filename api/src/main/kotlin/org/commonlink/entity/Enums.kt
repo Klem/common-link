@@ -244,8 +244,15 @@ enum class PayoutBlockingReason {
  *
  * Deliberately distinct from [PayoutStatus]: this is the bank's view of the transfer, whereas
  * [PayoutStatus] is CommonLink's accounting lifecycle. Only [ACSC] promotes a payout to
- * [PayoutStatus.CONFIRMED]; [RJCT], [LINK_EXPIRED] and [LINK_REVOKED] demote it to
- * [PayoutStatus.FAILED].
+ * [PayoutStatus.CONFIRMED], and only [RJCT] demotes it to [PayoutStatus.FAILED] — the bank
+ * refused, which is terminal.
+ *
+ * [LINK_EXPIRED] and [LINK_REVOKED] demote nothing. A link that died unused means nobody ever
+ * authorised anything, so the payout goes back to a retryable [PayoutStatus.PENDING] with its
+ * amount returned to the campaign. They are therefore transient: reported by
+ * [org.commonlink.service.BridgePaymentInitiationService.getPaymentLink] and acted on, never
+ * stored on a row — releasing the payout sets its Bridge status back to `null`. Rows written
+ * before that rule may still carry them, which is why the column's check constraint keeps them.
  *
  * The first six values are Bridge's ISO 20022 transaction statuses. The last two are payment-link
  * terminal states, kept in the same enum because exactly one of the two levels is meaningful at a
@@ -268,9 +275,9 @@ enum class BridgePaymentStatus {
     RJCT,
     /** Partial execution — only meaningful for bulk transfers; a payout carries a single transaction. */
     PART,
-    /** Terminal failure: the link expired before the association authenticated the transfer. */
+    /** The link expired before the association authenticated: nothing was asked, nothing owed. */
     LINK_EXPIRED,
-    /** Terminal failure: the link was revoked before use. */
+    /** The link was revoked before use — same outcome, and how a rejected link is closed. */
     LINK_REVOKED,
     ;
 
@@ -281,6 +288,21 @@ enum class BridgePaymentStatus {
     /** Whether the transfer is engaged: the amount must stay reserved on the campaign. */
     val isInFlight: Boolean
         get() = !isTerminal
+
+    /**
+     * Whether the transfer has left the association's hands, so the link dying cannot stop it.
+     *
+     * [CREA] and [ACTC] both mean the association has not yet authorised at its bank; on a link
+     * that has expired or been revoked it never will, because the URL that would let it is dead.
+     * From [PDNG] on, the bank is executing and the link's fate is irrelevant.
+     *
+     * Observed on 2026-09-23: a payer entered the tunnel, created a payment request, abandoned it,
+     * and the link expired five minutes later. Bridge sent `payment.link.updated` as hoped, but
+     * letting the request's `ACTC` win reported the payout in flight for ever and kept its amount
+     * engaged on the campaign — the very outcome the expiry was meant to prevent.
+     */
+    val survivesLinkDeath: Boolean
+        get() = this == PDNG || this == PART || isTerminal
 
     companion object {
         /**

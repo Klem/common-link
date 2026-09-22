@@ -284,7 +284,7 @@ class PayoutServiceTest {
     }
 
     @Test
-    fun `confirm - sends the campaign payments tab as the bank return url`() {
+    fun `confirm - sends the campaign payments tab and the payout as the bank return url`() {
         val link = BridgePaymentLink("pl_1", "https://pay.bridgeapi.io/link/abc")
         val callbackSlot = slot<String>()
 
@@ -297,8 +297,12 @@ class PayoutServiceTest {
 
         service.confirm(campaignId, payoutId, userId)
 
+        // Both matter. Without the tab the association lands on Infos, hiding the row it came back
+        // to see; without the payout the page cannot watch that one settle, and the association
+        // returns while Bridge is still notifying — CREA, ACTC and PDNG landed within 24 seconds of
+        // each other on 2026-09-22.
         assertThat(callbackSlot.captured)
-            .isEqualTo("$FRONTEND_URL/dashboard/association/campaigns/$campaignId?tab=payments")
+            .isEqualTo("$FRONTEND_URL/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId")
     }
 
     @Test

@@ -1418,6 +1418,7 @@
         "history": {
           "authorise": "Autoriser",
           "authoriseHint": "Autoriser ce virement auprès de votre banque",
+          "awaitingBank": "En attente de votre banque",
           "empty": "Aucun paiement émis.",
           "inTransit": "Virement en cours d'exécution par la banque",
           "lastAttemptFailed": "Échec de la dernière tentative : {error}",

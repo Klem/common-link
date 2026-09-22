@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useCallback, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Topbar } from '@/components/dashboard';
 import {
@@ -40,14 +40,22 @@ export default function CampaignEditorPage() {
   const params = useParams();
   const campaignId = params.id as string;
 
+  /*
+   * Bridge returns the association here after its bank, on the URL PayoutService built:
+   * `?tab=payments&payout=<id>`. Both are read — landing on the Infos tab after authorising a
+   * transfer hid the very row the association came back to see.
+   */
+  const searchParams = useSearchParams();
+  const returningPayoutId = searchParams.get('payout');
+
   const { campaign, isLoading, error, isSaving, updateCampaignInfo, setCampaign, fetchCampaign } =
     useCampaign(campaignId);
-  const payments = usePayments(campaignId);
+  const payments = usePayments(campaignId, returningPayoutId);
   const { donorsPage } = useCampaignDonors(campaignId);
   const { verificationStatus, bankStatus, mollieResolved, mollieDashboardUrl } = useAccStatusStore();
   const { addToast } = useToastStore();
 
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') ?? 'info');
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [milestoneSortDir, setMilestoneSortDir] = useState<'asc' | 'desc'>('asc');
 
