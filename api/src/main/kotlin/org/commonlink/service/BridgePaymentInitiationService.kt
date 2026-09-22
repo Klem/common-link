@@ -52,6 +52,7 @@ data class BridgePaymentLinkState(
  * - `GET  /v3/payment/payment-links/{id}` — whether the link itself is still usable
  * - `GET  /v3/payment/payment-requests/{id}` — the execution state of the request a notification named
  * - `GET  /v3/payment/payment-requests?payment_link_id={id}` — same, when it named none
+ * - `POST /v3/payment/payment-links/{id}/revoke` — close a link a rejection left usable
  *
  * Status is driven by Bridge's webhook. Because Bridge documents no webhook signature, the
  * notification is treated as a bare trigger and the state is always re-read with [getPaymentLink]
@@ -290,6 +291,48 @@ class BridgePaymentInitiationService(
             transactionId = request?.transactions?.firstOrNull()?.id,
             statusReason = request?.statusReason,
         )
+    }
+
+    /**
+     * Revokes a payment link so nothing more can be authorised from it.
+     *
+     * Bridge does **not** burn a link when a transfer is rejected: on 2026-09-22 a link whose
+     * payment request came back `RJCT` still showed as `Valide / Non payé`, and re-opening it
+     * created a second payment request that settled. Meanwhile the payout had been failed and its
+     * amount returned to the campaign's confirmable balance. So a rejected payout that is not
+     * revoked leaves a live authorisation URL against funds already given back — and a transfer
+     * authorised through it would publish a permanent on-chain attestation beyond the balance.
+     *
+     * Bridge documents only `200` and `404` here. A `404` is treated as done: whatever the cause,
+     * Bridge cannot authorise a link it does not know. Every other `4xx` is treated the same way
+     * and logged — the undocumented ones all describe a link already `completed`, `expired` or
+     * `revoked`, none of which is a fresh authorisable link, and answering the webhook non-2xx
+     * instead would have Bridge redeliver the same impossible revocation for two days. Only a
+     * `5xx` or a network failure is retryable, because then nothing is known.
+     *
+     * @param paymentLinkId Link to revoke.
+     * @throws BadGatewayException if Bridge could not be reached or failed — the caller must then
+     *   leave the amount engaged rather than release it against a link that may still be live.
+     */
+    fun revokePaymentLink(paymentLinkId: String) {
+        if (props.demoMode) {
+            log.debug("Bridge demo mode — simulated revocation of link {}", paymentLinkId)
+            return
+        }
+
+        try {
+            restClient.post()
+                .uri("/v3/payment/payment-links/{id}/revoke", paymentLinkId)
+                .headers { it.addAll(bridgeHeaders()) }
+                .retrieve()
+                .toBodilessEntity()
+            log.info("Bridge payment link {} revoked", paymentLinkId)
+        } catch (ex: HttpClientErrorException) {
+            log.warn("Bridge refused to revoke link {} ({}) — it cannot be a usable link", paymentLinkId, ex.statusCode)
+        } catch (ex: RestClientException) {
+            log.error("Bridge revocation failed for link {}: {}", paymentLinkId, ex.message)
+            throw BadGatewayException("Bridge payment initiation unavailable: ${ex.message}")
+        }
     }
 
     /** Reads the link itself — what was requested, and whether the link is still usable. */

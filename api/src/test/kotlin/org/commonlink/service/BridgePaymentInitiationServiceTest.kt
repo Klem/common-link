@@ -546,6 +546,55 @@ class BridgePaymentInitiationServiceTest {
     }
 
     @Test
+    fun `real mode - revoking posts to the documented endpoint`() {
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1/revoke"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withSuccess())
+
+        service.revokePaymentLink("pl_1")
+
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - a refused revocation is not retried, the link cannot be usable`() {
+        // Bridge documents only 200 and 404. Every other 4xx describes a link already completed,
+        // expired or revoked — none of them authorisable — and answering the webhook non-2xx would
+        // have Bridge redeliver the same impossible revocation for two days.
+        listOf(HttpStatus.NOT_FOUND, HttpStatus.CONFLICT, HttpStatus.BAD_REQUEST).forEach { status ->
+            val (service, server) = realService()
+            server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1/revoke"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(status))
+
+            service.revokePaymentLink("pl_1")
+
+            server.verify()
+        }
+    }
+
+    @Test
+    fun `real mode - a revocation Bridge could not answer leaves the amount engaged`() {
+        // Nothing is known about the link, so the caller must not release the payout's amount.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1/revoke"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withServerError())
+
+        assertThrows<BadGatewayException> { service.revokePaymentLink("pl_1") }
+
+        server.verify()
+    }
+
+    @Test
+    fun `demo mode - revoking calls nothing`() {
+        val service = demoService()
+
+        service.revokePaymentLink("pl_1")
+    }
+
+    @Test
     fun `real mode - maps every documented payment-request status`() {
         listOf(
             "CREA" to BridgePaymentStatus.CREA,

@@ -1,8 +1,11 @@
 package org.commonlink.service
 
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.BridgePaymentStatus
@@ -11,6 +14,7 @@ import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Payee
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.BadGatewayException
@@ -52,11 +56,15 @@ class BridgeWebhookServiceTest {
      * what let the confirmer's locked read be answered from the persistence context instead of the
      * database, so this test pins the projection rather than merely accepting it.
      */
-    private fun routing(payoutId: UUID = payout.id, linkId: String? = LINK_ID) =
-        object : PayoutRepository.PayoutRouting {
-            override val id = payoutId
-            override val bridgePaymentLinkId = linkId
-        }
+    private fun routing(
+        payoutId: UUID = payout.id,
+        linkId: String? = LINK_ID,
+        payoutStatus: PayoutStatus = PayoutStatus.PENDING,
+    ) = object : PayoutRepository.PayoutRouting {
+        override val id = payoutId
+        override val bridgePaymentLinkId = linkId
+        override val status = payoutStatus
+    }
 
     private fun stubState(
         status: BridgePaymentStatus,
@@ -92,6 +100,7 @@ class BridgeWebhookServiceTest {
     @Test
     fun `fails the payout with the bank's reason when Bridge reports RJCT`() {
         stubState(BridgePaymentStatus.RJCT, statusReason = "debit_account_insufficient_funds")
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
 
         service.handlePaymentLinkNotification(LINK_ID)
 
@@ -101,6 +110,49 @@ class BridgeWebhookServiceTest {
             )
         }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
+    }
+
+    @Test
+    fun `revokes the link before releasing the amount on a rejection`() {
+        // Bridge leaves a rejected link usable — observed 2026-09-22, a link whose request came
+        // back RJCT still read `Valide` and a second authorisation on it settled. Failing first
+        // would hand the amount back to the campaign while that URL is still live.
+        stubState(BridgePaymentStatus.RJCT)
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verifyOrder {
+            bridgeInitiation.revokePaymentLink(LINK_ID)
+            confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT)
+        }
+    }
+
+    @Test
+    fun `leaves the amount engaged when the link could not be revoked`() {
+        // Releasing it would be releasing against a link that may still be authorisable. The
+        // notification is answered non-2xx instead, and Bridge redelivers it.
+        stubState(BridgePaymentStatus.RJCT)
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } throws BadGatewayException("unreachable")
+
+        assertThrows<BadGatewayException> { service.handlePaymentLinkNotification(LINK_ID) }
+
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+    }
+
+    @Test
+    fun `does not revoke again on a redelivered rejection`() {
+        // Bridge sends several notifications per state change and retries for up to two days; the
+        // link was revoked on the first one.
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns
+            routing(payoutStatus = PayoutStatus.FAILED)
+        every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
+            BridgePaymentLinkState(BridgePaymentStatus.RJCT, "tx_1", null)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify(exactly = 0) { bridgeInitiation.revokePaymentLink(any()) }
+        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT) }
     }
 
     @Test

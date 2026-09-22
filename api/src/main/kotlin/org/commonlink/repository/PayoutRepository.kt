@@ -106,19 +106,30 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
     interface PayoutRouting {
         val id: UUID
         val bridgePaymentLinkId: String?
+
+        /**
+         * Only ever read to skip work already done — never to decide an outcome, which stays the
+         * business of the locked read inside [org.commonlink.service.PayoutConfirmer].
+         */
+        val status: PayoutStatus
     }
 
     /** Routes a notification carrying a Bridge payment-link id. */
     @Query(
         """
-        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId
+        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId, p.status AS status
         FROM Payout p WHERE p.bridgePaymentLinkId = :bridgePaymentLinkId
         """,
     )
     fun findRoutingByBridgePaymentLinkId(@Param("bridgePaymentLinkId") bridgePaymentLinkId: String): PayoutRouting?
 
     /** Routes a notification that carried only `client_reference`, i.e. the payout id. */
-    @Query("SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId FROM Payout p WHERE p.id = :id")
+    @Query(
+        """
+        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId, p.status AS status
+        FROM Payout p WHERE p.id = :id
+        """,
+    )
     fun findRoutingById(@Param("id") id: UUID): PayoutRouting?
 
     /**

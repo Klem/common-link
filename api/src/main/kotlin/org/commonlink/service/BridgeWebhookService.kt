@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.entity.BridgePaymentStatus
+import org.commonlink.entity.PayoutStatus
 import org.commonlink.repository.PayoutRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -79,12 +80,23 @@ class BridgeWebhookService(
             BridgePaymentStatus.ACSC ->
                 confirmer.finaliseSettled(payout.id, state.transactionId)
 
-            BridgePaymentStatus.RJCT ->
+            BridgePaymentStatus.RJCT -> {
+                // Revoke *before* failing, never after: failing returns the amount to the
+                // campaign's confirmable balance, and Bridge leaves a rejected link usable — a
+                // second authorisation on it would settle a transfer against funds already given
+                // back, and publish an irretractable attestation for it. If the revocation cannot
+                // be confirmed it throws, the payout stays engaged, and Bridge redelivers. Skipped
+                // when the payout is already FAILED: the link was revoked on the first delivery,
+                // and Bridge sends several notifications per state change.
+                if (payout.status != PayoutStatus.FAILED) {
+                    bridgeInitiation.revokePaymentLink(linkId)
+                }
                 confirmer.finaliseFailed(
                     payout.id,
                     state.statusReason ?: "Transfer rejected by the bank",
                     BridgePaymentStatus.RJCT,
                 )
+            }
 
             BridgePaymentStatus.LINK_EXPIRED ->
                 confirmer.finaliseFailed(
