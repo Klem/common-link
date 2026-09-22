@@ -297,6 +297,13 @@ class PayoutConfirmer(
      * The transfer is authorised but not settled: the amount must stay engaged, and the payout must
      * not yet claim the beneficiary has been credited.
      *
+     * Refuses to touch a payout already CONFIRMED, same guard and same reason as [finaliseFailed].
+     * Bridge fires `payment.transaction.updated` and `payment.link.updated` concurrently for a
+     * single state change — both were observed 98 ms apart on the same row — so at settlement two
+     * threads read Bridge independently: one can see `ACSC` while the other still sees `PDNG`. With
+     * the in-flight write landing second, the payout would stay CONFIRMED (the on-chain attestation
+     * is safe, [finaliseSettled] being idempotent) while permanently displaying `PDNG`.
+     *
      * @param payoutId Payout to update.
      * @param bridgeStatus The intermediate Bridge state.
      * @param transactionId Bridge transaction id, when already known.
@@ -304,6 +311,10 @@ class PayoutConfirmer(
     @Transactional
     fun recordInFlight(payoutId: UUID, bridgeStatus: BridgePaymentStatus, transactionId: String?) {
         val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+        if (payout.status == PayoutStatus.CONFIRMED) {
+            log.warn("Refusing to record {} on payout {} — it is already confirmed as settled", bridgeStatus, payoutId)
+            return
+        }
         payout.bridgeStatus = bridgeStatus
         payout.bridgePaymentTransactionId = transactionId ?: payout.bridgePaymentTransactionId
         payout.bridgeSyncedAt = Instant.now()

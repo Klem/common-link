@@ -339,4 +339,19 @@ class PayoutConfirmerTest {
         assertThat(payout.bridgePaymentTransactionId).isEqualTo("tx_1")
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
     }
+
+    @Test
+    fun `recordInFlight - refuses to downgrade a payout already settled`() {
+        // Bridge fires payment.transaction.updated and payment.link.updated concurrently: the
+        // second thread can still read PDNG after the first one settled the payout. Writing it
+        // would leave a CONFIRMED payout displaying "in progress" for good.
+        val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+
+        confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1")
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.ACSC)
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
 }

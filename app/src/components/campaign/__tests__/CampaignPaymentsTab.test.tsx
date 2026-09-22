@@ -488,6 +488,45 @@ describe('CampaignPaymentsTab', () => {
       .toBe('debit_account_insufficient_funds');
   });
 
+  it('distinguishes a payout whose last transfer attempt failed from one never attempted', () => {
+    // The backend releases a failed initiation back to PENDING on purpose — FAILED is terminal and
+    // nothing was debited. Without a distinct chip the association sees the same hourglass as a
+    // payout it has not submitted yet, and never learns it has to retry.
+    setupMocks();
+    const releasedAfterFailure: PayoutDto = {
+      ...samplePayout,
+      status: 'PENDING',
+      confirmedAt: null,
+      bridgeStatus: null,
+      bridgeLastError: 'Bridge recorded a different destination IBAN — transfer refused',
+    };
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedAfterFailure] })} />,
+    );
+
+    const chip = document.querySelector('.pay-chip.attention');
+    expect(chip).toBeTruthy();
+    // The tooltip must carry Bridge's own reason, not a generic "something went wrong".
+    expect(chip?.getAttribute('title')).toContain('history.lastAttemptFailed');
+    expect(chip?.getAttribute('title')).toContain('transfer refused');
+    expect(document.querySelector('.pay-chip.confirmed')).toBeNull();
+  });
+
+  it('keeps the plain pending chip for a payout never submitted to Bridge', () => {
+    setupMocks();
+    const neverAttempted: PayoutDto = {
+      ...samplePayout,
+      status: 'PENDING',
+      confirmedAt: null,
+      bridgeStatus: null,
+      bridgeLastError: null,
+    };
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [neverAttempted] })} />);
+
+    expect(document.querySelector('.pay-chip.pending')).toBeTruthy();
+    expect(document.querySelector('.pay-chip.attention')).toBeNull();
+  });
+
   it('shows no pills when there are no active blocking reasons', async () => {
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);

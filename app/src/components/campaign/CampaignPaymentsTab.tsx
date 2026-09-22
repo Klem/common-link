@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Donut } from '@/components/ui/Donut';
 import { useToastStore } from '@/stores/toastStore';
 import { getBlockingReasons } from '@/lib/api/payment';
-import { PayoutKind, PayoutStatus, isPayoutInFlight, needsBankAuthorisation } from '@/types/payment';
+import { PayoutKind, PayoutStatus, isPayoutInFlight, lastAttemptFailed, needsBankAuthorisation } from '@/types/payment';
 import { IbanVerificationStatus } from '@/types/payee';
 import { ROUTES } from '@/lib/routes';
 import type { CampaignDto } from '@/types/campaign';
@@ -48,7 +48,15 @@ function fmtDate(iso: string) {
  * confirmation and settlement it is either awaiting the association's authorisation at its bank, or
  * in transit — showing a check mark for either would claim the beneficiary has been credited.
  */
-function StatusChip({ payout, inTransitLabel }: { payout: PayoutDto; inTransitLabel: string }) {
+function StatusChip({
+  payout,
+  inTransitLabel,
+  lastAttemptFailedLabel,
+}: {
+  payout: PayoutDto;
+  inTransitLabel: string;
+  lastAttemptFailedLabel: string;
+}) {
   if (payout.status === PayoutStatus.FAILED) {
     return <span className="pay-chip failed" title={payout.bridgeLastError ?? undefined}>✗</span>;
   }
@@ -57,6 +65,11 @@ function StatusChip({ payout, inTransitLabel }: { payout: PayoutDto; inTransitLa
   }
   if (isPayoutInFlight(payout)) {
     return <span className="pay-chip pending" title={inTransitLabel}>→</span>;
+  }
+  // Still pending, but the previous attempt failed — without this the row is indistinguishable
+  // from one never submitted, and the association has no way to know it must retry.
+  if (lastAttemptFailed(payout)) {
+    return <span className="pay-chip attention" title={lastAttemptFailedLabel}>⚠</span>;
   }
   return <span className="pay-chip pending">⏳</span>;
 }
@@ -452,7 +465,15 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                       {t('history.authorise')}
                     </a>
                   ) : null}
-                  <StatusChip payout={p} inTransitLabel={t('history.inTransit')} />
+                  <StatusChip
+                    payout={p}
+                    inTransitLabel={t('history.inTransit')}
+                    lastAttemptFailedLabel={
+                      p.bridgeLastError
+                        ? t('history.lastAttemptFailed', { error: p.bridgeLastError })
+                        : ''
+                    }
+                  />
                 </div>
               ))
             )}

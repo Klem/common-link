@@ -92,6 +92,23 @@ export function needsBankAuthorisation(payout: PayoutDto): boolean {
 }
 
 /**
+ * True when the last attempt to initiate the transfer failed, leaving nothing engaged.
+ *
+ * The payout deliberately stays PENDING rather than FAILED: FAILED is terminal, and stamping it on
+ * a transfer that never debited anything would retire a payout the association can still issue. So
+ * this is the only thing distinguishing "attempted and failed" from "never attempted" — without it
+ * the two are the same hourglass. It clears by itself on a successful retry, the backend resetting
+ * the error when it attaches a payment link.
+ */
+export function lastAttemptFailed(payout: PayoutDto): boolean {
+  return (
+    payout.status === PayoutStatus.PENDING &&
+    payout.bridgeStatus === null &&
+    payout.bridgeLastError !== null
+  );
+}
+
+/**
  * A business rule preventing a payout from being issued — mirrors backend PayoutBlockingReason enum,
  * except IBAN_NOT_VERIFIED: the payee-IBAN selector only ever offers VERIFIED IBANs, so the frontend
  * can never end up in that state and the reason is omitted here.

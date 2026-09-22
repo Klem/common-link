@@ -1420,6 +1420,7 @@
           "authoriseHint": "Authorise this transfer with your bank",
           "empty": "No payments issued.",
           "inTransit": "Transfer being executed by the bank",
+          "lastAttemptFailed": "Last attempt failed: {error}",
           "title": "📋 Payment history"
         },
         "ibanSelect": "IBAN",

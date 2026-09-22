@@ -54,7 +54,7 @@ class BridgeWebhookServiceTest {
     ) {
         every { payoutRepository.findByBridgePaymentLinkId(LINK_ID) } returns payout
         every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
-            BridgePaymentLinkState(status, transactionId, statusReason, null)
+            BridgePaymentLinkState(status, transactionId, statusReason)
     }
 
     @Test

@@ -377,8 +377,48 @@ class BridgePaymentInitiationServiceTest {
 
     // ── real mode: state ─────────────────────────────────────────────────────
 
+    /**
+     * Stubs the two calls a state read performs: the link itself, then the payment request that
+     * actually carries the execution status.
+     */
+    private fun expectState(
+        server: MockRestServiceServer,
+        link: String,
+        requests: String = """{"resources":[]}""",
+    ) {
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess(link, MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests?payment_link_id=pl_1"))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess(requests, MediaType.APPLICATION_JSON))
+    }
+
     @Test
-    fun `real mode - maps every documented transaction status`() {
+    fun `real mode - reads the settled state off the payment request, never off the link`() {
+        // The regression this whole endpoint pair exists for. Bridge documents that a payment
+        // link's transaction objects "do not include status or id fields", so a link reporting an
+        // authorised transfer still says nothing about it. Deriving the state from the link alone
+        // pinned every payout to CREA and no transfer could ever settle.
+        val (service, server) = realService()
+        expectState(
+            server,
+            link = """{"id":"pl_1","status":"completed","payment_status":"initiated_in_success",
+                      "transactions":[{"amount":112,"currency":"EUR","label":"x",
+                      "beneficiary":{"iban":"FR81XXXXXXXXXXXXXXXXXXXXU39"}}]}""",
+            requests = """{"resources":[{"id":"pr_1","status":"ACSC","payment_link_id":"pl_1",
+                         "transactions":[{"id":"tx_1","status":"ACSC"}]}],"pagination":{}}""",
+        )
+
+        val state = service.getPaymentLink("pl_1")
+
+        assertThat(state.status).isEqualTo(BridgePaymentStatus.ACSC)
+        assertThat(state.transactionId).isEqualTo("tx_1")
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - maps every documented payment-request status`() {
         listOf(
             "CREA" to BridgePaymentStatus.CREA,
             "ACTC" to BridgePaymentStatus.ACTC,
@@ -388,14 +428,11 @@ class BridgePaymentInitiationServiceTest {
             "PART" to BridgePaymentStatus.PART,
         ).forEach { (wire, expected) ->
             val (service, server) = realService()
-            server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
-                .andExpect(method(HttpMethod.GET))
-                .andRespond(
-                    withSuccess(
-                        """{"id":"pl_1","status":"completed","transactions":[{"id":"tx_1","status":"$wire"}]}""",
-                        MediaType.APPLICATION_JSON,
-                    )
-                )
+            expectState(
+                server,
+                link = """{"id":"pl_1","status":"completed"}""",
+                requests = """{"resources":[{"id":"pr_1","status":"$wire","transactions":[{"id":"tx_1"}]}]}""",
+            )
 
             val state = service.getPaymentLink("pl_1")
             assertThat(state.status).`as`(wire).isEqualTo(expected)
@@ -406,14 +443,12 @@ class BridgePaymentInitiationServiceTest {
     @Test
     fun `real mode - carries the rejection reason so a failure is explainable`() {
         val (service, server) = realService()
-        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
-            .andRespond(
-                withSuccess(
-                    """{"id":"pl_1","status":"completed","transactions":[
-                       {"id":"tx_1","status":"RJCT","status_reason":"debit_account_insufficient_funds"}]}""",
-                    MediaType.APPLICATION_JSON,
-                )
-            )
+        expectState(
+            server,
+            link = """{"id":"pl_1","status":"completed"}""",
+            requests = """{"resources":[{"id":"pr_1","status":"RJCT",
+                         "status_reason":"debit_account_insufficient_funds"}]}""",
+        )
 
         val state = service.getPaymentLink("pl_1")
 
@@ -424,10 +459,7 @@ class BridgePaymentInitiationServiceTest {
     @Test
     fun `real mode - reports an expired link as terminally failed`() {
         val (service, server) = realService()
-        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
-            .andRespond(
-                withSuccess("""{"id":"pl_1","status":"expired","transactions":[]}""", MediaType.APPLICATION_JSON)
-            )
+        expectState(server, link = """{"id":"pl_1","status":"expired","transactions":[]}""")
 
         val state = service.getPaymentLink("pl_1")
 
@@ -438,21 +470,17 @@ class BridgePaymentInitiationServiceTest {
     @Test
     fun `real mode - reports a revoked link as terminally failed`() {
         val (service, server) = realService()
-        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
-            .andRespond(
-                withSuccess("""{"id":"pl_1","status":"revoked"}""", MediaType.APPLICATION_JSON)
-            )
+        expectState(server, link = """{"id":"pl_1","status":"revoked"}""")
 
         assertThat(service.getPaymentLink("pl_1").status).isEqualTo(BridgePaymentStatus.LINK_REVOKED)
     }
 
     @Test
-    fun `real mode - a still-valid link with no transaction is not yet authorised`() {
+    fun `real mode - a still-valid link with no payment request is not yet authorised`() {
+        // No payment request means the association has not authenticated at its bank — CREA, and
+        // the authorisation link is still the right thing to offer.
         val (service, server) = realService()
-        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
-            .andRespond(
-                withSuccess("""{"id":"pl_1","status":"valid","transactions":[]}""", MediaType.APPLICATION_JSON)
-            )
+        expectState(server, link = """{"id":"pl_1","status":"valid","transactions":[]}""")
 
         val state = service.getPaymentLink("pl_1")
 
@@ -461,15 +489,13 @@ class BridgePaymentInitiationServiceTest {
     }
 
     @Test
-    fun `real mode - an unrecognised transaction status is never treated as terminal`() {
+    fun `real mode - an unrecognised payment-request status is never treated as terminal`() {
         val (service, server) = realService()
-        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
-            .andRespond(
-                withSuccess(
-                    """{"id":"pl_1","status":"valid","transactions":[{"id":"tx_1","status":"WHAT"}]}""",
-                    MediaType.APPLICATION_JSON,
-                )
-            )
+        expectState(
+            server,
+            link = """{"id":"pl_1","status":"valid"}""",
+            requests = """{"resources":[{"id":"pr_1","status":"WHAT"}]}""",
+        )
 
         val state = service.getPaymentLink("pl_1")
 
@@ -502,6 +528,20 @@ class BridgePaymentInitiationServiceTest {
         val (service, server) = realService()
         server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
             .andRespond(withSuccess("not json at all", MediaType.APPLICATION_JSON))
+
+        assertThrows<BadGatewayException> { service.getPaymentLink("pl_1") }
+    }
+
+    @Test
+    fun `real mode - an unreadable payment request surfaces as BadGatewayException`() {
+        // A readable link plus an unreadable payment request must not be reported as CREA: that
+        // would silently downgrade a settled transfer to "not authorised yet" and, on the webhook
+        // path, hand Bridge a 200 for a notification that was never applied.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andRespond(withSuccess("""{"id":"pl_1","status":"completed"}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests?payment_link_id=pl_1"))
+            .andRespond(withServerError())
 
         assertThrows<BadGatewayException> { service.getPaymentLink("pl_1") }
     }

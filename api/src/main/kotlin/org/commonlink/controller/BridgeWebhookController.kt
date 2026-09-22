@@ -20,25 +20,50 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
+ * Identifying fields of a Bridge webhook, which the API nests under `content`.
+ *
+ * [paymentLinkId] is the primary key used to find the payout. The reference — the payoutId we sent
+ * at creation, see [org.commonlink.service.BridgePaymentInitiationService.createPaymentLink] — is a
+ * fallback for `payment.transaction.*` events, which document `payment_link_id` as optional. Bridge
+ * names it differently per event: `client_reference` on a transaction event,
+ * `payment_link_client_reference` on `payment.link.updated`. Both are read; neither is trusted for
+ * anything beyond routing, the state being re-read from Bridge (see [BridgeWebhookService]).
+ *
+ * @param paymentLinkId Bridge payment-link id, `content.payment_link_id`.
+ * @param clientReference `content.client_reference` — the payoutId, as a string.
+ * @param paymentLinkClientReference `content.payment_link_client_reference`, same value under the
+ *   name `payment.link.updated` uses.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class BridgeWebhookContent(
+    @JsonProperty("payment_link_id") val paymentLinkId: String?,
+    @JsonProperty("client_reference") val clientReference: String?,
+    @JsonProperty("payment_link_client_reference") val paymentLinkClientReference: String?,
+) {
+    /** The payoutId Bridge echoes back, whichever name this event type carries it under. */
+    val reference: String? get() = clientReference?.takeIf { it.isNotBlank() } ?: paymentLinkClientReference
+}
+
+/**
  * Bridge webhook payload.
  *
- * [paymentLinkId] is the primary key used to find the payout; [clientReference] (the payoutId we
- * sent at creation, see [org.commonlink.service.BridgePaymentInitiationService.createPaymentLink])
- * is a fallback for `payment.transaction.*` events, which document `payment_link_id` as optional.
- * Everything else is untrusted and deliberately ignored, the state being re-read from Bridge (see
- * [BridgeWebhookService]).
+ * Only `type` and `timestamp` sit at the root; every identifying field is nested under `content`.
+ * Reading them at the root instead made every genuine settlement notification deserialise to nulls
+ * and be answered `200` as "nothing to do", stranding payouts in `CREA` for good — Bridge counts a
+ * `200` as delivered and never retries. There is deliberately no root-level fallback: Bridge does
+ * not send that shape, and accepting it would only make the mistake survivable in silence again.
  *
  * @param type Event type, e.g. `payment.link.updated`, `payment.transaction.updated`, `TEST_EVENT`.
- * @param paymentLinkId Bridge payment-link id; absent on a `TEST_EVENT` from the dashboard, and
- *   documented optional on `payment.transaction.created`/`.updated`.
- * @param clientReference `client_reference` on a transaction event — the payoutId, as a string.
+ * @param content Identifying fields; absent on a `TEST_EVENT` from the dashboard.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class BridgeWebhookPayload(
     val type: String?,
-    @JsonProperty("payment_link_id") val paymentLinkId: String?,
-    @JsonProperty("client_reference") val clientReference: String?,
+    val content: BridgeWebhookContent?,
 )
+
+/** Type of the notification the Bridge dashboard's "Send a test" button emits, which carries no content. */
+private const val TEST_EVENT_TYPE = "TEST_EVENT"
 
 /**
  * Receives Bridge payment status notifications — the only mechanism driving payout settlement.
@@ -103,11 +128,23 @@ class BridgeWebhookController(
             return ResponseEntity.ok().build()
         }
 
-        val paymentLinkId = payload.paymentLinkId
-        val clientReference = payload.clientReference
+        val paymentLinkId = payload.content?.paymentLinkId
+        val clientReference = payload.content?.reference
         if (paymentLinkId.isNullOrBlank() && clientReference.isNullOrBlank()) {
-            // The dashboard's "Send a test" button posts a TEST_EVENT with neither field set.
-            logger.info("Received Bridge webhook type={} with no payment_link_id/client_reference — nothing to do", payload.type)
+            if (TEST_EVENT_TYPE.equals(payload.type, ignoreCase = true)) {
+                // The dashboard's "Send a test" button posts a TEST_EVENT with no content.
+                logger.info("Received Bridge webhook type={} — nothing to do", payload.type)
+            } else {
+                // Anything else carrying no routable id is a settlement notification being dropped,
+                // and Bridge will not send it again once this answers 200. Log loudly: the silent
+                // version of this branch is what hid a payload-shape mismatch until payouts were
+                // found stuck in CREA.
+                logger.warn(
+                    "Received Bridge webhook type={} with no content.payment_link_id and no client " +
+                        "reference — nothing to route, notification dropped",
+                    payload.type,
+                )
+            }
             return ResponseEntity.ok().build()
         }
 

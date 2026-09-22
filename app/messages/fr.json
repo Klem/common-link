@@ -1420,6 +1420,7 @@
           "authoriseHint": "Autoriser ce virement auprès de votre banque",
           "empty": "Aucun paiement émis.",
           "inTransit": "Virement en cours d'exécution par la banque",
+          "lastAttemptFailed": "Échec de la dernière tentative : {error}",
           "title": "📋 Historique paiements"
         },
         "ibanSelect": "IBAN",

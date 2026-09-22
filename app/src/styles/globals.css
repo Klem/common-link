@@ -1990,6 +1990,8 @@ tbody tr:last-child td { border-bottom: none; }
 .pay-chip.confirmed { background: rgba(78,205,196,.12); color: var(--teal-dark); }
 .pay-chip.pending   { background: rgba(255,179,71,.12); color: #b37800; }
 .pay-chip.failed    { background: rgba(255,107,91,.12); color: var(--warm-coral); }
+/* Still pending, but the last attempt failed: amber ground like .pending, coral ink like .failed. */
+.pay-chip.attention { background: rgba(255,179,71,.12); color: var(--warm-coral); }
 .pay-method-label { display: flex; align-items: center; gap: 9px; padding: 10px 12px; background: rgba(78,205,196,.05); border: 1px solid rgba(78,205,196,.25); border-radius: var(--radius-md); cursor: pointer; font-size: 12.5px; }
 .pay-method-title { font-weight: 600; }
 .blocking-reasons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }

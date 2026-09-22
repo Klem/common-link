@@ -35,12 +35,6 @@ data class BridgePaymentLinkState(
     val transactionId: String?,
     /** Bridge's reason for a rejection, e.g. `debit_account_insufficient_funds`. */
     val statusReason: String?,
-    /**
-     * Destination IBAN Bridge actually recorded, normalised — **partially masked**, as Bridge's
-     * read endpoints disclose only the first and last characters. Read back so it can be compared
-     * with the one we sent — see [BridgePaymentInitiationService.createPaymentLink].
-     */
-    val beneficiaryIban: String?,
 )
 
 /**
@@ -136,11 +130,19 @@ class BridgePaymentInitiationService(
             clientReference = payoutId.toString(),
             callbackUrl = callbackUrl,
             senderIban = senderIban,
-            // An explicit expiry is what guarantees the payout cannot stay engaged forever. If the
-            // association closes the tab without authorising, nothing else would ever change the
-            // state: there is no polling loop, and an unbounded link may never produce an event.
-            // A bounded one expires, Bridge emits payment.link.updated, and the reserved amount is
-            // released by the LINK_EXPIRED arm of BridgeWebhookService.
+            // An explicit expiry is what is meant to keep the payout from staying engaged forever.
+            // If the association closes the tab without authorising, nothing else would ever change
+            // the state: there is no polling loop, and an unbounded link may never produce an event.
+            // A bounded one expires, and the reserved amount is released by the LINK_EXPIRED arm of
+            // BridgeWebhookService — provided Bridge emits payment.link.updated on that transition.
+            //
+            // UNVERIFIED (2026-09-22). Bridge documents that `expired`/`revoked` are carried by
+            // payment.link.updated, but never that ageing past `expired_date` emits an event at all,
+            // and the revoke endpoint mentions no webhook. Two links created on 2026-09-22 at 10:37Z
+            // and 11:49Z expire a day later: if they are not FAILED/LINK_EXPIRED by then, this whole
+            // release path does not exist and a sweeper is required. Bridge's own default is 15
+            // minutes, deliberately overridden here — an association needs longer than that to
+            // authorise at its bank.
             expiredDate = Instant.now().plus(LINK_VALIDITY).toString(),
             // Bridge rejects the whole body with a bare `invalid_request` when `user` is absent —
             // it never names the field. The association is the payer here, so it is a company.
@@ -199,7 +201,7 @@ class BridgePaymentInitiationService(
         // and replace the rest with a mask character (`FR76XXXXXXXXXXXXXXXXXXXX250` in the
         // documented examples), so the comparison is on what Bridge discloses — see refusalReason.
         val recorded = try {
-            getPaymentLink(id).beneficiaryIban
+            fetchLink(id).transactions?.lastOrNull()?.beneficiary?.iban?.let { normalise(it) }
         } catch (ex: BadGatewayException) {
             log.error("Could not read back Bridge payment link {} for payout {}: {}", id, payoutId, ex.message)
             throw BadGatewayException(
@@ -228,9 +230,18 @@ class BridgePaymentInitiationService(
      * This is the verification step of webhook handling, not a polling loop: it runs when Bridge
      * notifies us, precisely because the notification itself cannot be authenticated.
      *
-     * Link-level and transaction-level states are collapsed onto one [BridgePaymentStatus]: the
-     * transaction status wins whenever a transaction exists, otherwise a dead link
-     * (`expired`/`revoked`) is reported as such and a still-usable link stays [BridgePaymentStatus.CREA].
+     * Two calls, and the second is the one that carries the answer. A payment link only ever
+     * describes what was *requested*: Bridge documents that the transaction objects it holds "do
+     * not include `status` or `id` fields". Execution state lives on the **payment request** Bridge
+     * creates once the association authorises at its bank, read through
+     * `GET /v3/payment/payment-requests?payment_link_id={id}`, whose `status` is the very
+     * `CREA`/`ACTC`/`PDNG`/`ACSC`/`RJCT` vocabulary [BridgePaymentStatus] mirrors. Deriving the
+     * state from the link alone reported every transfer as [BridgePaymentStatus.CREA] for ever, so
+     * no payout could settle and none ever did.
+     *
+     * The payment request's status wins whenever one exists; otherwise a dead link
+     * (`expired`/`revoked`) is reported as such, and a still-usable link with no payment request
+     * stays [BridgePaymentStatus.CREA] — nothing has been authorised yet.
      *
      * @param paymentLinkId Identifier returned by [createPaymentLink].
      * @return the current state.
@@ -240,11 +251,37 @@ class BridgePaymentInitiationService(
     fun getPaymentLink(paymentLinkId: String): BridgePaymentLinkState {
         if (props.demoMode) {
             log.debug("Bridge demo mode — simulated link {} reported as settled", paymentLinkId)
-            // beneficiaryIban is null in demo mode: the read-back guard skips a check it cannot
-            // perform rather than inventing a value that would make it pass.
-            return BridgePaymentLinkState(BridgePaymentStatus.ACSC, "$DEMO_ID_PREFIX$paymentLinkId", null, null)
+            return BridgePaymentLinkState(BridgePaymentStatus.ACSC, "$DEMO_ID_PREFIX$paymentLinkId", null)
         }
 
+        val link = fetchLink(paymentLinkId)
+        val request = fetchPaymentRequest(paymentLinkId)
+        val requestStatus = BridgePaymentStatus.fromTransactionWire(request?.status)
+
+        val status = when {
+            requestStatus != null -> requestStatus
+            link.status.equals("expired", ignoreCase = true) -> BridgePaymentStatus.LINK_EXPIRED
+            link.status.equals("revoked", ignoreCase = true) -> BridgePaymentStatus.LINK_REVOKED
+            else -> {
+                if (request?.status != null) {
+                    log.warn(
+                        "Unrecognised Bridge payment-request status '{}' on link {} — treated as not yet authorised",
+                        request.status, paymentLinkId,
+                    )
+                }
+                BridgePaymentStatus.CREA
+            }
+        }
+
+        return BridgePaymentLinkState(
+            status = status,
+            transactionId = request?.transactions?.firstOrNull()?.id,
+            statusReason = request?.statusReason,
+        )
+    }
+
+    /** Reads the link itself — what was requested, and whether the link is still usable. */
+    private fun fetchLink(paymentLinkId: String): PaymentLinkResponseJson {
         val raw = try {
             restClient.get()
                 .uri("/v3/payment/payment-links/{id}", paymentLinkId)
@@ -256,37 +293,49 @@ class BridgePaymentInitiationService(
             throw BadGatewayException("Bridge payment initiation unavailable: ${ex.message}")
         }
 
-        val parsed = try {
+        return try {
             objectMapper.readValue(raw, PaymentLinkResponseJson::class.java)
         } catch (ex: Exception) {
             log.warn("Failed to parse Bridge payment-link state for {}: {}", paymentLinkId, ex.message)
             throw BadGatewayException("Bridge returned an unparsable state for payment link $paymentLinkId")
         }
+    }
 
-        val transaction = parsed.transactions?.lastOrNull()
-        val transactionStatus = BridgePaymentStatus.fromTransactionWire(transaction?.status)
-
-        val status = when {
-            transactionStatus != null -> transactionStatus
-            parsed.status.equals("expired", ignoreCase = true) -> BridgePaymentStatus.LINK_EXPIRED
-            parsed.status.equals("revoked", ignoreCase = true) -> BridgePaymentStatus.LINK_REVOKED
-            else -> {
-                if (transaction?.status != null) {
-                    log.warn(
-                        "Unrecognised Bridge transaction status '{}' on link {} — treated as not yet authorised",
-                        transaction.status, paymentLinkId,
-                    )
-                }
-                BridgePaymentStatus.CREA
-            }
+    /**
+     * Reads the payment request Bridge created for this link, or null while there is none.
+     *
+     * A link the association has not authorised yet simply has no payment request; that is not an
+     * error, it is [BridgePaymentStatus.CREA]. Bridge marks a link `completed` once one has been
+     * initiated from it, so a second one is not expected — Bridge documents no ordering for the
+     * list, so when several do come back the last is taken and the ambiguity is logged rather than
+     * settled silently.
+     */
+    private fun fetchPaymentRequest(paymentLinkId: String): PaymentRequestJson? {
+        val raw = try {
+            restClient.get()
+                .uri { it.path("/v3/payment/payment-requests").queryParam("payment_link_id", paymentLinkId).build() }
+                .headers { it.addAll(bridgeHeaders()) }
+                .retrieve()
+                .body(String::class.java) ?: "{}"
+        } catch (ex: RestClientException) {
+            log.error("Bridge payment-request lookup failed for link {}: {}", paymentLinkId, ex.message)
+            throw BadGatewayException("Bridge payment initiation unavailable: ${ex.message}")
         }
 
-        return BridgePaymentLinkState(
-            status = status,
-            transactionId = transaction?.id,
-            statusReason = transaction?.statusReason,
-            beneficiaryIban = transaction?.beneficiary?.iban?.let { normalise(it) },
-        )
+        val resources = try {
+            objectMapper.readValue(raw, PaymentRequestListJson::class.java).resources
+        } catch (ex: Exception) {
+            log.warn("Failed to parse Bridge payment requests for link {}: {}", paymentLinkId, ex.message)
+            throw BadGatewayException("Bridge returned an unparsable payment request for link $paymentLinkId")
+        }
+
+        if (resources != null && resources.size > 1) {
+            log.warn(
+                "Bridge returned {} payment requests for link {} — order is undocumented, taking the last",
+                resources.size, paymentLinkId,
+            )
+        }
+        return resources?.lastOrNull()
     }
 
     private fun normalise(iban: String) = iban.uppercase().replace(Regex("[^A-Z0-9]"), "")
@@ -424,12 +473,45 @@ private data class PaymentLinkBeneficiaryJson(
     val iban: String?,
 )
 
+/**
+ * A transaction as the *payment link* carries it: the transfer that was asked for, never its
+ * outcome.
+ *
+ * Bridge documents that these objects "do not include `status` or `id` fields". Declaring them
+ * anyway meant they deserialised to null on every single call, which pinned every payout to
+ * [BridgePaymentStatus.CREA] and made settlement unreachable. Only the beneficiary is meaningful
+ * here, and only for the destination read-back guard; execution state comes from
+ * [PaymentRequestJson].
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 private data class PaymentLinkTransactionJson(
+    val beneficiary: PaymentLinkBeneficiaryJson?,
+)
+
+/** A transaction of a payment request — unlike the link's, this one does carry an id. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class PaymentRequestTransactionJson(
+    val id: String?,
+)
+
+/**
+ * The payment request Bridge creates when the association authorises the transfer at its bank.
+ *
+ * Its [status] is the authoritative execution state, in the same vocabulary as
+ * [BridgePaymentStatus]: `CREA`, `ACTC`, `PDNG`, `ACSC`, `RJCT`, `PART`.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class PaymentRequestJson(
     val id: String?,
     val status: String?,
     @JsonProperty("status_reason") val statusReason: String?,
-    val beneficiary: PaymentLinkBeneficiaryJson?,
+    val transactions: List<PaymentRequestTransactionJson>?,
+)
+
+/** Bridge's list envelope for `GET /v3/payment/payment-requests`. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class PaymentRequestListJson(
+    val resources: List<PaymentRequestJson>?,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

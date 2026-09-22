@@ -83,7 +83,13 @@ app:
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
   cookies:
     secure: true
-    same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
+    # Not Strict here, unlike production. Strict requires the frontend and the API to share a site;
+    # staging spreads them over two cleverapps.io subdomains, and cleverapps.io is a public suffix,
+    # so the browser treats them as different sites and never stores `cl-refresh` at all. The
+    # symptom is a session lost on every reload: AuthProvider replays POST /api/auth/refresh on
+    # mount, the cookie is absent, the API answers 401 and the client bounces to /login.
+    # Production keeps Strict because app/api.common-link.org do share a site.
+    same-site: None
   security:
     # Same single Clever Cloud reverse proxy as production — see application-prod.yml.
     trusted-proxy-count: ${APP_TRUSTED_PROXY_COUNT:1}
