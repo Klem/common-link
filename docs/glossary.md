@@ -626,7 +626,11 @@ Open Banking provider used to initiate the outgoing SEPA transfer of a confirmed
 `technical` `backend` `external`
 
 ### Dynamic beneficiary
-Bridge feature by which the destination IBAN travels inside the payment-initiation request (`transactions[].beneficiary.iban`) instead of referencing a pre-registered beneficiary. This is what makes the CommonLink flow a direct IBAN → IBAN transfer: a payee IBAN that is VERIFIED is on its own a valid destination, with nothing to register anywhere. Requires activation by Bridge on the account.
+Bridge feature by which the destination IBAN travels inside the payment-initiation request (`transactions[].beneficiary.iban`) instead of referencing a pre-registered beneficiary. This is what makes the CommonLink flow a direct IBAN → IBAN transfer: a payee IBAN that is VERIFIED is on its own a valid destination, with nothing to register anywhere. Requires activation by Bridge on the account — a request carrying a dynamic beneficiary on a non-activated account is answered `403 payment_link.dynamic_beneficiary_not_allowed`, never silently redirected.
+`technical` `backend` `external`
+
+### Masked read-back
+Bridge's read endpoints return a stored IBAN partially hidden (`FR76XXXXXXXXXXXXXXXXXXXX250`), disclosing only the country code, the check digits and the trailing characters. The destination check run before an authorisation URL is handed to an association therefore compares what Bridge *discloses*, never the whole IBAN: a disclosed character contradicting the IBAN sent refuses the transfer, and a read-back disclosing too little is refused rather than passed off as verified. See `docs/legal/verification-payee-iban.md`, points 4.5 and 6.
 `technical` `backend` `external`
 
 ### BridgePaymentStatus

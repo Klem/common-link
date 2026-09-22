@@ -181,14 +181,103 @@ class BridgePaymentInitiationServiceTest {
 
     @Test
     fun `real mode - refuses the transfer when Bridge recorded a different destination IBAN`() {
-        // Bridge substitutes the dashboard IBAN when beneficiary.iban is absent, and the
-        // dynamic-beneficiary feature must be activated on the account. If it is not, a 200 could
-        // hide a debit towards an account the association never chose — so the recorded destination
-        // is verified before the authorisation URL is handed out.
+        // Bridge substitutes the dashboard IBAN when beneficiary.iban is absent, so a 200 could hide
+        // a debit towards an account the association never chose — the recorded destination is
+        // verified before the authorisation URL is handed out.
         val (service, server) = realService()
         server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
             .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
         expectReadBack(server, "FR7630006000011234567890189", id = "pl_1")
+
+        assertThrows<BadGatewayException> { createLink(service) }
+    }
+
+    @Test
+    fun `real mode - accepts the masked destination Bridge discloses on read-back`() {
+        // Bridge's read endpoints return the IBAN masked — `FR76XXXXXXXXXXXXXXXXXXXX250` in the
+        // documented examples. Comparing that to the IBAN sent can never be an equality: every
+        // creation would be refused, whatever the destination really is.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR05XXXXXXXXXXXXXXXXXXXXJ55", id = "pl_1")
+
+        val link = createLink(service)
+
+        assertThat(link.url).isEqualTo("https://pay/x")
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - accepts the exact masked payload observed from Bridge in sandbox`() {
+        // Captured from staging on 22 September 2026, payout 0065370a: `FR8117569000701793447274U39`
+        // was sent and Bridge read the destination back as `FR81XXXXXXXXXXXXXXXXXXXXU39`. Every other
+        // masked case here is built from the documentation; this one is the real wire format, and it
+        // is the payload the strict comparison used to refuse.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR81XXXXXXXXXXXXXXXXXXXXU39", id = "pl_1")
+
+        val link = service.createPaymentLink(
+            payoutId, "ZO PROD.", associationId, "SCALE THAT", "FR8117569000701793447274U39",
+            BigDecimal("112.00"), "Livraison viande de barbecue", null, "https://app.example.org/return",
+        )
+
+        assertThat(link.url).isEqualTo("https://pay/x")
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - refuses a masked destination whose disclosed check digits contradict the request`() {
+        // The mask must never become a blanket pass: what Bridge does disclose still has to match.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR76XXXXXXXXXXXXXXXXXXXXJ55", id = "pl_1")
+
+        assertThrows<BadGatewayException> { createLink(service) }
+    }
+
+    @Test
+    fun `real mode - refuses a masked destination whose disclosed tail contradicts the request`() {
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR05XXXXXXXXXXXXXXXXXXXX189", id = "pl_1")
+
+        assertThrows<BadGatewayException> { createLink(service) }
+    }
+
+    @Test
+    fun `real mode - refuses a destination masked so completely that nothing can be verified`() {
+        // The mask must never make the check vacuous: a read-back disclosing nothing would let any
+        // destination through, which is exactly what this guard exists to prevent.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "XXXXXXXXXXXXXXXXXXXXXXXXXXX", id = "pl_1")
+
+        assertThrows<BadGatewayException> { createLink(service) }
+    }
+
+    @Test
+    fun `real mode - refuses a destination whose trailing character Bridge does not disclose`() {
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR05XXXXXXXXXXXXXXXXXXXXXXX", id = "pl_1")
+
+        assertThrows<BadGatewayException> { createLink(service) }
+    }
+
+    @Test
+    fun `real mode - refuses a destination of a different length however it is masked`() {
+        // A shorter IBAN is another account, never a mask of this one.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR05XXXXXXXXXXXXXXXXXXXJ55", id = "pl_1")
 
         assertThrows<BadGatewayException> { createLink(service) }
     }

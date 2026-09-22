@@ -36,8 +36,9 @@ data class BridgePaymentLinkState(
     /** Bridge's reason for a rejection, e.g. `debit_account_insufficient_funds`. */
     val statusReason: String?,
     /**
-     * Destination IBAN Bridge actually recorded, normalised. Read back so it can be compared with
-     * the one we sent — see [BridgePaymentInitiationService.createPaymentLink].
+     * Destination IBAN Bridge actually recorded, normalised — **partially masked**, as Bridge's
+     * read endpoints disclose only the first and last characters. Read back so it can be compared
+     * with the one we sent — see [BridgePaymentInitiationService.createPaymentLink].
      */
     val beneficiaryIban: String?,
 )
@@ -105,8 +106,10 @@ class BridgePaymentInitiationService(
      * @param senderIban The association's own IBAN, pre-filled as the debtor account when known.
      * @param callbackUrl Where Bridge returns the association after the bank flow.
      * @return the created link and the URL to redirect to.
-     * @throws BadGatewayException if Bridge is unreachable or answers unintelligibly. Nothing has
-     *   been debited in that case: no transfer can happen until the association authenticates.
+     * @throws BadGatewayException if Bridge is unreachable, answers unintelligibly, or reads the
+     *   link back with a destination that contradicts [payeeIban] — no authorisation URL is handed
+     *   out then. Nothing has been debited in any of these cases: no transfer can happen until the
+     *   association authenticates.
      */
     fun createPaymentLink(
         payoutId: UUID,
@@ -187,11 +190,14 @@ class BridgePaymentInitiationService(
         // Read the link back and check the destination Bridge recorded is the one we sent.
         //
         // Bridge documents that when `beneficiary.iban` is not defined it silently substitutes the
-        // IBAN configured in the dashboard, and the dynamic-beneficiary feature has to be activated
-        // on the account. If it is not active, a request carrying our IBAN could be answered 200
+        // IBAN configured in the dashboard. A request carrying our IBAN could then be answered 200
         // while the money is destined elsewhere — the association would authorise a debit towards
         // an account it never chose. Asserting what we *sent* proves nothing here; only what Bridge
         // stored does.
+        //
+        // That read-back is masked: Bridge's read endpoints disclose a few characters of the IBAN
+        // and replace the rest with a mask character (`FR76XXXXXXXXXXXXXXXXXXXX250` in the
+        // documented examples), so the comparison is on what Bridge discloses — see refusalReason.
         val recorded = try {
             getPaymentLink(id).beneficiaryIban
         } catch (ex: BadGatewayException) {
@@ -200,12 +206,12 @@ class BridgePaymentInitiationService(
                 "Bridge payment link $id could not be verified before use: ${ex.message}"
             )
         }
-        if (recorded != null && recorded != normalisedIban) {
+        val refusal = recorded?.let { refusalReason(it, normalisedIban) }
+        if (refusal != null) {
             log.error(
-                "Bridge recorded beneficiary IBAN {} for payout {} but {} was requested — refusing to " +
-                    "hand out the authorisation URL; check that the dynamic-beneficiary feature is " +
-                    "activated on the Bridge account",
-                recorded, payoutId, normalisedIban,
+                "Bridge read back destination {} for payout {} where {} was sent — {}; refusing to hand " +
+                    "out the authorisation URL",
+                recorded, payoutId, normalisedIban, refusal,
             )
             throw BadGatewayException(
                 "Bridge recorded a different destination IBAN for payout $payoutId — transfer refused"
@@ -285,6 +291,37 @@ class BridgePaymentInitiationService(
 
     private fun normalise(iban: String) = iban.uppercase().replace(Regex("[^A-Z0-9]"), "")
 
+    /**
+     * Why [recorded] — the destination as Bridge reads it back, partially masked — cannot be the
+     * [sent] IBAN, or null when it still can be.
+     *
+     * Every character Bridge discloses must match; a masked position carries no information and is
+     * skipped. The check fails closed rather than silently weakening: a length that is not the one
+     * sent means the read-back is not the documented mask at all, and a read-back that hides the
+     * country code, the check digits or the trailing character discloses too little to verify
+     * anything — an all-masked value would otherwise let any destination through.
+     *
+     * The guarantee remains partial by construction: a substitution is caught as soon as Bridge
+     * discloses one differing character — in practice the check digits and the trailing characters,
+     * which an unrelated account of the same length does not share — but an IBAN differing only
+     * where Bridge masks cannot be ruled out. That limit is stated in
+     * `docs/legal/verification-payee-iban.md`, points 4.5 and 6.
+     */
+    private fun refusalReason(recorded: String, sent: String): String? = when {
+        recorded.length != sent.length ->
+            "the read-back is ${recorded.length} characters where ${sent.length} were sent, so it is " +
+                "not the documented mask"
+
+        recorded.take(IBAN_DISCLOSED_PREFIX_LENGTH).any { it == MASK_CHAR } || recorded.last() == MASK_CHAR ->
+            "Bridge disclosed neither the country code and check digits nor the trailing character, " +
+                "so the destination cannot be verified"
+
+        recorded.indices.any { recorded[it] != MASK_CHAR && recorded[it] != sent[it] } ->
+            "a disclosed character contradicts the IBAN that was sent"
+
+        else -> null
+    }
+
     private fun bridgeHeaders() = HttpHeaders().apply {
         set("Client-Id", props.clientId)
         set("Client-Secret", props.clientSecret)
@@ -310,6 +347,21 @@ class BridgePaymentInitiationService(
 
         /** Prefix marking simulated Bridge data, so it can never pass for a real transfer. */
         const val DEMO_ID_PREFIX = "demo_"
+
+        /**
+         * Character Bridge substitutes for the digits it hides when it reads an IBAN back, e.g.
+         * `FR76XXXXXXXXXXXXXXXXXXXX250`. It survives [normalise] — it is a letter — so the mask
+         * must be handled explicitly rather than compared away.
+         */
+        const val MASK_CHAR = 'X'
+
+        /**
+         * Number of leading characters Bridge is expected to disclose: the country code and the
+         * check digits, as every documented example does. Requiring them is not an arbitrary floor
+         * — it is requiring Bridge to disclose what it documents, and refusing to pass a
+         * verification off as done when it could not be performed.
+         */
+        const val IBAN_DISCLOSED_PREFIX_LENGTH = 4
 
         /**
          * How long the association has to authorise a transfer before the link dies.
