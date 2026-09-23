@@ -141,6 +141,20 @@ virement est refusé. Ce contrôle existe parce que Bridge substitue l'IBAN conf
 de bord lorsque aucun IBAN de bénéficiaire n'est fourni : une substitution silencieuse ne doit pas
 pouvoir aboutir à un virement vers un compte que l'association n'a pas choisi.
 
+Un second contrôle, ajouté le 23 septembre 2026, ferme une brèche voisine : **le lien
+d'autorisation est révoqué auprès de Bridge avant que le virement ne soit marqué en échec**. Bridge
+ne consomme pas un lien qu'une banque a refusé — un lien rejeté reste affiché « Valide » et une
+seconde autorisation y crée une nouvelle demande de paiement, ce qui a été constaté en sandbox le
+22 septembre 2026. Or marquer le virement en échec rend son montant au solde disponible de la
+campagne : sans révocation, une seconde autorisation sur ce lien exécuterait un virement sur des
+fonds déjà rendus et publierait une attestation on-chain irrétractable. La révocation précède donc
+l'échec, et si elle ne peut être confirmée le montant reste engagé plutôt que rendu.
+
+Dans le même esprit, l'expiration d'un lien sans autorisation n'est **pas** traitée comme un échec :
+personne n'a rien demandé à la banque, aucun mouvement n'a pu avoir lieu, et le virement redevient
+simplement réémettable, son montant retournant au solde de la campagne. Seul un refus bancaire est
+terminal.
+
 Cette comparaison est **partielle par construction**. Les endpoints de lecture de Bridge ne
 restituent l'IBAN enregistré que masqué (`FR76XXXXXXXXXXXXXXXXXXXX250` dans la documentation) :
 seuls les caractères effectivement divulgués — en pratique le code pays, la clé de contrôle et les
@@ -202,7 +216,10 @@ destination relue auprès de Bridge contredit celle transmise — sur la clé de
 derniers caractères ou par une longueur différente — comme lorsqu'elle est masquée au point de ne
 plus rien divulguer de vérifiable (cinq cas), son acceptation lorsque la forme masquée restituée est
 compatible avec l'IBAN transmis (un cas), et la garantie qu'aucune attestation
-on-chain n'est émise avant le règlement effectif constaté par la banque.
+on-chain n'est émise avant le règlement effectif constaté par la banque. S'y ajoutent, depuis le
+23 septembre 2026, la révocation du lien d'autorisation avant tout marquage en échec — y compris
+le maintien du montant engagé lorsque cette révocation ne peut pas être confirmée — et la
+libération du virement vers un état réémettable lorsque le lien meurt sans avoir été autorisé.
 
 ---
 
@@ -210,7 +227,10 @@ on-chain n'est émise avant le règlement effectif constaté par la banque.
 de l'intégration de Bridge API pour l'exécution réelle des virements par initiation de paiement, puis
 le 22 septembre 2026 (points 4.5, 6 et 7) après le premier virement réel en sandbox : la destination
 relue auprès de Bridge revient masquée, la comparaison est donc partielle et la fiche ne peut pas la
-décrire comme une égalité. Ce contrôle a remplacé un
+décrire comme une égalité, puis le 23 septembre 2026 (points 4.5 et 7) : révocation du lien
+d'autorisation avant tout marquage en échec, expiration sans autorisation traitée comme une
+libération et non comme un échec, et durée de vie du lien rendue configurable par environnement
+(`app.bridge.link-validity`, un jour par défaut). Ce contrôle a remplacé un
 fournisseur de vérification antérieur (Qonto) par Mollie ; toutes les références à l'ancien
 fournisseur ont été retirées du code, de la configuration applicative et du glossaire
 (`docs/glossary.md`), à l'exception des fichiers d'environnement dont la rotation du jeton reste à

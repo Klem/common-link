@@ -618,7 +618,7 @@ Google Analytics 4 ecommerce events pushed to `window.dataLayer` (via `app/src/l
 ## P (continued)
 
 ### Payout
-An outgoing payment from a campaign to a payee (beneficiary). Created as `PENDING` when the association initiates it. Confirmation initiates a real SEPA transfer through **Bridge API**, and the payout stays `PENDING` until the association has authorised that transfer with its own bank and the bank has settled it; only then does it become `CONFIRMED` and a `RECORD_PAYOUT` on-chain job get enqueued. Terminal failure state is `FAILED`.
+An outgoing payment from a campaign to a payee (beneficiary). Created as `PENDING` when the association initiates it. Confirmation initiates a real SEPA transfer through **Bridge API**, and the payout stays `PENDING` until the association has authorised that transfer with its own bank and the bank has settled it; only then does it become `CONFIRMED` and a `RECORD_PAYOUT` on-chain job get enqueued. A bank rejection is the one terminal failure: `FAILED`. A link that expires or is revoked without ever being authorised is not a failure — nobody asked the bank for anything, so the payout returns to a retryable `PENDING`, its authorisation URL is cleared and its amount goes back to the campaign's confirmable balance.
 `domain` `backend` `association`
 
 ### Bridge API
@@ -634,11 +634,11 @@ Bridge's read endpoints return a stored IBAN partially hidden (`FR76XXXXXXXXXXXX
 `technical` `backend` `external`
 
 ### BridgePaymentStatus
-State of the Bridge initiation for a payout. The first six values are Bridge's ISO 20022 transaction statuses: `CREA` (link created, not yet authorised at the bank), `ACTC` (accepted, awaiting bank authorisation), `PDNG` (authorised, settling), `ACSC` (settled — terminal success), `RJCT` (rejected by the bank — terminal failure), `PART` (partial, only meaningful for bulk transfers). The last two are payment-link terminal failures: `LINK_EXPIRED`, `LINK_REVOKED`. Kept deliberately separate from **PayoutStatus** so the three-state accounting lifecycle that balance, KPI and breakdown computations rely on keeps its meaning. Only `ACSC` promotes a payout to `CONFIRMED`.
+State of the Bridge initiation for a payout. The first six values are Bridge's ISO 20022 transaction statuses: `CREA` (link created, not yet authorised at the bank), `ACTC` (accepted, awaiting bank authorisation), `PDNG` (authorised, settling), `ACSC` (settled — terminal success), `RJCT` (rejected by the bank — terminal failure), `PART` (partial, only meaningful for bulk transfers). The last two describe the payment link rather than a transfer: `LINK_EXPIRED`, `LINK_REVOKED`. They are neither failures nor states a payout is ever stored in — reaching one releases the payout back to a retryable `PENDING` with a null Bridge status. A `CREA` or `ACTC` request loses to a dead link, since the URL that would let the association authorise it no longer works; from `PDNG` on the bank is executing and the link's fate no longer matters. Kept deliberately separate from **PayoutStatus** so the three-state accounting lifecycle that balance, KPI and breakdown computations rely on keeps its meaning. Only `ACSC` promotes a payout to `CONFIRMED`.
 `technical` `backend`
 
 ### Bank authorisation URL
-The `url` returned by Bridge when a payment link is created (`bridgeCheckoutUrl` on a payout), where the association authenticates with its bank to authorise the transfer. Stored rather than merely returned, so an interrupted authorisation can be resumed from the Payments tab instead of stranding the payout. Bridge expires these links after 15 minutes.
+The `url` returned by Bridge when a payment link is created (`bridgeCheckoutUrl` on a payout), where the association authenticates with its bank to authorise the transfer. Stored rather than merely returned, so an interrupted authorisation can be resumed from the Payments tab for as long as the link lives. CommonLink sets that lifetime itself, sending `expired_date` on creation from `app.bridge.link-validity` (one day by default, configurable per environment); Bridge's own fallback of 15 minutes applies only when the field is omitted, which it never is. Once the link dies the URL is cleared and the payout is un-stranded by returning to `PENDING` for a fresh confirmation, not by resuming a dead link.
 `technical` `association`
 
 ### PayoutKind
@@ -646,7 +646,7 @@ High-level category of a payout used for budget variance reporting: `REMUNERATIO
 `technical` `backend`
 
 ### PayoutStatus
-CommonLink's accounting lifecycle for a payout: `PENDING` (created, awaiting confirmation) → `CONFIRMED` (bank accepted the transfer order, on-chain job enqueued) or `FAILED` (terminal error, including a transfer Bridge refused). `CONFIRMED` means the order was accepted, **not** that the beneficiary has been credited — see **BridgePayoutStatus** for the bank-side state.
+CommonLink's accounting lifecycle for a payout: `PENDING` (created, awaiting confirmation) → `CONFIRMED` (the bank settled the transfer, on-chain job enqueued) or `FAILED` (terminal error; on the Bridge path, a transfer the association's bank refused). `PENDING` is also returned to: an initiation that never reached Bridge, or a link that died unauthorised, releases the payout so it can be confirmed again. `CONFIRMED` means the bank settled, **not** merely that an order was accepted — see **BridgePaymentStatus** for the bank-side state.
 `technical` `backend`
 
 ### typeCode (payout)
