@@ -61,6 +61,17 @@ export interface UsePaymentsReturn {
    * the money has arrived.
    */
   submit: (req: CreatePayoutRequest) => Promise<PayoutDto>;
+  /**
+   * Issues an existing payout again, without re-creating it.
+   *
+   * A payout whose initiation failed, or whose authorisation link died unused, is deliberately left
+   * PENDING and retryable rather than FAILED — nothing was debited, so retiring it would punish the
+   * association for closing a tab. That only means something if it can actually be re-issued: with
+   * no such action the association creates a second payout instead, which is how four identical
+   * rows appeared from one payment on 2026-09-23. The old link is gone by then, so this asks the
+   * backend for a fresh one and returns the payout carrying its new authorisation URL.
+   */
+  retry: (payoutId: string) => Promise<PayoutDto>;
   refetch: () => Promise<void>;
   /**
    * The payout the association has just come back from its bank for, while its fate is still
@@ -162,6 +173,20 @@ export function usePayments(campaignId: string, returningPayoutId?: string | nul
     [campaignId, fetchAll],
   );
 
+  const retry = useCallback(
+    async (payoutId: string): Promise<PayoutDto> => {
+      setIsSaving(true);
+      try {
+        const confirmed = await confirmPayment(campaignId, payoutId);
+        await fetchAll();
+        return confirmed;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [campaignId, fetchAll],
+  );
+
   return {
     payouts,
     summary,
@@ -172,6 +197,7 @@ export function usePayments(campaignId: string, returningPayoutId?: string | nul
     totalPages,
     setPage,
     submit,
+    retry,
     refetch: fetchAll,
     awaitingReturnPayoutId: awaitingReturn ? returningPayoutId : null,
   };

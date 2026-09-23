@@ -1422,6 +1422,8 @@
           "empty": "No payments issued.",
           "inTransit": "Transfer being executed by the bank",
           "lastAttemptFailed": "Last attempt failed: {error}",
+          "retry": "Retry",
+          "retryHint": "Issue this payout again with a fresh bank authorisation link",
           "title": "📋 Payment history"
         },
         "ibanSelect": "IBAN",

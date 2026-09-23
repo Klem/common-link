@@ -10,6 +10,7 @@ import org.commonlink.dto.CreatePayoutRequest
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.exception.BadGatewayException
+import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.IbanVerificationStatus
@@ -326,6 +327,41 @@ class PayoutServiceTest {
         }
         // The attestation belongs to settlement, which only the webhook can establish.
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
+    }
+
+    @Test
+    fun `confirm - drops the payout when Bridge never accepted the initiation`() {
+        // No link exists, so the row records nothing but a form that failed to submit. Four
+        // identical rows appeared from a single payment on 2026-09-23 because the association could
+        // not tell that apart from a real attempt.
+        stubLoadForConfirm()
+        every { confirmer.reserve(campaignId, payoutId) } returns Unit
+        every {
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } throws BridgeInitiationNotStartedException("Bridge payment initiation unavailable: 400 Bad Request")
+        every { confirmer.discardNeverInitiated(payoutId) } returns Unit
+
+        assertThrows<BridgeInitiationNotStartedException> { service.confirm(campaignId, payoutId, userId) }
+
+        verify { confirmer.discardNeverInitiated(payoutId) }
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any()) }
+    }
+
+    @Test
+    fun `confirm - keeps the payout when a link may exist`() {
+        // The destination read-back refusal lands here: a link was created and revoked, and this
+        // row is the only local record that it existed at all.
+        stubLoadForConfirm()
+        every { confirmer.reserve(campaignId, payoutId) } returns Unit
+        every {
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } throws BadGatewayException("Bridge recorded a different destination IBAN — transfer refused")
+        every { confirmer.releaseReservation(payoutId, any()) } returns Unit
+
+        assertThrows<BadGatewayException> { service.confirm(campaignId, payoutId, userId) }
+
+        verify { confirmer.releaseReservation(payoutId, any()) }
+        verify(exactly = 0) { confirmer.discardNeverInitiated(any()) }
     }
 
     @Test

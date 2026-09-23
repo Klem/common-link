@@ -105,6 +105,20 @@ const awaitingBankPayout: PayoutDto = {
   bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
 };
 
+/**
+ * Released after an attempt that moved no money — a Bridge refusal, or a link that died unused.
+ * Still PENDING and re-issuable, with no authorisation URL because the old one is dead.
+ */
+const releasedPayout: PayoutDto = {
+  ...samplePayout,
+  id: 'payout-4',
+  status: 'PENDING',
+  confirmedAt: null,
+  bridgeStatus: null,
+  bridgeCheckoutUrl: null,
+  bridgeLastError: 'Bank authorisation window expired before the transfer was authorised',
+};
+
 const samplePayee: PayeeDto = {
   id: 'payee-1',
   payeeType: 'COMPANY' as const,
@@ -171,6 +185,7 @@ function setupPayments(overrides: Partial<UsePaymentsReturn> = {}): UsePaymentsR
     totalPages: 0,
     setPage: vi.fn(),
     submit: defaultSubmit,
+    retry: vi.fn(),
     refetch: vi.fn(),
     awaitingReturnPayoutId: null,
     ...overrides,
@@ -485,6 +500,33 @@ describe('CampaignPaymentsTab', () => {
 
     expect(screen.queryByRole('link', { name: 'history.authorise' })).toBeNull();
     expect(screen.getByText('history.awaitingBank')).toBeTruthy();
+  });
+
+  it('offers a retry on a payout whose last attempt failed, without re-creating it', async () => {
+    // Nothing was debited, so the payout was deliberately left retryable rather than failed. With
+    // no action that only meant something in the database: the association re-created the payout
+    // instead, which is how four identical rows appeared from one payment on 2026-09-23.
+    setupMocks();
+    const retry = vi.fn().mockResolvedValue(samplePayout);
+    render(
+      <CampaignPaymentsTab
+        campaign={campaign}
+        payments={setupPayments({ payouts: [releasedPayout], retry })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'history.retry' }));
+
+    await waitFor(() => expect(retry).toHaveBeenCalledWith(releasedPayout.id));
+    // Re-issuing, not re-creating: the accounting row the association filled in is reused.
+    expect(defaultSubmit).not.toHaveBeenCalled();
+  });
+
+  it('offers no retry while the transfer is still in flight', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [inFlightPayout] })} />);
+
+    expect(screen.queryByRole('button', { name: 'history.retry' })).toBeNull();
   });
 
   it('offers no authorisation link once the transfer is settled', () => {

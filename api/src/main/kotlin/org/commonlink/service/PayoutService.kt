@@ -9,6 +9,7 @@ import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutBlockingReason
 import org.commonlink.entity.PayoutStatus
+import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UserNotFoundException
@@ -196,12 +197,20 @@ class PayoutService(
                 senderIban = null,
                 callbackUrl = bridgeCallbackUrl(campaignId, payoutId),
             )
+        } catch (ex: BridgeInitiationNotStartedException) {
+            // Bridge refused the request outright, so no link exists. Keeping the row would record
+            // nothing but a form that failed to submit — and an association unable to tell that
+            // apart from a real attempt creates another one instead, which is how four identical
+            // rows appeared from a single payment on 2026-09-23.
+            confirmer.discardNeverInitiated(payoutId)
+            throw ex
         } catch (ex: Exception) {
-            // Release the reservation rather than fail the payout: with Open Banking initiation
-            // nothing can be debited until the association authorises the transfer at its bank, and
-            // that requires the authorisation URL — which this failure means we never obtained. The
-            // payout stays PENDING so the association can retry once Bridge answers again; FAILED
-            // would be terminal, because loadForConfirm only accepts PENDING.
+            // A link may exist here — the destination read-back refusal is the clearest case — so
+            // the row is kept and only its reservation released. With Open Banking initiation
+            // nothing can be debited until the association authorises at its bank, and that
+            // requires the authorisation URL, which this failure means it never received. The
+            // payout stays PENDING so it can be retried; FAILED would be terminal, because
+            // loadForConfirm only accepts PENDING.
             confirmer.releaseReservation(payoutId, ex.message ?: "Bridge initiation failed")
             throw ex
         }

@@ -1422,6 +1422,8 @@
           "empty": "Aucun paiement émis.",
           "inTransit": "Virement en cours d'exécution par la banque",
           "lastAttemptFailed": "Échec de la dernière tentative : {error}",
+          "retry": "Réessayer",
+          "retryHint": "Réémettre ce virement avec un nouveau lien d'autorisation bancaire",
           "title": "📋 Historique paiements"
         },
         "ibanSelect": "IBAN",

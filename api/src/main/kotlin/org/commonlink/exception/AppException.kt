@@ -85,8 +85,25 @@ class NotFoundException(message: String) :
     AppException(message, HttpStatus.NOT_FOUND)
 
 /** Thrown when an upstream dependency (e.g. an external API) is unavailable or returns an error (HTTP 502). */
-class BadGatewayException(message: String) :
+open class BadGatewayException(message: String) :
     AppException(message, HttpStatus.BAD_GATEWAY)
+
+/**
+ * Thrown when Bridge did not accept the request that would have created a payment link, so **no
+ * link exists** — a refusal, a timeout, a network failure.
+ *
+ * Distinguished from a plain [BadGatewayException] because it decides whether a payout row is worth
+ * keeping. Nothing was created at Bridge: no link, no authorisation URL, nothing that any later
+ * notification could refer to. The row records only that a form failed to submit, so it is deleted
+ * rather than left behind. Every other failure of the initiation keeps the payout, because a link
+ * may exist — a destination read-back refused is the clearest case, and it is evidence of a control
+ * that `docs/legal/verification-payee-iban.md` describes.
+ *
+ * Its own type rather than a test on the message: recognising this case by matching text would
+ * break the day a wording changes, and what it gates is a deletion.
+ */
+class BridgeInitiationNotStartedException(message: String) :
+    BadGatewayException(message)
 
 /** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */
 class UnprocessableEntityException(message: String) :

@@ -77,7 +77,7 @@ function StatusChip({
 export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
   const router = useRouter();
-  const { payouts, summary, isLoading, isSaving, error, submit, awaitingReturnPayoutId } = payments;
+  const { payouts, summary, isLoading, isSaving, error, submit, retry, awaitingReturnPayoutId } = payments;
   const { payees } = usePayees();
   const addToast = useToastStore((s) => s.addToast);
 
@@ -195,6 +195,26 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         return;
       }
       addToast('success', isPayoutInFlight(initiated) ? 'paymentSubmitted' : 'paymentSuccess');
+    } catch {
+      addToast('error', 'paymentError');
+    }
+  }
+
+  /**
+   * Issues an existing payout again — the previous attempt moved no money.
+   *
+   * Deliberately not `submit`: re-creating would duplicate the accounting row the association
+   * already filled in. Only a fresh authorisation link is needed, and the backend mints one.
+   */
+  async function handleRetry(payoutId: string) {
+    try {
+      const reissued = await retry(payoutId);
+      if (needsBankAuthorisation(reissued) && reissued.bridgeCheckoutUrl) {
+        addToast('success', 'paymentAwaitingBank');
+        window.location.href = reissued.bridgeCheckoutUrl;
+        return;
+      }
+      addToast('success', isPayoutInFlight(reissued) ? 'paymentSubmitted' : 'paymentSuccess');
     } catch {
       addToast('error', 'paymentError');
     }
@@ -463,6 +483,23 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                   */}
                   {p.id === awaitingReturnPayoutId ? (
                     <span className="cm-hint-sm">{t('history.awaitingBank')}</span>
+                  ) : lastAttemptFailed(p) ? (
+                    /*
+                      Nothing was debited and the payout was deliberately left retryable rather than
+                      failed. Without this button that only means something in the database: the
+                      association re-creates the payout instead, which is how four identical rows
+                      appeared from one payment. The old link is dead by then, so this asks for a
+                      fresh one rather than re-opening the stored URL.
+                    */
+                    <button
+                      type="button"
+                      className="cm-btn cm-btn-ghost cm-btn-sm"
+                      title={t('history.retryHint')}
+                      disabled={isSaving}
+                      onClick={() => handleRetry(p.id)}
+                    >
+                      {t('history.retry')}
+                    </button>
                   ) : needsBankAuthorisation(p) && p.bridgeCheckoutUrl ? (
                     <a
                       className="cm-btn cm-btn-ghost cm-btn-sm"

@@ -274,6 +274,43 @@ class PayoutConfirmerTest {
     }
 
     @Test
+    fun `discardNeverInitiated - drops a payout Bridge never accepted`() {
+        // No link, no authorisation URL, nothing a later notification could refer to: the row would
+        // record only that a form failed to submit, and an association unable to tell that apart
+        // from a real attempt simply creates another one.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.delete(payout) } returns Unit
+
+        confirmer.discardNeverInitiated(payout.id)
+
+        verify { payoutRepository.delete(payout) }
+    }
+
+    @Test
+    fun `discardNeverInitiated - never drops a payout that has a Bridge link`() {
+        // A link that exists is a fact this row is the only local record of — a destination
+        // read-back refused is the clearest case, and it is evidence of a documented control.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        payout.bridgePaymentLinkId = "pl_1"
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.discardNeverInitiated(payout.id)
+
+        verify(exactly = 0) { payoutRepository.delete(any<Payout>()) }
+    }
+
+    @Test
+    fun `discardNeverInitiated - never drops a payout that already left PENDING`() {
+        val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.discardNeverInitiated(payout.id)
+
+        verify(exactly = 0) { payoutRepository.delete(any<Payout>()) }
+    }
+
+    @Test
     fun `releaseReservation - returns the payout to a confirmable state, keeping the diagnostic`() {
         // A Bridge refusal before any link exists must not retire the payout: loadForConfirm only
         // accepts PENDING with a null bridgeStatus, so a FAILED stamp here would be terminal and

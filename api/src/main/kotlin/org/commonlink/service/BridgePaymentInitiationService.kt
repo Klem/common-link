@@ -8,6 +8,7 @@ import org.commonlink.config.BridgeProperties
 import org.commonlink.config.BridgeRestClientConfig
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.exception.BadGatewayException
+import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpHeaders
@@ -161,7 +162,7 @@ class BridgePaymentInitiationService(
             transactions = listOf(
                 TransactionJson(
                     amount = amount,
-                    label = label.take(BRIDGE_LABEL_MAX_LENGTH),
+                    label = statementLabel(label),
                     clientReference = payoutId.toString(),
                     beneficiary = BeneficiaryJson(
                         iban = normalisedIban,
@@ -180,8 +181,12 @@ class BridgePaymentInitiationService(
                 .retrieve()
                 .body(String::class.java) ?: "{}"
         } catch (ex: RestClientException) {
+            // Bridge did not accept the request, so no link exists — nothing to reconcile later,
+            // nothing to revoke, nothing for a notification to refer to. The distinct type is what
+            // lets the caller drop the payout row instead of leaving a record of a form that never
+            // submitted. See [BridgeInitiationNotStartedException].
             log.error("Bridge createPaymentLink failed for payout {}: {}", payoutId, ex.message)
-            throw BadGatewayException("Bridge payment initiation unavailable: ${ex.message}")
+            throw BridgeInitiationNotStartedException("Bridge payment initiation unavailable: ${ex.message}")
         }
 
         val parsed = try {
@@ -506,6 +511,30 @@ class BridgePaymentInitiationService(
             BridgePaymentStatus.ACSC -> 3
             else -> if (status.isInFlight) 2 else 1
         }
+
+    /**
+     * Renders the association's justification as something a bank statement will accept.
+     *
+     * Bridge rejects some characters in a transaction label with
+     * `payment.transaction.characters_not_allowed`, and documents neither the rule nor even that
+     * error. What is known is measured, not guessed: on 2026-09-23 a label containing `:` was
+     * refused twice, while labels carrying `é`, `è`, `'` and `.` went through in the same session.
+     * So the set kept here is what was observed to pass, plus the hyphen — rather than an invented
+     * whitelist. Anything else becomes a space.
+     *
+     * Rendered rather than validated, deliberately. The label is the association's own accounting
+     * justification and is stored verbatim on the payout; only what travels to the bank is
+     * constrained. Rejecting the payout instead would turn a typed colon into a `502` and a
+     * technical alert, which is what happened before this existed — and a validation rule built on
+     * one observed character would sooner or later refuse a legitimate label.
+     */
+    private fun statementLabel(label: String): String =
+        label.replace(Regex("[^\\p{L}\\p{N} .'-]"), " ")
+            .replace(Regex(" {2,}"), " ")
+            .trim()
+            .take(BRIDGE_LABEL_MAX_LENGTH)
+            .trim()
+            .ifBlank { "Virement" }
 
     private fun normalise(iban: String) = iban.uppercase().replace(Regex("[^A-Z0-9]"), "")
 

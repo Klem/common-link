@@ -663,6 +663,50 @@ class BridgePaymentInitiationServiceTest {
         }
     }
 
+    /** Creates a link with [label], asserting what reaches Bridge's `transactions[0].label`. */
+    private fun expectStatementLabel(label: String, sentAs: String) {
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andExpect(jsonPath("$.transactions[0].label").value(sentAs))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        expectReadBack(server, "FR0530003000402916465922J55", id = "pl_1")
+
+        service.createPaymentLink(
+            payoutId = payoutId,
+            payerName = "Association Test",
+            payerReference = associationId,
+            payeeName = "Croix-Rouge Francaise",
+            payeeIban = "FR05 3000 3000 4029 1646 5922 J55",
+            amount = BigDecimal("500.00"),
+            label = label,
+            senderIban = null,
+            callbackUrl = "https://app.example.org/return",
+        )
+
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - renders the statement label so Bridge cannot refuse it`() {
+        // Measured, not guessed: on 2026-09-23 a label containing `:` was refused twice with
+        // `payment.transaction.characters_not_allowed`, while labels carrying accents and an
+        // apostrophe went through in the same session. Bridge documents neither rule nor error.
+        expectStatementLabel("A.4 : Rejet bancaire simple", sentAs = "A.4 Rejet bancaire simple")
+    }
+
+    @Test
+    fun `real mode - keeps the accents an association actually writes`() {
+        // Rendering must not become transliteration: these went through untouched, and a French
+        // justification stripped of its accents on a bank statement helps nobody.
+        expectStatementLabel("Règlement différé d'une heure", sentAs = "Règlement différé d'une heure")
+    }
+
+    @Test
+    fun `real mode - a label made only of refused characters still yields something`() {
+        // An empty label is refused too, and a payout must not fail over punctuation.
+        expectStatementLabel(":::  ///  :::", sentAs = "Virement")
+    }
+
     @Test
     fun `real mode - revoking posts to the documented endpoint`() {
         val (service, server) = realService()

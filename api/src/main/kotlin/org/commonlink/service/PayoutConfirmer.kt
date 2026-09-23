@@ -243,6 +243,35 @@ class PayoutConfirmer(
     }
 
     /**
+     * Deletes a payout whose initiation Bridge never accepted.
+     *
+     * Nothing was created at Bridge: no link, no authorisation URL, nothing a later notification
+     * could refer to. The row would record only that a form failed to submit, and an association
+     * that cannot tell it apart from a real attempt simply creates another one — which is how four
+     * identical rows appeared on 2026-09-23 from one payment.
+     *
+     * Deliberately narrow. Only a payout still PENDING and carrying no payment-link id is dropped;
+     * anything else is left alone and logged, because a link that exists is a fact this row is the
+     * only local record of — including a destination read-back refused, which is evidence of a
+     * control `docs/legal/verification-payee-iban.md` describes.
+     *
+     * @param payoutId Payout to drop.
+     */
+    @Transactional
+    fun discardNeverInitiated(payoutId: UUID) {
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
+        if (payout.status != PayoutStatus.PENDING || payout.bridgePaymentLinkId != null) {
+            log.warn(
+                "Refusing to discard payout {} — it is {} with Bridge link {}",
+                payoutId, payout.status, payout.bridgePaymentLinkId,
+            )
+            return
+        }
+        payoutRepository.delete(payout)
+        log.info("Payout {} discarded — Bridge never accepted the initiation, so nothing was created", payoutId)
+    }
+
+    /**
      * Returns a payout to a retryable PENDING state, its amount back on the campaign's balance.
      *
      * For every outcome where **no transfer was ever authorised**: an initiation that never
