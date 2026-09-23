@@ -147,6 +147,18 @@ app:
     # while blank, it does not fail closed. Set BRIDGE_WEBHOOK_SECRET on Clever Cloud once available.
     webhook-secret: ${BRIDGE_WEBHOOK_SECRET:}
     webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
+    # Durée de vie d'un lien d'autorisation. Explicite ici plutôt qu'héritée du défaut du code :
+    # elle borne la durée pendant laquelle le montant d'un virement reste engagé sans autorisation,
+    # et une valeur de production ne doit pas dépendre d'une lecture de Kotlin pour être connue.
+    link-validity: ${BRIDGE_LINK_VALIDITY:1d}
+    # Rattrapage des virements dont l'état ne bouge plus — voir application.yml. Les seuils de
+    # production sont ceux du code, repris explicitement pour la même raison.
+    reconciler:
+      enabled: ${BRIDGE_RECONCILER_ENABLED:true}
+      fixed-delay: ${BRIDGE_RECONCILER_FIXED_DELAY:30m}
+      initial-delay: ${BRIDGE_RECONCILER_INITIAL_DELAY:2m}
+      stale-after: ${BRIDGE_RECONCILER_STALE_AFTER:6h}
+      stuck-after: ${BRIDGE_RECONCILER_STUCK_AFTER:3d}
   vop:
     demo-mode: false
     api-url: ${VOP_BASE_URL:https://api.mollie.com/v2/business-accounts/payee-verifications}

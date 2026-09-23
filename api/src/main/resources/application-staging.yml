@@ -133,7 +133,14 @@ app:
     webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
     # Shorten to a few minutes (e.g. 5m) to observe the expiry path without a 24-hour wait.
     link-validity: ${BRIDGE_LINK_VALIDITY:5m}
-    allow-fake-verify: true
+    # Voir application.yml pour le rôle de chaque clé. Les seuils sont abaissés ici pour que le
+    # balayage soit observable dans une session de test plutôt qu'en plusieurs jours.
+    reconciler:
+      enabled: ${BRIDGE_RECONCILER_ENABLED:true}
+      fixed-delay: ${BRIDGE_RECONCILER_FIXED_DELAY:5m}
+      initial-delay: ${BRIDGE_RECONCILER_INITIAL_DELAY:1m}
+      stale-after: ${BRIDGE_RECONCILER_STALE_AFTER:15m}
+      stuck-after: ${BRIDGE_RECONCILER_STUCK_AFTER:1h}
   vop:
     demo-mode: true
     api-url: ${VOP_BASE_URL:https://api.mollie.com/v2/business-accounts/payee-verifications}
