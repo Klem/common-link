@@ -9,6 +9,7 @@ import org.commonlink.config.BridgeRestClientConfig
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.exception.BadGatewayException
 import org.commonlink.exception.BridgeInitiationNotStartedException
+import org.commonlink.exception.BridgeRequestRefusedException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpHeaders
@@ -180,11 +181,15 @@ class BridgePaymentInitiationService(
                 .body(body)
                 .retrieve()
                 .body(String::class.java) ?: "{}"
+        } catch (ex: HttpClientErrorException) {
+            // Bridge answered and refused: it is not unavailable, it disagrees with the request.
+            // Same outcome for the payout — nothing was created, so the row is dropped — but no
+            // technical alert, see [BridgeRequestRefusedException].
+            log.error("Bridge refused the payment link for payout {}: {}", payoutId, ex.message)
+            throw BridgeRequestRefusedException("Bridge refused the payment initiation: ${ex.message}")
         } catch (ex: RestClientException) {
-            // Bridge did not accept the request, so no link exists — nothing to reconcile later,
-            // nothing to revoke, nothing for a notification to refer to. The distinct type is what
-            // lets the caller drop the payout row instead of leaving a record of a form that never
-            // submitted. See [BridgeInitiationNotStartedException].
+            // Bridge did not answer at all — down, unreachable, timed out. No link exists either,
+            // so the row is dropped just the same, and this one *is* worth alerting on.
             log.error("Bridge createPaymentLink failed for payout {}: {}", payoutId, ex.message)
             throw BridgeInitiationNotStartedException("Bridge payment initiation unavailable: ${ex.message}")
         }
@@ -491,25 +496,40 @@ class BridgePaymentInitiationService(
     /**
      * Whether [candidate] describes the fate of the link better than [kept] does.
      *
-     * Ranking, highest first — deliberately order-independent, because Bridge's list order is
-     * undocumented and was observed to be newest-first, i.e. the reverse of what positional
-     * selection assumed:
-     *  1. `ACSC` — the bank executed a transfer. That is a fact no sibling request can undo, and
-     *     reporting it as anything else loses money from the ledger.
-     *  2. in flight (`CREA`/`ACTC`/`PDNG`/`PART`) — an attempt still running supersedes an older
-     *     rejection: the association retried, and that retry is what the payout is waiting on.
-     *  3. anything else, `RJCT` included — every attempt failed.
+     * Every state gets its own rank, highest first, so no two distinct states can tie. Bridge's
+     * list order is undocumented — observed newest-first, the reverse of what positional selection
+     * assumed — and a tie would hand the decision straight back to that order:
+     *  1. `ACSC` — the bank executed a transfer. No sibling request undoes that fact, and reporting
+     *     it as anything else loses money from the ledger.
+     *  2. `PART` — part of it executed. Money moved and a human has to reconcile it.
+     *  3. `PDNG` — the bank is executing. The link's fate no longer matters.
+     *  4. `ACTC` — accepted by Bridge, the association has not authorised at its bank.
+     *  5. `CREA` — nothing authorised at all.
+     *  6. `RJCT` — every attempt failed. Loses to any live attempt: the association retried, and
+     *     that retry is what the payout is waiting on.
      *
-     * An unrecognised status ranks lowest: an unknown state must never outrank a known one.
+     * The tiers above and below `ACTC` are exactly [BridgePaymentStatus.survivesLinkDeath], which
+     * is what makes a tie expensive rather than merely untidy. Grouping `CREA`, `ACTC`, `PDNG` and
+     * `PART` together, as this did until 2026-09-23, left `[CREA, PDNG]` decided by list position:
+     * pick `CREA`, let the link expire, and the payout is released — its amount handed back to the
+     * campaign while the bank is executing the transfer.
+     *
+     * An unrecognised status ranks below everything: an unknown state must never outrank a known
+     * one.
      */
     private fun supersedes(candidate: PaymentRequestJson, kept: PaymentRequestJson): Boolean =
         rank(candidate.status) > rank(kept.status)
 
     private fun rank(wireStatus: String?): Int =
-        when (val status = BridgePaymentStatus.fromTransactionWire(wireStatus)) {
-            null -> 0
-            BridgePaymentStatus.ACSC -> 3
-            else -> if (status.isInFlight) 2 else 1
+        when (BridgePaymentStatus.fromTransactionWire(wireStatus)) {
+            BridgePaymentStatus.ACSC -> 5
+            BridgePaymentStatus.PART -> 4
+            BridgePaymentStatus.PDNG -> 3
+            BridgePaymentStatus.ACTC -> 2
+            BridgePaymentStatus.CREA -> 1
+            BridgePaymentStatus.RJCT -> 0
+            // Unrecognised, and the link-only states fromTransactionWire never returns.
+            else -> -1
         }
 
     /**

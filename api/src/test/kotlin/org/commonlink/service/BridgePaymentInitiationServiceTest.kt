@@ -5,6 +5,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.config.BridgeProperties
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.exception.BadGatewayException
+import org.commonlink.exception.BridgeInitiationNotStartedException
+import org.commonlink.exception.BridgeRequestRefusedException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.http.HttpMethod
@@ -604,6 +606,47 @@ class BridgePaymentInitiationServiceTest {
         }
     }
 
+    /** Asserts the ranking picks [expected] from two requests, whatever order Bridge lists them in. */
+    private fun expectRankedBoth(first: String, second: String, expected: BridgePaymentStatus, linkStatus: String) {
+        listOf("$first,$second", "$second,$first").forEach { ordering ->
+            val (service, server) = realService()
+            expectState(
+                server,
+                link = """{"id":"pl_1","status":"$linkStatus"}""",
+                requests = """{"resources":[$ordering]}""",
+            )
+
+            assertThat(service.getPaymentLink("pl_1").status).isEqualTo(expected)
+            server.verify()
+        }
+    }
+
+    @Test
+    fun `real mode - an authorised attempt outranks one merely accepted`() {
+        // Observed in staging on 2026-09-23: clicking "Autoriser" a second time on a live link adds
+        // a second payment request beside the first. Both were "in flight" and therefore tied, so
+        // the winner came from Bridge's list order — the very dependency the ranking removes.
+        expectRankedBoth(
+            first = """{"id":"pr_1","status":"ACTC","payment_link_id":"pl_1"}""",
+            second = """{"id":"pr_2","status":"PDNG","payment_link_id":"pl_1"}""",
+            expected = BridgePaymentStatus.PDNG,
+            linkStatus = "valid",
+        )
+    }
+
+    @Test
+    fun `real mode - a transfer being executed outranks an unauthorised sibling on a dead link`() {
+        // The expensive tie. Grouped together, `CREA` could win by position; the link is expired,
+        // `CREA` does not survive link death, and the payout would be released — its amount handed
+        // back to the campaign while the bank is executing the transfer.
+        expectRankedBoth(
+            first = """{"id":"pr_1","status":"CREA","payment_link_id":"pl_1"}""",
+            second = """{"id":"pr_2","status":"PDNG","payment_link_id":"pl_1"}""",
+            expected = BridgePaymentStatus.PDNG,
+            linkStatus = "expired",
+        )
+    }
+
     @Test
     fun `real mode - a retry in flight outranks the rejection it followed`() {
         // Ranking is not "most recent" but "what the payout is waiting on": a running attempt
@@ -705,6 +748,25 @@ class BridgePaymentInitiationServiceTest {
     fun `real mode - a label made only of refused characters still yields something`() {
         // An empty label is refused too, and a payout must not fail over punctuation.
         expectStatementLabel(":::  ///  :::", sentAs = "Virement")
+    }
+
+    @Test
+    fun `real mode - a refused creation is told apart from an unreachable Bridge`() {
+        // Both drop the payout row — nothing was created either way — but only one is an incident.
+        // Three alert e-mails went out on 2026-09-23 because a tab had been pasted into a label.
+        val (refusing, refusingServer) = realService()
+        refusingServer.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withStatus(HttpStatus.BAD_REQUEST))
+
+        assertThrows<BridgeRequestRefusedException> { createLink(refusing) }
+
+        val (unreachable, unreachableServer) = realService()
+        unreachableServer.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withServerError())
+
+        val ex = assertThrows<BridgeInitiationNotStartedException> { createLink(unreachable) }
+        // Not the refusal subtype: a 5xx means Bridge is down, and that does deserve an alert.
+        assertThat(ex).isNotInstanceOf(BridgeRequestRefusedException::class.java)
     }
 
     @Test

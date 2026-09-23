@@ -102,8 +102,24 @@ open class BadGatewayException(message: String) :
  * Its own type rather than a test on the message: recognising this case by matching text would
  * break the day a wording changes, and what it gates is a deletion.
  */
-class BridgeInitiationNotStartedException(message: String) :
+open class BridgeInitiationNotStartedException(message: String) :
     BadGatewayException(message)
+
+/**
+ * Thrown when Bridge **answered** the creation request and refused it — a `4xx`.
+ *
+ * Still a [BridgeInitiationNotStartedException], so the payout row is dropped like any other
+ * initiation that created nothing. What it changes is who gets woken up: Bridge is not
+ * unavailable, it understood the request perfectly and said no, so this raises no technical alert.
+ * On 2026-09-23 three e-mails went out because a tab character had been pasted into a payout's
+ * label — noise of that kind is what makes a real outage go unnoticed.
+ *
+ * It stays loud in the logs. With the statement label now rendered before it is sent, a refusal
+ * here means the integration disagrees with Bridge about what a valid request is, which is worth
+ * reading — just not worth paging anyone at night.
+ */
+class BridgeRequestRefusedException(message: String) :
+    BridgeInitiationNotStartedException(message)
 
 /** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */
 class UnprocessableEntityException(message: String) :
