@@ -22,6 +22,7 @@ import org.commonlink.repository.PayoutRepository
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -35,8 +36,9 @@ class BridgeWebhookServiceTest {
     private val payoutRepository = mockk<PayoutRepository>()
     private val bridgeInitiation = mockk<BridgePaymentInitiationService>()
     private val confirmer = mockk<PayoutConfirmer>(relaxed = true)
+    private val alerts = mockk<TechnicalAlertService>(relaxed = true)
 
-    private val service = BridgeWebhookService(payoutRepository, bridgeInitiation, confirmer)
+    private val service = BridgeWebhookService(payoutRepository, bridgeInitiation, confirmer, alerts)
 
     private val assocUser = User(email = "a@test.com", role = UserRole.ASSOCIATION, provider = AuthProvider.MAGIC_LINK)
     private val assoc = AssociationProfile(user = assocUser, name = "Asso", identifier = "123456789")
@@ -60,10 +62,14 @@ class BridgeWebhookServiceTest {
         payoutId: UUID = payout.id,
         linkId: String? = LINK_ID,
         payoutStatus: PayoutStatus = PayoutStatus.PENDING,
+        engaged: BridgePaymentStatus? = BridgePaymentStatus.CREA,
+        syncedAt: Instant? = Instant.now(),
     ) = object : PayoutRepository.PayoutRouting {
         override val id = payoutId
         override val bridgePaymentLinkId = linkId
         override val status = payoutStatus
+        override val bridgeStatus = engaged
+        override val bridgeSyncedAt = syncedAt
     }
 
     private fun stubState(
@@ -83,6 +89,33 @@ class BridgeWebhookServiceTest {
         service.handlePaymentLinkNotification(LINK_ID)
 
         verify { confirmer.finaliseSettled(payout.id, "tx_1") }
+    }
+
+    @Test
+    fun `alerts when a settlement lands on an amount already given back`() {
+        // The amount is reserved only while the payout is PENDING with a Bridge status on it.
+        // Settling a released one is recorded anyway — the bank executed the transfer — but the
+        // association may have committed those funds elsewhere in between, and nothing re-checks
+        // the balance at settlement because there is nothing left to refuse.
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns
+            routing(payoutStatus = PayoutStatus.FAILED, engaged = BridgePaymentStatus.RJCT)
+        every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
+            BridgePaymentLinkState(BridgePaymentStatus.ACSC, "tx_1", null)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { alerts.reportFailure(TechnicalAlertKind.PAYOUT_SETTLED_AFTER_RELEASE, any(), any(), any()) }
+        // Recorded regardless: a ledger refusing to record a movement it observes lies more gravely.
+        verify { confirmer.finaliseSettled(payout.id, "tx_1") }
+    }
+
+    @Test
+    fun `stays silent when the settled amount was still engaged`() {
+        stubState(BridgePaymentStatus.ACSC)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.PAYOUT_SETTLED_AFTER_RELEASE, any(), any(), any()) }
     }
 
     @Test

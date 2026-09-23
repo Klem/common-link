@@ -56,4 +56,29 @@ data class BridgeProperties(
     val webhookSecret: String = "",
     val webhookSecretPrevious: String = "",
     val linkValidity: Duration = Duration.ofDays(1),
-)
+    val reconciler: Reconciler = Reconciler(),
+) {
+    /**
+     * Settings of [org.commonlink.service.BridgePayoutReconciler].
+     *
+     * @param enabled Whether the sweep runs at all. On by default: without it a notification
+     *   accepted and not applied strands a payout for good, since Bridge never re-sends what it
+     *   considers delivered.
+     * @param fixedDelay Gap between the end of one sweep and the start of the next.
+     * @param initialDelay Grace period after boot, so a restart does not sweep before the
+     *   application is warm.
+     * @param staleAfter How long a payout may sit engaged without news before it is re-read.
+     *   Comfortably longer than a normal settlement, which Bridge describes as "typically within
+     *   one open day", so an ordinary transfer is never re-read.
+     * @param stuckAfter How long past authorisation a payout may stay unresolved before a human is
+     *   asked to confirm it from the bank statement. Never promotes anything by itself: the
+     *   on-chain attestation is irretractable.
+     */
+    data class Reconciler(
+        val enabled: Boolean = true,
+        val fixedDelay: Duration = Duration.ofMinutes(30),
+        val initialDelay: Duration = Duration.ofMinutes(2),
+        val staleAfter: Duration = Duration.ofHours(6),
+        val stuckAfter: Duration = Duration.ofDays(3),
+    )
+}

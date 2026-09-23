@@ -111,6 +111,15 @@ class PayoutService(
 
         val payee = payeeRepository.findById(request.payeeId!!)
             .orElseThrow { NotFoundException("Payee not found: ${request.payeeId}") }
+        // The campaign is scoped above, the payee has to be scoped too. Without this, an
+        // association could name any payee on the platform: the response echoes that payee's name
+        // and full IBAN, and a confirmation would send its own campaign's funds to an IBAN never
+        // registered nor VOP-verified under its account — defeating the per-association
+        // beneficiary trail the compliance fiches describe. Answered as "not found" rather than
+        // "forbidden", so the endpoint discloses nothing about payees of other associations.
+        if (payee.association.id != associationId) {
+            throw NotFoundException("Payee not found: ${request.payeeId}")
+        }
 
         val payeeIban = payeeIbanRepository.findById(request.payeeIbanId!!)
             .orElseThrow { NotFoundException("IBAN not found: ${request.payeeIbanId}") }
@@ -197,7 +206,26 @@ class PayoutService(
             throw ex
         }
 
-        return confirmer.attachPaymentLink(payoutId, link).toDto()
+        return try {
+            confirmer.attachPaymentLink(payoutId, link).toDto()
+        } catch (ex: Exception) {
+            // The link exists at Bridge but could not be recorded. Left alone this is the one
+            // unrecoverable state in the whole flow: `reserve` has already stamped bridgeStatus, so
+            // loadForConfirm and reserve both refuse a retry, while no link id was stored — nothing
+            // could match a webhook back to this payout, revoke the link, or free the amount. The
+            // campaign would lose that balance for good, recoverable only by hand in SQL.
+            //
+            // So the link is revoked first: whatever happens next, no money can move through an URL
+            // nobody holds. Then the reservation is released so the association can simply retry.
+            // Both are best effort — if the write that just failed was a database failure, the
+            // release will fail too — but the revocation is an HTTP call and does not depend on it,
+            // which is what keeps the failure harmless rather than merely recoverable.
+            log.error("Could not record Bridge link {} for payout {} — revoking it", link.id, payoutId, ex)
+            bridgeInitiation.revokeQuietly(link.id, "payout $payoutId could not record it")
+            runCatching { confirmer.releaseReservation(payoutId, "Bridge payment link could not be recorded") }
+                .onFailure { log.error("Payout {} left engaged: releasing it failed too", payoutId, it) }
+            throw ex
+        }
     }
 
     /** Where Bridge returns the association once the bank flow is over. */
@@ -208,9 +236,13 @@ class PayoutService(
      * Bridge is still notifying — CREA, ACTC and PDNG landed within 24 seconds of each other on
      * 2026-09-22 — so without it the page shows the state as of the instant it loaded and offers
      * an authorisation link for a transfer that is already on its way.
+     *
+     * Locale-prefixed like every other link this backend builds. Without it the URL is one redirect
+     * away from its destination, and a redirect is exactly what must not happen on the way back
+     * from a bank.
      */
     private fun bridgeCallbackUrl(campaignId: UUID, payoutId: UUID) =
-        "$frontendUrl/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId"
+        "${frontendUrl.trimEnd('/')}/fr/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId"
 
     /**
      * Returns a paginated list of payouts for [campaignId], ordered by creation date descending.
@@ -276,6 +308,12 @@ class PayoutService(
         assertCampaignOwnership(campaignId, associationId)
         val payeeIban = payeeIbanRepository.findById(payeeIbanId)
             .orElseThrow { NotFoundException("IBAN not found: $payeeIbanId") }
+        // Same scoping as create, for the same reason and one more: unscoped, this endpoint
+        // answers 200 for an IBAN of another association and 404 otherwise, which makes it an
+        // oracle for the existence and verification status of any IBAN on the platform.
+        if (payeeIban.payee.association.id != associationId) {
+            throw NotFoundException("IBAN not found: $payeeIbanId")
+        }
         return blockingReasonsFor(campaignId, payeeIban, amount, label)
     }
 

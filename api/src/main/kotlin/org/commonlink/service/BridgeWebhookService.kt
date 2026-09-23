@@ -27,6 +27,7 @@ class BridgeWebhookService(
     private val payoutRepository: PayoutRepository,
     private val bridgeInitiation: BridgePaymentInitiationService,
     private val confirmer: PayoutConfirmer,
+    private val alerts: TechnicalAlertService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -77,8 +78,27 @@ class BridgeWebhookService(
         val state = bridgeInitiation.getPaymentLink(linkId, paymentRequestId?.takeIf { it.isNotBlank() })
 
         when (state.status) {
-            BridgePaymentStatus.ACSC ->
+            BridgePaymentStatus.ACSC -> {
+                // The amount is reserved on the campaign only while the payout is PENDING with a
+                // Bridge status on it. Settling outside that means it had already been given back —
+                // failed after a rejection, or released when the link died — and the association
+                // may have committed those funds elsewhere in between. The settlement is recorded
+                // all the same, because the bank executed the transfer and refusing to record an
+                // observed movement lies more gravely than correcting course; but it is not
+                // absorbed silently.
+                if (payout.status != PayoutStatus.PENDING || payout.bridgeStatus == null) {
+                    log.error(
+                        "Payout {} settled at Bridge while its amount was no longer engaged " +
+                            "(status={}, bridgeStatus={}) — recording the settlement and alerting",
+                        payout.id, payout.status, payout.bridgeStatus,
+                    )
+                    alerts.reportFailure(
+                        TechnicalAlertKind.PAYOUT_SETTLED_AFTER_RELEASE,
+                        "POST", "/api/public/webhooks/bridge", null,
+                    )
+                }
                 confirmer.finaliseSettled(payout.id, state.transactionId)
+            }
 
             BridgePaymentStatus.RJCT -> {
                 // Revoke *before* failing, never after: failing returns the amount to the
@@ -98,14 +118,16 @@ class BridgeWebhookService(
                 )
             }
 
-            // A dead link is not a refusal. These two states are only ever reached when no payment
-            // request exists at all — the request's status wins whenever there is one — so nobody
-            // ever authorised anything and nothing can have been debited. Failing the payout would
-            // stamp FAILED, which loadForConfirm refuses, retiring it for good because the
-            // association closed the tab. It goes back to a retryable PENDING with its amount
-            // returned to the campaign instead. releaseReservation refuses to touch a payout that
-            // already left PENDING, so a link we revoked ourselves after a rejection cannot
-            // resurrect the payout it was revoked for.
+            // A dead link is not a refusal. Reached when no payment request exists, and also when
+            // one exists that the association never authorised — see
+            // [BridgePaymentStatus.survivesLinkDeath]: `CREA` and `ACTC` lose to a dead link,
+            // because the URL that would let them be authorised no longer works. Either way
+            // nothing can have been debited. Failing the payout would stamp FAILED, which
+            // loadForConfirm refuses, retiring it for good because the association closed the tab.
+            // It goes back to a retryable PENDING with its amount returned to the campaign
+            // instead. releaseReservation refuses to touch a payout that already left PENDING, so
+            // a link we revoked ourselves after a rejection cannot resurrect the payout it was
+            // revoked for.
             BridgePaymentStatus.LINK_EXPIRED ->
                 confirmer.releaseReservation(
                     payout.id,

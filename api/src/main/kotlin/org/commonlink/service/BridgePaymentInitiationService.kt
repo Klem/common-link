@@ -123,7 +123,10 @@ class BridgePaymentInitiationService(
         if (props.demoMode) {
             val demo = BridgePaymentLink(
                 id = "$DEMO_ID_PREFIX$payoutId",
-                url = "$callbackUrl?demo=1",
+                // `&`, not `?`: the callback already carries `?tab=payments&payout=…`, and a second
+                // `?` is not a separator — the payout id then parses as `<uuid>?demo=1` and the tab
+                // never recognises the payout it was told to watch.
+                url = "$callbackUrl&demo=1",
             )
             log.info("Bridge demo mode — simulated payment link {} for {} to {}", demo.id, amount, payeeIban)
             return demo
@@ -205,21 +208,38 @@ class BridgePaymentInitiationService(
         // That read-back is masked: Bridge's read endpoints disclose a few characters of the IBAN
         // and replace the rest with a mask character (`FR76XXXXXXXXXXXXXXXXXXXX250` in the
         // documented examples), so the comparison is on what Bridge discloses — see refusalReason.
-        val recorded = try {
-            fetchLink(id).transactions?.lastOrNull()?.beneficiary?.iban?.let { normalise(it) }
+        val recordedTransactions = try {
+            fetchLink(id).transactions.orEmpty()
         } catch (ex: BadGatewayException) {
             log.error("Could not read back Bridge payment link {} for payout {}: {}", id, payoutId, ex.message)
             throw BadGatewayException(
                 "Bridge payment link $id could not be verified before use: ${ex.message}"
             )
         }
-        val refusal = recorded?.let { refusalReason(it, normalisedIban) }
+        val recorded = recordedTransactions.singleOrNull()?.beneficiary?.iban?.let { normalise(it) }
+
+        // No verifiable destination means no authorisation URL. An absent beneficiary is not a
+        // check that could not be performed — it is the exact shape of the substitution this guard
+        // exists to catch, since Bridge falls back to the IBAN configured in its dashboard when
+        // none is given. It carries the same information as a fully-masked read-back, which is
+        // already refused, so it is refused on the same footing. More than one transaction is
+        // refused too: exactly one is ever sent, and picking among several by position is how the
+        // payment-request path came to report a settled transfer as rejected.
+        val refusal = when {
+            recordedTransactions.size > 1 ->
+                "Bridge recorded ${recordedTransactions.size} transactions where one was sent"
+            recorded == null -> "Bridge disclosed no destination to compare"
+            else -> refusalReason(recorded, normalisedIban)
+        }
         if (refusal != null) {
             log.error(
                 "Bridge read back destination {} for payout {} where {} was sent — {}; refusing to hand " +
                     "out the authorisation URL",
                 recorded, payoutId, normalisedIban, refusal,
             )
+            // The link exists and is authorisable; its destination is what we cannot vouch for.
+            // Leaving it alive would keep an URL to an account the association never chose.
+            revokeQuietly(id, "unverifiable destination")
             throw BadGatewayException(
                 "Bridge recorded a different destination IBAN for payout $payoutId — transfer refused"
             )
@@ -340,6 +360,19 @@ class BridgePaymentInitiationService(
             log.error("Bridge revocation failed for link {}: {}", paymentLinkId, ex.message)
             throw BadGatewayException("Bridge payment initiation unavailable: ${ex.message}")
         }
+    }
+
+    /**
+     * Revokes [paymentLinkId] without ever throwing.
+     *
+     * For the paths that are already abandoning a link: the caller is on its way to fail or
+     * release the payout, and a revocation that cannot be confirmed must not replace that outcome
+     * with a different error. Worst case the link stays authorisable until it expires, which is
+     * what happened before this existed.
+     */
+    fun revokeQuietly(paymentLinkId: String, why: String) {
+        runCatching { revokePaymentLink(paymentLinkId) }
+            .onFailure { log.error("Could not revoke Bridge link {} after {}: {}", paymentLinkId, why, it.message) }
     }
 
     /** Reads the link itself — what was requested, and whether the link is still usable. */

@@ -90,6 +90,51 @@ class PayoutServiceTest {
         every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal(raised)
     }
 
+    /** A payee belonging to a different association, used to pin the ownership checks. */
+    private val foreignPayee = Payee(
+        association = AssociationProfile(
+            user = User(email = "b@test.com", role = UserRole.ASSOCIATION, provider = AuthProvider.MAGIC_LINK),
+            name = "Autre asso", identifier = "987654321",
+        ).also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) },
+        name = "Foreign Payee", identifier1 = "987654321",
+    ).also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) }
+
+    private val foreignIban = PayeeIban(
+        payee = foreignPayee, iban = "FR7630006000011111111111111", status = IbanVerificationStatus.VERIFIED,
+    ).also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) }
+
+    @Test
+    fun `create - refuses a payee belonging to another association`() {
+        // The campaign is scoped, the payee was not. Naming a foreign payee echoed its name and
+        // full IBAN back in the 201, and a confirmation would have sent this campaign's funds to an
+        // IBAN never registered nor VOP-verified under this association.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(foreignPayee.id!!) } returns Optional.of(foreignPayee)
+
+        val request = CreatePayoutRequest(
+            payeeId = foreignPayee.id, payeeIbanId = foreignIban.id, amount = BigDecimal("10"),
+            kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel pédagogique",
+        )
+
+        // "Not found", not "forbidden": the endpoint must disclose nothing about other associations.
+        assertThrows<NotFoundException> { service.create(campaignId, request, userId) }
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `computeBlockingReasons - refuses an IBAN belonging to another association`() {
+        // Unscoped, this endpoint answered 200 for a foreign IBAN and 404 otherwise, which makes it
+        // an oracle for the existence and verification status of any IBAN on the platform.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeIbanRepository.findById(foreignIban.id!!) } returns Optional.of(foreignIban)
+
+        assertThrows<NotFoundException> {
+            service.computeBlockingReasons(campaignId, foreignIban.id!!, BigDecimal("10"), "Achat matériel pédagogique", userId)
+        }
+    }
+
     @Test
     fun `create - happy path returns PayoutDto`() {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
@@ -302,7 +347,7 @@ class PayoutServiceTest {
         // returns while Bridge is still notifying — CREA, ACTC and PDNG landed within 24 seconds of
         // each other on 2026-09-22.
         assertThat(callbackSlot.captured)
-            .isEqualTo("$FRONTEND_URL/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId")
+            .isEqualTo("$FRONTEND_URL/fr/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId")
     }
 
     @Test

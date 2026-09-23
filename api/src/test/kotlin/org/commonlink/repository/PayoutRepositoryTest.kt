@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.assertj.core.api.Assertions.assertThat
+import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
@@ -10,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.data.domain.PageRequest
 import java.math.BigDecimal
+import java.time.Duration
+import java.time.Instant
 
 @ImportTestcontainers(TestcontainersConfig::class)
 class PayoutRepositoryTest(
@@ -93,6 +96,31 @@ class PayoutRepositoryTest(
         assertThat(byId!!.bridgePaymentLinkId).isEqualTo("pl_routing_1")
 
         assertThat(payoutRepository.findRoutingByBridgePaymentLinkId("pl_unknown")).isNull()
+    }
+
+    @Test
+    fun `findStaleInFlight returns only engaged payouts whose state has stopped moving`() {
+        val all = payoutRepository.findByCampaignIdOrderByCreatedAtDesc(campaignId, PageRequest.of(0, 10)).content
+        val stale = all.first { it.status == PayoutStatus.PENDING }
+        stale.bridgePaymentLinkId = "pl_stale"
+        stale.bridgeStatus = BridgePaymentStatus.PDNG
+        stale.bridgeSyncedAt = Instant.now().minus(Duration.ofDays(5))
+
+        // Engaged but fresh: not stale yet.
+        val fresh = all.first { it.status == PayoutStatus.CONFIRMED }
+        fresh.status = PayoutStatus.PENDING
+        fresh.bridgePaymentLinkId = "pl_fresh"
+        fresh.bridgeStatus = BridgePaymentStatus.PDNG
+        fresh.bridgeSyncedAt = Instant.now()
+        payoutRepository.saveAllAndFlush(listOf(stale, fresh))
+
+        val found = payoutRepository.findStaleInFlight(Instant.now().minus(Duration.ofDays(1)))
+
+        assertThat(found.map { it.id }).containsExactly(stale.id)
+        // The projection has to carry the age the sweep reasons on, and the state it escalates on.
+        assertThat(found.first().bridgeStatus).isEqualTo(BridgePaymentStatus.PDNG)
+        assertThat(found.first().bridgeSyncedAt).isNotNull
+        assertThat(found.first().bridgePaymentLinkId).isEqualTo("pl_stale")
     }
 
     // No test covers findByIdForUpdate: this slice rejects the `for no key update` Hibernate emits

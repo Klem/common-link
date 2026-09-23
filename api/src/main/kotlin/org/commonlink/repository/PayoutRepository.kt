@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import jakarta.persistence.LockModeType
+import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutStatus
 import org.springframework.data.domain.Page
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 interface PayoutRepository : JpaRepository<Payout, UUID> {
@@ -112,12 +114,23 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
          * business of the locked read inside [org.commonlink.service.PayoutConfirmer].
          */
         val status: PayoutStatus
+
+        /**
+         * Null once the amount has gone back to the campaign's confirmable balance — releasing a
+         * payout is exactly what clears it. Read to tell a settlement that lands on a still-reserved
+         * amount from one that lands on an amount already given back.
+         */
+        val bridgeStatus: BridgePaymentStatus?
+
+        /** When Bridge last told us anything about this payout — the age the reconciler reasons on. */
+        val bridgeSyncedAt: Instant?
     }
 
     /** Routes a notification carrying a Bridge payment-link id. */
     @Query(
         """
-        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId, p.status AS status
+        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId, p.status AS status,
+               p.bridgeStatus AS bridgeStatus, p.bridgeSyncedAt AS bridgeSyncedAt
         FROM Payout p WHERE p.bridgePaymentLinkId = :bridgePaymentLinkId
         """,
     )
@@ -126,11 +139,35 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
     /** Routes a notification that carried only `client_reference`, i.e. the payout id. */
     @Query(
         """
-        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId, p.status AS status
+        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId, p.status AS status,
+               p.bridgeStatus AS bridgeStatus, p.bridgeSyncedAt AS bridgeSyncedAt
         FROM Payout p WHERE p.id = :id
         """,
     )
     fun findRoutingById(@Param("id") id: UUID): PayoutRouting?
+
+    /**
+     * Payouts whose Bridge state has not moved for a while and is not terminal.
+     *
+     * The webhook is the only driver of settlement, so a notification lost on a `200` strands a
+     * payout for good — which is exactly what happened three times on 23 September 2026. This is
+     * the list [org.commonlink.service.BridgePayoutReconciler] re-reads from Bridge.
+     *
+     * Ordered oldest first so a sweep that is cut short makes progress on the worst cases.
+     */
+    @Query(
+        """
+        SELECT p.id AS id, p.bridgePaymentLinkId AS bridgePaymentLinkId, p.status AS status,
+               p.bridgeStatus AS bridgeStatus, p.bridgeSyncedAt AS bridgeSyncedAt
+        FROM Payout p
+        WHERE p.status = org.commonlink.entity.PayoutStatus.PENDING
+          AND p.bridgeStatus IS NOT NULL
+          AND p.bridgePaymentLinkId IS NOT NULL
+          AND p.bridgeSyncedAt < :notSyncedSince
+        ORDER BY p.bridgeSyncedAt ASC
+        """,
+    )
+    fun findStaleInFlight(@Param("notSyncedSince") notSyncedSince: Instant): List<PayoutRouting>
 
     /**
      * Loads a payout holding a pessimistic write lock on its row.

@@ -73,7 +73,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // role is stored verbatim from the JWT claim — CURATOR is a valid value here
     Cookies.set('auth-session', JSON.stringify({ userId: user.id, role: user.role }), {
       expires: 30,
-      sameSite: 'strict',
+      // `lax`, not `strict`: a Strict cookie is withheld on a top-level navigation coming from
+      // another site, so returning from the bank's Open Banking tunnel arrived with no cookie at
+      // all — the middleware saw no session and bounced the association to the login page, in the
+      // middle of authorising a transfer. Lax is sent on exactly that navigation and still
+      // withheld on cross-site subresources and POSTs. It costs nothing in authentication either:
+      // this cookie is a routing hint for the middleware, never a credential — the API is guarded
+      // by the bearer token and the `cl-refresh` cookie, which is checked independently.
+      sameSite: 'lax',
       secure: IS_PROD,
     });
     set({ accessToken, user, isAuthenticated: true });

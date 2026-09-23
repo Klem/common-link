@@ -324,16 +324,66 @@ class BridgePaymentInitiationServiceTest {
     }
 
     @Test
-    fun `real mode - accepts a link whose read-back exposes no beneficiary yet`() {
-        // A check that cannot be performed must not be turned into a failure: Bridge may answer
-        // without a transaction until the association authenticates.
+    fun `real mode - a read-back disclosing no destination hands out no URL, and the link is revoked`() {
+        // No verifiable information, no authorisation URL. An absent beneficiary is not a check
+        // that could not be performed: it is the exact shape of the substitution this guard exists
+        // to catch, Bridge falling back to the IBAN configured in its dashboard when none is given.
+        // It carries the same information as a fully-masked read-back, which is already refused.
         val (service, server) = realService()
         server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
             .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
         server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
             .andRespond(withSuccess("""{"id":"pl_1","status":"valid","transactions":[]}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1/revoke"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withSuccess())
 
-        assertThat(createLink(service).id).isEqualTo("pl_1")
+        assertThrows<BadGatewayException> { createLink(service) }
+
+        // The link existed and was authorisable; its destination is what could not be vouched for.
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - more than one recorded transaction is refused rather than picked from`() {
+        // Exactly one transaction is ever sent. Choosing among several by position is how the
+        // payment-request path came to report a settled transfer as rejected.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andRespond(
+                withSuccess(
+                    """{"id":"pl_1","status":"valid","transactions":[
+                       {"beneficiary":{"iban":"FR0530003000402916465922J55"}},
+                       {"beneficiary":{"iban":"FR7630006000011234567890189"}}]}""",
+                    MediaType.APPLICATION_JSON,
+                ),
+            )
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1/revoke"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withSuccess())
+
+        assertThrows<BadGatewayException> { createLink(service) }
+
+        server.verify()
+    }
+
+    @Test
+    fun `real mode - a refusal still hands out no URL when the link cannot be revoked`() {
+        // The revocation is best effort: the refusal is the outcome that matters and must not be
+        // replaced by a different error because Bridge would not close the link.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links"))
+            .andRespond(withSuccess("""{"id":"pl_1","url":"https://pay/x"}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andRespond(withSuccess("""{"id":"pl_1","status":"valid","transactions":[]}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1/revoke"))
+            .andRespond(withServerError())
+
+        assertThrows<BadGatewayException> { createLink(service) }
+
+        server.verify()
     }
 
     @Test
