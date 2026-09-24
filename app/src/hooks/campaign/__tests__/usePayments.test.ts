@@ -67,7 +67,7 @@ const awaitingReturnPage = {
       status: 'PENDING',
       confirmedAt: null,
       bridgeStatus: 'CREA',
-      bridgeLastError: null,
+      bridgeLastErrorCode: null,
       bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
     },
   ],

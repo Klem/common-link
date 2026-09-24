@@ -15,6 +15,7 @@ import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Payee
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
@@ -177,17 +178,88 @@ class BridgeWebhookServiceTest {
 
     @Test
     fun `fails the payout with the bank's reason when Bridge reports RJCT`() {
-        stubState(BridgePaymentStatus.RJCT, statusReason = "debit_account_insufficient_funds")
+        // A bare ISO code, which is what Bridge actually sends — the prose this fixture used to
+        // carry is a shape their documentation never describes.
+        stubState(BridgePaymentStatus.RJCT, statusReason = "AM04")
         every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
 
         service.handlePaymentLinkNotification(LINK_ID)
 
         verify {
             confirmer.finaliseFailed(
-                payout.id, "debit_account_insufficient_funds", BridgePaymentStatus.RJCT,
+                payout.id, "AM04", BridgePaymentStatus.RJCT, PayoutErrorCode.AM04,
             )
         }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
+    }
+
+    @Test
+    fun `releases rather than fails when the association never answered its bank`() {
+        // NOAS is filed under RJCT by Bridge, but it is a timeout waiting for the association, not
+        // the bank refusing. Failing it stamps FAILED, which loadForConfirm refuses, retiring a
+        // payout for good because someone let a screen expire.
+        stubState(BridgePaymentStatus.RJCT, statusReason = "NOAS")
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { confirmer.releaseReservation(payout.id, any(), PayoutErrorCode.NOAS) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
+        // Still revoked first: Bridge does not burn a link on a RJCT, so returning the amount
+        // while that URL lives is how 120 EUR left against funds already given back.
+        verifyOrder {
+            bridgeInitiation.revokePaymentLink(LINK_ID)
+            confirmer.releaseReservation(payout.id, any(), PayoutErrorCode.NOAS)
+        }
+    }
+
+    @Test
+    fun `releases rather than fails when the association cancelled at its bank`() {
+        stubState(BridgePaymentStatus.RJCT, statusReason = "DS02")
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { confirmer.releaseReservation(payout.id, any(), PayoutErrorCode.DS02) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `still fails on a genuine bank refusal`() {
+        stubState(BridgePaymentStatus.RJCT, statusReason = "AC01")
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { confirmer.finaliseFailed(payout.id, "AC01", BridgePaymentStatus.RJCT, PayoutErrorCode.AC01) }
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any(), any()) }
+    }
+
+    @Test
+    fun `fails with UNSPECIFIED when the bank gives no reason at all`() {
+        // Bridge omits status_reason entirely then — the `id-rjct` sandbox login, seen live on
+        // 2026-09-24. A rejection always has a cause to show, even if it is "none given".
+        stubState(BridgePaymentStatus.RJCT, statusReason = null)
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify {
+            confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT, PayoutErrorCode.UNSPECIFIED)
+        }
+    }
+
+    @Test
+    fun `fails with UNKNOWN on a reason code this version does not model`() {
+        // Bridge can add one. Collapsing it to null would read as "no failure at all".
+        stubState(BridgePaymentStatus.RJCT, statusReason = "XX99")
+        every { bridgeInitiation.revokePaymentLink(LINK_ID) } just Runs
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify {
+            confirmer.finaliseFailed(payout.id, "XX99", BridgePaymentStatus.RJCT, PayoutErrorCode.UNKNOWN)
+        }
     }
 
     @Test
@@ -202,7 +274,7 @@ class BridgeWebhookServiceTest {
 
         verifyOrder {
             bridgeInitiation.revokePaymentLink(LINK_ID)
-            confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT)
+            confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT, any())
         }
     }
 
@@ -215,7 +287,7 @@ class BridgeWebhookServiceTest {
 
         assertThrows<BadGatewayException> { service.handlePaymentLinkNotification(LINK_ID) }
 
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     @Test
@@ -230,7 +302,7 @@ class BridgeWebhookServiceTest {
         service.handlePaymentLinkNotification(LINK_ID)
 
         verify(exactly = 0) { bridgeInitiation.revokePaymentLink(any()) }
-        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT) }
+        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT, any()) }
     }
 
     @Test
@@ -248,7 +320,7 @@ class BridgeWebhookServiceTest {
 
         verify(exactly = 0) { bridgeInitiation.revokePaymentLink(any()) }
         // Still routed to the confirmer, which is where the refusal to un-settle lives.
-        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT) }
+        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT, any()) }
     }
 
     @Test
@@ -259,8 +331,8 @@ class BridgeWebhookServiceTest {
 
         service.handlePaymentLinkNotification(LINK_ID)
 
-        verify { confirmer.releaseReservation(payout.id, any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify { confirmer.releaseReservation(payout.id, any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     @Test
@@ -269,8 +341,8 @@ class BridgeWebhookServiceTest {
 
         service.handlePaymentLinkNotification(LINK_ID)
 
-        verify { confirmer.releaseReservation(payout.id, any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify { confirmer.releaseReservation(payout.id, any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     @Test
@@ -284,12 +356,12 @@ class BridgeWebhookServiceTest {
 
         service.handlePaymentLinkNotification(LINK_ID)
 
-        verify(exactly = 0) { confirmer.releaseReservation(any(), any()) }
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any(), any()) }
         // And nothing is written: touching bridgeSyncedAt would reset the clock this reads and
         // defer the release for ever. The payout keeps ageing until Bridge redelivers or the
         // reconciler picks it up.
         verify(exactly = 0) { confirmer.recordInFlight(any(), any(), any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     @Test
@@ -304,7 +376,7 @@ class BridgeWebhookServiceTest {
 
         service.handlePaymentLinkNotification(LINK_ID)
 
-        verify { confirmer.releaseReservation(payout.id, any()) }
+        verify { confirmer.releaseReservation(payout.id, any(), any()) }
     }
 
     @Test
@@ -315,7 +387,7 @@ class BridgeWebhookServiceTest {
 
         service.handlePaymentLinkNotification(LINK_ID)
 
-        verify(exactly = 0) { confirmer.releaseReservation(any(), any()) }
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any(), any()) }
     }
 
     @Test
@@ -327,7 +399,7 @@ class BridgeWebhookServiceTest {
 
         noGrace.handlePaymentLinkNotification(LINK_ID)
 
-        verify { confirmer.releaseReservation(payout.id, any()) }
+        verify { confirmer.releaseReservation(payout.id, any(), any()) }
     }
 
     @Test
@@ -338,7 +410,7 @@ class BridgeWebhookServiceTest {
 
         verify { confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1") }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     @Test
@@ -351,7 +423,7 @@ class BridgeWebhookServiceTest {
 
         verify { confirmer.recordInFlight(payout.id, BridgePaymentStatus.PART, "tx_1") }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     @Test
@@ -374,7 +446,7 @@ class BridgeWebhookServiceTest {
 
         verify(exactly = 0) { bridgeInitiation.getPaymentLink(any()) }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     @Test
@@ -407,7 +479,7 @@ class BridgeWebhookServiceTest {
         assertThrows<BadGatewayException> { service.handlePaymentLinkNotification(LINK_ID) }
 
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
     }
 
     private companion object {

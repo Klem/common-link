@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import org.commonlink.config.BridgeProperties
 import org.commonlink.entity.BridgePaymentStatus
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.repository.PayoutRepository
 import org.slf4j.LoggerFactory
@@ -132,11 +133,34 @@ class BridgeWebhookService(
                 if (payout.status == PayoutStatus.PENDING) {
                     bridgeInitiation.revokePaymentLink(linkId)
                 }
-                confirmer.finaliseFailed(
-                    payout.id,
-                    state.statusReason ?: "Transfer rejected by the bank",
-                    BridgePaymentStatus.RJCT,
-                )
+
+                // Two of Bridge's own `status_reason` values are filed under RJCT without the bank
+                // ever having refused anything: `NOAS` is a timeout waiting for the association,
+                // `DS02` the association cancelling the order at its own bank. Failing those
+                // stamps FAILED, which loadForConfirm refuses, retiring a payout for good because
+                // someone let a screen expire — the distinction already drawn for a dead link, and
+                // the same conclusion: a refusal is the bank being asked and saying no, an
+                // abandonment is nobody ever asking, and only the first is terminal.
+                //
+                // The revocation above still applies to them. Bridge does not burn a link on a
+                // RJCT — verified 2026-09-22, a rejected link still read `Valide` and a second
+                // authorisation on it settled — so returning the amount while that URL lives is
+                // exactly how 120 € left against funds already given back.
+                val code = PayoutErrorCode.fromStatusReason(state.statusReason)
+                if (code.isBankRefusal) {
+                    confirmer.finaliseFailed(
+                        payout.id,
+                        state.statusReason ?: "Transfer rejected by the bank",
+                        BridgePaymentStatus.RJCT,
+                        code,
+                    )
+                } else {
+                    confirmer.releaseReservation(
+                        payout.id,
+                        "Bridge reported $code — the transfer was never authorised",
+                        code,
+                    )
+                }
             }
 
             // A dead link is not a refusal. Reached when no payment request exists, and also when
@@ -153,12 +177,14 @@ class BridgeWebhookService(
                 releaseUnlessJustMoved(
                     payout,
                     "Bank authorisation window expired before the transfer was authorised",
+                    PayoutErrorCode.LINK_EXPIRED,
                 )
 
             BridgePaymentStatus.LINK_REVOKED ->
                 releaseUnlessJustMoved(
                     payout,
                     "Payment link revoked before the transfer was authorised",
+                    PayoutErrorCode.LINK_REVOKED,
                 )
 
             BridgePaymentStatus.PART -> {
@@ -209,7 +235,11 @@ class BridgeWebhookService(
      * Only the *timing* is decided here. Whether the release is legitimate at all stays in
      * [PayoutConfirmer.releaseReservation], which still refuses any payout that left PENDING.
      */
-    private fun releaseUnlessJustMoved(payout: PayoutRepository.PayoutRouting, reason: String) {
+    private fun releaseUnlessJustMoved(
+        payout: PayoutRepository.PayoutRouting,
+        reason: String,
+        code: PayoutErrorCode,
+    ) {
         val movedAt = payout.bridgeSyncedAt
         val grace = props.releaseGrace
 
@@ -222,6 +252,6 @@ class BridgeWebhookService(
             return
         }
 
-        confirmer.releaseReservation(payout.id, reason)
+        confirmer.releaseReservation(payout.id, reason, code)
     }
 }

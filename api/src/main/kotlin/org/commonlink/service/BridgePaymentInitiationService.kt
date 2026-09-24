@@ -8,6 +8,7 @@ import org.commonlink.config.BridgeProperties
 import org.commonlink.config.BridgeRestClientConfig
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.exception.BadGatewayException
+import org.commonlink.exception.BridgeDestinationRefusedException
 import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.exception.BridgeRequestRefusedException
 import org.slf4j.LoggerFactory
@@ -36,7 +37,11 @@ data class BridgePaymentLinkState(
     val status: BridgePaymentStatus,
     /** Bridge transaction id, present once the association has authenticated at its bank. */
     val transactionId: String?,
-    /** Bridge's reason for a rejection, e.g. `debit_account_insufficient_funds`. */
+    /**
+     * Bridge's reason for a rejection: a **bare ISO 20022 code**, `AC01` / `NOAS` / `RR04`, never
+     * prose. Absent entirely when the bank gave none. Mapped by
+     * [org.commonlink.entity.PayoutErrorCode.fromStatusReason].
+     */
     val statusReason: String?,
 )
 
@@ -250,7 +255,7 @@ class BridgePaymentInitiationService(
             // The link exists and is authorisable; its destination is what we cannot vouch for.
             // Leaving it alive would keep an URL to an account the association never chose.
             revokeQuietly(id, "unverifiable destination")
-            throw BadGatewayException(
+            throw BridgeDestinationRefusedException(
                 "Bridge recorded a different destination IBAN for payout $payoutId — transfer refused"
             )
         }

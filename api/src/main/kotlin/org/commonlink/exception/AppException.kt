@@ -121,6 +121,20 @@ open class BridgeInitiationNotStartedException(message: String) :
 class BridgeRequestRefusedException(message: String) :
     BridgeInitiationNotStartedException(message)
 
+/**
+ * Thrown when Bridge read a payment link back with a destination it could not be vouched for.
+ *
+ * A link **exists** — unlike [BridgeInitiationNotStartedException] — and has been revoked on the
+ * way out, so the payout row is kept as evidence that the control ran. What this type adds over a
+ * plain [BadGatewayException] is the ability to tell an association *why* without reading the text
+ * of a message: "we could not vouch for where this money was going" is not "the bank was busy".
+ *
+ * Same discipline as [BridgeRequestRefusedException]: the distinction lives in the type, because
+ * recognising a cause from its wording breaks at the first rewording.
+ */
+class BridgeDestinationRefusedException(message: String) :
+    BadGatewayException(message)
+
 /** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */
 class UnprocessableEntityException(message: String) :
     AppException(message, HttpStatus.UNPROCESSABLE_CONTENT)

@@ -17,6 +17,7 @@ import org.commonlink.entity.Payee
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
@@ -320,7 +321,7 @@ class PayoutConfirmerTest {
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
-        confirmer.releaseReservation(payout.id, "Bridge payment initiation unavailable: timeout")
+        confirmer.releaseReservation(payout.id, "Bridge payment initiation unavailable: timeout", PayoutErrorCode.INITIATION_FAILED)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.PENDING)
         assertThat(payout.bridgeStatus).isNull()
@@ -339,7 +340,7 @@ class PayoutConfirmerTest {
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
-        confirmer.releaseReservation(payout.id, "Bank authorisation window expired before the transfer was authorised")
+        confirmer.releaseReservation(payout.id, "Bank authorisation window expired before the transfer was authorised", PayoutErrorCode.LINK_EXPIRED)
 
         assertThat(payout.bridgeCheckoutUrl).isNull()
         // Kept: the audit trail of the attempt, and the routing key for a notification still in
@@ -362,7 +363,7 @@ class PayoutConfirmerTest {
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
-        confirmer.releaseReservation(payout.id, "late failure")
+        confirmer.releaseReservation(payout.id, "late failure", PayoutErrorCode.INITIATION_FAILED)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.ACSC)
@@ -377,7 +378,7 @@ class PayoutConfirmerTest {
         val payout = newPayout(status = PayoutStatus.FAILED, bridgeStatus = BridgePaymentStatus.RJCT)
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
-        confirmer.releaseReservation(payout.id, "Payment link revoked before the transfer was authorised")
+        confirmer.releaseReservation(payout.id, "Payment link revoked before the transfer was authorised", PayoutErrorCode.LINK_REVOKED)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.FAILED)
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
@@ -390,11 +391,12 @@ class PayoutConfirmerTest {
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
-        confirmer.finaliseFailed(payout.id, "debit_account_insufficient_funds", BridgePaymentStatus.RJCT)
+        confirmer.finaliseFailed(payout.id, "AM04", BridgePaymentStatus.RJCT, PayoutErrorCode.AM04)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.FAILED)
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
-        assertThat(payout.bridgeLastError).isEqualTo("debit_account_insufficient_funds")
+        assertThat(payout.bridgeLastError).isEqualTo("AM04")
+        assertThat(payout.bridgeLastErrorCode).isEqualTo(PayoutErrorCode.AM04)
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
     }
 
@@ -404,7 +406,7 @@ class PayoutConfirmerTest {
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
-        confirmer.finaliseFailed(payout.id, "late rejection", BridgePaymentStatus.RJCT)
+        confirmer.finaliseFailed(payout.id, "late rejection", BridgePaymentStatus.RJCT, PayoutErrorCode.MS03)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
         verify(exactly = 0) { payoutRepository.save(any()) }

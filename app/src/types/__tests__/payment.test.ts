@@ -3,9 +3,11 @@ import {
   BridgePaymentStatus,
   PayoutKind,
   PayoutStatus,
+  PayoutErrorCode,
   isPayoutInFlight,
   lastAttemptFailed,
   needsBankAuthorisation,
+  payoutErrorMessageKey,
   type PayoutDto,
 } from '../payment';
 
@@ -27,7 +29,7 @@ function payout(overrides: Partial<PayoutDto> = {}): PayoutDto {
     confirmedAt: null,
     onchainJobId: null,
     bridgeStatus: BridgePaymentStatus.CREA,
-    bridgeLastError: null,
+    bridgeLastErrorCode: null,
     bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
     ...overrides,
   };
@@ -71,7 +73,7 @@ describe('lastAttemptFailed', () => {
         payout({
           bridgeStatus: null,
           bridgeCheckoutUrl: null,
-          bridgeLastError: 'Bank authorisation window expired before the transfer was authorised',
+          bridgeLastErrorCode: PayoutErrorCode.LINK_EXPIRED,
         }),
       ),
     ).toBe(true);
@@ -82,7 +84,17 @@ describe('lastAttemptFailed', () => {
   });
 
   it('does not mark a payout whose transfer is engaged', () => {
-    expect(lastAttemptFailed(payout({ bridgeLastError: 'previous failure' }))).toBe(false);
+    expect(lastAttemptFailed(payout({ bridgeLastErrorCode: PayoutErrorCode.AM04 }))).toBe(false);
+  });
+
+  it('does not mark a payout when the API omits the field entirely', () => {
+    // An API predating this field sends no key at all, and JSON absence is `undefined`. A strict
+    // `!== null` reported that as "a previous attempt failed", so every payout never submitted
+    // offered "Réessayer" — a button that calls confirm and would initiate a real transfer.
+    const fromOlderApi = payout({ bridgeStatus: null, bridgeCheckoutUrl: null });
+    delete (fromOlderApi as Partial<PayoutDto>).bridgeLastErrorCode;
+
+    expect(lastAttemptFailed(fromOlderApi)).toBe(false);
   });
 });
 
@@ -102,4 +114,23 @@ describe('isPayoutInFlight', () => {
       expect(isPayoutInFlight(payout({ bridgeStatus: status }))).toBe(false);
     },
   );
+});
+
+describe('payoutErrorMessageKey', () => {
+  it('names the key for a code this build knows', () => {
+    expect(payoutErrorMessageKey(PayoutErrorCode.NOAS)).toBe('errorCode.NOAS');
+    expect(payoutErrorMessageKey(PayoutErrorCode.DESTINATION_UNVERIFIED)).toBe(
+      'errorCode.DESTINATION_UNVERIFIED',
+    );
+  });
+
+  it('falls back rather than leaking a code the bundle predates', () => {
+    // A deployed backend can carry a value this build has never heard of. Printing it raw is how
+    // associations came to read `AC01` in a tooltip.
+    expect(payoutErrorMessageKey('AB99' as PayoutErrorCode)).toBe('errorCode.fallback');
+  });
+
+  it('falls back when nothing has failed', () => {
+    expect(payoutErrorMessageKey(null)).toBe('errorCode.fallback');
+  });
 });

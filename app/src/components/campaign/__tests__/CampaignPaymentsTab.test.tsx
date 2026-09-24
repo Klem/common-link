@@ -4,6 +4,7 @@ import { CampaignPaymentsTab } from '../CampaignPaymentsTab';
 import type { CampaignDto } from '@/types/campaign';
 import type { UsePaymentsReturn } from '@/hooks/campaign/usePayments';
 import type { PayoutDto } from '@/types/payment';
+import { PayoutErrorCode } from '@/types/payment';
 import type { PayeeDto } from '@/types/payee';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -82,7 +83,7 @@ const samplePayout: PayoutDto = {
   confirmedAt: '2026-06-01T10:05:00Z',
   onchainJobId: null,
   bridgeStatus: 'ACSC',
-  bridgeLastError: null,
+  bridgeLastErrorCode: null,
   bridgeCheckoutUrl: null,
 };
 
@@ -116,7 +117,7 @@ const releasedPayout: PayoutDto = {
   confirmedAt: null,
   bridgeStatus: null,
   bridgeCheckoutUrl: null,
-  bridgeLastError: 'Bank authorisation window expired before the transfer was authorised',
+  bridgeLastErrorCode: PayoutErrorCode.LINK_EXPIRED,
 };
 
 const samplePayee: PayeeDto = {
@@ -542,12 +543,14 @@ describe('CampaignPaymentsTab', () => {
       ...samplePayout,
       status: 'FAILED',
       bridgeStatus: 'RJCT',
-      bridgeLastError: 'debit_account_insufficient_funds',
+      bridgeLastErrorCode: PayoutErrorCode.AM04,
     };
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [failed] })} />);
 
+    // Translated from the stable code, never the stored string: that one is Bridge's bare ISO
+    // reason or one of our English messages, and it used to land in this tooltip verbatim.
     expect(document.querySelector('.pay-chip.failed')?.getAttribute('title'))
-      .toBe('debit_account_insufficient_funds');
+      .toBe('history.errorCode.AM04');
   });
 
   it('distinguishes a payout whose last transfer attempt failed from one never attempted', () => {
@@ -560,7 +563,7 @@ describe('CampaignPaymentsTab', () => {
       status: 'PENDING',
       confirmedAt: null,
       bridgeStatus: null,
-      bridgeLastError: 'Bridge recorded a different destination IBAN — transfer refused',
+      bridgeLastErrorCode: PayoutErrorCode.DESTINATION_UNVERIFIED,
     };
     render(
       <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedAfterFailure] })} />,
@@ -568,9 +571,9 @@ describe('CampaignPaymentsTab', () => {
 
     const chip = document.querySelector('.pay-chip.attention');
     expect(chip).toBeTruthy();
-    // The tooltip must carry Bridge's own reason, not a generic "something went wrong".
-    expect(chip?.getAttribute('title')).toContain('history.lastAttemptFailed');
-    expect(chip?.getAttribute('title')).toContain('transfer refused');
+    // The tooltip must name the actual cause, not a generic "something went wrong" — here the
+    // destination read-back guard, which is a control refusing rather than a bank being busy.
+    expect(chip?.getAttribute('title')).toBe('history.errorCode.DESTINATION_UNVERIFIED');
     expect(document.querySelector('.pay-chip.confirmed')).toBeNull();
   });
 
@@ -581,7 +584,7 @@ describe('CampaignPaymentsTab', () => {
       status: 'PENDING',
       confirmedAt: null,
       bridgeStatus: null,
-      bridgeLastError: null,
+      bridgeLastErrorCode: null,
     };
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [neverAttempted] })} />);
 

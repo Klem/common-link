@@ -18,6 +18,7 @@ import org.commonlink.entity.Payee
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.User
@@ -369,7 +370,7 @@ class PayoutServiceTest {
         assertThrows<BridgeInitiationNotStartedException> { service.confirm(campaignId, payoutId, userId) }
 
         verify { confirmer.discardNeverInitiated(payoutId) }
-        verify(exactly = 0) { confirmer.releaseReservation(any(), any()) }
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any(), any()) }
     }
 
     @Test
@@ -381,11 +382,11 @@ class PayoutServiceTest {
         every {
             bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } throws BadGatewayException("Bridge recorded a different destination IBAN — transfer refused")
-        every { confirmer.releaseReservation(payoutId, any()) } returns Unit
+        every { confirmer.releaseReservation(payoutId, any(), any()) } returns Unit
 
         assertThrows<BadGatewayException> { service.confirm(campaignId, payoutId, userId) }
 
-        verify { confirmer.releaseReservation(payoutId, any()) }
+        verify { confirmer.releaseReservation(payoutId, any(), any()) }
         verify(exactly = 0) { confirmer.discardNeverInitiated(any()) }
     }
 
@@ -420,12 +421,12 @@ class PayoutServiceTest {
         every { confirmer.reserve(campaignId, payoutId) } returns Unit
         every { bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any()) } throws
             BadGatewayException("Bridge payment initiation unavailable: timeout")
-        every { confirmer.releaseReservation(payoutId, any()) } returns Unit
+        every { confirmer.releaseReservation(payoutId, any(), any()) } returns Unit
 
         assertThrows<BadGatewayException> { service.confirm(campaignId, payoutId, userId) }
 
-        verify { confirmer.releaseReservation(payoutId, any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify { confirmer.releaseReservation(payoutId, any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
         verify(exactly = 0) { confirmer.attachPaymentLink(any(), any()) }
     }

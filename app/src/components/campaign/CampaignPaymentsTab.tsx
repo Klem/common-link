@@ -9,7 +9,14 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Donut } from '@/components/ui/Donut';
 import { useToastStore } from '@/stores/toastStore';
 import { getBlockingReasons } from '@/lib/api/payment';
-import { PayoutKind, PayoutStatus, isPayoutInFlight, lastAttemptFailed, needsBankAuthorisation } from '@/types/payment';
+import {
+  PayoutKind,
+  PayoutStatus,
+  isPayoutInFlight,
+  lastAttemptFailed,
+  needsBankAuthorisation,
+  payoutErrorMessageKey,
+} from '@/types/payment';
 import { IbanVerificationStatus } from '@/types/payee';
 import { ROUTES } from '@/lib/routes';
 import type { CampaignDto } from '@/types/campaign';
@@ -51,14 +58,15 @@ function fmtDate(iso: string) {
 function StatusChip({
   payout,
   inTransitLabel,
-  lastAttemptFailedLabel,
+  failureLabel,
 }: {
   payout: PayoutDto;
   inTransitLabel: string;
-  lastAttemptFailedLabel: string;
+  /** Why the transfer did not go through, already translated. Empty when nothing failed. */
+  failureLabel: string;
 }) {
   if (payout.status === PayoutStatus.FAILED) {
-    return <span className="pay-chip failed" title={payout.bridgeLastError ?? undefined}>✗</span>;
+    return <span className="pay-chip failed" title={failureLabel}>✗</span>;
   }
   if (payout.status === PayoutStatus.CONFIRMED) {
     return <span className="pay-chip confirmed">✓</span>;
@@ -69,7 +77,7 @@ function StatusChip({
   // Still pending, but the previous attempt failed — without this the row is indistinguishable
   // from one never submitted, and the association has no way to know it must retry.
   if (lastAttemptFailed(payout)) {
-    return <span className="pay-chip attention" title={lastAttemptFailedLabel}>⚠</span>;
+    return <span className="pay-chip attention" title={failureLabel}>⚠</span>;
   }
   return <span className="pay-chip pending">⏳</span>;
 }
@@ -509,14 +517,16 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
                       {t('history.authorise')}
                     </a>
                   ) : null}
+                  {/*
+                    The reason is translated from a stable code, never printed from the stored
+                    string: that string mixes Bridge's bare ISO codes with our own English
+                    messages, one of which carries a payout id, and it used to go into this
+                    tooltip verbatim.
+                  */}
                   <StatusChip
                     payout={p}
                     inTransitLabel={t('history.inTransit')}
-                    lastAttemptFailedLabel={
-                      p.bridgeLastError
-                        ? t('history.lastAttemptFailed', { error: p.bridgeLastError })
-                        : ''
-                    }
+                    failureLabel={t(`history.${payoutErrorMessageKey(p.bridgeLastErrorCode)}`)}
                   />
                 </div>
               ))

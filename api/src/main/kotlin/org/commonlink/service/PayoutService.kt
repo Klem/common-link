@@ -8,8 +8,10 @@ import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutBlockingReason
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
+import org.commonlink.exception.BridgeDestinationRefusedException
 import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -213,7 +215,16 @@ class PayoutService(
             // requires the authorisation URL, which this failure means it never received. The
             // payout stays PENDING so it can be retried; FAILED would be terminal, because
             // loadForConfirm only accepts PENDING.
-            confirmer.releaseReservation(payoutId, ex.message ?: "Bridge initiation failed")
+            // DESTINATION_UNVERIFIED rather than a generic failure: the read-back guard refusing
+            // to hand out an authorisation URL is a control doing its job, and the association is
+            // owed that distinction — "we could not vouch for where this money was going" is not
+            // "the bank was busy". Named by exception type, never by reading ex.message.
+            val code = if (ex is BridgeDestinationRefusedException) {
+                PayoutErrorCode.DESTINATION_UNVERIFIED
+            } else {
+                PayoutErrorCode.INITIATION_FAILED
+            }
+            confirmer.releaseReservation(payoutId, ex.message ?: "Bridge initiation failed", code)
             throw ex
         }
 
@@ -233,7 +244,13 @@ class PayoutService(
             // which is what keeps the failure harmless rather than merely recoverable.
             log.error("Could not record Bridge link {} for payout {} — revoking it", link.id, payoutId, ex)
             bridgeInitiation.revokeQuietly(link.id, "payout $payoutId could not record it")
-            runCatching { confirmer.releaseReservation(payoutId, "Bridge payment link could not be recorded") }
+            runCatching {
+                confirmer.releaseReservation(
+                    payoutId,
+                    "Bridge payment link could not be recorded",
+                    PayoutErrorCode.LINK_NOT_RECORDED,
+                )
+            }
                 .onFailure { log.error("Payout {} left engaged: releasing it failed too", payoutId, it) }
             throw ex
         }

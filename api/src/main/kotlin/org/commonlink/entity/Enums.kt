@@ -268,6 +268,112 @@ enum class PayoutBlockingReason {
 }
 
 /**
+ * Stable cause of a payout's last failure, translated by the frontend.
+ *
+ * The first seventeen entries are Bridge's own `status_reason` values, which are bare ISO 20022
+ * codes — `AC01`, `NOAS` — and not the prose [Payout.bridgeLastError] also carries. The rest are
+ * our own causes, which never reach a bank.
+ *
+ * Posed at the site where the cause is known and never derived afterwards. Recognising a cause
+ * from the text of its message is the anti-pattern already rejected for
+ * [org.commonlink.exception.BridgeInitiationNotStartedException]: it breaks on the first
+ * rewording, and here that means showing an association the wrong explanation.
+ *
+ * [Payout.bridgeLastError] keeps the verbatim text for support and is no longer displayed.
+ */
+enum class PayoutErrorCode {
+    /** *(IncorrectAccountNumber)* the account number is either invalid or does not exist. */
+    AC01,
+    /** *(ClosedAccountNumber)* the account is closed and cannot be used. */
+    AC04,
+    /** *(BlockedAccount)* the account is blocked and cannot be used. */
+    AC06,
+    /** *(TransactionForbidden)* Transaction forbidden on this type of account. */
+    AG01,
+    /** *(InsufficientFunds)* the funds available do not cover the amount. No Demo Bank login. */
+    AM04,
+    /** *(InvalidNumberOfTransactions)* the number of transactions exceeds the bank's limit. */
+    AM18,
+    /** *(RequestedExecutionDateTooFarInFuture)* — we send no execution date, so this signals drift. */
+    CH03,
+    /** *(RequestedByCustomer)* the reject is due to the debtor: refusal or lack of liquidity. */
+    CUST,
+    /** *(OrderCancelled)* an authorised user cancelled the order at their bank. */
+    DS02,
+    /** *(InvalidFileFormat)* the original payment request was invalid — our request, our bug. */
+    FF01,
+    /** *(FraudulentOriginated)* the payment request is considered fraudulent by the bank. */
+    FRAD,
+    /** *(NotSpecifiedReasonAgentGenerated)* no reason specified by the bank. */
+    MS03,
+    /** *(NoAnswerFromCustomer)* the association never answered and the bank timed out. */
+    NOAS,
+    /** *(MissingDebtorAccountOrIdentification)* debtor account or identification inconsistent. */
+    RR01,
+    /** *(MissingCreditorNameOrAddress)* creditor name or address insufficient for the regulator. */
+    RR03,
+    /** *(RegulatoryReason)* reject from regulatory reason. */
+    RR04,
+    /** *(InvalidPartyID)* identification required by the country or payment type is invalid. No Demo Bank login. */
+    RR12,
+
+    /** The bank refused and communicated no reason — Bridge omits `status_reason` entirely. */
+    UNSPECIFIED,
+
+    /**
+     * Bridge returned a `status_reason` this version does not model.
+     *
+     * Kept rather than collapsed to null: "refused for a reason we cannot name" is not "no failure
+     * at all", and the verbatim string is still on [Payout.bridgeLastError] for whoever looks.
+     */
+    UNKNOWN,
+
+    /** The authorisation window closed before the association authorised. Not a bank refusal. */
+    LINK_EXPIRED,
+    /** The payment link was revoked before use. Not a bank refusal either. */
+    LINK_REVOKED,
+    /** Bridge could not be reached, or returned something unusable, while creating the link. */
+    INITIATION_FAILED,
+    /** Bridge read the link back with a destination it could not vouch for — see the read-back guard. */
+    DESTINATION_UNVERIFIED,
+    /** The link exists at Bridge but could not be recorded here, so it was revoked immediately. */
+    LINK_NOT_RECORDED,
+    ;
+
+    companion object {
+        /**
+         * Maps a Bridge `status_reason` to this enum.
+         *
+         * @param wireStatusReason the raw value, absent when the bank gave no reason.
+         * @return the matching code, [UNSPECIFIED] when Bridge sent none, [UNKNOWN] when it sent
+         *   one we do not model — never null, because a rejection always has *a* cause to show.
+         */
+        fun fromStatusReason(wireStatusReason: String?): PayoutErrorCode {
+            val trimmed = wireStatusReason?.trim()?.takeIf { it.isNotEmpty() } ?: return UNSPECIFIED
+            return entries.firstOrNull { it.name.equals(trimmed, ignoreCase = true) && it.isBridgeStatusReason }
+                ?: UNKNOWN
+        }
+    }
+
+    /** Whether this value is one Bridge can send back, as opposed to one of our own causes. */
+    val isBridgeStatusReason: Boolean
+        get() = ordinal <= RR12.ordinal
+
+    /**
+     * Whether the bank was asked and said no.
+     *
+     * [NOAS] and [DS02] are deliberately excluded although Bridge reports them under `RJCT`:
+     * a timeout waiting for the association, and the association cancelling at its own bank, are
+     * nobody ever asking. Stamping them terminal retires a payout for good because someone let a
+     * screen expire — the same reasoning that already routes an expired link to a release rather
+     * than a failure. See `org.commonlink.service.BridgeWebhookService`.
+     */
+    val isBankRefusal: Boolean
+        get() = isBridgeStatusReason && this != NOAS && this != DS02 ||
+            this == UNSPECIFIED || this == UNKNOWN
+}
+
+/**
  * State of a Bridge payment initiation for a payout.
  *
  * Deliberately distinct from [PayoutStatus]: this is the bank's view of the transfer, whereas
@@ -297,8 +403,13 @@ enum class BridgePaymentStatus {
     /** Terminal success: the transfer was accepted and settled by the bank. */
     ACSC,
     /**
-     * Terminal failure: rejected by the bank. Bridge's `status_reason` carries the cause
-     * (e.g. `debit_account_insufficient_funds`) and is stored in [Payout.bridgeLastError].
+     * Terminal failure: rejected by the bank. Bridge's `status_reason` carries the cause as a bare
+     * ISO 20022 code — `AC01`, `NOAS` — mapped to [PayoutErrorCode] and stored in
+     * [Payout.bridgeLastErrorCode], the raw string going to [Payout.bridgeLastError].
+     *
+     * Not every `RJCT` is a refusal: `NOAS` and `DS02` mean the association never answered or
+     * cancelled at its own bank, and those release the payout instead of failing it — see
+     * [PayoutErrorCode.isBankRefusal].
      */
     RJCT,
     /** Partial execution — only meaningful for bulk transfers; a payout carries a single transaction. */

@@ -6,6 +6,7 @@ import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutBlockingReason
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -179,6 +180,7 @@ class PayoutConfirmer(
         payout.bridgeCheckoutUrl = link.url
         payout.bridgeStatus = BridgePaymentStatus.CREA
         payout.bridgeLastError = null
+        payout.bridgeLastErrorCode = null
         payout.bridgeSyncedAt = Instant.now()
 
         log.info("Payout {} awaiting bank authorisation via Bridge link {}", payoutId, link.id)
@@ -219,6 +221,7 @@ class PayoutConfirmer(
         payout.bridgeStatus = BridgePaymentStatus.ACSC
         payout.bridgePaymentTransactionId = transactionId
         payout.bridgeLastError = null
+        payout.bridgeLastErrorCode = null
         payout.bridgeSyncedAt = Instant.now()
         val saved = payoutRepository.save(payout)
 
@@ -290,10 +293,11 @@ class PayoutConfirmer(
      * for any notification Bridge still has in flight for it.
      *
      * @param payoutId Payout whose reservation is released.
-     * @param message Why it is being released, stored on the row for support.
+     * @param message Why it is being released, stored verbatim on the row for support.
+     * @param code Same cause as a stable value, which is what the interface shows.
      */
     @Transactional
-    fun releaseReservation(payoutId: UUID, message: String) {
+    fun releaseReservation(payoutId: UUID, message: String, code: PayoutErrorCode) {
         val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
         if (payout.status != PayoutStatus.PENDING) {
             log.warn("Refusing to release payout {} — it is {}", payoutId, payout.status)
@@ -302,6 +306,7 @@ class PayoutConfirmer(
         payout.bridgeStatus = null
         payout.bridgeCheckoutUrl = null
         payout.bridgeLastError = message.take(BRIDGE_ERROR_MAX_LENGTH)
+        payout.bridgeLastErrorCode = code
         payout.bridgeSyncedAt = Instant.now()
         payoutRepository.save(payout)
         log.warn("Payout {} released back to a retryable PENDING: {}", payoutId, message)
@@ -323,11 +328,12 @@ class PayoutConfirmer(
      * URL kept on the row would only point at that dead link.
      *
      * @param payoutId Payout to fail.
-     * @param message Diagnostic message stored on the row.
+     * @param message Diagnostic message stored verbatim on the row.
      * @param bridgeStatus Bridge's own terminal state, when known.
+     * @param code The bank's reason as a stable value, which is what the interface shows.
      */
     @Transactional
-    fun finaliseFailed(payoutId: UUID, message: String, bridgeStatus: BridgePaymentStatus?) {
+    fun finaliseFailed(payoutId: UUID, message: String, bridgeStatus: BridgePaymentStatus?, code: PayoutErrorCode) {
         val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
         if (payout.status == PayoutStatus.CONFIRMED) {
             log.warn("Refusing to fail payout {} — it is already confirmed as settled", payoutId)
@@ -337,6 +343,7 @@ class PayoutConfirmer(
         payout.bridgeStatus = bridgeStatus
         payout.bridgeCheckoutUrl = null
         payout.bridgeLastError = message.take(BRIDGE_ERROR_MAX_LENGTH)
+        payout.bridgeLastErrorCode = code
         payout.bridgeSyncedAt = Instant.now()
         payoutRepository.save(payout)
         log.warn("Payout {} failed at Bridge: {}", payoutId, message)

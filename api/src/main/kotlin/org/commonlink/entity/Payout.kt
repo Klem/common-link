@@ -118,9 +118,20 @@ class Payout(
     @Column(name = "bridge_status", length = 32)
     var bridgeStatus: BridgePaymentStatus? = null,
 
-    /** Message of the last failed Bridge call, for diagnosis without digging through logs. */
+    /**
+     * Verbatim message of the last failure, for diagnosis without digging through logs.
+     *
+     * Support-facing only. It mixes Bridge's bare ISO `status_reason` with our own English
+     * sentences, one of which embeds a payout id, so it is never shown to an association —
+     * [bridgeLastErrorCode] is what the interface reads.
+     */
     @Column(name = "bridge_last_error", length = 500)
     var bridgeLastError: String? = null,
+
+    /** Stable cause of that same failure, translated by the frontend. See [PayoutErrorCode]. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "bridge_last_error_code", length = 32)
+    var bridgeLastErrorCode: PayoutErrorCode? = null,
 
     /** When [bridgeStatus] was last reconciled with Bridge (see BridgePayoutPoller). */
     @Column(name = "bridge_synced_at")

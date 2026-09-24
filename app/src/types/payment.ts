@@ -47,6 +47,56 @@ export const BRIDGE_IN_FLIGHT_STATUSES: readonly BridgePaymentStatus[] = [
   BridgePaymentStatus.PART,
 ];
 
+/**
+ * Stable cause of a payout's last failure — mirrors backend PayoutErrorCode.
+ *
+ * The first seventeen are Bridge's own `status_reason` values, bare ISO 20022 codes; the rest are
+ * CommonLink's own causes, which never reached a bank. Each maps to one
+ * `dashboard.campaigns.payments.history.errorCode.*` key, with `fallback` for anything a newer
+ * backend sends that this build does not know.
+ */
+export const PayoutErrorCode = {
+  AC01: 'AC01',
+  AC04: 'AC04',
+  AC06: 'AC06',
+  AG01: 'AG01',
+  AM04: 'AM04',
+  AM18: 'AM18',
+  CH03: 'CH03',
+  CUST: 'CUST',
+  DS02: 'DS02',
+  FF01: 'FF01',
+  FRAD: 'FRAD',
+  MS03: 'MS03',
+  NOAS: 'NOAS',
+  RR01: 'RR01',
+  RR03: 'RR03',
+  RR04: 'RR04',
+  RR12: 'RR12',
+  UNSPECIFIED: 'UNSPECIFIED',
+  UNKNOWN: 'UNKNOWN',
+  LINK_EXPIRED: 'LINK_EXPIRED',
+  LINK_REVOKED: 'LINK_REVOKED',
+  INITIATION_FAILED: 'INITIATION_FAILED',
+  DESTINATION_UNVERIFIED: 'DESTINATION_UNVERIFIED',
+  LINK_NOT_RECORDED: 'LINK_NOT_RECORDED',
+} as const;
+export type PayoutErrorCode = (typeof PayoutErrorCode)[keyof typeof PayoutErrorCode];
+
+/** Codes this build can name. Anything else falls back rather than showing a raw code. */
+const KNOWN_ERROR_CODES: ReadonlySet<string> = new Set(Object.keys(PayoutErrorCode));
+
+/**
+ * i18n key under `dashboard.campaigns.payments.history` explaining why a payout failed.
+ *
+ * Always returns a key: a deployed backend can carry a code this bundle predates, and the previous
+ * behaviour — printing the stored string straight into a tooltip — is what showed associations
+ * `AC01` and `Bridge recorded a different destination IBAN for payout 696de1eb-…`.
+ */
+export function payoutErrorMessageKey(code: PayoutErrorCode | null): string {
+  return `errorCode.${code !== null && KNOWN_ERROR_CODES.has(code) ? code : 'fallback'}`;
+}
+
 /** Single payout as returned by the API. */
 export interface PayoutDto {
   id: string;
@@ -66,8 +116,8 @@ export interface PayoutDto {
   onchainJobId: string | null;
   /** State of the Bridge initiation; null when no transfer has been initiated. */
   bridgeStatus: BridgePaymentStatus | null;
-  /** Message of the last Bridge failure, so a failure can be explained rather than guessed. */
-  bridgeLastError: string | null;
+  /** Stable cause of the last failure, turned into a sentence by `history.errorCode.*`. */
+  bridgeLastErrorCode: PayoutErrorCode | null;
   /**
    * URL the association must open to authorise the transfer with its own bank. Non-null while a
    * payout awaits that authorisation.
@@ -119,7 +169,11 @@ export function lastAttemptFailed(payout: PayoutDto): boolean {
   return (
     payout.status === PayoutStatus.PENDING &&
     payout.bridgeStatus === null &&
-    payout.bridgeLastError !== null
+    // `!= null`, deliberately loose: an API that predates this field omits it, and JSON absence is
+    // `undefined`, which a strict `!== null` reports as "a previous attempt failed". Every payout
+    // never submitted would then offer "Réessayer" — and that button calls confirm, so a click
+    // would initiate a real transfer on a row the association never sent anywhere.
+    payout.bridgeLastErrorCode != null
   );
 }
 
