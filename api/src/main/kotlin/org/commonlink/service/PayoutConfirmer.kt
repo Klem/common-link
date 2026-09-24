@@ -348,12 +348,21 @@ class PayoutConfirmer(
      * The transfer is authorised but not settled: the amount must stay engaged, and the payout must
      * not yet claim the beneficiary has been credited.
      *
-     * Refuses to touch a payout already CONFIRMED, same guard and same reason as [finaliseFailed].
+     * Refuses to touch a payout that has left PENDING — the same invariant [releaseReservation]
+     * enforces, and for the same reason: an in-flight state describes a transfer still being
+     * decided, so writing one onto a row whose outcome is settled contradicts it.
+     *
      * Bridge fires `payment.transaction.updated` and `payment.link.updated` concurrently for a
-     * single state change — both were observed 98 ms apart on the same row — so at settlement two
-     * threads read Bridge independently: one can see `ACSC` while the other still sees `PDNG`. With
-     * the in-flight write landing second, the payout would stay CONFIRMED (the on-chain attestation
-     * is safe, [finaliseSettled] being idempotent) while permanently displaying `PDNG`.
+     * single state change — both were observed 98 ms apart on the same row — so two threads read
+     * Bridge independently and one can still see an in-flight status after the other has finished.
+     * On a CONFIRMED payout the late write would leave it permanently displaying `PDNG` (the
+     * on-chain attestation is safe, [finaliseSettled] being idempotent). On a FAILED one it stamps
+     * an in-flight status over a terminal refusal: on 2026-09-24 a `payment.link.updated` ranked
+     * `ACTC` landed 214 ms after [finaliseFailed], and only missed this branch because the
+     * rejection had already revoked the link.
+     *
+     * [finaliseFailed] keeps the narrower `CONFIRMED` guard on purpose: re-stamping FAILED over
+     * FAILED is an idempotent redelivery, not a contradiction.
      *
      * @param payoutId Payout to update.
      * @param bridgeStatus The intermediate Bridge state.
@@ -362,8 +371,8 @@ class PayoutConfirmer(
     @Transactional
     fun recordInFlight(payoutId: UUID, bridgeStatus: BridgePaymentStatus, transactionId: String?) {
         val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
-        if (payout.status == PayoutStatus.CONFIRMED) {
-            log.warn("Refusing to record {} on payout {} — it is already confirmed as settled", bridgeStatus, payoutId)
+        if (payout.status != PayoutStatus.PENDING) {
+            log.warn("Refusing to record {} on payout {} — it is {}", bridgeStatus, payoutId, payout.status)
             return
         }
         payout.bridgeStatus = bridgeStatus

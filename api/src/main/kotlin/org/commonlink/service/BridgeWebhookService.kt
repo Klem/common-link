@@ -105,10 +105,17 @@ class BridgeWebhookService(
                 // campaign's confirmable balance, and Bridge leaves a rejected link usable — a
                 // second authorisation on it would settle a transfer against funds already given
                 // back, and publish an irretractable attestation for it. If the revocation cannot
-                // be confirmed it throws, the payout stays engaged, and Bridge redelivers. Skipped
-                // when the payout is already FAILED: the link was revoked on the first delivery,
-                // and Bridge sends several notifications per state change.
-                if (payout.status != PayoutStatus.FAILED) {
+                // be confirmed it throws, the payout stays engaged, and Bridge redelivers.
+                //
+                // Only a payout still PENDING is worth revoking for. A payout that has left
+                // PENDING is one [PayoutConfirmer.finaliseFailed] refuses to move — already FAILED
+                // (the link was revoked on the first delivery, and Bridge sends several
+                // notifications per state change) or already CONFIRMED, where failing is refused
+                // outright so the revocation would protect nothing the guard below does not
+                // already refuse. It is not free either: a `5xx` on `POST /revoke` throws, the
+                // webhook answers 502, and Bridge redelivers for two days over a call whose only
+                // outcome was a no-op.
+                if (payout.status == PayoutStatus.PENDING) {
                     bridgeInitiation.revokePaymentLink(linkId)
                 }
                 confirmer.finaliseFailed(

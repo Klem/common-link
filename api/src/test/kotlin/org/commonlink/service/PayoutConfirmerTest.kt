@@ -370,6 +370,21 @@ class PayoutConfirmerTest {
     }
 
     @Test
+    fun `releaseReservation - never resurrects a payout the bank refused`() {
+        // Observed live on 2026-09-24: our own revocation of a rejected link comes back as
+        // LINK_REVOKED, whose arm releases. Without this guard the payout just failed would return
+        // to a retryable PENDING and its amount be counted available a second time.
+        val payout = newPayout(status = PayoutStatus.FAILED, bridgeStatus = BridgePaymentStatus.RJCT)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.releaseReservation(payout.id, "Payment link revoked before the transfer was authorised")
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.FAILED)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
     fun `finaliseFailed - fails the payout without emitting any attestation`() {
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
         every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
@@ -423,6 +438,23 @@ class PayoutConfirmerTest {
 
         assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.ACSC)
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `recordInFlight - refuses to stamp an in-flight status over a bank refusal`() {
+        // A link carrying two payment requests still reports an in-flight one after the other was
+        // rejected. On 2026-09-24 such a notification landed 214 ms after the payout was failed,
+        // and missed this branch only because the rejection had already revoked the link. FAILED
+        // is terminal — loadForConfirm refuses it — so an in-flight status on that row describes a
+        // transfer that is no longer being decided.
+        val payout = newPayout(status = PayoutStatus.FAILED, bridgeStatus = BridgePaymentStatus.RJCT)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.recordInFlight(payout.id, BridgePaymentStatus.ACTC, "tx_1")
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.FAILED)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
         verify(exactly = 0) { payoutRepository.save(any()) }
     }
 }

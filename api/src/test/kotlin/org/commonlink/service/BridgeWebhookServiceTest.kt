@@ -189,6 +189,24 @@ class BridgeWebhookServiceTest {
     }
 
     @Test
+    fun `does not revoke on a late rejection for a payout already settled`() {
+        // A link can carry a settled request and a rejected sibling, so a late RJCT is reachable
+        // on a CONFIRMED payout. finaliseFailed refuses to un-settle it, so the revocation would
+        // protect nothing — while a 5xx on POST /revoke throws, answers the webhook 502 and has
+        // Bridge redeliver for two days over a call whose only outcome was a no-op.
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns
+            routing(payoutStatus = PayoutStatus.CONFIRMED, engaged = BridgePaymentStatus.ACSC)
+        every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
+            BridgePaymentLinkState(BridgePaymentStatus.RJCT, "tx_1", null)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify(exactly = 0) { bridgeInitiation.revokePaymentLink(any()) }
+        // Still routed to the confirmer, which is where the refusal to un-settle lives.
+        verify { confirmer.finaliseFailed(payout.id, any(), BridgePaymentStatus.RJCT) }
+    }
+
+    @Test
     fun `returns the payout to a retryable state when the authorisation window expired`() {
         // An expiry is nobody ever asking, not the bank refusing. Nothing was debited, so failing
         // the payout would retire it for good because the association closed the tab.
