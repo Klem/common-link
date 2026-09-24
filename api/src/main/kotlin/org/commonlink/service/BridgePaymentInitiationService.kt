@@ -282,10 +282,12 @@ class BridgePaymentInitiationService(
      *
      * **Which** payment request is read matters, because a link can hold several: Bridge does not
      * burn a link on a rejection, so re-opening it and authorising again adds a second request
-     * beside the first. When [paymentRequestId] names one, it is read directly; without it the
-     * list is ranked by [supersedes], never by its order. Taking `resources.last()` reported a
-     * settled 120 € transfer as rejected on 2026-09-22: Bridge had returned both requests, newest
-     * first, and four consecutive notifications each re-stamped the older rejection over it.
+     * beside the first. A named [paymentRequestId] is read directly, but decides alone only once
+     * the transfer has left the association's hands (`PDNG` and above); below that the link's
+     * requests are ranked by [supersedes], never by list order, the named one included. Taking
+     * `resources.last()` reported a settled 120 € transfer as rejected on 2026-09-22: Bridge had
+     * returned both requests, newest first, and four consecutive notifications each re-stamped the
+     * older rejection over it.
      *
      * @param paymentLinkId Identifier returned by [createPaymentLink].
      * @param paymentRequestId Payment request the notification is about, when it named one.
@@ -300,8 +302,17 @@ class BridgePaymentInitiationService(
         }
 
         val link = fetchLink(paymentLinkId)
-        val request = paymentRequestId?.let { fetchPaymentRequestById(it, paymentLinkId) }
+
+        // Reading the named request answers "what happened to *this* one", which is the right
+        // question only while no sibling can outrank it. A request that has not moved money can:
+        // on 2026-09-22 a redelivered notification for a `RJCT` re-stamped a settled 120 €
+        // transfer as rejected, four times in a row. So the named request decides alone only from
+        // `PDNG` upwards — where the bank is executing or has executed, and nothing on the link
+        // outranks it — and otherwise the link's own requests are ranked, the named one included.
+        val named = paymentRequestId?.let { fetchPaymentRequestById(it, paymentLinkId) }
+        val request = named?.takeIf { rank(it.status) >= RANK_LEFT_THE_ASSOCIATION }
             ?: fetchPaymentRequest(paymentLinkId)
+            ?: named
         val requestStatus = BridgePaymentStatus.fromTransactionWire(request?.status)
 
         val status = when {
@@ -458,11 +469,12 @@ class BridgePaymentInitiationService(
      * Reads the payment requests of a link and keeps the one that decides its fate, or null while
      * there is none.
      *
-     * Fallback for a notification that names no payment request. A link the association has not
-     * authorised yet simply has no request; that is not an error, it is
-     * [BridgePaymentStatus.CREA]. Several can coexist — a rejection leaves the link usable, so a
-     * second authorisation adds a second request — and Bridge documents no order for the list, so
-     * the winner is chosen by [supersedes] and never by position.
+     * Used when a notification names no payment request, and also when the one it names has not
+     * moved money — a sibling may have. A link the association has not authorised yet simply has
+     * no request; that is not an error, it is [BridgePaymentStatus.CREA]. Several can coexist — a
+     * rejection leaves the link usable, so a second authorisation adds a second request — and
+     * Bridge documents no order for the list, so the winner is chosen by [supersedes] and never by
+     * position.
      */
     private fun fetchPaymentRequest(paymentLinkId: String): PaymentRequestJson? {
         val raw = try {
@@ -485,8 +497,8 @@ class BridgePaymentInitiationService(
 
         if (resources != null && resources.size > 1) {
             log.warn(
-                "Bridge returned {} payment requests for link {} and the notification named none — " +
-                    "ranking them by status",
+                "Bridge returned {} payment requests for link {} — ranking them, no sibling having " +
+                    "left the association's hands",
                 resources.size, paymentLinkId,
             )
         }
@@ -496,35 +508,60 @@ class BridgePaymentInitiationService(
     /**
      * Whether [candidate] describes the fate of the link better than [kept] does.
      *
-     * Every state gets its own rank, highest first, so no two distinct states can tie. Bridge's
-     * list order is undocumented — observed newest-first, the reverse of what positional selection
-     * assumed — and a tie would hand the decision straight back to that order:
-     *  1. `ACSC` — the bank executed a transfer. No sibling request undoes that fact, and reporting
-     *     it as anything else loses money from the ledger.
+     * Two tiers, and the boundary is whether money has left the association's hands.
+     *
+     * **From `PDNG` upwards — the transfer is executing or executed — rank decides, always.**
+     *  1. `ACSC` — the bank executed a transfer. No sibling undoes that fact, and reporting it as
+     *     anything else loses money from the ledger.
      *  2. `PART` — part of it executed. Money moved and a human has to reconcile it.
      *  3. `PDNG` — the bank is executing. The link's fate no longer matters.
-     *  4. `ACTC` — accepted by Bridge, the association has not authorised at its bank.
-     *  5. `CREA` — nothing authorised at all.
-     *  6. `RJCT` — every attempt failed. Loses to any live attempt: the association retried, and
-     *     that retry is what the payout is waiting on.
      *
-     * The tiers above and below `ACTC` are exactly [BridgePaymentStatus.survivesLinkDeath], which
-     * is what makes a tie expensive rather than merely untidy. Grouping `CREA`, `ACTC`, `PDNG` and
-     * `PART` together, as this did until 2026-09-23, left `[CREA, PDNG]` decided by list position:
-     * pick `CREA`, let the link expire, and the payout is released — its amount handed back to the
-     * campaign while the bank is executing the transfer.
+     * Nothing below may ever outrank these. Grouping them with `CREA`/`ACTC`, as this did until
+     * 2026-09-23, left `[CREA, PDNG]` decided by Bridge's undocumented list order: pick `CREA`,
+     * let the link expire, and the payout is released — its amount handed back to the campaign
+     * while the bank is executing the transfer.
      *
-     * An unrecognised status ranks below everything: an unknown state must never outrank a known
-     * one.
+     * **Below it — `ACTC`, `CREA`, `RJCT` — the most recently created request wins.** None of
+     * them moved a cent, so the question is not which state is "best" but which attempt is the
+     * one the association is actually on. Rank alone got that backwards on 2026-09-24: a payer
+     * entered the tunnel (`ACTC` at 10:18:52), went back, authorised again and was refused
+     * (`RJCT` at 10:19:11) — and the abandoned `ACTC` outranked the real refusal. The old
+     * reasoning ("a rejection loses to any live attempt, the association retried") assumed the
+     * rejection was the older one; a back-navigation inverts it. `created_at` settles it either
+     * way, and it is the creation date rather than `updated_at` because what is being compared is
+     * which attempt started last, not which row Bridge touched last.
+     *
+     * Falls back to rank whenever the dates cannot decide — absent, equal, unparsable, or either
+     * side carrying a status this code does not recognise. An unknown state must never win on a
+     * timestamp.
      */
-    private fun supersedes(candidate: PaymentRequestJson, kept: PaymentRequestJson): Boolean =
-        rank(candidate.status) > rank(kept.status)
+    private fun supersedes(candidate: PaymentRequestJson, kept: PaymentRequestJson): Boolean {
+        val candidateRank = rank(candidate.status)
+        val keptRank = rank(kept.status)
+
+        val decidedByRank = candidateRank >= RANK_LEFT_THE_ASSOCIATION ||
+            keptRank >= RANK_LEFT_THE_ASSOCIATION ||
+            candidateRank < 0 || keptRank < 0
+        if (decidedByRank) return candidateRank > keptRank
+
+        val candidateStart = startedAt(candidate)
+        val keptStart = startedAt(kept)
+        if (candidateStart != null && keptStart != null && candidateStart != keptStart) {
+            return candidateStart > keptStart
+        }
+        return candidateRank > keptRank
+    }
+
+    /** When the association started this attempt, or null when Bridge disclosed nothing usable. */
+    private fun startedAt(request: PaymentRequestJson): Instant? =
+        (request.createdAt ?: request.updatedAt)
+            ?.let { runCatching { Instant.parse(it) }.getOrNull() }
 
     private fun rank(wireStatus: String?): Int =
         when (BridgePaymentStatus.fromTransactionWire(wireStatus)) {
             BridgePaymentStatus.ACSC -> 5
             BridgePaymentStatus.PART -> 4
-            BridgePaymentStatus.PDNG -> 3
+            BridgePaymentStatus.PDNG -> RANK_LEFT_THE_ASSOCIATION
             BridgePaymentStatus.ACTC -> 2
             BridgePaymentStatus.CREA -> 1
             BridgePaymentStatus.RJCT -> 0
@@ -630,6 +667,14 @@ class BridgePaymentInitiationService(
          */
         const val IBAN_DISCLOSED_PREFIX_LENGTH = 4
 
+        /**
+         * Rank of `PDNG`, the point at which the transfer has left the association's hands.
+         *
+         * The boundary of the ranking's upper tier: at or above it the bank is executing or has
+         * executed, so no sibling request and no dead link can change the outcome — see
+         * [supersedes].
+         */
+        const val RANK_LEFT_THE_ASSOCIATION = 3
     }
 }
 
@@ -721,6 +766,10 @@ private data class PaymentRequestJson(
     val status: String?,
     @JsonProperty("status_reason") val statusReason: String?,
     @JsonProperty("payment_link_id") val paymentLinkId: String?,
+    /** ISO 8601 creation date — which of a link's attempts started last. See `supersedes`. */
+    @JsonProperty("created_at") val createdAt: String?,
+    /** ISO 8601 last-update date, used only when Bridge discloses no creation date. */
+    @JsonProperty("updated_at") val updatedAt: String?,
     val transactions: List<PaymentRequestTransactionJson>?,
 )
 

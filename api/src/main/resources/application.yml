@@ -102,6 +102,14 @@ app:
     # pendant laquelle le montant d'un virement reste engagé sans que l'association ait autorisé.
     # Le défaut de Bridge (15 min) ne s'applique que si le champ est omis, ce qui n'arrive jamais.
     link-validity: ${BRIDGE_LINK_VALIDITY:1d}
+    # Sursis avant de libérer un virement dont le lien vient de mourir. Bridge pose `ACTC` dès
+    # l'entrée dans le tunnel et le garde pendant TOUTE l'authentification bancaire : une
+    # association qui commence à autoriser juste avant l'échéance est donc encore en `ACTC` quand
+    # le lien expire, et `ACTC` perd contre un lien mort. Libérer là rend le montant au solde
+    # pendant que la banque exécute le virement. Attendre ne coûte rien — une expiration n'a pas
+    # d'échéance — alors que libérer trop tôt est irrattrapable. Le report n'est écrit nulle part :
+    # le virement continue de vieillir et c'est le réconciliateur qui le ramasse. 0 désactive.
+    release-grace: ${BRIDGE_RELEASE_GRACE:3m}
     # Rattrapage des virements dont l'état ne bouge plus. Le webhook ne suffit pas : Bridge ne
     # renvoie jamais une notification qu'il considère délivrée, donc une notification acceptée et
     # non appliquée bloque un virement pour toujours. Et certaines banques (LCL, Nickel) ne

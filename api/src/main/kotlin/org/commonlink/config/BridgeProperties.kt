@@ -43,6 +43,17 @@ import java.time.Duration
  *   PENDING — is otherwise a 24-hour feedback loop: set a handful of minutes on staging and the
  *   same scenario is observable immediately. It bounds how long a payout's amount can stay
  *   engaged on the campaign, so it is never zero.
+ * @param releaseGrace How recently a payout's Bridge state must have moved for a dead link to
+ *   leave it engaged instead of releasing it — see
+ *   [org.commonlink.service.BridgeWebhookService].
+ *
+ *   Bridge stamps `ACTC` the moment the payer enters the tunnel and holds it for the whole bank
+ *   authentication, which is where the race lives: if the link expires in that window the payout
+ *   is released, its amount handed back to the campaign, and the transfer then settles anyway —
+ *   `PAYOUT_SETTLED_AFTER_RELEASE`, with the association free to have spent the returned balance
+ *   in between. Sized to cover a strong authentication (app notification, code, card reader) and
+ *   no more, because everything it covers is an amount held a little longer for nothing in the
+ *   common case. Zero disables the deferral.
  */
 @ConfigurationProperties(prefix = "app.bridge")
 data class BridgeProperties(
@@ -56,6 +67,7 @@ data class BridgeProperties(
     val webhookSecret: String = "",
     val webhookSecretPrevious: String = "",
     val linkValidity: Duration = Duration.ofDays(1),
+    val releaseGrace: Duration = Duration.ofMinutes(3),
     val reconciler: Reconciler = Reconciler(),
 ) {
     /**

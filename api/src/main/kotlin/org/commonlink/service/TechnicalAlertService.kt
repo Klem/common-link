@@ -84,6 +84,18 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
      * observed — so a human is asked to confirm from the bank statement.
      */
     PAYOUT_STUCK_IN_FLIGHT("Virement bloqué en cours d'exécution", "WARN"),
+
+    /**
+     * Bridge reported `PART` — a partial execution — on a payout.
+     *
+     * A payout carries exactly one transaction, so this should be unreachable: partial execution
+     * is a bulk-transfer outcome. Reaching it means either that assumption is wrong or Bridge is
+     * reporting something we do not model, and in both cases part of an amount may have moved.
+     * The payout is left engaged rather than guessed either way, which makes this strictly a
+     * matter for a human reading a bank statement — and until now it produced only a `log.error`
+     * nobody reads.
+     */
+    PAYOUT_PARTIALLY_EXECUTED("Virement partiellement exécuté (PART)", "ERROR"),
 }
 
 /**

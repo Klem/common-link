@@ -221,7 +221,35 @@ enum class MollieConnectionState {
 }
 
 /** High-level categorisation of a [org.commonlink.entity.Payout]: personnel vs operational expense. */
-enum class PayoutKind { REMUNERATION, EXPENSE }
+enum class PayoutKind {
+    REMUNERATION,
+    EXPENSE,
+    ;
+
+    companion object {
+        /**
+         * Plan comptable codes that make a payout a personnel expense — 64 « Charges de
+         * personnel ». Everything else, including a code the association typed itself, is an
+         * operational expense.
+         */
+        private val REMUNERATION_TYPE_CODES = setOf("64-rem", "64-soc")
+
+        /**
+         * Derives the kind from the accounting code, so the two can never contradict each other.
+         *
+         * The request body carries a `kind` too, and it used to be trusted: a replayed call with
+         * `typeCode = "64-rem"` and `kind = EXPENSE` filed a salary as an operating cost, and
+         * every click on this platform is replayable. The code is the value the association
+         * actually chose from a closed list; the kind was only ever a projection of it computed in
+         * the browser, so the browser is no longer asked.
+         *
+         * Mirrors `kindFromTypeCode` in `app/src/components/campaign/CampaignPaymentsTab.tsx` —
+         * the frontend keeps its copy to label its own form, not to decide the stored value.
+         */
+        fun fromTypeCode(typeCode: String): PayoutKind =
+            if (typeCode.trim().lowercase() in REMUNERATION_TYPE_CODES) REMUNERATION else EXPENSE
+    }
+}
 
 /** Lifecycle status of a [org.commonlink.entity.Payout]. */
 enum class PayoutStatus { PENDING, CONFIRMED, FAILED }

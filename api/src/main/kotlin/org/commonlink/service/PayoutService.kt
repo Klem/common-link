@@ -8,6 +8,7 @@ import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutBlockingReason
+import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.exception.ConflictException
@@ -138,8 +139,9 @@ class PayoutService(
                 payeeIbanId     = payeeIban.id!!,
                 payeeIbanValue  = payeeIban.iban,
                 amount          = request.amount,
-                kind            = request.kind!!,
-                typeCode        = request.typeCode!!,
+                // Derived, never taken from the body: see PayoutKind.fromTypeCode.
+                kind            = PayoutKind.fromTypeCode(request.typeCode!!),
+                typeCode        = request.typeCode,
                 label           = request.label!!,
             )
         )

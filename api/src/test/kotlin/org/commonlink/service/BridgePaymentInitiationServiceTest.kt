@@ -648,6 +648,76 @@ class BridgePaymentInitiationServiceTest {
     }
 
     @Test
+    fun `real mode - the newest attempt wins between two that moved no money`() {
+        // Observed 2026-09-24 on link 01a0d27e-f59e: the payer entered the tunnel (ACTC at
+        // 10:18:52), navigated back, authorised again and was refused (RJCT at 10:19:11). Rank
+        // alone kept the abandoned ACTC and reported an in-flight transfer where the bank had
+        // said no. Neither moved a cent, so the question is which attempt the association is on.
+        expectRankedBoth(
+            first = """{"id":"pr_1","status":"ACTC","payment_link_id":"pl_1","created_at":"2026-09-24T08:18:52Z"}""",
+            second = """{"id":"pr_2","status":"RJCT","payment_link_id":"pl_1","created_at":"2026-09-24T08:19:11Z"}""",
+            expected = BridgePaymentStatus.RJCT,
+            linkStatus = "revoked",
+        )
+    }
+
+    @Test
+    fun `real mode - recency never outranks a transfer the bank is executing`() {
+        // The boundary that must not move: a third tab opened after authorising creates a newer
+        // CREA. Letting recency decide there would release the payout on link death while the
+        // bank executes — the exact failure the tiering exists to prevent.
+        expectRankedBoth(
+            first = """{"id":"pr_1","status":"PDNG","payment_link_id":"pl_1","created_at":"2026-09-24T08:18:52Z"}""",
+            second = """{"id":"pr_2","status":"CREA","payment_link_id":"pl_1","created_at":"2026-09-24T08:25:00Z"}""",
+            expected = BridgePaymentStatus.PDNG,
+            linkStatus = "expired",
+        )
+    }
+
+    @Test
+    fun `real mode - without dates the ranking falls back to the status order`() {
+        // Bridge documents created_at, but an absent or unparsable value must degrade to the
+        // previous behaviour rather than to an arbitrary winner.
+        expectRankedBoth(
+            first = """{"id":"pr_1","status":"ACTC","payment_link_id":"pl_1"}""",
+            second = """{"id":"pr_2","status":"RJCT","payment_link_id":"pl_1","created_at":"not-a-date"}""",
+            expected = BridgePaymentStatus.ACTC,
+            linkStatus = "valid",
+        )
+    }
+
+    @Test
+    fun `real mode - a named request that moved no money cannot bury a settled sibling`() {
+        // F4: the notification names the RJCT, so reading it by id answered "rejected" while the
+        // link also carried an ACSC. On 2026-09-22 four consecutive redeliveries re-stamped that
+        // rejection over a settled 120 EUR transfer.
+        val (service, server) = realService()
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-links/pl_1"))
+            .andRespond(withSuccess("""{"id":"pl_1","status":"completed"}""", MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests/pr_rjct"))
+            .andRespond(
+                withSuccess(
+                    """{"id":"pr_rjct","status":"RJCT","status_reason":"AC01","payment_link_id":"pl_1"}""",
+                    MediaType.APPLICATION_JSON,
+                )
+            )
+        server.expect(requestTo("$BASE_URL/v3/payment/payment-requests?payment_link_id=pl_1"))
+            .andRespond(
+                withSuccess(
+                    """{"resources":[{"id":"pr_rjct","status":"RJCT","payment_link_id":"pl_1"},
+                       {"id":"pr_ok","status":"ACSC","payment_link_id":"pl_1","transactions":[{"id":"tx_ok"}]}]}""",
+                    MediaType.APPLICATION_JSON,
+                )
+            )
+
+        val state = service.getPaymentLink("pl_1", "pr_rjct")
+
+        assertThat(state.status).isEqualTo(BridgePaymentStatus.ACSC)
+        assertThat(state.transactionId).isEqualTo("tx_ok")
+        server.verify()
+    }
+
+    @Test
     fun `real mode - a retry in flight outranks the rejection it followed`() {
         // Ranking is not "most recent" but "what the payout is waiting on": a running attempt
         // beside a dead one means the association retried, and PDNG is the honest state.

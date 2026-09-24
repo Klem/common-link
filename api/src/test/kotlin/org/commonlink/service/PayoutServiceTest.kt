@@ -153,6 +153,31 @@ class PayoutServiceTest {
     }
 
     @Test
+    fun `create - derives the kind from the accounting code, ignoring the one in the body`() {
+        // Replaying the call with typeCode = "64-rem" and kind = EXPENSE filed a salary as an
+        // operating cost. The code is what the association picked from a closed list; the kind was
+        // only ever a projection of it computed in the browser.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        stubBalance(confirmed = "0", raised = "1000")
+        every { payoutRepository.save(any()) } returnsArgument 0
+
+        val forged = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "64-rem", "Salaire coordinateur projet")
+        assertThat(service.create(campaignId, forged, userId).kind).isEqualTo(PayoutKind.REMUNERATION)
+
+        // And the converse, so the derivation is not simply pinned to one value.
+        val alsoForged = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.REMUNERATION, "60-mat", "Achat matériel pédagogique")
+        assertThat(service.create(campaignId, alsoForged, userId).kind).isEqualTo(PayoutKind.EXPENSE)
+
+        // A code the association typed itself is an operational expense, like the frontend's own
+        // mapping — only the closed 64-* set is personnel.
+        val custom = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.REMUNERATION, "Frais divers", "Achat matériel pédagogique")
+        assertThat(service.create(campaignId, custom, userId).kind).isEqualTo(PayoutKind.EXPENSE)
+    }
+
+    @Test
     fun `create - refused in prod while Bridge runs in demo mode`() {
         // Mirror of the disabled submit button: every click is replayable, so the server must
         // refuse too — otherwise a crafted request produces, in production, a payout that would

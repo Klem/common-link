@@ -61,7 +61,22 @@ interface AuthState {
 }
 
 const IS_PROD = process.env.NODE_ENV === 'production';
-const SEARCH_ASSOCIATION_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+
+/**
+ * API origin for the refresh call, normalised exactly like `lib/api.ts` and `lib/api/public.ts`.
+ *
+ * Those two prepend `https://` when the variable carries no scheme, and fall back with `||` so an
+ * empty string is treated as unset. This file did neither, and the difference is not cosmetic: a
+ * bare host — the shape a PaaS environment variable routinely takes — makes this a **relative**
+ * URL. The refresh then posts to the frontend's own origin, 404s, and the catch below wipes
+ * `auth-session`, which sends the middleware straight to the login page. Everything authenticated
+ * by header keeps working, so only the session appears broken.
+ *
+ * Deliberately not imported from `@/lib/api`: that module imports this store, and the cycle would
+ * be resolved at runtime in an order nothing guarantees.
+ */
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const SEARCH_ASSOCIATION_URL = RAW_API_URL.startsWith('http') ? RAW_API_URL : `https://${RAW_API_URL}`;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
@@ -120,6 +135,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       });
+
+      // A retryable status is not an expired session. 429 (the refresh endpoint is rate-limited
+      // per client IP, and a misread X-Forwarded-For makes every user share one quota) and 5xx
+      // both mean "ask again later", yet falling through to the catch below logs the user out and
+      // bounces them to /login mid-task. Leave the session alone and let the next mount retry.
+      if (response.status === 429 || response.status >= 500) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Refresh failed');

@@ -1,10 +1,12 @@
 package org.commonlink.service
 
+import org.commonlink.config.BridgeProperties
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.repository.PayoutRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -28,6 +30,7 @@ class BridgeWebhookService(
     private val bridgeInitiation: BridgePaymentInitiationService,
     private val confirmer: PayoutConfirmer,
     private val alerts: TechnicalAlertService,
+    private val props: BridgeProperties,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -80,13 +83,24 @@ class BridgeWebhookService(
         when (state.status) {
             BridgePaymentStatus.ACSC -> {
                 // The amount is reserved on the campaign only while the payout is PENDING with a
-                // Bridge status on it. Settling outside that means it had already been given back —
-                // failed after a rejection, or released when the link died — and the association
-                // may have committed those funds elsewhere in between. The settlement is recorded
-                // all the same, because the bank executed the transfer and refusing to record an
-                // observed movement lies more gravely than correcting course; but it is not
-                // absorbed silently.
-                if (payout.status != PayoutStatus.PENDING || payout.bridgeStatus == null) {
+                // Bridge status on it. Settling once it has been **given back** — failed after a
+                // rejection, or released when the link died — means the association may have
+                // committed those funds elsewhere in between. The settlement is recorded all the
+                // same, because the bank executed the transfer and refusing to record an observed
+                // movement lies more gravely than correcting course; but it is not absorbed
+                // silently.
+                //
+                // An already CONFIRMED payout is deliberately not that case, and testing it with
+                // `status != PENDING` was the bug: its amount was never given back, it was spent
+                // exactly as intended, and [PayoutConfirmer.finaliseSettled] is idempotent. Bridge
+                // redelivers a settlement for up to two days and a notification for a superseded
+                // link resolves here through the client_reference fallback, so that condition
+                // raised the alarm on ordinary replays — observed 2026-09-24 at 08:58:45, forty
+                // minutes after a correct settlement. An alert that cries wolf on every replay is
+                // an alert nobody reads the day it means something.
+                val amountWasGivenBack = payout.status == PayoutStatus.FAILED ||
+                    (payout.status == PayoutStatus.PENDING && payout.bridgeStatus == null)
+                if (amountWasGivenBack) {
                     log.error(
                         "Payout {} settled at Bridge while its amount was no longer engaged " +
                             "(status={}, bridgeStatus={}) — recording the settlement and alerting",
@@ -136,24 +150,30 @@ class BridgeWebhookService(
             // a link we revoked ourselves after a rejection cannot resurrect the payout it was
             // revoked for.
             BridgePaymentStatus.LINK_EXPIRED ->
-                confirmer.releaseReservation(
-                    payout.id,
+                releaseUnlessJustMoved(
+                    payout,
                     "Bank authorisation window expired before the transfer was authorised",
                 )
 
             BridgePaymentStatus.LINK_REVOKED ->
-                confirmer.releaseReservation(
-                    payout.id,
+                releaseUnlessJustMoved(
+                    payout,
                     "Payment link revoked before the transfer was authorised",
                 )
 
             BridgePaymentStatus.PART -> {
                 // A payout carries exactly one transaction, so a partial execution should be
-                // impossible. Recorded and left engaged rather than guessed either way.
+                // impossible. Recorded and left engaged rather than guessed either way — and
+                // alerted, because "left for manual reconciliation" is only true if somebody is
+                // told. A log.error alone was a reconciliation nobody had been asked to do.
                 log.error(
                     "Bridge reported PART on payment link {} for payout {} — a payout has a single " +
                         "transaction, so this needs manual reconciliation",
                     linkId, payout.id,
+                )
+                alerts.reportFailure(
+                    TechnicalAlertKind.PAYOUT_PARTIALLY_EXECUTED,
+                    "POST", "/api/public/webhooks/bridge", null,
                 )
                 confirmer.recordInFlight(payout.id, BridgePaymentStatus.PART, state.transactionId)
             }
@@ -163,5 +183,45 @@ class BridgeWebhookService(
             BridgePaymentStatus.PDNG ->
                 confirmer.recordInFlight(payout.id, state.status, state.transactionId)
         }
+    }
+
+    /**
+     * Releases a payout whose link died, unless its Bridge state moved moments ago.
+     *
+     * The race this exists for: Bridge stamps `ACTC` the instant the payer enters the tunnel and
+     * keeps it for the **whole** bank authentication — measured on 2026-09-24, `CREA` at 08:18:53,
+     * `ACTC` at 08:18:55, terminal answer at 08:20:16. An association that starts authorising a
+     * minute before `expired_date` is therefore still at `ACTC` when the link dies, and `ACTC`
+     * loses to a dead link. Released, its amount goes back to the campaign's confirmable balance
+     * — and then the bank executes the transfer anyway. That is `PAYOUT_SETTLED_AFTER_RELEASE`,
+     * with the association free to have committed the returned balance in between: the same
+     * amount spent twice, caught only by an e-mail.
+     *
+     * So a state that moved less than [BridgeProperties.releaseGrace] ago means "somebody is
+     * probably at their bank right now", and the amount stays engaged. Nothing is lost by waiting:
+     * an expiry has no deadline, whereas releasing early is unrecoverable. The deferral is
+     * deliberately not written anywhere — no `recordInFlight`, no touch of `bridgeSyncedAt`, which
+     * would reset the very clock this reads and defer for ever. The payout simply keeps ageing,
+     * and two paths pick it up: Bridge redelivers `payment.link.updated` several times per state
+     * change, and past that [BridgePayoutReconciler] re-reads anything engaged and stale — its
+     * query takes `CREA` and `ACTC` too, so a deferred release is always collected.
+     *
+     * Only the *timing* is decided here. Whether the release is legitimate at all stays in
+     * [PayoutConfirmer.releaseReservation], which still refuses any payout that left PENDING.
+     */
+    private fun releaseUnlessJustMoved(payout: PayoutRepository.PayoutRouting, reason: String) {
+        val movedAt = payout.bridgeSyncedAt
+        val grace = props.releaseGrace
+
+        if (movedAt != null && !grace.isZero && movedAt.isAfter(Instant.now().minus(grace))) {
+            log.info(
+                "Payout {} not released on a dead link — its Bridge state moved at {}, less than {} ago, " +
+                    "so the association may be authorising at its bank right now; left engaged",
+                payout.id, movedAt, grace,
+            )
+            return
+        }
+
+        confirmer.releaseReservation(payout.id, reason)
     }
 }

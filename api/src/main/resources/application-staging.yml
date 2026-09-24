@@ -133,6 +133,9 @@ app:
     webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
     # Shorten to a few minutes (e.g. 5m) to observe the expiry path without a 24-hour wait.
     link-validity: ${BRIDGE_LINK_VALIDITY:5m}
+    # Voir application.yml. Abaissé ici : avec un lien de 5 min, un sursis de 3 min couvre
+    # presque toute la fenêtre et rend le scénario C.2 inobservable.
+    release-grace: ${BRIDGE_RELEASE_GRACE:1m}
     # Voir application.yml pour le rôle de chaque clé. Les seuils sont abaissés ici pour que le
     # balayage soit observable dans une session de test plutôt qu'en plusieurs jours.
     reconciler:

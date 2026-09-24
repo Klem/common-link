@@ -86,9 +86,24 @@ export function isPayoutInFlight(payout: PayoutDto): boolean {
  * Distinct from {@link isPayoutInFlight}: here nothing has been debited yet and the association
  * still has an action to take, so the UI must offer the authorisation link rather than merely
  * report progress.
+ *
+ * `ACTC` counts, not just `CREA`. Bridge stamps `ACTC` the moment the payer enters the tunnel and
+ * keeps it for the whole bank authentication, so gating on `CREA` alone made the button vanish at
+ * the exact instant it was clicked: an association that closed the tab was left with a row saying
+ * "in transit" and no action at all until the link expired — five minutes on staging, a full day
+ * in production, for a transfer where nothing had been debited.
+ *
+ * Re-opening a link that already carries a request adds a second one beside it, which is only safe
+ * because the backend ranks a link's requests by tier and then by recency: a transfer the bank is
+ * executing can no longer lose to a newer unauthorised sibling. `bridgeCheckoutUrl` is cleared
+ * whenever the link dies, so a dead link is never offered here.
  */
 export function needsBankAuthorisation(payout: PayoutDto): boolean {
-  return payout.bridgeStatus === BridgePaymentStatus.CREA && payout.bridgeCheckoutUrl !== null;
+  return (
+    (payout.bridgeStatus === BridgePaymentStatus.CREA ||
+      payout.bridgeStatus === BridgePaymentStatus.ACTC) &&
+    payout.bridgeCheckoutUrl !== null
+  );
 }
 
 /**

@@ -6,6 +6,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
+import org.commonlink.config.BridgeProperties
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.BridgePaymentStatus
@@ -22,6 +23,7 @@ import org.commonlink.repository.PayoutRepository
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
+import java.time.Duration
 import java.time.Instant
 import java.util.Optional
 import java.util.UUID
@@ -38,7 +40,10 @@ class BridgeWebhookServiceTest {
     private val confirmer = mockk<PayoutConfirmer>(relaxed = true)
     private val alerts = mockk<TechnicalAlertService>(relaxed = true)
 
-    private val service = BridgeWebhookService(payoutRepository, bridgeInitiation, confirmer, alerts)
+    /** Grace window for the deferred release; long enough that "now" is always inside it. */
+    private val props = BridgeProperties(releaseGrace = Duration.ofMinutes(3))
+
+    private val service = BridgeWebhookService(payoutRepository, bridgeInitiation, confirmer, alerts, props)
 
     private val assocUser = User(email = "a@test.com", role = UserRole.ASSOCIATION, provider = AuthProvider.MAGIC_LINK)
     private val assoc = AssociationProfile(user = assocUser, name = "Asso", identifier = "123456789")
@@ -72,12 +77,18 @@ class BridgeWebhookServiceTest {
         override val bridgeSyncedAt = syncedAt
     }
 
+    /**
+     * @param syncedAt When the payout's Bridge state last moved. Defaults to well outside the
+     *   release grace: the ordinary case is a link that outlives the last thing that happened on
+     *   it, and only the deferral tests care about the recent one.
+     */
     private fun stubState(
         status: BridgePaymentStatus,
         transactionId: String? = "tx_1",
         statusReason: String? = null,
+        syncedAt: Instant = Instant.now().minus(Duration.ofHours(1)),
     ) {
-        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns routing()
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns routing(syncedAt = syncedAt)
         every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
             BridgePaymentLinkState(status, transactionId, statusReason)
     }
@@ -116,6 +127,40 @@ class BridgeWebhookServiceTest {
         service.handlePaymentLinkNotification(LINK_ID)
 
         verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.PAYOUT_SETTLED_AFTER_RELEASE, any(), any(), any()) }
+    }
+
+    @Test
+    fun `stays silent when a settlement is redelivered on a payout already confirmed`() {
+        // Observed 2026-09-24 08:58:45: a notification for a superseded link resolved through the
+        // client_reference fallback, re-read the current link, found ACSC — and the payout had
+        // been correctly CONFIRMED forty minutes earlier. Its amount was never given back, so
+        // there is nothing for a human to reconcile. Bridge redelivers for up to two days; an
+        // alert on every replay is an alert nobody reads the day it means something.
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns
+            routing(payoutStatus = PayoutStatus.CONFIRMED, engaged = BridgePaymentStatus.ACSC)
+        every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
+            BridgePaymentLinkState(BridgePaymentStatus.ACSC, "tx_1", null)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.PAYOUT_SETTLED_AFTER_RELEASE, any(), any(), any()) }
+        // Still routed to the confirmer, whose own idempotence guard makes it a no-op.
+        verify { confirmer.finaliseSettled(payout.id, "tx_1") }
+    }
+
+    @Test
+    fun `alerts when a settlement lands on a payout released back to PENDING`() {
+        // The other half of "the amount was given back": an expiry cleared bridgeStatus and
+        // returned the amount to the campaign, and the transfer settled anyway.
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns
+            routing(payoutStatus = PayoutStatus.PENDING, engaged = null)
+        every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
+            BridgePaymentLinkState(BridgePaymentStatus.ACSC, "tx_1", null)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { alerts.reportFailure(TechnicalAlertKind.PAYOUT_SETTLED_AFTER_RELEASE, any(), any(), any()) }
+        verify { confirmer.finaliseSettled(payout.id, "tx_1") }
     }
 
     @Test
@@ -229,6 +274,63 @@ class BridgeWebhookServiceTest {
     }
 
     @Test
+    fun `leaves the amount engaged when the link died while the association was at its bank`() {
+        // Bridge stamps ACTC the instant the payer enters the tunnel and keeps it for the whole
+        // bank authentication — CREA 08:18:53, ACTC 08:18:55, terminal answer 08:20:16 on
+        // 2026-09-24. Someone who starts authorising a minute before expired_date is therefore
+        // still ACTC when the link dies, and releasing there hands the amount back to the campaign
+        // while the bank goes on to execute the transfer.
+        stubState(BridgePaymentStatus.LINK_EXPIRED, transactionId = null, syncedAt = Instant.now())
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any()) }
+        // And nothing is written: touching bridgeSyncedAt would reset the clock this reads and
+        // defer the release for ever. The payout keeps ageing until Bridge redelivers or the
+        // reconciler picks it up.
+        verify(exactly = 0) { confirmer.recordInFlight(any(), any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+    }
+
+    @Test
+    fun `releases once the grace window has passed`() {
+        // The deferral is a pause, not a veto: the same notification redelivered later, or the
+        // reconciler's replay, must reach the release.
+        stubState(
+            BridgePaymentStatus.LINK_EXPIRED,
+            transactionId = null,
+            syncedAt = Instant.now().minus(Duration.ofMinutes(4)),
+        )
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { confirmer.releaseReservation(payout.id, any()) }
+    }
+
+    @Test
+    fun `defers a revocation the same way`() {
+        // Same hazard, same reasoning: a link revoked from the Bridge dashboard mid-authentication
+        // is a dead link over a request that may be seconds from PDNG.
+        stubState(BridgePaymentStatus.LINK_REVOKED, transactionId = null, syncedAt = Instant.now())
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any()) }
+    }
+
+    @Test
+    fun `releases without waiting when the grace is disabled`() {
+        val noGrace = BridgeWebhookService(
+            payoutRepository, bridgeInitiation, confirmer, alerts, BridgeProperties(releaseGrace = Duration.ZERO),
+        )
+        stubState(BridgePaymentStatus.LINK_EXPIRED, transactionId = null, syncedAt = Instant.now())
+
+        noGrace.handlePaymentLinkNotification(LINK_ID)
+
+        verify { confirmer.releaseReservation(payout.id, any()) }
+    }
+
+    @Test
     fun `keeps the amount engaged on an intermediate status`() {
         stubState(BridgePaymentStatus.PDNG)
 
@@ -250,6 +352,17 @@ class BridgeWebhookServiceTest {
         verify { confirmer.recordInFlight(payout.id, BridgePaymentStatus.PART, "tx_1") }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
         verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+    }
+
+    @Test
+    fun `alerts on a partial execution rather than logging it to nobody`() {
+        // "Left engaged for manual reconciliation" is only true if somebody is told. Part of an
+        // amount may have moved, and a log.error is not a reconciliation request.
+        stubState(BridgePaymentStatus.PART)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { alerts.reportFailure(TechnicalAlertKind.PAYOUT_PARTIALLY_EXECUTED, any(), any(), any()) }
     }
 
     @Test

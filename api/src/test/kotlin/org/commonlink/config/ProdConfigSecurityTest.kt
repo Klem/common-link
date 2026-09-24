@@ -220,6 +220,23 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `technical notification mailbox is required with no blank-fallback default in prod`() {
+        // TechnicalAlertService sends nothing when this is blank — it logs a warning and returns.
+        // The Bridge payout flow makes that unacceptable: PAYOUT_SETTLED_AFTER_RELEASE (a transfer
+        // executed on funds already returned to the campaign) and PAYOUT_STUCK_IN_FLIGHT (a bank
+        // that never reports execution) are deliberately *recorded and alerted* rather than
+        // refused, and no other control catches either. A blank mailbox turns both into silence.
+        assertEquals("\${APP_TECHNICAL_NOTIFICATION_EMAIL}", prop("app.technical.notification-email"))
+    }
+
+    @Test
+    fun `technical alerting is not switched off by default in prod`() {
+        // Corollary of the mailbox above: an operator can still disable alerting deliberately with
+        // APP_TECHNICAL_ALERTS_ENABLED, but the shipped default must never be the off position.
+        assertEquals("\${APP_TECHNICAL_ALERTS_ENABLED:true}", prop("app.technical.alerts-enabled"))
+    }
+
+    @Test
     fun `trusted-proxy-count is set in prod`() {
         // Rate limiting keys on the client address resolved by ClientIpResolver. Leaving the count
         // unset would fall back to the base-profile value of 0, i.e. every request behind the Clever
