@@ -223,11 +223,14 @@ class BridgeWebhookService(
      * with the association free to have committed the returned balance in between: the same
      * amount spent twice, caught only by an e-mail.
      *
-     * So a state that moved less than [BridgeProperties.releaseGrace] ago means "somebody is
-     * probably at their bank right now", and the amount stays engaged. Nothing is lost by waiting:
-     * an expiry has no deadline, whereas releasing early is unrecoverable. The deferral is
-     * deliberately not written anywhere — no `recordInFlight`, no touch of `bridgeSyncedAt`, which
-     * would reset the very clock this reads and defer for ever. The payout simply keeps ageing,
+     * So a payout heard from less than [BridgeProperties.releaseGrace] ago means "somebody is
+     * probably at their bank right now", and the amount stays engaged. Read on
+     * [PayoutRepository.PayoutRouting.bridgeSyncedAt], which any reading pushes forward — a
+     * reconciler sweep therefore defers a release because *we* asked Bridge a question rather than
+     * because anything moved. Nothing is lost by waiting: an expiry has no deadline, whereas
+     * releasing early is unrecoverable. The deferral is deliberately not written anywhere — no
+     * `recordInFlight`, which would reset the very clock this reads and defer for ever. The payout
+     * simply keeps ageing,
      * and two paths pick it up: Bridge redelivers `payment.link.updated` several times per state
      * change, and past that [BridgePayoutReconciler] re-reads anything engaged and stale — its
      * query takes `CREA` and `ACTC` too, so a deferred release is always collected.

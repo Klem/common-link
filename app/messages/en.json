@@ -1392,12 +1392,23 @@
           "insufficientBalance": "Insufficient available balance"
         },
         "breakdown": {
+          "count": "{count, plural, one {# payment} other {# payments}}",
+          "empty": "No payment made yet.",
           "title": "📊 Breakdown"
         },
         "confirm": {
           "message": "Issue {amount} to {payee}?",
           "submit": "Issue payment",
           "title": "Confirm payment"
+        },
+        "detail": {
+          "confirmedAt": "Executed on",
+          "createdAt": "Issued on",
+          "iban": "Destination IBAN",
+          "payee": "Beneficiary",
+          "reference": "Bridge reference",
+          "title": "Payment details",
+          "type": "Account line"
         },
         "form": {
           "addPayee": "+ Add",
@@ -1429,31 +1440,90 @@
             "AM18": "Too many operations for your bank. Try again later.",
             "CH03": "Execution date refused by your bank. Our team has been notified.",
             "CUST": "Refused on the payer side: authorisation declined at the bank, or insufficient funds.",
+            "DESTINATION_UNVERIFIED": "The transfer destination could not be verified: refused as a safety measure.",
             "DS02": "Authorisation cancelled from your bank's interface.",
             "FF01": "The transfer was refused because of a technical problem. Our team has been notified.",
             "FRAD": "Transfer blocked by your bank on suspicion of fraud. Contact them before trying again.",
+            "INITIATION_FAILED": "The banking service could not be reached. Try again in a few minutes.",
+            "LINK_EXPIRED": "The authorisation window has expired. Start the transfer again.",
+            "LINK_NOT_RECORDED": "The transfer could not be recorded. Start it again.",
+            "LINK_REVOKED": "The authorisation link was cancelled. Start the transfer again.",
             "MS03": "Refused by your bank, with no reason given.",
             "NOAS": "Authorisation was not completed in time. Start the transfer again.",
             "RR01": "Payer account details are incomplete on the bank's side.",
             "RR03": "The payee's name or address is insufficient for your bank.",
             "RR04": "Refused for regulatory reasons. Get in touch with your bank.",
             "RR12": "One party's identifier is invalid or missing.",
-            "UNSPECIFIED": "Refused by your bank, with no reason given.",
             "UNKNOWN": "Refused by your bank for a reason we cannot explain yet.",
-            "LINK_EXPIRED": "The authorisation window has expired. Start the transfer again.",
-            "LINK_REVOKED": "The authorisation link was cancelled. Start the transfer again.",
-            "INITIATION_FAILED": "The banking service could not be reached. Try again in a few minutes.",
-            "DESTINATION_UNVERIFIED": "The transfer destination could not be verified: refused as a safety measure.",
-            "LINK_NOT_RECORDED": "The transfer could not be recorded. Start it again.",
+            "UNSPECIFIED": "Refused by your bank, with no reason given.",
             "fallback": "The transfer did not go through."
           },
           "inTransit": "Transfer being executed by the bank",
           "lastAttemptFailed": "Last attempt failed: {error}",
           "retry": "Retry",
-          "retryHint": "Issue this payout again with a fresh bank authorisation link",
-          "title": "📋 Payment history"
+          "retryHint": "Issue this payout again with a fresh bank authorisation link"
         },
         "ibanSelect": "IBAN",
+        "journal": {
+          "allTypes": "All account lines",
+          "close": "Close",
+          "col": {
+            "action": "Action",
+            "amount": "Amount",
+            "date": "Date",
+            "payee": "Beneficiary",
+            "status": "Status",
+            "type": "Account line"
+          },
+          "counter": "{count, plural, one {# payment shown} other {# payments shown}} · {total}",
+          "csv": {
+            "amount": "Amount (EUR)",
+            "code": "Code",
+            "date": "Date",
+            "filename": "payments.csv",
+            "payee": "Beneficiary",
+            "reference": "Bridge reference",
+            "status": "Status",
+            "type": "Account line"
+          },
+          "export": "Export (CSV)",
+          "next": "Next page",
+          "noMatch": {
+            "hint": "Widen the period, pick another account line, or clear the search.",
+            "title": "No payment matches these filters"
+          },
+          "openDetail": "Open details for payment {reference}",
+          "perPage": "Per page",
+          "period": {
+            "all": "All periods",
+            "d30": "Last 30 days",
+            "d365": "Last 12 months",
+            "d90": "Last 90 days",
+            "label": "Period"
+          },
+          "pills": {
+            "ALL": "All",
+            "DONE": "Executed",
+            "FAILED": "Refused",
+            "PENDING": "Pending",
+            "TODO": "To handle"
+          },
+          "prev": "Previous page",
+          "range": "{from}–{to} of {total} payments",
+          "reset": "Clear filters",
+          "resize": "Resize the {column} column",
+          "searchPlaceholder": "Beneficiary, transfer reference, account line, amount, status",
+          "title": "Payment journal"
+        },
+        "state": {
+          "AUTHORISED": "Transfer authorised",
+          "AWAITING_AUTHORISATION": "Awaiting validation",
+          "CONFIRMED": "Transfer executed",
+          "FAILED": "Refused",
+          "IN_TRANSIT": "Transfer in progress",
+          "PENDING": "Recorded",
+          "RETRYABLE": "Failed — to reissue"
+        },
         "stats": {
           "availableBalance": "Available balance",
           "confirmed": "Confirmed",

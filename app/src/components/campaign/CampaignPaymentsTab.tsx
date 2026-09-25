@@ -1,26 +1,16 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import type { UsePaymentsReturn } from '@/hooks/campaign/usePayments';
-import { usePayees } from '@/hooks/payee/usePayees';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Donut } from '@/components/ui/Donut';
+import { Donut, DONUT_PALETTE } from '@/components/ui/Donut';
+import { PaymentJournal } from '@/components/campaign/PaymentJournal';
+import { PayoutDetailPanel } from '@/components/campaign/PayoutDetailPanel';
+import { IssuePaymentForm } from '@/components/campaign/IssuePaymentForm';
+import { fmtDate, fmtEur } from '@/components/campaign/payoutDisplay';
 import { useToastStore } from '@/stores/toastStore';
-import { getBlockingReasons } from '@/lib/api/payment';
-import {
-  PayoutKind,
-  PayoutStatus,
-  isPayoutInFlight,
-  lastAttemptFailed,
-  needsBankAuthorisation,
-  payoutErrorMessageKey,
-} from '@/types/payment';
-import { IbanVerificationStatus } from '@/types/payee';
-import { ROUTES } from '@/lib/routes';
+import { PayoutStatus, isPayoutInFlight, needsBankAuthorisation } from '@/types/payment';
 import type { CampaignDto } from '@/types/campaign';
-import { PayoutBlockingReason } from '@/types/payment';
 import type { PayoutDto } from '@/types/payment';
 
 interface Props {
@@ -28,125 +18,26 @@ interface Props {
   payments: UsePaymentsReturn;
 }
 
-const REMUNERATION_CODES = new Set(['64-rem', '64-soc']);
-const MIN_LABEL_LENGTH = 16;
-
-const BLOCKING_REASON_LABEL_KEYS: Record<PayoutBlockingReason, string> = {
-  INSUFFICIENT_BALANCE: 'insufficientBalance',
-  DESCRIPTION_TOO_SHORT: 'descriptionTooShort',
-};
-
-function kindFromTypeCode(code: string) {
-  return REMUNERATION_CODES.has(code) ? PayoutKind.REMUNERATION : PayoutKind.EXPENSE;
-}
-
-function fmtEur(amount: number) {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
-}
-
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(iso));
-}
-
-/**
- * Payout state chip.
- *
- * A payout only shows as settled once the bank has actually executed the transfer. Between
- * confirmation and settlement it is either awaiting the association's authorisation at its bank, or
- * in transit — showing a check mark for either would claim the beneficiary has been credited.
- */
-function StatusChip({
-  payout,
-  inTransitLabel,
-  failureLabel,
-}: {
-  payout: PayoutDto;
-  inTransitLabel: string;
-  /** Why the transfer did not go through, already translated. Empty when nothing failed. */
-  failureLabel: string;
-}) {
-  if (payout.status === PayoutStatus.FAILED) {
-    return <span className="pay-chip failed" title={failureLabel}>✗</span>;
-  }
-  if (payout.status === PayoutStatus.CONFIRMED) {
-    return <span className="pay-chip confirmed">✓</span>;
-  }
-  if (isPayoutInFlight(payout)) {
-    return <span className="pay-chip pending" title={inTransitLabel}>→</span>;
-  }
-  // Still pending, but the previous attempt failed — without this the row is indistinguishable
-  // from one never submitted, and the association has no way to know it must retry.
-  if (lastAttemptFailed(payout)) {
-    return <span className="pay-chip attention" title={failureLabel}>⚠</span>;
-  }
-  return <span className="pay-chip pending">⏳</span>;
-}
+/** Preset accounting codes. Each has a `typeCodes.*` label; anything else is free text. */
+const PRESET_TYPE_CODES = new Set<string>([
+  '60-mat', '60-svc', '61-loc', '61-ent', '62-tra', '62-pub', '64-rem', '64-soc', '65-ges',
+]);
 
 export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
-  const router = useRouter();
-  const { payouts, summary, isLoading, isSaving, error, submit, retry, awaitingReturnPayoutId } = payments;
-  const { payees } = usePayees();
+  const { payouts, summary, isLoading, isSaving, error, retry, awaitingReturnPayoutId } = payments;
   const addToast = useToastStore((s) => s.addToast);
 
-  const [payeeId, setPayeeId] = useState('');
-  const [payeeIbanId, setPayeeIbanId] = useState('');
-  const [typeCodeRaw, setTypeCodeRaw] = useState('');
-  const [customTypeCode, setCustomTypeCode] = useState('');
-  const [amount, setAmount] = useState('');
-  const [label, setLabel] = useState('');
-  const [showConfirm, setShowConfirm] = useState(false);
+  /** Expense line expanded in the breakdown. One at a time, so the list never runs long. */
+  const [openBreakdownCode, setOpenBreakdownCode] = useState<string | null>(null);
+  /** Payout whose detail panel is open, by id — not by object, so a poll refresh keeps it live. */
+  const [detailPayoutId, setDetailPayoutId] = useState<string | null>(null);
 
-  const isCustomType = typeCodeRaw === 'custom';
-  const effectiveTypeCode = isCustomType ? customTypeCode.trim() : typeCodeRaw;
-  const isRemunerationType = REMUNERATION_CODES.has(effectiveTypeCode);
-
-  const filteredPayees = useMemo(
-    () => payees.filter((p) =>
-      p.active
-      && p.payeeType === (isRemunerationType ? 'PERSON' : 'COMPANY')
-      && p.ibans.some((i) => i.status === IbanVerificationStatus.VERIFIED && i.active),
-    ),
-    [payees, isRemunerationType],
+  /** Human label of a payout type: the translated preset, or the free text of a custom code. */
+  const typeLabel = useCallback(
+    (code: string) => (PRESET_TYPE_CODES.has(code) ? t(`typeCodes.${code}`) : code),
+    [t],
   );
-
-  const selectedPayee = useMemo(() => filteredPayees.find((p) => p.id === payeeId), [filteredPayees, payeeId]);
-  const verifiedIbans = useMemo(
-    () => selectedPayee?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED && i.active) ?? [],
-    [selectedPayee],
-  );
-  const selectedIban = useMemo(
-    () => verifiedIbans.find((i) => i.id === payeeIbanId),
-    [verifiedIbans, payeeIbanId],
-  );
-
-  const amountNum = parseFloat(amount) || 0;
-
-  const [blockingReasons, setBlockingReasons] = useState<PayoutBlockingReason[]>([]);
-
-  useEffect(() => {
-    if (!payeeIbanId || amountNum <= 0) {
-      setBlockingReasons([]);
-      return;
-    }
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      getBlockingReasons(campaign.id, payeeIbanId, amountNum, '')
-        .then((reasons) => { if (!cancelled) setBlockingReasons(reasons); })
-        .catch(() => { if (!cancelled) setBlockingReasons([]); });
-    }, 300);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [campaign.id, payeeIbanId, amountNum]);
-
-  const isDescriptionTooShort = label.trim().length > 0 && label.trim().length < MIN_LABEL_LENGTH;
-
-  const displayedBlockingReasons = useMemo(() => {
-    const reasons: PayoutBlockingReason[] = blockingReasons.filter(
-      (r) => r !== PayoutBlockingReason.DESCRIPTION_TOO_SHORT,
-    );
-    if (isDescriptionTooShort) reasons.push(PayoutBlockingReason.DESCRIPTION_TOO_SHORT);
-    return reasons;
-  }, [blockingReasons, isDescriptionTooShort]);
 
   /**
    * The backend reports payouts as not issuable — production running Bridge in demo mode, where a
@@ -157,64 +48,13 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
    */
   const paymentsDisabled = summary?.paymentsEnabled === false;
 
-  const isValid = !paymentsDisabled && !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
-    && label.trim().length >= MIN_LABEL_LENGTH && displayedBlockingReasons.length === 0;
-
-  function handleTypeChange(value: string) {
-    const newIsRemu = REMUNERATION_CODES.has(value);
-    if (newIsRemu !== isRemunerationType) {
-      setPayeeId('');
-      setPayeeIbanId('');
-    }
-    setTypeCodeRaw(value);
-    setCustomTypeCode('');
-  }
-
-  function handlePayeeChange(id: string) {
-    setPayeeId(id);
-    setPayeeIbanId('');
-    const p = filteredPayees.find((x) => x.id === id);
-    const verified = p?.ibans.filter((i) => i.status === IbanVerificationStatus.VERIFIED && i.active) ?? [];
-    if (verified.length === 1) setPayeeIbanId(verified[0].id);
-  }
-
-  function handleAddPayee() {
-    addToast('warning', 'addPayeeHint');
-    router.push(ROUTES.ASSOCIATION_PAYEES);
-  }
-
-  async function handleConfirm() {
-    setShowConfirm(false);
-    try {
-      const initiated = await submit({
-        payeeId, payeeIbanId, amount: amountNum,
-        kind: kindFromTypeCode(effectiveTypeCode),
-        typeCode: effectiveTypeCode,
-        label: label.trim(),
-      });
-      setPayeeId(''); setPayeeIbanId(''); setTypeCodeRaw('');
-      setCustomTypeCode(''); setAmount(''); setLabel('');
-
-      // The association is the debtor: nothing moves until it authorises the transfer with its own
-      // bank. Send it straight there rather than reporting a payment that has not happened.
-      if (needsBankAuthorisation(initiated) && initiated.bridgeCheckoutUrl) {
-        addToast('success', 'paymentAwaitingBank');
-        window.location.href = initiated.bridgeCheckoutUrl;
-        return;
-      }
-      addToast('success', isPayoutInFlight(initiated) ? 'paymentSubmitted' : 'paymentSuccess');
-    } catch {
-      addToast('error', 'paymentError');
-    }
-  }
-
   /**
    * Issues an existing payout again — the previous attempt moved no money.
    *
    * Deliberately not `submit`: re-creating would duplicate the accounting row the association
    * already filled in. Only a fresh authorisation link is needed, and the backend mints one.
    */
-  async function handleRetry(payoutId: string) {
+  const handleRetry = useCallback(async (payoutId: string) => {
     try {
       const reissued = await retry(payoutId);
       if (needsBankAuthorisation(reissued) && reissued.bridgeCheckoutUrl) {
@@ -226,17 +66,32 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     } catch {
       addToast('error', 'paymentError');
     }
-  }
+  }, [retry, addToast]);
 
-  /* Breakdown slices for donut */
-  const donutSlices = useMemo(() => {
-    const confirmed = payouts.filter((p) => p.status === PayoutStatus.CONFIRMED);
-    const totals: Record<string, number> = {};
-    confirmed.forEach((p) => { totals[p.typeCode] = (totals[p.typeCode] ?? 0) + p.amount; });
-    return Object.entries(totals)
-      .sort((a, b) => b[1] - a[1])
-      .map(([code, value]) => ({ label: code, value }));
-  }, [payouts]);
+  /**
+   * Settled payouts grouped by expense line, largest first. Feeds both the donut and the list below
+   * it; the colour is fixed here so each list entry matches its slice.
+   */
+  const breakdown = useMemo(() => {
+    const groups = new Map<string, PayoutDto[]>();
+    payouts
+      .filter((p) => p.status === PayoutStatus.CONFIRMED)
+      .forEach((p) => groups.set(p.typeCode, [...(groups.get(p.typeCode) ?? []), p]));
+    return [...groups.entries()]
+      .map(([code, items]) => ({ code, items, total: items.reduce((s, p) => s + p.amount, 0) }))
+      .sort((a, b) => b.total - a.total)
+      .map((g, i) => ({ ...g, label: typeLabel(g.code), color: DONUT_PALETTE[i % DONUT_PALETTE.length] }));
+  }, [payouts, typeLabel]);
+
+  const donutSlices = useMemo(
+    () => breakdown.map((g) => ({ label: g.label, value: g.total, color: g.color })),
+    [breakdown],
+  );
+
+  const detailPayout = useMemo(
+    () => payouts.find((p) => p.id === detailPayoutId) ?? null,
+    [payouts, detailPayoutId],
+  );
 
   return (
     <div>
@@ -284,276 +139,80 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         </div>
       </div>
 
-      {/* ── Two-column grid ───────────────────────────────────────── */}
-      <div className="pay-form-grid">
+      {/* ── Two-column grid: issue on the left, what was spent on the right ─ */}
+      <div className="pay-form-grid mb-18">
+        <IssuePaymentForm
+          campaignId={campaign.id}
+          submit={payments.submit}
+          isSaving={isSaving}
+          paymentsDisabled={paymentsDisabled}
+        />
 
-        {/* ── LEFT: form ──────────────────────────────────────────── */}
         <div className="cm-card">
-          <div className="cm-card-title">💸 {t('form.title')}</div>
-
-          {/* Type + Amount row2 — FIRST */}
-          <div className="row2 mb-14">
-            <div>
-              <label className="cm-label">
-                {t('form.typeCode')} <span className="cm-required">*</span>
-              </label>
-              <select
-                className="cm-fi"
-                value={typeCodeRaw}
-                onChange={(e) => handleTypeChange(e.target.value)}
-              >
-                <option value="">{t('form.typeCodePlaceholder')}</option>
-                <optgroup label={t('typeGroups.operational')}>
-                  <option value="60-mat">{t('typeCodes.60-mat')}</option>
-                  <option value="60-svc">{t('typeCodes.60-svc')}</option>
-                  <option value="61-loc">{t('typeCodes.61-loc')}</option>
-                  <option value="61-ent">{t('typeCodes.61-ent')}</option>
-                  <option value="62-tra">{t('typeCodes.62-tra')}</option>
-                  <option value="62-pub">{t('typeCodes.62-pub')}</option>
-                </optgroup>
-                <optgroup label={t('typeGroups.personnel')}>
-                  <option value="64-rem">{t('typeCodes.64-rem')}</option>
-                  <option value="64-soc">{t('typeCodes.64-soc')}</option>
-                </optgroup>
-                <optgroup label={t('typeGroups.other')}>
-                  <option value="65-ges">{t('typeCodes.65-ges')}</option>
-                  <option value="custom">{t('typeCodes.custom')}</option>
-                </optgroup>
-              </select>
-              {isCustomType && (
-                <input
-                  className="cm-fi mt-6"
-                  type="text"
-                  maxLength={50}
-                  placeholder={t('form.customCodePlaceholder')}
-                  value={customTypeCode}
-                  onChange={(e) => setCustomTypeCode(e.target.value)}
-                />
-              )}
-            </div>
-            <div>
-              <label className="cm-label">
-                {t('form.amount')} <span className="cm-required">*</span>
-              </label>
-              <input
-                className="cm-fi"
-                type="number"
-                min="0.01"
-                step="0.01"
-                placeholder="0,00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
+          <div className="cm-card-title">{t('breakdown.title')}</div>
+          {/* Top half: the chart. Its legend is the list below, which also details each line. */}
+          <div className="cm-donut-center">
+            <Donut slices={donutSlices} emptyKey="campaigns.payments.breakdown.empty" legend={false} />
           </div>
 
-          {/* Payee select + Add button — BELOW type/amount */}
-          <div className="mb-14">
-            <label className="cm-label">
-              {t('form.payee')} <span className="cm-required">*</span>
-            </label>
-            <div className="form-inline-row">
-              <select
-                className="cm-fi flex-1"
-                value={payeeId}
-                onChange={(e) => handlePayeeChange(e.target.value)}
-              >
-                <option value="">{t('form.payeePlaceholder')}</option>
-                {filteredPayees.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="cm-btn cm-btn-ghost cm-btn-sm"
-                onClick={handleAddPayee}
-              >
-                {t('form.addPayee')}
-              </button>
-            </div>
-
-            {/* Single verified IBAN preview */}
-            {selectedPayee && verifiedIbans.length === 1 && selectedIban && (
-              <div className="bene-preview show">
-                <div className="bene-preview-name">{selectedPayee.name}</div>
-                <div className="bene-preview-iban">{selectedIban.iban}</div>
-              </div>
-            )}
-
-            {/* Multi verified-IBAN select */}
-            {selectedPayee && verifiedIbans.length > 1 && (
-              <div className="mt-6">
-                <label className="cm-label cm-label-sm">{t('ibanSelect')}</label>
-                <select
-                  className="cm-fi"
-                  value={payeeIbanId}
-                  onChange={(e) => setPayeeIbanId(e.target.value)}
+          {/* Bottom half: one expandable entry per expense line, listing its transactions. */}
+          {breakdown.length > 0 && (
+            <div className="breakdown-list">
+              {breakdown.map((g) => (
+                <details
+                  key={g.code}
+                  className="breakdown-item"
+                  open={openBreakdownCode === g.code}
+                  onToggle={(e) => {
+                    const { open } = e.currentTarget;
+                    setOpenBreakdownCode((cur) => (open ? g.code : cur === g.code ? null : cur));
+                  }}
                 >
-                  <option value="">— IBAN —</option>
-                  {verifiedIbans.map((ib) => (
-                    <option key={ib.id} value={ib.id}>{ib.iban}</option>
-                  ))}
-                </select>
-                {selectedIban && (
-                  <div className="bene-preview show">
-                    <div className="bene-preview-name">{selectedPayee.name}</div>
-                    <div className="bene-preview-iban">{selectedIban.iban}</div>
+                  <summary className="breakdown-summary">
+                    <span className="breakdown-dot" style={{ background: g.color }} />
+                    <span className="breakdown-label" title={g.label}>{g.label}</span>
+                    <span className="breakdown-count">{t('breakdown.count', { count: g.items.length })}</span>
+                    <span className="breakdown-total">{fmtEur(g.total)}</span>
+                    <span className="breakdown-chev" aria-hidden="true">▾</span>
+                  </summary>
+                  <div className="breakdown-body">
+                    {g.items.map((p) => (
+                      <div key={p.id} className="pay-row">
+                        <div className="pay-row-main">
+                          <div className="pay-row-name">{p.payeeName}</div>
+                          <div className="cm-hint-sm">{fmtDate(p.createdAt)}</div>
+                        </div>
+                        <span className="pay-row-amount">{fmtEur(p.amount)}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Label / justificatif */}
-          <div className="mb-14">
-            <label className="cm-label">
-              {t('form.label')} <span className="cm-required">*</span>
-            </label>
-            <textarea
-              className="cm-fi cm-fi-h70"
-              placeholder={t('form.labelPlaceholder')}
-              maxLength={500}
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-            />
-          </div>
-
-          {/* Payment method (SEPA only) */}
-          <div className="mb-18">
-            <label className="pay-method-label">
-              <input type="radio" name="pay-method" defaultChecked
-                className="cm-accent-teal" readOnly />
-              <div>
-                <div className="pay-method-title">{t('form.method')}</div>
-                <div className="cm-hint-sm">{t('form.methodSub')}</div>
-              </div>
-            </label>
-          </div>
-
-          {/* The title sits on the wrapper: a disabled button receives no pointer event, so its
-              own tooltip would never show. */}
-          <span
-            className="block w-full"
-            title={paymentsDisabled ? t('form.paymentsDisabled') : undefined}
-          >
-            <button
-              className="cm-btn cm-btn-primary w-full"
-              disabled={!isValid || isSaving}
-              onClick={() => setShowConfirm(true)}
-            >
-              {isSaving ? '…' : t('form.submit')}
-            </button>
-          </span>
-
-          {displayedBlockingReasons.length > 0 && (
-            <div className="blocking-reasons">
-              {displayedBlockingReasons.map((reason) => (
-                <span key={reason} className="badge badge-warning">
-                  {t(`blocking.${BLOCKING_REASON_LABEL_KEYS[reason]}`)}
-                </span>
+                </details>
               ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── RIGHT: history + donut ───────────────────────────────── */}
-        <div>
-          {/* History */}
-          <div className="cm-card mb-14">
-            <div className="cm-card-title">{t('history.title')}</div>
-            {isLoading ? (
-              <div className="cm-loading-center">
-                <div className="animate-spin spinner lg" />
-              </div>
-            ) : error ? (
-              <p className="cm-error-center">{error}</p>
-            ) : payouts.length === 0 ? (
-              <p className="cm-empty-center">{t('history.empty')}</p>
-            ) : (
-              payouts.map((p) => (
-                <div key={p.id} className="pay-row">
-                  <div className="pay-row-main">
-                    <div className="pay-row-name">{p.payeeName}</div>
-                    <div className="cm-hint-sm">
-                      {p.typeCode} · {fmtDate(p.createdAt)}
-                    </div>
-                  </div>
-                  <span
-                    className="pay-row-amount"
-                    style={{ color: p.status === PayoutStatus.CONFIRMED ? 'var(--teal-dark)' : '#b37800' }}
-                  >
-                    {fmtEur(p.amount)}
-                  </span>
-                  {/*
-                    Just back from the bank: the payout is still CREA only because Bridge has not
-                    finished notifying. Offering the link here invites re-opening one already being
-                    consumed, so the wait is stated instead.
-                  */}
-                  {p.id === awaitingReturnPayoutId ? (
-                    <span className="cm-hint-sm">{t('history.awaitingBank')}</span>
-                  ) : lastAttemptFailed(p) ? (
-                    /*
-                      Nothing was debited and the payout was deliberately left retryable rather than
-                      failed. Without this button that only means something in the database: the
-                      association re-creates the payout instead, which is how four identical rows
-                      appeared from one payment. The old link is dead by then, so this asks for a
-                      fresh one rather than re-opening the stored URL.
-                    */
-                    <button
-                      type="button"
-                      className="cm-btn cm-btn-ghost cm-btn-sm"
-                      title={t('history.retryHint')}
-                      disabled={isSaving}
-                      onClick={() => handleRetry(p.id)}
-                    >
-                      {t('history.retry')}
-                    </button>
-                  ) : needsBankAuthorisation(p) && p.bridgeCheckoutUrl ? (
-                    <a
-                      className="cm-btn cm-btn-ghost cm-btn-sm"
-                      href={p.bridgeCheckoutUrl}
-                      title={t('history.authoriseHint')}
-                    >
-                      {t('history.authorise')}
-                    </a>
-                  ) : null}
-                  {/*
-                    The reason is translated from a stable code, never printed from the stored
-                    string: that string mixes Bridge's bare ISO codes with our own English
-                    messages, one of which carries a payout id, and it used to go into this
-                    tooltip verbatim.
-                  */}
-                  <StatusChip
-                    payout={p}
-                    inTransitLabel={t('history.inTransit')}
-                    failureLabel={t(`history.${payoutErrorMessageKey(p.bridgeLastErrorCode)}`)}
-                  />
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Donut breakdown */}
-          {donutSlices.length > 0 && (
-            <div className="cm-card">
-              <div className="cm-card-title">{t('breakdown.title')}</div>
-              <div className="cm-donut-center">
-                <Donut slices={donutSlices} emptyKey="campaigns.payments.breakdown.empty" />
-              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Confirm dialog ────────────────────────────────────────── */}
-      <ConfirmDialog
-        isOpen={showConfirm}
-        variant="default"
-        title={t('confirm.title')}
-        message={t('confirm.message', { amount: fmtEur(amountNum), payee: selectedPayee?.name ?? '' })}
-        confirmLabel={t('confirm.submit')}
-        onConfirm={handleConfirm}
-        onCancel={() => setShowConfirm(false)}
+      {/* ── Journal ───────────────────────────────────────────────── */}
+      <PaymentJournal
+        payouts={payouts}
+        isLoading={isLoading}
+        error={error}
+        isSaving={isSaving}
+        awaitingReturnPayoutId={awaitingReturnPayoutId}
+        typeLabel={typeLabel}
+        onRetry={handleRetry}
+        onOpen={(p) => setDetailPayoutId(p.id)}
+      />
+
+      <PayoutDetailPanel
+        payout={detailPayout}
+        reference={detailPayout?.bridgePaymentTransactionId ?? ''}
+        typeLabel={detailPayout ? typeLabel(detailPayout.typeCode) : ''}
+        awaitingReturnPayoutId={awaitingReturnPayoutId}
+        isSaving={isSaving}
+        onRetry={handleRetry}
+        onClose={() => setDetailPayoutId(null)}
       />
     </div>
   );

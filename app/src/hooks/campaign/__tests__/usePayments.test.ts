@@ -196,12 +196,32 @@ describe('usePayments', () => {
     }
   });
 
-  it('setPage triggers a new fetch with updated page number', async () => {
+  it('loads every page of the history, not just the first', async () => {
+    // The journal searches, filters, counts and exports over the whole campaign, and numbers each
+    // payout by rank within its day. A first page would silently under-count all four.
+    mockList.mockImplementation((_id: string, page: number) =>
+      Promise.resolve({
+        ...samplePage,
+        content: [{ ...samplePage.content[0], id: `payout-p${page}` }],
+        totalElements: 3,
+        totalPages: 3,
+        number: page,
+      }));
+
     const { result } = renderHook(() => usePayments(campaignId));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    act(() => result.current.setPage(1));
+    expect(result.current.payouts.map((p) => p.id))
+      .toEqual(['payout-p0', 'payout-p1', 'payout-p2']);
+    expect(mockList).toHaveBeenCalledWith(campaignId, 0, 200);
+    expect(mockList).toHaveBeenCalledWith(campaignId, 1, 200);
+    expect(mockList).toHaveBeenCalledWith(campaignId, 2, 200);
+  });
 
-    await waitFor(() => expect(mockList).toHaveBeenCalledWith(campaignId, 1, 20));
+  it('asks for a single page when the history fits in one', async () => {
+    const { result } = renderHook(() => usePayments(campaignId));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockList).toHaveBeenCalledTimes(1);
   });
 });

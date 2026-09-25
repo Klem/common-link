@@ -31,6 +31,7 @@ function payout(overrides: Partial<PayoutDto> = {}): PayoutDto {
     bridgeStatus: BridgePaymentStatus.CREA,
     bridgeLastErrorCode: null,
     bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
+    bridgePaymentTransactionId: null,
     ...overrides,
   };
 }

@@ -28,6 +28,8 @@ interface DonutProps {
   slices: DonutSlice[];
   /** i18n key for the empty state message */
   emptyKey?: string;
+  /** Render the side legend. Off when the caller lists the slices itself. Defaults to true. */
+  legend?: boolean;
 }
 
 interface Segment {
@@ -42,6 +44,21 @@ function buildSegments(slices: DonutSlice[]): Segment[] {
   const R = 70, r = 42, cx = 90, cy = 90;
   const total = slices.reduce((s, sl) => s + sl.value, 0);
   if (total === 0) return [];
+
+  // A lone slice spans 2π: its arc would start and end on the same point, which SVG renders as
+  // nothing. Draw the full ring instead — outer and inner circles, hollowed by the even-odd rule.
+  if (slices.length === 1) {
+    const [sl] = slices;
+    const circle = (rad: number) =>
+      `M${cx - rad},${cy} A${rad},${rad} 0 1,1 ${cx + rad},${cy} A${rad},${rad} 0 1,1 ${cx - rad},${cy} Z`;
+    return [{
+      d: `${circle(R)} ${circle(r)}`,
+      color: sl.color ?? DONUT_PALETTE[0],
+      label: sl.label,
+      value: sl.value,
+      pct: 100,
+    }];
+  }
 
   let cumulAngle = -Math.PI / 2;
   return slices.map((sl, i) => {
@@ -67,7 +84,7 @@ function buildSegments(slices: DonutSlice[]): Segment[] {
  * SVG donut chart with hover interaction and right-side legend.
  * Replicates the `buildDonut()` helper from the dashboard prototype.
  */
-export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutProps) {
+export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty', legend = true }: DonutProps) {
   const t = useTranslations('dashboard');
   const [hovered, setHovered] = useState<number | null>(null);
 
@@ -85,7 +102,7 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutPr
   const active = hovered !== null ? segments[hovered] : null;
 
   return (
-    <div className="flex items-center gap-[24px] flex-wrap w-full">
+    <div className={`flex items-center gap-[24px] flex-wrap w-full${legend ? '' : ' justify-center'}`}>
       {/* SVG donut */}
       <div className="relative flex-shrink-0">
         <svg width="180" height="180" viewBox="0 0 180 180">
@@ -94,6 +111,7 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutPr
               key={i}
               d={seg.d}
               fill={seg.color}
+              fillRule="evenodd"
               stroke="var(--color-bg)"
               strokeWidth="2"
               className="donut-segment"
@@ -133,7 +151,7 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutPr
       </div>
 
       {/* Legend */}
-      <div className="flex-1 min-w-[140px]">
+      {legend && <div className="flex-1 min-w-[140px]">
         {segments.map((seg, i) => (
           <div
             key={i}
@@ -156,7 +174,7 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty' }: DonutPr
             </span>
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );
 }

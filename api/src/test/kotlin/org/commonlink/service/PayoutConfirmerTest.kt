@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -426,6 +427,19 @@ class PayoutConfirmerTest {
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.PDNG)
         assertThat(payout.bridgePaymentTransactionId).isEqualTo("tx_1")
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+    }
+
+    @Test
+    fun `recordInFlight - a re-read stamps the staleness clock`() {
+        val earlier = Instant.now().minusSeconds(3600)
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.PDNG)
+            .also { it.bridgeSyncedAt = earlier }
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1")
+
+        assertThat(payout.bridgeSyncedAt).isAfter(earlier)
     }
 
     @Test

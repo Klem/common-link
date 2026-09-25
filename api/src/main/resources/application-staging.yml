@@ -222,7 +222,7 @@ springdoc:
 onchain:
   mock: true
   rpc-url: ${ONCHAIN_RPC_URL}
-  chain-id: ${ONCHAIN_CHAIN_ID}
+  chain-id: ${ONCHAIN_CHAIN_ID:31337}
   # Empty defaults — safe because both OnchainRegistryClient and Web3jConfig (which builds the
   # signing credentials from recorder-pk / curator-pk) are inactive when mock=true.
   # Prod supply real values via environment variables.

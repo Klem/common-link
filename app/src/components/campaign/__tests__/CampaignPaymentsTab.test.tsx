@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { CampaignPaymentsTab } from '../CampaignPaymentsTab';
 import type { CampaignDto } from '@/types/campaign';
 import type { UsePaymentsReturn } from '@/hooks/campaign/usePayments';
@@ -85,6 +85,7 @@ const samplePayout: PayoutDto = {
   bridgeStatus: 'ACSC',
   bridgeLastErrorCode: null,
   bridgeCheckoutUrl: null,
+  bridgePaymentTransactionId: 'bridge-tx-1',
 };
 
 /** Transfer authorised at the bank but not settled yet — still PENDING for accounting. */
@@ -182,9 +183,6 @@ function setupPayments(overrides: Partial<UsePaymentsReturn> = {}): UsePaymentsR
     isLoading: false,
     isSaving: false,
     error: null,
-    page: 0,
-    totalPages: 0,
-    setPage: vi.fn(),
     submit: defaultSubmit,
     retry: vi.fn(),
     refetch: vi.fn(),
@@ -206,6 +204,45 @@ function setupMocks(payeesOverride: PayeeDto[] = [samplePayee]) {
   });
 }
 
+/**
+ * Scopes queries to the issuance form, left column of the tab.
+ *
+ * Scoping matters: the journal below has selects of its own, so an index into every combobox on
+ * the page would reach the wrong one.
+ */
+function issueForm() {
+  return within(document.querySelector('.pay-form-grid .cm-card') as HTMLElement);
+}
+
+/** Fills the form with a valid payment. */
+function fillValidForm(form: ReturnType<typeof issueForm>) {
+  // Select payee (auto-fills IBAN since only one VERIFIED)
+  fireEvent.change(form.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+  // Select typeCode
+  fireEvent.change(form.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
+  fireEvent.change(form.getByPlaceholderText('0,00'), { target: { value: '100' } });
+  fireEvent.change(form.getByPlaceholderText('form.labelPlaceholder'), {
+    target: { value: 'Achat de fournitures diverses' },
+  });
+}
+
+/**
+ * Gives the header cells a measurable width.
+ *
+ * jsdom lays nothing out, so every `getBoundingClientRect` returns zero and the resize arithmetic
+ * has nothing to divide by. These are the numbers the component would read from a real layout.
+ */
+function stubHeaderWidths(container: HTMLElement, widths: number[]) {
+  container.querySelectorAll('.pj-table thead th').forEach((cell, i) => {
+    (cell as HTMLElement).getBoundingClientRect = () => ({ width: widths[i] } as DOMRect);
+  });
+}
+
+/** The row the journal renders for a payout, by its beneficiary cell. */
+function journalRows() {
+  return [...document.querySelectorAll('tr.pj-row')];
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetBlockingReasons.mockResolvedValue([]);
@@ -225,6 +262,17 @@ describe('CampaignPaymentsTab', () => {
     expect(screen.getByText('stats.confirmed')).toBeDefined();
   });
 
+  // ── Issuance panel ─────────────────────────────────────────────────────────
+
+  it('keeps the issuance form beside the breakdown, above the journal', () => {
+    setupMocks();
+    const { container } = render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+
+    const grid = container.querySelector('.pay-form-grid')!;
+    expect(grid.querySelectorAll(':scope > .cm-card')).toHaveLength(2);
+    expect(within(grid as HTMLElement).getByRole('button', { name: /form.submit/i })).toBeDefined();
+  });
+
   it('submit button is disabled when form is empty', () => {
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
@@ -236,17 +284,7 @@ describe('CampaignPaymentsTab', () => {
   it('submit button enables when all required fields are valid', async () => {
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
-
-    // Select payee (auto-fills IBAN since only one VERIFIED)
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
-    // Select typeCode
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
-    // Enter amount
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
-    // Enter label (min 6 chars)
-    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
-      target: { value: 'Achat de fournitures diverses' },
-    });
+    fillValidForm(issueForm());
 
     await waitFor(() => {
       const btn = screen.getByRole('button', { name: /form.submit/i });
@@ -259,13 +297,7 @@ describe('CampaignPaymentsTab', () => {
     render(
       <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ summary: paymentsDisabledSummary })} />,
     );
-
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
-    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
-      target: { value: 'Achat de fournitures diverses' },
-    });
+    fillValidForm(issueForm());
 
     await waitFor(() => {
       expect(mockGetBlockingReasons).toHaveBeenCalled();
@@ -278,13 +310,7 @@ describe('CampaignPaymentsTab', () => {
   it('clicking submit shows the confirm dialog', async () => {
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
-
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
-    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
-      target: { value: 'Achat de fournitures diverses' },
-    });
+    fillValidForm(issueForm());
 
     await waitFor(() => {
       expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(false);
@@ -299,13 +325,7 @@ describe('CampaignPaymentsTab', () => {
   it('confirming the dialog calls submit and resets form', async () => {
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
-
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
-    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
-      target: { value: 'Achat de fournitures diverses' },
-    });
+    fillValidForm(issueForm());
 
     await waitFor(() => {
       expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(false);
@@ -327,16 +347,207 @@ describe('CampaignPaymentsTab', () => {
         }),
       );
     });
+    // The form empties itself rather than inviting a second, identical payment.
+    await waitFor(() => expect((issueForm().getByPlaceholderText('0,00') as HTMLInputElement).value).toBe(''));
   });
 
-  it('shows payment history list', () => {
+  it('typeCode=64-rem sets kind to REMUNERATION', async () => {
+    setupMocks([samplePayeePerson]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const form = issueForm();
+
+    // REMUNERATION typeCodes only list PERSON payees — select type first so the payee list updates
+    fireEvent.change(form.getAllByRole('combobox')[0], { target: { value: '64-rem' } });
+    fireEvent.change(form.getAllByRole('combobox')[1], { target: { value: 'payee-person-1' } });
+    fireEvent.change(form.getByPlaceholderText('0,00'), { target: { value: '1000' } });
+    fireEvent.change(form.getByPlaceholderText('form.labelPlaceholder'), {
+      target: { value: 'Salaire mensuel développeur' },
+    });
+
+    await waitFor(() => {
+      expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(false);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /form.submit/i }));
+    await waitFor(() => screen.getByText('confirm.title'));
+    fireEvent.click(screen.getByText('confirm.submit'));
+
+    await waitFor(() => {
+      expect(defaultSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'REMUNERATION', typeCode: '64-rem' }),
+      );
+    });
+  });
+
+  // ── Lot 1: verified-IBAN-only selector ─────────────────────────────────────
+
+  it('excludes a payee with no VERIFIED IBAN from the payee dropdown entirely', () => {
+    setupMocks([samplePayeeUnverifiedIban]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const form = issueForm();
+
+    const payeeSelect = form.getAllByRole('combobox')[1];
+    expect(form.queryByRole('option', { name: 'Unverified Payee' })).toBeNull();
+    fireEvent.change(payeeSelect, { target: { value: 'payee-2' } });
+    expect((payeeSelect as HTMLSelectElement).value).toBe('');
+  });
+
+  it('excludes a payee whose only VERIFIED IBAN is disabled from the payee dropdown', () => {
+    setupMocks([samplePayeeDisabledIban]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const form = issueForm();
+
+    expect(form.queryByRole('option', { name: 'Disabled Iban Payee' })).toBeNull();
+  });
+
+  it('does not auto-select and excludes non-VERIFIED IBANs from the multi-IBAN selector', () => {
+    setupMocks([samplePayeeMixedIbans]);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const form = issueForm();
+
+    fireEvent.change(form.getAllByRole('combobox')[1], { target: { value: 'payee-3' } });
+
+    // Only one VERIFIED IBAN exists among the two -> auto-selected, no dropdown shown, invalid one not offered
+    expect(form.queryByText('FR76 3333 3333')).toBeNull();
+    expect(form.getByText('FR76 2222 2222')).toBeDefined();
+  });
+
+  // ── Lot 1: payment blocking reason pills ───────────────────────────────────
+
+  it('renders a pill and disables submit when a blocking reason is active', async () => {
+    mockGetBlockingReasons.mockResolvedValue(['INSUFFICIENT_BALANCE']);
     setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout], summary: sampleSummary })} />);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    fillValidForm(issueForm());
 
-    // payeeName appears in both the select option and the history row
-    expect(screen.getAllByText('ACME Corp').length).toBeGreaterThan(0);
-    expect(screen.queryByText('history.empty')).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText('blocking.insufficientBalance')).toBeDefined();
+    });
+    expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('renders the descriptionTooShort pill client-side, without waiting on the blocking-reasons API', async () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const form = issueForm();
+
+    fireEvent.change(form.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(form.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
+    fireEvent.change(form.getByPlaceholderText('0,00'), { target: { value: '100' } });
+    fireEvent.change(form.getByPlaceholderText('form.labelPlaceholder'), {
+      target: { value: 'dfgdfg' },
+    });
+
+    expect(screen.getByText('blocking.descriptionTooShort')).toBeDefined();
+    expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('shows no pills when there are no active blocking reasons', async () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const form = issueForm();
+
+    fireEvent.change(form.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
+    fireEvent.change(form.getByPlaceholderText('0,00'), { target: { value: '100' } });
+
+    await waitFor(() => expect(mockGetBlockingReasons).toHaveBeenCalled());
+    expect(screen.queryByText('blocking.insufficientBalance')).toBeNull();
+    expect(screen.queryByText('blocking.descriptionTooShort')).toBeNull();
+  });
+
+  // ── Journal: anatomy of a row ──────────────────────────────────────────────
+
+  it('gives each row its own cell per information, reference included', () => {
+    setupMocks();
+    const { container } = render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />,
+    );
+
+    const row = journalRows()[0];
+    expect(row.querySelector('.pj-payee')?.textContent).toBe('ACME Corp');
+    expect(row.querySelector('.pj-type')?.textContent).toBe('typeCodes.60-mat');
+    expect(row.querySelector('.pj-code')?.textContent).toBe('60-mat');
+    // The reference is Bridge's own transaction id — the payout's only identifier that also
+    // exists outside CommonLink.
+    expect(row.querySelector('.pj-ref')?.textContent).toBe('bridge-tx-1');
+    // The amount carries no status colour — that is the badge's job alone.
+    expect(row.querySelector('.pj-amount')?.getAttribute('style')).toBeNull();
+    // The journal no longer stacks `.pay-row` flex lines; the breakdown card still does.
+    expect(container.querySelector('.pj-card .pay-row')).toBeNull();
+  });
+
+  it('shows no reference at all on a payout no transfer was ever ordered for', () => {
+    // Nothing is invented in its place: a made-up reference would not match anything Bridge or the
+    // bank knows about.
+    setupMocks();
+    const payouts = [
+      { ...samplePayout, id: 'with', bridgePaymentTransactionId: 'bridge-tx-9' },
+      { ...releasedPayout, id: 'without', bridgePaymentTransactionId: null },
+    ];
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    const refs = [...document.querySelectorAll('.pj-ref')].map((n) => n.textContent);
+    expect(refs).toEqual(['bridge-tx-9']);
+  });
+
+  it('shows the translated label of a preset type code, in journal and breakdown', () => {
+    setupMocks();
+    const payout = { ...samplePayout, typeCode: '60-svc' };
+    const { container } = render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [payout] })} />);
+
+    expect(container.querySelector('.pj-type')?.textContent).toBe('typeCodes.60-svc');
+    expect(container.querySelector('.breakdown-label')?.textContent).toBe('typeCodes.60-svc');
+    // Lone category: the donut still draws its ring.
+    expect(container.querySelector('path.donut-segment')).not.toBeNull();
+  });
+
+  it('shows a custom type code as typed', () => {
+    setupMocks();
+    const payout = { ...samplePayout, typeCode: 'Frais divers' };
+    const { container } = render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [payout] })} />);
+
+    expect(container.querySelector('.pj-type')?.textContent).toBe('Frais divers');
+  });
+
+  // ── Journal: breakdown card ────────────────────────────────────────────────
+
+  it('lists each expense line under the donut, with its settled transactions in an expandable entry', () => {
+    setupMocks();
+    const payouts = [
+      { ...samplePayout, id: 'a', typeCode: '60-svc', amount: 100, payeeName: 'Alpha' },
+      { ...samplePayout, id: 'b', typeCode: '60-svc', amount: 50, payeeName: 'Beta' },
+      { ...samplePayout, id: 'c', typeCode: '60-mat', amount: 400, payeeName: 'Gamma' },
+      // Not settled: stays out of the breakdown.
+      { ...inFlightPayout, id: 'd', typeCode: '60-svc', amount: 999, payeeName: 'Delta' },
+    ];
+    const { container } = render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    const items = container.querySelectorAll('details.breakdown-item');
+    expect(items).toHaveLength(2);
+    // Largest line first.
+    expect(items[0].querySelector('.breakdown-label')?.textContent).toBe('typeCodes.60-mat');
+    expect(items[1].querySelector('.breakdown-count')?.textContent).toBe('breakdown.count:{"count":2}');
+    const names = [...items[1].querySelectorAll('.pay-row-name')].map((n) => n.textContent);
+    expect(names).toEqual(['Alpha', 'Beta']);
+  });
+
+  it('keeps a single expense line expanded at a time', () => {
+    setupMocks();
+    const payouts = [
+      { ...samplePayout, id: 'a', typeCode: '60-svc', amount: 100 },
+      { ...samplePayout, id: 'c', typeCode: '60-mat', amount: 400 },
+    ];
+    const { container } = render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+    const [first, second] = [...container.querySelectorAll<HTMLDetailsElement>('details.breakdown-item')];
+
+    act(() => { first.open = true; fireEvent(first, new Event('toggle')); });
+    expect(first.open).toBe(true);
+
+    act(() => { second.open = true; fireEvent(second, new Event('toggle')); });
+    expect(second.open).toBe(true);
+    expect(first.open).toBe(false);
+  });
+
+  // ── Journal: list states ───────────────────────────────────────────────────
 
   it('shows empty state when no payouts', () => {
     setupMocks();
@@ -361,118 +572,284 @@ describe('CampaignPaymentsTab', () => {
     expect(screen.getByText('common.errors.serverError')).toBeDefined();
   });
 
-  it('typeCode=64-rem sets kind to REMUNERATION', async () => {
-    setupMocks([samplePayeePerson]);
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+  // ── Journal: search, filters, sort, counters ───────────────────────────────
 
-    // REMUNERATION typeCodes only list PERSON payees — select type first so the payee list updates
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '64-rem' } });
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-person-1' } });
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '1000' } });
-    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
-      target: { value: 'Salaire mensuel développeur' },
-    });
-
-    await waitFor(() => {
-      expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(false);
-    });
-    fireEvent.click(screen.getByRole('button', { name: /form.submit/i }));
-    await waitFor(() => screen.getByText('confirm.title'));
-    fireEvent.click(screen.getByText('confirm.submit'));
-
-    await waitFor(() => {
-      expect(defaultSubmit).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'REMUNERATION', typeCode: '64-rem' }),
-      );
-    });
-  });
-
-  // ── Lot 1: verified-IBAN-only selector ─────────────────────────────────────
-
-  it('excludes a payee with no VERIFIED IBAN from the payee dropdown entirely', () => {
-    setupMocks([samplePayeeUnverifiedIban]);
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
-
-    const payeeSelect = screen.getAllByRole('combobox')[1];
-    expect(screen.queryByRole('option', { name: 'Unverified Payee' })).toBeNull();
-    fireEvent.change(payeeSelect, { target: { value: 'payee-2' } });
-    expect((payeeSelect as HTMLSelectElement).value).toBe('');
-  });
-
-  it('excludes a payee whose only VERIFIED IBAN is disabled from the payee dropdown', () => {
-    setupMocks([samplePayeeDisabledIban]);
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
-
-    expect(screen.queryByRole('option', { name: 'Disabled Iban Payee' })).toBeNull();
-  });
-
-  it('does not auto-select and excludes non-VERIFIED IBANs from the multi-IBAN selector', () => {
-    setupMocks([samplePayeeMixedIbans]);
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
-
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-3' } });
-
-    // Only one VERIFIED IBAN exists among the two -> auto-selected, no dropdown shown, invalid one not offered
-    expect(screen.queryByText('FR76 3333 3333')).toBeNull();
-    expect(screen.getByText('FR76 2222 2222')).toBeDefined();
-  });
-
-  // ── Lot 1: payment blocking reason pills ───────────────────────────────────
-
-  it('renders a pill and disables submit when a blocking reason is active', async () => {
-    mockGetBlockingReasons.mockResolvedValue(['INSUFFICIENT_BALANCE']);
+  it('lets the content size the columns until someone resizes one', () => {
+    // Content-driven widths are what keep a short beneficiary from leaving a gulf beside it; the
+    // moment a viewer moves an edge, measured shares take over and the layout stops re-deriving
+    // them. jsdom lays nothing out, so the table here stays on the browser's own algorithm.
     setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const { container } = render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />,
+    );
 
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
-    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
-      target: { value: 'Achat de fournitures diverses' },
-    });
+    const table = container.querySelector('.pj-table')!;
+    expect([...table.querySelectorAll('colgroup col')].map((c) => c.className)).toEqual([
+      'pj-col-date', 'pj-col-payee', 'pj-col-type', 'pj-col-amount', 'pj-col-status', 'pj-col-action',
+    ]);
+    expect([...table.querySelectorAll('colgroup col')].every((c) => !c.getAttribute('style'))).toBe(true);
+    expect(table.classList.contains('pj-table-sized')).toBe(false);
 
-    await waitFor(() => {
-      expect(screen.getByText('blocking.insufficientBalance')).toBeDefined();
-    });
-    expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
+    // Five handles for six columns: nothing follows the last one, so its edge cannot be moved.
+    expect(container.querySelectorAll('.pj-resizer')).toHaveLength(5);
   });
 
-  it('renders the descriptionTooShort pill client-side, without waiting on the blocking-reasons API', async () => {
+  it('moves width between two neighbours, never past the table', () => {
+    // The whole point of shares that sum to 100%: a resize redistributes, it never widens the
+    // table, so the journal can never grow a horizontal scrollbar.
     setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
+    const { container } = render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />,
+    );
+    stubHeaderWidths(container, [100, 200, 300, 100, 200, 100]);
 
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '60-mat' } });
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
-    fireEvent.change(screen.getByPlaceholderText('form.labelPlaceholder'), {
-      target: { value: 'dfgdfg' },
-    });
+    fireEvent.keyDown(container.querySelectorAll('.pj-resizer')[0], { key: 'ArrowRight' });
 
-    expect(screen.getByText('blocking.descriptionTooShort')).toBeDefined();
-    expect((screen.getByRole('button', { name: /form.submit/i }) as HTMLButtonElement).disabled).toBe(true);
+    const widths = [...container.querySelectorAll('.pj-table colgroup col')]
+      .map((c) => parseFloat((c as HTMLElement).style.width));
+    // 16px of a 1000px table: the date column gains 1.6 points, the beneficiary loses them.
+    expect(widths[0]).toBeCloseTo(11.6, 5);
+    expect(widths[1]).toBeCloseTo(18.4, 5);
+    expect(widths.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 5);
   });
 
-  // ── Bridge transfer state ──────────────────────────────────────────────────
+  it('refuses to squeeze a neighbour below its minimum', () => {
+    setupMocks();
+    const { container } = render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />,
+    );
+    // The beneficiary column is already at the 64px floor, so it can give nothing away.
+    stubHeaderWidths(container, [100, 64, 300, 100, 200, 236]);
 
-  it('marks a settled payout as confirmed', () => {
+    fireEvent.keyDown(container.querySelectorAll('.pj-resizer')[0], { key: 'ArrowRight' });
+
+    const widths = [...container.querySelectorAll('.pj-table colgroup col')]
+      .map((c) => parseFloat((c as HTMLElement).style.width));
+    expect(widths[0]).toBeCloseTo(10, 5);
+    expect(widths[1]).toBeCloseTo(6.4, 5);
+    expect(widths.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 5);
+  });
+
+  it('searches across beneficiary, account line and reference', () => {
+    setupMocks();
+    const payouts = [
+      { ...samplePayout, id: 'a', payeeName: 'Scale That' },
+      { ...samplePayout, id: 'b', payeeName: 'Autre Fournisseur', typeCode: '65-ges' },
+    ];
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'scale' } });
+    expect(journalRows()).toHaveLength(1);
+    expect(journalRows()[0].querySelector('.pj-payee')?.textContent).toBe('Scale That');
+
+    // The reference is what the association reads off its bank statement, so it must match too.
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'bridge-tx-1' } });
+    expect(journalRows()).toHaveLength(2);
+  });
+
+  it('counts each quick filter and narrows the list to it', () => {
+    setupMocks();
+    const payouts = [
+      samplePayout,
+      inFlightPayout,
+      releasedPayout,
+      { ...samplePayout, id: 'f', status: 'FAILED' as const, bridgeStatus: 'RJCT' as const, bridgeLastErrorCode: PayoutErrorCode.AM04 },
+    ];
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    const pill = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}`) });
+    expect(pill('journal.pills.ALL').textContent).toContain('4');
+    // Only the released payout asks for a click here: a terminal refusal offers nothing.
+    expect(pill('journal.pills.TODO').textContent).toContain('1');
+    expect(pill('journal.pills.FAILED').textContent).toContain('1');
+    expect(pill('journal.pills.DONE').textContent).toContain('1');
+
+    fireEvent.click(pill('journal.pills.FAILED'));
+    expect(journalRows()).toHaveLength(1);
+    expect(screen.getByText('state.FAILED')).toBeDefined();
+  });
+
+  it('reaches refused payouts in one click whatever the page shows', () => {
+    setupMocks();
+    // Forty rows: a refusal in fortieth position is invisible in a chronological feed.
+    const payouts: PayoutDto[] = Array.from({ length: 40 }, (_, i) => ({
+      ...samplePayout,
+      id: `p-${i}`,
+      createdAt: `2026-06-${String((i % 28) + 1).padStart(2, '0')}T10:00:00Z`,
+    }));
+    payouts[39] = { ...payouts[39], status: 'FAILED', bridgeStatus: 'RJCT', bridgeLastErrorCode: PayoutErrorCode.AM04 };
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    // Default page size hides it.
+    expect(journalRows()).toHaveLength(25);
+    fireEvent.click(screen.getByRole('button', { name: /^journal\.pills\.FAILED/ }));
+    expect(journalRows()).toHaveLength(1);
+  });
+
+  it('recomputes the displayed counter and total on every filter', () => {
+    setupMocks();
+    const payouts = [
+      { ...samplePayout, id: 'a', amount: 100 },
+      { ...inFlightPayout, id: 'b', amount: 50 },
+    ];
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    expect(screen.getByText(/journal\.counter:\{"count":2/)).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /^journal\.pills\.DONE/ }));
+    expect(screen.getByText(/journal\.counter:\{"count":1/)).toBeDefined();
+  });
+
+  it('sorts by amount on a header button, and flips direction on a second click', () => {
+    setupMocks();
+    const payouts = [
+      { ...samplePayout, id: 'a', amount: 100 },
+      { ...samplePayout, id: 'b', amount: 900 },
+    ];
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    const amounts = () => journalRows().map((r) => r.querySelector('.pj-amount')?.textContent);
+    fireEvent.click(screen.getByRole('button', { name: /journal\.col\.amount/ }));
+    expect(amounts()[0]).toContain('900');
+    fireEvent.click(screen.getByRole('button', { name: /journal\.col\.amount/ }));
+    expect(amounts()[0]).toContain('100');
+  });
+
+  it('sorts by date descending by default', () => {
+    setupMocks();
+    const payouts = [
+      { ...samplePayout, id: 'old', amount: 100, createdAt: '2026-06-01T10:00:00Z' },
+      { ...samplePayout, id: 'new', amount: 900, createdAt: '2026-07-01T10:00:00Z' },
+    ];
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    const header = screen.getByRole('button', { name: /journal\.col\.date/ }).closest('th');
+    expect(header?.getAttribute('aria-sort')).toBe('descending');
+    expect(journalRows()[0].querySelector('.pj-amount')?.textContent).toContain('900');
+  });
+
+  it('dates an operation to the second, not to the day', () => {
+    // Two transfers to the same beneficiary for the same amount on the same day are told apart by
+    // nothing else, and a statement is reconciled on the instant.
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
 
-    expect(document.querySelector('.pay-chip.confirmed')).toBeTruthy();
-    expect(document.querySelector('.pay-chip.pending')).toBeNull();
+    expect(journalRows()[0].querySelector('.pj-date')?.textContent)
+      .toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/);
   });
 
-  it('shows an authorised but unsettled transfer as in-transit, not settled', () => {
-    // The bank has the order but the beneficiary is credited days later — a check mark here would
+  it('explains an empty result and offers a way out', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'introuvable' } });
+    expect(journalRows()).toHaveLength(0);
+    expect(screen.getByText('journal.noMatch.title')).toBeDefined();
+    expect(screen.getByText('journal.noMatch.hint')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'journal.reset' }));
+    expect(journalRows()).toHaveLength(1);
+  });
+
+  // ── Journal: status badges ─────────────────────────────────────────────────
+
+  it('names every state in words, never in an icon alone', () => {
+    setupMocks();
+    const payouts = [samplePayout, inFlightPayout, awaitingBankPayout, releasedPayout];
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts })} />);
+
+    expect(screen.getByText('state.CONFIRMED')).toBeDefined();
+    expect(screen.getByText('state.AUTHORISED')).toBeDefined();
+    expect(screen.getByText('state.AWAITING_AUTHORISATION')).toBeDefined();
+    expect(screen.getByText('state.RETRYABLE')).toBeDefined();
+  });
+
+  it('marks a settled payout as executed', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    expect(screen.getByText('state.CONFIRMED')).toBeDefined();
+    expect(screen.queryByText('state.AWAITING_AUTHORISATION')).toBeNull();
+  });
+
+  it('shows an authorised but unsettled transfer as authorised, not settled', () => {
+    // The bank has the order but the beneficiary is credited days later — "executed" here would
     // claim the money arrived.
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [inFlightPayout] })} />);
 
-    const chip = document.querySelector('.pay-chip.pending');
-    expect(chip).toBeTruthy();
-    expect(chip?.getAttribute('title')).toBe('history.inTransit');
-    expect(document.querySelector('.pay-chip.confirmed')).toBeNull();
+    expect(screen.getByText('state.AUTHORISED')).toBeDefined();
+    expect(screen.queryByText('state.CONFIRMED')).toBeNull();
   });
+
+  it('keeps the plain pending state for a payout never submitted to Bridge', () => {
+    setupMocks();
+    const neverAttempted: PayoutDto = {
+      ...samplePayout,
+      status: 'PENDING',
+      confirmedAt: null,
+      bridgeStatus: null,
+      bridgeLastErrorCode: null,
+    };
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [neverAttempted] })} />);
+
+    expect(screen.getByText('state.PENDING')).toBeDefined();
+    expect(screen.queryByText('state.RETRYABLE')).toBeNull();
+  });
+
+  it('distinguishes a payout whose last transfer attempt failed from one never attempted', () => {
+    // The backend releases a failed initiation back to PENDING on purpose — FAILED is terminal and
+    // nothing was debited. Without a distinct state the association sees the same row as a payout
+    // it has not submitted yet, and never learns it has to retry.
+    setupMocks();
+    const releasedAfterFailure: PayoutDto = {
+      ...samplePayout,
+      status: 'PENDING',
+      confirmedAt: null,
+      bridgeStatus: null,
+      bridgeLastErrorCode: PayoutErrorCode.DESTINATION_UNVERIFIED,
+    };
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedAfterFailure] })} />,
+    );
+
+    expect(screen.getByText('state.RETRYABLE')).toBeDefined();
+    // The row must name the actual cause, not a generic "something went wrong" — here the
+    // destination read-back guard, which is a control refusing rather than a bank being busy.
+    expect(document.querySelector('.pj-reason')?.textContent)
+      .toBe('history.errorCode.DESTINATION_UNVERIFIED');
+    expect(screen.queryByText('state.CONFIRMED')).toBeNull();
+  });
+
+  it('surfaces the bank rejection reason on the row of a failed payout', () => {
+    setupMocks();
+    const failed: PayoutDto = {
+      ...samplePayout,
+      status: 'FAILED',
+      bridgeStatus: 'RJCT',
+      bridgeLastErrorCode: PayoutErrorCode.AM04,
+    };
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [failed] })} />);
+
+    // Translated from the stable code, never the stored string: that one is Bridge's bare ISO
+    // reason or one of our English messages, and it used to land in a tooltip verbatim.
+    expect(screen.getByText('state.FAILED')).toBeDefined();
+    expect(document.querySelector('.pj-reason')?.textContent).toBe('history.errorCode.AM04');
+  });
+
+  it('never captions a settled transfer with a stale failure', () => {
+    // An error code left over from an attempt that was later re-issued must not read as "solde
+    // insuffisant" under a payment the beneficiary has been credited for.
+    setupMocks();
+    const settledAfterRetry: PayoutDto = { ...samplePayout, bridgeLastErrorCode: PayoutErrorCode.AM04 };
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [settledAfterRetry] })} />);
+
+    expect(screen.getByText('state.CONFIRMED')).toBeDefined();
+    expect(document.querySelector('.pj-reason')).toBeNull();
+    fireEvent.click(journalRows()[0]);
+    expect(document.querySelector('.pd-reason')).toBeNull();
+  });
+
+  // ── Journal: row actions ───────────────────────────────────────────────────
 
   it('offers a bank-authorisation link while the transfer awaits the association', () => {
     // The association is the debtor: an initiation it never authorised moves no money, so the tab
@@ -523,6 +900,18 @@ describe('CampaignPaymentsTab', () => {
     expect(defaultSubmit).not.toHaveBeenCalled();
   });
 
+  it('does not open the detail panel when the row action is clicked', () => {
+    // Opening a panel and ordering a real bank transfer must not be the same gesture.
+    setupMocks();
+    const retry = vi.fn().mockResolvedValue(samplePayout);
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedPayout], retry })} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'history.retry' }));
+    expect(document.querySelector('.side-panel')).toBeNull();
+  });
+
   it('offers no retry while the transfer is still in flight', () => {
     setupMocks();
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [inFlightPayout] })} />);
@@ -537,7 +926,23 @@ describe('CampaignPaymentsTab', () => {
     expect(screen.queryByRole('link', { name: 'history.authorise' })).toBeNull();
   });
 
-  it('surfaces the bank rejection reason on a failed payout', () => {
+  // ── Detail panel ───────────────────────────────────────────────────────────
+
+  it('opens the detail panel on a row click, with what the six columns cannot hold', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    fireEvent.click(journalRows()[0]);
+
+    const panel = within(document.querySelector('.side-panel') as HTMLElement);
+    expect(panel.getByText('detail.title')).toBeDefined();
+    expect(panel.getByText('FR76 0000 0000 0000 0000')).toBeDefined();
+    expect(panel.getByText('detail.createdAt')).toBeDefined();
+    // The payment's free-text justification stays out of the new screen entirely.
+    expect(panel.queryByText('Achat fournitures')).toBeNull();
+  });
+
+  it('gives the full refusal sentence in the detail panel of a failed payout', () => {
     setupMocks();
     const failed: PayoutDto = {
       ...samplePayout,
@@ -547,60 +952,30 @@ describe('CampaignPaymentsTab', () => {
     };
     render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [failed] })} />);
 
-    // Translated from the stable code, never the stored string: that one is Bridge's bare ISO
-    // reason or one of our English messages, and it used to land in this tooltip verbatim.
-    expect(document.querySelector('.pay-chip.failed')?.getAttribute('title'))
-      .toBe('history.errorCode.AM04');
+    fireEvent.click(journalRows()[0]);
+    expect(document.querySelector('.pd-reason')?.textContent).toBe('history.errorCode.AM04');
   });
 
-  it('distinguishes a payout whose last transfer attempt failed from one never attempted', () => {
-    // The backend releases a failed initiation back to PENDING on purpose — FAILED is terminal and
-    // nothing was debited. Without a distinct chip the association sees the same hourglass as a
-    // payout it has not submitted yet, and never learns it has to retry.
+  it('opens the detail panel from the keyboard on a row whose action is a button', () => {
+    // Those rows carry no chevron, and the panel is the only place the full refusal sentence is.
     setupMocks();
-    const releasedAfterFailure: PayoutDto = {
-      ...samplePayout,
-      status: 'PENDING',
-      confirmedAt: null,
-      bridgeStatus: null,
-      bridgeLastErrorCode: PayoutErrorCode.DESTINATION_UNVERIFIED,
-    };
-    render(
-      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedAfterFailure] })} />,
-    );
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedPayout] })} />);
 
-    const chip = document.querySelector('.pay-chip.attention');
-    expect(chip).toBeTruthy();
-    // The tooltip must name the actual cause, not a generic "something went wrong" — here the
-    // destination read-back guard, which is a control refusing rather than a bank being busy.
-    expect(chip?.getAttribute('title')).toBe('history.errorCode.DESTINATION_UNVERIFIED');
-    expect(document.querySelector('.pay-chip.confirmed')).toBeNull();
+    const row = journalRows()[0];
+    expect(row.querySelector('.pj-chevron')).toBeNull();
+    fireEvent.keyDown(row, { key: 'Enter', target: row });
+
+    expect(document.querySelector('.side-panel')).toBeTruthy();
   });
 
-  it('keeps the plain pending chip for a payout never submitted to Bridge', () => {
+  it('closes the detail panel on Escape', () => {
     setupMocks();
-    const neverAttempted: PayoutDto = {
-      ...samplePayout,
-      status: 'PENDING',
-      confirmedAt: null,
-      bridgeStatus: null,
-      bridgeLastErrorCode: null,
-    };
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [neverAttempted] })} />);
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
 
-    expect(document.querySelector('.pay-chip.pending')).toBeTruthy();
-    expect(document.querySelector('.pay-chip.attention')).toBeNull();
-  });
+    fireEvent.click(journalRows()[0]);
+    expect(document.querySelector('.side-panel')).toBeTruthy();
 
-  it('shows no pills when there are no active blocking reasons', async () => {
-    setupMocks();
-    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments()} />);
-
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'payee-1' } });
-    fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '100' } });
-
-    await waitFor(() => expect(mockGetBlockingReasons).toHaveBeenCalled());
-    expect(screen.queryByText('blocking.insufficientBalance')).toBeNull();
-    expect(screen.queryByText('blocking.descriptionTooShort')).toBeNull();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.querySelector('.side-panel')).toBeNull();
   });
 });

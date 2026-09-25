@@ -79,7 +79,7 @@ class BridgeWebhookServiceTest {
     }
 
     /**
-     * @param syncedAt When the payout's Bridge state last moved. Defaults to well outside the
+     * @param syncedAt When Bridge last answered about the payout. Defaults to well outside the
      *   release grace: the ordinary case is a link that outlives the last thing that happened on
      *   it, and only the deferral tests care about the recent one.
      */
@@ -89,7 +89,8 @@ class BridgeWebhookServiceTest {
         statusReason: String? = null,
         syncedAt: Instant = Instant.now().minus(Duration.ofHours(1)),
     ) {
-        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns routing(syncedAt = syncedAt)
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns
+            routing(syncedAt = syncedAt)
         every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
             BridgePaymentLinkState(status, transactionId, statusReason)
     }

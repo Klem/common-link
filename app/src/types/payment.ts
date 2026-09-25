@@ -123,6 +123,13 @@ export interface PayoutDto {
    * payout awaits that authorisation.
    */
   bridgeCheckoutUrl: string | null;
+  /**
+   * Bridge's own identifier for the transfer — the payout's reference in the journal.
+   *
+   * Null until a transfer has actually been ordered, and the journal then shows nothing rather
+   * than inventing a reference: a payout that never reached a bank has none to show.
+   */
+  bridgePaymentTransactionId: string | null;
 }
 
 /** True while the payout's transfer is engaged but not yet settled by the bank. */
@@ -175,6 +182,100 @@ export function lastAttemptFailed(payout: PayoutDto): boolean {
     // would initiate a real transfer on a row the association never sent anywhere.
     payout.bridgeLastErrorCode != null
   );
+}
+
+/**
+ * What the journal shows in a payout's status cell.
+ *
+ * Deliberately finer than {@link PayoutStatus}: the accounting lifecycle has three values, but a
+ * payout sitting in `PENDING` can be four very different things to the association — never
+ * submitted, waiting for it to authorise the transfer at its bank, authorised and travelling, or
+ * failed on the way out and retryable. Collapsing them is what made a hourglass mean anything.
+ *
+ * Derived once by {@link payoutUiState} so the badge, the quick filters, the live counter and the
+ * CSV export can never disagree about what a row is.
+ */
+export const PayoutUiState = {
+  /** Terminal refusal by the bank. Nothing more can be done from here. */
+  FAILED: 'FAILED',
+  /** Settled: the beneficiary has been credited. */
+  CONFIRMED: 'CONFIRMED',
+  /** Waiting for the association to authorise the transfer with its own bank. */
+  AWAITING_AUTHORISATION: 'AWAITING_AUTHORISATION',
+  /** Authorised at the bank, not yet executed. */
+  AUTHORISED: 'AUTHORISED',
+  /** Engaged with the bank in a state that is neither of the two above (Bridge `PART`). */
+  IN_TRANSIT: 'IN_TRANSIT',
+  /** The last initiation attempt failed; nothing was debited and the payout can be re-issued. */
+  RETRYABLE: 'RETRYABLE',
+  /** Recorded, never submitted to a bank. */
+  PENDING: 'PENDING',
+} as const;
+export type PayoutUiState = (typeof PayoutUiState)[keyof typeof PayoutUiState];
+
+/**
+ * The single state a payout is displayed in.
+ *
+ * Evaluation order matters and mirrors the one the status chip has always used: the accounting
+ * status wins over the bank's view (a `FAILED` payout is refused whatever Bridge last said), then
+ * the in-flight states are split by `bridgeStatus`, then a failed attempt, then plain pending.
+ *
+ * @param payout the payout to classify.
+ * @returns the state its badge, its quick filter and its CSV row all read.
+ */
+export function payoutUiState(payout: PayoutDto): PayoutUiState {
+  if (payout.status === PayoutStatus.FAILED) return PayoutUiState.FAILED;
+  if (payout.status === PayoutStatus.CONFIRMED) return PayoutUiState.CONFIRMED;
+  if (isPayoutInFlight(payout)) {
+    if (
+      payout.bridgeStatus === BridgePaymentStatus.CREA ||
+      payout.bridgeStatus === BridgePaymentStatus.ACTC
+    ) {
+      return PayoutUiState.AWAITING_AUTHORISATION;
+    }
+    if (payout.bridgeStatus === BridgePaymentStatus.PDNG) return PayoutUiState.AUTHORISED;
+    // `PART` — engaged, partially accepted, neither awaiting the association nor settled.
+    return PayoutUiState.IN_TRANSIT;
+  }
+  if (lastAttemptFailed(payout)) return PayoutUiState.RETRYABLE;
+  return PayoutUiState.PENDING;
+}
+
+/** What the end of a payout's row offers. */
+export const PayoutAction = {
+  /** Just back from the bank, fate still unknown: state the wait, offer no link. */
+  AWAITING_RETURN: 'AWAITING_RETURN',
+  /** Re-issue the payout with a fresh authorisation link. */
+  RETRY: 'RETRY',
+  /** Open the bank's authorisation tunnel. */
+  AUTHORISE: 'AUTHORISE',
+  /** Nothing to do — the row only opens its detail panel. */
+  NONE: 'NONE',
+} as const;
+export type PayoutAction = (typeof PayoutAction)[keyof typeof PayoutAction];
+
+/**
+ * The action a payout's row offers, if any.
+ *
+ * Kept beside {@link payoutUiState} rather than derived from it: the two do not partition the same
+ * way. `AWAITING_RETURN` and `AUTHORISE` are both `AWAITING_AUTHORISATION` rows, told apart only by
+ * whether the association is coming back from its bank right now.
+ *
+ * @param payout the payout to classify.
+ * @param awaitingReturnPayoutId id of the payout the association has just returned from its bank
+ *   for, or null.
+ */
+export function payoutAction(payout: PayoutDto, awaitingReturnPayoutId: string | null): PayoutAction {
+  // The in-flight check is not redundant with the id match: the hook only sets that id while the
+  // payout is still `CREA`, but it is re-evaluated on every poll, and a payout that has meanwhile
+  // been refused must offer its retry rather than keep telling the association to wait for a bank
+  // that has already answered.
+  if (payout.id === awaitingReturnPayoutId && isPayoutInFlight(payout)) {
+    return PayoutAction.AWAITING_RETURN;
+  }
+  if (lastAttemptFailed(payout)) return PayoutAction.RETRY;
+  if (needsBankAuthorisation(payout) && payout.bridgeCheckoutUrl) return PayoutAction.AUTHORISE;
+  return PayoutAction.NONE;
 }
 
 /**

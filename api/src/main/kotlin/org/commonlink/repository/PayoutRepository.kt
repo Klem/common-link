@@ -122,7 +122,7 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
          */
         val bridgeStatus: BridgePaymentStatus?
 
-        /** When Bridge last told us anything about this payout — the age the reconciler reasons on. */
+        /** When Bridge last told us anything about this payout — what marks a row as stale. */
         val bridgeSyncedAt: Instant?
     }
 

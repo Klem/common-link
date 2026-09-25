@@ -61,6 +61,14 @@ data class PayoutDto(
      * confirmed payout still awaits that authorisation.
      */
     val bridgeCheckoutUrl: String? = null,
+    /**
+     * Bridge's own identifier for the transfer, or null until one has been ordered.
+     *
+     * The only reference a payout ever carries that also exists outside CommonLink, which is why
+     * the journal shows it: it is what a support request about "this transfer" can be about. It
+     * appears when Bridge reports the transaction, so a payout that never reached a bank has none.
+     */
+    val bridgePaymentTransactionId: String? = null,
 )
 
 fun Payout.toDto() = PayoutDto(
@@ -81,4 +89,5 @@ fun Payout.toDto() = PayoutDto(
     bridgeStatus = bridgeStatus,
     bridgeLastErrorCode = bridgeLastErrorCode,
     bridgeCheckoutUrl = bridgeCheckoutUrl,
+    bridgePaymentTransactionId = bridgePaymentTransactionId,
 )

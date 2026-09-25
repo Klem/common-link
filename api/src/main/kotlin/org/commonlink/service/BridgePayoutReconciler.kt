@@ -80,14 +80,17 @@ class BridgePayoutReconciler(
                 .onSuccess { reRead++ }
                 .onFailure { log.warn("Bridge reconciliation failed for payout {}: {}", payout.id, it.message) }
 
-            // The age is the one read *before* the replay: applying a state refreshes
-            // `bridgeSyncedAt`, so a payout that just got re-stamped PDNG would otherwise look new.
-            val syncedAt = payout.bridgeSyncedAt
-            if (syncedAt != null && syncedAt.isBefore(stuckThreshold) && isBeyondAuthorisation(payout.id)) {
+            // Measured on the last reading, which this very sweep pushes forward: the row was
+            // selected because it was stale, the replay re-stamps it, and it comes back one
+            // `staleAfter` later with an age of exactly `staleAfter`. So as long as Bridge answers,
+            // a payout frozen at `PDNG` never looks old enough and this escalation does not fire —
+            // it reports "our upstream is unreachable", not "the bank is not reporting".
+            val changedAt = payout.bridgeSyncedAt
+            if (changedAt != null && changedAt.isBefore(stuckThreshold) && isBeyondAuthorisation(payout.id)) {
                 log.error(
                     "Payout {} has been in flight at Bridge since {} with no terminal answer — some banks " +
                         "never report an execution status, so this needs a human to confirm from the statement",
-                    payout.id, syncedAt,
+                    payout.id, changedAt,
                 )
                 stuck++
             }

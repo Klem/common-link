@@ -1392,12 +1392,23 @@
           "insufficientBalance": "Solde disponible insuffisant"
         },
         "breakdown": {
+          "count": "{count, plural, one {# paiement} other {# paiements}}",
+          "empty": "Aucun paiement effectué pour l'instant.",
           "title": "📊 Répartition"
         },
         "confirm": {
           "message": "Émettre {amount} à {payee} ?",
           "submit": "Émettre",
           "title": "Confirmer le paiement"
+        },
+        "detail": {
+          "confirmedAt": "Exécuté le",
+          "createdAt": "Émis le",
+          "iban": "IBAN de destination",
+          "payee": "Bénéficiaire",
+          "reference": "Référence Bridge",
+          "title": "Détail du paiement",
+          "type": "Poste comptable"
         },
         "form": {
           "addPayee": "+ Ajouter",
@@ -1429,31 +1440,90 @@
             "AM18": "Nombre d'opérations trop élevé pour votre banque. Réessayez plus tard.",
             "CH03": "Date d'exécution refusée par votre banque. Nos équipes sont prévenues.",
             "CUST": "Refus côté payeur : autorisation refusée a la banque, ou provision insuffisante.",
+            "DESTINATION_UNVERIFIED": "Destination du virement non vérifiable : opération refusée par sécurité.",
             "DS02": "Autorisation annulée depuis l'interface de votre banque.",
             "FF01": "Le virement a été refusé pour un problème technique. Nos équipes sont prévenues.",
             "FRAD": "Virement bloqué par votre banque pour suspicion de fraude. Contactez-la avant toute nouvelle tentative.",
+            "INITIATION_FAILED": "Le service bancaire n'a pas pu etre joint. Réessayez dans quelques minutes.",
+            "LINK_EXPIRED": "Le délai d'autorisation a expiré. Relancez le virement.",
+            "LINK_NOT_RECORDED": "Le virement n'a pas pu etre enregistré. Relancez-le.",
+            "LINK_REVOKED": "Le lien d'autorisation a été annulé. Relancez le virement.",
             "MS03": "Refusé par votre banque, sans motif communiqué.",
             "NOAS": "Autorisation non terminée dans le délai imparti. Relancez le virement.",
             "RR01": "Informations du compte payeur incomplètes côté banque.",
             "RR03": "Nom ou adresse du bénéficiaire insuffisants pour votre banque.",
             "RR04": "Refusé pour motif réglementaire. Contactez votre banque.",
             "RR12": "Identifiant d'une des parties invalide ou manquant.",
-            "UNSPECIFIED": "Refusé par votre banque, sans motif communiqué.",
             "UNKNOWN": "Refusé par votre banque pour un motif que nous ne savons pas encore expliquer.",
-            "LINK_EXPIRED": "Le délai d'autorisation a expiré. Relancez le virement.",
-            "LINK_REVOKED": "Le lien d'autorisation a été annulé. Relancez le virement.",
-            "INITIATION_FAILED": "Le service bancaire n'a pas pu etre joint. Réessayez dans quelques minutes.",
-            "DESTINATION_UNVERIFIED": "Destination du virement non vérifiable : opération refusée par sécurité.",
-            "LINK_NOT_RECORDED": "Le virement n'a pas pu etre enregistré. Relancez-le.",
+            "UNSPECIFIED": "Refusé par votre banque, sans motif communiqué.",
             "fallback": "Le virement n'a pas abouti."
           },
           "inTransit": "Virement en cours d'exécution par la banque",
           "lastAttemptFailed": "Échec de la dernière tentative : {error}",
           "retry": "Réessayer",
-          "retryHint": "Réémettre ce virement avec un nouveau lien d'autorisation bancaire",
-          "title": "📋 Historique paiements"
+          "retryHint": "Réémettre ce virement avec un nouveau lien d'autorisation bancaire"
         },
         "ibanSelect": "IBAN",
+        "journal": {
+          "allTypes": "Tous les postes",
+          "close": "Fermer",
+          "col": {
+            "action": "Action",
+            "amount": "Montant",
+            "date": "Date",
+            "payee": "Bénéficiaire",
+            "status": "Statut",
+            "type": "Poste"
+          },
+          "counter": "{count, plural, one {# paiement affiché} other {# paiements affichés}} · {total}",
+          "csv": {
+            "amount": "Montant (EUR)",
+            "code": "Code",
+            "date": "Date",
+            "filename": "paiements.csv",
+            "payee": "Bénéficiaire",
+            "reference": "Référence Bridge",
+            "status": "Statut",
+            "type": "Poste"
+          },
+          "export": "Exporter (CSV)",
+          "next": "Page suivante",
+          "noMatch": {
+            "hint": "Élargissez la période, changez de poste comptable, ou effacez la recherche.",
+            "title": "Aucun paiement ne correspond à ces filtres"
+          },
+          "openDetail": "Ouvrir le détail du paiement {reference}",
+          "perPage": "Par page",
+          "period": {
+            "all": "Toutes les périodes",
+            "d30": "30 derniers jours",
+            "d365": "12 derniers mois",
+            "d90": "90 derniers jours",
+            "label": "Période"
+          },
+          "pills": {
+            "ALL": "Tous",
+            "DONE": "Exécutés",
+            "FAILED": "Refusés",
+            "PENDING": "En attente",
+            "TODO": "À traiter"
+          },
+          "prev": "Page précédente",
+          "range": "{from}–{to} sur {total} paiements",
+          "reset": "Réinitialiser les filtres",
+          "resize": "Redimensionner la colonne {column}",
+          "searchPlaceholder": "Bénéficiaire, référence du virement, poste, montant, statut",
+          "title": "Journal des paiements"
+        },
+        "state": {
+          "AUTHORISED": "Virement autorisé",
+          "AWAITING_AUTHORISATION": "En attente de validation",
+          "CONFIRMED": "Virement exécuté",
+          "FAILED": "Refusé",
+          "IN_TRANSIT": "Virement en cours",
+          "PENDING": "Enregistré",
+          "RETRYABLE": "Échec — à relancer"
+        },
         "stats": {
           "availableBalance": "Solde disponible",
           "confirmed": "Confirmées",

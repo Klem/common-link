@@ -51,6 +51,30 @@ class BridgePayoutReconcilerTest {
     }
 
     @Test
+    fun `escalates a payout Bridge has not answered about since before the threshold`() {
+        val silent = routing(syncedAt = Instant.now().minus(Duration.ofDays(10)))
+        every { payouts.findStaleInFlight(any()) } returns listOf(silent)
+        every { payouts.findRoutingById(silent.id) } returns routing(bridgeStatus = BridgePaymentStatus.PDNG)
+
+        reconciler().sweep()
+
+        verify { alerts.reportFailure(TechnicalAlertKind.PAYOUT_STUCK_IN_FLIGHT, any(), any(), any()) }
+    }
+
+    @Test
+    fun `does not escalate a payout Bridge answered about recently`() {
+        // Which is every payout this sweep just re-read: the replay stamps bridgeSyncedAt, so a
+        // transfer frozen at PDNG is only escalated while Bridge itself is unreachable.
+        val recent = routing(syncedAt = Instant.now().minus(Duration.ofMinutes(5)))
+        every { payouts.findStaleInFlight(any()) } returns listOf(recent)
+        every { payouts.findRoutingById(recent.id) } returns routing(bridgeStatus = BridgePaymentStatus.PDNG)
+
+        reconciler().sweep()
+
+        verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.PAYOUT_STUCK_IN_FLIGHT, any(), any(), any()) }
+    }
+
+    @Test
     fun `replays each stale payout through the one handler that knows the transitions`() {
         // Not a second implementation of settle/fail/release: the sweep re-reads and hands over, so
         // there is exactly one place where Bridge's view becomes a payout's state.
