@@ -642,6 +642,15 @@ textarea.form-input{resize:vertical;min-height:100px;}
 @media(max-width:700px){.campaigns-grid{grid-template-columns:1fr;}}
 
 /* ------------------------------------------------------------
+   HORS MAQUETTE — titre de niveau 4 dans un document légal.
+   La maquette ne descend pas sous `h3` dans `.legal-body` : elle n'a aucune
+   page où un article se subdivise. L'annexe 2 des CGU association, elle, est
+   découpée en neuf sections numérotées, sous le `h3` de l'annexe. Valeurs
+   alignées sur la progression de la maquette (h2 26px, h3 19px).
+   ------------------------------------------------------------ */
+.legal-body h4{font-size:16px;margin:26px 0 8px;}
+
+/* ------------------------------------------------------------
    HORS MAQUETTE — adaptation tablette et mobile.
    La maquette n'existe qu'en desktop : elle ne porte de règles `@media` que
    sur les sections ajoutées après elle (tarifs, transparence, annuaire,
