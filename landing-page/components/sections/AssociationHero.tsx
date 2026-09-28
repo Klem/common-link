@@ -13,32 +13,18 @@ export function AssociationHero() {
 
   return (
     <section
+      className="section"
       style={{
         background: 'var(--deep-indigo)',
         color: 'var(--white)',
-        padding: '80px 48px',
       }}
     >
-      <div
-        className="max-w"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '64px',
-          alignItems: 'center',
-        }}
-      >
+      <div className="max-w page-hero-grid">
         <div>
           <div className="section-label" style={{ color: 'var(--bright-teal)' }}>
             {t('label')}
           </div>
-          <h1
-            style={{
-              fontSize: '48px',
-              color: 'var(--white)',
-              marginBottom: '20px',
-            }}
-          >
+          <h1 className="page-hero-title" style={{ color: 'var(--white)' }}>
             {t('title')}{' '}
             <span className="italic-accent" style={{ color: 'var(--soft-amber)' }}>
               {t('titleAccent')}
@@ -65,6 +51,7 @@ export function AssociationHero() {
           <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               gap: '32px',
               marginTop: '48px',
               paddingTop: '32px',

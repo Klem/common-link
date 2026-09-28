@@ -72,6 +72,44 @@
 >   accessibilité, zéro différence visuelle.
 > - `grid-2 mb-20` de la maquette rendu `grid-2` (page Donateurs) : `mb-20`
 >   n'existe pas dans le CSS de la maquette et y vaut donc `margin-bottom:0`.
+> - **Trois classes ajoutées pour le responsive** (pages Donateurs et
+>   Associations) : `section` sur la `<section>` du hero, `page-hero-grid` sur
+>   son `.max-w`, `page-hero-title` sur son `<h1>`. Elles remplacent des
+>   `style={{}}` inline — qu'aucune règle `@media` ne peut surcharger — par des
+>   valeurs strictement identiques. Le comparateur signale la différence de
+>   `class` ; aucune propriété calculée ni aucune géométrie ne diverge.
+> - Les dégradés sont sérialisés différemment par Chromium selon qu'ils
+>   viennent d'un `file://` ou d'un serveur (`0%` vs `0px`, stops omis) :
+>   `hero-blob`, `hero-photo-frame`, `tarif-hero`, `transparency-page-hero`.
+>   Antérieur à tout travail responsive, purement cosmétique dans le rapport.
+>
+> ### Responsive
+>
+> **La maquette est desktop uniquement.** Tout le responsive vit donc **après**
+> `MAQUETTE — FIN DU BLOC VERBATIM`, sous `@media` — le rendu au-dessus de
+> 980px, seul comparé par `compare-maquette.js`, reste celui de la maquette.
+> Breakpoints en place : **980px** (grilles 3 → 2 colonnes), **900px** (la barre
+> de navigation passe en menu burger), **760px** (colonne unique, gouttières
+> 48px → 20px, typographie), **420px** (libellés de boutons sécables).
+>
+> Deux ajouts hors maquette portent le menu mobile : `.nav-toggle` (le burger,
+> `display:none` au-dessus de 900px) et `.nav-menu` (`display:contents` en
+> desktop, donc sans effet sur le rendu). `compare-maquette.js` les neutralise
+> avant de comparer, sans quoi l'arborescence de la nav se décale d'un cran et
+> toute la zone devient illisible. Le panneau déroulant est en
+> `position:absolute` : la hauteur de `.main-nav` ne doit pas bouger à
+> l'ouverture, `.legal-subnav` est collée à `top:63px`.
+>
+> Contrôle — détecte tout débordement horizontal et vérifie le menu :
+>
+> ```bash
+> npm run check:responsive http://localhost:3001 375   # aussi 320, 768, 1024
+> ```
+>
+> Doit afficher `0 page(s) en défaut`. Attention aux items de grille :
+> `min-width:auto` empêche une piste de descendre sous la largeur min-content de
+> son contenu, et un libellé de bouton non sécable suffit à élargir la colonne
+> au-delà du viewport.
 
 ## GETTING STARTED
 

@@ -19,24 +19,16 @@ export function DonorHero() {
 
   return (
     <section
+      className="section"
       style={{
         background:
           'linear-gradient(135deg,var(--soft-cream) 0%,rgba(78,205,196,0.08) 100%)',
-        padding: '80px 48px',
       }}
     >
-      <div
-        className="max-w"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '64px',
-          alignItems: 'center',
-        }}
-      >
+      <div className="max-w page-hero-grid">
         <div>
           <div className="section-label">{t('label')}</div>
-          <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>
+          <h1 className="page-hero-title">
             {t('title')}{' '}
             <span className="italic-accent" style={{ color: 'var(--bright-teal)' }}>
               {t('titleAccent')}

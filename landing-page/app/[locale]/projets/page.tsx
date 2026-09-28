@@ -35,7 +35,7 @@ export default async function ProjetsPage({ params }: { params: Promise<{ locale
 
   return (
     <main>
-      <section style={{ background: 'var(--soft-cream)', padding: '48px' }}>
+      <section className="section-sm" style={{ background: 'var(--soft-cream)' }}>
         <div className="max-w">
           <div className="breadcrumb">
             <Link href="/">{t('breadcrumbHome')}</Link>
