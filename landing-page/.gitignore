@@ -10,3 +10,4 @@ test-results
 node_modules
 tasks
 .env.*
+CLAUDE.md

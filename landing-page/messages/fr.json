@@ -197,7 +197,7 @@
     },
     "bottom": {
       "legal": "© {year} CommonLink SAS · RCS Antibes 105 153 928 · ORIAS 26010395",
-      "payments": "Paiements opérés par des prestataires agréés · Données hébergées dans l'Union européenne"
+      "payments": "Paiements opérés par des prestataires agréés · Plateforme hébergée en France"
     },
     "brand": {
       "badgeOrias": "ORIAS 26010395",
@@ -487,7 +487,7 @@
           "paragraphs": [
             "Les paiements effectués par l'organisme depuis la plateforme sont exécutés depuis son propre compte bancaire, au moyen du service d'initiation de paiement fourni par Perspecteev, exerçant sous la marque Bridge, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 16918.",
             "Chaque paiement est autorisé par le représentant légal de l'organisme, qui s'authentifie auprès de sa banque dans l'environnement technique de Bridge. CommonLink ne peut ni déclencher un paiement à sa place, ni l'annuler une fois autorisé. Bridge ne détient à aucun moment les fonds.",
-            "Les données nécessaires à l'exécution de ces paiements sont traitées par Bridge en qualité de responsable de traitement, dans les conditions prévues par sa documentation. Les données traitées par CommonLink le sont dans les conditions prévues à l'article 22."
+            "Les données nécessaires à l'exécution de ces paiements sont traitées par Bridge en qualité de responsable de traitement, dans les conditions prévues par sa documentation. Les données traitées par CommonLink le sont dans les conditions prévues par sa politique de confidentialité."
           ],
           "title": "Article 8. Paiements sortants"
         },
@@ -745,12 +745,85 @@
           "title": "Annexe 1. Contrat type entre le donateur et l'organisme bénéficiaire"
         },
         {
-          "callout": "EN ATTENTE : encadrement du traitement des données des donateurs saisies sur les pages hébergées par l'organisme, voir article 20. Cette annexe est produite dans le cadre de la fiche DP-04 et n'est pas encore publiable.",
-          "title": "Annexe 2. Traitement des données personnelles"
+          "subsections": [
+            {
+              "paragraphs": [
+                "La présente annexe précise, en application de l'article 20, comment CommonLink et l'Organisme se répartissent leurs responsabilités sur les données personnelles des donateurs, quel que soit l'endroit où le don est effectué."
+              ],
+              "title": "1. Objet"
+            },
+            {
+              "paragraphs": [
+                "Chaque partie est responsable de traitement pour les finalités qu'elle détermine, et aucune n'agit comme sous-traitant de l'autre.",
+                "CommonLink est responsable de traitement pour le fonctionnement de la plateforme, la réalisation du don, l'émission du reçu fiscal pour le compte de l'Organisme, la publication des paiements tracés, et ses obligations légales de vigilance et de conservation.",
+                "L'Organisme est responsable de traitement pour l'usage qu'il fait des données qui lui sont transmises, notamment les remerciements, l'information sur ses actions et ses sollicitations ultérieures, ainsi que pour ses obligations comptables et déclaratives.",
+                "Par exception, lorsque le don est effectué sur une page éditée par l'Organisme, les parties sont responsables conjointes de la collecte des données saisies par le donateur et de leur transmission à CommonLink, dans les conditions de l'article 6."
+              ],
+              "title": "2. Qui est responsable de quoi"
+            },
+            {
+              "paragraphs": [
+                "CommonLink transmet à l'Organisme les données des donateurs nécessaires à ses obligations de déclarant et à la relation avec ses donateurs.",
+                "Un donateur ayant choisi de ne pas apparaître publiquement sur la page de campagne reste identifié auprès de l'Organisme. Ce choix ne porte que sur l'affichage public."
+              ],
+              "title": "3. Données transmises à l'Organisme"
+            },
+            {
+              "paragraphs": [
+                "L'Organisme informe les personnes concernées du traitement qu'il opère et de la manière dont elles peuvent exercer leurs droits auprès de lui.",
+                "Il n'utilise les données que pour les finalités énoncées à l'article 2, ne les cède ni ne les loue à un tiers, et met en oeuvre des mesures de sécurité appropriées.",
+                "Il traite les demandes d'exercice de droits qui lui sont adressées, et transmet à CommonLink celles qui relèvent des traitements dont elle est responsable.",
+                "Il informe CommonLink sans délai, et au plus tard vingt-quatre heures après en avoir eu connaissance, de toute violation de données concernant des donateurs."
+              ],
+              "title": "4. Engagements de l'Organisme"
+            },
+            {
+              "paragraphs": [
+                "CommonLink informe les donateurs de ses propres traitements par sa politique de confidentialité, accessible depuis toutes les pages du site.",
+                "Elle ne communique à l'Organisme que les données prévues à l'article 3.",
+                "Elle informe l'Organisme sans délai, et au plus tard vingt-quatre heures après en avoir eu connaissance, de toute violation de données concernant les donateurs de ses campagnes."
+              ],
+              "title": "5. Engagements de CommonLink"
+            },
+            {
+              "paragraphs": [
+                "Lorsque le formulaire de don est intégré à un site édité par l'Organisme, celui-ci est l'éditeur de la page. Il y publie ses propres mentions légales et sa propre politique de confidentialité, et y indique que le service de collecte est fourni par CommonLink.",
+                "La collecte des données saisies par le donateur dans ce formulaire, et leur transmission à CommonLink, relèvent de la responsabilité conjointe des parties au sens de l'article 26 du règlement général sur la protection des données. Elles en répartissent les obligations comme suit.",
+                "CommonLink fournit dans le formulaire l'information due au donateur au moment de la collecte. Elle est le point de contact des donateurs pour cette collecte et traite les demandes d'exercice de droits qui s'y rapportent. Elle assure la sécurité du formulaire et de la transmission, et notifie les violations de données qui les concernent.",
+                "L'Organisme transmet à CommonLink, sans délai et au plus tard dans les cinq jours ouvrés, toute demande relative à cette collecte qu'un donateur lui adresserait directement. Il informe CommonLink dans les vingt-quatre heures de toute violation affectant la page qu'il édite.",
+                "Dans leurs rapports entre elles, chaque partie supporte les conséquences des manquements aux obligations que le présent article met à sa charge.",
+                "Le donateur peut exercer ses droits auprès de l'une ou de l'autre des parties. Les grandes lignes du présent accord sont mises à sa disposition dans la politique de confidentialité de CommonLink.",
+                "Dès leur réception par CommonLink, les données sont traitées dans les conditions des articles 2 à 5.",
+                "Les outils de mesure d'audience ou de mesure publicitaire que l'Organisme choisit d'activer sur cette page relèvent de sa seule responsabilité. CommonLink met à sa disposition un bandeau de consentement qui les bloque par défaut. Il appartient à l'Organisme de configurer ces outils pour qu'ils respectent le choix du visiteur."
+              ],
+              "title": "6. Pages de collecte éditées par l'Organisme"
+            },
+            {
+              "paragraphs": [
+                "CommonLink fait appel à des prestataires, notamment pour l'hébergement et l'acheminement des courriers électroniques. Leur liste à jour, ainsi que les éventuels transferts de données en dehors de l'Union européenne et leurs garanties, figurent dans sa politique de confidentialité.",
+                "Le prestataire d'encaissement et l'établissement de paiement qui exécute les paiements sortants traitent les données pour leur propre compte, dans les conditions prévues aux articles 7 et 8. Ils ne sont pas des prestataires de CommonLink."
+              ],
+              "title": "7. Prestataires"
+            },
+            {
+              "paragraphs": [
+                "Les durées appliquées par CommonLink figurent dans sa politique de confidentialité. Elles répondent notamment à ses obligations de conservation en matière fiscale et de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
+                "L'Organisme détermine ses propres durées sous sa responsabilité, au regard de ses obligations de déclarant."
+              ],
+              "title": "8. Durées de conservation"
+            },
+            {
+              "paragraphs": [
+                "À la fin du contrat, CommonLink ne conserve que les données nécessaires au respect de ses obligations légales, dans les conditions prévues à l'article 34."
+              ],
+              "title": "9. Fin du contrat"
+            }
+          ],
+          "title": "Annexe 2. Traitement des données personnelles des donateurs"
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 9 septembre 2026",
+      "lastUpdated": "Version en vigueur au 28 septembre 2026",
       "title": "Conditions générales d'utilisation applicables aux organismes bénéficiaires"
     },
     "cguDonors": {
@@ -1120,7 +1193,7 @@
       "title": "Nous contacter"
     },
     "mentionsLegales": {
-      "lastUpdated": "Version en vigueur au 9 septembre 2026",
+      "lastUpdated": "Version en vigueur au 28 septembre 2026",
       "sections": [
         {
           "paragraphs": [
@@ -1130,7 +1203,8 @@
             "Directeur de la publication : Julian Maiolino, Président.",
             "Courriel : contact@common-link.org",
             "Téléphone : 04 23 40 02 06, appel non surtaxé.",
-            "Hébergeur : Clever Cloud SAS, 4 rue Voltaire, 44000 Nantes, RCS Nantes 524 172 699."
+            "Hébergement du site vitrine www.common-link.org : Vercel Inc., 440 North Barranca Avenue, Suite 4133, Covina, Californie 91723, États-Unis. Téléphone : +1 951 383 6898.",
+            "Hébergement de la plateforme app.common-link.org : Clever Cloud SAS, 4 rue Voltaire, 44000 Nantes, RCS Nantes 524 172 699. Téléphone : 02 85 52 07 69."
           ],
           "title": "Éditeur"
         },
@@ -1257,7 +1331,7 @@
       "collected": {
         "browsing": {
           "linkLabel": "page dédiée",
-          "p1": "Notre hébergeur conserve des journaux techniques pendant sept jours : date et heure de connexion, adresse IP, page demandée, type de navigateur. Ils servent uniquement à diagnostiquer un incident et à détecter une utilisation anormale du service. Au-delà de sept jours, ils sont supprimés.",
+          "p1": "Nos hébergeurs conservent des journaux techniques pendant sept jours au plus : date et heure de connexion, adresse IP, page demandée, type de navigateur. Ils servent uniquement à diagnostiquer un incident et à détecter une utilisation anormale du service. Au-delà de sept jours, ils sont supprimés.",
           "p2": "Les cookies utilisés sont décrits sur notre <link>page dédiée</link>.",
           "title": "En naviguant sur le site"
         },
@@ -1282,20 +1356,21 @@
         "title": "Qui est responsable"
       },
       "hostedPages": {
-        "p1": "Une association peut mettre en ligne, sur son propre site, une page de collecte fournie par CommonLink. Elle en est alors l'éditrice, et ce sont ses propres mentions légales et sa propre politique de confidentialité qui s'appliquent à cette page.",
-        "p2": "Les données que vous saisissez pour effectuer votre don y sont traitées dans les conditions décrites sur la présente page.",
+        "p1": "Une association peut mettre en ligne, sur son propre site, une page de collecte fournie par CommonLink. Elle en est alors l'éditrice, et ses propres mentions légales et sa propre politique de confidentialité s'appliquent à cette page, en dehors du formulaire de don.",
+        "p2": "Pour les données que vous saisissez dans ce formulaire, l'association et CommonLink sont responsables conjoints de leur collecte et de leur transmission à CommonLink. Elles ont convenu que CommonLink vous informe, répond à vos demandes et assure la sécurité de cette collecte. Vous pouvez néanmoins exercer vos droits auprès de l'une ou de l'autre.",
+        "p3": "Une fois reçues, vos données sont traitées dans les conditions décrites sur la présente page.",
         "title": "Les pages de collecte hébergées par une association"
       },
-      "lastUpdated": "Version en vigueur au 9 septembre 2026",
+      "lastUpdated": "Version en vigueur au 28 septembre 2026",
       "protection": {
         "p1": "Cette page explique quelles informations nous collectons, pourquoi, combien de temps nous les gardons, qui y a accès et comment vous pouvez agir dessus.",
         "title": "Protection de vos données personnelles"
       },
       "recipients": {
         "p1": "<b>L'organisme bénéficiaire de votre don.</b> Il connaît votre identité, notamment parce que c'est lui le déclarant de votre reçu fiscal. Il ne peut en faire aucun autre usage que ceux liés à cette obligation et à la relation avec ses donateurs. Si vous avez choisi de ne pas apparaître publiquement sur la page de campagne, votre nom n'est pas affiché, mais l'organisme le connaît.",
-        "p2": "<b>Nos prestataires techniques.</b> Clever Cloud, qui héberge la plateforme en France. Proton, qui achemine nos courriers électroniques, y compris votre reçu fiscal.",
+        "p2": "<b>Nos prestataires techniques.</b> Vercel, qui héberge le site vitrine. Clever Cloud, qui héberge la plateforme en France. Proton, qui achemine nos courriers électroniques, y compris votre reçu fiscal.",
         "p3": "<b>Les prestataires de paiement.</b> Le prestataire qui encaisse les dons et l'établissement de paiement qui exécute les virements traitent vos données pour leur propre compte, dans les conditions qu'ils publient. Ils ne sont pas nos sous-traitants.",
-        "p4": "Nous ne vendons ni ne louons vos données. La plateforme est hébergée dans l'Union européenne. Notre service de messagerie est établi en Suisse, pays reconnu par la Commission européenne comme offrant un niveau de protection adéquat. Aucun autre transfert en dehors de l'Union européenne n'est effectué.",
+        "p4": "Nous ne vendons ni ne louons vos données. La plateforme est hébergée dans l'Union européenne. Notre service de messagerie est établi en Suisse, pays reconnu par la Commission européenne comme offrant un niveau de protection adéquat. L'hébergeur du site vitrine, Vercel, est une société établie aux États-Unis : les données de connexion au site vitrine peuvent y être transférées, dans le respect des garanties prévues par le règlement européen sur la protection des données. Aucun autre transfert en dehors de l'Union européenne n'est effectué.",
         "title": "Qui d'autre y accède"
       },
       "retention": {
@@ -1309,7 +1384,7 @@
         "row2col1": "Les dossiers de réclamation",
         "row2col2": "cinq ans à compter de la clôture du dossier, puis suppression",
         "row3col1": "Les journaux techniques de connexion",
-        "row3col2": "sept jours",
+        "row3col2": "sept jours au plus",
         "row4col1": "Les données de votre espace personnel",
         "row4col2": "jusqu'à sa clôture, sous réserve des durées ci-dessus",
         "title": "Combien de temps"
@@ -1336,14 +1411,14 @@
         "title": "Ce que nous déposons sur common-link.org"
       },
       "hostedPages": {
-        "p1": "Une association peut mettre en ligne, sur son propre site, une page de collecte fournie par CommonLink. Elle en est alors l'éditrice, et ce sont ses propres mentions légales et sa propre politique de confidentialité qui s'appliquent.",
-        "p2": "Si cette association a choisi d'y activer un outil de mesure publicitaire, des traceurs peuvent y être déposés. Ils ne relèvent pas de la présente page. Adressez-vous à l'association concernée, dont les coordonnées figurent sur sa page.",
-        "title": "Les pages de collecte hébergées par une association"
+        "p1": "Sur la page de don d'une campagne, l'association qui la porte peut activer ses propres outils de mesure ou de publicité, par exemple pour suivre les résultats d'une campagne Google Ad Grants. Ces outils sont bloqués par défaut : un bandeau vous permet de les accepter ou de les refuser, aussi simplement l'un que l'autre, et rien n'est déposé tant que vous n'avez pas fait votre choix. Ce choix est conservé treize mois. Ces outils relèvent de l'association concernée, dont les coordonnées figurent sur la page de don.",
+        "p2": "Lorsqu'une association met en ligne, sur son propre site, une page de collecte fournie par CommonLink, elle en est l'éditrice, et ce sont ses propres mentions légales et sa propre politique de confidentialité qui s'appliquent à cette page.",
+        "title": "Les pages de don"
       },
-      "lastUpdated": "Version en vigueur au 9 septembre 2026",
+      "lastUpdated": "Version en vigueur au 28 septembre 2026",
       "logs": {
         "linkLabel": "politique de confidentialité",
-        "p1": "Indépendamment des cookies, notre hébergeur conserve pendant sept jours des journaux de connexion contenant notamment votre adresse IP. Ils ne servent qu'au diagnostic d'incident et à la sécurité du service. Le détail figure dans notre <link>politique de confidentialité</link>.",
+        "p1": "Indépendamment des cookies, nos hébergeurs conservent pendant sept jours au plus des journaux de connexion contenant notamment votre adresse IP. Ils ne servent qu'au diagnostic d'incident et à la sécurité du service. Le détail figure dans notre <link>politique de confidentialité</link>.",
         "title": "Les journaux techniques"
       },
       "notDeposited": {
