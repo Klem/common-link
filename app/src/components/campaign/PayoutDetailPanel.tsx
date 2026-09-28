@@ -30,9 +30,9 @@ interface Props {
 /**
  * Everything the journal's six columns cannot hold, for one payout.
  *
- * Exists so the table can stay at six columns: the destination IBAN, the object the association
- * typed, the exact timestamps and the full refusal sentence all live here rather than crowding a
- * row. The refusal sentence in particular is the reason a rejected row is worth opening at all.
+ * Exists so the table can stay at six columns: the destination IBAN, the exact timestamps and the
+ * full refusal sentence all live here rather than crowding a row. The refusal sentence in
+ * particular is the reason a rejected row is worth opening at all.
  */
 export function PayoutDetailPanel({
   payout, reference, typeLabel, awaitingReturnPayoutId, isSaving, onRetry, onClose,
@@ -47,6 +47,36 @@ export function PayoutDetailPanel({
   // when it attaches a fresh link, but a stale one must never caption a transfer that went through.
   const hasFailure = payout.bridgeLastErrorCode != null
     && (state === PayoutUiState.FAILED || state === PayoutUiState.RETRYABLE);
+  const inTransit = state === PayoutUiState.AUTHORISED || state === PayoutUiState.IN_TRANSIT;
+
+  /** Null when the payout asks nothing of the association, which is most of them. */
+  const footer = action === PayoutAction.NONE ? null : (
+    <>
+      {action === PayoutAction.AWAITING_RETURN && (
+        <p className="pd-note">{t('history.awaitingBank')}</p>
+      )}
+      {action === PayoutAction.RETRY && (
+        <button
+          type="button"
+          className="cm-btn cm-btn-primary w-full"
+          title={t('history.retryHint')}
+          disabled={isSaving}
+          onClick={() => onRetry(payout.id)}
+        >
+          {t('history.retry')}
+        </button>
+      )}
+      {action === PayoutAction.AUTHORISE && payout.bridgeCheckoutUrl && (
+        <a
+          className="cm-btn cm-btn-primary w-full"
+          href={payout.bridgeCheckoutUrl}
+          title={t('history.authoriseHint')}
+        >
+          {t('history.authorise')}
+        </a>
+      )}
+    </>
+  );
 
   return (
     <SidePanel
@@ -54,13 +84,16 @@ export function PayoutDetailPanel({
       title={t('detail.title')}
       closeLabel={t('journal.close')}
       onClose={onClose}
+      footer={footer}
     >
-      <div className="pd-amount">{fmtEur(payout.amount)}</div>
-      <div className="pd-badge-row">
+      {/* The two things read first, on a ground of their own so they do not compete with the list. */}
+      <div className="pd-hero">
+        <div className="pd-amount">{fmtEur(payout.amount)}</div>
         <span className={badgeClass(state)}>
           <span className={badgeDotClass(state)} aria-hidden="true" />
           {t(`state.${state}`)}
         </span>
+        <div className="pd-hero-payee">{payout.payeeName}</div>
       </div>
 
       {/*
@@ -71,28 +104,18 @@ export function PayoutDetailPanel({
       {hasFailure && (
         <p className="pd-reason">{t(`history.${payoutErrorMessageKey(payout.bridgeLastErrorCode)}`)}</p>
       )}
+      {inTransit && <p className="pd-note pd-note-boxed">{t('history.inTransit')}</p>}
 
       <dl className="pd-list">
-        {/* Absent until a transfer has actually been ordered — nothing is invented in its place. */}
-        {reference && (
-          <div className="pd-item">
-            <dt>{t('detail.reference')}</dt>
-            <dd className="mono">{reference}</dd>
-          </div>
-        )}
-        <div className="pd-item">
-          <dt>{t('detail.payee')}</dt>
-          <dd>{payout.payeeName}</dd>
-        </div>
-        <div className="pd-item">
-          <dt>{t('detail.iban')}</dt>
-          <dd className="mono">{payout.ibanValue}</dd>
-        </div>
         <div className="pd-item">
           <dt>{t('detail.type')}</dt>
           <dd>
             {typeLabel} <span className="mono">{payout.typeCode}</span>
           </dd>
+        </div>
+        <div className="pd-item">
+          <dt>{t('detail.iban')}</dt>
+          <dd className="mono">{payout.ibanValue}</dd>
         </div>
         <div className="pd-item">
           <dt>{t('detail.createdAt')}</dt>
@@ -104,37 +127,14 @@ export function PayoutDetailPanel({
             <dd>{fmtDateTime(payout.confirmedAt)}</dd>
           </div>
         )}
+        {/* Absent until a transfer has actually been ordered — nothing is invented in its place. */}
+        {reference && (
+          <div className="pd-item pd-item-stacked">
+            <dt>{t('detail.reference')}</dt>
+            <dd className="mono">{reference}</dd>
+          </div>
+        )}
       </dl>
-
-      {state === PayoutUiState.AUTHORISED || state === PayoutUiState.IN_TRANSIT ? (
-        <p className="pd-note">{t('history.inTransit')}</p>
-      ) : null}
-
-      <div className="pd-actions">
-        {action === PayoutAction.AWAITING_RETURN && (
-          <p className="pd-note">{t('history.awaitingBank')}</p>
-        )}
-        {action === PayoutAction.RETRY && (
-          <button
-            type="button"
-            className="cm-btn cm-btn-primary"
-            title={t('history.retryHint')}
-            disabled={isSaving}
-            onClick={() => onRetry(payout.id)}
-          >
-            {t('history.retry')}
-          </button>
-        )}
-        {action === PayoutAction.AUTHORISE && payout.bridgeCheckoutUrl && (
-          <a
-            className="cm-btn cm-btn-primary"
-            href={payout.bridgeCheckoutUrl}
-            title={t('history.authoriseHint')}
-          >
-            {t('history.authorise')}
-          </a>
-        )}
-      </div>
     </SidePanel>
   );
 }

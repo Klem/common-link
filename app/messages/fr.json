@@ -1405,7 +1405,6 @@
           "confirmedAt": "Exécuté le",
           "createdAt": "Émis le",
           "iban": "IBAN de destination",
-          "payee": "Bénéficiaire",
           "reference": "Référence Bridge",
           "title": "Détail du paiement",
           "type": "Poste comptable"

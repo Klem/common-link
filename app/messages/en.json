@@ -1405,7 +1405,6 @@
           "confirmedAt": "Executed on",
           "createdAt": "Issued on",
           "iban": "Destination IBAN",
-          "payee": "Beneficiary",
           "reference": "Bridge reference",
           "title": "Payment details",
           "type": "Account line"

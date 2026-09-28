@@ -10,18 +10,30 @@ interface Props {
   closeLabel: string;
   onClose: () => void;
   children: ReactNode;
+  /**
+   * Actions pinned to the bottom edge, outside the scrolling body.
+   *
+   * A payout's one action is the reason its panel is opened at all — leaving it at the end of the
+   * detail list put it below the fold on a narrow window, on exactly the rows that have one.
+   */
+  footer?: ReactNode;
 }
 
 /**
- * Right-hand sliding panel used by the Payments tab for a payout's detail and for the issuance form.
+ * Right-hand panel used by the Payments tab for a payout's detail.
  *
  * A panel rather than a modal: the journal stays on screen behind it, so the association keeps the
- * row it came from — and, when issuing, the balance and the history it is issuing against.
+ * row it came from in view.
+ *
+ * Its height is fixed rather than filled: a panel stretched to the viewport left a column of blank
+ * under six lines of detail, and made the close button and the actions drift apart depending on how
+ * much the payout happened to carry. Header and footer hold their edges, the body scrolls between
+ * them.
  *
  * Closes on Escape and on a click on the veil. Focus moves into the panel on open so a keyboard
  * user is not left behind on the row that opened it.
  */
-export function SidePanel({ isOpen, title, closeLabel, onClose, children }: Props) {
+export function SidePanel({ isOpen, title, closeLabel, onClose, children, footer }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +64,7 @@ export function SidePanel({ isOpen, title, closeLabel, onClose, children }: Prop
           </button>
         </div>
         <div className="side-panel-b">{children}</div>
+        {footer && <div className="side-panel-f">{footer}</div>}
       </div>
     </div>
   );

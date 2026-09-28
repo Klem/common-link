@@ -30,6 +30,13 @@ interface DonutProps {
   emptyKey?: string;
   /** Render the side legend. Off when the caller lists the slices itself. Defaults to true. */
   legend?: boolean;
+  /**
+   * Rendered edge of the square chart, in pixels. Defaults to 180.
+   *
+   * Only scales the drawing: the geometry is built in a fixed 180-unit viewBox, so a larger chart
+   * is the same ring drawn bigger, with no arc to recompute.
+   */
+  size?: number;
 }
 
 interface Segment {
@@ -84,7 +91,9 @@ function buildSegments(slices: DonutSlice[]): Segment[] {
  * SVG donut chart with hover interaction and right-side legend.
  * Replicates the `buildDonut()` helper from the dashboard prototype.
  */
-export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty', legend = true }: DonutProps) {
+export function Donut({
+  slices, emptyKey = 'reporting.tab.donutEmpty', legend = true, size = 180,
+}: DonutProps) {
   const t = useTranslations('dashboard');
   const [hovered, setHovered] = useState<number | null>(null);
 
@@ -105,7 +114,7 @@ export function Donut({ slices, emptyKey = 'reporting.tab.donutEmpty', legend = 
     <div className={`flex items-center gap-[24px] flex-wrap w-full${legend ? '' : ' justify-center'}`}>
       {/* SVG donut */}
       <div className="relative flex-shrink-0">
-        <svg width="180" height="180" viewBox="0 0 180 180">
+        <svg width={size} height={size} viewBox="0 0 180 180">
           {segments.map((seg, i) => (
             <path
               key={i}

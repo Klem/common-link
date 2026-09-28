@@ -150,46 +150,53 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
 
         <div className="cm-card">
           <div className="cm-card-title">{t('breakdown.title')}</div>
-          {/* Top half: the chart. Its legend is the list below, which also details each line. */}
-          <div className="cm-donut-center">
-            <Donut slices={donutSlices} emptyKey="campaigns.payments.breakdown.empty" legend={false} />
-          </div>
-
-          {/* Bottom half: one expandable entry per expense line, listing its transactions. */}
-          {breakdown.length > 0 && (
-            <div className="breakdown-list">
-              {breakdown.map((g) => (
-                <details
-                  key={g.code}
-                  className="breakdown-item"
-                  open={openBreakdownCode === g.code}
-                  onToggle={(e) => {
-                    const { open } = e.currentTarget;
-                    setOpenBreakdownCode((cur) => (open ? g.code : cur === g.code ? null : cur));
-                  }}
-                >
-                  <summary className="breakdown-summary">
-                    <span className="breakdown-dot" style={{ background: g.color }} />
-                    <span className="breakdown-label" title={g.label}>{g.label}</span>
-                    <span className="breakdown-count">{t('breakdown.count', { count: g.items.length })}</span>
-                    <span className="breakdown-total">{fmtEur(g.total)}</span>
-                    <span className="breakdown-chev" aria-hidden="true">▾</span>
-                  </summary>
-                  <div className="breakdown-body">
-                    {g.items.map((p) => (
-                      <div key={p.id} className="pay-row">
-                        <div className="pay-row-main">
-                          <div className="pay-row-name">{p.payeeName}</div>
-                          <div className="cm-hint-sm">{fmtDate(p.createdAt)}</div>
-                        </div>
-                        <span className="pay-row-amount">{fmtEur(p.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ))}
+          {/* Chart on the left, its lines on the right — the list is the chart's legend, and each
+              entry expands into the transactions behind its slice. */}
+          <div className="breakdown-split">
+            <div className="cm-donut-center">
+              <Donut
+                slices={donutSlices}
+                emptyKey="campaigns.payments.breakdown.empty"
+                legend={false}
+                size={220}
+              />
             </div>
-          )}
+
+            {breakdown.length > 0 && (
+              <div className="breakdown-list">
+                {breakdown.map((g) => (
+                  <details
+                    key={g.code}
+                    className="breakdown-item"
+                    open={openBreakdownCode === g.code}
+                    onToggle={(e) => {
+                      const { open } = e.currentTarget;
+                      setOpenBreakdownCode((cur) => (open ? g.code : cur === g.code ? null : cur));
+                    }}
+                  >
+                    <summary className="breakdown-summary">
+                      <span className="breakdown-dot" style={{ background: g.color }} />
+                      <span className="breakdown-label" title={g.label}>{g.label}</span>
+                      <span className="breakdown-count">{t('breakdown.count', { count: g.items.length })}</span>
+                      <span className="breakdown-total">{fmtEur(g.total)}</span>
+                      <span className="breakdown-chev" aria-hidden="true">▾</span>
+                    </summary>
+                    <div className="breakdown-body">
+                      {g.items.map((p) => (
+                        <div key={p.id} className="pay-row">
+                          <div className="pay-row-main">
+                            <div className="pay-row-name">{p.payeeName}</div>
+                            <div className="cm-hint-sm">{fmtDate(p.createdAt)}</div>
+                          </div>
+                          <span className="pay-row-amount">{fmtEur(p.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

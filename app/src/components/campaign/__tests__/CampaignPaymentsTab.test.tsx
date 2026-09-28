@@ -530,6 +530,17 @@ describe('CampaignPaymentsTab', () => {
     expect(names).toEqual(['Alpha', 'Beta']);
   });
 
+  it('lays the breakdown out as chart and lines side by side', () => {
+    setupMocks();
+    const { container } = render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />,
+    );
+
+    const split = container.querySelector('.breakdown-split')!;
+    expect(split.querySelector('.cm-donut-center')).not.toBeNull();
+    expect(split.querySelector('.breakdown-list')).not.toBeNull();
+  });
+
   it('keeps a single expense line expanded at a time', () => {
     setupMocks();
     const payouts = [
@@ -966,6 +977,30 @@ describe('CampaignPaymentsTab', () => {
     fireEvent.keyDown(row, { key: 'Enter', target: row });
 
     expect(document.querySelector('.side-panel')).toBeTruthy();
+  });
+
+  it('pins the payout action to the panel footer, out of the scrolling body', () => {
+    // The action is why a row is opened at all; at the end of the detail list it sat below the
+    // fold on exactly the payouts that have one.
+    setupMocks();
+    const retry = vi.fn().mockResolvedValue(samplePayout);
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedPayout], retry })} />,
+    );
+
+    fireEvent.keyDown(journalRows()[0], { key: 'Enter', target: journalRows()[0] });
+
+    const footer = document.querySelector('.side-panel-f') as HTMLElement;
+    expect(within(footer).getByRole('button', { name: 'history.retry' })).toBeDefined();
+  });
+
+  it('carries no footer on a payout that asks nothing', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout] })} />);
+
+    fireEvent.click(journalRows()[0]);
+
+    expect(document.querySelector('.side-panel-f')).toBeNull();
   });
 
   it('closes the detail panel on Escape', () => {
