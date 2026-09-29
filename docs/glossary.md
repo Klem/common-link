@@ -653,6 +653,14 @@ French plan comptable accounting code stored on a payout, e.g. `"60-mat"` (mati�
 14th `OnchainJobAction` variant, enqueued when a payout is confirmed. Carries `RecordPayoutPayload(payoutId, campaignId, amountCents)`. The Solidity function `recordPayout(bytes32, bytes32, uint256)` must be deployed to `CommonLinkRegistry` before the worker can dispatch it (currently stubs with `NotImplementedError`).
 `technical` `onchain`
 
+### Donor read scope
+The single place (`DonorReadScope`) through which every donor-side read resolves who is asking and what they may see. It answers three questions: which `DonorProfile` belongs to the authenticated user, whether that donor has actually made a confirmed donation to a given campaign, and whether a given donation is theirs. It exists as one component rather than one check per endpoint because the rest of the backend is built on the mirror path (association → ownership), and a rule restated per endpoint drifts. A resource that does not exist yields 404; one that exists but belongs to someone else yields 403 — never the reverse, so a probe learns nothing.
+`technical` `security` `backend`
+
+### Estimated tax reduction
+Figure shown on the donor dashboard: the sum, **over receipted donations only**, of `amount × the rate of the fiscal mandate in force on the date of that donation` (66 % or 75 % — see **MandateEligibility**). Three properties matter. It is a sum of lines, not a global percentage: a donor funding both a 66 % and a 75 % association mixes rates. The rate is historical, not current: a donation made under a mandate revoked since still opened a right at the time, and the donor has already declared it. And a donation without a `DonationReceipt` contributes nothing, because the Cerfa receipt is the instrument of the reduction and none is issued without an active mandate. The 20 %-of-taxable-income ceiling is not applied, so the wording must always say "estimated" and never present the amount as acquired.
+`functional` `business` `donor`
+
 ## Z
 
 ### Zustand

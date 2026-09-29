@@ -89,6 +89,20 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
     """)
     fun sumInFlightAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 
+    /**
+     * Number of confirmed payouts published by an association, all campaigns combined.
+     *
+     * Shown on the donor's "My associations" card as the association's transparency record.
+     * Only CONFIRMED payouts count: a pending one has not been executed and would overstate it.
+     */
+    @Query("""
+        SELECT COUNT(p)
+        FROM Payout p
+        WHERE p.campaign.association.id = :associationId
+          AND p.status = org.commonlink.entity.PayoutStatus.CONFIRMED
+    """)
+    fun countConfirmedByAssociationId(@Param("associationId") associationId: UUID): Long
+
     /** The payout attached to a Bridge payment link, for webhook reconciliation. */
     fun findByBridgePaymentLinkId(bridgePaymentLinkId: String): Payout?
 }

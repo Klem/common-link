@@ -35,4 +35,28 @@ class DonorProfile(
     /** Deterministic 20-byte EVM address derived from the donor's UUID via HMAC-SHA256. Null until first donation. */
     @Column(name = "wallet_address", length = 42)
     var walletAddress: String? = null,
+
+    /** Civil first name of the donor. Distinct from [displayName], which is the public pseudonym. */
+    @Column(name = "first_name", length = 128)
+    var firstName: String? = null,
+
+    /** Civil last name of the donor. Distinct from [displayName], which is the public pseudonym. */
+    @Column(name = "last_name", length = 128)
+    var lastName: String? = null,
+
+    /** When `true`, the donor receives the monthly impact report by email. Enabled by default. */
+    @Column(name = "notify_monthly_report", nullable = false)
+    var notifyMonthlyReport: Boolean = true,
+
+    /** When `true`, the donor is emailed when a supported association publishes a new payout. Enabled by default. */
+    @Column(name = "notify_new_payout", nullable = false)
+    var notifyNewPayout: Boolean = true,
+
+    /** When `true`, the donor is emailed when a supported campaign reaches its goal. Enabled by default. */
+    @Column(name = "notify_goal_reached", nullable = false)
+    var notifyGoalReached: Boolean = true,
+
+    /** When `true`, the donor accepts campaign suggestions by email. Opt-in: disabled by default. */
+    @Column(name = "notify_suggestions", nullable = false)
+    var notifySuggestions: Boolean = false,
 )

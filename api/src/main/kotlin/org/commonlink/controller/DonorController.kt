@@ -7,24 +7,38 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.commonlink.dto.DonorAssociationDto
+import org.commonlink.dto.DonorDonationDto
+import org.commonlink.dto.DonorDonationFiltersDto
 import org.commonlink.dto.DonorProfileDto
+import org.commonlink.dto.DonorStatsDto
+import org.commonlink.dto.PageResponse
 import org.commonlink.dto.UpdateDonorProfileRequest
+import org.commonlink.dto.toPageResponse
+import org.commonlink.service.DonorAssociationService
+import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorService
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
 @RequestMapping("/api/donor")
-@Tag(name = "Donor", description = "Donor profile endpoints")
+@Tag(name = "Donor", description = "Donor profile and dashboard endpoints")
 class DonorController(
-    private val donorService: DonorService
+    private val donorService: DonorService,
+    private val donorDashboardService: DonorDashboardService,
+    private val donorAssociationService: DonorAssociationService,
 ) {
 
     @GetMapping("/me")
@@ -61,4 +75,110 @@ class DonorController(
         @Valid @RequestBody req: UpdateDonorProfileRequest
     ): ResponseEntity<DonorProfileDto> =
         ResponseEntity.ok(donorService.updateProfile(UUID.fromString(principal.username), req))
+
+    @GetMapping("/me/donations")
+    @Operation(
+        summary = "List the donor's donations",
+        description = "Confirmed donations of the authenticated donor, newest first. " +
+            "Both filters are optional: omit them to get the whole history."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Donation page returned",
+            content = [Content(schema = Schema(implementation = PageResponse::class))]
+        ),
+        ApiResponse(responseCode = "400", description = "Paging or year out of range", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun listDonations(
+        @AuthenticationPrincipal principal: UserDetails,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(required = false) associationId: UUID?,
+        @RequestParam(required = false) year: Int?,
+    ): ResponseEntity<PageResponse<DonorDonationDto>> =
+        ResponseEntity.ok(
+            donorDashboardService
+                .listDonations(UUID.fromString(principal.username), associationId, year, page, size)
+                .toPageResponse()
+        )
+
+    @GetMapping("/me/donations/filters")
+    @Operation(
+        summary = "Values available in the donation history filters",
+        description = "Associations funded by the authenticated donor and years with at least one confirmed donation."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Filter values returned",
+            content = [Content(schema = Schema(implementation = DonorDonationFiltersDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun getDonationFilters(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<DonorDonationFiltersDto> =
+        ResponseEntity.ok(donorDashboardService.getFilters(UUID.fromString(principal.username)))
+
+    @GetMapping("/me/stats")
+    @Operation(
+        summary = "Donor headline figures",
+        description = "Total donated, number of donations, associations supported, and the " +
+            "**estimated** tax reduction — an estimate, never a guaranteed amount."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Stats returned",
+            content = [Content(schema = Schema(implementation = DonorStatsDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun getStats(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<DonorStatsDto> =
+        ResponseEntity.ok(donorDashboardService.getStats(UUID.fromString(principal.username)))
+
+    @GetMapping("/me/donations/{donationId}/receipt", produces = [MediaType.APPLICATION_PDF_VALUE])
+    @Operation(
+        summary = "Download the fiscal receipt of a donation",
+        description = "Returns the stored Cerfa PDF. 403 when the donation belongs to another donor, " +
+            "404 when it does not exist or no receipt has been generated for it."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Receipt PDF returned"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Donation belongs to another donor", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donation or receipt not found", content = [Content()])
+    )
+    fun downloadReceipt(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable donationId: UUID,
+    ): ResponseEntity<ByteArray> {
+        val receipt = donorDashboardService.getReceipt(UUID.fromString(principal.username), donationId)
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${receipt.fileName}\"")
+            .body(receipt.pdfBytes)
+    }
+
+    @GetMapping("/me/associations")
+    @Operation(
+        summary = "List the associations the donor supports",
+        description = "One entry per association funded by the authenticated donor, most funded first."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Associations returned",
+            content = [Content(schema = Schema(implementation = DonorAssociationDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun listAssociations(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<List<DonorAssociationDto>> =
+        ResponseEntity.ok(donorAssociationService.listAssociations(UUID.fromString(principal.username)))
 }

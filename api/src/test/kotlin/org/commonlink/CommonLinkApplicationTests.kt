@@ -32,6 +32,8 @@ import org.commonlink.service.VerificationService
 import org.commonlink.service.PayeeService
 import org.commonlink.service.CampaignService
 import org.commonlink.service.DonorAggregateService
+import org.commonlink.service.DonorAssociationService
+import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorService
 import org.commonlink.service.MandatePdfService
 import org.commonlink.service.MandateService
@@ -77,6 +79,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var associationLandingService: AssociationLandingService
     @MockkBean private lateinit var authRateLimiter: AuthRateLimiter
     @MockkBean private lateinit var donorAggregateService: DonorAggregateService
+    @MockkBean private lateinit var donorDashboardService: DonorDashboardService
+    @MockkBean private lateinit var donorAssociationService: DonorAssociationService
     @MockkBean private lateinit var payoutService: PayoutService
     @MockkBean private lateinit var reportingService: ReportingService
     @MockkBean private lateinit var verificationService: VerificationService
