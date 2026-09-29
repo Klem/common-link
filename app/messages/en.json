@@ -325,6 +325,7 @@
       "conflict": "This resource already exists.",
       "networkError": "Connection problem. Check your network.",
       "rateLimitExceeded": "Too many requests. Please wait {seconds} seconds.",
+      "receiptDownloadFailed": "Unable to download the receipt.",
       "serverError": "An error occurred. Please try again.",
       "sessionExpired": "Your session has expired. Please log in again."
     },
@@ -1514,13 +1515,61 @@
       }
     },
     "donor": {
+      "associations": {
+        "campaignCount": "Campaigns supported",
+        "empty": {
+          "icon": "🏢",
+          "subtitle": "The associations you support will appear here.",
+          "title": "No association supported yet"
+        },
+        "error": "Unable to load your associations.",
+        "lastDonationAt": "Last donation",
+        "loading": "Loading associations…",
+        "publishedPayoutCount": "Published expenses",
+        "title": "My associations",
+        "totalDonated": "Total donated"
+      },
+      "donations": {
+        "empty": {
+          "subtitle": "Your confirmed donations will appear here.",
+          "title": "No donations yet"
+        },
+        "error": "Unable to load your donations.",
+        "filters": {
+          "allAssociations": "All associations",
+          "allYears": "All years",
+          "association": "Association",
+          "year": "Year"
+        },
+        "loading": "Loading donations…",
+        "next": "Next",
+        "pageOf": "Page {page} of {totalPages}",
+        "pagination": "Donation history pages",
+        "previous": "Previous",
+        "table": {
+          "amount": "Amount",
+          "association": "Association",
+          "date": "Date",
+          "downloadReceipt": "Download",
+          "noReceipt": "Not available",
+          "project": "Project",
+          "receipt": "Receipt"
+        },
+        "tableLabel": "Donation history",
+        "title": "My donations"
+      },
       "empty": {
         "cta": "Explore campaigns",
         "icon": "🌱",
         "subtitle": "Explore campaigns and make your first donation to see your impact.",
         "title": "Your philanthropic journey starts here"
       },
-      "profile": {
+      "sections": {
+        "myAssociations": "My associations",
+        "recentDonations": "My recent donations",
+        "viewAll": "View all"
+      },
+      "settings": {
         "anonymous": "Anonymous donations by default",
         "anonymousHint": "Your identity will be hidden on campaigns.",
         "cancel": "Cancel",
@@ -1528,8 +1577,21 @@
         "displayName": "Display name",
         "displayNamePlaceholder": "Your public name",
         "email": "Email",
-        "loading": "Loading profile…",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "loading": "Loading settings…",
         "memberSince": "Member since {date}",
+        "notifications": {
+          "goalReached": "Goal reached",
+          "goalReachedHint": "Get notified when a supported campaign reaches its goal.",
+          "monthlyReport": "Monthly impact report",
+          "monthlyReportHint": "Receive a summary of your impact by email every month.",
+          "newPayout": "New expense published",
+          "newPayoutHint": "Get notified when a supported association publishes an expense.",
+          "suggestions": "Campaign suggestions",
+          "suggestionsHint": "Receive suggestions of campaigns to support by email.",
+          "title": "Notifications"
+        },
         "save": "Save",
         "security": {
           "changePassword": "Set a password",
@@ -1539,19 +1601,13 @@
           "magicLink": "Magic link",
           "title": "Security"
         },
-        "success": "Profile updated.",
-        "title": "My profile"
-      },
-      "sections": {
-        "followedCampaigns": "My followed campaigns",
-        "nftBadges": "My NFT badges",
-        "recentDonations": "My recent donations",
-        "viewAll": "View all"
+        "title": "My settings"
       },
       "stats": {
-        "campaignsFollowed": "Campaigns followed",
-        "donationsCount": "Donations made",
-        "impactScore": "Impact score",
+        "associationCount": "Associations supported",
+        "donationCount": "Donations made",
+        "estimatedTaxReduction": "Estimated tax reduction",
+        "estimatedTaxReductionHint": "Estimate, not a guaranteed amount",
         "totalDonated": "Total donated"
       }
     },
@@ -1568,6 +1624,7 @@
     },
     "nav": {
       "associationProfile": "Association profile",
+      "associations": "My associations",
       "campaigns": "Campaigns",
       "donations": "My donations",
       "donors": "Donors",
@@ -1580,7 +1637,6 @@
       "orgType": "Non-profit (loi 1901)",
       "overview": "Dashboard",
       "payees": "Beneficiaries",
-      "profile": "My profile",
       "reporting": "Reporting",
       "settings": "Settings"
     },

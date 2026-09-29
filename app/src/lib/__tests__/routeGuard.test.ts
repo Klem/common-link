@@ -15,7 +15,7 @@ describe('getRedirectForRole', () => {
   });
 
   it('returns /login for a nested donor path when role is null', () => {
-    expect(getRedirectForRole(ROUTES.DONOR_PROFILE, null)).toBe(ROUTES.LOGIN);
+    expect(getRedirectForRole(ROUTES.DONOR_SETTINGS, null)).toBe(ROUTES.LOGIN);
   });
 
   it('returns null for /login when role is null (let login page render)', () => {
@@ -49,7 +49,7 @@ describe('getRedirectForRole', () => {
   });
 
   it('returns null for DONOR on a nested donor path', () => {
-    expect(getRedirectForRole(ROUTES.DONOR_PROFILE, UserRole.DONOR)).toBeNull();
+    expect(getRedirectForRole(ROUTES.DONOR_SETTINGS, UserRole.DONOR)).toBeNull();
   });
 
   // ── Authenticated user on /login (bounce to dashboard) ───────────────────

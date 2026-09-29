@@ -325,6 +325,7 @@
       "conflict": "Cette ressource existe déjà.",
       "networkError": "Problème de connexion. Vérifiez votre réseau.",
       "rateLimitExceeded": "Trop de requêtes. Veuillez attendre {seconds} secondes.",
+      "receiptDownloadFailed": "Impossible de télécharger le reçu.",
       "serverError": "Une erreur est survenue. Veuillez réessayer.",
       "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
     },
@@ -1514,44 +1515,99 @@
       }
     },
     "donor": {
+      "associations": {
+        "campaignCount": "Campagnes soutenues",
+        "empty": {
+          "icon": "🏢",
+          "subtitle": "Les associations que vous soutenez apparaîtront ici.",
+          "title": "Aucune association soutenue pour le moment"
+        },
+        "error": "Impossible de charger vos associations.",
+        "lastDonationAt": "Dernier don",
+        "loading": "Chargement des associations…",
+        "publishedPayoutCount": "Dépenses publiées",
+        "title": "Mes associations",
+        "totalDonated": "Total donné"
+      },
+      "donations": {
+        "empty": {
+          "subtitle": "Vos dons confirmés apparaîtront ici.",
+          "title": "Aucun don pour le moment"
+        },
+        "error": "Impossible de charger vos dons.",
+        "filters": {
+          "allAssociations": "Toutes les associations",
+          "allYears": "Toutes les années",
+          "association": "Association",
+          "year": "Année"
+        },
+        "loading": "Chargement des dons…",
+        "next": "Suivant",
+        "pageOf": "Page {page} sur {totalPages}",
+        "pagination": "Pages de l'historique des dons",
+        "previous": "Précédent",
+        "table": {
+          "amount": "Montant",
+          "association": "Association",
+          "date": "Date",
+          "downloadReceipt": "Télécharger",
+          "noReceipt": "Non disponible",
+          "project": "Projet",
+          "receipt": "Reçu"
+        },
+        "tableLabel": "Historique des dons",
+        "title": "Mes dons"
+      },
       "empty": {
         "cta": "Explorer les campagnes",
         "icon": "🌱",
         "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
         "title": "Votre aventure philanthropique commence ici"
       },
-      "profile": {
-        "anonymous": "Don anonyme par défaut",
+      "sections": {
+        "myAssociations": "Mes associations",
+        "recentDonations": "Mes dons récents",
+        "viewAll": "Voir tout"
+      },
+      "settings": {
+        "anonymous": "Dons anonymes par défaut",
         "anonymousHint": "Votre identité sera masquée sur les campagnes.",
         "cancel": "Annuler",
         "changePhoto": "Changer la photo",
-        "displayName": "Nom d'affichage",
+        "displayName": "Nom affiché",
         "displayNamePlaceholder": "Votre nom public",
         "email": "Email",
-        "loading": "Chargement du profil…",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "loading": "Chargement des paramètres…",
         "memberSince": "Membre depuis {date}",
+        "notifications": {
+          "goalReached": "Objectif atteint",
+          "goalReachedHint": "Soyez averti quand une campagne que vous soutenez atteint son objectif.",
+          "monthlyReport": "Rapport d'impact mensuel",
+          "monthlyReportHint": "Recevez un résumé de votre impact par email chaque mois.",
+          "newPayout": "Nouvelle dépense publiée",
+          "newPayoutHint": "Soyez averti quand une association que vous soutenez publie une dépense.",
+          "suggestions": "Suggestions de campagnes",
+          "suggestionsHint": "Recevez par email des suggestions de campagnes à soutenir.",
+          "title": "Notifications"
+        },
         "save": "Enregistrer",
         "security": {
           "changePassword": "Définir un mot de passe",
-          "email": "Email & mot de passe",
+          "email": "Email et mot de passe",
           "google": "Google",
           "loginMethod": "Méthode de connexion",
           "magicLink": "Lien magique",
           "title": "Sécurité"
         },
-        "success": "Profil mis à jour.",
-        "title": "Mon profil"
-      },
-      "sections": {
-        "followedCampaigns": "Mes campagnes suivies",
-        "nftBadges": "Mes badges NFT",
-        "recentDonations": "Mes dons récents",
-        "viewAll": "Voir tout"
+        "title": "Mes paramètres"
       },
       "stats": {
-        "campaignsFollowed": "Campagnes suivies",
-        "donationsCount": "Dons effectués",
-        "impactScore": "Score d'impact",
+        "associationCount": "Associations soutenues",
+        "donationCount": "Dons effectués",
+        "estimatedTaxReduction": "Réduction d'impôt estimée",
+        "estimatedTaxReductionHint": "Estimation, et non un montant garanti",
         "totalDonated": "Total donné"
       }
     },
@@ -1568,6 +1624,7 @@
     },
     "nav": {
       "associationProfile": "Profil association",
+      "associations": "Mes associations",
       "campaigns": "Campagnes",
       "donations": "Mes dons",
       "donors": "Donateurs",
@@ -1580,7 +1637,6 @@
       "orgType": "Association loi 1901",
       "overview": "Tableau de bord",
       "payees": "Bénéficiaires",
-      "profile": "Mon profil",
       "reporting": "Mon reporting",
       "settings": "Paramètres"
     },

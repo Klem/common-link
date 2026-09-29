@@ -12,12 +12,18 @@ import { useSetPassword } from '@/hooks/auth/useSetPassword';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
-const profileSchema = z.object({
-  displayName: z.string().optional(),
+const settingsSchema = z.object({
+  firstName: z.string().max(128).optional(),
+  lastName: z.string().max(128).optional(),
+  displayName: z.string().max(255).optional(),
   anonymous: z.boolean(),
+  notifyMonthlyReport: z.boolean(),
+  notifyNewPayout: z.boolean(),
+  notifyGoalReached: z.boolean(),
+  notifySuggestions: z.boolean(),
 });
 
-type ProfileFormData = z.infer<typeof profileSchema>;
+type SettingsFormData = z.infer<typeof settingsSchema>;
 
 // ─── Avatar helpers ───────────────────────────────────────────────────────────
 
@@ -32,7 +38,7 @@ function getInitials(displayName: string | null, email: string): string {
 }
 
 function formatDate(isoDate: string): string {
-  return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long' }).format(
+  return new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'long' }).format(
     new Date(isoDate),
   );
 }
@@ -40,14 +46,53 @@ function formatDate(isoDate: string): string {
 // ─── Provider label map ───────────────────────────────────────────────────────
 
 const PROVIDER_KEYS = {
-  GOOGLE: 'donor.profile.security.google',
-  EMAIL: 'donor.profile.security.email',
-  MAGIC_LINK: 'donor.profile.security.magicLink',
+  GOOGLE: 'donor.settings.security.google',
+  EMAIL: 'donor.settings.security.email',
+  MAGIC_LINK: 'donor.settings.security.magicLink',
 } as const;
+
+// ─── Notification toggle row ───────────────────────────────────────────────────
+
+function NotificationToggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div>
+        <p className="text-sm text-text font-medium">{label}</p>
+        <p className="text-xs text-text-2 mt-0.5">{hint}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={`relative w-[42px] h-[24px] rounded-full transition-colors duration-200 flex-shrink-0 ${
+          checked ? 'bg-green' : 'bg-muted'
+        }`}
+      >
+        <span
+          className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-text transition-all duration-200 ${
+            checked ? 'left-[21px]' : 'left-[3px]'
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function DonorProfilePage() {
+export default function DonorSettingsPage() {
   const t = useTranslations('dashboard');
   const user = useAuthStore((s) => s.user);
   const { profile, isLoading, updateProfile } = useDonorProfile();
@@ -61,20 +106,36 @@ export default function DonorProfilePage() {
     watch,
     setValue,
     formState: { isDirty, isSubmitting },
-  } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
+  } = useForm<SettingsFormData>({
+    resolver: zodResolver(settingsSchema),
     values: {
+      firstName: profile?.firstName ?? '',
+      lastName: profile?.lastName ?? '',
       displayName: profile?.displayName ?? '',
       anonymous: profile?.anonymous ?? false,
+      notifyMonthlyReport: profile?.notifyMonthlyReport ?? true,
+      notifyNewPayout: profile?.notifyNewPayout ?? true,
+      notifyGoalReached: profile?.notifyGoalReached ?? true,
+      notifySuggestions: profile?.notifySuggestions ?? false,
     },
   });
 
   const anonymousValue = watch('anonymous');
+  const notifyMonthlyReport = watch('notifyMonthlyReport');
+  const notifyNewPayout = watch('notifyNewPayout');
+  const notifyGoalReached = watch('notifyGoalReached');
+  const notifySuggestions = watch('notifySuggestions');
 
   const onSubmit = handleSubmit(async (data) => {
     await updateProfile({
+      firstName: data.firstName,
+      lastName: data.lastName,
       displayName: data.displayName || undefined,
       anonymous: data.anonymous,
+      notifyMonthlyReport: data.notifyMonthlyReport,
+      notifyNewPayout: data.notifyNewPayout,
+      notifyGoalReached: data.notifyGoalReached,
+      notifySuggestions: data.notifySuggestions,
     });
     reset(data);
   });
@@ -92,7 +153,7 @@ export default function DonorProfilePage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-display font-black text-2xl md:text-3xl">{t('donor.profile.title')}</h1>
+        <h1 className="font-display font-black text-2xl md:text-3xl">{t('donor.settings.title')}</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
@@ -107,32 +168,59 @@ export default function DonorProfilePage() {
             <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
               <span className="chip green">{t('roles.donor')}</span>
               <span className="text-xs text-text-2">
-                {t('donor.profile.memberSince', { date: formatDate(user.createdAt) })}
+                {t('donor.settings.memberSince', { date: formatDate(user.createdAt) })}
               </span>
             </div>
           </div>
           <button type="button" className="btn btn-ghost btn-sm">
-            {t('donor.profile.changePhoto')}
+            {t('donor.settings.changePhoto')}
           </button>
         </div>
 
-        {/* ── Right: Form + Security ────────────────────────────────────── */}
+        {/* ── Right: Form + Notifications + Security ────────────────────── */}
         <div className="flex flex-col gap-6">
-          {/* Profile form card */}
+          {/* Identity form card */}
           <div className="card card-no-hover">
             <div className="card-body">
               {isLoading ? (
-                <p className="text-sm text-text-2">{t('donor.profile.loading')}</p>
+                <p className="text-sm text-text-2" aria-live="polite">
+                  {t('donor.settings.loading')}
+                </p>
               ) : (
                 <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-group mb-0">
+                      <label htmlFor="firstName" className="form-label">
+                        {t('donor.settings.firstName')}
+                      </label>
+                      <input
+                        id="firstName"
+                        type="text"
+                        className="form-input"
+                        {...register('firstName')}
+                      />
+                    </div>
+                    <div className="form-group mb-0">
+                      <label htmlFor="lastName" className="form-label">
+                        {t('donor.settings.lastName')}
+                      </label>
+                      <input
+                        id="lastName"
+                        type="text"
+                        className="form-input"
+                        {...register('lastName')}
+                      />
+                    </div>
+                  </div>
+
                   <div className="form-group">
                     <label htmlFor="displayName" className="form-label">
-                      {t('donor.profile.displayName')}
+                      {t('donor.settings.displayName')}
                     </label>
                     <input
                       id="displayName"
                       type="text"
-                      placeholder={t('donor.profile.displayNamePlaceholder')}
+                      placeholder={t('donor.settings.displayNamePlaceholder')}
                       className="form-input"
                       {...register('displayName')}
                     />
@@ -140,7 +228,7 @@ export default function DonorProfilePage() {
 
                   <div className="form-group">
                     <label htmlFor="email" className="form-label">
-                      {t('donor.profile.email')}
+                      {t('donor.settings.email')}
                     </label>
                     <input
                       id="email"
@@ -151,26 +239,51 @@ export default function DonorProfilePage() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between py-1">
-                    <div>
-                      <p className="text-sm text-text font-medium">{t('donor.profile.anonymous')}</p>
-                      <p className="text-xs text-text-2 mt-0.5">{t('donor.profile.anonymousHint')}</p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={anonymousValue}
-                      onClick={() => setValue('anonymous', !anonymousValue, { shouldDirty: true })}
-                      className={`relative w-[42px] h-[24px] rounded-full transition-colors duration-200 flex-shrink-0 ${
-                        anonymousValue ? 'bg-green' : 'bg-muted'
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-text transition-all duration-200 ${
-                          anonymousValue ? 'left-[21px]' : 'left-[3px]'
-                        }`}
+                  <NotificationToggle
+                    label={t('donor.settings.anonymous')}
+                    hint={t('donor.settings.anonymousHint')}
+                    checked={anonymousValue}
+                    onChange={(value) => setValue('anonymous', value, { shouldDirty: true })}
+                  />
+
+                  <div className="border-t border-border pt-4 mt-2">
+                    <h3 className="font-display font-bold text-sm text-text mb-3">
+                      {t('donor.settings.notifications.title')}
+                    </h3>
+                    <div className="flex flex-col gap-1">
+                      <NotificationToggle
+                        label={t('donor.settings.notifications.monthlyReport')}
+                        hint={t('donor.settings.notifications.monthlyReportHint')}
+                        checked={notifyMonthlyReport}
+                        onChange={(value) =>
+                          setValue('notifyMonthlyReport', value, { shouldDirty: true })
+                        }
                       />
-                    </button>
+                      <NotificationToggle
+                        label={t('donor.settings.notifications.newPayout')}
+                        hint={t('donor.settings.notifications.newPayoutHint')}
+                        checked={notifyNewPayout}
+                        onChange={(value) =>
+                          setValue('notifyNewPayout', value, { shouldDirty: true })
+                        }
+                      />
+                      <NotificationToggle
+                        label={t('donor.settings.notifications.goalReached')}
+                        hint={t('donor.settings.notifications.goalReachedHint')}
+                        checked={notifyGoalReached}
+                        onChange={(value) =>
+                          setValue('notifyGoalReached', value, { shouldDirty: true })
+                        }
+                      />
+                      <NotificationToggle
+                        label={t('donor.settings.notifications.suggestions')}
+                        hint={t('donor.settings.notifications.suggestionsHint')}
+                        checked={notifySuggestions}
+                        onChange={(value) =>
+                          setValue('notifySuggestions', value, { shouldDirty: true })
+                        }
+                      />
+                    </div>
                   </div>
 
                   <div className="flex gap-3 pt-1">
@@ -179,7 +292,7 @@ export default function DonorProfilePage() {
                       disabled={!isDirty || isSubmitting}
                       className="btn btn-primary btn-md disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      {t('donor.profile.save')}
+                      {t('donor.settings.save')}
                     </button>
                     <button
                       type="button"
@@ -187,7 +300,7 @@ export default function DonorProfilePage() {
                       disabled={!isDirty}
                       className="btn btn-ghost btn-md disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      {t('donor.profile.cancel')}
+                      {t('donor.settings.cancel')}
                     </button>
                   </div>
                 </form>
@@ -199,11 +312,11 @@ export default function DonorProfilePage() {
           <div className="card card-no-hover">
             <div className="card-body">
               <h3 className="font-display font-bold text-base text-text mb-4">
-                {t('donor.profile.security.title')}
+                {t('donor.settings.security.title')}
               </h3>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="form-label">{t('donor.profile.security.loginMethod')}</p>
+                  <p className="form-label">{t('donor.settings.security.loginMethod')}</p>
                   <p className="text-sm text-text">
                     {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
                   </p>
@@ -213,7 +326,7 @@ export default function DonorProfilePage() {
                   onClick={() => setShowPasswordModal(true)}
                   className="btn btn-ghost btn-sm"
                 >
-                  {t('donor.profile.security.changePassword')}
+                  {t('donor.settings.security.changePassword')}
                 </button>
               </div>
             </div>
@@ -232,7 +345,7 @@ export default function DonorProfilePage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-display font-bold text-[17px] text-text mb-[16px]">
-              {t('donor.profile.security.changePassword')}
+              {t('donor.settings.security.changePassword')}
             </h3>
             <SetPasswordForm
               onSubmit={handlePasswordSubmit}
