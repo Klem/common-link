@@ -6,6 +6,7 @@ import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutBlockingReason
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -50,7 +51,7 @@ data class PayoutConfirmContext(
  * Confirmation runs in three phases, orchestrated by [PayoutService.confirm]:
  *  1. [loadForConfirm] — validate and read what the initiation needs
  *  2. [reserve] — lock the campaign, re-check the balance, mark the amount engaged
- *  3. Bridge call, then [attachPaymentLink] or [finaliseFailed]
+ *  3. Bridge call, then [attachPaymentLink] or [releaseReservation]
  *
  * The payout stays PENDING throughout: with Open Banking initiation, nothing moves until the
  * association authorises the transfer at its own bank. Settlement arrives later, through Bridge's
@@ -179,6 +180,7 @@ class PayoutConfirmer(
         payout.bridgeCheckoutUrl = link.url
         payout.bridgeStatus = BridgePaymentStatus.CREA
         payout.bridgeLastError = null
+        payout.bridgeLastErrorCode = null
         payout.bridgeSyncedAt = Instant.now()
 
         log.info("Payout {} awaiting bank authorisation via Bridge link {}", payoutId, link.id)
@@ -191,8 +193,13 @@ class PayoutConfirmer(
      *
      * Both writes happen in one transaction, so a crash never leaves a payout CONFIRMED without its
      * [OnchainJobAction.RECORD_PAYOUT] job. Idempotent: a payout already CONFIRMED is returned
-     * untouched, because Bridge retries a webhook for up to two days and the outbox deduplicates on
-     * `correlationKey` anyway.
+     * untouched, because Bridge retries a webhook for up to two days.
+     *
+     * The row is locked for the whole transaction. That guard is a read-then-write, and Bridge
+     * delivers its notifications in parallel: without the lock two threads both read a payout that
+     * was not yet CONFIRMED and both enqueued the job, the second one dying on the outbox's unique
+     * constraint and answering Bridge 502 for a settlement that had succeeded — see
+     * [PayoutRepository.findByIdForUpdate].
      *
      * @param payoutId Payout to settle.
      * @param transactionId Bridge transaction id, for bank reconciliation.
@@ -201,8 +208,8 @@ class PayoutConfirmer(
      */
     @Transactional
     fun finaliseSettled(payoutId: UUID, transactionId: String?): Payout {
-        val payout = payoutRepository.findById(payoutId)
-            .orElseThrow { NotFoundException("Payout not found: $payoutId") }
+        val payout = payoutRepository.findByIdForUpdate(payoutId)
+            ?: throw NotFoundException("Payout not found: $payoutId")
 
         if (payout.status == PayoutStatus.CONFIRMED) {
             log.debug("Payout {} already confirmed — webhook replay ignored", payoutId)
@@ -214,6 +221,7 @@ class PayoutConfirmer(
         payout.bridgeStatus = BridgePaymentStatus.ACSC
         payout.bridgePaymentTransactionId = transactionId
         payout.bridgeLastError = null
+        payout.bridgeLastErrorCode = null
         payout.bridgeSyncedAt = Instant.now()
         val saved = payoutRepository.save(payout)
 
@@ -238,54 +246,104 @@ class PayoutConfirmer(
     }
 
     /**
-     * Undoes [reserve] after an initiation that never reached Bridge, leaving the payout PENDING.
+     * Deletes a payout whose initiation Bridge never accepted.
      *
-     * Nothing was created at Bridge, so nothing can be debited: the amount must return to the
-     * campaign's confirmable balance and the association must be able to click confirm again.
-     * [finaliseFailed] would be wrong here — it stamps FAILED, which [loadForConfirm] refuses, so a
-     * transient Bridge outage or a rejected request would retire the payout for good.
+     * Nothing was created at Bridge: no link, no authorisation URL, nothing a later notification
+     * could refer to. The row would record only that a form failed to submit, and an association
+     * that cannot tell it apart from a real attempt simply creates another one — which is how four
+     * identical rows appeared on 2026-09-23 from one payment.
      *
-     * The diagnostic is still kept on the row: only the reservation is released.
+     * Deliberately narrow. Only a payout still PENDING and carrying no payment-link id is dropped;
+     * anything else is left alone and logged, because a link that exists is a fact this row is the
+     * only local record of — including a destination read-back refused, which is evidence of a
+     * control `docs/legal/verification-payee-iban.md` describes.
      *
-     * @param payoutId Payout whose reservation is released.
-     * @param message Why the initiation failed, stored on the row for support.
+     * @param payoutId Payout to drop.
      */
     @Transactional
-    fun releaseReservation(payoutId: UUID, message: String) {
-        val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+    fun discardNeverInitiated(payoutId: UUID) {
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
+        if (payout.status != PayoutStatus.PENDING || payout.bridgePaymentLinkId != null) {
+            log.warn(
+                "Refusing to discard payout {} — it is {} with Bridge link {}",
+                payoutId, payout.status, payout.bridgePaymentLinkId,
+            )
+            return
+        }
+        payoutRepository.delete(payout)
+        log.info("Payout {} discarded — Bridge never accepted the initiation, so nothing was created", payoutId)
+    }
+
+    /**
+     * Returns a payout to a retryable PENDING state, its amount back on the campaign's balance.
+     *
+     * For every outcome where **no transfer was ever authorised**: an initiation that never
+     * reached Bridge, and a link that died unused — expired or revoked before the association
+     * authenticated at its bank. In all of them nothing can have been debited, so the amount must
+     * return to the confirmable balance and the association must be able to click confirm again.
+     *
+     * [finaliseFailed] would be wrong here — it stamps FAILED, which [loadForConfirm] refuses, so
+     * closing the tab on the bank's page would retire a payout for good over an outcome that moved
+     * no money. That distinction is the whole point: a rejection is the bank refusing, an expiry is
+     * nobody ever asking. Only the first is terminal.
+     *
+     * The diagnostic is kept on the row so the association is told why, and
+     * [Payout.bridgeCheckoutUrl] is cleared: it points at a link that can no longer be used.
+     * [Payout.bridgePaymentLinkId] stays, as the audit trail of the attempt and as the routing key
+     * for any notification Bridge still has in flight for it.
+     *
+     * @param payoutId Payout whose reservation is released.
+     * @param message Why it is being released, stored verbatim on the row for support.
+     * @param code Same cause as a stable value, which is what the interface shows.
+     */
+    @Transactional
+    fun releaseReservation(payoutId: UUID, message: String, code: PayoutErrorCode) {
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
         if (payout.status != PayoutStatus.PENDING) {
             log.warn("Refusing to release payout {} — it is {}", payoutId, payout.status)
             return
         }
         payout.bridgeStatus = null
+        payout.bridgeCheckoutUrl = null
         payout.bridgeLastError = message.take(BRIDGE_ERROR_MAX_LENGTH)
+        payout.bridgeLastErrorCode = code
         payout.bridgeSyncedAt = Instant.now()
         payoutRepository.save(payout)
-        log.warn("Payout {} released back to PENDING — Bridge initiation never happened: {}", payoutId, message)
+        log.warn("Payout {} released back to a retryable PENDING: {}", payoutId, message)
     }
 
     /**
-     * Marks the payout FAILED — the transfer was refused, or its authorisation window closed.
+     * Marks the payout FAILED — the bank refused the transfer.
+     *
+     * Reserved for a refusal, which is terminal: the bank was asked and said no. A link that
+     * merely died unused goes through [releaseReservation] instead, because nobody ever asked.
      *
      * The reservation is released and the amount returns to the campaign's confirmable balance.
      * This is safe in the initiation model: no money can move without the association authorising
-     * it at its bank, so a refused or dead initiation moved nothing. No on-chain attestation is
-     * emitted — nothing certifies a transfer that did not happen.
+     * it at its bank, so a refused initiation moved nothing. No on-chain attestation is emitted —
+     * nothing certifies a transfer that did not happen.
+     *
+     * [Payout.bridgeCheckoutUrl] is cleared: the caller revokes the link before failing the payout,
+     * precisely so it cannot be authorised after the amount has gone back to the balance, and an
+     * URL kept on the row would only point at that dead link.
      *
      * @param payoutId Payout to fail.
-     * @param message Diagnostic message stored on the row.
+     * @param message Diagnostic message stored verbatim on the row.
      * @param bridgeStatus Bridge's own terminal state, when known.
+     * @param code The bank's reason as a stable value, which is what the interface shows.
      */
     @Transactional
-    fun finaliseFailed(payoutId: UUID, message: String, bridgeStatus: BridgePaymentStatus?) {
-        val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+    fun finaliseFailed(payoutId: UUID, message: String, bridgeStatus: BridgePaymentStatus?, code: PayoutErrorCode) {
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
         if (payout.status == PayoutStatus.CONFIRMED) {
             log.warn("Refusing to fail payout {} — it is already confirmed as settled", payoutId)
             return
         }
         payout.status = PayoutStatus.FAILED
         payout.bridgeStatus = bridgeStatus
+        payout.bridgeCheckoutUrl = null
         payout.bridgeLastError = message.take(BRIDGE_ERROR_MAX_LENGTH)
+        payout.bridgeLastErrorCode = code
         payout.bridgeSyncedAt = Instant.now()
         payoutRepository.save(payout)
         log.warn("Payout {} failed at Bridge: {}", payoutId, message)
@@ -297,13 +355,33 @@ class PayoutConfirmer(
      * The transfer is authorised but not settled: the amount must stay engaged, and the payout must
      * not yet claim the beneficiary has been credited.
      *
+     * Refuses to touch a payout that has left PENDING — the same invariant [releaseReservation]
+     * enforces, and for the same reason: an in-flight state describes a transfer still being
+     * decided, so writing one onto a row whose outcome is settled contradicts it.
+     *
+     * Bridge fires `payment.transaction.updated` and `payment.link.updated` concurrently for a
+     * single state change — both were observed 98 ms apart on the same row — so two threads read
+     * Bridge independently and one can still see an in-flight status after the other has finished.
+     * On a CONFIRMED payout the late write would leave it permanently displaying `PDNG` (the
+     * on-chain attestation is safe, [finaliseSettled] being idempotent). On a FAILED one it stamps
+     * an in-flight status over a terminal refusal: on 2026-09-24 a `payment.link.updated` ranked
+     * `ACTC` landed 214 ms after [finaliseFailed], and only missed this branch because the
+     * rejection had already revoked the link.
+     *
+     * [finaliseFailed] keeps the narrower `CONFIRMED` guard on purpose: re-stamping FAILED over
+     * FAILED is an idempotent redelivery, not a contradiction.
+     *
      * @param payoutId Payout to update.
      * @param bridgeStatus The intermediate Bridge state.
      * @param transactionId Bridge transaction id, when already known.
      */
     @Transactional
     fun recordInFlight(payoutId: UUID, bridgeStatus: BridgePaymentStatus, transactionId: String?) {
-        val payout = payoutRepository.findById(payoutId).orElse(null) ?: return
+        val payout = payoutRepository.findByIdForUpdate(payoutId) ?: return
+        if (payout.status != PayoutStatus.PENDING) {
+            log.warn("Refusing to record {} on payout {} — it is {}", bridgeStatus, payoutId, payout.status)
+            return
+        }
         payout.bridgeStatus = bridgeStatus
         payout.bridgePaymentTransactionId = transactionId ?: payout.bridgePaymentTransactionId
         payout.bridgeSyncedAt = Instant.now()

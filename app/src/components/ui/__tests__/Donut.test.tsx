@@ -45,6 +45,20 @@ describe('Donut', () => {
     expect(screen.getByText('reporting.tab.donutEmpty')).toBeInTheDocument();
   });
 
+  it('draws a full ring for a single slice', () => {
+    const { container } = render(<Donut slices={[{ label: 'Services', value: 1200 }]} />);
+    const path = container.querySelector('path')!;
+    // Two closed sub-paths (outer + inner circle) instead of a degenerate zero-length arc.
+    expect(path.getAttribute('d')!.match(/Z/g)).toHaveLength(2);
+    expect(path.getAttribute('fill-rule')).toBe('evenodd');
+    expect(screen.getByText('100%')).toBeInTheDocument();
+  });
+
+  it('omits the legend when legend is false', () => {
+    render(<Donut slices={slices} legend={false} />);
+    expect(screen.queryByText('Salaires')).toBeNull();
+  });
+
   it('updates centre text on hover', () => {
     const { container } = render(<Donut slices={slices} />);
     const firstPath = container.querySelector('path')!;

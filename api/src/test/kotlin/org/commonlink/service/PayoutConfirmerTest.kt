@@ -17,6 +17,7 @@ import org.commonlink.entity.Payee
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -239,7 +241,7 @@ class PayoutConfirmerTest {
         val job = mockk<OnchainJob>()
         val payloadSlot = slot<Any>()
 
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
         every { job.id } returns jobId
         every {
@@ -260,12 +262,54 @@ class PayoutConfirmerTest {
     fun `finaliseSettled - a webhook replay does not re-enqueue the attestation`() {
         // Bridge retries a notification for up to two days, so the same settlement arrives twice.
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
         confirmer.finaliseSettled(payout.id, "tx_1")
 
+        // The guard only holds under the row lock: Bridge delivers its notifications in parallel,
+        // and an unlocked read let two threads both settle and both enqueue, the second dying on
+        // the outbox unique constraint and answering 502 for a settlement that had succeeded.
+        verify(exactly = 0) { payoutRepository.findById(any()) }
+
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
         verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `discardNeverInitiated - drops a payout Bridge never accepted`() {
+        // No link, no authorisation URL, nothing a later notification could refer to: the row would
+        // record only that a form failed to submit, and an association unable to tell that apart
+        // from a real attempt simply creates another one.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.delete(payout) } returns Unit
+
+        confirmer.discardNeverInitiated(payout.id)
+
+        verify { payoutRepository.delete(payout) }
+    }
+
+    @Test
+    fun `discardNeverInitiated - never drops a payout that has a Bridge link`() {
+        // A link that exists is a fact this row is the only local record of — a destination
+        // read-back refused is the clearest case, and it is evidence of a documented control.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        payout.bridgePaymentLinkId = "pl_1"
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.discardNeverInitiated(payout.id)
+
+        verify(exactly = 0) { payoutRepository.delete(any<Payout>()) }
+    }
+
+    @Test
+    fun `discardNeverInitiated - never drops a payout that already left PENDING`() {
+        val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.discardNeverInitiated(payout.id)
+
+        verify(exactly = 0) { payoutRepository.delete(any<Payout>()) }
     }
 
     @Test
@@ -275,10 +319,10 @@ class PayoutConfirmerTest {
         // the association could never retry. Clearing bridgeStatus also returns the amount to the
         // confirmable balance, since sumInFlightAmount counts exactly the non-null ones.
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
-        confirmer.releaseReservation(payout.id, "Bridge payment initiation unavailable: timeout")
+        confirmer.releaseReservation(payout.id, "Bridge payment initiation unavailable: timeout", PayoutErrorCode.INITIATION_FAILED)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.PENDING)
         assertThat(payout.bridgeStatus).isNull()
@@ -287,11 +331,40 @@ class PayoutConfirmerTest {
     }
 
     @Test
+    fun `releaseReservation - drops the dead checkout url and leaves the payout confirmable again`() {
+        // The expiry path: the association never authenticated, the link died, and the URL on the
+        // row now leads nowhere. Leaving it would offer a dead end; leaving bridgeStatus set would
+        // keep the amount engaged on the campaign for ever.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        payout.bridgePaymentLinkId = "pl_1"
+        payout.bridgeCheckoutUrl = "https://pay.bridgeapi.io/link/dead"
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.releaseReservation(payout.id, "Bank authorisation window expired before the transfer was authorised", PayoutErrorCode.LINK_EXPIRED)
+
+        assertThat(payout.bridgeCheckoutUrl).isNull()
+        // Kept: the audit trail of the attempt, and the routing key for a notification still in
+        // flight for that link.
+        assertThat(payout.bridgePaymentLinkId).isEqualTo("pl_1")
+
+        // The state loadForConfirm demands — proven by running it rather than by asserting fields.
+        every {
+            payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payout.id, assocId)
+        } returns payout
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(verifiedIban)
+
+        val context = confirmer.loadForConfirm(campaignId, payout.id, assocId)
+
+        assertThat(context.payoutId).isEqualTo(payout.id)
+    }
+
+    @Test
     fun `releaseReservation - never touches a payout that already left PENDING`() {
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
-        confirmer.releaseReservation(payout.id, "late failure")
+        confirmer.releaseReservation(payout.id, "late failure", PayoutErrorCode.INITIATION_FAILED)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.ACSC)
@@ -299,16 +372,32 @@ class PayoutConfirmerTest {
     }
 
     @Test
-    fun `finaliseFailed - fails the payout without emitting any attestation`() {
-        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
-        every { payoutRepository.save(payout) } returns payout
+    fun `releaseReservation - never resurrects a payout the bank refused`() {
+        // Observed live on 2026-09-24: our own revocation of a rejected link comes back as
+        // LINK_REVOKED, whose arm releases. Without this guard the payout just failed would return
+        // to a retryable PENDING and its amount be counted available a second time.
+        val payout = newPayout(status = PayoutStatus.FAILED, bridgeStatus = BridgePaymentStatus.RJCT)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
-        confirmer.finaliseFailed(payout.id, "debit_account_insufficient_funds", BridgePaymentStatus.RJCT)
+        confirmer.releaseReservation(payout.id, "Payment link revoked before the transfer was authorised", PayoutErrorCode.LINK_REVOKED)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.FAILED)
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
-        assertThat(payout.bridgeLastError).isEqualTo("debit_account_insufficient_funds")
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `finaliseFailed - fails the payout without emitting any attestation`() {
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.finaliseFailed(payout.id, "AM04", BridgePaymentStatus.RJCT, PayoutErrorCode.AM04)
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.FAILED)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
+        assertThat(payout.bridgeLastError).isEqualTo("AM04")
+        assertThat(payout.bridgeLastErrorCode).isEqualTo(PayoutErrorCode.AM04)
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
     }
 
@@ -316,9 +405,9 @@ class PayoutConfirmerTest {
     fun `finaliseFailed - refuses to un-settle a payout already confirmed`() {
         // A late RJCT after an ACSC must not retract a payout whose attestation is already public.
         val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
-        confirmer.finaliseFailed(payout.id, "late rejection", BridgePaymentStatus.RJCT)
+        confirmer.finaliseFailed(payout.id, "late rejection", BridgePaymentStatus.RJCT, PayoutErrorCode.MS03)
 
         assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
         verify(exactly = 0) { payoutRepository.save(any()) }
@@ -327,7 +416,7 @@ class PayoutConfirmerTest {
     @Test
     fun `recordInFlight - keeps the amount engaged without confirming the payout`() {
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
         confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1")
@@ -338,5 +427,50 @@ class PayoutConfirmerTest {
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.PDNG)
         assertThat(payout.bridgePaymentTransactionId).isEqualTo("tx_1")
         verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+    }
+
+    @Test
+    fun `recordInFlight - a re-read stamps the staleness clock`() {
+        val earlier = Instant.now().minusSeconds(3600)
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.PDNG)
+            .also { it.bridgeSyncedAt = earlier }
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1")
+
+        assertThat(payout.bridgeSyncedAt).isAfter(earlier)
+    }
+
+    @Test
+    fun `recordInFlight - refuses to downgrade a payout already settled`() {
+        // Bridge fires payment.transaction.updated and payment.link.updated concurrently: the
+        // second thread can still read PDNG after the first one settled the payout. Writing it
+        // would leave a CONFIRMED payout displaying "in progress" for good.
+        val payout = newPayout(status = PayoutStatus.CONFIRMED, bridgeStatus = BridgePaymentStatus.ACSC)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.recordInFlight(payout.id, BridgePaymentStatus.PDNG, "tx_1")
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.CONFIRMED)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.ACSC)
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `recordInFlight - refuses to stamp an in-flight status over a bank refusal`() {
+        // A link carrying two payment requests still reports an in-flight one after the other was
+        // rejected. On 2026-09-24 such a notification landed 214 ms after the payout was failed,
+        // and missed this branch only because the rejection had already revoked the link. FAILED
+        // is terminal — loadForConfirm refuses it — so an in-flight status on that row describes a
+        // transfer that is no longer being decided.
+        val payout = newPayout(status = PayoutStatus.FAILED, bridgeStatus = BridgePaymentStatus.RJCT)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.recordInFlight(payout.id, BridgePaymentStatus.ACTC, "tx_1")
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.FAILED)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
+        verify(exactly = 0) { payoutRepository.save(any()) }
     }
 }

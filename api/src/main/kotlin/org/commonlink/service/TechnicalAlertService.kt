@@ -58,6 +58,44 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
      * e-mail per window rather than one per donation.
      */
     MISSED_WEBHOOK("Callback Mollie manqué — confirmé par le réconciliateur", "ERROR"),
+
+    /**
+     * Bridge reported a transfer settled on a payout whose amount had already gone back to the
+     * campaign's confirmable balance — a payout failed after a bank rejection, or released after
+     * its link died.
+     *
+     * The settlement is recorded regardless: the bank executed the transfer, and a ledger that
+     * refuses to record a movement it observes lies more gravely than one that corrects itself.
+     * But between the release and this settlement the association could have committed those funds
+     * to another payout, and both would then have gone out. Nothing re-checks the balance at
+     * settlement, by design — the money has already moved, there is nothing left to refuse. So the
+     * anomaly is raised here instead of being silently absorbed.
+     */
+    PAYOUT_SETTLED_AFTER_RELEASE("Virement réglé après libération de son montant", "ERROR"),
+
+    /**
+     * A payout has sat in a non-terminal Bridge state long past the point where a bank executes.
+     *
+     * Bridge documents that some banks (LCL, Nickel) never report an execution status at all:
+     * their flow stops at `PDNG` and `ACSC` never comes. Such a payout would otherwise stay
+     * engaged for ever, its amount unavailable to the campaign and no attestation ever published,
+     * while the money has in fact left the account. Promoting it automatically is out of the
+     * question — the attestation is irretractable and this whole flow certifies only what it has
+     * observed — so a human is asked to confirm from the bank statement.
+     */
+    PAYOUT_STUCK_IN_FLIGHT("Virement bloqué en cours d'exécution", "WARN"),
+
+    /**
+     * Bridge reported `PART` — a partial execution — on a payout.
+     *
+     * A payout carries exactly one transaction, so this should be unreachable: partial execution
+     * is a bulk-transfer outcome. Reaching it means either that assumption is wrong or Bridge is
+     * reporting something we do not model, and in both cases part of an amount may have moved.
+     * The payout is left engaged rather than guessed either way, which makes this strictly a
+     * matter for a human reading a bank statement — and until now it produced only a `log.error`
+     * nobody reads.
+     */
+    PAYOUT_PARTIALLY_EXECUTED("Virement partiellement exécuté (PART)", "ERROR"),
 }
 
 /**

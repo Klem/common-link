@@ -245,6 +245,25 @@ class GlobalExceptionHandler(
      * status means association onboarding and IBAN verification are both stalled — a state no user
      * can resolve and no user will report as anything but "the site is broken".
      */
+    /**
+     * Handles [BridgeRequestRefusedException] — Bridge answered the initiation and refused it.
+     *
+     * Logged at ERROR and **never alerted**, unlike every other [BadGatewayException]. Bridge is
+     * not unavailable here: it understood the request and said no, so nothing about it is an
+     * incident an operator can act on at night. Three alert e-mails went out on 2026-09-23 because
+     * a tab character had been pasted into a payout's label, and noise of that kind is exactly what
+     * makes a real outage go unnoticed.
+     *
+     * The status stays 502 rather than becoming a 4xx: from the caller's side the transfer still
+     * could not be initiated, and the frontend already treats that as one failure to report.
+     */
+    @ExceptionHandler(BridgeRequestRefusedException::class)
+    fun handleBridgeRefusal(ex: BridgeRequestRefusedException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
+        appLogger.error("Bridge refused the request on {}: {}", path(request), ex.message)
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "Bad gateway")
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
+    }
+
     @ExceptionHandler(BadGatewayException::class)
     fun handleBadGateway(ex: BadGatewayException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
         appLogger.error("Upstream dependency unavailable on {}: {}", path(request), ex.message)

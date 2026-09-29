@@ -138,9 +138,29 @@ Deux conséquences à assumer explicitement :
 Par ailleurs, la destination effectivement enregistrée par Bridge est **relue et comparée** à celle
 transmise avant que l'URL d'autorisation ne soit remise à l'association ; en cas d'écart, le
 virement est refusé. Ce contrôle existe parce que Bridge substitue l'IBAN configuré dans son tableau
-de bord lorsque aucun IBAN de bénéficiaire n'est fourni, et que la fonctionnalité de bénéficiaire
-dynamique doit être activée sur le compte : une activation manquante ne doit pas pouvoir aboutir à
-un virement vers un compte que l'association n'a pas choisi.
+de bord lorsque aucun IBAN de bénéficiaire n'est fourni : une substitution silencieuse ne doit pas
+pouvoir aboutir à un virement vers un compte que l'association n'a pas choisi.
+
+Un second contrôle, ajouté le 23 septembre 2026, ferme une brèche voisine : **le lien
+d'autorisation est révoqué auprès de Bridge avant que le virement ne soit marqué en échec**. Bridge
+ne consomme pas un lien qu'une banque a refusé — un lien rejeté reste affiché « Valide » et une
+seconde autorisation y crée une nouvelle demande de paiement, ce qui a été constaté en sandbox le
+22 septembre 2026. Or marquer le virement en échec rend son montant au solde disponible de la
+campagne : sans révocation, une seconde autorisation sur ce lien exécuterait un virement sur des
+fonds déjà rendus et publierait une attestation on-chain irrétractable. La révocation précède donc
+l'échec, et si elle ne peut être confirmée le montant reste engagé plutôt que rendu.
+
+Dans le même esprit, l'expiration d'un lien sans autorisation n'est **pas** traitée comme un échec :
+personne n'a rien demandé à la banque, aucun mouvement n'a pu avoir lieu, et le virement redevient
+simplement réémettable, son montant retournant au solde de la campagne. Seul un refus bancaire est
+terminal.
+
+Cette comparaison est **partielle par construction**. Les endpoints de lecture de Bridge ne
+restituent l'IBAN enregistré que masqué (`FR76XXXXXXXXXXXXXXXXXXXX250` dans la documentation) :
+seuls les caractères effectivement divulgués — en pratique le code pays, la clé de contrôle et les
+derniers caractères — peuvent être confrontés à ceux transmis. Toute divergence sur un caractère
+divulgué, comme toute longueur différente, refuse le virement ; une destination qui ne différerait
+que sous le masque ne peut en revanche pas être écartée. Cette limite est reprise au point 6.
 
 ## 5. Traçabilité et audit
 
@@ -164,6 +184,12 @@ encore reçu aucun paiement peut, lui, être soit désactivé soit supprimé.
   aucun enregistrement préalable ailleurs, mais aucun contrôle supplémentaire non plus. La
   vérification du titulaire est donc le seul filtre entre la saisie d'un IBAN et un virement réel
   vers cet IBAN — ce qui renforce l'importance du point 4.3.
+- **La relecture de la destination auprès de Bridge est une comparaison partielle** — Bridge ne
+  restitue l'IBAN enregistré que masqué, seuls les caractères divulgués sont confrontés à ceux
+  transmis (point 4.5). Une destination ne différant que sous le masque ne serait pas détectée par
+  ce contrôle ; l'autorisation donnée par l'association auprès de sa propre banque reste le filtre
+  final avant tout mouvement de fonds. Lorsque Bridge divulgue moins que ce que sa documentation
+  décrit, le virement est refusé plutôt que réputé vérifié.
 - **La vérification du titulaire ne garantit pas la légitimité du bénéficiaire** — elle établit que
   le nom déclaré correspond au nom tenu par la banque, non que ce bénéficiaire est autorisé ou
   attendu par l'association. Un compte associatif compromis pourrait toujours enregistrer un
@@ -186,13 +212,25 @@ des tests concernés a été exécuté après la modification, sans régression.
 
 S'y ajoutent, depuis l'intégration de Bridge, la vérification que l'IBAN vérifié est bien transmis
 tel quel comme destination du virement (bénéficiaire dynamique), le refus du virement lorsque la
-destination relue auprès de Bridge diffère de celle transmise, et la garantie qu'aucune attestation
-on-chain n'est émise avant le règlement effectif constaté par la banque.
+destination relue auprès de Bridge contredit celle transmise — sur la clé de contrôle, sur les
+derniers caractères ou par une longueur différente — comme lorsqu'elle est masquée au point de ne
+plus rien divulguer de vérifiable (cinq cas), son acceptation lorsque la forme masquée restituée est
+compatible avec l'IBAN transmis (un cas), et la garantie qu'aucune attestation
+on-chain n'est émise avant le règlement effectif constaté par la banque. S'y ajoutent, depuis le
+23 septembre 2026, la révocation du lien d'autorisation avant tout marquage en échec — y compris
+le maintien du montant engagé lorsque cette révocation ne peut pas être confirmée — et la
+libération du virement vers un état réémettable lorsque le lien meurt sans avoir été autorisé.
 
 ---
 
 *Document établi le 6 septembre 2026, mis à jour le 8 septembre 2026 (points 4.4, 4.5, 6 et 7) lors
-de l'intégration de Bridge API pour l'exécution réelle des virements par initiation de paiement. Ce contrôle a remplacé un
+de l'intégration de Bridge API pour l'exécution réelle des virements par initiation de paiement, puis
+le 22 septembre 2026 (points 4.5, 6 et 7) après le premier virement réel en sandbox : la destination
+relue auprès de Bridge revient masquée, la comparaison est donc partielle et la fiche ne peut pas la
+décrire comme une égalité, puis le 23 septembre 2026 (points 4.5 et 7) : révocation du lien
+d'autorisation avant tout marquage en échec, expiration sans autorisation traitée comme une
+libération et non comme un échec, et durée de vie du lien rendue configurable par environnement
+(`app.bridge.link-validity`, un jour par défaut). Ce contrôle a remplacé un
 fournisseur de vérification antérieur (Qonto) par Mollie ; toutes les références à l'ancien
 fournisseur ont été retirées du code, de la configuration applicative et du glossaire
 (`docs/glossary.md`), à l'exception des fichiers d'environnement dont la rotation du jeton reste à

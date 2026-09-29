@@ -83,7 +83,13 @@ app:
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
   cookies:
     secure: true
-    same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
+    # Not Strict here, unlike production. Strict requires the frontend and the API to share a site;
+    # staging spreads them over two cleverapps.io subdomains, and cleverapps.io is a public suffix,
+    # so the browser treats them as different sites and never stores `cl-refresh` at all. The
+    # symptom is a session lost on every reload: AuthProvider replays POST /api/auth/refresh on
+    # mount, the cookie is absent, the API answers 401 and the client bounces to /login.
+    # Production keeps Strict because app/api.common-link.org do share a site.
+    same-site: None
   security:
     # Same single Clever Cloud reverse proxy as production — see application-prod.yml.
     trusted-proxy-count: ${APP_TRUSTED_PROXY_COUNT:1}
@@ -125,7 +131,19 @@ app:
     client-secret: ${BRIDGE_CLIENT_SECRET}
     webhook-secret: ${BRIDGE_WEBHOOK_SECRET}
     webhook-secret-previous: ${BRIDGE_WEBHOOK_SECRET_PREVIOUS:}
-    allow-fake-verify: true
+    # Shorten to a few minutes (e.g. 5m) to observe the expiry path without a 24-hour wait.
+    link-validity: ${BRIDGE_LINK_VALIDITY:5m}
+    # Voir application.yml. Abaissé ici : avec un lien de 5 min, un sursis de 3 min couvre
+    # presque toute la fenêtre et rend le scénario C.2 inobservable.
+    release-grace: ${BRIDGE_RELEASE_GRACE:1m}
+    # Voir application.yml pour le rôle de chaque clé. Les seuils sont abaissés ici pour que le
+    # balayage soit observable dans une session de test plutôt qu'en plusieurs jours.
+    reconciler:
+      enabled: ${BRIDGE_RECONCILER_ENABLED:true}
+      fixed-delay: ${BRIDGE_RECONCILER_FIXED_DELAY:5m}
+      initial-delay: ${BRIDGE_RECONCILER_INITIAL_DELAY:1m}
+      stale-after: ${BRIDGE_RECONCILER_STALE_AFTER:15m}
+      stuck-after: ${BRIDGE_RECONCILER_STUCK_AFTER:1h}
   vop:
     demo-mode: true
     api-url: ${VOP_BASE_URL:https://api.mollie.com/v2/business-accounts/payee-verifications}
@@ -204,7 +222,7 @@ springdoc:
 onchain:
   mock: true
   rpc-url: ${ONCHAIN_RPC_URL}
-  chain-id: ${ONCHAIN_CHAIN_ID}
+  chain-id: ${ONCHAIN_CHAIN_ID:31337}
   # Empty defaults — safe because both OnchainRegistryClient and Web3jConfig (which builds the
   # signing credentials from recorder-pk / curator-pk) are inactive when mock=true.
   # Prod supply real values via environment variables.

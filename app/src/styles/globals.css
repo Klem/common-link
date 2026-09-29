@@ -1975,7 +1975,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* ── Payments ─────────────────────────────────────────────────────────────── */
 
-.pay-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.pay-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 @media(max-width:700px) { .pay-form-grid { grid-template-columns: 1fr; } }
 .bene-preview { margin-top: 8px; padding: 10px 14px; background: rgba(78,205,196,.06); border-radius: var(--radius-md); border-left: 3px solid var(--bright-teal); font-size: 12px; display: none; }
 .bene-preview.show { display: block; }
@@ -1990,6 +1990,8 @@ tbody tr:last-child td { border-bottom: none; }
 .pay-chip.confirmed { background: rgba(78,205,196,.12); color: var(--teal-dark); }
 .pay-chip.pending   { background: rgba(255,179,71,.12); color: #b37800; }
 .pay-chip.failed    { background: rgba(255,107,91,.12); color: var(--warm-coral); }
+/* Still pending, but the last attempt failed: amber ground like .pending, coral ink like .failed. */
+.pay-chip.attention { background: rgba(255,179,71,.12); color: var(--warm-coral); }
 .pay-method-label { display: flex; align-items: center; gap: 9px; padding: 10px 12px; background: rgba(78,205,196,.05); border: 1px solid rgba(78,205,196,.25); border-radius: var(--radius-md); cursor: pointer; font-size: 12.5px; }
 .pay-method-title { font-weight: 600; }
 .blocking-reasons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
@@ -2000,6 +2002,135 @@ tbody tr:last-child td { border-bottom: none; }
 .breakdown-row  { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
 .breakdown-bar  { flex: 1; height: 6px; background: var(--mist-lavender); border-radius: 3px; overflow: hidden; }
 .breakdown-fill { height: 100%; border-radius: 3px; background: var(--bright-teal); transition: width .5s ease; }
+/* Payments breakdown - the chart beside its lines, not stacked above them: stacked, the donut got
+   whatever height was left over and the lines started below the fold. */
+.breakdown-split { display: grid; grid-template-columns: minmax(200px, 240px) minmax(0, 1fr); gap: 24px; align-items: center; }
+@media (max-width: 1000px) { .breakdown-split { grid-template-columns: minmax(0, 1fr); } }
+.breakdown-list { border-top: 1px solid var(--mist-lavender); margin-top: 4px; }
+/* Side by side there is no rule above the first line to separate it from anything. */
+.breakdown-split .breakdown-list { border-top: none; margin-top: 0; }
+.breakdown-item { border-bottom: 1px solid rgba(230,228,244,.5); }
+.breakdown-item:last-child { border-bottom: none; }
+.breakdown-summary { display: flex; align-items: center; gap: 8px; padding: 9px 0; cursor: pointer; font-size: 12.5px; list-style: none; }
+.breakdown-summary::-webkit-details-marker { display: none; }
+.breakdown-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.breakdown-label { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.breakdown-count { font-size: 11px; color: var(--slate-lavender); }
+.breakdown-total { font-weight: 700; font-family: var(--font-syne), sans-serif; }
+.breakdown-chev { color: var(--bright-teal); transition: transform .25s; }
+.breakdown-item[open] .breakdown-chev { transform: rotate(180deg); }
+.breakdown-body { padding: 0 0 8px 18px; }
+.breakdown-body .pay-row-amount { color: var(--teal-dark); }
+
+/* ── Payment journal ──────────────────────────────────────────────────────── */
+
+/* The journal is the whole card: filters, scrollable table, pagination foot. */
+.pj-card { padding-bottom: 12px; }
+.pj-filters { margin-bottom: 4px; }
+.pj-filter-bar { margin-bottom: 10px; }
+/* Outruns `.filter-bar .cm-fi`, which caps every field at 260px: the search takes the slack. */
+.filter-bar input.pj-search { flex: 1; min-width: 220px; max-width: none; }
+.pj-export { margin-left: auto; }
+
+.pj-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.pj-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-full); border: 1px solid var(--mist-lavender); background: var(--soft-cream); color: var(--slate-lavender); font-family: var(--font-inter), sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all var(--tb); }
+.pj-pill:hover { border-color: var(--bright-teal); color: var(--ink-navy); }
+.pj-pill.active { background: var(--deep-indigo); border-color: var(--deep-indigo); color: #fff; }
+.pj-pill-count { font-weight: 700; opacity: .75; }
+.pj-counter { margin-left: auto; font-size: 12px; color: var(--slate-lavender); }
+
+/* Sticky header needs a scroll container of its own, or it sticks to the page instead. */
+.pj-scroll { max-height: 560px; overflow-x: hidden; overflow-y: auto; border-top: 1px solid var(--mist-lavender); }
+/* One content-driven pass sets the starting widths, then percentages of the table hold them — so
+   the columns are justified by what they contain and still cannot add up to more than the table.
+   No `min-width`: the journal must never scroll sideways. */
+.cm-table.pj-table { table-layout: auto; width: 100%; }
+.cm-table.pj-table.pj-table-sized { table-layout: fixed; }
+
+/* Rows never grow: a page whose line height depends on its longest cell cannot be scanned. */
+.cm-table.pj-table tbody tr { height: 56px; }
+
+.cm-table.pj-table thead th { position: relative; }
+.pj-resizer { position: absolute; top: 0; right: -4px; width: 9px; height: 100%; cursor: col-resize; touch-action: none; z-index: 2; }
+.pj-resizer::after { content: ''; position: absolute; top: 7px; bottom: 7px; left: 4px; width: 1px; background: var(--mist-lavender); transition: background var(--tb), width var(--tb); }
+.pj-resizer:hover::after,
+.pj-resizer:focus-visible::after { width: 2px; background: var(--bright-teal); }
+.pj-resizer:focus-visible { outline: none; }
+/* Doubled up on `.cm-table`, whose own rules come later in this file and would otherwise win —
+   a transparent sticky header lets the rows scroll through it. */
+.cm-table.pj-table thead th { position: sticky; top: 0; z-index: 1; background: var(--white); box-shadow: inset 0 -1px 0 var(--mist-lavender); }
+/* Clipped, not stretched: the row height is fixed, so a long cell ends in an ellipsis. */
+.cm-table.pj-table tbody td { padding: 6px 10px; height: 56px; overflow: hidden; }
+.cm-table.pj-table tbody td .badge { white-space: nowrap; max-width: 100%; overflow: hidden; }
+.cm-table.pj-table tbody tr.pj-row { cursor: pointer; }
+.cm-table.pj-table tbody tr.pj-row:hover { background: rgba(78,205,196,.05); }
+.cm-table.pj-table tbody tr.pj-row:focus-visible { outline: 2px solid var(--bright-teal); outline-offset: -2px; }
+
+.pj-sort { background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; display: inline-flex; align-items: center; gap: 4px; }
+.pj-sort:hover { color: var(--ink-navy); }
+.pj-sort-arrow { font-size: 9px; opacity: .6; }
+.pj-th-action { white-space: nowrap; }
+
+/* Fixed columns clip rather than stretch, so anything long ends in an ellipsis with a title. */
+.pj-date { font-size: 12.5px; color: var(--ink-navy); white-space: nowrap; }
+.pj-ref  { font-size: 10.5px; margin-top: 2px; white-space: nowrap; }
+/* A data point, not a title: normal case, medium weight — it is identical on most rows. */
+.pj-payee { font-size: 13px; font-weight: 500; color: var(--ink-navy); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* What actually tells two rows apart, so it reads at the same level as the beneficiary. */
+.pj-type { font-size: 13px; color: var(--ink-navy); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pj-code { font-size: 10.5px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Strongest weight on the page, and deliberately neutral: the status is the badge's job. */
+.pj-amount { font-family: var(--font-syne), sans-serif; font-size: 13.5px; font-weight: 700; color: var(--ink-navy); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pj-reason { margin-top: 2px; font-size: 11px; line-height: 1.3; color: var(--slate-lavender); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A comfortable target, not a micro-button. */
+.pj-action { padding: 7px 14px; }
+.pj-chevron { width: 32px; height: 32px; border-radius: var(--radius-md); border: 1px solid var(--mist-lavender); background: var(--white); color: var(--slate-lavender); font-size: 16px; line-height: 1; cursor: pointer; transition: all var(--tb); }
+.pj-chevron:hover { border-color: var(--bright-teal); color: var(--ink-navy); }
+
+.pj-empty { padding: 36px 24px; }
+.pj-empty-title { font-family: var(--font-syne), sans-serif; font-size: 15px; font-weight: 700; color: var(--ink-navy); margin-bottom: 6px; }
+.pj-empty-hint { font-size: 13px; color: var(--slate-lavender); margin-bottom: 14px; }
+
+.pj-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--mist-lavender); }
+.pj-range { font-size: 12px; color: var(--slate-lavender); }
+.pj-foot-right { display: flex; align-items: center; gap: 12px; }
+.pj-perpage { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--slate-lavender); }
+.pj-perpage .fsel { padding: 5px 24px 5px 10px; font-size: 12px; background-position: right 8px center; }
+/* `.pager` sets its own top margin further down; the foot already spaces this one. */
+.pager.pj-pager { margin-top: 0; }
+.pager.pj-pager button { padding: 5px 12px; font-size: 14px; line-height: 1; }
+
+/* ── Side panel ───────────────────────────────────────────────────────────── */
+
+/* Reuses the dashboard veil, but the sheet rides the right edge instead of centring. Its height is
+   fixed, not stretched: filled to the viewport it showed six lines of detail over a column of
+   blank, and pushed its actions wherever the content happened to end. */
+.side-panel-ov { align-items: center; justify-content: flex-end; padding: 24px; }
+.side-panel { background: var(--white); width: 100%; max-width: 460px; height: 660px; max-height: calc(100vh - 48px); border-radius: var(--radius-xl); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-xl); animation: slideInRight .25s ease; outline: none; }
+@keyframes slideInRight { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Header and footer hold the edges; only the middle scrolls. */
+.side-panel-h { flex-shrink: 0; padding: 18px 24px; border-bottom: 1px solid var(--mist-lavender); display: flex; align-items: center; justify-content: space-between; background: var(--white); }
+.side-panel-h h3 { font-size: 17px; }
+.side-panel-b { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 24px; }
+.side-panel-f { flex-shrink: 0; padding: 14px 24px; border-top: 1px solid var(--mist-lavender); background: var(--soft-cream); }
+
+/* The amount, the state and the beneficiary: what the panel is opened to read. */
+.pd-hero { padding: 16px 18px; background: var(--soft-cream); border: 1px solid var(--mist-lavender); border-radius: var(--radius-lg); }
+.pd-amount { font-family: var(--font-syne), sans-serif; font-size: 28px; font-weight: 800; line-height: 1.1; color: var(--ink-navy); font-variant-numeric: tabular-nums; margin-bottom: 10px; }
+.pd-hero-payee { margin-top: 10px; font-size: 13px; font-weight: 500; color: var(--ink-navy); }
+
+.pd-reason { margin-top: 14px; padding: 10px 14px; background: rgba(255,107,91,.07); border-left: 3px solid var(--warm-coral); border-radius: var(--radius-md); font-size: 12.5px; color: var(--ink-navy); line-height: 1.5; }
+.pd-list { margin-top: 16px; }
+.pd-item { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid rgba(230,228,244,.5); font-size: 12.5px; }
+.pd-item:last-child { border-bottom: none; }
+.pd-item dt { color: var(--slate-lavender); flex-shrink: 0; }
+.pd-item dd { color: var(--ink-navy); text-align: right; word-break: break-word; }
+/* A 64-character reference has no business being squeezed into half a line. */
+.pd-item-stacked { display: block; }
+.pd-item-stacked dd { text-align: left; margin-top: 4px; line-height: 1.5; }
+.pd-note { font-size: 12px; color: var(--slate-lavender); }
+.pd-note-boxed { margin-top: 14px; padding: 10px 14px; background: rgba(78,205,196,.07); border-left: 3px solid var(--bright-teal); border-radius: var(--radius-md); line-height: 1.5; }
 
 /* ── Reporting ────────────────────────────────────────────────────────────── */
 
@@ -2347,6 +2478,15 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .badge-draft { background: rgba(255,179,71,.15); color: #c98400; }
 .badge-urgent { background: rgba(255,107,91,.12); color: var(--warm-coral); }
 .badge-success { background: rgba(52,199,89,.1); color: #22a44b; }
+/* Payout states: seven of them, so authorised and in transit need grounds of their own. */
+.badge-authorised { background: rgba(50,50,125,.08); color: var(--deep-indigo); }
+.badge-transit { background: rgba(78,205,196,.08); color: var(--teal-dark); }
+/* Amber ground, coral ink — still pending, but the last attempt failed. */
+.badge-retry { background: rgba(255,179,71,.14); color: var(--warm-coral); }
+/* A second signal beside the hue, since a badge that differed only in colour says nothing to a
+   colour-blind reader: filled disc for an engaged transfer, hollow ring for one still waiting. */
+.badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.badge-dot-hollow { background: none; border: 1.5px solid currentColor; }
 .tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: var(--radius-full); font-size: 12px; font-weight: 600; }
 .tag-default { background: var(--mist-lavender); color: var(--deep-indigo); }
 .tag-teal { background: rgba(78,205,196,.12); color: var(--teal-dark); }

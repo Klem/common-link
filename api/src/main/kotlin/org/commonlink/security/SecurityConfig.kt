@@ -142,7 +142,13 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration()
-        config.allowedOrigins = listOf(frontendUrl)
+        // `trimEnd('/')` like every other consumer of app.frontend-url (PayoutService,
+        // ComplianceAlertEmailListener, PublicCampaignDirectoryService). Here it is not cosmetic:
+        // allowedOrigins compares the Origin header as an exact string, and a browser never sends
+        // a trailing slash. A value edited to end in `/` — harmless for every link built from it —
+        // would match nothing, failing the preflight on /api/auth/refresh and logging every user
+        // out on their next page load, with no code change to explain it.
+        config.allowedOrigins = listOf(frontendUrl.trimEnd('/'))
         config.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         config.allowedHeaders = listOf("Authorization", "Content-Type")
         config.exposedHeaders = listOf("Authorization")
