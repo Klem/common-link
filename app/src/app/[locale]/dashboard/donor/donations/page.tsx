@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { DonationHistoryTable } from '@/components/donor/DonationHistoryTable';
 import { DonationFilters } from '@/components/donor/DonationFilters';
+import { DonationTraceabilityModal } from '@/components/donor/DonationTraceabilityModal';
 import { useDonorDonations } from '@/hooks/dashboard/useDonorDonations';
 import { getDonorDonationFilters, downloadDonationReceipt } from '@/lib/api/donor';
 import { useToastStore } from '@/stores/toastStore';
@@ -37,6 +38,7 @@ export default function DonorDonationsPage() {
     setYear,
   } = useDonorDonations();
   const [filters, setFilters] = useState<DonorDonationFiltersDto>({ associations: [], years: [] });
+  const [traceabilityDonationId, setTraceabilityDonationId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,6 +79,7 @@ export default function DonorDonationsPage() {
             isLoading={isLoading}
             error={error}
             onDownloadReceipt={handleDownloadReceipt}
+            onOpenTraceability={(donation) => setTraceabilityDonationId(donation.id)}
           />
 
           {totalPages > 1 && (
@@ -104,6 +107,11 @@ export default function DonorDonationsPage() {
           )}
         </div>
       </div>
+
+      <DonationTraceabilityModal
+        donationId={traceabilityDonationId}
+        onClose={() => setTraceabilityDonationId(null)}
+      />
     </div>
   );
 }

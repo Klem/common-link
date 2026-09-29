@@ -4,6 +4,7 @@ import { DonationHistoryTable } from '../DonationHistoryTable';
 import type { DonorDonationDto } from '@/types/donor';
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'fr',
   useTranslations: () => (key: string) => key,
 }));
 
@@ -18,6 +19,8 @@ const donation1: DonorDonationDto = {
   associationName: 'Terre Verte',
   receiptAvailable: true,
   receiptNumber: 'REC-2026-001',
+  usedAmount: 100,
+  remainingAmount: 0,
 };
 
 const donation2: DonorDonationDto = {
@@ -31,12 +34,22 @@ const donation2: DonorDonationDto = {
   associationName: 'Solidarité',
   receiptAvailable: false,
   receiptNumber: null,
+  usedAmount: 20,
+  remainingAmount: 30,
 };
+
+const noop = () => {};
 
 describe('DonationHistoryTable', () => {
   it('renders loading state', () => {
     render(
-      <DonationHistoryTable donations={[]} isLoading error={null} onDownloadReceipt={vi.fn()} />,
+      <DonationHistoryTable
+        donations={[]}
+        isLoading
+        error={null}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
+      />,
     );
     expect(screen.getByText('loading')).toBeInTheDocument();
   });
@@ -47,7 +60,8 @@ describe('DonationHistoryTable', () => {
         donations={[]}
         isLoading={false}
         error="error"
-        onDownloadReceipt={vi.fn()}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
       />,
     );
     expect(screen.getByRole('alert')).toHaveTextContent('error');
@@ -59,7 +73,8 @@ describe('DonationHistoryTable', () => {
         donations={[]}
         isLoading={false}
         error={null}
-        onDownloadReceipt={vi.fn()}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
       />,
     );
     expect(screen.getByText('empty.title')).toBeInTheDocument();
@@ -71,7 +86,8 @@ describe('DonationHistoryTable', () => {
         donations={[donation1, donation2]}
         isLoading={false}
         error={null}
-        onDownloadReceipt={vi.fn()}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
       />,
     );
     expect(screen.getByRole('table', { name: 'tableLabel' })).toBeInTheDocument();
@@ -85,7 +101,8 @@ describe('DonationHistoryTable', () => {
         donations={[donation1]}
         isLoading={false}
         error={null}
-        onDownloadReceipt={vi.fn()}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
       />,
     );
     expect(container.querySelector('ul.md\\:hidden')).toBeInTheDocument();
@@ -97,7 +114,8 @@ describe('DonationHistoryTable', () => {
         donations={[donation1, donation2]}
         isLoading={false}
         error={null}
-        onDownloadReceipt={vi.fn()}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
       />,
     );
     expect(screen.getAllByText('table.downloadReceipt').length).toBeGreaterThan(0);
@@ -112,9 +130,53 @@ describe('DonationHistoryTable', () => {
         isLoading={false}
         error={null}
         onDownloadReceipt={onDownloadReceipt}
+        onOpenTraceability={noop}
       />,
     );
     fireEvent.click(screen.getAllByText('table.downloadReceipt')[0]);
     expect(onDownloadReceipt).toHaveBeenCalledWith(donation1);
+  });
+
+  it('renders the used-share amounts for partial and fully-used donations', () => {
+    render(
+      <DonationHistoryTable
+        donations={[donation1, donation2]}
+        isLoading={false}
+        error={null}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
+      />,
+    );
+    expect(screen.getAllByText(/100,00\s?€/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/20,00\s?€/).length).toBeGreaterThan(0);
+  });
+
+  it('triggers the traceability callback when clicked', () => {
+    const onOpenTraceability = vi.fn();
+    render(
+      <DonationHistoryTable
+        donations={[donation1]}
+        isLoading={false}
+        error={null}
+        onDownloadReceipt={noop}
+        onOpenTraceability={onOpenTraceability}
+      />,
+    );
+    fireEvent.click(screen.getAllByText('table.viewTraceability')[0]);
+    expect(onOpenTraceability).toHaveBeenCalledWith(donation1);
+  });
+
+  it('links the campaign name to its report page', () => {
+    render(
+      <DonationHistoryTable
+        donations={[donation1]}
+        isLoading={false}
+        error={null}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
+      />,
+    );
+    const link = screen.getAllByRole('link', { name: /Reforestation/ })[0];
+    expect(link).toHaveAttribute('href', '/fr/dashboard/donor/campaigns/camp-1');
   });
 });

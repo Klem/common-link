@@ -105,4 +105,10 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
 
     /** The payout attached to a Bridge payment link, for webhook reconciliation. */
     fun findByBridgePaymentLinkId(bridgePaymentLinkId: String): Payout?
+
+    /**
+     * Confirmed payouts of a campaign, oldest first — FIFO consumption order for
+     * [org.commonlink.service.DonationAllocationService].
+     */
+    fun findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId: UUID, status: PayoutStatus): List<Payout>
 }

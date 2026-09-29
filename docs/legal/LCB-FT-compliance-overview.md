@@ -392,6 +392,16 @@ Chaque fiche porte en outre, à la fin de sa section « ce que ce contrôle ne c
 
 **Une seconde fiche, hors dispositif LCB-FT, a été ajoutée le 26 août 2026 : `notice-collecte-publique-mentions-obligatoires.md`.** Elle porte sur les cinq éléments que la notice ACPR impose de décrire sur la page publique d'une campagne en collecte ouverte au public (objet, montant cible, calendrier, description chiffrée de l'utilisation des fonds, résultat attendu) — deux d'entre eux, le montant cible et le calendrier, n'atteignaient pas la page publique avant cette date. Comme pour la fiche précédente, aucune conclusion sur le dispositif LCB-FT ne peut en être tirée. Son nom de fichier ne porte volontairement aucun préfixe `E`, pour ne pas reproduire la confusion relevée ci-dessus sur `E5-recu-fiscal-mentions.md`.
 
+**Une troisième fiche, hors dispositif LCB-FT, a été ajoutée le 29 septembre 2026 :
+`registre-onchain-des-depenses.md`.** Elle documente l'état réel de l'inscription au registre
+public on-chain : les dons y sont réellement inscrits (`recordDonation` câblé au contrat), les
+dépenses ne le sont pas (`OnchainRegistryClient.recordPayout` est un stub qui lève
+`NotImplementedError` ; chaque décaissement confirmé produit un job `RECORD_PAYOUT` qui échoue et
+s'accumule à l'état `FAILED`). Cette fiche est produite parce que le sprint 2 du dashboard donateur
+introduit le premier écran s'adressant au donateur qui mentionne ce registre. Comme pour les deux
+fiches précédentes, aucune conclusion sur le dispositif LCB-FT ne peut en être tirée. Son nom de
+fichier ne porte volontairement aucun préfixe `E`, pour la même raison que la fiche précédente.
+
 La saisie des représentants légaux comme bénéficiaires effectifs faisait initialement l'objet d'une fiche séparée, rédigée dans un registre technique. Elle est intégrée à la fiche *Filtrage à l'entrée en relation d'affaires*, dont elle constitue le périmètre d'application : le contrôle de gel porte sur les personnes physiques identifiées au dossier, et les conditions de leur identification ne se lisent pas utilement séparément du contrôle qu'elles alimentent.
 
 ---

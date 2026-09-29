@@ -170,6 +170,15 @@ A payment made by an association to a third-party provider (e.g., a supplier, co
 The main public page where visitors browse associations. Displays association cards in a filterable, searchable grid layout. Filters include cause category, geographic scope, and campaign status.
 `functional`
 
+### Donation Journey
+The 4-step derived timeline shown on the donor dashboard home for a single donation: **Don reçu**
+(received, `Donation.confirmedAt`), **Crédité / inscrit au registre public** (recorded on-chain,
+its `RECORD_DONATION` `OnchainJob` reaching `DONE`), **Utilisé pour des dépenses** (spent, per the
+FIFO donation allocation), and **Bilan d'impact** (impact reported, once the campaign's
+`CampaignStatus` reaches `COMPLETED`). Purely derived — no dedicated table, recomputed on each read
+(`DonorDonationJourneyService`).
+`functional` `technical`
+
 ### Donation Modal
 The UI popup that opens when a user clicks "Donate" on an association's page. It includes donation type selection (one-time, monthly, re-donate), amount presets, custom amount input, anonymous toggle, payment method selection, gas estimate (for wallet), and confirmation button.
 `functional`
@@ -184,6 +193,15 @@ One of the two user types on CommonLink. A donor is an individual or entity that
 
 ### Donor Aggregate
 A consolidated view of a single donor's activity within one campaign. Aggregates all confirmed transactions into: total amount donated, transaction count, and date of last donation. Anonymous donors (`DonorProfile.anonymous = true`) appear as "Anonyme" — identity is masked at the service layer, on-chain proof (`providerRef`) is always retained. Backed by `CampaignDonorDto` from `GET /api/campaigns/{campaignId}/donors` (`DonorAggregateService`, Step 6).
+`functional` `technical`
+
+### Donor Campaign Report
+The donor-facing "bilan de campagne" page: the campaign's hero (name, emoji, status), the
+requesting donor's own contribution (never a share of others'), three KPIs, milestones, the list of
+confirmed payouts with the FIFO-allocated spend breakdown (prévu vs. **dépensé**, never "engagé" —
+decision D4), and the on-chain registry banner. Not to be confused with `Campaign Report`, the
+unrelated abuse-reporting feature ("Report this campaign"). Backed by
+`DonorCampaignReportService.getReport`, gated by `DonorReadScope.assertHasDonatedTo`.
 `functional` `technical`
 
 ### Donor Profile
@@ -205,6 +223,15 @@ One of the three login methods. Users register with an email and a password (min
 ### Fiat
 Traditional government-issued currency (EUR in our case). On CommonLink, donors pay in euros — the platform is not a crypto payment system. The blockchain layer is used for certification, not for transferring funds.
 `business` `blockchain`
+
+### FIFO Donation Allocation
+The engine that determines which confirmed donations funded which confirmed payouts of a campaign:
+donations and payouts are each sorted by `confirmedAt` ascending, and payouts consume donations
+chronologically, oldest first, across all donors of the campaign combined — never per-donor. A
+single payout may span several donations; a single donation may (partially) fund several payouts.
+Computed on the fly (`DonationAllocationService`), not materialized. Feeds the "Part utilisée"
+column of the donor's donation history and the traceability modal.
+`functional` `technical`
 
 ### Flyway
 A database migration tool that manages the evolution of the database schema through versioned SQL files (V1, V2, V3…). Ensures the database structure is consistent across all environments.

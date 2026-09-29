@@ -1,7 +1,9 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import { EmptyStateCard } from '@/components/dashboard';
+import { ROUTES } from '@/lib/routes';
 import type { DonorDonationDto } from '@/types/donor';
 
 interface Props {
@@ -9,6 +11,7 @@ interface Props {
   isLoading: boolean;
   error: string | null;
   onDownloadReceipt: (donation: DonorDonationDto) => void;
+  onOpenTraceability: (donation: DonorDonationDto) => void;
 }
 
 function fmtEur(amount: number): string {
@@ -23,10 +26,18 @@ function fmtDate(iso: string): string {
 
 /**
  * Donation history — a semantic `<table>` at `md` and above, stacked cards below it.
- * Both layouts share the same data and the same receipt-download action.
+ * Both layouts share the same data, the receipt-download action, the traceability action, and a
+ * link from the campaign name to its "bilan de campagne" page.
  */
-export function DonationHistoryTable({ donations, isLoading, error, onDownloadReceipt }: Props) {
+export function DonationHistoryTable({
+  donations,
+  isLoading,
+  error,
+  onDownloadReceipt,
+  onOpenTraceability,
+}: Props) {
   const t = useTranslations('dashboard.donor.donations');
+  const locale = useLocale();
 
   if (isLoading) {
     return (
@@ -62,7 +73,9 @@ export function DonationHistoryTable({ donations, isLoading, error, onDownloadRe
               <th scope="col">{t('table.project')}</th>
               <th scope="col">{t('table.association')}</th>
               <th scope="col">{t('table.amount')}</th>
+              <th scope="col">{t('table.usedAmount')}</th>
               <th scope="col">{t('table.receipt')}</th>
+              <th scope="col">{t('table.traceability')}</th>
             </tr>
           </thead>
           <tbody>
@@ -70,10 +83,13 @@ export function DonationHistoryTable({ donations, isLoading, error, onDownloadRe
               <tr key={donation.id}>
                 <td>{fmtDate(donation.donatedAt)}</td>
                 <td>
-                  {donation.campaignEmoji} {donation.campaignName}
+                  <Link href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}>
+                    {donation.campaignEmoji} {donation.campaignName}
+                  </Link>
                 </td>
                 <td>{donation.associationName}</td>
                 <td>{fmtEur(donation.amount)}</td>
+                <td>{fmtEur(donation.usedAmount)}</td>
                 <td>
                   {donation.receiptAvailable ? (
                     <button
@@ -87,6 +103,15 @@ export function DonationHistoryTable({ donations, isLoading, error, onDownloadRe
                     <span className="text-text-2 text-sm">{t('table.noReceipt')}</span>
                   )}
                 </td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => onOpenTraceability(donation)}
+                  >
+                    {t('table.viewTraceability')}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -99,14 +124,22 @@ export function DonationHistoryTable({ donations, isLoading, error, onDownloadRe
           <li key={donation.id} className="card card-no-hover">
             <div className="card-body flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="font-display font-bold text-sm">
+                <Link
+                  href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}
+                  className="font-display font-bold text-sm"
+                >
                   {donation.campaignEmoji} {donation.campaignName}
-                </span>
+                </Link>
                 <span className="font-display font-bold text-sm">{fmtEur(donation.amount)}</span>
               </div>
               <div className="text-sm text-text-2">{donation.associationName}</div>
               <div className="flex items-center justify-between text-sm text-text-2">
                 <span>{fmtDate(donation.donatedAt)}</span>
+                <span>
+                  {t('table.usedAmount')}: {fmtEur(donation.usedAmount)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
                 {donation.receiptAvailable ? (
                   <button
                     type="button"
@@ -116,8 +149,15 @@ export function DonationHistoryTable({ donations, isLoading, error, onDownloadRe
                     {t('table.downloadReceipt')}
                   </button>
                 ) : (
-                  <span>{t('table.noReceipt')}</span>
+                  <span className="text-text-2">{t('table.noReceipt')}</span>
                 )}
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => onOpenTraceability(donation)}
+                >
+                  {t('table.viewTraceability')}
+                </button>
               </div>
             </div>
           </li>

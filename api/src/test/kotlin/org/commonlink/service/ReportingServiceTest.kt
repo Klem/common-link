@@ -19,8 +19,11 @@ import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetSectionRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
+import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.PayoutRepository
+import org.commonlink.security.DonorReadScope
 import org.junit.jupiter.api.Test
+import org.springframework.security.access.AccessDeniedException
 import java.math.BigDecimal
 import java.util.Optional
 import java.util.UUID
@@ -32,13 +35,16 @@ class ReportingServiceTest {
     private val sectionRepository             = mockk<CampaignBudgetSectionRepository>()
     private val payoutRepository              = mockk<PayoutRepository>()
     private val donationRepository            = mockk<DonationRepository>()
+    private val donorProfileRepository        = mockk<DonorProfileRepository>()
+    private val donorReadScope                = DonorReadScope(donorProfileRepository, donationRepository)
 
     private val service = ReportingService(
         campaignRepository, associationProfileRepository,
-        sectionRepository, payoutRepository, donationRepository,
+        sectionRepository, payoutRepository, donationRepository, donorReadScope,
     )
 
     private val userId     = UUID.randomUUID()
+    private val donorId    = UUID.randomUUID()
     private val assocId    = UUID.randomUUID()
     private val campaignId = UUID.randomUUID()
 
@@ -148,6 +154,48 @@ class ReportingServiceTest {
 
         assertThatThrownBy { service.getVariance(campaignId, userId) }
             .isInstanceOf(NotFoundException::class.java)
+    }
+
+    // ── getVarianceForDonor ────────────────────────────────────────────────
+
+    @Test
+    fun `getVarianceForDonor - returns the same result as getVariance for a donor who has donated`() {
+        val produitSection = sectionWithItems(BudgetSide.REVENUE, "74", "Subventions", BigDecimal("2000"))
+
+        every { donationRepository.existsConfirmedByDonorIdAndCampaignId(donorId, campaignId) } returns true
+        every { sectionRepository.findAllWithItemsByCampaignId(campaignId) } returns listOf(produitSection)
+        every { payoutRepository.sumConfirmedAmountsByCampaignIdGroupedByTypeCode(campaignId) } returns emptyList()
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByTypeCode(campaignId) } returns
+            listOf(arrayOf("74", BigDecimal("1500")))
+
+        val result = service.getVarianceForDonor(campaignId, donorId)
+
+        assertThat(result.produits).hasSize(1)
+        assertThat(result.produits[0].actual).isEqualByComparingTo("1500")
+    }
+
+    @Test
+    fun `getVarianceForDonor - refuses a donor who has not donated to the campaign`() {
+        every { donationRepository.existsConfirmedByDonorIdAndCampaignId(donorId, campaignId) } returns false
+
+        assertThatThrownBy { service.getVarianceForDonor(campaignId, donorId) }
+            .isInstanceOf(AccessDeniedException::class.java)
+    }
+
+    @Test
+    fun `getVariance (association path) is unaffected by the donor-scoped extraction`() {
+        val chargeSection = sectionWithItems(BudgetSide.EXPENSE, "60", "Achats", BigDecimal("1000"))
+
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { sectionRepository.findAllWithItemsByCampaignId(campaignId) } returns listOf(chargeSection)
+        every { payoutRepository.sumConfirmedAmountsByCampaignIdGroupedByTypeCode(campaignId) } returns
+            listOf(arrayOf("60-mat", BigDecimal("600")))
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByTypeCode(campaignId) } returns emptyList()
+
+        val result = service.getVariance(campaignId, userId)
+
+        assertThat(result.charges[0].actual).isEqualByComparingTo("600")
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

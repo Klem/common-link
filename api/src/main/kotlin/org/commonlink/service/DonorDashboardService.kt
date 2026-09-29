@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.dto.AssociationOptionDto
+import org.commonlink.dto.DonationAllocationDto
 import org.commonlink.dto.DonorDonationDto
 import org.commonlink.dto.DonorDonationFiltersDto
 import org.commonlink.dto.DonorStatsDto
@@ -43,6 +44,7 @@ class DonorDashboardService(
     private val donationReceiptRepository: DonationReceiptRepository,
     private val fiscalMandateRepository: FiscalMandateRepository,
     private val taxRateService: TaxRateService,
+    private val donationAllocationService: DonationAllocationService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -77,7 +79,8 @@ class DonorDashboardService(
 
         // One receipt lookup for the whole page, not one per row.
         val receiptNumbers = receiptNumbersFor(donations.content)
-        return donations.map { it.toDonorDonationDto(receiptNumbers[it.id]) }
+        val allocations = allocationsFor(donations.content)
+        return donations.map { it.toDonorDonationDto(receiptNumbers[it.id], allocations[it.id]) }
     }
 
     /**
@@ -171,7 +174,22 @@ class DonorDashboardService(
             .associate { it.getDonationId() to it.getReceiptNumber() }
     }
 
-    private fun Donation.toDonorDonationDto(receiptNumber: String?) = DonorDonationDto(
+    /**
+     * FIFO allocation for every campaign present on this page, keyed by donation id.
+     *
+     * Computed once per **distinct campaign**, not once per row: a page frequently repeats the
+     * same campaign across several donations, and [DonationAllocationService.allocateCampaign]
+     * itself scans every confirmed donation and payout of that campaign — running it per row would
+     * be an N+1 on top of an already O(campaign size) computation.
+     */
+    private fun allocationsFor(donations: List<Donation>): Map<UUID, DonationAllocationDto> {
+        if (donations.isEmpty()) return emptyMap()
+        return donations.map { it.campaign.id!! }.distinct()
+            .flatMap { donationAllocationService.allocateCampaign(it) }
+            .associateBy { it.donationId }
+    }
+
+    private fun Donation.toDonorDonationDto(receiptNumber: String?, allocation: DonationAllocationDto?) = DonorDonationDto(
         id = id!!,
         // Only confirmed donations reach this mapper — the queries filter on confirmedAt.
         donatedAt = confirmedAt!!,
@@ -183,6 +201,8 @@ class DonorDashboardService(
         associationName = campaign.association.name,
         receiptAvailable = receiptNumber != null,
         receiptNumber = receiptNumber,
+        usedAmount = allocation?.usedAmount ?: BigDecimal.ZERO,
+        remainingAmount = allocation?.remainingAmount ?: amount,
     )
 
     /**

@@ -8,15 +8,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.DonorAssociationDto
+import org.commonlink.dto.DonorCampaignReportDto
 import org.commonlink.dto.DonorDonationDto
 import org.commonlink.dto.DonorDonationFiltersDto
+import org.commonlink.dto.DonorDonationJourneyDto
 import org.commonlink.dto.DonorProfileDto
 import org.commonlink.dto.DonorStatsDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.UpdateDonorProfileRequest
 import org.commonlink.dto.toPageResponse
+import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.DonorAssociationService
+import org.commonlink.service.DonorCampaignReportService
 import org.commonlink.service.DonorDashboardService
+import org.commonlink.service.DonorDonationJourneyService
 import org.commonlink.service.DonorService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -39,6 +44,9 @@ class DonorController(
     private val donorService: DonorService,
     private val donorDashboardService: DonorDashboardService,
     private val donorAssociationService: DonorAssociationService,
+    private val donorDonationJourneyService: DonorDonationJourneyService,
+    private val donorCampaignReportService: DonorCampaignReportService,
+    private val campaignReportPdfService: CampaignReportPdfService,
 ) {
 
     @GetMapping("/me")
@@ -162,6 +170,71 @@ class DonorController(
             .contentType(MediaType.APPLICATION_PDF)
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${receipt.fileName}\"")
             .body(receipt.pdfBytes)
+    }
+
+    @GetMapping("/me/donations/{donationId}/journey")
+    @Operation(
+        summary = "Get the traceability journey of a donation",
+        description = "Derives the 4-step journey (received, recorded on-chain, spent, impact reported) " +
+            "of one of the authenticated donor's donations, plus précédent/suivant navigation."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Journey returned",
+            content = [Content(schema = Schema(implementation = DonorDonationJourneyDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Donation belongs to another donor", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donation not found", content = [Content()])
+    )
+    fun getDonationJourney(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable donationId: UUID,
+    ): ResponseEntity<DonorDonationJourneyDto> =
+        ResponseEntity.ok(donorDonationJourneyService.getJourney(UUID.fromString(principal.username), donationId))
+
+    @GetMapping("/me/campaigns/{campaignId}/report")
+    @Operation(
+        summary = "Get the donor-facing campaign report",
+        description = "Hero data, the donor's own contribution, milestones, confirmed payouts and " +
+            "budget variance for a campaign the authenticated donor has funded."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Report returned",
+            content = [Content(schema = Schema(implementation = DonorCampaignReportDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Donor has no confirmed donation on this campaign", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()])
+    )
+    fun getCampaignReport(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable campaignId: UUID,
+    ): ResponseEntity<DonorCampaignReportDto> =
+        ResponseEntity.ok(donorCampaignReportService.getReport(UUID.fromString(principal.username), campaignId))
+
+    @GetMapping("/me/campaigns/{campaignId}/report/pdf", produces = [MediaType.APPLICATION_PDF_VALUE])
+    @Operation(
+        summary = "Download the donor-facing campaign report as a PDF",
+        description = "Same content as GET .../report, rendered as a downloadable PDF."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Report PDF returned"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Donor has no confirmed donation on this campaign", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()])
+    )
+    fun downloadCampaignReportPdf(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable campaignId: UUID,
+    ): ResponseEntity<ByteArray> {
+        val report = donorCampaignReportService.getReport(UUID.fromString(principal.username), campaignId)
+        val pdfBytes = campaignReportPdfService.generate(report)
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"bilan-${campaignId}.pdf\"")
+            .body(pdfBytes)
     }
 
     @GetMapping("/me/associations")

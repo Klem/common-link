@@ -11,6 +11,7 @@ import org.commonlink.repository.CampaignBudgetSectionRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.PayoutRepository
+import org.commonlink.security.DonorReadScope
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -30,11 +31,12 @@ class ReportingService(
     private val sectionRepository: CampaignBudgetSectionRepository,
     private val payoutRepository: PayoutRepository,
     private val donationRepository: DonationRepository,
+    private val donorReadScope: DonorReadScope,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
-     * Returns the budget variance report for [campaignId].
+     * Returns the budget variance report for [campaignId] — association-owned path.
      *
      * @throws UserNotFoundException if [userId] does not match an association profile.
      * @throws NotFoundException if [campaignId] does not exist or does not belong to the association.
@@ -42,7 +44,23 @@ class ReportingService(
     fun getVariance(campaignId: UUID, userId: UUID): BudgetVarianceDto {
         val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
+        return computeVariance(campaignId)
+    }
 
+    /**
+     * Donor-scoped variant of [getVariance]: same computation, donor read-scope instead of
+     * association ownership. Used by the donor-facing "bilan de campagne" (see
+     * [DonorCampaignReportService]).
+     *
+     * @throws org.springframework.security.access.AccessDeniedException if [donorId] has no
+     *   confirmed donation on [campaignId].
+     */
+    fun getVarianceForDonor(campaignId: UUID, donorId: UUID): BudgetVarianceDto {
+        donorReadScope.assertHasDonatedTo(donorId, campaignId)
+        return computeVariance(campaignId)
+    }
+
+    private fun computeVariance(campaignId: UUID): BudgetVarianceDto {
         val sections = sectionRepository.findAllWithItemsByCampaignId(campaignId)
 
         // typeCode prefix → realised amount (payouts: "60-mat" → "60"; donations: "74" → "74")

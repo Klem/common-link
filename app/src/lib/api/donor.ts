@@ -1,7 +1,9 @@
 import api from '@/lib/api';
 import type {
   DonorAssociationDto,
+  DonorCampaignReportDto,
   DonorDonationFiltersDto,
+  DonorDonationJourneyDto,
   DonorDonationsPage,
   DonorDonationsQuery,
   DonorProfileDto,
@@ -78,4 +80,37 @@ export const getDonorAssociations = (): Promise<DonorAssociationDto[]> =>
 export const downloadDonationReceipt = (donationId: string): Promise<Blob> =>
   api
     .get<Blob>(`/api/donor/me/donations/${donationId}/receipt`, { responseType: 'blob' })
+    .then((r) => r.data);
+
+/**
+ * Fetches the 4-step journey of one donation via
+ * `GET /api/donor/me/donations/{donationId}/journey`.
+ * Ownership is enforced server-side by `DonorReadScope.assertOwnsDonation`.
+ *
+ * @param donationId - Id of the donation to fetch the journey for.
+ * @returns The journey steps, allocation detail, and prev/next navigation.
+ */
+export const getDonationJourney = (donationId: string): Promise<DonorDonationJourneyDto> =>
+  api.get<DonorDonationJourneyDto>(`/api/donor/me/donations/${donationId}/journey`).then((r) => r.data);
+
+/**
+ * Fetches the donor-facing "bilan de campagne" via
+ * `GET /api/donor/me/campaigns/{campaignId}/report`.
+ * Requires at least one confirmed donation of the donor on the campaign.
+ *
+ * @param campaignId - Id of the campaign to fetch the report for.
+ * @returns Hero data, the donor's own contribution, milestones, payouts, and budget variance.
+ */
+export const getCampaignReport = (campaignId: string): Promise<DonorCampaignReportDto> =>
+  api.get<DonorCampaignReportDto>(`/api/donor/me/campaigns/${campaignId}/report`).then((r) => r.data);
+
+/**
+ * Downloads the campaign report PDF via `GET /api/donor/me/campaigns/{campaignId}/report/pdf`.
+ *
+ * @param campaignId - Id of the campaign to fetch the report PDF for.
+ * @returns The PDF as a Blob.
+ */
+export const downloadCampaignReportPdf = (campaignId: string): Promise<Blob> =>
+  api
+    .get<Blob>(`/api/donor/me/campaigns/${campaignId}/report/pdf`, { responseType: 'blob' })
     .then((r) => r.data);

@@ -14,6 +14,7 @@ export const ROUTES = {
   DONOR_DONATIONS: '/dashboard/donor/donations',
   DONOR_ASSOCIATIONS: '/dashboard/donor/associations',
   DONOR_SETTINGS: '/dashboard/donor/settings',
+  DONOR_CAMPAIGN_REPORT: (campaignId: string) => `/dashboard/donor/campaigns/${campaignId}`,
   ASSOCIATION_DASHBOARD: '/dashboard/association',
   ASSOCIATION_PROFILE: '/dashboard/association/profile',
   ASSOCIATION_PAYEES: '/dashboard/association/payees',

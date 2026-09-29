@@ -504,4 +504,29 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
           AND d.createdAt < :threshold
     """)
     fun findStalePending(@Param("threshold") threshold: Instant): List<Donation>
+
+    // ── Donor dashboard (Sprint 2 — allocation & campaign report) ─────────
+
+    /**
+     * All confirmed donations of a campaign, oldest first — FIFO input for
+     * [org.commonlink.service.DonationAllocationService], all donors combined.
+     */
+    fun findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId: UUID): List<Donation>
+
+    /**
+     * This donor's total confirmed amount on one campaign — for the campaign report's "votre
+     * contribution". Returns null when the donor has no confirmed donation on that campaign;
+     * callers treat null as zero.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(d.amount), 0)
+        FROM Donation d
+        WHERE d.donor.id    = :donorId
+          AND d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun sumConfirmedAmountByDonorIdAndCampaignId(
+        @Param("donorId") donorId: UUID,
+        @Param("campaignId") campaignId: UUID,
+    ): BigDecimal?
 }

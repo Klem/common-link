@@ -15,6 +15,7 @@ import org.commonlink.entity.DonationReceipt
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.FiscalMandate
 import org.commonlink.entity.MandateEligibility
+import org.commonlink.dto.DonationAllocationDto
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.NotFoundException
@@ -46,11 +47,13 @@ class DonorDashboardServiceTest {
     private val donationRepository       = mockk<DonationRepository>()
     private val donationReceiptRepository = mockk<DonationReceiptRepository>()
     private val fiscalMandateRepository  = mockk<FiscalMandateRepository>()
+    private val donationAllocationService = mockk<DonationAllocationService>()
 
     private val readScope      = DonorReadScope(donorProfileRepository, donationRepository)
     private val taxRateService = TaxRateService(fiscalMandateRepository)
     private val service = DonorDashboardService(
         readScope, donationRepository, donationReceiptRepository, fiscalMandateRepository, taxRateService,
+        donationAllocationService,
     )
 
     private val userId     = UUID.fromString("00000000-0000-0000-0000-000000000000")
@@ -183,6 +186,9 @@ class DonorDashboardServiceTest {
                 override fun getReceiptNumber() = "2024-0001"
             }
         )
+        every { donationAllocationService.allocateCampaign(campaignId) } returns listOf(
+            DonationAllocationDto(donationId, usedAmount = BigDecimal("60.00"), remainingAmount = BigDecimal("40.00"), fundedPayouts = emptyList())
+        )
 
         val page = service.listDonations(userId, null, null, 0, 20)
 
@@ -196,6 +202,8 @@ class DonorDashboardServiceTest {
             assertThat(associationName).isEqualTo("Alpha")
             assertThat(receiptAvailable).isTrue()
             assertThat(receiptNumber).isEqualTo("2024-0001")
+            assertThat(usedAmount).isEqualByComparingTo("60.00")
+            assertThat(remainingAmount).isEqualByComparingTo("40.00")
         }
     }
 
@@ -205,11 +213,34 @@ class DonorDashboardServiceTest {
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
             PageImpl(listOf(donation()))
         every { donationReceiptRepository.findRefsByDonationIds(listOf(donationId)) } returns emptyList()
+        every { donationAllocationService.allocateCampaign(campaignId) } returns emptyList()
 
         val row = service.listDonations(userId, null, null, 0, 20).content[0]
 
         assertThat(row.receiptAvailable).isFalse()
         assertThat(row.receiptNumber).isNull()
+        // No allocation entry for this donation → conservatively unused, nothing spent yet
+        assertThat(row.usedAmount).isEqualByComparingTo("0")
+        assertThat(row.remainingAmount).isEqualByComparingTo("100.00")
+    }
+
+    @Test
+    fun `listDonations computes the allocation once per distinct campaign, not once per row`() {
+        resolvesDonor()
+        val d1 = donation(id = donationId)
+        val otherDonationId = UUID.randomUUID()
+        val d2 = donation(id = otherDonationId) // same campaign as d1
+        every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
+            PageImpl(listOf(d1, d2))
+        every { donationReceiptRepository.findRefsByDonationIds(any()) } returns emptyList()
+        every { donationAllocationService.allocateCampaign(campaignId) } returns listOf(
+            DonationAllocationDto(donationId, usedAmount = BigDecimal("10"), remainingAmount = BigDecimal("90"), fundedPayouts = emptyList()),
+            DonationAllocationDto(otherDonationId, usedAmount = BigDecimal("20"), remainingAmount = BigDecimal("80"), fundedPayouts = emptyList()),
+        )
+
+        service.listDonations(userId, null, null, 0, 20)
+
+        verify(exactly = 1) { donationAllocationService.allocateCampaign(campaignId) }
     }
 
     @Test

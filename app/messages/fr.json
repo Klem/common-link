@@ -599,10 +599,10 @@
       "createdAt": "Détectée le",
       "decision": {
         "FALSE_POSITIVE": "Faux positif — erreur d'identification",
-        "LEGITIMATE": "Correspondance non avérée — situation légitime",
-        "SUSPICIOUS": "Correspondance avérée",
         "label": "Décision",
+        "LEGITIMATE": "Correspondance non avérée — situation légitime",
         "placeholder": "Sélectionner une décision…",
+        "SUSPICIOUS": "Correspondance avérée",
         "title": "Décision de clôture"
       },
       "decisionCampaignReport": {
@@ -784,12 +784,12 @@
           "unknown": "Statut RNA non renseigné"
         },
         "scopeVerdict": {
+          "accepted": "Formes acceptées : 9220 déclarée · 9221 insertion par l'économique · 9222 intermédiaire · 9223 groupement d'employeurs · 9230 reconnue d'utilité publique · 9260 droit local.",
           "IN_SCOPE": "Dans le périmètre",
           "OUT_OF_SCOPE": "Hors périmètre",
-          "UNDETERMINED": "Indéterminé",
-          "accepted": "Formes acceptées : 9220 déclarée · 9221 insertion par l'économique · 9222 intermédiaire · 9223 groupement d'employeurs · 9230 reconnue d'utilité publique · 9260 droit local.",
           "outOfScopeWarning": "L'approbation est bloquée : l'association est hors périmètre loi 1901.",
           "title": "Périmètre loi 1901",
+          "UNDETERMINED": "Indéterminé",
           "undeterminedHint": "Catégorie juridique non récupérée — l'approbation n'est pas bloquée."
         }
       },
@@ -848,8 +848,8 @@
       "HIT_CLEARED": "correspondance écartée par le responsable de la conformité — contrôle du {date}",
       "NOT_PERFORMED": "aucun contrôle de gel n'a encore été effectué",
       "PASSED": "contrôle effectué le {date} — aucune correspondance",
-      "UNAVAILABLE": "le contrôle de gel n'a pas pu être effectué — l'approbation est suspendue",
-      "title": "Contrôle de gel"
+      "title": "Contrôle de gel",
+      "UNAVAILABLE": "le contrôle de gel n'a pas pu être effectué — l'approbation est suspendue"
     }
   },
   "dashboard": {
@@ -894,14 +894,14 @@
                 "cta": "Corriger mes documents →",
                 "desc": "Votre dossier de vérification a été refusé"
               },
+              "title": "Vérification de l'association",
               "UNVERIFIED": {
                 "cta": "Vérifier →",
                 "desc": "Soumettez vos justificatifs pour publier publiquement"
               },
               "VERIFIED": {
                 "desc": "Votre association est vérifiée, vous pouvez publier publiquement"
-              },
-              "title": "Vérification de l'association"
+              }
             },
             "validated": "✓ Validée"
           },
@@ -1273,8 +1273,8 @@
             "hint": "JPG, PNG, WebP — 5 Mo max · 1200×600 recommandé",
             "label": "Image de couverture",
             "remove": "Retirer",
-            "uploadPrompt": "Glissez une image ou parcourir",
-            "uploading": "Envoi en cours..."
+            "uploading": "Envoi en cours...",
+            "uploadPrompt": "Glissez une image ou parcourir"
           },
           "dateError": "La date de fin doit être au moins 7 jours après le début",
           "description": {
@@ -1553,7 +1553,10 @@
           "downloadReceipt": "Télécharger",
           "noReceipt": "Non disponible",
           "project": "Projet",
-          "receipt": "Reçu"
+          "receipt": "Reçu",
+          "traceability": "Traçabilité",
+          "usedAmount": "Part utilisée",
+          "viewTraceability": "Voir la traçabilité"
         },
         "tableLabel": "Historique des dons",
         "title": "Mes dons"
@@ -1564,7 +1567,63 @@
         "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
         "title": "Votre aventure philanthropique commence ici"
       },
+      "journey": {
+        "empty": {
+          "subtitle": "Dès votre premier don, son parcours apparaîtra ici.",
+          "title": "Aucun don pour l'instant"
+        },
+        "error": "Impossible de charger le parcours de ce don.",
+        "loading": "Chargement du parcours…",
+        "navigation": "Naviguer entre vos dons",
+        "next": "Don suivant",
+        "previous": "Don précédent",
+        "steps": {
+          "IMPACT_REPORTED": {
+            "label": "Bilan d'impact",
+            "pendingHint": "Disponible à la clôture de la campagne"
+          },
+          "RECEIVED": {
+            "label": "Don reçu",
+            "pendingHint": "Enregistrement de votre don…"
+          },
+          "RECORDED": {
+            "label": "Inscrit au registre public",
+            "pendingHint": "Inscription en cours"
+          },
+          "SPENT": {
+            "label": "Utilisé pour des dépenses",
+            "pendingHint": "Pas encore utilisé"
+          }
+        },
+        "title": "Le parcours de votre don"
+      },
+      "report": {
+        "downloadPdf": "Télécharger le bilan en PDF",
+        "error": "Impossible de charger ce bilan de campagne.",
+        "errorSubtitle": "Il se peut que vous n'ayez pas donné à cette campagne, ou qu'elle n'existe plus.",
+        "funds": {
+          "category": "Catégorie",
+          "detailEmpty": "Aucune dépense confirmée pour l'instant.",
+          "empty": "Aucune donnée budgétaire disponible pour l'instant.",
+          "hideDetail": "Masquer le détail des dépenses",
+          "planned": "Prévu",
+          "showDetail": "Voir le détail des dépenses",
+          "spent": "Dépensé",
+          "title": "Utilisation des fonds"
+        },
+        "kpi": {
+          "contribution": "Votre contribution",
+          "raised": "Collecté",
+          "spent": "Dépensé"
+        },
+        "loading": "Chargement du bilan de campagne…",
+        "milestones": {
+          "empty": "Aucun palier pour cette campagne.",
+          "title": "Paliers"
+        }
+      },
       "sections": {
+        "donationJourney": "Le parcours de votre don",
         "myAssociations": "Mes associations",
         "recentDonations": "Mes dons récents",
         "viewAll": "Voir tout"
@@ -1609,6 +1668,23 @@
         "estimatedTaxReduction": "Réduction d'impôt estimée",
         "estimatedTaxReductionHint": "Estimation, et non un montant garanti",
         "totalDonated": "Total donné"
+      },
+      "traceability": {
+        "close": "Fermer",
+        "error": "Impossible de charger la traçabilité de ce don.",
+        "fundedPayouts": {
+          "empty": "Ce don n'a pas encore financé de dépense.",
+          "title": "Dépenses financées par ce don"
+        },
+        "loading": "Chargement de la traçabilité…",
+        "remainingAmount": "Montant pas encore utilisé",
+        "title": "Traçabilité de votre don",
+        "usedAmount": "Montant déjà utilisé",
+        "verifiedAccount": {
+          "body": "Ce don est inscrit sur un registre public infalsifiable. Chacun peut vérifier que le montant et la date correspondent bien à ce que CommonLink vous affiche ici.",
+          "cta": "Que signifie « compte vérifié » ?",
+          "title": "Compte vérifié"
+        }
       }
     },
     "greeting": "Bonjour, {name} 👋",

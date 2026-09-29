@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
 import { StatCard, EmptyStateCard } from '@/components/dashboard';
 import { DonorAssociationCard } from '@/components/donor/DonorAssociationCard';
+import { DonationJourneyTimeline } from '@/components/donor/DonationJourneyTimeline';
 import { useDonorStats } from '@/hooks/dashboard/useDonorStats';
 import { useDonorDonations } from '@/hooks/dashboard/useDonorDonations';
 import { useDonorAssociations } from '@/hooks/dashboard/useDonorAssociations';
@@ -87,12 +88,30 @@ export default function DonorDashboardPage() {
                 {recentDonations.map((donation) => (
                   <li key={donation.id} className="flex items-center justify-between text-sm">
                     <span>
-                      {donation.campaignEmoji} {donation.campaignName} — {donation.associationName}
+                      <Link href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}>
+                        {donation.campaignEmoji} {donation.campaignName}
+                      </Link>{' '}
+                      — {donation.associationName}
                     </span>
                     <span className="font-display font-bold">{fmtEur(donation.amount)}</span>
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="card card-no-hover">
+          <div className="card-header-bar flex items-center justify-between">
+            <span className="font-display font-bold text-sm">{t('donor.sections.donationJourney')}</span>
+          </div>
+          <div className="card-body">
+            {donationsLoading ? (
+              <p className="text-sm text-text-2" aria-live="polite">
+                {t('donor.donations.loading')}
+              </p>
+            ) : (
+              <DonationJourneyTimeline initialDonationId={recentDonations[0]?.id ?? null} />
             )}
           </div>
         </div>

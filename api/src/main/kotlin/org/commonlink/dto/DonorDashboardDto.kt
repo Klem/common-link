@@ -9,6 +9,9 @@ import java.util.UUID
  *
  * @property receiptNumber internal Cerfa number. Exposed so the UI can label the download, never as
  *   a path segment: the receipt is fetched by donation id, through the donor read scope.
+ * @property usedAmount portion of [amount] already consumed by confirmed payouts of its campaign
+ *   (FIFO allocation, see [org.commonlink.service.DonationAllocationService]).
+ * @property remainingAmount portion of [amount] not yet consumed by any confirmed payout.
  */
 data class DonorDonationDto(
     val id: UUID,
@@ -21,6 +24,8 @@ data class DonorDonationDto(
     val associationName: String,
     val receiptAvailable: Boolean,
     val receiptNumber: String?,
+    val usedAmount: BigDecimal,
+    val remainingAmount: BigDecimal,
 )
 
 /**

@@ -599,10 +599,10 @@
       "createdAt": "Detected on",
       "decision": {
         "FALSE_POSITIVE": "False positive — misidentification",
-        "LEGITIMATE": "No match confirmed — legitimate situation",
-        "SUSPICIOUS": "Match confirmed",
         "label": "Decision",
+        "LEGITIMATE": "No match confirmed — legitimate situation",
         "placeholder": "Select a decision…",
+        "SUSPICIOUS": "Match confirmed",
         "title": "Close alert"
       },
       "decisionCampaignReport": {
@@ -784,12 +784,12 @@
           "unknown": "RNA status unknown"
         },
         "scopeVerdict": {
+          "accepted": "Accepted forms: 9220 declared · 9221 work integration · 9222 intermediary · 9223 employers' grouping · 9230 public utility · 9260 local law.",
           "IN_SCOPE": "In scope",
           "OUT_OF_SCOPE": "Out of scope",
-          "UNDETERMINED": "Undetermined",
-          "accepted": "Accepted forms: 9220 declared · 9221 work integration · 9222 intermediary · 9223 employers' grouping · 9230 public utility · 9260 local law.",
           "outOfScopeWarning": "Approval is blocked: the association is out of loi 1901 scope.",
           "title": "Loi 1901 scope",
+          "UNDETERMINED": "Undetermined",
           "undeterminedHint": "Legal category not retrieved — approval is not blocked."
         }
       },
@@ -848,8 +848,8 @@
       "HIT_CLEARED": "match ruled a false positive by the compliance officer — screened on {date}",
       "NOT_PERFORMED": "no screening has been performed yet",
       "PASSED": "screening passed on {date}",
-      "UNAVAILABLE": "screening could not be completed — approval suspended",
-      "title": "Freeze screening"
+      "title": "Freeze screening",
+      "UNAVAILABLE": "screening could not be completed — approval suspended"
     }
   },
   "dashboard": {
@@ -894,14 +894,14 @@
                 "cta": "Fix my documents →",
                 "desc": "Your verification file was rejected"
               },
+              "title": "Association verification",
               "UNVERIFIED": {
                 "cta": "Verify →",
                 "desc": "Submit your documents to publish publicly"
               },
               "VERIFIED": {
                 "desc": "Your association is verified, you can publish publicly"
-              },
-              "title": "Association verification"
+              }
             },
             "validated": "✓ Validated"
           },
@@ -1273,8 +1273,8 @@
             "hint": "JPG, PNG, WebP — 5 MB max · 1200×600 recommended",
             "label": "Cover image",
             "remove": "Remove",
-            "uploadPrompt": "Drag an image or browse",
-            "uploading": "Uploading..."
+            "uploading": "Uploading...",
+            "uploadPrompt": "Drag an image or browse"
           },
           "dateError": "End date must be at least 7 days after start date",
           "description": {
@@ -1553,7 +1553,10 @@
           "downloadReceipt": "Download",
           "noReceipt": "Not available",
           "project": "Project",
-          "receipt": "Receipt"
+          "receipt": "Receipt",
+          "traceability": "Traceability",
+          "usedAmount": "Used share",
+          "viewTraceability": "View traceability"
         },
         "tableLabel": "Donation history",
         "title": "My donations"
@@ -1564,7 +1567,63 @@
         "subtitle": "Explore campaigns and make your first donation to see your impact.",
         "title": "Your philanthropic journey starts here"
       },
+      "journey": {
+        "empty": {
+          "subtitle": "Once you make your first donation, its journey will appear here.",
+          "title": "No donation yet"
+        },
+        "error": "Unable to load this donation's journey.",
+        "loading": "Loading the journey…",
+        "navigation": "Navigate between your donations",
+        "next": "Next donation",
+        "previous": "Previous donation",
+        "steps": {
+          "IMPACT_REPORTED": {
+            "label": "Impact report",
+            "pendingHint": "Available once the campaign ends"
+          },
+          "RECEIVED": {
+            "label": "Donation received",
+            "pendingHint": "Registering your donation…"
+          },
+          "RECORDED": {
+            "label": "Recorded in the public registry",
+            "pendingHint": "Registration in progress"
+          },
+          "SPENT": {
+            "label": "Used to fund an expense",
+            "pendingHint": "Not yet used"
+          }
+        },
+        "title": "Your donation's journey"
+      },
+      "report": {
+        "downloadPdf": "Download the report as PDF",
+        "error": "Unable to load this campaign report.",
+        "errorSubtitle": "You may not have donated to this campaign, or it may no longer exist.",
+        "funds": {
+          "category": "Category",
+          "detailEmpty": "No confirmed expense yet.",
+          "empty": "No budget data available yet.",
+          "hideDetail": "Hide expense detail",
+          "planned": "Planned",
+          "showDetail": "Show expense detail",
+          "spent": "Spent",
+          "title": "How the funds were used"
+        },
+        "kpi": {
+          "contribution": "Your contribution",
+          "raised": "Raised",
+          "spent": "Spent"
+        },
+        "loading": "Loading the campaign report…",
+        "milestones": {
+          "empty": "No milestones for this campaign.",
+          "title": "Milestones"
+        }
+      },
       "sections": {
+        "donationJourney": "Your donation's journey",
         "myAssociations": "My associations",
         "recentDonations": "My recent donations",
         "viewAll": "View all"
@@ -1609,6 +1668,23 @@
         "estimatedTaxReduction": "Estimated tax reduction",
         "estimatedTaxReductionHint": "Estimate, not a guaranteed amount",
         "totalDonated": "Total donated"
+      },
+      "traceability": {
+        "close": "Close",
+        "error": "Unable to load this donation's traceability.",
+        "fundedPayouts": {
+          "empty": "This donation has not funded any expense yet.",
+          "title": "Expenses this donation funded"
+        },
+        "loading": "Loading traceability…",
+        "remainingAmount": "Amount not yet used",
+        "title": "Your donation's traceability",
+        "usedAmount": "Amount already used",
+        "verifiedAccount": {
+          "body": "This donation is recorded on a public, tamper-proof registry. Anyone can verify that the amount and the date match what CommonLink shows you here.",
+          "cta": "What does \"verified account\" mean?",
+          "title": "Verified account"
+        }
       }
     },
     "greeting": "Hello, {name} 👋",
