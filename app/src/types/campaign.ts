@@ -300,7 +300,16 @@ export interface ReorderMilestonesRequest {
 
 /** Payload for `PUT /api/association/campaigns/:id/story`. */
 export interface UpsertCampaignStoryRequest {
+  /** Sanitized rich-text HTML. */
   storyText: string;
+  /** Plain text, max 220 chars -- what the impact gallery and the share card render. */
+  storySummary: string;
   /** One-directional: `false` never unpublishes an already-published story. */
   publish?: boolean;
+}
+
+/** One uploaded story image -- what `RichTextEditor` inserts as `<img src>`. */
+export interface CampaignStoryImageDto {
+  id: string;
+  url: string;
 }

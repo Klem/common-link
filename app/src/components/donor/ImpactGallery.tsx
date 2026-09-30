@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { StatCard, EmptyStateCard } from '@/components/dashboard';
+import { CampaignStoryModal } from '@/components/donor/CampaignStoryModal';
 import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
 import { useDonorImpacts } from '@/hooks/dashboard/useDonorImpacts';
 import { useDonorStats } from '@/hooks/dashboard/useDonorStats';
@@ -27,6 +28,7 @@ export function ImpactGallery() {
   const [category, setCategory] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [shareTarget, setShareTarget] = useState<DonorImpactDto | null>(null);
+  const [storyTarget, setStoryTarget] = useState<DonorImpactDto | null>(null);
 
   const categories = useMemo(
     () => Array.from(new Set(impacts.map((i) => i.category).filter((c): c is string => c !== null))).sort(),
@@ -94,7 +96,7 @@ export function ImpactGallery() {
               const wording = impactWording(impact);
               return (
                 <li key={impact.campaignId} className="card card-no-hover">
-                  <div className="card-body flex flex-col gap-3">
+                  <div className="card-b flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <span className="font-display font-bold text-sm">
                         {impact.campaignEmoji} {impact.campaignName}
@@ -109,13 +111,24 @@ export function ImpactGallery() {
                     ) : (
                       <p className="text-sm text-text-2">{t('notYetPublished')}</p>
                     )}
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm self-start"
-                      onClick={() => setShareTarget(impact)}
-                    >
-                      {t('share.cta')}
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      {impact.storySummary && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm self-start"
+                          onClick={() => setStoryTarget(impact)}
+                        >
+                          {t('story.cta')}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm self-start"
+                        onClick={() => setShareTarget(impact)}
+                      >
+                        {t('share.cta')}
+                      </button>
+                    </div>
                   </div>
                 </li>
               );
@@ -135,6 +148,7 @@ export function ImpactGallery() {
       )}
 
       <ShareImpactModal impact={shareTarget} onClose={() => setShareTarget(null)} />
+      <CampaignStoryModal campaignId={storyTarget?.campaignId ?? null} onClose={() => setStoryTarget(null)} />
     </div>
   );
 }

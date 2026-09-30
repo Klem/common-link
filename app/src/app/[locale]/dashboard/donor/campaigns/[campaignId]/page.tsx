@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { EmptyStateCard, StatCard } from '@/components/dashboard';
+import { EmptyStateCard, StatCard, Topbar } from '@/components/dashboard';
 import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
 import { useDonorCampaignReport } from '@/hooks/dashboard/useDonorCampaignReport';
 import { downloadCampaignReportPdf } from '@/lib/api/donor';
@@ -78,22 +78,38 @@ export default function DonorCampaignReportPage() {
 
   if (isLoading) {
     return (
-      <p className="text-sm text-text-2 py-8 text-center" aria-live="polite">
-        {t('loading')}
-      </p>
+      <div>
+        <Topbar title={t('loading')} />
+        <div className="page">
+          <p className="text-sm text-text-2 py-8 text-center" aria-live="polite">
+            {t('loading')}
+          </p>
+        </div>
+      </div>
     );
   }
 
   if (error || !report) {
-    return <EmptyStateCard icon="⚠️" title={t('error')} subtitle={t('errorSubtitle')} />;
+    return (
+      <div>
+        <Topbar title={t('error')} />
+        <div className="page">
+          <EmptyStateCard icon="⚠️" title={t('error')} subtitle={t('errorSubtitle')} />
+        </div>
+      </div>
+    );
   }
 
   const progressPct = report.goal > 0 ? Math.min(100, Math.round((report.raised / report.goal) * 100)) : 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div>
+      <Topbar title={report.campaignName} />
+
+      <div className="page">
+      <div className="flex flex-col gap-6">
       <div className="card card-no-hover">
-        <div className="card-body flex flex-col gap-4">
+        <div className="card-b flex flex-col gap-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h1 className="font-display font-black text-2xl md:text-3xl">
               {report.campaignEmoji} {report.campaignName}
@@ -119,10 +135,10 @@ export default function DonorCampaignReportPage() {
       </div>
 
       <div className="card card-no-hover">
-        <div className="card-header-bar">
+        <div className="card-h">
           <span className="font-display font-bold text-sm">{t('milestones.title')}</span>
         </div>
-        <div className="card-body">
+        <div className="card-b">
           {report.milestones.length === 0 ? (
             <p className="text-sm text-text-2">{t('milestones.empty')}</p>
           ) : (
@@ -143,10 +159,10 @@ export default function DonorCampaignReportPage() {
       </div>
 
       <div className="card card-no-hover">
-        <div className="card-header-bar">
+        <div className="card-h">
           <span className="font-display font-bold text-sm">{t('funds.title')}</span>
         </div>
-        <div className="card-body flex flex-col gap-4">
+        <div className="card-b flex flex-col gap-4">
           {report.variance.charges.length === 0 ? (
             <p className="text-sm text-text-2">{t('funds.empty')}</p>
           ) : (
@@ -215,7 +231,7 @@ export default function DonorCampaignReportPage() {
       </div>
 
       <div className="card card-no-hover">
-        <div className="card-header-bar flex items-center justify-between">
+        <div className="card-h flex items-center justify-between">
           <span className="font-display font-bold text-sm">{t('story.title')}</span>
           <button
             type="button"
@@ -226,16 +242,19 @@ export default function DonorCampaignReportPage() {
                 campaignName: report.campaignName,
                 campaignEmoji: report.campaignEmoji,
                 associationName: report.associationName,
-                storyText: report.story?.storyText ?? null,
+                storySummary: report.story?.storySummary ?? null,
               })
             }
           >
             {t('story.share')}
           </button>
         </div>
-        <div className="card-body">
+        <div className="card-b">
           {report.story ? (
-            <p className="text-sm leading-relaxed">{report.story.storyText}</p>
+            // Sanitized server-side (StoryHtmlSanitizer) before ever being persisted — safe to
+            // render as-is. Reserved to the donor authenticated and gated on having funded this
+            // campaign (DonorReadScope), not a public page.
+            <div className="rte-content text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: report.story.storyText }} />
           ) : (
             <p className="text-sm text-text-2">{t('story.notYetPublished')}</p>
           )}
@@ -259,6 +278,8 @@ export default function DonorCampaignReportPage() {
       </button>
 
       <ShareImpactModal impact={shareTarget} onClose={() => setShareTarget(null)} />
+      </div>
+      </div>
     </div>
   );
 }

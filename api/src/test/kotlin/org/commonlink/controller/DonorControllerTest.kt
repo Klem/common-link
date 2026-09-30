@@ -593,7 +593,7 @@ class DonorControllerTest {
             DonorImpactDto(
                 campaignId = campaignId, campaignName = "Camp", campaignEmoji = "🌍",
                 associationName = "Asso", category = "Éducation", impactGoals = "50 enfants scolarisés",
-                storyText = null,
+                storySummary = null,
             )
         )
 

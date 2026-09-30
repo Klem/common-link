@@ -12,6 +12,18 @@ interface Props {
 
 const CARD_WIDTH = 600;
 const CARD_HEIGHT = 315;
+// storySummary can be up to 220 chars (the form's own cap) -- at the card's font size that can
+// overflow the fixed-height <foreignObject> and clip silently in the downloaded file, with no
+// scrollbar to reveal it. Truncated at a word boundary so a long summary degrades to a shorter
+// but still complete-looking sentence, never a mid-word cut.
+const MAX_CARD_WORDING_LENGTH = 130;
+
+function truncateForCard(text: string): string {
+  if (text.length <= MAX_CARD_WORDING_LENGTH) return text;
+  const cut = text.slice(0, MAX_CARD_WORDING_LENGTH);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trim()}…`;
+}
 
 /**
  * Builds the shareable card as an inline SVG string -- same design tokens as the rest of the
@@ -31,7 +43,7 @@ function buildCardSvg(
 ): string {
   const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const bodyText = wording
-    ? escape(`${wordingPrefix} ${withTerminalPunctuation(wording)} ${wordingSuffix}`)
+    ? escape(`${wordingPrefix} ${withTerminalPunctuation(truncateForCard(wording))} ${wordingSuffix}`)
     : escape(notYetPublishedText);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" viewBox="0 0 ${CARD_WIDTH} ${CARD_HEIGHT}">
   <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="20" fill="#FDF8F0" />

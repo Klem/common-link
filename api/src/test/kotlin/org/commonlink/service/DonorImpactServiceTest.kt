@@ -81,22 +81,22 @@ class DonorImpactServiceTest {
     }
 
     @Test
-    fun `storyText is null when the campaign has no published story`() {
+    fun `storySummary is null when the campaign has no published story`() {
         stubDonor()
         every { donationRepository.findDistinctCampaignsByDonorId(donorId) } returns listOf(campaignRow())
         every { campaignStoryService.getPublishedStory(campaignId) } returns null
 
-        assertThat(service.listImpacts(userId).single().storyText).isNull()
+        assertThat(service.listImpacts(userId).single().storySummary).isNull()
     }
 
     @Test
-    fun `storyText is populated when the campaign has a published story`() {
+    fun `storySummary is populated when the campaign has a published story`() {
         stubDonor()
         every { donationRepository.findDistinctCampaignsByDonorId(donorId) } returns listOf(campaignRow())
         every { campaignStoryService.getPublishedStory(campaignId) } returns
-            CampaignStoryDto(storyText = "Un récit.", publishedAt = java.time.Instant.now())
+            CampaignStoryDto(storyText = "<p>Un récit.</p>", storySummary = "Un résumé.", publishedAt = java.time.Instant.now())
 
-        assertThat(service.listImpacts(userId).single().storyText).isEqualTo("Un récit.")
+        assertThat(service.listImpacts(userId).single().storySummary).isEqualTo("Un résumé.")
     }
 
     @Test

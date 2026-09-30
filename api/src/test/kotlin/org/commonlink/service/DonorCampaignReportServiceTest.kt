@@ -130,7 +130,7 @@ class DonorCampaignReportServiceTest {
         every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
         every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal.ZERO
         every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
-        val storyDto = CampaignStoryDto(storyText = "Un récit publié.", publishedAt = Instant.now())
+        val storyDto = CampaignStoryDto(storyText = "Un récit publié.", storySummary = "Résumé.", publishedAt = Instant.now())
         every { campaignStoryService.getPublishedStory(campaignId) } returns storyDto
 
         val report = service.getReport(userId, campaignId)

@@ -316,6 +316,7 @@
   "common": {
     "addPayeeHint": "Add your beneficiary then come back to the campaign.",
     "budgetSaved": "Budget saved.",
+    "campaignStoryImageUploadFailed": "Image upload failed. Please try again.",
     "campaignStoryPublished": "Story published.",
     "campaignUpdated": "Campaign updated.",
     "cancel": "Cancel",
@@ -1359,7 +1360,23 @@
           "publish": "Publish",
           "published": "Published",
           "republish": "Update",
-          "title": "Impact story"
+          "summaryHint": "{count}/{max} characters — shown in the impact gallery and on the share card, never the full story.",
+          "summaryLabel": "Short summary",
+          "summaryPlaceholder": "One sentence — what this story is about",
+          "title": "Impact story",
+          "toolbar": {
+            "bold": "Bold",
+            "bulletList": "Bullet list",
+            "heading2": "Heading 2",
+            "heading3": "Heading 3",
+            "image": "Insert image",
+            "italic": "Italic",
+            "label": "Formatting",
+            "link": "Link",
+            "linkPrompt": "Link URL (leave empty to remove)",
+            "orderedList": "Numbered list",
+            "underline": "Underline"
+          }
         },
         "tabs": {
           "budget": "Budget",
@@ -1606,6 +1623,13 @@
           "cta": "Share"
         },
         "showMore": "Show more",
+        "story": {
+          "close": "Close",
+          "cta": "Read full story",
+          "error": "Unable to load the story.",
+          "loading": "Loading the story…",
+          "title": "Full story"
+        },
         "subtitle": "The concrete impact of the projects you support.",
         "title": "Impact of my donations",
         "wordingPrefix": "This project has",

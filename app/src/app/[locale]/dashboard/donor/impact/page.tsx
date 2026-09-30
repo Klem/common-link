@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Topbar } from '@/components/dashboard';
 import { ImpactGallery } from '@/components/donor/ImpactGallery';
 
 export default function DonorImpactPage() {
@@ -8,12 +9,18 @@ export default function DonorImpactPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display font-black text-2xl md:text-3xl">{t('title')}</h1>
-        <p className="text-text-2 mt-1">{t('subtitle')}</p>
-      </div>
+      <Topbar title={t('title')} />
 
-      <ImpactGallery />
+      <div className="page">
+        <div className="page-head">
+          <div>
+            <h1>{t('title')}</h1>
+            <p>{t('subtitle')}</p>
+          </div>
+        </div>
+
+        <ImpactGallery />
+      </div>
     </div>
   );
 }

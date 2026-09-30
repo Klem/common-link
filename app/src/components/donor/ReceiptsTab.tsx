@@ -68,10 +68,10 @@ export function ReceiptsTab() {
           </div>
 
           <div className="card card-no-hover">
-            <div className="card-header-bar">
+            <div className="card-h">
               <span className="font-display font-bold text-sm">{t('list.title')}</span>
             </div>
-            <div className="card-body">
+            <div className="card-b">
               <ul className="flex flex-col gap-3">
                 {years.map((y) => (
                   <li key={y.year} className="flex items-center justify-between text-sm">

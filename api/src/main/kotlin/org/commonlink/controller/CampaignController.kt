@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.CampaignDto
 import org.commonlink.dto.CampaignStoryDto
+import org.commonlink.dto.CampaignStoryImageDto
 import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.CreateCampaignRequest
 import org.commonlink.dto.CreateMilestoneRequest
@@ -446,7 +447,9 @@ class CampaignController(
         @Valid @RequestBody req: UpsertCampaignStoryRequest
     ): ResponseEntity<CampaignStoryDto> =
         ResponseEntity.ok(
-            campaignStoryService.upsertStory(UUID.fromString(principal.username), id, req.storyText, req.publish)
+            campaignStoryService.upsertStory(
+                UUID.fromString(principal.username), id, req.storyText, req.storySummary, req.publish,
+            )
         )
 
     /**
@@ -479,4 +482,37 @@ class CampaignController(
             ?: return ResponseEntity.noContent().build()
         return ResponseEntity.ok(story)
     }
+
+    /**
+     * Uploads an image to embed in the campaign's story via the rich-text editor.
+     *
+     * Accepted types: JPEG, PNG, WebP. Max size: 5 MB — same limits as the cover image upload.
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the campaign.
+     * @param file Multipart image part named `file`.
+     * @return 201 with the image id and its public serving URL.
+     */
+    @PostMapping("/{id}/story/images", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @Operation(
+        summary = "Upload a campaign story image",
+        description = "Stores an image to be embedded in the story's rich text. Accepted types: JPEG, PNG, WebP. Max size: 5 MB."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "201", description = "Image stored",
+            content = [Content(schema = Schema(implementation = CampaignStoryImageDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "Empty, oversized, or unsupported file type", content = [Content()])
+    )
+    fun uploadStoryImage(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+        @RequestParam("file") file: MultipartFile,
+    ): ResponseEntity<CampaignStoryImageDto> =
+        ResponseEntity.status(HttpStatus.CREATED).body(
+            campaignStoryService.uploadStoryImage(UUID.fromString(principal.username), id, file)
+        )
 }

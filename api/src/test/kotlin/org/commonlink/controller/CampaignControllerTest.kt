@@ -7,6 +7,7 @@ import org.commonlink.dto.BudgetItemDto
 import org.commonlink.dto.BudgetSectionDto
 import org.commonlink.dto.CampaignDto
 import org.commonlink.dto.CampaignStoryDto
+import org.commonlink.dto.CampaignStoryImageDto
 import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.MilestoneDto
 import org.commonlink.entity.BudgetSide
@@ -26,9 +27,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -411,14 +414,14 @@ class CampaignControllerTest {
 
     @Test
     fun `upsertStory - 200 on creation`() {
-        every { campaignStoryService.upsertStory(userId, campaignId, "Un récit.", false) } returns
-            CampaignStoryDto(storyText = "Un récit.", publishedAt = null)
+        every { campaignStoryService.upsertStory(userId, campaignId, "Un récit.", "Résumé.", false) } returns
+            CampaignStoryDto(storyText = "Un récit.", storySummary = "Résumé.", publishedAt = null)
 
         mockMvc.perform(
             put("/api/association/campaigns/$campaignId/story")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"storyText":"Un récit."}""")
+                .content("""{"storyText":"Un récit.","storySummary":"Résumé."}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.storyText").value("Un récit."))
@@ -428,14 +431,14 @@ class CampaignControllerTest {
     @Test
     fun `upsertStory - 200 on upsert with publish`() {
         val publishedAt = Instant.parse("2026-09-29T10:00:00Z")
-        every { campaignStoryService.upsertStory(userId, campaignId, "Récit modifié.", true) } returns
-            CampaignStoryDto(storyText = "Récit modifié.", publishedAt = publishedAt)
+        every { campaignStoryService.upsertStory(userId, campaignId, "Récit modifié.", "Résumé.", true) } returns
+            CampaignStoryDto(storyText = "Récit modifié.", storySummary = "Résumé.", publishedAt = publishedAt)
 
         mockMvc.perform(
             put("/api/association/campaigns/$campaignId/story")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"storyText":"Récit modifié.","publish":true}""")
+                .content("""{"storyText":"Récit modifié.","storySummary":"Résumé.","publish":true}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.publishedAt").value("2026-09-29T10:00:00Z"))
@@ -443,14 +446,14 @@ class CampaignControllerTest {
 
     @Test
     fun `upsertStory - 404 when the campaign belongs to another association`() {
-        every { campaignStoryService.upsertStory(userId, campaignId, "Un récit.", false) } throws
+        every { campaignStoryService.upsertStory(userId, campaignId, "Un récit.", "Résumé.", false) } throws
             NotFoundException("Campaign not found")
 
         mockMvc.perform(
             put("/api/association/campaigns/$campaignId/story")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"storyText":"Un récit."}""")
+                .content("""{"storyText":"Un récit.","storySummary":"Résumé."}""")
         )
             .andExpect(status().isNotFound)
     }
@@ -461,7 +464,30 @@ class CampaignControllerTest {
             put("/api/association/campaigns/$campaignId/story")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"storyText":""}""")
+                .content("""{"storyText":"","storySummary":"Résumé."}""")
+        )
+            .andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `upsertStory - 422 on blank summary`() {
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"storyText":"<p>Un récit.</p>","storySummary":""}""")
+        )
+            .andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `upsertStory - 422 when summary exceeds 220 characters`() {
+        val tooLong = "a".repeat(221)
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"storyText":"<p>Un récit.</p>","storySummary":"$tooLong"}""")
         )
             .andExpect(status().isUnprocessableContent)
     }
@@ -481,7 +507,7 @@ class CampaignControllerTest {
     @Test
     fun `getStory - 200 with the draft story`() {
         every { campaignStoryService.getOwnStory(userId, campaignId) } returns
-            CampaignStoryDto(storyText = "Brouillon.", publishedAt = null)
+            CampaignStoryDto(storyText = "Brouillon.", storySummary = "Résumé.", publishedAt = null)
 
         mockMvc.perform(
             get("/api/association/campaigns/$campaignId/story")
@@ -517,6 +543,59 @@ class CampaignControllerTest {
     @Test
     fun `getStory - 401 without JWT`() {
         mockMvc.perform(get("/api/association/campaigns/$campaignId/story"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // ── POST /api/association/campaigns/{id}/story/images ─────────────────────
+
+    @Test
+    fun `uploadStoryImage - 201 with the stored image id and URL`() {
+        val imageId = java.util.UUID.randomUUID()
+        every { campaignStoryService.uploadStoryImage(userId, campaignId, any()) } returns
+            CampaignStoryImageDto(id = imageId.toString(), url = "/api/public/campaigns/$campaignId/story-images/$imageId")
+
+        mockMvc.perform(
+            multipart("/api/association/campaigns/$campaignId/story/images")
+                .file(MockMultipartFile("file", "photo.png", "image/png", ByteArray(10)))
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.id").value(imageId.toString()))
+            .andExpect(jsonPath("$.url").value("/api/public/campaigns/$campaignId/story-images/$imageId"))
+    }
+
+    @Test
+    fun `uploadStoryImage - 422 when the file is unsupported`() {
+        every { campaignStoryService.uploadStoryImage(userId, campaignId, any()) } throws
+            UnprocessableEntityException("Unsupported story image type")
+
+        mockMvc.perform(
+            multipart("/api/association/campaigns/$campaignId/story/images")
+                .file(MockMultipartFile("file", "doc.pdf", "application/pdf", ByteArray(10)))
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `uploadStoryImage - 404 when the campaign belongs to another association`() {
+        every { campaignStoryService.uploadStoryImage(userId, campaignId, any()) } throws
+            NotFoundException("Campaign not found")
+
+        mockMvc.perform(
+            multipart("/api/association/campaigns/$campaignId/story/images")
+                .file(MockMultipartFile("file", "photo.png", "image/png", ByteArray(10)))
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `uploadStoryImage - 401 without JWT`() {
+        mockMvc.perform(
+            multipart("/api/association/campaigns/$campaignId/story/images")
+                .file(MockMultipartFile("file", "photo.png", "image/png", ByteArray(10)))
+        )
             .andExpect(status().isUnauthorized)
     }
 }

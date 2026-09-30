@@ -195,7 +195,10 @@ export interface DonorReceiptYearDto {
  * "bilan de campagne" (published only) and the association's own story editor (draft included).
  */
 export interface CampaignStoryDto {
+  /** Sanitized rich-text HTML — safe to render with `dangerouslySetInnerHTML`. */
   storyText: string;
+  /** Plain text, no HTML — what the impact gallery and the share card render. */
+  storySummary: string;
   /** ISO instant, or null when still draft — never shown to the donor. */
   publishedAt: string | null;
 }
@@ -210,6 +213,6 @@ export interface DonorImpactDto {
   category: string | null;
   /** Free-text impact description written by the association at campaign creation. */
   impactGoals: string | null;
-  /** Published story text, null if none or still draft. */
-  storyText: string | null;
+  /** Published story's plain-text summary, null if none or still draft. Never the rich-text HTML. */
+  storySummary: string | null;
 }

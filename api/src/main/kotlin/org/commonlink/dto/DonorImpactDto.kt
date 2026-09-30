@@ -12,6 +12,10 @@ data class DonorImpactDto(
     val category: String?,
     /** Free-text impact description written by the association at campaign creation. */
     val impactGoals: String?,
-    /** Published story text, null if none or still draft. */
-    val storyText: String?,
+    /**
+     * Published story's plain-text summary, null if none or still draft. Never the rich-text
+     * [org.commonlink.entity.CampaignStory.storyText] HTML -- the gallery composes this into the
+     * collective wording (D6) as plain text, never as markup.
+     */
+    val storySummary: String?,
 )

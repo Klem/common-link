@@ -18,6 +18,9 @@ vi.mock('next-intl', () => ({
 vi.mock('@/lib/api/donor', () => ({
   getDonorImpacts: vi.fn(),
   getDonorStats: vi.fn(),
+  // CampaignStoryModal (opened from the "story.cta" button) fetches through this on its own --
+  // never resolved in these tests, which only assert the modal opens, not its fetched content.
+  getCampaignReport: vi.fn(() => new Promise(() => {})),
 }));
 
 const stats: DonorStatsDto = { totalDonated: 500, donationCount: 5, associationCount: 2, estimatedTaxReduction: 300 };
@@ -30,7 +33,7 @@ const impacts: DonorImpactDto[] = [
     associationName: 'Terre Verte',
     category: 'Environnement',
     impactGoals: "50 arbres plantés",
-    storyText: null,
+    storySummary: null,
   },
   {
     campaignId: 'camp-2',
@@ -39,7 +42,7 @@ const impacts: DonorImpactDto[] = [
     associationName: 'École Kaolack',
     category: 'Éducation',
     impactGoals: null,
-    storyText: '200 repas servis cette année.',
+    storySummary: '200 repas servis cette année.',
   },
 ];
 
@@ -97,13 +100,35 @@ describe('ImpactGallery', () => {
     vi.mocked(getDonorStats).mockResolvedValue(stats);
     render(<ImpactGallery />);
 
-    // storyText ("200 repas servis cette année.") already ends with a period.
+    // storySummary ("200 repas servis cette année.") already ends with a period.
     await waitFor(() =>
       expect(
         screen.getByText('Ce projet a 200 repas servis cette année. Vous y avez contribué.'),
       ).toBeInTheDocument(),
     );
     expect(screen.queryByText(/\.\./)).not.toBeInTheDocument();
+  });
+
+  it('offers "read full story" only for campaigns with a published story', async () => {
+    vi.mocked(getDonorImpacts).mockResolvedValue(impacts);
+    vi.mocked(getDonorStats).mockResolvedValue(stats);
+    render(<ImpactGallery />);
+
+    await waitFor(() => expect(screen.getByText(/Reforestation/)).toBeInTheDocument());
+    // impacts[0] (Reforestation) has storySummary: null -- not yet published, no button.
+    // impacts[1] (Cantine scolaire) has a published storySummary -- button offered.
+    expect(screen.getAllByText('story.cta')).toHaveLength(1);
+  });
+
+  it('opens the story modal for the clicked campaign', async () => {
+    vi.mocked(getDonorImpacts).mockResolvedValue(impacts);
+    vi.mocked(getDonorStats).mockResolvedValue(stats);
+    render(<ImpactGallery />);
+
+    await waitFor(() => expect(screen.getByText(/Reforestation/)).toBeInTheDocument());
+    fireEvent.click(screen.getByText('story.cta'));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('"Voir plus" reveals additional cards beyond the first page', async () => {
@@ -114,7 +139,7 @@ describe('ImpactGallery', () => {
       associationName: 'Asso',
       category: null,
       impactGoals: 'Impact',
-      storyText: null,
+      storySummary: null,
     }));
     vi.mocked(getDonorImpacts).mockResolvedValue(many);
     vi.mocked(getDonorStats).mockResolvedValue(stats);

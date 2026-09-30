@@ -10,6 +10,7 @@ import type {
   UpdateMilestoneRequest,
   ReorderMilestonesRequest,
   UpsertCampaignStoryRequest,
+  CampaignStoryImageDto,
 } from '@/types/campaign';
 import type { CampaignStoryDto } from '@/types/donor';
 
@@ -221,3 +222,19 @@ export const getCampaignStory = (campaignId: string): Promise<CampaignStoryDto |
   api
     .get<CampaignStoryDto>(`/api/association/campaigns/${campaignId}/story`)
     .then((r) => (r.status === 204 ? null : r.data));
+
+/**
+ * Uploads an image to embed in a campaign's story via the rich-text editor.
+ * Calls `POST /api/association/campaigns/:campaignId/story/images`.
+ *
+ * @param campaignId - UUID of the campaign.
+ * @param file - Image file (JPEG, PNG or WebP, max 5 MB).
+ * @returns The stored image's id and public serving URL.
+ */
+export const uploadStoryImage = (campaignId: string, file: File): Promise<CampaignStoryImageDto> => {
+  const form = new FormData();
+  form.append('file', file);
+  return api
+    .post<CampaignStoryImageDto>(`/api/association/campaigns/${campaignId}/story/images`, form)
+    .then((r) => r.data);
+};

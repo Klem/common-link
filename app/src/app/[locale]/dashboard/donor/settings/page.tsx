@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useDonorProfile } from '@/hooks/dashboard/useDonorProfile';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
+import { Topbar } from '@/components/dashboard';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -152,11 +153,16 @@ export default function DonorSettingsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display font-black text-2xl md:text-3xl">{t('donor.settings.title')}</h1>
-      </div>
+      <Topbar title={t('donor.settings.title')} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      <div className="page">
+        <div className="page-head">
+          <div>
+            <h1>{t('donor.settings.title')}</h1>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
         {/* ── Left: Avatar card ─────────────────────────────────────────── */}
         <div className="card card-no-hover p-6 flex flex-col items-center text-center gap-4 h-fit">
           <div className="avatar avatar-lg avatar-teal font-display font-extrabold">
@@ -181,7 +187,7 @@ export default function DonorSettingsPage() {
         <div className="flex flex-col gap-6">
           {/* Identity form card */}
           <div className="card card-no-hover">
-            <div className="card-body">
+            <div className="card-b">
               {isLoading ? (
                 <p className="text-sm text-text-2" aria-live="polite">
                   {t('donor.settings.loading')}
@@ -310,7 +316,7 @@ export default function DonorSettingsPage() {
 
           {/* Security card */}
           <div className="card card-no-hover">
-            <div className="card-body">
+            <div className="card-b">
               <h3 className="font-display font-bold text-base text-text mb-4">
                 {t('donor.settings.security.title')}
               </h3>
@@ -332,6 +338,7 @@ export default function DonorSettingsPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* ── SetPassword modal ────────────────────────────────────────────── */}

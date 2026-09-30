@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
-import { StatCard, EmptyStateCard } from '@/components/dashboard';
+import { StatCard, EmptyStateCard, Topbar } from '@/components/dashboard';
 import { DonorAssociationCard } from '@/components/donor/DonorAssociationCard';
 import { DonationJourneyTimeline } from '@/components/donor/DonationJourneyTimeline';
 import { useDonorStats } from '@/hooks/dashboard/useDonorStats';
@@ -29,12 +29,17 @@ export default function DonorDashboardPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display font-black text-2xl md:text-3xl">{t('title')}</h1>
-        <p className="text-text-2 mt-1">{t('greeting', { name })}</p>
-      </div>
+      <Topbar title={t('title')} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div className="page">
+        <div className="page-head">
+          <div>
+            <h1>{t('title')}</h1>
+            <p>{t('greeting', { name })}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <StatCard
           icon="💰"
           label={t('donor.stats.totalDonated')}
@@ -64,13 +69,13 @@ export default function DonorDashboardPage() {
 
       <div className="flex flex-col gap-6">
         <div className="card card-no-hover">
-          <div className="card-header-bar flex items-center justify-between">
+          <div className="card-h flex items-center justify-between">
             <span className="font-display font-bold text-sm">{t('donor.sections.recentDonations')}</span>
             <Link href={`/${locale}${ROUTES.DONOR_DONATIONS}`} className="text-sm text-text-2">
               {t('donor.sections.viewAll')}
             </Link>
           </div>
-          <div className="card-body">
+          <div className="card-b">
             {donationsLoading ? (
               <p className="text-sm text-text-2" aria-live="polite">
                 {t('donor.donations.loading')}
@@ -102,10 +107,10 @@ export default function DonorDashboardPage() {
         </div>
 
         <div className="card card-no-hover">
-          <div className="card-header-bar flex items-center justify-between">
+          <div className="card-h flex items-center justify-between">
             <span className="font-display font-bold text-sm">{t('donor.sections.donationJourney')}</span>
           </div>
-          <div className="card-body">
+          <div className="card-b">
             {donationsLoading ? (
               <p className="text-sm text-text-2" aria-live="polite">
                 {t('donor.donations.loading')}
@@ -117,13 +122,13 @@ export default function DonorDashboardPage() {
         </div>
 
         <div className="card card-no-hover">
-          <div className="card-header-bar flex items-center justify-between">
+          <div className="card-h flex items-center justify-between">
             <span className="font-display font-bold text-sm">{t('donor.sections.myAssociations')}</span>
             <Link href={`/${locale}${ROUTES.DONOR_ASSOCIATIONS}`} className="text-sm text-text-2">
               {t('donor.sections.viewAll')}
             </Link>
           </div>
-          <div className="card-body">
+          <div className="card-b">
             {associationsLoading ? (
               <p className="text-sm text-text-2" aria-live="polite">
                 {t('donor.associations.loading')}
@@ -143,6 +148,7 @@ export default function DonorDashboardPage() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

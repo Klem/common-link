@@ -316,6 +316,7 @@
   "common": {
     "addPayeeHint": "Ajoutez votre bénéficiaire puis revenez sur la campagne.",
     "budgetSaved": "Budget sauvegardé.",
+    "campaignStoryImageUploadFailed": "Échec de l'envoi de l'image. Merci de réessayer.",
     "campaignStoryPublished": "Récit publié.",
     "campaignUpdated": "Campagne mise à jour.",
     "cancel": "Annuler",
@@ -1359,7 +1360,23 @@
           "publish": "Publier",
           "published": "Publié",
           "republish": "Mettre à jour",
-          "title": "Récit d'impact"
+          "summaryHint": "{count}/{max} caractères — affiché dans la galerie d'impact et sur la carte de partage, jamais le récit complet.",
+          "summaryLabel": "Résumé court",
+          "summaryPlaceholder": "Une phrase — ce dont parle ce récit",
+          "title": "Récit d'impact",
+          "toolbar": {
+            "bold": "Gras",
+            "bulletList": "Liste à puces",
+            "heading2": "Titre 2",
+            "heading3": "Titre 3",
+            "image": "Insérer une image",
+            "italic": "Italique",
+            "label": "Mise en forme",
+            "link": "Lien",
+            "linkPrompt": "URL du lien (laisser vide pour retirer)",
+            "orderedList": "Liste numérotée",
+            "underline": "Souligné"
+          }
         },
         "tabs": {
           "budget": "Budget prév.",
@@ -1606,6 +1623,13 @@
           "cta": "Partager"
         },
         "showMore": "Voir plus",
+        "story": {
+          "close": "Fermer",
+          "cta": "Voir le récit complet",
+          "error": "Impossible de charger le récit.",
+          "loading": "Chargement du récit…",
+          "title": "Récit complet"
+        },
         "subtitle": "L'impact concret des projets que vous soutenez.",
         "title": "Impact de mes dons",
         "wordingPrefix": "Ce projet a",

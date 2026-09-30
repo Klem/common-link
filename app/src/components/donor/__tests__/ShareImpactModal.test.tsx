@@ -14,7 +14,7 @@ const impact: ShareableImpact = {
   campaignEmoji: '🌳',
   associationName: 'Terre Verte',
   impactGoals: '50 arbres plantés',
-  storyText: '200 arbres déjà plantés cette saison.',
+  storySummary: '200 arbres déjà plantés cette saison.',
 };
 
 describe('ShareImpactModal', () => {
@@ -56,5 +56,17 @@ describe('ShareImpactModal', () => {
 
     screen.getByLabelText('close').click();
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('truncates a long summary in the card so the fixed-height SVG box never overflows', () => {
+    // storySummary's own form cap is 220 chars -- long enough to overflow the card's fixed-height
+    // <foreignObject> and clip silently (no scrollbar) in the downloaded file.
+    const longSummary = 'Grâce à ce projet, '.repeat(12).trim(); // > 220 chars
+    const { container } = render(
+      <ShareImpactModal impact={{ ...impact, storySummary: longSummary }} onClose={vi.fn()} />,
+    );
+
+    expect(container.innerHTML).toContain('…');
+    expect(container.textContent).not.toContain(longSummary);
   });
 });

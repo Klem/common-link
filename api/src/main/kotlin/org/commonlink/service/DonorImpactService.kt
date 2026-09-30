@@ -34,7 +34,7 @@ class DonorImpactService(
                 associationName = row.getAssociationName(),
                 category = row.getCategory(),
                 impactGoals = row.getImpactGoals(),
-                storyText = campaignStoryService.getPublishedStory(row.getCampaignId())?.storyText,
+                storySummary = campaignStoryService.getPublishedStory(row.getCampaignId())?.storySummary,
             )
         }
     }

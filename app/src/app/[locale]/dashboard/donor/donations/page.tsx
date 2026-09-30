@@ -6,6 +6,7 @@ import { DonationHistoryTable } from '@/components/donor/DonationHistoryTable';
 import { DonationFilters } from '@/components/donor/DonationFilters';
 import { DonationTraceabilityModal } from '@/components/donor/DonationTraceabilityModal';
 import { ReceiptsTab } from '@/components/donor/ReceiptsTab';
+import { Topbar } from '@/components/dashboard';
 import { useDonorDonations } from '@/hooks/dashboard/useDonorDonations';
 import { getDonorDonationFilters, downloadDonationReceipt } from '@/lib/api/donor';
 import { useToastStore } from '@/stores/toastStore';
@@ -63,11 +64,16 @@ export default function DonorDonationsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display font-black text-2xl md:text-3xl">{t('title')}</h1>
-      </div>
+      <Topbar title={t('title')} />
 
-      <div className="set-tabs">
+      <div className="page">
+        <div className="page-head">
+          <div>
+            <h1>{t('title')}</h1>
+          </div>
+        </div>
+
+        <div className="set-tabs">
         <button
           type="button"
           className={`set-tab${activeTab === 'history' ? ' active' : ''}`}
@@ -87,7 +93,7 @@ export default function DonorDonationsPage() {
       {activeTab === 'history' && (
         <div className="set-tab-content active">
           <div className="card card-no-hover">
-            <div className="card-body flex flex-col gap-6">
+            <div className="card-b flex flex-col gap-6">
               <DonationFilters
                 associations={filters.associations}
                 years={filters.years}
@@ -143,6 +149,7 @@ export default function DonorDonationsPage() {
           <ReceiptsTab />
         </div>
       )}
+      </div>
     </div>
   );
 }

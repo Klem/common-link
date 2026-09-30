@@ -1564,6 +1564,21 @@ textarea.form-input {
 .cm-btn-danger { background: rgba(255,107,91,.07); border: 1px solid rgba(255,107,91,.2); color: var(--warm-coral); }
 .cm-btn-danger:hover { background: rgba(255,107,91,.13); }
 .cm-btn-sm { padding: 6px 13px; font-size: 12px; }
+.cm-btn-xs { padding: 5px 9px; font-size: 12px; gap: 0; min-width: 30px; justify-content: center; }
+
+/* ── Rich-text editor (récit d'impact) ──────────────────────────────────────── */
+.rte { border: 1px solid var(--mist-lavender); border-radius: var(--radius-md); overflow: hidden; }
+.rte-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 8px; background: var(--soft-cream); border-bottom: 1px solid var(--mist-lavender); }
+.rte-sep { width: 1px; align-self: stretch; background: var(--mist-lavender); margin: 2px 2px; }
+.rte-content { min-height: 220px; padding: 16px; font-family: var(--font-inter), sans-serif; font-size: 14px; line-height: 1.6; color: var(--ink-navy); }
+.rte-content .ProseMirror { outline: none; min-height: 200px; }
+.rte-content h2 { font-size: 20px; font-weight: 700; margin: 12px 0 6px; font-family: var(--font-syne), sans-serif; }
+.rte-content h3 { font-size: 16px; font-weight: 700; margin: 10px 0 6px; font-family: var(--font-syne), sans-serif; }
+.rte-content p { margin: 0 0 10px; }
+.rte-content ul, .rte-content ol { margin: 0 0 10px 20px; }
+.rte-content img { max-width: 100%; border-radius: var(--radius-sm); margin: 8px 0; }
+.rte-content a { color: var(--bright-teal); text-decoration: underline; }
+.rte-content p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--slate-lavender); float: left; height: 0; pointer-events: none; }
 .btn-icon { background: none; border: 1px solid var(--mist-lavender); color: var(--slate-lavender); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all var(--tb); }
 .btn-icon:hover { border-color: var(--bright-teal); color: var(--ink-navy); }
 .btn-camp-link { background: none; border: none; padding: 0; color: var(--bright-teal); font-weight: 600; cursor: pointer; font-family: inherit; font-size: inherit; text-decoration: underline; text-underline-offset: 2px; }
@@ -2410,6 +2425,10 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 /* Tall modals: the shared .modal clips its overflow, so the body scrolls instead of being cut off */
 .modal-scroll { display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
 .modal-scroll .modal-body { overflow-y: auto; flex: 1; min-height: 0; }
+
+/* Wide modals: readable line-length for long-form content (e.g. the full campaign story) --
+   the shared .modal's 480px max-width is tuned for short forms/confirmations, not paragraphs. */
+.modal-wide { max-width: 760px; }
 
 /* Mollie trust modal - who Mollie is, why the KYC is unavoidable, where the documents go */
 .mollie-info-intro { font-size: 14px; color: var(--slate-lavender); line-height: 1.6; margin-bottom: 18px; }

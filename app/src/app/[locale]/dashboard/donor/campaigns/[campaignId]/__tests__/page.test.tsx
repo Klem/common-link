@@ -72,7 +72,9 @@ describe('DonorCampaignReportPage', () => {
     vi.mocked(getCampaignReport).mockResolvedValue(report);
     render(<DonorCampaignReportPage />);
 
-    await waitFor(() => expect(screen.getByText(/Reforestation/)).toBeInTheDocument());
+    // The campaign name now also appears in the Topbar breadcrumb, not just the hero heading --
+    // scope to the heading role to keep this query unambiguous.
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Reforestation/ })).toBeInTheDocument());
     expect(screen.getByText('Terre Verte')).toBeInTheDocument();
     expect(screen.getByText(report.registryBannerText)).toBeInTheDocument();
   });
@@ -127,7 +129,7 @@ describe('DonorCampaignReportPage', () => {
   it('never renders the word "engagé"', async () => {
     vi.mocked(getCampaignReport).mockResolvedValue(report);
     const { container } = render(<DonorCampaignReportPage />);
-    await waitFor(() => expect(screen.getByText(/Reforestation/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Reforestation/ })).toBeInTheDocument());
     expect(container.textContent?.toLowerCase()).not.toContain('engagé');
   });
 
