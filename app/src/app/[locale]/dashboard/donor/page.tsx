@@ -6,9 +6,13 @@ import { useAuthStore } from '@/stores/authStore';
 import { StatCard, EmptyStateCard, Topbar } from '@/components/dashboard';
 import { DonorAssociationCard } from '@/components/donor/DonorAssociationCard';
 import { DonationJourneyTimeline } from '@/components/donor/DonationJourneyTimeline';
+import { RecentActivityBlock } from '@/components/donor/RecentActivityBlock';
+import { RecommendationCard } from '@/components/donor/RecommendationCard';
+import { DonationCta } from '@/components/donor/DonationCta';
 import { useDonorStats } from '@/hooks/dashboard/useDonorStats';
 import { useDonorDonations } from '@/hooks/dashboard/useDonorDonations';
 import { useDonorAssociations } from '@/hooks/dashboard/useDonorAssociations';
+import { useDonorRecommendations } from '@/hooks/dashboard/useDonorRecommendations';
 import { ROUTES } from '@/lib/routes';
 
 function fmtEur(amount: number): string {
@@ -22,10 +26,21 @@ export default function DonorDashboardPage() {
   const { stats, isLoading: statsLoading } = useDonorStats();
   const { donationsPage, isLoading: donationsLoading } = useDonorDonations(3);
   const { associations, isLoading: associationsLoading } = useDonorAssociations();
+  const { recommendations, isLoading: recommendationsLoading } = useDonorRecommendations();
 
   const name = user?.displayName?.trim() || user?.email || '';
   const recentDonations = donationsPage?.content ?? [];
   const recentAssociations = associations.slice(0, 3);
+  const topRecommendation = recommendations[0] ?? null;
+
+  // Global "Faire un don" CTA: first eligible supported association, falling back to the top
+  // recommendation. Never a link that would 404/409 — see DonationCta.
+  const eligibleAssociation = associations.find((a) => a.donationUrl !== null);
+  const globalDonationTarget = eligibleAssociation
+    ? { name: eligibleAssociation.name, url: eligibleAssociation.donationUrl }
+    : topRecommendation
+      ? { name: topRecommendation.associationName, url: topRecommendation.donationUrl }
+      : null;
 
   return (
     <div>
@@ -37,6 +52,13 @@ export default function DonorDashboardPage() {
             <h1>{t('title')}</h1>
             <p>{t('greeting', { name })}</p>
           </div>
+          {globalDonationTarget && (
+            <DonationCta
+              associationName={globalDonationTarget.name}
+              donationUrl={globalDonationTarget.url}
+              className="btn btn-primary"
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
@@ -68,6 +90,39 @@ export default function DonorDashboardPage() {
       </div>
 
       <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card card-no-hover">
+            <div className="card-h flex items-center justify-between">
+              <span className="font-display font-bold text-sm">
+                {t('donor.engagement.feed.sectionTitle')}
+              </span>
+            </div>
+            <div className="card-b">
+              <RecentActivityBlock />
+            </div>
+          </div>
+
+          <div className="card card-no-hover">
+            <div className="card-h flex items-center justify-between">
+              <span className="font-display font-bold text-sm">{t('donor.recommendations.sectionTitle')}</span>
+              <Link href={`/${locale}${ROUTES.DONOR_RECOMMENDATIONS}`} className="text-sm text-text-2">
+                {t('donor.sections.viewAll')}
+              </Link>
+            </div>
+            <div className="card-b">
+              {recommendationsLoading ? (
+                <p className="text-sm text-text-2" aria-live="polite">
+                  {t('donor.recommendations.loading')}
+                </p>
+              ) : topRecommendation ? (
+                <RecommendationCard recommendation={topRecommendation} />
+              ) : (
+                <p className="text-sm text-text-2">{t('donor.recommendations.empty.subtitle')}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="card card-no-hover">
           <div className="card-h flex items-center justify-between">
             <span className="font-display font-bold text-sm">{t('donor.sections.recentDonations')}</span>

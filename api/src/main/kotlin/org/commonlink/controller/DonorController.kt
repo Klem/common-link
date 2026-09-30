@@ -12,9 +12,11 @@ import org.commonlink.dto.DonorCampaignReportDto
 import org.commonlink.dto.DonorDonationDto
 import org.commonlink.dto.DonorDonationFiltersDto
 import org.commonlink.dto.DonorDonationJourneyDto
+import org.commonlink.dto.DonorFeedItemDto
 import org.commonlink.dto.DonorImpactDto
 import org.commonlink.dto.DonorProfileDto
 import org.commonlink.dto.DonorReceiptYearDto
+import org.commonlink.dto.DonorRecommendationDto
 import org.commonlink.dto.DonorStatsDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.UpdateDonorProfileRequest
@@ -24,10 +26,13 @@ import org.commonlink.service.DonorAssociationService
 import org.commonlink.service.DonorCampaignReportService
 import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorDonationJourneyService
+import org.commonlink.service.DonorEngagementService
 import org.commonlink.service.DonorImpactService
 import org.commonlink.service.DonorReceiptsService
+import org.commonlink.service.DonorRecommendationService
 import org.commonlink.service.DonorService
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -35,6 +40,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -53,6 +59,8 @@ class DonorController(
     private val campaignReportPdfService: CampaignReportPdfService,
     private val donorReceiptsService: DonorReceiptsService,
     private val donorImpactService: DonorImpactService,
+    private val donorEngagementService: DonorEngagementService,
+    private val donorRecommendationService: DonorRecommendationService,
 ) {
 
     @GetMapping("/me")
@@ -317,4 +325,61 @@ class DonorController(
         @AuthenticationPrincipal principal: UserDetails,
     ): ResponseEntity<List<DonorImpactDto>> =
         ResponseEntity.ok(donorImpactService.listImpacts(UUID.fromString(principal.username)))
+
+    @GetMapping("/me/recommendations")
+    @Operation(
+        summary = "Recommended projects for the donor",
+        description = "Simple rule (D8, option A): campaigns matching a cause the donor already " +
+            "funds, excluding associations already supported, falling back to the most recent " +
+            "live campaigns. At most 6 results."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Recommendations returned",
+            content = [Content(schema = Schema(implementation = DonorRecommendationDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun getRecommendations(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<List<DonorRecommendationDto>> =
+        ResponseEntity.ok(donorRecommendationService.getRecommendations(UUID.fromString(principal.username)))
+
+    @GetMapping("/me/feed")
+    @Operation(
+        summary = "Engagement feed since the donor's last visit",
+        description = "Read-only: does not mark the feed as seen. See POST .../feed/seen."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Feed returned",
+            content = [Content(schema = Schema(implementation = DonorFeedItemDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun getFeed(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<List<DonorFeedItemDto>> =
+        ResponseEntity.ok(donorEngagementService.getFeed(UUID.fromString(principal.username)))
+
+    @PostMapping("/me/feed/seen")
+    @Operation(
+        summary = "Mark the engagement feed as seen",
+        description = "Sets the donor's last-visit timestamp to now. Call this once the donor has " +
+            "actually viewed the \"Depuis votre dernière visite\" block, never as a side effect of " +
+            "loading it."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Marked as seen"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun markFeedSeen(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<Void> {
+        donorEngagementService.markSeen(UUID.fromString(principal.username))
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build()
+    }
 }

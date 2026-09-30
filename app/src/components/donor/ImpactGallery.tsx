@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { StatCard, EmptyStateCard } from '@/components/dashboard';
 import { CampaignStoryModal } from '@/components/donor/CampaignStoryModal';
+import { DonationCta } from '@/components/donor/DonationCta';
 import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
 import { useDonorImpacts } from '@/hooks/dashboard/useDonorImpacts';
 import { useDonorStats } from '@/hooks/dashboard/useDonorStats';
@@ -128,6 +129,11 @@ export function ImpactGallery() {
                       >
                         {t('share.cta')}
                       </button>
+                      <DonationCta
+                        associationName={impact.associationName}
+                        donationUrl={impact.donationUrl}
+                        className="btn btn-primary btn-sm self-start"
+                      />
                     </div>
                   </div>
                 </li>

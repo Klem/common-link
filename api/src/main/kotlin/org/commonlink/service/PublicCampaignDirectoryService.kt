@@ -47,7 +47,7 @@ class PublicCampaignDirectoryService(
                 milestoneCount = row.milestoneCount,
                 associationName = row.associationName,
                 associationLogo = row.associationLogo,
-                donationUrl = donationUrl(row.widgetToken),
+                donationUrl = buildDonationUrl(row.widgetToken),
             )
         }
     }
@@ -55,11 +55,15 @@ class PublicCampaignDirectoryService(
     /**
      * Builds the absolute donation landing URL for [widgetToken].
      *
-     * Uses the configured `app.frontend-url` rather than a hard-coded host so the directory points
+     * Uses the configured `app.frontend-url` rather than a hard-coded host so every caller points
      * at the same origin as every other outbound link the backend emits (Mollie Connect returns,
      * transactional emails). The locale segment is `fr`: the landing page is French-only.
+     *
+     * Public: reused by [org.commonlink.service.DonorAssociationService] and
+     * [org.commonlink.service.DonorRecommendationService] so the donor dashboard's "Faire un don"
+     * links are built by a single method, never duplicated.
      */
-    private fun donationUrl(widgetToken: String): String =
+    fun buildDonationUrl(widgetToken: String): String =
         "${frontendUrl.trimEnd('/')}/fr/lp/$widgetToken"
 
     private companion object {

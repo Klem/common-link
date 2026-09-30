@@ -78,6 +78,11 @@ data class AssociationOptionDto(
  *   association. The attribute belongs to the campaign, not to the association, so there is no
  *   association-level category to report; null when that campaign carries none.
  * @property publishedPayoutCount confirmed payouts of the association, all campaigns combined.
+ * @property donationUrl absolute public donation URL, or null when the association's widget isn't
+ *   currently reachable (see [org.commonlink.entity.AssociationProfile.hasEligibleWidget]). Never
+ *   render a "Faire un don" link when null — this points at the association's *current* live
+ *   campaign, never necessarily the one the donor funded (one live campaign per association at a
+ *   time, see [org.commonlink.repository.CampaignRepository.findPublicLive]).
  */
 data class DonorAssociationDto(
     val associationId: UUID,
@@ -87,4 +92,5 @@ data class DonorAssociationDto(
     val publishedPayoutCount: Long,
     val campaignCount: Int,
     val lastDonationAt: Instant?,
+    val donationUrl: String?,
 )

@@ -31,6 +31,7 @@ class PublicCampaignDirectoryServiceTest {
         goal = BigDecimal("10000"),
         raised = BigDecimal("4200"),
         milestoneCount = 4,
+        associationId = UUID.fromString("00000000-0000-0000-0000-000000000002"),
         associationName = "Les Restos du Coeur",
         associationLogo = null,
         widgetToken = widgetToken,

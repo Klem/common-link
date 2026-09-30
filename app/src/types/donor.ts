@@ -95,6 +95,12 @@ export interface DonorAssociationDto {
   campaignCount: number;
   /** ISO instant, or null if never donated (should not happen in practice). */
   lastDonationAt: string | null;
+  /**
+   * Absolute public donation URL, or null when the association's widget isn't currently
+   * reachable. Points at the association's *current* live campaign, not necessarily the one the
+   * donor funded — never render a link when null.
+   */
+  donationUrl: string | null;
 }
 
 /** Parameters accepted by `GET /api/donor/me/donations`. */
@@ -215,4 +221,50 @@ export interface DonorImpactDto {
   impactGoals: string | null;
   /** Published story's plain-text summary, null if none or still draft. Never the rich-text HTML. */
   storySummary: string | null;
+  /** Absolute public donation URL, or null when the association's widget isn't currently reachable. */
+  donationUrl: string | null;
+}
+
+/** Kind of event surfaced by the donor engagement feed — see `dashboard.donor.engagement.feed.*`. */
+export const DonorFeedItemType = {
+  PAYOUT_CONFIRMED: 'PAYOUT_CONFIRMED',
+  MILESTONE_REACHED: 'MILESTONE_REACHED',
+  CAMPAIGN_COMPLETED: 'CAMPAIGN_COMPLETED',
+} as const;
+export type DonorFeedItemType = (typeof DonorFeedItemType)[keyof typeof DonorFeedItemType];
+
+/**
+ * One event of the donor's "Depuis votre dernière visite" home block, from
+ * `GET /api/donor/me/feed`.
+ */
+export interface DonorFeedItemDto {
+  type: DonorFeedItemType;
+  campaignId: string;
+  campaignName: string;
+  associationName: string;
+  /** ISO instant. */
+  occurredAt: string;
+  /**
+   * Fully-resolved sentence built server-side — render as-is, never recompose a wording around a
+   * payout event (D2-validated wording, never claims on-chain registration of the expense).
+   */
+  label: string;
+}
+
+/**
+ * One recommended campaign for "Projets recommandés" and the home "Pour vous" block (D8, option A),
+ * from `GET /api/donor/me/recommendations`. `donationUrl` is always non-null here.
+ */
+export interface DonorRecommendationDto {
+  campaignId: string;
+  campaignName: string;
+  campaignEmoji: string;
+  associationName: string;
+  category: string | null;
+  coverImage: string | null;
+  goal: number;
+  raised: number;
+  donationUrl: string;
+  /** Non-null when explained by a cause the donor already funds — show the reason to the donor. */
+  matchedCategory: string | null;
 }

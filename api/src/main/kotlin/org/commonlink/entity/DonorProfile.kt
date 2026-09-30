@@ -1,6 +1,7 @@
 package org.commonlink.entity
 
 import jakarta.persistence.*
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -59,4 +60,9 @@ class DonorProfile(
     /** When `true`, the donor accepts campaign suggestions by email. Opt-in: disabled by default. */
     @Column(name = "notify_suggestions", nullable = false)
     var notifySuggestions: Boolean = false,
+
+    /** Timestamp of the donor's last visit to the engagement feed. Null until their first visit
+     * after this field was introduced -- see [org.commonlink.service.DonorEngagementService.getFeed]. */
+    @Column(name = "last_seen_at")
+    var lastSeenAt: Instant? = null,
 )

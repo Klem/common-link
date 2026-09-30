@@ -186,4 +186,14 @@ class AssociationProfile(
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
     var status: AssociationStatus = AssociationStatus.ACTIVE,
-)
+) {
+    /**
+     * True when this association's public widget can currently accept a donation -- the exact
+     * predicate of [org.commonlink.repository.CampaignRepository.findPublicLive]'s WHERE clause,
+     * factored out so every "Faire un don" link in the donor dashboard applies it identically.
+     */
+    fun hasEligibleWidget(): Boolean =
+        status != AssociationStatus.SUSPENDED &&
+            widgetToken != null &&
+            widgetDestinationCampaign?.status == CampaignStatus.LIVE
+}

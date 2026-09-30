@@ -304,6 +304,7 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         fun getCampaignEmoji(): String
         fun getCategory(): String?
         fun getImpactGoals(): String?
+        fun getAssociationId(): UUID
         fun getAssociationName(): String
     }
 
@@ -525,7 +526,7 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     @Query("""
         SELECT DISTINCT c.id AS campaignId, c.name AS campaignName, c.emoji AS campaignEmoji,
                c.category AS category, c.impactGoals AS impactGoals,
-               a.name AS associationName
+               a.id AS associationId, a.name AS associationName
         FROM Donation d
         JOIN d.campaign c
         JOIN c.association a

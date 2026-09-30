@@ -34,6 +34,7 @@ const impacts: DonorImpactDto[] = [
     category: 'Environnement',
     impactGoals: "50 arbres plantés",
     storySummary: null,
+    donationUrl: 'https://commonlink.org/fr/lp/clk_terreverte',
   },
   {
     campaignId: 'camp-2',
@@ -43,6 +44,7 @@ const impacts: DonorImpactDto[] = [
     category: 'Éducation',
     impactGoals: null,
     storySummary: '200 repas servis cette année.',
+    donationUrl: null,
   },
 ];
 
@@ -140,6 +142,7 @@ describe('ImpactGallery', () => {
       category: null,
       impactGoals: 'Impact',
       storySummary: null,
+      donationUrl: null,
     }));
     vi.mocked(getDonorImpacts).mockResolvedValue(many);
     vi.mocked(getDonorStats).mockResolvedValue(stats);

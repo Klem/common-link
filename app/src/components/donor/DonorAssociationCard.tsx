@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { apiUrl } from '@/lib/api';
+import { DonationCta } from '@/components/donor/DonationCta';
 import type { DonorAssociationDto } from '@/types/donor';
 
 interface Props {
@@ -75,6 +76,12 @@ export function DonorAssociationCard({ association }: Props) {
             <dd className="font-display font-bold text-text">{fmtDate(association.lastDonationAt)}</dd>
           </div>
         </dl>
+
+        <DonationCta
+          associationName={association.name}
+          donationUrl={association.donationUrl}
+          className="btn btn-primary btn-sm self-start"
+        />
       </div>
     </div>
   );

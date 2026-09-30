@@ -1,7 +1,10 @@
 package org.commonlink.controller
 
 import com.ninjasquad.springmockk.MockkBean
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
+import io.mockk.verify
 import org.commonlink.dto.AssociationOptionDto
 import org.commonlink.dto.BudgetVarianceDto
 import org.commonlink.dto.DonorAssociationDto
@@ -9,9 +12,12 @@ import org.commonlink.dto.DonorCampaignReportDto
 import org.commonlink.dto.DonorDonationDto
 import org.commonlink.dto.DonorDonationFiltersDto
 import org.commonlink.dto.DonorDonationJourneyDto
+import org.commonlink.dto.DonorFeedItemDto
+import org.commonlink.dto.DonorFeedItemType
 import org.commonlink.dto.DonorImpactDto
 import org.commonlink.dto.DonorProfileDto
 import org.commonlink.dto.DonorReceiptYearDto
+import org.commonlink.dto.DonorRecommendationDto
 import org.commonlink.dto.DonorStatsDto
 import org.commonlink.dto.JourneyStep
 import org.commonlink.dto.JourneyStepDto
@@ -30,8 +36,10 @@ import org.commonlink.service.DonorAssociationService
 import org.commonlink.service.DonorCampaignReportService
 import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorDonationJourneyService
+import org.commonlink.service.DonorEngagementService
 import org.commonlink.service.DonorImpactService
 import org.commonlink.service.DonorReceiptsService
+import org.commonlink.service.DonorRecommendationService
 import org.commonlink.service.DonorService
 import org.junit.jupiter.api.Test
 import org.springframework.security.access.AccessDeniedException
@@ -44,6 +52,7 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -88,6 +97,12 @@ class DonorControllerTest {
 
     @MockkBean
     private lateinit var donorImpactService: DonorImpactService
+
+    @MockkBean
+    private lateinit var donorEngagementService: DonorEngagementService
+
+    @MockkBean
+    private lateinit var donorRecommendationService: DonorRecommendationService
 
     @MockkBean
     private lateinit var jwtService: JwtService
@@ -353,6 +368,7 @@ class DonorControllerTest {
                 publishedPayoutCount = 4,
                 campaignCount = 2,
                 lastDonationAt = Instant.parse("2026-02-01T10:00:00Z"),
+                donationUrl = "https://commonlink.org/fr/lp/clk_alpha",
             )
         )
 
@@ -593,7 +609,7 @@ class DonorControllerTest {
             DonorImpactDto(
                 campaignId = campaignId, campaignName = "Camp", campaignEmoji = "🌍",
                 associationName = "Asso", category = "Éducation", impactGoals = "50 enfants scolarisés",
-                storySummary = null,
+                storySummary = null, donationUrl = "https://commonlink.org/fr/lp/clk_x",
             )
         )
 
@@ -609,6 +625,91 @@ class DonorControllerTest {
     @Test
     fun `getImpacts - 401 when not authenticated`() {
         mockMvc.perform(get("/api/donor/me/impacts"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/donor/me/recommendations
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getRecommendations - 200 returns recommended projects`() {
+        every { donorRecommendationService.getRecommendations(userId) } returns listOf(
+            DonorRecommendationDto(
+                campaignId = campaignId, campaignName = "Camp", campaignEmoji = "🌍",
+                associationName = "Asso", category = "Éducation", coverImage = null,
+                goal = BigDecimal("1000"), raised = BigDecimal("100"),
+                donationUrl = "https://commonlink.org/fr/lp/clk_x", matchedCategory = "Éducation",
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/donor/me/recommendations")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].campaignId").value(campaignId.toString()))
+            .andExpect(jsonPath("$[0].matchedCategory").value("Éducation"))
+    }
+
+    @Test
+    fun `getRecommendations - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/donor/me/recommendations"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/donor/me/feed
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getFeed - 200 returns the engagement feed`() {
+        every { donorEngagementService.getFeed(userId) } returns listOf(
+            DonorFeedItemDto(
+                type = DonorFeedItemType.MILESTONE_REACHED,
+                campaignId = campaignId,
+                campaignName = "Camp",
+                associationName = "Asso",
+                occurredAt = Instant.parse("2026-09-01T00:00:00Z"),
+                label = "Camp a atteint le palier « Palier 1 ».",
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/donor/me/feed")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].type").value("MILESTONE_REACHED"))
+            .andExpect(jsonPath("$[0].campaignId").value(campaignId.toString()))
+    }
+
+    @Test
+    fun `getFeed - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/donor/me/feed"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/donor/me/feed/seen
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `markFeedSeen - 204 marks the feed as seen`() {
+        every { donorEngagementService.markSeen(userId) } just Runs
+
+        mockMvc.perform(
+            post("/api/donor/me/feed/seen")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isNoContent)
+
+        verify { donorEngagementService.markSeen(userId) }
+    }
+
+    @Test
+    fun `markFeedSeen - 401 when not authenticated`() {
+        mockMvc.perform(post("/api/donor/me/feed/seen"))
             .andExpect(status().isUnauthorized)
     }
 }

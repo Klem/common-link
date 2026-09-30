@@ -6,9 +6,11 @@ import type {
   DonorDonationJourneyDto,
   DonorDonationsPage,
   DonorDonationsQuery,
+  DonorFeedItemDto,
   DonorImpactDto,
   DonorProfileDto,
   DonorReceiptYearDto,
+  DonorRecommendationDto,
   DonorStatsDto,
   UpdateDonorProfileRequest,
 } from '@/types/donor';
@@ -143,3 +145,28 @@ export const downloadAnnualReceiptsSummary = (year: number): Promise<Blob> =>
  */
 export const getDonorImpacts = (): Promise<DonorImpactDto[]> =>
   api.get<DonorImpactDto[]>('/api/donor/me/impacts').then((r) => r.data);
+
+/**
+ * Fetches recommended projects via `GET /api/donor/me/recommendations` (D8, option A).
+ *
+ * @returns At most 6 recommended campaigns, `donationUrl` always non-null.
+ */
+export const getDonorRecommendations = (): Promise<DonorRecommendationDto[]> =>
+  api.get<DonorRecommendationDto[]>('/api/donor/me/recommendations').then((r) => r.data);
+
+/**
+ * Fetches the donor's engagement feed since their last visit via `GET /api/donor/me/feed`.
+ * Read-only: does not mark the feed as seen — see {@link markDonorFeedSeen}.
+ *
+ * @returns Events newest first, already filtered by the donor's notification preferences.
+ */
+export const getDonorFeed = (): Promise<DonorFeedItemDto[]> =>
+  api.get<DonorFeedItemDto[]>('/api/donor/me/feed').then((r) => r.data);
+
+/**
+ * Marks the engagement feed as seen via `POST /api/donor/me/feed/seen`.
+ * Call this once the donor has actually viewed the "Depuis votre dernière visite" block, never as
+ * a side effect of loading it.
+ */
+export const markDonorFeedSeen = (): Promise<void> =>
+  api.post('/api/donor/me/feed/seen').then(() => undefined);

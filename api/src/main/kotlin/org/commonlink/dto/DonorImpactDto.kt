@@ -18,4 +18,7 @@ data class DonorImpactDto(
      * collective wording (D6) as plain text, never as markup.
      */
     val storySummary: String?,
+    /** Absolute public donation URL, or null when the association's widget isn't currently
+     * reachable -- see [org.commonlink.entity.AssociationProfile.hasEligibleWidget]. */
+    val donationUrl: String?,
 )

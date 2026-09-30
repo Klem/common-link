@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -48,5 +49,28 @@ interface CampaignMilestoneRepository : JpaRepository<CampaignMilestone, UUID> {
     fun findNextMilestoneByAssociationId(
         @Param("associationId") associationId: UUID,
         pageable: Pageable,
+    ): List<CampaignMilestone>
+
+    /**
+     * Milestones reached since [since] on campaigns [donorId] has funded -- feeds the donor
+     * engagement feed's "palier atteint" event ([org.commonlink.service.DonorEngagementService]).
+     *
+     * [since] is never null at the call site -- pass `Instant.EPOCH` for "everything available".
+     * See [org.commonlink.repository.PayoutRepository.findConfirmedSinceForDonor]'s KDoc for why a
+     * nullable parameter here would break on PostgreSQL ("could not determine data type").
+     */
+    @Query("""
+        SELECT m FROM CampaignMilestone m
+        WHERE m.campaign.id IN (
+            SELECT DISTINCT d.campaign.id FROM Donation d
+            WHERE d.donor.id = :donorId AND d.confirmedAt IS NOT NULL
+        )
+        AND m.reachedAt IS NOT NULL
+        AND m.reachedAt > :since
+        ORDER BY m.reachedAt DESC
+    """)
+    fun findReachedSinceForDonor(
+        @Param("donorId") donorId: UUID,
+        @Param("since") since: Instant,
     ): List<CampaignMilestone>
 }

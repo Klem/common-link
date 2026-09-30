@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 interface PayoutRepository : JpaRepository<Payout, UUID> {
@@ -111,4 +112,33 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
      * [org.commonlink.service.DonationAllocationService].
      */
     fun findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId: UUID, status: PayoutStatus): List<Payout>
+
+    /**
+     * Payouts confirmed since [since] on associations [donorId] has funded -- feeds the donor
+     * engagement feed's "payout confirmé" event ([org.commonlink.service.DonorEngagementService]).
+     * Wording at render time must use the D2-validated sentence, never claim on-chain registration
+     * of the expense (see `docs/legal/registre-onchain-des-depenses.md`).
+     *
+     * [since] is never null at the call site -- pass `Instant.EPOCH` for "everything available".
+     * A nullable parameter compared with a bare `:since IS NULL OR ...` leaves PostgreSQL unable to
+     * infer that parameter's type ("could not determine data type of parameter"), since the `IS
+     * NULL` branch gives it no type context; `Instant.EPOCH` sidesteps this entirely.
+     *
+     * Filtered by **association**, not by the exact campaign the donor funded: a payout on another
+     * campaign of the same association is still relevant transparency for a donor who supports it.
+     */
+    @Query("""
+        SELECT p FROM Payout p
+        WHERE p.campaign.association.id IN (
+            SELECT DISTINCT d.campaign.association.id FROM Donation d
+            WHERE d.donor.id = :donorId AND d.confirmedAt IS NOT NULL
+        )
+        AND p.status = org.commonlink.entity.PayoutStatus.CONFIRMED
+        AND p.confirmedAt > :since
+        ORDER BY p.confirmedAt DESC
+    """)
+    fun findConfirmedSinceForDonor(
+        @Param("donorId") donorId: UUID,
+        @Param("since") since: Instant,
+    ): List<Payout>
 }

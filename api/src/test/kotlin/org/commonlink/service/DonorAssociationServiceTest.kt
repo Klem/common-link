@@ -4,10 +4,15 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.AssociationStatus
 import org.commonlink.entity.AuthProvider
+import org.commonlink.entity.Campaign
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonationRepository.AssociationCategoryRow
 import org.commonlink.repository.DonationRepository.DonorAssociationRow
@@ -29,9 +34,15 @@ class DonorAssociationServiceTest {
     private val donorProfileRepository = mockk<DonorProfileRepository>()
     private val donationRepository     = mockk<DonationRepository>()
     private val payoutRepository       = mockk<PayoutRepository>()
+    private val associationProfileRepository = mockk<AssociationProfileRepository>()
+    private val publicCampaignDirectoryService = mockk<PublicCampaignDirectoryService>()
 
     private val service = DonorAssociationService(
-        DonorReadScope(donorProfileRepository, donationRepository), donationRepository, payoutRepository,
+        DonorReadScope(donorProfileRepository, donationRepository),
+        donationRepository,
+        payoutRepository,
+        associationProfileRepository,
+        publicCampaignDirectoryService,
     )
 
     private val userId   = UUID.fromString("00000000-0000-0000-0000-000000000000")
@@ -72,6 +83,7 @@ class DonorAssociationServiceTest {
         )
         every { payoutRepository.countConfirmedByAssociationId(assocAId) } returns 4
         every { payoutRepository.countConfirmedByAssociationId(assocBId) } returns 0
+        every { associationProfileRepository.findById(any()) } returns Optional.empty()
 
         val result = service.listAssociations(userId)
 
@@ -100,6 +112,7 @@ class DonorAssociationServiceTest {
             categoryRow(assocAId, "Sante"),
         )
         every { payoutRepository.countConfirmedByAssociationId(assocAId) } returns 0
+        every { associationProfileRepository.findById(any()) } returns Optional.empty()
 
         assertThat(service.listAssociations(userId)[0].category).isEqualTo("Sante")
     }
@@ -114,8 +127,32 @@ class DonorAssociationServiceTest {
             categoryRow(assocAId, null),
         )
         every { payoutRepository.countConfirmedByAssociationId(assocAId) } returns 0
+        every { associationProfileRepository.findById(any()) } returns Optional.empty()
 
         assertThat(service.listAssociations(userId)[0].category).isNull()
+    }
+
+    @Test
+    fun `listAssociations exposes a donation URL only when the association's widget is eligible`() {
+        every { donorProfileRepository.findByUserId(userId) } returns Optional.of(donor)
+        every { donationRepository.findAssociationAggregatesByDonorId(donorId) } returns listOf(
+            aggregate(assocAId, "Alpha", "10.00", 1),
+            aggregate(assocBId, "Beta", "10.00", 1),
+        )
+        every { donationRepository.findAssociationCategoriesByDonorId(donorId) } returns emptyList()
+        every { payoutRepository.countConfirmedByAssociationId(any()) } returns 0
+
+        val eligibleAssociation = testAssociation(assocAId, widgetToken = "clk_a", destinationLive = true)
+        val ineligibleAssociation = testAssociation(assocBId, widgetToken = null, destinationLive = false)
+        every { associationProfileRepository.findById(assocAId) } returns Optional.of(eligibleAssociation)
+        every { associationProfileRepository.findById(assocBId) } returns Optional.of(ineligibleAssociation)
+        every { publicCampaignDirectoryService.buildDonationUrl("clk_a") } returns "https://commonlink.org/fr/lp/clk_a"
+
+        val result = service.listAssociations(userId)
+
+        assertThat(result.first { it.associationId == assocAId }.donationUrl)
+            .isEqualTo("https://commonlink.org/fr/lp/clk_a")
+        assertThat(result.first { it.associationId == assocBId }.donationUrl).isNull()
     }
 
     @Test
@@ -127,5 +164,21 @@ class DonorAssociationServiceTest {
         // No aggregates: neither the category query nor the payout counts are worth issuing
         verify(exactly = 0) { donationRepository.findAssociationCategoriesByDonorId(any()) }
         verify(exactly = 0) { payoutRepository.countConfirmedByAssociationId(any()) }
+    }
+
+    /** Minimal [AssociationProfile], with or without an eligible widget destination campaign. */
+    private fun testAssociation(id: UUID, widgetToken: String?, destinationLive: Boolean): AssociationProfile {
+        val user = User(email = "a-$id@test.com", role = UserRole.ASSOCIATION, provider = AuthProvider.EMAIL, emailVerified = true)
+        val association = AssociationProfile(user = user, name = "Assoc $id", identifier = "775671356").setId(id)
+        association.widgetToken = widgetToken
+        if (widgetToken != null) {
+            val destinationCampaign = Campaign(
+                association = association,
+                name = "Campagne",
+                status = if (destinationLive) CampaignStatus.LIVE else CampaignStatus.DRAFT,
+            )
+            association.widgetDestinationCampaign = destinationCampaign
+        }
+        return association
     }
 }

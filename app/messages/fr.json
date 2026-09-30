@@ -1559,6 +1559,9 @@
         "title": "Mes associations",
         "totalDonated": "Total donné"
       },
+      "cta": {
+        "donate": "Soutenir {name}"
+      },
       "donations": {
         "empty": {
           "subtitle": "Vos dons confirmés apparaîtront ici.",
@@ -1600,6 +1603,13 @@
         "icon": "🌱",
         "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
         "title": "Votre aventure philanthropique commence ici"
+      },
+      "engagement": {
+        "feed": {
+          "empty": "Rien de nouveau depuis votre dernière visite.",
+          "loading": "Chargement de votre activité…",
+          "sectionTitle": "Depuis votre dernière visite"
+        }
       },
       "impact": {
         "cumulative": {
@@ -1687,6 +1697,24 @@
           "totalDeductionHint": "Estimation uniquement — jamais un montant garanti.",
           "totalReceipted": "Total receipté"
         }
+      },
+      "recommendations": {
+        "empty": {
+          "icon": "🔍",
+          "subtitle": "Faites votre premier don pour recevoir des recommandations personnalisées.",
+          "title": "Aucune recommandation pour l'instant"
+        },
+        "error": "Impossible de charger les recommandations.",
+        "errorSubtitle": "Réessayez plus tard.",
+        "filter": {
+          "all": "Toutes les causes",
+          "label": "Filtrer par cause"
+        },
+        "loading": "Chargement des recommandations…",
+        "reason": "Parce que vous soutenez déjà la cause {category}",
+        "sectionTitle": "Pour vous",
+        "subtitle": "Des projets qui correspondent peut-être aux causes que vous soutenez déjà.",
+        "title": "Projets recommandés"
       },
       "report": {
         "downloadPdf": "Télécharger le bilan en PDF",

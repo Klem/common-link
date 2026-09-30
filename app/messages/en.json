@@ -1559,6 +1559,9 @@
         "title": "My associations",
         "totalDonated": "Total donated"
       },
+      "cta": {
+        "donate": "Support {name}"
+      },
       "donations": {
         "empty": {
           "subtitle": "Your confirmed donations will appear here.",
@@ -1600,6 +1603,13 @@
         "icon": "🌱",
         "subtitle": "Explore campaigns and make your first donation to see your impact.",
         "title": "Your philanthropic journey starts here"
+      },
+      "engagement": {
+        "feed": {
+          "empty": "Nothing new since your last visit.",
+          "loading": "Loading your activity…",
+          "sectionTitle": "Since your last visit"
+        }
       },
       "impact": {
         "cumulative": {
@@ -1687,6 +1697,24 @@
           "totalDeductionHint": "Estimate only — never a guaranteed amount.",
           "totalReceipted": "Total receipted"
         }
+      },
+      "recommendations": {
+        "empty": {
+          "icon": "🔍",
+          "subtitle": "Make your first donation to get personalized recommendations.",
+          "title": "No recommendation yet"
+        },
+        "error": "Unable to load recommendations.",
+        "errorSubtitle": "Please try again later.",
+        "filter": {
+          "all": "All causes",
+          "label": "Filter by cause"
+        },
+        "loading": "Loading recommendations…",
+        "reason": "Because you already support the {category} cause",
+        "sectionTitle": "For you",
+        "subtitle": "Projects that may match causes you already support.",
+        "title": "Recommended projects"
       },
       "report": {
         "downloadPdf": "Download the report as PDF",

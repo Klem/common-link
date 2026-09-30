@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.dto.DonorImpactDto
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.security.DonorReadScope
 import org.springframework.stereotype.Service
@@ -20,6 +21,8 @@ class DonorImpactService(
     private val donorReadScope: DonorReadScope,
     private val donationRepository: DonationRepository,
     private val campaignStoryService: CampaignStoryService,
+    private val associationProfileRepository: AssociationProfileRepository,
+    private val publicCampaignDirectoryService: PublicCampaignDirectoryService,
 ) {
 
     /** @throws org.commonlink.exception.UserNotFoundException if the user has no donor profile. */
@@ -35,7 +38,20 @@ class DonorImpactService(
                 category = row.getCategory(),
                 impactGoals = row.getImpactGoals(),
                 storySummary = campaignStoryService.getPublishedStory(row.getCampaignId())?.storySummary,
+                donationUrl = resolveDonationUrl(row.getAssociationId()),
             )
         }
+    }
+
+    /**
+     * Absolute donation URL for [associationId], or null when its widget isn't currently reachable
+     * (see [org.commonlink.entity.AssociationProfile.hasEligibleWidget]). Points at the
+     * association's current live campaign, not necessarily this gallery card's campaign — see the
+     * class doc on [org.commonlink.service.DonorRecommendationService] for why.
+     */
+    private fun resolveDonationUrl(associationId: UUID): String? {
+        val association = associationProfileRepository.findById(associationId).orElse(null) ?: return null
+        if (!association.hasEligibleWidget()) return null
+        return publicCampaignDirectoryService.buildDonationUrl(association.widgetToken!!)
     }
 }

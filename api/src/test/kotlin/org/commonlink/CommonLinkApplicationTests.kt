@@ -21,8 +21,10 @@ import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.CampaignReportService
 import org.commonlink.service.DonorCampaignReportService
 import org.commonlink.service.DonorDonationJourneyService
+import org.commonlink.service.DonorEngagementService
 import org.commonlink.service.DonorImpactService
 import org.commonlink.service.DonorReceiptsService
+import org.commonlink.service.DonorRecommendationService
 import org.commonlink.service.LegalAcceptanceService
 import org.commonlink.service.BridgeWebhookService
 import org.commonlink.service.BridgeWebhookSignatureVerifier
@@ -93,6 +95,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var campaignReportPdfService: CampaignReportPdfService
     @MockkBean private lateinit var donorReceiptsService: DonorReceiptsService
     @MockkBean private lateinit var donorImpactService: DonorImpactService
+    @MockkBean private lateinit var donorEngagementService: DonorEngagementService
+    @MockkBean private lateinit var donorRecommendationService: DonorRecommendationService
     @MockkBean private lateinit var payoutService: PayoutService
     @MockkBean private lateinit var reportingService: ReportingService
     @MockkBean private lateinit var verificationService: VerificationService

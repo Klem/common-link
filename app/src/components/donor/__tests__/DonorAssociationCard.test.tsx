@@ -15,6 +15,7 @@ const association: DonorAssociationDto = {
   publishedPayoutCount: 4,
   campaignCount: 2,
   lastDonationAt: '2026-03-15T10:00:00Z',
+  donationUrl: 'https://commonlink.org/fr/lp/clk_terreverte',
 };
 
 describe('DonorAssociationCard', () => {

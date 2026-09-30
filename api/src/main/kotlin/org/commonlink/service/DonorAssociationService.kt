@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.dto.DonorAssociationDto
+import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.PayoutRepository
 import org.commonlink.security.DonorReadScope
@@ -21,6 +22,8 @@ class DonorAssociationService(
     private val donorReadScope: DonorReadScope,
     private val donationRepository: DonationRepository,
     private val payoutRepository: PayoutRepository,
+    private val associationProfileRepository: AssociationProfileRepository,
+    private val publicCampaignDirectoryService: PublicCampaignDirectoryService,
 ) {
 
     /**
@@ -52,7 +55,19 @@ class DonorAssociationService(
                 publishedPayoutCount = payoutRepository.countConfirmedByAssociationId(row.getAssociationId()),
                 campaignCount = row.getCampaignCount().toInt(),
                 lastDonationAt = row.getLastDonationAt(),
+                donationUrl = resolveDonationUrl(row.getAssociationId()),
             )
         }
+    }
+
+    /**
+     * Absolute donation URL for [associationId], or null when its widget isn't currently reachable
+     * (see [org.commonlink.entity.AssociationProfile.hasEligibleWidget]). One lookup per row: bounded
+     * by the number of associations a single donor funds (same N+1 tolerance as sprints 2-3).
+     */
+    private fun resolveDonationUrl(associationId: UUID): String? {
+        val association = associationProfileRepository.findById(associationId).orElse(null) ?: return null
+        if (!association.hasEligibleWidget()) return null
+        return publicCampaignDirectoryService.buildDonationUrl(association.widgetToken!!)
     }
 }

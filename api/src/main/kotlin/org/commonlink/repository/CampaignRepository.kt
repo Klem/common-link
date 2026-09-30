@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -121,7 +122,7 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
         SELECT new org.commonlink.dto.PublicCampaignRow(
             c.id, c.name, c.emoji, c.category, c.coverImage, c.updatedAt,
             c.goal, c.raised, size(c.milestones),
-            a.name, a.landingLogo, a.widgetToken
+            a.id, a.name, a.landingLogo, a.widgetToken
         )
         FROM Campaign c
         JOIN c.association a
@@ -133,4 +134,30 @@ interface CampaignRepository : JpaRepository<Campaign, UUID> {
         """
     )
     fun findPublicLive(pageable: Pageable): List<PublicCampaignRow>
+
+    /**
+     * Campaigns supported by [donorId] that reached [CampaignStatus.COMPLETED] since [since] --
+     * feeds the donor engagement feed's "objectif atteint" event
+     * ([org.commonlink.service.DonorEngagementService]).
+     *
+     * [since] is never null at the call site -- pass `Instant.EPOCH` for "everything available".
+     * See [org.commonlink.repository.PayoutRepository.findConfirmedSinceForDonor]'s KDoc for why a
+     * nullable parameter here would break on PostgreSQL ("could not determine data type").
+     *
+     * CAVEAT: uses [Campaign.updatedAt] as a proxy for the completion timestamp -- there is no
+     * dedicated `completedAt` column. This assumes a COMPLETED campaign is never edited afterwards;
+     * if that assumption turns out false in practice, add a dedicated column instead of trusting
+     * this (see the sprint 4 spec, `.tasks/current-sprint-donator-dashboard.md` §2.3).
+     */
+    @Query("""
+        SELECT c FROM Campaign c
+        WHERE c.id IN (
+            SELECT DISTINCT d.campaign.id FROM Donation d
+            WHERE d.donor.id = :donorId AND d.confirmedAt IS NOT NULL
+        )
+        AND c.status = org.commonlink.entity.CampaignStatus.COMPLETED
+        AND c.updatedAt > :since
+        ORDER BY c.updatedAt DESC
+    """)
+    fun findCompletedSinceForDonor(@Param("donorId") donorId: UUID, @Param("since") since: Instant): List<Campaign>
 }

@@ -24,6 +24,9 @@ import java.util.UUID
  * @param goal Total fundraising goal in euros.
  * @param raised Amount raised so far in euros.
  * @param milestoneCount Number of milestones defined for this campaign.
+ * @param associationId UUID of the owning association -- used by
+ *   [org.commonlink.service.DonorRecommendationService] to exclude associations the donor already
+ *   supports; never serialized (see class doc).
  * @param associationName Official registered name of the owning association.
  * @param associationLogo Public serving path of the association landing logo, or null.
  * @param widgetToken Opaque public widget token, used to build the donation URL.
@@ -38,6 +41,7 @@ data class PublicCampaignRow(
     val goal: BigDecimal,
     val raised: BigDecimal,
     val milestoneCount: Int,
+    val associationId: UUID,
     val associationName: String,
     val associationLogo: String?,
     val widgetToken: String,
