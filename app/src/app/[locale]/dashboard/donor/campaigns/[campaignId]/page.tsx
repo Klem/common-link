@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { EmptyStateCard, StatCard } from '@/components/dashboard';
+import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
 import { useDonorCampaignReport } from '@/hooks/dashboard/useDonorCampaignReport';
 import { downloadCampaignReportPdf } from '@/lib/api/donor';
 import { useToastStore } from '@/stores/toastStore';
 import { MilestoneStatus } from '@/types/campaign';
 import type { MilestoneDto } from '@/types/campaign';
+import type { ShareableImpact } from '@/lib/impactWording';
 
 function fmtEur(amount: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
@@ -42,6 +44,7 @@ export default function DonorCampaignReportPage() {
   const { report, isLoading, error } = useDonorCampaignReport(campaignId);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [shareTarget, setShareTarget] = useState<ShareableImpact | null>(null);
 
   function toggleSection(sectionCode: string): void {
     setExpandedSections((prev) => {
@@ -211,6 +214,34 @@ export default function DonorCampaignReportPage() {
         </div>
       </div>
 
+      <div className="card card-no-hover">
+        <div className="card-header-bar flex items-center justify-between">
+          <span className="font-display font-bold text-sm">{t('story.title')}</span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() =>
+              setShareTarget({
+                campaignId: report.campaignId,
+                campaignName: report.campaignName,
+                campaignEmoji: report.campaignEmoji,
+                associationName: report.associationName,
+                storyText: report.story?.storyText ?? null,
+              })
+            }
+          >
+            {t('story.share')}
+          </button>
+        </div>
+        <div className="card-body">
+          {report.story ? (
+            <p className="text-sm leading-relaxed">{report.story.storyText}</p>
+          ) : (
+            <p className="text-sm text-text-2">{t('story.notYetPublished')}</p>
+          )}
+        </div>
+      </div>
+
       <div className="alert alert-info">
         <span className="alert-icon" aria-hidden="true">
           ℹ️
@@ -226,6 +257,8 @@ export default function DonorCampaignReportPage() {
       >
         {t('downloadPdf')}
       </button>
+
+      <ShareImpactModal impact={shareTarget} onClose={() => setShareTarget(null)} />
     </div>
   );
 }

@@ -6,7 +6,9 @@ import type {
   DonorDonationJourneyDto,
   DonorDonationsPage,
   DonorDonationsQuery,
+  DonorImpactDto,
   DonorProfileDto,
+  DonorReceiptYearDto,
   DonorStatsDto,
   UpdateDonorProfileRequest,
 } from '@/types/donor';
@@ -114,3 +116,30 @@ export const downloadCampaignReportPdf = (campaignId: string): Promise<Blob> =>
   api
     .get<Blob>(`/api/donor/me/campaigns/${campaignId}/report/pdf`, { responseType: 'blob' })
     .then((r) => r.data);
+
+/**
+ * Fetches the donor's annual fiscal recap summaries via `GET /api/donor/me/receipts`.
+ *
+ * @returns One row per calendar year with at least one receipted donation.
+ */
+export const getDonorReceiptYears = (): Promise<DonorReceiptYearDto[]> =>
+  api.get<DonorReceiptYearDto[]>('/api/donor/me/receipts').then((r) => r.data);
+
+/**
+ * Downloads the annual fiscal recap PDF via `GET /api/donor/me/receipts/{year}/pdf`.
+ *
+ * @param year - Calendar year to fetch the recap for.
+ * @returns The PDF as a Blob.
+ */
+export const downloadAnnualReceiptsSummary = (year: number): Promise<Blob> =>
+  api
+    .get<Blob>(`/api/donor/me/receipts/${year}/pdf`, { responseType: 'blob' })
+    .then((r) => r.data);
+
+/**
+ * Fetches the donor's impact gallery via `GET /api/donor/me/impacts`.
+ *
+ * @returns One card per campaign the donor has funded, never a per-donor share (D6).
+ */
+export const getDonorImpacts = (): Promise<DonorImpactDto[]> =>
+  api.get<DonorImpactDto[]>('/api/donor/me/impacts').then((r) => r.data);

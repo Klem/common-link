@@ -36,6 +36,7 @@ class DonorCampaignReportService(
     private val payoutRepository: PayoutRepository,
     private val donationRepository: DonationRepository,
     private val reportingService: ReportingService,
+    private val campaignStoryService: CampaignStoryService,
 ) {
 
     /**
@@ -79,6 +80,7 @@ class DonorCampaignReportService(
             confirmedPayouts = confirmedPayouts,
             variance = reportingService.getVarianceForDonor(campaignId, donorId),
             registryBannerText = REGISTRY_BANNER_TEXT,
+            story = campaignStoryService.getPublishedStory(campaignId),
         )
     }
 }

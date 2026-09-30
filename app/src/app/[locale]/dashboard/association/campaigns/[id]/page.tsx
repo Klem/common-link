@@ -13,6 +13,7 @@ import {
   CampaignPaymentsTab,
   CampaignDonorsTab,
   CampaignReportingTab,
+  CampaignStoryTab,
   PrePublishModal,
 } from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
@@ -187,6 +188,10 @@ export default function CampaignEditorPage() {
 
         {activeTab === 'reporting' && (
           <CampaignReportingTab campaign={campaign} />
+        )}
+
+        {activeTab === 'story' && (
+          <CampaignStoryTab campaignId={campaign.id} />
         )}
       </div>
 

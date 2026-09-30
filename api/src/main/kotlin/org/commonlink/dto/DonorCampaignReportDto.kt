@@ -26,6 +26,8 @@ data class DonorCampaignReportDto(
     val confirmedPayouts: List<CampaignPayoutLineDto>,
     val variance: BudgetVarianceDto,
     val registryBannerText: String,
+    /** Null = not yet published — the front renders the "not yet published" placeholder (D5). */
+    val story: CampaignStoryDto?,
 )
 
 /**

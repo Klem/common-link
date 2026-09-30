@@ -9,7 +9,9 @@ import org.commonlink.dto.DonorCampaignReportDto
 import org.commonlink.dto.DonorDonationDto
 import org.commonlink.dto.DonorDonationFiltersDto
 import org.commonlink.dto.DonorDonationJourneyDto
+import org.commonlink.dto.DonorImpactDto
 import org.commonlink.dto.DonorProfileDto
+import org.commonlink.dto.DonorReceiptYearDto
 import org.commonlink.dto.DonorStatsDto
 import org.commonlink.dto.JourneyStep
 import org.commonlink.dto.JourneyStepDto
@@ -28,6 +30,8 @@ import org.commonlink.service.DonorAssociationService
 import org.commonlink.service.DonorCampaignReportService
 import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorDonationJourneyService
+import org.commonlink.service.DonorImpactService
+import org.commonlink.service.DonorReceiptsService
 import org.commonlink.service.DonorService
 import org.junit.jupiter.api.Test
 import org.springframework.security.access.AccessDeniedException
@@ -78,6 +82,12 @@ class DonorControllerTest {
 
     @MockkBean
     private lateinit var campaignReportPdfService: CampaignReportPdfService
+
+    @MockkBean
+    private lateinit var donorReceiptsService: DonorReceiptsService
+
+    @MockkBean
+    private lateinit var donorImpactService: DonorImpactService
 
     @MockkBean
     private lateinit var jwtService: JwtService
@@ -442,6 +452,7 @@ class DonorControllerTest {
             totals = TotalsVarianceDto(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO),
         ),
         registryBannerText = "Les dons sont inscrits dans un registre public.",
+        story = null,
     )
 
     @Test
@@ -509,6 +520,95 @@ class DonorControllerTest {
     @Test
     fun `downloadCampaignReportPdf - 401 when not authenticated`() {
         mockMvc.perform(get("/api/donor/me/campaigns/$campaignId/report/pdf"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/donor/me/receipts
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getReceiptYears - 200 returns the yearly summaries`() {
+        every { donorReceiptsService.getYearlySummaries(userId) } returns listOf(
+            DonorReceiptYearDto(year = 2025, donationCount = 3, totalAmount = BigDecimal("150"), estimatedDeduction = BigDecimal("99.00"))
+        )
+
+        mockMvc.perform(
+            get("/api/donor/me/receipts")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].year").value(2025))
+            .andExpect(jsonPath("$[0].donationCount").value(3))
+    }
+
+    @Test
+    fun `getReceiptYears - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/donor/me/receipts"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/donor/me/receipts/{year}/pdf
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `downloadAnnualReceiptsSummary - 200 returns the PDF as an attachment`() {
+        every { donorReceiptsService.getAnnualSummaryPdf(userId, 2025) } returns byteArrayOf(0x25, 0x50, 0x44, 0x46)
+
+        mockMvc.perform(
+            get("/api/donor/me/receipts/2025/pdf")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+            .andExpect(header().string("Content-Disposition", """attachment; filename="recapitulatif-fiscal-2025.pdf""""))
+    }
+
+    @Test
+    fun `downloadAnnualReceiptsSummary - 404 when no receipted donation that year`() {
+        every { donorReceiptsService.getAnnualSummaryPdf(userId, 2025) } throws
+            NotFoundException("No receipted donation for donor $userId in 2025")
+
+        mockMvc.perform(
+            get("/api/donor/me/receipts/2025/pdf")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `downloadAnnualReceiptsSummary - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/donor/me/receipts/2025/pdf"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/donor/me/impacts
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getImpacts - 200 returns the impact gallery`() {
+        every { donorImpactService.listImpacts(userId) } returns listOf(
+            DonorImpactDto(
+                campaignId = campaignId, campaignName = "Camp", campaignEmoji = "🌍",
+                associationName = "Asso", category = "Éducation", impactGoals = "50 enfants scolarisés",
+                storyText = null,
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/donor/me/impacts")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].campaignId").value(campaignId.toString()))
+            .andExpect(jsonPath("$[0].category").value("Éducation"))
+    }
+
+    @Test
+    fun `getImpacts - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/donor/me/impacts"))
             .andExpect(status().isUnauthorized)
     }
 }

@@ -688,6 +688,18 @@ The single place (`DonorReadScope`) through which every donor-side read resolves
 Figure shown on the donor dashboard: the sum, **over receipted donations only**, of `amount × the rate of the fiscal mandate in force on the date of that donation` (66 % or 75 % — see **MandateEligibility**). Three properties matter. It is a sum of lines, not a global percentage: a donor funding both a 66 % and a 75 % association mixes rates. The rate is historical, not current: a donation made under a mandate revoked since still opened a right at the time, and the donor has already declared it. And a donation without a `DonationReceipt` contributes nothing, because the Cerfa receipt is the instrument of the reduction and none is issued without an active mandate. The 20 %-of-taxable-income ceiling is not applied, so the wording must always say "estimated" and never present the amount as acquired.
 `functional` `business` `donor`
 
+### Récit d'impact (Campaign Story)
+A free-text narrative an association writes for one campaign, describing what the donations achieved. Stored one-to-one with the campaign (`CampaignStory`, `campaign_stories`), no version history — a second save overwrites the text in place. `publishedAt` gates visibility: null is a draft visible only to the authoring association in its campaign editor ("Récit" tab); once set by an explicit "Publier" action it becomes visible to donors who funded that campaign, on the campaign's bilan page. Publishing is one-directional this sprint — there is no unpublish action, and the editor's autosave of the text field always sends `publish: false` so it can never silently take a draft live. Distinct from [[Impact]] (`Campaign.impactGoals`), the shorter qualitative field an association fills in when creating the campaign — the story is optional, longer-form, and written any time after.
+`functional` `business`
+
+### Galerie d'impact (Impact Gallery)
+The donor-facing "Impact de mes dons" page (`/dashboard/donor/impact`): one card per campaign the donor has funded with at least one confirmed donation, filterable by cause. Each card's wording is built entirely from the campaign's [[Récit d'impact]] (once published) or its `impactGoals`, in the fixed collective phrasing "Ce projet a [texte]. Vous y avez contribué." — never a donor-specific amount or percentage, even for a single-donor campaign where the share would be trivial to compute (decision D6, option A: project-level figures only). The same wording and card feed a share modal (LinkedIn/X/WhatsApp links, downloadable SVG card) reachable from both the gallery and a campaign's bilan page.
+`functional` `business` `donor`
+
+### Récapitulatif fiscal annuel (Annual Fiscal Recap)
+One row per calendar year (Europe/Paris) with at least one receipted donation, shown in the "Reçus fiscaux" tab of Mes dons: donation count, total amount, and [[Estimated tax reduction]] restricted to that year — same rate-resolution algorithm as the dashboard-wide estimate, just grouped by year instead of summed globally. Each year has a downloadable PDF recap listing every receipted donation of that year with the association name, date, amount, Cerfa receipt number and applied rate. The per-line PDF total is computed the same unrounded-then-rounded-once way as the tab figure specifically so the two never disagree by a rounding cent on the same donations.
+`functional` `business` `donor`
+
 ## Z
 
 ### Zustand

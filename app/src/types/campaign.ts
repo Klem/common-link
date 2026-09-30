@@ -297,3 +297,10 @@ export interface ReorderMilestonesRequest {
   /** Ordered list of milestone UUIDs defining the new sort order. */
   milestoneIds: string[];
 }
+
+/** Payload for `PUT /api/association/campaigns/:id/story`. */
+export interface UpsertCampaignStoryRequest {
+  storyText: string;
+  /** One-directional: `false` never unpublishes an already-published story. */
+  publish?: boolean;
+}

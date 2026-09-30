@@ -25,6 +25,7 @@ const DONOR_NAV: NavItem[] = [
   { icon: '🏠', labelKey: 'nav.overview',     href: ROUTES.DONOR_DASHBOARD },
   { icon: '🎁', labelKey: 'nav.donations',    href: ROUTES.DONOR_DONATIONS },
   { icon: '🏢', labelKey: 'nav.associations', href: ROUTES.DONOR_ASSOCIATIONS },
+  { icon: '🌍', labelKey: 'nav.impact',       href: ROUTES.DONOR_IMPACT },
   { icon: '⚙️', labelKey: 'nav.settings',     href: ROUTES.DONOR_SETTINGS },
 ];
 

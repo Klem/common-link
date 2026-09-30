@@ -64,6 +64,7 @@ const report: DonorCampaignReportDto = {
   },
   registryBannerText:
     'Les dons sont inscrits dans un registre public. Les dépenses sont tracées et vérifiées ; leur inscription au registre public est en cours de déploiement.',
+  story: null,
 };
 
 describe('DonorCampaignReportPage', () => {

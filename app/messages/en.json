@@ -316,6 +316,7 @@
   "common": {
     "addPayeeHint": "Add your beneficiary then come back to the campaign.",
     "budgetSaved": "Budget saved.",
+    "campaignStoryPublished": "Story published.",
     "campaignUpdated": "Campaign updated.",
     "cancel": "Cancel",
     "confirm": "Confirm",
@@ -599,10 +600,10 @@
       "createdAt": "Detected on",
       "decision": {
         "FALSE_POSITIVE": "False positive — misidentification",
-        "label": "Decision",
         "LEGITIMATE": "No match confirmed — legitimate situation",
-        "placeholder": "Select a decision…",
         "SUSPICIOUS": "Match confirmed",
+        "label": "Decision",
+        "placeholder": "Select a decision…",
         "title": "Close alert"
       },
       "decisionCampaignReport": {
@@ -784,12 +785,12 @@
           "unknown": "RNA status unknown"
         },
         "scopeVerdict": {
-          "accepted": "Accepted forms: 9220 declared · 9221 work integration · 9222 intermediary · 9223 employers' grouping · 9230 public utility · 9260 local law.",
           "IN_SCOPE": "In scope",
           "OUT_OF_SCOPE": "Out of scope",
+          "UNDETERMINED": "Undetermined",
+          "accepted": "Accepted forms: 9220 declared · 9221 work integration · 9222 intermediary · 9223 employers' grouping · 9230 public utility · 9260 local law.",
           "outOfScopeWarning": "Approval is blocked: the association is out of loi 1901 scope.",
           "title": "Loi 1901 scope",
-          "UNDETERMINED": "Undetermined",
           "undeterminedHint": "Legal category not retrieved — approval is not blocked."
         }
       },
@@ -848,8 +849,8 @@
       "HIT_CLEARED": "match ruled a false positive by the compliance officer — screened on {date}",
       "NOT_PERFORMED": "no screening has been performed yet",
       "PASSED": "screening passed on {date}",
-      "title": "Freeze screening",
-      "UNAVAILABLE": "screening could not be completed — approval suspended"
+      "UNAVAILABLE": "screening could not be completed — approval suspended",
+      "title": "Freeze screening"
     }
   },
   "dashboard": {
@@ -894,14 +895,14 @@
                 "cta": "Fix my documents →",
                 "desc": "Your verification file was rejected"
               },
-              "title": "Association verification",
               "UNVERIFIED": {
                 "cta": "Verify →",
                 "desc": "Submit your documents to publish publicly"
               },
               "VERIFIED": {
                 "desc": "Your association is verified, you can publish publicly"
-              }
+              },
+              "title": "Association verification"
             },
             "validated": "✓ Validated"
           },
@@ -1273,8 +1274,8 @@
             "hint": "JPG, PNG, WebP — 5 MB max · 1200×600 recommended",
             "label": "Cover image",
             "remove": "Remove",
-            "uploading": "Uploading...",
-            "uploadPrompt": "Drag an image or browse"
+            "uploadPrompt": "Drag an image or browse",
+            "uploading": "Uploading..."
           },
           "dateError": "End date must be at least 7 days after start date",
           "description": {
@@ -1349,13 +1350,25 @@
         },
         "notFound": "Campaign not found.",
         "publish": "🚀 Publish",
+        "story": {
+          "draft": "Draft",
+          "label": "Story text",
+          "loadError": "Unable to load the story. Please try again later.",
+          "loading": "Loading…",
+          "placeholder": "Describe the concrete impact of this campaign for your donors…",
+          "publish": "Publish",
+          "published": "Published",
+          "republish": "Update",
+          "title": "Impact story"
+        },
         "tabs": {
           "budget": "Budget",
           "donors": "Donors",
           "info": "Info",
           "milestones": "Milestones",
           "payments": "Payments",
-          "reporting": "Budget tracking"
+          "reporting": "Budget tracking",
+          "story": "Story"
         }
       },
       "empty": {
@@ -1559,6 +1572,10 @@
           "viewTraceability": "View traceability"
         },
         "tableLabel": "Donation history",
+        "tabs": {
+          "history": "History",
+          "receipts": "Fiscal receipts"
+        },
         "title": "My donations"
       },
       "empty": {
@@ -1566,6 +1583,33 @@
         "icon": "🌱",
         "subtitle": "Explore campaigns and make your first donation to see your impact.",
         "title": "Your philanthropic journey starts here"
+      },
+      "impact": {
+        "cumulative": {
+          "campaignCount": "Projects supported",
+          "label": "Total donated"
+        },
+        "empty": {
+          "icon": "🌍",
+          "subtitle": "The projects you fund will appear here.",
+          "title": "No supported project yet"
+        },
+        "error": "Unable to load your impact.",
+        "errorSubtitle": "Please try again later.",
+        "filter": {
+          "all": "All causes",
+          "label": "Filter by cause"
+        },
+        "loading": "Loading your impact…",
+        "notYetPublished": "Not yet published.",
+        "share": {
+          "cta": "Share"
+        },
+        "showMore": "Show more",
+        "subtitle": "The concrete impact of the projects you support.",
+        "title": "Impact of my donations",
+        "wordingPrefix": "This project has",
+        "wordingSuffix": "You contributed to it."
       },
       "journey": {
         "empty": {
@@ -1597,6 +1641,29 @@
         },
         "title": "Your donation's journey"
       },
+      "receipts": {
+        "banner": "One fiscal recap per calendar year with at least one receipted donation.",
+        "empty": {
+          "icon": "🧾",
+          "subtitle": "Your annual fiscal recaps will appear here.",
+          "title": "No receipted donation yet"
+        },
+        "error": "Unable to load your fiscal receipts.",
+        "errorSubtitle": "Please try again later.",
+        "list": {
+          "donationCount": "{count, plural, one {# donation} other {# donations}}",
+          "download": "Download PDF",
+          "downloadAria": "Download the {year} fiscal recap",
+          "title": "Annual recaps"
+        },
+        "loading": "Loading your fiscal receipts…",
+        "stats": {
+          "receiptCount": "Number of receipts",
+          "totalDeduction": "Estimated tax reduction",
+          "totalDeductionHint": "Estimate only — never a guaranteed amount.",
+          "totalReceipted": "Total receipted"
+        }
+      },
       "report": {
         "downloadPdf": "Download the report as PDF",
         "error": "Unable to load this campaign report.",
@@ -1620,6 +1687,11 @@
         "milestones": {
           "empty": "No milestones for this campaign.",
           "title": "Milestones"
+        },
+        "story": {
+          "notYetPublished": "This association has not published a story for this campaign yet.",
+          "share": "Share",
+          "title": "Impact story"
         }
       },
       "sections": {
@@ -1661,6 +1733,16 @@
           "title": "Security"
         },
         "title": "My settings"
+      },
+      "share": {
+        "close": "Close",
+        "download": "Download image",
+        "linkedin": "LinkedIn",
+        "notYetPublished": "Not yet published.",
+        "shareText": "I support {campaignName} with {associationName} — see the impact on CommonLink.",
+        "title": "Share this impact",
+        "whatsapp": "WhatsApp",
+        "x": "X"
       },
       "stats": {
         "associationCount": "Associations supported",
@@ -1709,6 +1791,7 @@
         "principal": "Main",
         "settings": "Settings"
       },
+      "impact": "My impact",
       "logout": "Log out",
       "orgType": "Non-profit (loi 1901)",
       "overview": "Dashboard",

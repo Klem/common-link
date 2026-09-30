@@ -177,4 +177,39 @@ export interface DonorCampaignReportDto {
   variance: BudgetVariance;
   /** Static, validated D2 wording — never build this string ad hoc in the frontend. */
   registryBannerText: string;
+  /** Null = not yet published — the front renders the "not yet published" placeholder (D5). */
+  story: CampaignStoryDto | null;
+}
+
+/** One year's fiscal recap, from `GET /api/donor/me/receipts`. */
+export interface DonorReceiptYearDto {
+  year: number;
+  donationCount: number;
+  totalAmount: number;
+  /** Estimate only — never a guaranteed amount, same caveat as `DonorStatsDto.estimatedTaxReduction`. */
+  estimatedDeduction: number;
+}
+
+/**
+ * A campaign's impact story, association-authored, free text only (D5). Shared by the donor's
+ * "bilan de campagne" (published only) and the association's own story editor (draft included).
+ */
+export interface CampaignStoryDto {
+  storyText: string;
+  /** ISO instant, or null when still draft — never shown to the donor. */
+  publishedAt: string | null;
+}
+
+/** One campaign card of the "Impact de mes dons" gallery, from `GET /api/donor/me/impacts`. */
+export interface DonorImpactDto {
+  campaignId: string;
+  campaignName: string;
+  campaignEmoji: string;
+  associationName: string;
+  /** Cause — the filter facet. Null when the campaign carries none. */
+  category: string | null;
+  /** Free-text impact description written by the association at campaign creation. */
+  impactGoals: string | null;
+  /** Published story text, null if none or still draft. */
+  storyText: string | null;
 }

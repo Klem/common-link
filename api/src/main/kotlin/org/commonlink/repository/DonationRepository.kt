@@ -297,11 +297,34 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         fun getCategory(): String?
     }
 
+    /** One campaign the donor has funded with at least one confirmed donation -- feeds the impact gallery. */
+    interface DonorCampaignRow {
+        fun getCampaignId(): UUID
+        fun getCampaignName(): String
+        fun getCampaignEmoji(): String
+        fun getCategory(): String?
+        fun getImpactGoals(): String?
+        fun getAssociationName(): String
+    }
+
     /** A receipted donation reduced to what the estimated tax reduction needs: who, how much, when. */
     interface ReceiptedDonationRow {
         fun getAssociationId(): UUID
         fun getAmount(): BigDecimal
         fun getConfirmedAt(): Instant
+    }
+
+    /**
+     * A receipted donation of one calendar year, with the fields a fiscal recap PDF must show —
+     * association name and the receipt number the donor can cross-check against the per-donation
+     * PDF already downloadable via [org.commonlink.service.DonorDashboardService.getReceipt].
+     */
+    interface ReceiptedDonationDetailRow {
+        fun getAssociationId(): UUID
+        fun getAssociationName(): String
+        fun getAmount(): BigDecimal
+        fun getConfirmedAt(): Instant
+        fun getReceiptNumber(): String
     }
 
     /**
@@ -466,6 +489,51 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
           AND EXISTS (SELECT r.id FROM DonationReceipt r WHERE r.donation = d)
     """)
     fun findReceiptedRowsByDonorId(@Param("donorId") donorId: UUID): List<ReceiptedDonationRow>
+
+    /**
+     * Receipted donations of a donor, with the fields the annual fiscal recap PDF needs. Same
+     * "has a receipt" gate as [findReceiptedRowsByDonorId].
+     *
+     * Deliberately not filtered by year in SQL: `extract(year from ...)` would group by the
+     * database session's timezone, while [org.commonlink.service.DonorReceiptsService] groups by
+     * the Paris-zone year (same rule as [org.commonlink.service.DonorDashboardService]'s estimate)
+     * — the two would silently disagree on donations made within an hour of a new year. The
+     * caller filters to one Paris-zone year in memory instead, same bounded per-donor volume as
+     * [findReceiptedRowsByDonorId].
+     */
+    @Query("""
+        SELECT c.association.id   AS associationId,
+               c.association.name AS associationName,
+               d.amount           AS amount,
+               d.confirmedAt      AS confirmedAt,
+               r.receiptNumber    AS receiptNumber
+        FROM Donation d
+        JOIN d.campaign c
+        JOIN DonationReceipt r ON r.donation = d
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        ORDER BY d.confirmedAt ASC
+    """)
+    fun findReceiptedDetailRowsByDonorId(@Param("donorId") donorId: UUID): List<ReceiptedDonationDetailRow>
+
+    /**
+     * One row per campaign the donor has funded with at least one confirmed donation -- feeds the
+     * "Impact de mes dons" gallery. Distinct from [findAssociationCategoriesByDonorId] (grouped by
+     * association): the gallery is per-campaign, since impact goals and the story both belong to
+     * the campaign, not the association.
+     */
+    @Query("""
+        SELECT DISTINCT c.id AS campaignId, c.name AS campaignName, c.emoji AS campaignEmoji,
+               c.category AS category, c.impactGoals AS impactGoals,
+               a.name AS associationName
+        FROM Donation d
+        JOIN d.campaign c
+        JOIN c.association a
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        ORDER BY c.name ASC
+    """)
+    fun findDistinctCampaignsByDonorId(@Param("donorId") donorId: UUID): List<DonorCampaignRow>
 
     // ── Donor read scope (Sprint 1 — donor dashboard) ─────────────────────
 

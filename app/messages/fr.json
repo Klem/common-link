@@ -316,6 +316,7 @@
   "common": {
     "addPayeeHint": "Ajoutez votre bénéficiaire puis revenez sur la campagne.",
     "budgetSaved": "Budget sauvegardé.",
+    "campaignStoryPublished": "Récit publié.",
     "campaignUpdated": "Campagne mise à jour.",
     "cancel": "Annuler",
     "confirm": "Confirmer",
@@ -599,10 +600,10 @@
       "createdAt": "Détectée le",
       "decision": {
         "FALSE_POSITIVE": "Faux positif — erreur d'identification",
-        "label": "Décision",
         "LEGITIMATE": "Correspondance non avérée — situation légitime",
-        "placeholder": "Sélectionner une décision…",
         "SUSPICIOUS": "Correspondance avérée",
+        "label": "Décision",
+        "placeholder": "Sélectionner une décision…",
         "title": "Décision de clôture"
       },
       "decisionCampaignReport": {
@@ -784,12 +785,12 @@
           "unknown": "Statut RNA non renseigné"
         },
         "scopeVerdict": {
-          "accepted": "Formes acceptées : 9220 déclarée · 9221 insertion par l'économique · 9222 intermédiaire · 9223 groupement d'employeurs · 9230 reconnue d'utilité publique · 9260 droit local.",
           "IN_SCOPE": "Dans le périmètre",
           "OUT_OF_SCOPE": "Hors périmètre",
+          "UNDETERMINED": "Indéterminé",
+          "accepted": "Formes acceptées : 9220 déclarée · 9221 insertion par l'économique · 9222 intermédiaire · 9223 groupement d'employeurs · 9230 reconnue d'utilité publique · 9260 droit local.",
           "outOfScopeWarning": "L'approbation est bloquée : l'association est hors périmètre loi 1901.",
           "title": "Périmètre loi 1901",
-          "UNDETERMINED": "Indéterminé",
           "undeterminedHint": "Catégorie juridique non récupérée — l'approbation n'est pas bloquée."
         }
       },
@@ -848,8 +849,8 @@
       "HIT_CLEARED": "correspondance écartée par le responsable de la conformité — contrôle du {date}",
       "NOT_PERFORMED": "aucun contrôle de gel n'a encore été effectué",
       "PASSED": "contrôle effectué le {date} — aucune correspondance",
-      "title": "Contrôle de gel",
-      "UNAVAILABLE": "le contrôle de gel n'a pas pu être effectué — l'approbation est suspendue"
+      "UNAVAILABLE": "le contrôle de gel n'a pas pu être effectué — l'approbation est suspendue",
+      "title": "Contrôle de gel"
     }
   },
   "dashboard": {
@@ -894,14 +895,14 @@
                 "cta": "Corriger mes documents →",
                 "desc": "Votre dossier de vérification a été refusé"
               },
-              "title": "Vérification de l'association",
               "UNVERIFIED": {
                 "cta": "Vérifier →",
                 "desc": "Soumettez vos justificatifs pour publier publiquement"
               },
               "VERIFIED": {
                 "desc": "Votre association est vérifiée, vous pouvez publier publiquement"
-              }
+              },
+              "title": "Vérification de l'association"
             },
             "validated": "✓ Validée"
           },
@@ -1273,8 +1274,8 @@
             "hint": "JPG, PNG, WebP — 5 Mo max · 1200×600 recommandé",
             "label": "Image de couverture",
             "remove": "Retirer",
-            "uploading": "Envoi en cours...",
-            "uploadPrompt": "Glissez une image ou parcourir"
+            "uploadPrompt": "Glissez une image ou parcourir",
+            "uploading": "Envoi en cours..."
           },
           "dateError": "La date de fin doit être au moins 7 jours après le début",
           "description": {
@@ -1349,13 +1350,25 @@
         },
         "notFound": "Campagne introuvable.",
         "publish": "Publier",
+        "story": {
+          "draft": "Brouillon",
+          "label": "Texte du récit",
+          "loadError": "Impossible de charger le récit. Merci de réessayer plus tard.",
+          "loading": "Chargement…",
+          "placeholder": "Décrivez l'impact concret de cette campagne pour vos donateurs…",
+          "publish": "Publier",
+          "published": "Publié",
+          "republish": "Mettre à jour",
+          "title": "Récit d'impact"
+        },
         "tabs": {
           "budget": "Budget prév.",
           "donors": "Donateurs",
           "info": "Infos",
           "milestones": "Jalons",
           "payments": "Paiements & Transactions",
-          "reporting": "Suivi budgétaire"
+          "reporting": "Suivi budgétaire",
+          "story": "Récit"
         }
       },
       "empty": {
@@ -1559,6 +1572,10 @@
           "viewTraceability": "Voir la traçabilité"
         },
         "tableLabel": "Historique des dons",
+        "tabs": {
+          "history": "Historique",
+          "receipts": "Reçus fiscaux"
+        },
         "title": "Mes dons"
       },
       "empty": {
@@ -1566,6 +1583,33 @@
         "icon": "🌱",
         "subtitle": "Explorez les campagnes et faites votre premier don pour voir votre impact.",
         "title": "Votre aventure philanthropique commence ici"
+      },
+      "impact": {
+        "cumulative": {
+          "campaignCount": "Projets soutenus",
+          "label": "Total donné"
+        },
+        "empty": {
+          "icon": "🌍",
+          "subtitle": "Les projets que vous financez apparaîtront ici.",
+          "title": "Aucun projet soutenu pour l'instant"
+        },
+        "error": "Impossible de charger votre impact.",
+        "errorSubtitle": "Merci de réessayer plus tard.",
+        "filter": {
+          "all": "Toutes les causes",
+          "label": "Filtrer par cause"
+        },
+        "loading": "Chargement de votre impact…",
+        "notYetPublished": "Pas encore publié.",
+        "share": {
+          "cta": "Partager"
+        },
+        "showMore": "Voir plus",
+        "subtitle": "L'impact concret des projets que vous soutenez.",
+        "title": "Impact de mes dons",
+        "wordingPrefix": "Ce projet a",
+        "wordingSuffix": "Vous y avez contribué."
       },
       "journey": {
         "empty": {
@@ -1597,6 +1641,29 @@
         },
         "title": "Le parcours de votre don"
       },
+      "receipts": {
+        "banner": "Un récapitulatif fiscal par année civile comportant au moins un don receipté.",
+        "empty": {
+          "icon": "🧾",
+          "subtitle": "Vos récapitulatifs fiscaux annuels apparaîtront ici.",
+          "title": "Aucun don receipté pour l'instant"
+        },
+        "error": "Impossible de charger vos reçus fiscaux.",
+        "errorSubtitle": "Merci de réessayer plus tard.",
+        "list": {
+          "donationCount": "{count, plural, one {# don} other {# dons}}",
+          "download": "Télécharger le PDF",
+          "downloadAria": "Télécharger le récapitulatif {year}",
+          "title": "Récapitulatifs annuels"
+        },
+        "loading": "Chargement de vos reçus fiscaux…",
+        "stats": {
+          "receiptCount": "Nombre de reçus",
+          "totalDeduction": "Réduction fiscale estimée",
+          "totalDeductionHint": "Estimation uniquement — jamais un montant garanti.",
+          "totalReceipted": "Total receipté"
+        }
+      },
       "report": {
         "downloadPdf": "Télécharger le bilan en PDF",
         "error": "Impossible de charger ce bilan de campagne.",
@@ -1620,6 +1687,11 @@
         "milestones": {
           "empty": "Aucun palier pour cette campagne.",
           "title": "Paliers"
+        },
+        "story": {
+          "notYetPublished": "Cette association n'a pas encore publié de récit pour cette campagne.",
+          "share": "Partager",
+          "title": "Récit d'impact"
         }
       },
       "sections": {
@@ -1661,6 +1733,16 @@
           "title": "Sécurité"
         },
         "title": "Mes paramètres"
+      },
+      "share": {
+        "close": "Fermer",
+        "download": "Télécharger l'image",
+        "linkedin": "LinkedIn",
+        "notYetPublished": "Pas encore publié.",
+        "shareText": "Je soutiens {campaignName} avec {associationName} — découvrez l'impact sur CommonLink.",
+        "title": "Partager cet impact",
+        "whatsapp": "WhatsApp",
+        "x": "X"
       },
       "stats": {
         "associationCount": "Associations soutenues",
@@ -1709,6 +1791,7 @@
         "principal": "Principal",
         "settings": "Paramètres"
       },
+      "impact": "Mon impact",
       "logout": "Déconnexion",
       "orgType": "Association loi 1901",
       "overview": "Tableau de bord",

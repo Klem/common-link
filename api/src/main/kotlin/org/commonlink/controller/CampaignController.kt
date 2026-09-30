@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.CampaignDto
+import org.commonlink.dto.CampaignStoryDto
 import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.CreateCampaignRequest
 import org.commonlink.dto.CreateMilestoneRequest
@@ -17,7 +18,9 @@ import org.commonlink.dto.ReorderMilestonesRequest
 import org.commonlink.dto.SaveBudgetRequest
 import org.commonlink.dto.UpdateCampaignRequest
 import org.commonlink.dto.UpdateMilestoneRequest
+import org.commonlink.dto.UpsertCampaignStoryRequest
 import org.commonlink.service.CampaignService
+import org.commonlink.service.CampaignStoryService
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -39,7 +42,8 @@ import java.util.UUID
 @RequestMapping("/api/association/campaigns")
 @Tag(name = "Campaign", description = "Campaign management for associations")
 class CampaignController(
-    private val campaignService: CampaignService
+    private val campaignService: CampaignService,
+    private val campaignStoryService: CampaignStoryService,
 ) {
 
     /**
@@ -413,4 +417,66 @@ class CampaignController(
         @Valid @RequestBody req: MarkMilestoneReachedRequest
     ): ResponseEntity<MilestoneDto> =
         ResponseEntity.ok(campaignService.markMilestoneReached(UUID.fromString(principal.username), id, msId, req.proofUrl))
+
+    /**
+     * Creates or replaces the campaign's impact story (D5, option C).
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the campaign whose story is being written.
+     * @param req Story text and whether to publish it now.
+     * @return 200 with the updated story DTO.
+     */
+    @PutMapping("/{id}/story")
+    @Operation(
+        summary = "Create or update a campaign's impact story",
+        description = "Upserts the free-text impact narrative for a campaign. Publish is one-directional: it never unpublishes an already-published story."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Story saved",
+            content = [Content(schema = Schema(implementation = CampaignStoryDto::class))]
+        ),
+        ApiResponse(responseCode = "400", description = "Validation error", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()])
+    )
+    fun upsertStory(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+        @Valid @RequestBody req: UpsertCampaignStoryRequest
+    ): ResponseEntity<CampaignStoryDto> =
+        ResponseEntity.ok(
+            campaignStoryService.upsertStory(UUID.fromString(principal.username), id, req.storyText, req.publish)
+        )
+
+    /**
+     * Returns the campaign's own story, draft or published -- backs the editor's story tab, which
+     * must show a draft back to its author (unlike the donor-facing read, gated on publication).
+     *
+     * @param principal Injected JWT principal; username holds the user UUID.
+     * @param id UUID of the campaign whose story is being read.
+     * @return 200 with the story, or a null body if none has been written yet.
+     */
+    @GetMapping("/{id}/story")
+    @Operation(
+        summary = "Get a campaign's own story",
+        description = "Returns the story regardless of publication state -- draft included."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Story returned",
+            content = [Content(schema = Schema(implementation = CampaignStoryDto::class))]
+        ),
+        ApiResponse(responseCode = "204", description = "No story written yet", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Campaign not found", content = [Content()])
+    )
+    fun getStory(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable id: UUID,
+    ): ResponseEntity<CampaignStoryDto> {
+        val story = campaignStoryService.getOwnStory(UUID.fromString(principal.username), id)
+            ?: return ResponseEntity.noContent().build()
+        return ResponseEntity.ok(story)
+    }
 }

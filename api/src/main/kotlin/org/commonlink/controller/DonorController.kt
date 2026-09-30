@@ -12,7 +12,9 @@ import org.commonlink.dto.DonorCampaignReportDto
 import org.commonlink.dto.DonorDonationDto
 import org.commonlink.dto.DonorDonationFiltersDto
 import org.commonlink.dto.DonorDonationJourneyDto
+import org.commonlink.dto.DonorImpactDto
 import org.commonlink.dto.DonorProfileDto
+import org.commonlink.dto.DonorReceiptYearDto
 import org.commonlink.dto.DonorStatsDto
 import org.commonlink.dto.PageResponse
 import org.commonlink.dto.UpdateDonorProfileRequest
@@ -22,6 +24,8 @@ import org.commonlink.service.DonorAssociationService
 import org.commonlink.service.DonorCampaignReportService
 import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorDonationJourneyService
+import org.commonlink.service.DonorImpactService
+import org.commonlink.service.DonorReceiptsService
 import org.commonlink.service.DonorService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -47,6 +51,8 @@ class DonorController(
     private val donorDonationJourneyService: DonorDonationJourneyService,
     private val donorCampaignReportService: DonorCampaignReportService,
     private val campaignReportPdfService: CampaignReportPdfService,
+    private val donorReceiptsService: DonorReceiptsService,
+    private val donorImpactService: DonorImpactService,
 ) {
 
     @GetMapping("/me")
@@ -254,4 +260,61 @@ class DonorController(
         @AuthenticationPrincipal principal: UserDetails,
     ): ResponseEntity<List<DonorAssociationDto>> =
         ResponseEntity.ok(donorAssociationService.listAssociations(UUID.fromString(principal.username)))
+
+    @GetMapping("/me/receipts")
+    @Operation(
+        summary = "Annual fiscal recap summaries",
+        description = "One row per calendar year with at least one receipted donation."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Yearly summaries returned",
+            content = [Content(schema = Schema(implementation = DonorReceiptYearDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun getReceiptYears(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<List<DonorReceiptYearDto>> =
+        ResponseEntity.ok(donorReceiptsService.getYearlySummaries(UUID.fromString(principal.username)))
+
+    @GetMapping("/me/receipts/{year}/pdf", produces = [MediaType.APPLICATION_PDF_VALUE])
+    @Operation(
+        summary = "Download the annual fiscal recap as a PDF",
+        description = "One line per receipted donation of that calendar year, with the tax reduction rate applied."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Recap PDF returned"),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found, or no receipted donation that year", content = [Content()])
+    )
+    fun downloadAnnualReceiptsSummary(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable year: Int,
+    ): ResponseEntity<ByteArray> {
+        val pdfBytes = donorReceiptsService.getAnnualSummaryPdf(UUID.fromString(principal.username), year)
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"recapitulatif-fiscal-$year.pdf\"")
+            .body(pdfBytes)
+    }
+
+    @GetMapping("/me/impacts")
+    @Operation(
+        summary = "Impact gallery of the donor's funded campaigns",
+        description = "One card per campaign the donor has funded, never a per-donor share of the impact (D6)."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Impacts returned",
+            content = [Content(schema = Schema(implementation = DonorImpactDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Donor profile not found", content = [Content()])
+    )
+    fun getImpacts(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<List<DonorImpactDto>> =
+        ResponseEntity.ok(donorImpactService.listImpacts(UUID.fromString(principal.username)))
 }

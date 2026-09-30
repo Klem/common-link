@@ -5,6 +5,7 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.commonlink.dto.BudgetVarianceDto
+import org.commonlink.dto.CampaignStoryDto
 import org.commonlink.dto.TotalsVarianceDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
@@ -43,10 +44,12 @@ class DonorCampaignReportServiceTest {
     private val campaignMilestoneRepository = mockk<CampaignMilestoneRepository>()
     private val payoutRepository = mockk<PayoutRepository>()
     private val reportingService = mockk<ReportingService>()
+    private val campaignStoryService = mockk<CampaignStoryService>()
 
     private val donorReadScope = DonorReadScope(donorProfileRepository, donationRepository)
     private val service = DonorCampaignReportService(
-        donorReadScope, campaignRepository, campaignMilestoneRepository, payoutRepository, donationRepository, reportingService,
+        donorReadScope, campaignRepository, campaignMilestoneRepository, payoutRepository, donationRepository,
+        reportingService, campaignStoryService,
     )
 
     // Distinct on purpose: donorId (DonorProfile PK) must never be conflated with userId (the JWT
@@ -89,6 +92,7 @@ class DonorCampaignReportServiceTest {
         every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(payout)
         every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal("150")
         every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
+        every { campaignStoryService.getPublishedStory(campaignId) } returns null
 
         val report = service.getReport(userId, campaignId)
 
@@ -104,6 +108,37 @@ class DonorCampaignReportServiceTest {
     }
 
     @Test
+    fun `getReport reports no story when none was ever written or it is still a draft`() {
+        stubDonated()
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { campaignMilestoneRepository.findAllByCampaignIdOrderBySortOrder(campaignId) } returns emptyList()
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
+        every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal.ZERO
+        every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
+        every { campaignStoryService.getPublishedStory(campaignId) } returns null
+
+        val report = service.getReport(userId, campaignId)
+
+        assertThat(report.story).isNull()
+    }
+
+    @Test
+    fun `getReport carries the published story through`() {
+        stubDonated()
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { campaignMilestoneRepository.findAllByCampaignIdOrderBySortOrder(campaignId) } returns emptyList()
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
+        every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal.ZERO
+        every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
+        val storyDto = CampaignStoryDto(storyText = "Un récit publié.", publishedAt = Instant.now())
+        every { campaignStoryService.getPublishedStory(campaignId) } returns storyDto
+
+        val report = service.getReport(userId, campaignId)
+
+        assertThat(report.story).isEqualTo(storyDto)
+    }
+
+    @Test
     fun `donorContribution counts only the current donor, not other donors of the same campaign`() {
         stubDonated()
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
@@ -113,6 +148,7 @@ class DonorCampaignReportServiceTest {
         // never falls back to a campaign-wide sum.
         every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal("75")
         every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
+        every { campaignStoryService.getPublishedStory(campaignId) } returns null
 
         val report = service.getReport(userId, campaignId)
 

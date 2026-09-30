@@ -21,6 +21,8 @@ import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.CampaignReportService
 import org.commonlink.service.DonorCampaignReportService
 import org.commonlink.service.DonorDonationJourneyService
+import org.commonlink.service.DonorImpactService
+import org.commonlink.service.DonorReceiptsService
 import org.commonlink.service.LegalAcceptanceService
 import org.commonlink.service.BridgeWebhookService
 import org.commonlink.service.BridgeWebhookSignatureVerifier
@@ -34,6 +36,7 @@ import org.commonlink.service.AuthService
 import org.commonlink.service.VerificationService
 import org.commonlink.service.PayeeService
 import org.commonlink.service.CampaignService
+import org.commonlink.service.CampaignStoryService
 import org.commonlink.service.DonorAggregateService
 import org.commonlink.service.DonorAssociationService
 import org.commonlink.service.DonorDashboardService
@@ -76,6 +79,7 @@ class CommonLinkApplicationTests {
     @MockkBean lateinit var donorService: DonorService
     @MockkBean lateinit var payeeService: PayeeService
     @MockkBean private lateinit var campaignService: CampaignService
+    @MockkBean private lateinit var campaignStoryService: CampaignStoryService
     @MockkBean private lateinit var sireneSearchService: SireneSearchService
     @MockkBean private lateinit var onchainOutboxService: OnchainOutboxService
     @MockkBean private lateinit var dashboardService: AssociationDashboardService
@@ -87,6 +91,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var donorDonationJourneyService: DonorDonationJourneyService
     @MockkBean private lateinit var donorCampaignReportService: DonorCampaignReportService
     @MockkBean private lateinit var campaignReportPdfService: CampaignReportPdfService
+    @MockkBean private lateinit var donorReceiptsService: DonorReceiptsService
+    @MockkBean private lateinit var donorImpactService: DonorImpactService
     @MockkBean private lateinit var payoutService: PayoutService
     @MockkBean private lateinit var reportingService: ReportingService
     @MockkBean private lateinit var verificationService: VerificationService

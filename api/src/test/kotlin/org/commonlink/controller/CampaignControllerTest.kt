@@ -6,11 +6,13 @@ import io.mockk.justRun
 import org.commonlink.dto.BudgetItemDto
 import org.commonlink.dto.BudgetSectionDto
 import org.commonlink.dto.CampaignDto
+import org.commonlink.dto.CampaignStoryDto
 import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.MilestoneDto
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MilestoneStatus
+import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
@@ -18,6 +20,7 @@ import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.CampaignService
+import org.commonlink.service.CampaignStoryService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -49,6 +52,9 @@ class CampaignControllerTest {
 
     @MockkBean
     private lateinit var campaignService: CampaignService
+
+    @MockkBean
+    private lateinit var campaignStoryService: CampaignStoryService
 
     @MockkBean
     private lateinit var jwtService: JwtService
@@ -399,5 +405,118 @@ class CampaignControllerTest {
                 .with(user(userId.toString()).roles("ASSOCIATION"))
         )
             .andExpect(status().isUnprocessableContent)
+    }
+
+    // ── PUT /api/association/campaigns/{id}/story ─────────────────────────────
+
+    @Test
+    fun `upsertStory - 200 on creation`() {
+        every { campaignStoryService.upsertStory(userId, campaignId, "Un récit.", false) } returns
+            CampaignStoryDto(storyText = "Un récit.", publishedAt = null)
+
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"storyText":"Un récit."}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.storyText").value("Un récit."))
+            .andExpect(jsonPath("$.publishedAt").doesNotExist())
+    }
+
+    @Test
+    fun `upsertStory - 200 on upsert with publish`() {
+        val publishedAt = Instant.parse("2026-09-29T10:00:00Z")
+        every { campaignStoryService.upsertStory(userId, campaignId, "Récit modifié.", true) } returns
+            CampaignStoryDto(storyText = "Récit modifié.", publishedAt = publishedAt)
+
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"storyText":"Récit modifié.","publish":true}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.publishedAt").value("2026-09-29T10:00:00Z"))
+    }
+
+    @Test
+    fun `upsertStory - 404 when the campaign belongs to another association`() {
+        every { campaignStoryService.upsertStory(userId, campaignId, "Un récit.", false) } throws
+            NotFoundException("Campaign not found")
+
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"storyText":"Un récit."}""")
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `upsertStory - 422 on blank text`() {
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"storyText":""}""")
+        )
+            .andExpect(status().isUnprocessableContent)
+    }
+
+    @Test
+    fun `upsertStory - 401 without JWT`() {
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId/story")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"storyText":"Un récit."}""")
+        )
+            .andExpect(status().isUnauthorized)
+    }
+
+    // ── GET /api/association/campaigns/{id}/story ─────────────────────────────
+
+    @Test
+    fun `getStory - 200 with the draft story`() {
+        every { campaignStoryService.getOwnStory(userId, campaignId) } returns
+            CampaignStoryDto(storyText = "Brouillon.", publishedAt = null)
+
+        mockMvc.perform(
+            get("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.storyText").value("Brouillon."))
+    }
+
+    @Test
+    fun `getStory - 204 when nothing was written yet`() {
+        every { campaignStoryService.getOwnStory(userId, campaignId) } returns null
+
+        mockMvc.perform(
+            get("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isNoContent)
+    }
+
+    @Test
+    fun `getStory - 404 when the campaign belongs to another association`() {
+        every { campaignStoryService.getOwnStory(userId, campaignId) } throws
+            NotFoundException("Campaign not found")
+
+        mockMvc.perform(
+            get("/api/association/campaigns/$campaignId/story")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `getStory - 401 without JWT`() {
+        mockMvc.perform(get("/api/association/campaigns/$campaignId/story"))
+            .andExpect(status().isUnauthorized)
     }
 }
