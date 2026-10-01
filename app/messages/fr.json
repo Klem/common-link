@@ -1547,6 +1547,14 @@
     "donor": {
       "associations": {
         "campaignCount": "Campagnes soutenues",
+        "campaignStatus": {
+          "completed": "Campagne clôturée",
+          "completedDescription": "Campagne « {campaignName} », désormais clôturée.",
+          "ctaCompleted": "Voir le bilan",
+          "ctaLive": "Suivre en direct",
+          "live": "Campagne en cours",
+          "liveDescription": "Campagne « {campaignName} », dépenses tracées en temps réel."
+        },
         "empty": {
           "icon": "🏢",
           "subtitle": "Les associations que vous soutenez apparaîtront ici.",
@@ -1556,8 +1564,9 @@
         "lastDonationAt": "Dernier don",
         "loading": "Chargement des associations…",
         "publishedPayoutCount": "Dépenses publiées",
-        "title": "Mes associations",
-        "totalDonated": "Total donné"
+        "subtitle": "Les associations que vous soutenez et leur activité récente.",
+        "title": "Mes associations suivies",
+        "totalDonated": "Mes dons cumulés"
       },
       "cta": {
         "donate": "Soutenir {name}"
@@ -1584,12 +1593,15 @@
           "association": "Association",
           "date": "Date",
           "downloadReceipt": "Télécharger",
+          "downloadReceiptAria": "Télécharger le reçu {receiptNumber}",
           "noReceipt": "Non disponible",
           "project": "Projet",
           "receipt": "Reçu",
           "traceability": "Traçabilité",
           "usedAmount": "Part utilisée",
-          "viewTraceability": "Voir la traçabilité"
+          "usedAmountBadge": "{used} sur {total} utilisés",
+          "viewTraceability": "Voir la traçabilité",
+          "viewTraceabilityAria": "Voir la traçabilité du don du {date} à {association}"
         },
         "tableLabel": "Historique des dons",
         "tabs": {
@@ -1606,15 +1618,39 @@
       },
       "engagement": {
         "feed": {
+          "actionsTitle": "À faire de votre côté",
           "empty": "Rien de nouveau depuis votre dernière visite.",
           "loading": "Chargement de votre activité…",
+          "proofsTitle": "Nouvelles preuves à découvrir",
           "sectionTitle": "Depuis votre dernière visite"
         }
       },
+      "home": {
+        "greetingSubtitle": "Voici ce qui a été prouvé sur vos dons récemment.",
+        "greetingTitle": "Bonjour {name}",
+        "narrative": {
+          "associations": "Associations",
+          "donated": "Donnés",
+          "footer": "Vos impacts détaillés, projet par projet, dans « Impact de mes dons »",
+          "projects": "Projets soutenus",
+          "tag": "Depuis 2024",
+          "text": "{name}, voici l'essentiel de votre engagement depuis 2024.",
+          "title": "Votre contribution cumulée"
+        },
+        "shareImpact": "Partager mon impact",
+        "suggestion": {
+          "raisedOf": "collectés sur"
+        },
+        "viewMoreProjects": "Voir d'autres projets"
+      },
       "impact": {
         "cumulative": {
+          "associationCount": "Associations",
           "campaignCount": "Projets soutenus",
-          "label": "Total donné"
+          "label": "Total donné",
+          "since": "Depuis 2024",
+          "tagline": "Ce qui s'additionne toujours, quel que soit le projet",
+          "title": "Votre contribution cumulée"
         },
         "empty": {
           "icon": "🌍",
@@ -1626,6 +1662,10 @@
         "filter": {
           "all": "Toutes les causes",
           "label": "Filtrer par cause"
+        },
+        "gallery": {
+          "count": "{count, plural, =0 {Aucun impact} one {# impact} other {# impacts}}",
+          "title": "Vos impacts concrets"
         },
         "loading": "Chargement de votre impact…",
         "notYetPublished": "Pas encore publié.",
@@ -1642,10 +1682,15 @@
         },
         "subtitle": "L'impact concret des projets que vous soutenez.",
         "title": "Impact de mes dons",
+        "why": {
+          "ariaLabel": "Pourquoi des impacts différents ?",
+          "tooltip": "Chaque projet mesure ses résultats dans son unité propre, des arbres, des repas, des élèves. C'est ce qui permet à chaque projet d'être mesuré avec une unité qui lui correspond vraiment, plutôt qu'une unité imposée de l'extérieur."
+        },
         "wordingPrefix": "Ce projet a",
         "wordingSuffix": "Vous y avez contribué."
       },
       "journey": {
+        "bannerTitle": "{amount} pour {campaign}",
         "empty": {
           "subtitle": "Dès votre premier don, son parcours apparaîtra ici.",
           "title": "Aucun don pour l'instant"
@@ -1673,7 +1718,9 @@
             "pendingHint": "Pas encore utilisé"
           }
         },
-        "title": "Le parcours de votre don"
+        "subtitle": "Étape par étape, jusqu'à l'impact final.",
+        "title": "Le parcours de votre don",
+        "viewTraceability": "Voir la traçabilité"
       },
       "receipts": {
         "banner": "Un récapitulatif fiscal par année civile comportant au moins un don receipté.",
@@ -1688,6 +1735,7 @@
           "donationCount": "{count, plural, one {# don} other {# dons}}",
           "download": "Télécharger le PDF",
           "downloadAria": "Télécharger le récapitulatif {year}",
+          "footnote": "Le reçu de chaque don est aussi téléchargeable ligne par ligne dans l'onglet Historique.",
           "title": "Récapitulatifs annuels"
         },
         "loading": "Chargement de vos reçus fiscaux…",

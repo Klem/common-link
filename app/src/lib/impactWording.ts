@@ -7,6 +7,10 @@ export interface ShareableImpact {
   impactGoals?: string | null;
   /** Plain text — never the story's rich-text HTML, which this wording is never allowed to render. */
   storySummary: string | null;
+  /** Absolute public donation URL for the association behind this campaign, included in the share
+   *  message content when present. Optional: the campaign report page's share button doesn't have
+   *  it (`DonorCampaignReportDto` carries no `donationUrl`), only the impact gallery's does. */
+  donationUrl?: string | null;
 }
 
 /**

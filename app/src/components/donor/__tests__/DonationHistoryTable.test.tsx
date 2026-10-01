@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { DonationHistoryTable } from '../DonationHistoryTable';
 import type { DonorDonationDto } from '@/types/donor';
 
@@ -105,10 +105,10 @@ describe('DonationHistoryTable', () => {
         onOpenTraceability={noop}
       />,
     );
-    expect(container.querySelector('ul.md\\:hidden')).toBeInTheDocument();
+    expect(container.querySelector('div.md\\:hidden.donations-cards')).toBeInTheDocument();
   });
 
-  it('shows a download button only when a receipt is available', () => {
+  it('renders the donated amounts and a used-share badge for both donations', () => {
     render(
       <DonationHistoryTable
         donations={[donation1, donation2]}
@@ -118,13 +118,33 @@ describe('DonationHistoryTable', () => {
         onOpenTraceability={noop}
       />,
     );
-    expect(screen.getAllByText('table.downloadReceipt').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('table.noReceipt').length).toBeGreaterThan(0);
+    // donation1 fully used (100/100), donation2 partially used (20/50) — the badge text itself
+    // is an ICU-interpolated key (`table.usedAmountBadge`), opaque under the next-intl mock here;
+    // real differentiation between full/partial is covered by the desktop-scoped test below.
+    expect(screen.getAllByText(/100,00\s?€/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/50,00\s?€/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('table.usedAmountBadge')).toHaveLength(4); // 2 donations × (desktop + mobile)
   });
 
-  it('triggers the receipt download callback when clicked', () => {
+  it('mobile cards: show a download button only when a receipt is available, text labels (not icon-only)', () => {
+    const { container } = render(
+      <DonationHistoryTable
+        donations={[donation1, donation2]}
+        isLoading={false}
+        error={null}
+        onDownloadReceipt={noop}
+        onOpenTraceability={noop}
+      />,
+    );
+    const cards = container.querySelector('.donations-cards') as HTMLElement;
+    expect(within(cards).getAllByText('table.receipt').length).toBe(1);
+    expect(within(cards).getAllByText('table.noReceipt').length).toBe(1);
+    expect(within(cards).getAllByText('table.traceability').length).toBe(2);
+  });
+
+  it('mobile cards: clicking the download button triggers the callback', () => {
     const onDownloadReceipt = vi.fn();
-    render(
+    const { container } = render(
       <DonationHistoryTable
         donations={[donation1]}
         isLoading={false}
@@ -133,11 +153,28 @@ describe('DonationHistoryTable', () => {
         onOpenTraceability={noop}
       />,
     );
-    fireEvent.click(screen.getAllByText('table.downloadReceipt')[0]);
+    const cards = container.querySelector('.donations-cards') as HTMLElement;
+    fireEvent.click(within(cards).getByRole('button', { name: 'table.downloadReceiptAria' }));
     expect(onDownloadReceipt).toHaveBeenCalledWith(donation1);
   });
 
-  it('renders the used-share amounts for partial and fully-used donations', () => {
+  it('mobile cards: clicking the traceability button triggers the callback', () => {
+    const onOpenTraceability = vi.fn();
+    const { container } = render(
+      <DonationHistoryTable
+        donations={[donation1]}
+        isLoading={false}
+        error={null}
+        onDownloadReceipt={noop}
+        onOpenTraceability={onOpenTraceability}
+      />,
+    );
+    const cards = container.querySelector('.donations-cards') as HTMLElement;
+    fireEvent.click(within(cards).getByRole('button', { name: 'table.viewTraceabilityAria' }));
+    expect(onOpenTraceability).toHaveBeenCalledWith(donation1);
+  });
+
+  it('desktop table: traceability column comes before receipt, uses icon buttons and a badge', () => {
     render(
       <DonationHistoryTable
         donations={[donation1, donation2]}
@@ -147,11 +184,16 @@ describe('DonationHistoryTable', () => {
         onOpenTraceability={noop}
       />,
     );
-    expect(screen.getAllByText(/100,00\s?€/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/20,00\s?€/).length).toBeGreaterThan(0);
+    const table = screen.getByRole('table', { name: 'tableLabel' });
+    const headers = within(table).getAllByRole('columnheader').map((h) => h.textContent);
+    expect(headers.indexOf('table.traceability')).toBeLessThan(headers.indexOf('table.receipt'));
+
+    expect(within(table).getAllByRole('button', { name: 'table.viewTraceabilityAria' }).length).toBe(2);
+    expect(within(table).getAllByRole('button', { name: 'table.downloadReceiptAria' }).length).toBe(1);
+    expect(within(table).getAllByText('table.usedAmountBadge').length).toBe(2);
   });
 
-  it('triggers the traceability callback when clicked', () => {
+  it('desktop table: clicking the traceability icon button triggers the callback', () => {
     const onOpenTraceability = vi.fn();
     render(
       <DonationHistoryTable
@@ -162,8 +204,25 @@ describe('DonationHistoryTable', () => {
         onOpenTraceability={onOpenTraceability}
       />,
     );
-    fireEvent.click(screen.getAllByText('table.viewTraceability')[0]);
+    const table = screen.getByRole('table', { name: 'tableLabel' });
+    fireEvent.click(within(table).getByRole('button', { name: 'table.viewTraceabilityAria' }));
     expect(onOpenTraceability).toHaveBeenCalledWith(donation1);
+  });
+
+  it('desktop table: clicking the receipt download icon button triggers the callback', () => {
+    const onDownloadReceipt = vi.fn();
+    render(
+      <DonationHistoryTable
+        donations={[donation1]}
+        isLoading={false}
+        error={null}
+        onDownloadReceipt={onDownloadReceipt}
+        onOpenTraceability={noop}
+      />,
+    );
+    const table = screen.getByRole('table', { name: 'tableLabel' });
+    fireEvent.click(within(table).getByRole('button', { name: 'table.downloadReceiptAria' }));
+    expect(onDownloadReceipt).toHaveBeenCalledWith(donation1);
   });
 
   it('links the campaign name to its report page', () => {

@@ -50,9 +50,9 @@ describe('DonationJourneyTimeline', () => {
     vi.mocked(getDonationJourney).mockResolvedValue(baseJourney);
     render(<DonationJourneyTimeline initialDonationId="don-1" />);
 
-    await waitFor(() => expect(screen.getByText('previous')).toBeInTheDocument());
-    expect(screen.getByText('previous')).toBeDisabled();
-    expect(screen.getByText('next')).not.toBeDisabled();
+    await waitFor(() => expect(screen.getByLabelText('previous')).toBeInTheDocument());
+    expect(screen.getByLabelText('previous')).toBeDisabled();
+    expect(screen.getByLabelText('next')).not.toBeDisabled();
   });
 
   it('navigates to the next donation when clicked', async () => {
@@ -64,9 +64,39 @@ describe('DonationJourneyTimeline', () => {
     });
     render(<DonationJourneyTimeline initialDonationId="don-1" />);
 
-    await waitFor(() => expect(screen.getByText('next')).not.toBeDisabled());
-    fireEvent.click(screen.getByText('next'));
+    await waitFor(() => expect(screen.getByLabelText('next')).not.toBeDisabled());
+    fireEvent.click(screen.getByLabelText('next'));
 
     await waitFor(() => expect(getDonationJourney).toHaveBeenCalledWith('don-2'));
+  });
+
+  it('shows the followup banner and wires the traceability action only when a matching donation summary is known', async () => {
+    vi.mocked(getDonationJourney).mockResolvedValue(baseJourney);
+    const onOpenTraceability = vi.fn();
+    const donation = {
+      id: 'don-1',
+      donatedAt: '2026-01-01T00:00:00Z',
+      amount: 50,
+      campaignId: 'camp-1',
+      campaignName: 'Rénovation école',
+      campaignEmoji: '📚',
+      associationId: 'asso-1',
+      associationName: 'Les Petits Écoliers',
+      receiptAvailable: true,
+      receiptNumber: null,
+      usedAmount: 0,
+      remainingAmount: 50,
+    };
+    render(
+      <DonationJourneyTimeline
+        initialDonationId="don-1"
+        knownDonations={[donation]}
+        onOpenTraceability={onOpenTraceability}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Les Petits Écoliers · 01 janv. 2026')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('viewTraceability'));
+    expect(onOpenTraceability).toHaveBeenCalledWith('don-1');
   });
 });

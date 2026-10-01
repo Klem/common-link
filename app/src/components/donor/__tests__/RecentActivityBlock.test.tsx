@@ -6,6 +6,7 @@ import { DonorFeedItemType, type DonorFeedItemDto } from '@/types/donor';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => 'fr',
 }));
 
 vi.mock('@/lib/api/donor', () => ({
@@ -46,10 +47,30 @@ describe('RecentActivityBlock', () => {
     await waitFor(() => expect(markDonorFeedSeen).toHaveBeenCalledTimes(1));
   });
 
-  it('shows an empty message when there is no new event', async () => {
+  it('shows an empty message in both columns when there is no new event', async () => {
     vi.mocked(getDonorFeed).mockResolvedValue([]);
     render(<RecentActivityBlock />);
 
-    await waitFor(() => expect(screen.getByText('empty')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('empty')).toHaveLength(2));
+  });
+
+  it('splits proof items (payout/milestone) from action items (campaign completed) into two columns', async () => {
+    const mixedFeed: DonorFeedItemDto[] = [
+      ...feed,
+      {
+        type: DonorFeedItemType.CAMPAIGN_COMPLETED,
+        campaignId: 'camp-2',
+        campaignName: 'Cantine solidaire',
+        associationName: 'Solidarité Repas',
+        occurredAt: '2026-09-02T00:00:00Z',
+        label: 'Cantine solidaire est clôturée.',
+      },
+    ];
+    vi.mocked(getDonorFeed).mockResolvedValue(mixedFeed);
+    render(<RecentActivityBlock />);
+
+    await waitFor(() => expect(screen.getByText('Reforestation a atteint le palier « Palier 1 ».')).toBeInTheDocument());
+    expect(screen.getByText('Cantine solidaire est clôturée.')).toBeInTheDocument();
+    expect(screen.queryByText('empty')).not.toBeInTheDocument();
   });
 });

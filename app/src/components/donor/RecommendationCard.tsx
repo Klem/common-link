@@ -19,39 +19,47 @@ export function RecommendationCard({ recommendation }: Props) {
   const pct = recommendation.goal > 0 ? Math.round((recommendation.raised / recommendation.goal) * 100) : 0;
 
   return (
-    <div className="card card-no-hover">
-      <div className="card-b flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          {recommendation.coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element -- served by the API, not by Next
-            <img src={apiUrl(recommendation.coverImage)} alt="" className="avatar avatar-md object-cover" />
-          ) : (
-            <span className="avatar avatar-md" aria-hidden="true">
-              {recommendation.campaignEmoji}
-            </span>
-          )}
-          <div>
-            <p className="font-display font-bold text-sm">{recommendation.campaignName}</p>
-            <p className="text-xs text-text-2">{recommendation.associationName}</p>
-          </div>
-        </div>
+    <article className="project-card">
+      <div className="project-card-img">
+        {recommendation.coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element -- served by the API, not by Next
+          <img src={apiUrl(recommendation.coverImage)} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span aria-hidden="true">{recommendation.campaignEmoji}</span>
+        )}
+        {recommendation.category && <span className="project-card-badge">{recommendation.category}</span>}
+      </div>
 
-        {recommendation.category && <span className="badge badge-info self-start">{recommendation.category}</span>}
+      <div className="project-card-body">
+        <div className="project-card-asso">{recommendation.associationName}</div>
+        <h3 className="project-card-title">{recommendation.campaignName}</h3>
 
         {recommendation.matchedCategory && (
-          <p className="text-xs text-text-2">{t('reason', { category: recommendation.matchedCategory })}</p>
+          <p className="text-xs text-text-2 mb-2">{t('reason', { category: recommendation.matchedCategory })}</p>
         )}
 
-        <p className="text-sm">
-          {fmtEur(recommendation.raised)} / {fmtEur(recommendation.goal)} ({pct}%)
-        </p>
+        <div
+          className="project-card-bar"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="project-card-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="project-card-stats">
+          <span>
+            <strong>{fmtEur(recommendation.raised)}</strong> / {fmtEur(recommendation.goal)}
+          </span>
+          <span>{pct}%</span>
+        </div>
 
         <DonationCta
           associationName={recommendation.associationName}
           donationUrl={recommendation.donationUrl}
-          className="btn btn-primary btn-sm self-start"
+          className="btn btn-sm btn-primary self-start mt-3"
         />
       </div>
-    </div>
+    </article>
   );
 }

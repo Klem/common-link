@@ -119,7 +119,7 @@ describe('ImpactGallery', () => {
     await waitFor(() => expect(screen.getByText(/Reforestation/)).toBeInTheDocument());
     // impacts[0] (Reforestation) has storySummary: null -- not yet published, no button.
     // impacts[1] (Cantine scolaire) has a published storySummary -- button offered.
-    expect(screen.getAllByText('story.cta')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'story.cta' })).toHaveLength(1);
   });
 
   it('opens the story modal for the clicked campaign', async () => {
@@ -128,7 +128,7 @@ describe('ImpactGallery', () => {
     render(<ImpactGallery />);
 
     await waitFor(() => expect(screen.getByText(/Reforestation/)).toBeInTheDocument());
-    fireEvent.click(screen.getByText('story.cta'));
+    fireEvent.click(screen.getByRole('button', { name: 'story.cta' }));
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });

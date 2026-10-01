@@ -89,8 +89,11 @@ export function ShareImpactModal({ impact, onClose }: Props) {
     tImpact('wordingSuffix'),
     t('notYetPublished'),
   );
-  const shareText = t('shareText', { campaignName: impact.campaignName, associationName: impact.associationName });
-  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const campaignUrl = impact.donationUrl ?? null;
+  const shareText =
+    t('shareText', { campaignName: impact.campaignName, associationName: impact.associationName }) +
+    (campaignUrl ? ` ${campaignUrl}` : '');
+  const shareUrl = campaignUrl ?? (typeof window !== 'undefined' ? window.location.origin : '');
 
   function handleDownload(): void {
     const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -118,8 +121,11 @@ export function ShareImpactModal({ impact, onClose }: Props) {
           </button>
         </div>
         <div className="modal-body flex flex-col gap-4">
+          {/* The SVG keeps its fixed 600x315 pixel size (needed for a well-formed downloaded
+              file) — `[&>svg]` scales it down to the modal's actual width here on screen instead
+              of letting it overflow and get silently clipped by `overflow-hidden`. */}
           <div
-            className="rounded-lg overflow-hidden border border-mist-lavender"
+            className="rounded-lg overflow-hidden border border-mist-lavender [&>svg]:w-full [&>svg]:h-auto"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
 

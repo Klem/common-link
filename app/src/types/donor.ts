@@ -83,6 +83,17 @@ export interface DonorDonationFiltersDto {
   years: number[];
 }
 
+/**
+ * Coarse campaign-activity signal for a supported association's "freshness-tag" (sprint 5, L18).
+ * Mirrors the backend `DonorCampaignStatus` enum.
+ */
+export const DonorCampaignStatus = {
+  LIVE: 'LIVE',
+  COMPLETED: 'COMPLETED',
+  NONE: 'NONE',
+} as const;
+export type DonorCampaignStatus = typeof DonorCampaignStatus[keyof typeof DonorCampaignStatus];
+
 /** A supported association, as shown on the "My associations" page. */
 export interface DonorAssociationDto {
   associationId: string;
@@ -101,6 +112,12 @@ export interface DonorAssociationDto {
    * donor funded — never render a link when null.
    */
   donationUrl: string | null;
+  /** Coarse activity signal for the association's current widget-destination campaign. */
+  campaignStatus: DonorCampaignStatus;
+  /** Id of the campaign `campaignStatus` describes, or null when `campaignStatus` is `NONE`. */
+  campaignId: string | null;
+  /** Name of the campaign `campaignStatus` describes, or null when `campaignStatus` is `NONE`. */
+  campaignName: string | null;
 }
 
 /** Parameters accepted by `GET /api/donor/me/donations`. */

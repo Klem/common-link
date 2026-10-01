@@ -1547,6 +1547,14 @@
     "donor": {
       "associations": {
         "campaignCount": "Campaigns supported",
+        "campaignStatus": {
+          "completed": "Campaign closed",
+          "completedDescription": "Campaign « {campaignName} », now closed.",
+          "ctaCompleted": "View report",
+          "ctaLive": "Follow live",
+          "live": "Campaign in progress",
+          "liveDescription": "Campaign « {campaignName} », expenses tracked in real time."
+        },
         "empty": {
           "icon": "🏢",
           "subtitle": "The associations you support will appear here.",
@@ -1556,7 +1564,8 @@
         "lastDonationAt": "Last donation",
         "loading": "Loading associations…",
         "publishedPayoutCount": "Published expenses",
-        "title": "My associations",
+        "subtitle": "The associations you support and their recent activity.",
+        "title": "Associations you follow",
         "totalDonated": "Total donated"
       },
       "cta": {
@@ -1584,12 +1593,15 @@
           "association": "Association",
           "date": "Date",
           "downloadReceipt": "Download",
+          "downloadReceiptAria": "Download receipt {receiptNumber}",
           "noReceipt": "Not available",
           "project": "Project",
           "receipt": "Receipt",
           "traceability": "Traceability",
           "usedAmount": "Used share",
-          "viewTraceability": "View traceability"
+          "usedAmountBadge": "{used} of {total} used",
+          "viewTraceability": "View traceability",
+          "viewTraceabilityAria": "View traceability for the {date} donation to {association}"
         },
         "tableLabel": "Donation history",
         "tabs": {
@@ -1606,15 +1618,39 @@
       },
       "engagement": {
         "feed": {
+          "actionsTitle": "Still to do on your side",
           "empty": "Nothing new since your last visit.",
           "loading": "Loading your activity…",
+          "proofsTitle": "New proof to discover",
           "sectionTitle": "Since your last visit"
         }
       },
+      "home": {
+        "greetingSubtitle": "Here's what has been proven about your donations recently.",
+        "greetingTitle": "Hello {name}",
+        "narrative": {
+          "associations": "Associations",
+          "donated": "Donated",
+          "footer": "Your detailed impact, project by project, in My impact",
+          "projects": "Projects supported",
+          "tag": "Since 2024",
+          "text": "{name}, here's the essence of your engagement since 2024.",
+          "title": "Your cumulative contribution"
+        },
+        "shareImpact": "Share my impact",
+        "suggestion": {
+          "raisedOf": "raised out of"
+        },
+        "viewMoreProjects": "View other projects"
+      },
       "impact": {
         "cumulative": {
+          "associationCount": "Associations",
           "campaignCount": "Projects supported",
-          "label": "Total donated"
+          "label": "Total donated",
+          "since": "Since 2024",
+          "tagline": "What always adds up, whatever the project",
+          "title": "Your cumulative contribution"
         },
         "empty": {
           "icon": "🌍",
@@ -1626,6 +1662,10 @@
         "filter": {
           "all": "All causes",
           "label": "Filter by cause"
+        },
+        "gallery": {
+          "count": "{count, plural, =0 {No impact} one {# impact} other {# impacts}}",
+          "title": "Your concrete impact"
         },
         "loading": "Loading your impact…",
         "notYetPublished": "Not yet published.",
@@ -1642,10 +1682,15 @@
         },
         "subtitle": "The concrete impact of the projects you support.",
         "title": "Impact of my donations",
+        "why": {
+          "ariaLabel": "Why different impacts?",
+          "tooltip": "Each project measures its results in its own unit -- trees, meals, students. This lets every project be measured in the unit that truly fits it, rather than one imposed from outside."
+        },
         "wordingPrefix": "This project has",
         "wordingSuffix": "You contributed to it."
       },
       "journey": {
+        "bannerTitle": "{amount} for {campaign}",
         "empty": {
           "subtitle": "Once you make your first donation, its journey will appear here.",
           "title": "No donation yet"
@@ -1673,7 +1718,9 @@
             "pendingHint": "Not yet used"
           }
         },
-        "title": "Your donation's journey"
+        "subtitle": "Step by step, through to the final impact report.",
+        "title": "Your donation's journey",
+        "viewTraceability": "View traceability"
       },
       "receipts": {
         "banner": "One fiscal recap per calendar year with at least one receipted donation.",
@@ -1688,6 +1735,7 @@
           "donationCount": "{count, plural, one {# donation} other {# donations}}",
           "download": "Download PDF",
           "downloadAria": "Download the {year} fiscal recap",
+          "footnote": "Each donation's receipt can also be downloaded individually from the History tab.",
           "title": "Annual recaps"
         },
         "loading": "Loading your fiscal receipts…",

@@ -5,6 +5,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.dto.DonorCampaignStatus
 import org.commonlink.entity.AssociationStatus
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.Campaign
@@ -164,6 +165,42 @@ class DonorAssociationServiceTest {
         // No aggregates: neither the category query nor the payout counts are worth issuing
         verify(exactly = 0) { donationRepository.findAssociationCategoriesByDonorId(any()) }
         verify(exactly = 0) { payoutRepository.countConfirmedByAssociationId(any()) }
+    }
+
+    @Test
+    fun `listAssociations derives campaignStatus from the widget-destination campaign`() {
+        every { donorProfileRepository.findByUserId(userId) } returns Optional.of(donor)
+        every { donationRepository.findAssociationAggregatesByDonorId(donorId) } returns listOf(
+            aggregate(assocAId, "Alpha", "10.00", 1),
+            aggregate(assocBId, "Beta", "10.00", 1),
+        )
+        every { donationRepository.findAssociationCategoriesByDonorId(donorId) } returns emptyList()
+        every { payoutRepository.countConfirmedByAssociationId(any()) } returns 0
+
+        val liveAssociation = testAssociation(assocAId, widgetToken = "clk_a", destinationLive = true)
+        val noDestinationAssociation = testAssociation(assocBId, widgetToken = null, destinationLive = false)
+        every { associationProfileRepository.findById(assocAId) } returns Optional.of(liveAssociation)
+        every { associationProfileRepository.findById(assocBId) } returns Optional.of(noDestinationAssociation)
+        every { publicCampaignDirectoryService.buildDonationUrl("clk_a") } returns "https://commonlink.org/fr/lp/clk_a"
+
+        val completedCampaign = Campaign(
+            association = liveAssociation, name = "Campagne close", status = CampaignStatus.COMPLETED,
+        )
+        val completedAssociation = testAssociation(assocAId, widgetToken = "clk_c", destinationLive = false)
+            .also { it.widgetDestinationCampaign = completedCampaign }
+
+        val result = service.listAssociations(userId)
+        assertThat(result.first { it.associationId == assocAId }.campaignStatus)
+            .isEqualTo(DonorCampaignStatus.LIVE)
+        assertThat(result.first { it.associationId == assocAId }.campaignName).isEqualTo("Campagne")
+        assertThat(result.first { it.associationId == assocBId }.campaignStatus)
+            .isEqualTo(DonorCampaignStatus.NONE)
+        assertThat(result.first { it.associationId == assocBId }.campaignName).isNull()
+
+        every { associationProfileRepository.findById(assocAId) } returns Optional.of(completedAssociation)
+        val completedResult = service.listAssociations(userId).first { it.associationId == assocAId }
+        assertThat(completedResult.campaignStatus).isEqualTo(DonorCampaignStatus.COMPLETED)
+        assertThat(completedResult.campaignName).isEqualTo("Campagne close")
     }
 
     /** Minimal [AssociationProfile], with or without an eligible widget destination campaign. */

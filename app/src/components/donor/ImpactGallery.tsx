@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { StatCard, EmptyStateCard } from '@/components/dashboard';
+import { EmptyStateCard } from '@/components/dashboard';
 import { CampaignStoryModal } from '@/components/donor/CampaignStoryModal';
 import { DonationCta } from '@/components/donor/DonationCta';
 import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
@@ -32,7 +32,10 @@ export function ImpactGallery() {
   const [storyTarget, setStoryTarget] = useState<DonorImpactDto | null>(null);
 
   const categories = useMemo(
-    () => Array.from(new Set(impacts.map((i) => i.category).filter((c): c is string => c !== null))).sort(),
+    () =>
+      Array.from(new Set(impacts.map((i) => i.category).filter((c): c is string => c !== null))).sort((a, b) =>
+        a.localeCompare(b, 'fr', { sensitivity: 'base' }),
+      ),
     [impacts],
   );
   const filtered = useMemo(
@@ -48,39 +51,62 @@ export function ImpactGallery() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <StatCard
-          icon="💚"
-          label={t('cumulative.label')}
-          value={statsLoading ? '—' : fmtEur(stats?.totalDonated ?? 0)}
-          variant="teal"
-        />
-        <StatCard icon="🌍" label={t('cumulative.campaignCount')} value={impacts.length} variant="indigo" />
-      </div>
-
-      {impacts.length > 0 && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t('filter.label')}>
-          <button
-            type="button"
-            className={`btn btn-sm ${category === null ? 'btn-primary' : 'btn-ghost'}`}
-            aria-pressed={category === null}
-            onClick={() => selectCategory(null)}
-          >
-            {t('filter.all')}
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`btn btn-sm ${category === c ? 'btn-primary' : 'btn-ghost'}`}
-              aria-pressed={category === c}
-              onClick={() => selectCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
+      <section className="narrative-card" aria-labelledby="impact-narrative-h2">
+        <div className="narrative-top">
+          <h2 id="impact-narrative-h2">{t('cumulative.title')}</h2>
+          <span className="tag">{t('cumulative.since')}</span>
         </div>
-      )}
+        <div className="narrative-grid">
+          <div className="narrative-item">
+            <div className="narrative-val">{statsLoading ? '—' : fmtEur(stats?.totalDonated ?? 0)}</div>
+            <div className="narrative-label">{t('cumulative.label')}</div>
+          </div>
+          <div className="narrative-item">
+            <div className="narrative-val">{impacts.length}</div>
+            <div className="narrative-label">{t('cumulative.campaignCount')}</div>
+          </div>
+          <div className="narrative-item">
+            <div className="narrative-val">{statsLoading ? '—' : (stats?.associationCount ?? 0)}</div>
+            <div className="narrative-label">{t('cumulative.associationCount')}</div>
+          </div>
+        </div>
+        <div className="narrative-bottom">
+          <span className="freshness-tag freshness-tag-light">{t('cumulative.tagline')}</span>
+        </div>
+      </section>
+
+      <div className="imp-toolbar">
+        <h3>
+          {t('gallery.title')}
+          <span className="imp-why" tabIndex={0} role="button" aria-label={t('why.ariaLabel')}>
+            ?<span className="imp-why-tip">{t('why.tooltip')}</span>
+          </span>
+        </h3>
+        {impacts.length > 0 && (
+          <div className="flex flex-wrap gap-2" role="group" aria-label={t('filter.label')}>
+            <button
+              type="button"
+              className={`btn btn-sm ${category === null ? 'btn-primary' : 'btn-ghost'}`}
+              aria-pressed={category === null}
+              onClick={() => selectCategory(null)}
+            >
+              {t('filter.all')}
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`btn btn-sm ${category === c ? 'btn-primary' : 'btn-ghost'}`}
+                aria-pressed={category === c}
+                onClick={() => selectCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <p className="imp-count">{t('gallery.count', { count: filtered.length })}</p>
 
       {isLoading ? (
         <p className="text-sm text-text-2" aria-live="polite">
@@ -92,50 +118,56 @@ export function ImpactGallery() {
         <EmptyStateCard icon={t('empty.icon')} title={t('empty.title')} subtitle={t('empty.subtitle')} />
       ) : (
         <>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ul className="imp-gal">
             {visible.map((impact) => {
               const wording = impactWording(impact);
               return (
-                <li key={impact.campaignId} className="card card-no-hover">
-                  <div className="card-b flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-sm">
-                        {impact.campaignEmoji} {impact.campaignName}
-                      </span>
-                      {impact.category && <span className="badge badge-info">{impact.category}</span>}
+                <li key={impact.campaignId} className="imp-tile">
+                  {impact.category && (
+                    <div className="cause">
+                      <span aria-hidden="true">🏷️</span> {impact.category}
                     </div>
-                    <div className="text-xs text-text-2">{impact.associationName}</div>
-                    {wording ? (
-                      <p className="text-sm">
-                        {t('wordingPrefix')} {withTerminalPunctuation(wording)} {t('wordingSuffix')}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-text-2">{t('notYetPublished')}</p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {impact.storySummary && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm self-start"
-                          onClick={() => setStoryTarget(impact)}
-                        >
-                          {t('story.cta')}
-                        </button>
-                      )}
+                  )}
+                  {wording ? (
+                    <p className="v text">
+                      {t('wordingPrefix')} {withTerminalPunctuation(wording)} {t('wordingSuffix')}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-text-2">{t('notYetPublished')}</p>
+                  )}
+                  <p className="p" title={`${impact.campaignEmoji} ${impact.campaignName}`}>
+                    {impact.campaignEmoji} {impact.campaignName}
+                  </p>
+                  <p className="p" title={impact.associationName}>
+                    {impact.associationName}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {impact.storySummary && (
                       <button
                         type="button"
-                        className="btn btn-ghost btn-sm self-start"
-                        onClick={() => setShareTarget(impact)}
+                        className="btn-icon"
+                        onClick={() => setStoryTarget(impact)}
+                        aria-label={t('story.cta')}
+                        title={t('story.cta')}
                       >
-                        {t('share.cta')}
+                        <span aria-hidden="true">📖</span>
                       </button>
-                      <DonationCta
-                        associationName={impact.associationName}
-                        donationUrl={impact.donationUrl}
-                        className="btn btn-primary btn-sm self-start"
-                      />
-                    </div>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      onClick={() => setShareTarget(impact)}
+                      aria-label={t('share.cta')}
+                      title={t('share.cta')}
+                    >
+                      <span aria-hidden="true">📤</span>
+                    </button>
                   </div>
+                  <DonationCta
+                    associationName={impact.associationName}
+                    donationUrl={impact.donationUrl}
+                    className="btn btn-primary btn-sm mt-3 max-w-full truncate"
+                  />
                 </li>
               );
             })}

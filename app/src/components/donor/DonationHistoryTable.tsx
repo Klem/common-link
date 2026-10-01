@@ -64,8 +64,8 @@ export function DonationHistoryTable({
   return (
     <>
       {/* ── Desktop / tablet: semantic table ──────────────────────────────── */}
-      <div className="hidden md:block overflow-x-auto">
-        <table aria-label={t('tableLabel')}>
+      <div className="hidden md:block tw">
+        <table className="donations-table" aria-label={t('tableLabel')}>
           <caption className="sr-only">{t('tableLabel')}</caption>
           <thead>
             <tr>
@@ -74,8 +74,8 @@ export function DonationHistoryTable({
               <th scope="col">{t('table.association')}</th>
               <th scope="col">{t('table.amount')}</th>
               <th scope="col">{t('table.usedAmount')}</th>
-              <th scope="col">{t('table.receipt')}</th>
               <th scope="col">{t('table.traceability')}</th>
+              <th scope="col">{t('table.receipt')}</th>
             </tr>
           </thead>
           <tbody>
@@ -89,28 +89,42 @@ export function DonationHistoryTable({
                 </td>
                 <td>{donation.associationName}</td>
                 <td>{fmtEur(donation.amount)}</td>
-                <td>{fmtEur(donation.usedAmount)}</td>
                 <td>
-                  {donation.receiptAvailable ? (
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => onDownloadReceipt(donation)}
-                    >
-                      {t('table.downloadReceipt')}
-                    </button>
-                  ) : (
-                    <span className="text-text-2 text-sm">{t('table.noReceipt')}</span>
-                  )}
+                  <span className="badge badge-active">
+                    {t('table.usedAmountBadge', {
+                      used: fmtEur(donation.usedAmount),
+                      total: fmtEur(donation.amount),
+                    })}
+                  </span>
                 </td>
                 <td>
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm"
+                    className="btn-icon"
                     onClick={() => onOpenTraceability(donation)}
+                    aria-label={t('table.viewTraceabilityAria', {
+                      date: fmtDate(donation.donatedAt),
+                      association: donation.associationName,
+                    })}
                   >
-                    {t('table.viewTraceability')}
+                    <span aria-hidden="true">🔍</span>
                   </button>
+                </td>
+                <td>
+                  {donation.receiptAvailable ? (
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      onClick={() => onDownloadReceipt(donation)}
+                      aria-label={t('table.downloadReceiptAria', {
+                        receiptNumber: donation.receiptNumber ?? donation.id,
+                      })}
+                    >
+                      <span aria-hidden="true">📥</span>
+                    </button>
+                  ) : (
+                    <span className="text-text-2 text-sm">{t('table.noReceipt')}</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -119,50 +133,65 @@ export function DonationHistoryTable({
       </div>
 
       {/* ── Mobile: stacked cards ──────────────────────────────────────────── */}
-      <ul className="md:hidden flex flex-col gap-3">
+      <div className="flex flex-col gap-3 md:hidden donations-cards" aria-label={t('tableLabel')}>
         {donations.map((donation) => (
-          <li key={donation.id} className="card card-no-hover">
-            <div className="card-body flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <Link
-                  href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}
-                  className="font-display font-bold text-sm"
-                >
-                  {donation.campaignEmoji} {donation.campaignName}
-                </Link>
-                <span className="font-display font-bold text-sm">{fmtEur(donation.amount)}</span>
-              </div>
-              <div className="text-sm text-text-2">{donation.associationName}</div>
-              <div className="flex items-center justify-between text-sm text-text-2">
-                <span>{fmtDate(donation.donatedAt)}</span>
-                <span>
-                  {t('table.usedAmount')}: {fmtEur(donation.usedAmount)}
+          <article key={donation.id} className="donation-card">
+            <Link
+              href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}
+              className="donation-card-title"
+            >
+              {donation.campaignEmoji} {donation.campaignName}
+            </Link>
+            <div className="donation-card-asso">{donation.associationName}</div>
+            <div className="donation-card-row">
+              <span className="donation-card-label">{t('table.date')}</span>
+              <span className="donation-card-value">{fmtDate(donation.donatedAt)}</span>
+            </div>
+            <div className="donation-card-row">
+              <span className="donation-card-label">{t('table.amount')}</span>
+              <span className="donation-card-amt">{fmtEur(donation.amount)}</span>
+            </div>
+            <div className="donation-card-row">
+              <span className="donation-card-label">{t('table.usedAmount')}</span>
+              <span className="donation-card-value">
+                <span className="badge badge-active">
+                  {t('table.usedAmountBadge', {
+                    used: fmtEur(donation.usedAmount),
+                    total: fmtEur(donation.amount),
+                  })}
                 </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                {donation.receiptAvailable ? (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => onDownloadReceipt(donation)}
-                  >
-                    {t('table.downloadReceipt')}
-                  </button>
-                ) : (
-                  <span className="text-text-2">{t('table.noReceipt')}</span>
-                )}
+              </span>
+            </div>
+            <div className="donation-card-actions">
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost flex-1"
+                onClick={() => onOpenTraceability(donation)}
+                aria-label={t('table.viewTraceabilityAria', {
+                  date: fmtDate(donation.donatedAt),
+                  association: donation.associationName,
+                })}
+              >
+                <span aria-hidden="true">🔍</span> {t('table.traceability')}
+              </button>
+              {donation.receiptAvailable ? (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => onOpenTraceability(donation)}
+                  className="btn btn-sm btn-ghost flex-1"
+                  onClick={() => onDownloadReceipt(donation)}
+                  aria-label={t('table.downloadReceiptAria', {
+                    receiptNumber: donation.receiptNumber ?? donation.id,
+                  })}
                 >
-                  {t('table.viewTraceability')}
+                  <span aria-hidden="true">📥</span> {t('table.receipt')}
                 </button>
-              </div>
+              ) : (
+                <span className="text-text-2 text-sm flex-1 text-center">{t('table.noReceipt')}</span>
+              )}
             </div>
-          </li>
+          </article>
         ))}
-      </ul>
+      </div>
     </>
   );
 }

@@ -17,6 +17,7 @@ export default function DonorAssociationsPage() {
         <div className="page-head">
           <div>
             <h1>{t('title')}</h1>
+            <p>{t('subtitle')}</p>
           </div>
         </div>
 
@@ -35,9 +36,13 @@ export default function DonorAssociationsPage() {
             subtitle={t('empty.subtitle')}
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {associations.map((association) => (
-              <DonorAssociationCard key={association.associationId} association={association} />
+          <div className="association-grid">
+            {associations.map((association, index) => (
+              <DonorAssociationCard
+                key={association.associationId}
+                association={association}
+                colorIndex={index}
+              />
             ))}
           </div>
         )}

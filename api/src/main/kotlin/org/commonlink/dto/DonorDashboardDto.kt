@@ -83,6 +83,14 @@ data class AssociationOptionDto(
  *   render a "Faire un don" link when null — this points at the association's *current* live
  *   campaign, never necessarily the one the donor funded (one live campaign per association at a
  *   time, see [org.commonlink.repository.CampaignRepository.findPublicLive]).
+ * @property campaignStatus coarse activity signal for the association's current widget-destination
+ *   campaign — drives the "freshness-tag" and its call-to-action label on the association card
+ *   (sprint 5, L18). Intentionally coarser than a milestone/story-level status: that data doesn't
+ *   exist yet (see `.tasks/todo-dashboard-donateur.md` §D Sprint 5).
+ * @property campaignId id of the widget-destination campaign `campaignStatus` describes, or null
+ *   when there is none (`campaignStatus == NONE`) — target of the "Suivre en direct"/"Voir le
+ *   bilan" link on the association card (sprint 5, L18). Same source as `campaignStatus`, no new
+ *   query.
  */
 data class DonorAssociationDto(
     val associationId: UUID,
@@ -93,4 +101,29 @@ data class DonorAssociationDto(
     val campaignCount: Int,
     val lastDonationAt: Instant?,
     val donationUrl: String?,
+    val campaignStatus: DonorCampaignStatus,
+    /** Id of the association's widget-destination campaign, regardless of [campaignStatus] — null
+     *  only when no destination campaign is configured at all. A non-null value here does **not**
+     *  imply [campaignStatus] is LIVE or COMPLETED (e.g. a DRAFT destination campaign yields
+     *  `campaignStatus = NONE` with a non-null id/name) — consumers gate display on
+     *  [campaignStatus], not on nullability of this field. */
+    val campaignId: UUID?,
+    /** Name of the widget-destination campaign named by [campaignId] — same nullability and
+     *  caveat as [campaignId]; feeds the "Campagne « {name} », …" sentence under the freshness-tag
+     *  (sprint 5, L18), shown only when [campaignStatus] is not NONE. */
+    val campaignName: String?,
 )
+
+/**
+ * Coarse campaign-activity signal for a supported association's "freshness-tag" (sprint 5, L18).
+ * Derived from [org.commonlink.entity.AssociationProfile.widgetDestinationCampaign]'s status —
+ * already loaded for [org.commonlink.entity.AssociationProfile.hasEligibleWidget], no new query.
+ */
+enum class DonorCampaignStatus {
+    /** The association's widget-destination campaign is live. */
+    LIVE,
+    /** The association's widget-destination campaign has completed. */
+    COMPLETED,
+    /** No widget-destination campaign, or it is neither live nor completed (e.g. draft, paused). */
+    NONE,
+}

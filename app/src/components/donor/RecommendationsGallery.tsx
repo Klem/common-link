@@ -44,7 +44,7 @@ export function RecommendationsGallery() {
         <div className="flex flex-wrap gap-2" role="group" aria-label={t('filter.label')}>
           <button
             type="button"
-            className={`btn btn-sm ${category === null ? 'btn-primary' : 'btn-ghost'}`}
+            className={`btn btn-sm ${category === null ? 'btn-primary' : 'btn-secondary'}`}
             aria-pressed={category === null}
             onClick={() => setCategory(null)}
           >
@@ -54,7 +54,7 @@ export function RecommendationsGallery() {
             <button
               key={c}
               type="button"
-              className={`btn btn-sm ${category === c ? 'btn-primary' : 'btn-ghost'}`}
+              className={`btn btn-sm ${category === c ? 'btn-primary' : 'btn-secondary'}`}
               aria-pressed={category === c}
               onClick={() => setCategory(c)}
             >
@@ -64,7 +64,7 @@ export function RecommendationsGallery() {
         </div>
       )}
 
-      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <ul className="project-grid">
         {filtered.map((recommendation) => (
           <li key={recommendation.campaignId}>
             <RecommendationCard recommendation={recommendation} />

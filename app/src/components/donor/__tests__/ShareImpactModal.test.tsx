@@ -58,6 +58,33 @@ describe('ShareImpactModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('includes the campaign donation link in the share content when present', () => {
+    const donationUrl = 'https://commonlink.org/fr/lp/clk_terreverte';
+    render(
+      <ShareImpactModal impact={{ ...impact, donationUrl }} onClose={vi.fn()} />,
+    );
+
+    const linkedin = screen.getByText('linkedin').closest('a')!;
+    const x = screen.getByText('x').closest('a')!;
+    const whatsapp = screen.getByText('whatsapp').closest('a')!;
+
+    // LinkedIn's `url` param points at the campaign, not just the site origin.
+    expect(linkedin.getAttribute('href')).toContain(encodeURIComponent(donationUrl));
+    // X/WhatsApp are text-based shares -- the link has to live inside the message text itself.
+    expect(x.getAttribute('href')).toContain(encodeURIComponent(donationUrl));
+    expect(whatsapp.getAttribute('href')).toContain(encodeURIComponent(donationUrl));
+  });
+
+  it('falls back to the site origin for LinkedIn and omits a URL from the text when there is no donationUrl', () => {
+    render(<ShareImpactModal impact={impact} onClose={vi.fn()} />);
+
+    const linkedin = screen.getByText('linkedin').closest('a')!;
+    const x = screen.getByText('x').closest('a')!;
+
+    expect(linkedin.getAttribute('href')).toContain(encodeURIComponent(window.location.origin));
+    expect(decodeURIComponent(x.getAttribute('href')!.split('text=')[1])).not.toMatch(/https?:\/\//);
+  });
+
   it('truncates a long summary in the card so the fixed-height SVG box never overflows', () => {
     // storySummary's own form cap is 220 chars -- long enough to overflow the card's fixed-height
     // <foreignObject> and clip silently (no scrollbar) in the downloaded file.

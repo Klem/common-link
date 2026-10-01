@@ -1,6 +1,9 @@
 package org.commonlink.service
 
 import org.commonlink.dto.DonorAssociationDto
+import org.commonlink.dto.DonorCampaignStatus
+import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.PayoutRepository
@@ -46,6 +49,7 @@ class DonorAssociationService(
             .associate { it.getAssociationId() to it.getCategory() }
 
         return aggregates.map { row ->
+            val association = associationProfileRepository.findById(row.getAssociationId()).orElse(null)
             DonorAssociationDto(
                 associationId = row.getAssociationId(),
                 name = row.getName(),
@@ -55,7 +59,10 @@ class DonorAssociationService(
                 publishedPayoutCount = payoutRepository.countConfirmedByAssociationId(row.getAssociationId()),
                 campaignCount = row.getCampaignCount().toInt(),
                 lastDonationAt = row.getLastDonationAt(),
-                donationUrl = resolveDonationUrl(row.getAssociationId()),
+                donationUrl = resolveDonationUrl(association),
+                campaignStatus = resolveCampaignStatus(association),
+                campaignId = association?.widgetDestinationCampaign?.id,
+                campaignName = association?.widgetDestinationCampaign?.name,
             )
         }
     }
@@ -65,9 +72,20 @@ class DonorAssociationService(
      * (see [org.commonlink.entity.AssociationProfile.hasEligibleWidget]). One lookup per row: bounded
      * by the number of associations a single donor funds (same N+1 tolerance as sprints 2-3).
      */
-    private fun resolveDonationUrl(associationId: UUID): String? {
-        val association = associationProfileRepository.findById(associationId).orElse(null) ?: return null
+    private fun resolveDonationUrl(association: AssociationProfile?): String? {
+        if (association == null) return null
         if (!association.hasEligibleWidget()) return null
         return publicCampaignDirectoryService.buildDonationUrl(association.widgetToken!!)
     }
+
+    /**
+     * Coarse campaign-activity signal for the "freshness-tag" (sprint 5, L18) — derived from the
+     * same [AssociationProfile] already loaded for [resolveDonationUrl], no new query.
+     */
+    private fun resolveCampaignStatus(association: AssociationProfile?): DonorCampaignStatus =
+        when (association?.widgetDestinationCampaign?.status) {
+            CampaignStatus.LIVE -> DonorCampaignStatus.LIVE
+            CampaignStatus.COMPLETED -> DonorCampaignStatus.COMPLETED
+            else -> DonorCampaignStatus.NONE
+        }
 }

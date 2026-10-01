@@ -9,6 +9,7 @@ import org.commonlink.dto.AssociationOptionDto
 import org.commonlink.dto.BudgetVarianceDto
 import org.commonlink.dto.DonorAssociationDto
 import org.commonlink.dto.DonorCampaignReportDto
+import org.commonlink.dto.DonorCampaignStatus
 import org.commonlink.dto.DonorDonationDto
 import org.commonlink.dto.DonorDonationFiltersDto
 import org.commonlink.dto.DonorDonationJourneyDto
@@ -369,6 +370,9 @@ class DonorControllerTest {
                 campaignCount = 2,
                 lastDonationAt = Instant.parse("2026-02-01T10:00:00Z"),
                 donationUrl = "https://commonlink.org/fr/lp/clk_alpha",
+                campaignStatus = DonorCampaignStatus.LIVE,
+                campaignId = UUID.fromString("00000000-0000-0000-0000-000000000099"),
+                campaignName = "Campagne Alpha",
             )
         )
 
