@@ -184,6 +184,40 @@ export interface CampaignPayoutLineDto {
   sectionCode: string;
 }
 
+/** One of the viewing donor's own donations that helped fund a payout (Sprint 6). */
+export interface PayoutFundingLineDto {
+  donationId: string;
+  confirmedAt: string;
+  amount: number;
+}
+
+/**
+ * Per-payout funding breakdown ("Voir la répartition"), from
+ * `GET /api/donor/me/campaigns/{campaignId}/payouts/{payoutId}/breakdown` — the inverse of
+ * `FundedPayoutShareDto`: for one payout, which of the viewing donor's own donations funded it.
+ *
+ * Privacy: `myLines` is always full detail (the viewing donor's own money). Every other donor's
+ * contribution is folded into `othersTotal` (the amount), which is `null` when fewer than 3 other
+ * donations contributed — below that floor, even the aggregate would reveal (or let a viewer
+ * deduce by subtraction) an individual donor's exact amount.
+ *
+ * `othersDonationCount` is **always** populated, including `0` — a count carries no monetary
+ * information, so it's never withheld. This is what distinguishes "no other donor at all"
+ * (`othersDonationCount === 0`) from "some did, but too few to show safely"
+ * (`othersDonationCount` in 1..2, `othersTotal === null`) — never render an amount when
+ * `othersTotal` is null, but the "funded by others too" message is only accurate when
+ * `othersDonationCount > 0`.
+ */
+export interface PayoutFundingBreakdownDto {
+  payoutId: string;
+  payoutLabel: string;
+  payoutAmount: number;
+  myLines: PayoutFundingLineDto[];
+  myTotal: number;
+  othersTotal: number | null;
+  othersDonationCount: number;
+}
+
 /** The donor-facing "bilan de campagne" page, from `GET /api/donor/me/campaigns/{id}/report`. */
 export interface DonorCampaignReportDto {
   campaignId: string;

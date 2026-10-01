@@ -1722,6 +1722,26 @@
         "title": "Your donation's journey",
         "viewTraceability": "View traceability"
       },
+      "payoutBreakdown": {
+        "chart": {
+          "mine": "My donation #{index}",
+          "others": "Other donors ({count} donations)"
+        },
+        "chartEmpty": "No breakdown data yet.",
+        "close": "Close",
+        "error": "Unable to load this breakdown.",
+        "loading": "Loading breakdown…",
+        "myLines": {
+          "empty": "None of your own donations funded this expense.",
+          "title": "My contributing donations",
+          "viewTraceabilityAria": "View traceability for the {date} donation"
+        },
+        "others": {
+          "hidden": "Also funded by other donors",
+          "withAmount": "Also funded by other donors: {amount} across {count} donations"
+        },
+        "title": "See the breakdown"
+      },
       "receipts": {
         "banner": "One fiscal recap per calendar year with at least one receipted donation.",
         "empty": {
@@ -1776,7 +1796,8 @@
           "planned": "Planned",
           "showDetail": "Show expense detail",
           "spent": "Spent",
-          "title": "How the funds were used"
+          "title": "How the funds were used",
+          "viewBreakdown": "View breakdown"
         },
         "kpi": {
           "contribution": "Your contribution",
@@ -1852,6 +1873,10 @@
         "totalDonated": "Total donated"
       },
       "traceability": {
+        "chart": {
+          "remaining": "Not yet used"
+        },
+        "chartEmpty": "No allocation data yet.",
         "close": "Close",
         "error": "Unable to load this donation's traceability.",
         "fundedPayouts": {

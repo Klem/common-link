@@ -19,6 +19,7 @@ import org.commonlink.dto.DonorReceiptYearDto
 import org.commonlink.dto.DonorRecommendationDto
 import org.commonlink.dto.DonorStatsDto
 import org.commonlink.dto.PageResponse
+import org.commonlink.dto.PayoutFundingBreakdownDto
 import org.commonlink.dto.UpdateDonorProfileRequest
 import org.commonlink.dto.toPageResponse
 import org.commonlink.service.CampaignReportPdfService
@@ -28,6 +29,7 @@ import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorDonationJourneyService
 import org.commonlink.service.DonorEngagementService
 import org.commonlink.service.DonorImpactService
+import org.commonlink.service.DonorPayoutBreakdownService
 import org.commonlink.service.DonorReceiptsService
 import org.commonlink.service.DonorRecommendationService
 import org.commonlink.service.DonorService
@@ -61,6 +63,7 @@ class DonorController(
     private val donorImpactService: DonorImpactService,
     private val donorEngagementService: DonorEngagementService,
     private val donorRecommendationService: DonorRecommendationService,
+    private val donorPayoutBreakdownService: DonorPayoutBreakdownService,
 ) {
 
     @GetMapping("/me")
@@ -250,6 +253,36 @@ class DonorController(
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"bilan-${campaignId}.pdf\"")
             .body(pdfBytes)
     }
+
+    @GetMapping("/me/campaigns/{campaignId}/payouts/{payoutId}/breakdown")
+    @Operation(
+        summary = "Get which donations funded one payout (\"Voir la répartition\")",
+        description = "Inverse of the donation journey's funded-payouts list: for one payout, which " +
+            "donations funded it. The authenticated donor's own donations are returned in full detail; " +
+            "every other donor's contribution is folded into a single aggregate, itself withheld below " +
+            "a minimum number of contributing donations so it never reveals an individual amount."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Breakdown returned",
+            content = [Content(schema = Schema(implementation = PayoutFundingBreakdownDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(
+            responseCode = "403",
+            description = "Donor has no confirmed donation on this campaign, or the payout does not belong to it",
+            content = [Content()]
+        ),
+        ApiResponse(responseCode = "404", description = "Campaign or payout not found", content = [Content()])
+    )
+    fun getPayoutBreakdown(
+        @AuthenticationPrincipal principal: UserDetails,
+        @PathVariable campaignId: UUID,
+        @PathVariable payoutId: UUID,
+    ): ResponseEntity<PayoutFundingBreakdownDto> =
+        ResponseEntity.ok(
+            donorPayoutBreakdownService.getBreakdown(UUID.fromString(principal.username), campaignId, payoutId)
+        )
 
     @GetMapping("/me/associations")
     @Operation(

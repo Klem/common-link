@@ -20,6 +20,8 @@ import org.commonlink.dto.DonorProfileDto
 import org.commonlink.dto.DonorReceiptYearDto
 import org.commonlink.dto.DonorRecommendationDto
 import org.commonlink.dto.DonorStatsDto
+import org.commonlink.dto.PayoutFundingBreakdownDto
+import org.commonlink.dto.PayoutFundingLineDto
 import org.commonlink.dto.JourneyStep
 import org.commonlink.dto.JourneyStepDto
 import org.commonlink.dto.TotalsVarianceDto
@@ -35,6 +37,7 @@ import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.DonorAssociationService
 import org.commonlink.service.DonorCampaignReportService
+import org.commonlink.service.DonorPayoutBreakdownService
 import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorDonationJourneyService
 import org.commonlink.service.DonorEngagementService
@@ -94,6 +97,9 @@ class DonorControllerTest {
     private lateinit var campaignReportPdfService: CampaignReportPdfService
 
     @MockkBean
+    private lateinit var donorPayoutBreakdownService: DonorPayoutBreakdownService
+
+    @MockkBean
     private lateinit var donorReceiptsService: DonorReceiptsService
 
     @MockkBean
@@ -120,6 +126,7 @@ class DonorControllerTest {
     private val donationId = UUID.fromString("00000000-0000-0000-0000-000000000003")
     private val associationId = UUID.fromString("00000000-0000-0000-0000-000000000004")
     private val campaignId = UUID.fromString("00000000-0000-0000-0000-000000000005")
+    private val payoutId = UUID.fromString("00000000-0000-0000-0000-000000000006")
 
     private val sampleProfile = DonorProfileDto(
         id = profileId,
@@ -540,6 +547,72 @@ class DonorControllerTest {
     @Test
     fun `downloadCampaignReportPdf - 401 when not authenticated`() {
         mockMvc.perform(get("/api/donor/me/campaigns/$campaignId/report/pdf"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/donor/me/campaigns/{campaignId}/payouts/{payoutId}/breakdown
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getPayoutBreakdown - 200 returns the breakdown`() {
+        every { donorPayoutBreakdownService.getBreakdown(userId, campaignId, payoutId) } returns
+            PayoutFundingBreakdownDto(
+                payoutId = payoutId,
+                payoutLabel = "Achat matériel",
+                payoutAmount = BigDecimal("100.00"),
+                myLines = listOf(
+                    PayoutFundingLineDto(
+                        donationId = donationId,
+                        confirmedAt = Instant.parse("2026-02-01T10:00:00Z"),
+                        amount = BigDecimal("60.00"),
+                    )
+                ),
+                myTotal = BigDecimal("60.00"),
+                othersTotal = BigDecimal("40.00"),
+                othersDonationCount = 3,
+            )
+
+        mockMvc.perform(
+            get("/api/donor/me/campaigns/$campaignId/payouts/$payoutId/breakdown")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.payoutId").value(payoutId.toString()))
+            .andExpect(jsonPath("$.payoutLabel").value("Achat matériel"))
+            .andExpect(jsonPath("$.myLines[0].donationId").value(donationId.toString()))
+            .andExpect(jsonPath("$.myTotal").value(60.00))
+            .andExpect(jsonPath("$.othersTotal").value(40.00))
+            .andExpect(jsonPath("$.othersDonationCount").value(3))
+    }
+
+    @Test
+    fun `getPayoutBreakdown - 403 when the payout does not belong to the campaign`() {
+        every { donorPayoutBreakdownService.getBreakdown(userId, campaignId, payoutId) } throws
+            AccessDeniedException("Payout $payoutId does not belong to campaign $campaignId")
+
+        mockMvc.perform(
+            get("/api/donor/me/campaigns/$campaignId/payouts/$payoutId/breakdown")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `getPayoutBreakdown - 404 when the payout does not exist`() {
+        every { donorPayoutBreakdownService.getBreakdown(userId, campaignId, payoutId) } throws
+            NotFoundException("Payout not found: $payoutId")
+
+        mockMvc.perform(
+            get("/api/donor/me/campaigns/$campaignId/payouts/$payoutId/breakdown")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `getPayoutBreakdown - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/donor/me/campaigns/$campaignId/payouts/$payoutId/breakdown"))
             .andExpect(status().isUnauthorized)
     }
 

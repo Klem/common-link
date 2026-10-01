@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DonorCampaignReportPage from '../page';
-import { getCampaignReport, downloadCampaignReportPdf } from '@/lib/api/donor';
+import { getCampaignReport, downloadCampaignReportPdf, getPayoutBreakdown, getDonationJourney } from '@/lib/api/donor';
 import type { DonorCampaignReportDto } from '@/types/donor';
 
 vi.mock('next-intl', () => ({
@@ -15,6 +15,8 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/api/donor', () => ({
   getCampaignReport: vi.fn(),
   downloadCampaignReportPdf: vi.fn(),
+  getPayoutBreakdown: vi.fn(),
+  getDonationJourney: vi.fn(),
 }));
 
 const report: DonorCampaignReportDto = {
@@ -131,6 +133,27 @@ describe('DonorCampaignReportPage', () => {
     const { container } = render(<DonorCampaignReportPage />);
     await waitFor(() => expect(screen.getByRole('heading', { name: /Reforestation/ })).toBeInTheDocument());
     expect(container.textContent?.toLowerCase()).not.toContain('engagé');
+  });
+
+  it('opens the payout breakdown modal when "Voir la répartition" is clicked', async () => {
+    vi.mocked(getCampaignReport).mockResolvedValue(report);
+    vi.mocked(getPayoutBreakdown).mockResolvedValue({
+      payoutId: 'payout-1',
+      payoutLabel: 'Achat de graines',
+      payoutAmount: 500,
+      myLines: [{ donationId: 'don-1', confirmedAt: '2026-01-15T00:00:00Z', amount: 500 }],
+      myTotal: 500,
+      othersTotal: null,
+      othersDonationCount: 0,
+    });
+    render(<DonorCampaignReportPage />);
+
+    await waitFor(() => expect(screen.getByText(/funds.showDetail/)).toBeInTheDocument());
+    fireEvent.click(screen.getByText(/funds.showDetail/));
+    fireEvent.click(screen.getByText('funds.viewBreakdown'));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await waitFor(() => expect(getPayoutBreakdown).toHaveBeenCalledWith('camp-1', 'payout-1'));
   });
 
   it('triggers the PDF download when the export button is clicked', async () => {

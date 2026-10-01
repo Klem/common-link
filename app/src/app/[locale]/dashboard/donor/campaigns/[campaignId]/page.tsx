@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { EmptyStateCard, StatCard, Topbar } from '@/components/dashboard';
+import { DonationTraceabilityModal } from '@/components/donor/DonationTraceabilityModal';
+import { PayoutBreakdownModal } from '@/components/donor/PayoutBreakdownModal';
 import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
 import { useDonorCampaignReport } from '@/hooks/dashboard/useDonorCampaignReport';
 import { downloadCampaignReportPdf } from '@/lib/api/donor';
@@ -45,6 +47,8 @@ export default function DonorCampaignReportPage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const [shareTarget, setShareTarget] = useState<ShareableImpact | null>(null);
+  const [breakdownPayoutId, setBreakdownPayoutId] = useState<string | null>(null);
+  const [traceabilityDonationId, setTraceabilityDonationId] = useState<string | null>(null);
 
   function toggleSection(sectionCode: string): void {
     setExpandedSections((prev) => {
@@ -212,12 +216,21 @@ export default function DonorCampaignReportPage() {
                     ) : (
                       <ul className="flex flex-col gap-2 pl-4">
                         {sectionPayouts.map((payout) => (
-                          <li key={payout.payoutId} className="flex items-center justify-between text-sm">
+                          <li key={payout.payoutId} className="flex items-center justify-between text-sm gap-2">
                             <span>
                               {payout.label} — {payout.payeeName}{' '}
                               <span className="text-text-2 text-xs">({fmtDate(payout.confirmedAt)})</span>
                             </span>
-                            <span className="font-display font-bold">{fmtEur(payout.amount)}</span>
+                            <span className="flex items-center gap-2">
+                              <span className="font-display font-bold">{fmtEur(payout.amount)}</span>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => setBreakdownPayoutId(payout.payoutId)}
+                              >
+                                {t('funds.viewBreakdown')}
+                              </button>
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -278,6 +291,16 @@ export default function DonorCampaignReportPage() {
       </button>
 
       <ShareImpactModal impact={shareTarget} onClose={() => setShareTarget(null)} />
+      <PayoutBreakdownModal
+        campaignId={breakdownPayoutId ? campaignId : null}
+        payoutId={breakdownPayoutId}
+        onClose={() => setBreakdownPayoutId(null)}
+        onOpenTraceability={(donationId) => setTraceabilityDonationId(donationId)}
+      />
+      <DonationTraceabilityModal
+        donationId={traceabilityDonationId}
+        onClose={() => setTraceabilityDonationId(null)}
+      />
       </div>
       </div>
     </div>

@@ -39,7 +39,7 @@ describe('DonationTraceabilityModal', () => {
     vi.mocked(getDonationJourney).mockResolvedValue(journey);
     render(<DonationTraceabilityModal donationId="don-1" onClose={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText(/Achat de graines/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/Achat de graines/).length).toBeGreaterThan(0));
     expect(screen.getAllByText(/80,00\s?€/).length).toBeGreaterThan(0);
   });
 
@@ -47,7 +47,7 @@ describe('DonationTraceabilityModal', () => {
     vi.mocked(getDonationJourney).mockResolvedValue(journey);
     render(<DonationTraceabilityModal donationId="don-1" onClose={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText(/Achat de graines/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/Achat de graines/).length).toBeGreaterThan(0));
     expect(screen.queryByText(/preuve/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
@@ -57,7 +57,7 @@ describe('DonationTraceabilityModal', () => {
     const onClose = vi.fn();
     render(<DonationTraceabilityModal donationId="don-1" onClose={onClose} />);
 
-    await waitFor(() => expect(screen.getByText(/Achat de graines/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/Achat de graines/).length).toBeGreaterThan(0));
     screen.getByLabelText('close').click();
     expect(onClose).toHaveBeenCalled();
   });

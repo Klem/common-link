@@ -20,6 +20,7 @@ import org.commonlink.service.AssociationLandingService
 import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.CampaignReportService
 import org.commonlink.service.DonorCampaignReportService
+import org.commonlink.service.DonorPayoutBreakdownService
 import org.commonlink.service.DonorDonationJourneyService
 import org.commonlink.service.DonorEngagementService
 import org.commonlink.service.DonorImpactService
@@ -93,6 +94,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var donorDonationJourneyService: DonorDonationJourneyService
     @MockkBean private lateinit var donorCampaignReportService: DonorCampaignReportService
     @MockkBean private lateinit var campaignReportPdfService: CampaignReportPdfService
+    @MockkBean private lateinit var donorPayoutBreakdownService: DonorPayoutBreakdownService
     @MockkBean private lateinit var donorReceiptsService: DonorReceiptsService
     @MockkBean private lateinit var donorImpactService: DonorImpactService
     @MockkBean private lateinit var donorEngagementService: DonorEngagementService

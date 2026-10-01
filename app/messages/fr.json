@@ -1722,6 +1722,26 @@
         "title": "Le parcours de votre don",
         "viewTraceability": "Voir la traçabilité"
       },
+      "payoutBreakdown": {
+        "chart": {
+          "mine": "Mon don n°{index}",
+          "others": "Autres donateurs ({count} dons)"
+        },
+        "chartEmpty": "Pas encore de répartition.",
+        "close": "Fermer",
+        "error": "Impossible de charger cette répartition.",
+        "loading": "Chargement de la répartition…",
+        "myLines": {
+          "empty": "Aucun de vos dons n'a financé cette dépense.",
+          "title": "Mes dons ayant contribué",
+          "viewTraceabilityAria": "Voir la traçabilité du don du {date}"
+        },
+        "others": {
+          "hidden": "Financé aussi par d'autres donateurs",
+          "withAmount": "Financé aussi par d'autres donateurs : {amount} sur {count} dons"
+        },
+        "title": "Voir la répartition"
+      },
       "receipts": {
         "banner": "Un récapitulatif fiscal par année civile comportant au moins un don receipté.",
         "empty": {
@@ -1776,7 +1796,8 @@
           "planned": "Prévu",
           "showDetail": "Voir le détail des dépenses",
           "spent": "Dépensé",
-          "title": "Utilisation des fonds"
+          "title": "Utilisation des fonds",
+          "viewBreakdown": "Voir la répartition"
         },
         "kpi": {
           "contribution": "Votre contribution",
@@ -1852,6 +1873,10 @@
         "totalDonated": "Total donné"
       },
       "traceability": {
+        "chart": {
+          "remaining": "Pas encore utilisé"
+        },
+        "chartEmpty": "Pas encore de répartition.",
         "close": "Fermer",
         "error": "Impossible de charger la traçabilité de ce don.",
         "fundedPayouts": {

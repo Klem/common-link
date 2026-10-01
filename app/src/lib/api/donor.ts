@@ -12,6 +12,7 @@ import type {
   DonorReceiptYearDto,
   DonorRecommendationDto,
   DonorStatsDto,
+  PayoutFundingBreakdownDto,
   UpdateDonorProfileRequest,
 } from '@/types/donor';
 
@@ -107,6 +108,23 @@ export const getDonationJourney = (donationId: string): Promise<DonorDonationJou
  */
 export const getCampaignReport = (campaignId: string): Promise<DonorCampaignReportDto> =>
   api.get<DonorCampaignReportDto>(`/api/donor/me/campaigns/${campaignId}/report`).then((r) => r.data);
+
+/**
+ * Fetches which donations funded one payout ("Voir la répartition") via
+ * `GET /api/donor/me/campaigns/{campaignId}/payouts/{payoutId}/breakdown`.
+ *
+ * @param campaignId - Id of the campaign the payout belongs to.
+ * @param payoutId - Id of the payout to fetch the funding breakdown for.
+ * @returns The donor's own contributing lines, plus an aggregate of other donors (withheld below
+ *   a minimum contributor count — see `PayoutFundingBreakdownDto`).
+ */
+export const getPayoutBreakdown = (
+  campaignId: string,
+  payoutId: string,
+): Promise<PayoutFundingBreakdownDto> =>
+  api
+    .get<PayoutFundingBreakdownDto>(`/api/donor/me/campaigns/${campaignId}/payouts/${payoutId}/breakdown`)
+    .then((r) => r.data);
 
 /**
  * Downloads the campaign report PDF via `GET /api/donor/me/campaigns/{campaignId}/report/pdf`.

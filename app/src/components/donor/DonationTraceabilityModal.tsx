@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Donut, type DonutSlice } from '@/components/ui/Donut';
 import { useDonorDonationJourney } from '@/hooks/dashboard/useDonorDonationJourney';
 
 interface Props {
@@ -85,6 +86,19 @@ export function DonationTraceabilityModal({ donationId, onClose }: Props) {
                   <dd className="font-display font-bold">{fmtEur(journey.remainingAmount)}</dd>
                 </div>
               </dl>
+
+              <Donut
+                slices={[
+                  ...journey.fundedPayouts.map((share) => ({
+                    label: share.label,
+                    value: share.amountImputed,
+                  } satisfies DonutSlice)),
+                  ...(journey.remainingAmount > 0
+                    ? [{ label: t('chart.remaining'), value: journey.remainingAmount, color: 'var(--color-text-2)' }]
+                    : []),
+                ]}
+                emptyKey="donor.traceability.chartEmpty"
+              />
 
               <div>
                 <h3 className="font-display font-bold text-sm mb-2">{t('fundedPayouts.title')}</h3>
