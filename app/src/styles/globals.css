@@ -2899,8 +2899,11 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
    association name in the DonationCta button (unwrappable, `.btn` is `white-space: nowrap`) would
    force this tile's grid track wider than its 170px floor instead of letting the button's own text
    truncate within the tile. */
-.imp-tile { background: var(--white); border: 1px solid var(--mist-lavender); border-radius: var(--radius-lg); padding: 16px; transition: box-shadow .2s; min-width: 0; }
+.imp-tile { background: var(--white); border: 1px solid var(--mist-lavender); border-radius: var(--radius-lg); padding: 16px; transition: box-shadow .2s; min-width: 0; display: flex; flex-direction: column; }
 .imp-tile:hover { box-shadow: var(--shadow-sm); }
+/* Actions always sit at the tile's bottom edge (icons + donate button as one group), regardless of
+   how much text the cause/wording/names above take up — keeps the grid row from looking cluttered. */
+.imp-tile-actions { margin-top: auto; padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .imp-tile .cause { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--slate-readable); margin-bottom: 8px; }
 .imp-tile .v { font-family: var(--font-nunito-sans); font-weight: 900; font-size: 22px; color: var(--teal-dark); line-height: 1; }
 /* Free-text fallback (sprint 5, §1): no value/unit column exists yet on CampaignMilestone, so `.v`

@@ -141,33 +141,35 @@ export function ImpactGallery() {
                   <p className="p" title={impact.associationName}>
                     {impact.associationName}
                   </p>
-                  <div className="flex items-center gap-2">
-                    {impact.storySummary && (
+                  <div className="imp-tile-actions">
+                    <div className="flex items-center gap-2">
+                      {impact.storySummary && (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => setStoryTarget(impact)}
+                          aria-label={t('story.cta')}
+                          title={t('story.cta')}
+                        >
+                          <span aria-hidden="true">📖</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="btn-icon"
-                        onClick={() => setStoryTarget(impact)}
-                        aria-label={t('story.cta')}
-                        title={t('story.cta')}
+                        onClick={() => setShareTarget(impact)}
+                        aria-label={t('share.cta')}
+                        title={t('share.cta')}
                       >
-                        <span aria-hidden="true">📖</span>
+                        <span aria-hidden="true">📤</span>
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      onClick={() => setShareTarget(impact)}
-                      aria-label={t('share.cta')}
-                      title={t('share.cta')}
-                    >
-                      <span aria-hidden="true">📤</span>
-                    </button>
+                    </div>
+                    <DonationCta
+                      associationName={impact.associationName}
+                      donationUrl={impact.donationUrl}
+                      className="btn btn-primary btn-sm max-w-full truncate"
+                    />
                   </div>
-                  <DonationCta
-                    associationName={impact.associationName}
-                    donationUrl={impact.donationUrl}
-                    className="btn btn-primary btn-sm mt-3 max-w-full truncate"
-                  />
                 </li>
               );
             })}
