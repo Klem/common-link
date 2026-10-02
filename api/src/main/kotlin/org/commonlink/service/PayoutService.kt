@@ -8,7 +8,11 @@ import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutBlockingReason
+import org.commonlink.entity.PayoutErrorCode
+import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
+import org.commonlink.exception.BridgeDestinationRefusedException
+import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UserNotFoundException
@@ -111,6 +115,15 @@ class PayoutService(
 
         val payee = payeeRepository.findById(request.payeeId!!)
             .orElseThrow { NotFoundException("Payee not found: ${request.payeeId}") }
+        // The campaign is scoped above, the payee has to be scoped too. Without this, an
+        // association could name any payee on the platform: the response echoes that payee's name
+        // and full IBAN, and a confirmation would send its own campaign's funds to an IBAN never
+        // registered nor VOP-verified under its account — defeating the per-association
+        // beneficiary trail the compliance fiches describe. Answered as "not found" rather than
+        // "forbidden", so the endpoint discloses nothing about payees of other associations.
+        if (payee.association.id != associationId) {
+            throw NotFoundException("Payee not found: ${request.payeeId}")
+        }
 
         val payeeIban = payeeIbanRepository.findById(request.payeeIbanId!!)
             .orElseThrow { NotFoundException("IBAN not found: ${request.payeeIbanId}") }
@@ -128,8 +141,9 @@ class PayoutService(
                 payeeIbanId     = payeeIban.id!!,
                 payeeIbanValue  = payeeIban.iban,
                 amount          = request.amount,
-                kind            = request.kind!!,
-                typeCode        = request.typeCode!!,
+                // Derived, never taken from the body: see PayoutKind.fromTypeCode.
+                kind            = PayoutKind.fromTypeCode(request.typeCode!!),
+                typeCode        = request.typeCode,
                 label           = request.label!!,
             )
         )
@@ -185,24 +199,78 @@ class PayoutService(
                 amount = context.amount,
                 label = context.label,
                 senderIban = null,
-                callbackUrl = bridgeCallbackUrl(campaignId),
+                callbackUrl = bridgeCallbackUrl(campaignId, payoutId),
             )
+        } catch (ex: BridgeInitiationNotStartedException) {
+            // Bridge refused the request outright, so no link exists. Keeping the row would record
+            // nothing but a form that failed to submit — and an association unable to tell that
+            // apart from a real attempt creates another one instead, which is how four identical
+            // rows appeared from a single payment on 2026-09-23.
+            confirmer.discardNeverInitiated(payoutId)
+            throw ex
         } catch (ex: Exception) {
-            // Release the reservation rather than fail the payout: with Open Banking initiation
-            // nothing can be debited until the association authorises the transfer at its bank, and
-            // that requires the authorisation URL — which this failure means we never obtained. The
-            // payout stays PENDING so the association can retry once Bridge answers again; FAILED
-            // would be terminal, because loadForConfirm only accepts PENDING.
-            confirmer.releaseReservation(payoutId, ex.message ?: "Bridge initiation failed")
+            // A link may exist here — the destination read-back refusal is the clearest case — so
+            // the row is kept and only its reservation released. With Open Banking initiation
+            // nothing can be debited until the association authorises at its bank, and that
+            // requires the authorisation URL, which this failure means it never received. The
+            // payout stays PENDING so it can be retried; FAILED would be terminal, because
+            // loadForConfirm only accepts PENDING.
+            // DESTINATION_UNVERIFIED rather than a generic failure: the read-back guard refusing
+            // to hand out an authorisation URL is a control doing its job, and the association is
+            // owed that distinction — "we could not vouch for where this money was going" is not
+            // "the bank was busy". Named by exception type, never by reading ex.message.
+            val code = if (ex is BridgeDestinationRefusedException) {
+                PayoutErrorCode.DESTINATION_UNVERIFIED
+            } else {
+                PayoutErrorCode.INITIATION_FAILED
+            }
+            confirmer.releaseReservation(payoutId, ex.message ?: "Bridge initiation failed", code)
             throw ex
         }
 
-        return confirmer.attachPaymentLink(payoutId, link).toDto()
+        return try {
+            confirmer.attachPaymentLink(payoutId, link).toDto()
+        } catch (ex: Exception) {
+            // The link exists at Bridge but could not be recorded. Left alone this is the one
+            // unrecoverable state in the whole flow: `reserve` has already stamped bridgeStatus, so
+            // loadForConfirm and reserve both refuse a retry, while no link id was stored — nothing
+            // could match a webhook back to this payout, revoke the link, or free the amount. The
+            // campaign would lose that balance for good, recoverable only by hand in SQL.
+            //
+            // So the link is revoked first: whatever happens next, no money can move through an URL
+            // nobody holds. Then the reservation is released so the association can simply retry.
+            // Both are best effort — if the write that just failed was a database failure, the
+            // release will fail too — but the revocation is an HTTP call and does not depend on it,
+            // which is what keeps the failure harmless rather than merely recoverable.
+            log.error("Could not record Bridge link {} for payout {} — revoking it", link.id, payoutId, ex)
+            bridgeInitiation.revokeQuietly(link.id, "payout $payoutId could not record it")
+            runCatching {
+                confirmer.releaseReservation(
+                    payoutId,
+                    "Bridge payment link could not be recorded",
+                    PayoutErrorCode.LINK_NOT_RECORDED,
+                )
+            }
+                .onFailure { log.error("Payout {} left engaged: releasing it failed too", payoutId, it) }
+            throw ex
+        }
     }
 
     /** Where Bridge returns the association once the bank flow is over. */
-    private fun bridgeCallbackUrl(campaignId: UUID) =
-        "$frontendUrl/dashboard/association/campaigns/$campaignId?tab=payments"
+    /**
+     * Where Bridge returns the association once it is done at its bank.
+     *
+     * Carries the payout so the tab can watch that one settle. The association comes back while
+     * Bridge is still notifying — CREA, ACTC and PDNG landed within 24 seconds of each other on
+     * 2026-09-22 — so without it the page shows the state as of the instant it loaded and offers
+     * an authorisation link for a transfer that is already on its way.
+     *
+     * Locale-prefixed like every other link this backend builds. Without it the URL is one redirect
+     * away from its destination, and a redirect is exactly what must not happen on the way back
+     * from a bank.
+     */
+    private fun bridgeCallbackUrl(campaignId: UUID, payoutId: UUID) =
+        "${frontendUrl.trimEnd('/')}/fr/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId"
 
     /**
      * Returns a paginated list of payouts for [campaignId], ordered by creation date descending.
@@ -268,6 +336,12 @@ class PayoutService(
         assertCampaignOwnership(campaignId, associationId)
         val payeeIban = payeeIbanRepository.findById(payeeIbanId)
             .orElseThrow { NotFoundException("IBAN not found: $payeeIbanId") }
+        // Same scoping as create, for the same reason and one more: unscoped, this endpoint
+        // answers 200 for an IBAN of another association and 404 otherwise, which makes it an
+        // oracle for the existence and verification status of any IBAN on the platform.
+        if (payeeIban.payee.association.id != associationId) {
+            throw NotFoundException("IBAN not found: $payeeIbanId")
+        }
         return blockingReasonsFor(campaignId, payeeIban, amount, label)
     }
 

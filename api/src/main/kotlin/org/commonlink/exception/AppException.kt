@@ -85,8 +85,55 @@ class NotFoundException(message: String) :
     AppException(message, HttpStatus.NOT_FOUND)
 
 /** Thrown when an upstream dependency (e.g. an external API) is unavailable or returns an error (HTTP 502). */
-class BadGatewayException(message: String) :
+open class BadGatewayException(message: String) :
     AppException(message, HttpStatus.BAD_GATEWAY)
+
+/**
+ * Thrown when Bridge did not accept the request that would have created a payment link, so **no
+ * link exists** — a refusal, a timeout, a network failure.
+ *
+ * Distinguished from a plain [BadGatewayException] because it decides whether a payout row is worth
+ * keeping. Nothing was created at Bridge: no link, no authorisation URL, nothing that any later
+ * notification could refer to. The row records only that a form failed to submit, so it is deleted
+ * rather than left behind. Every other failure of the initiation keeps the payout, because a link
+ * may exist — a destination read-back refused is the clearest case, and it is evidence of a control
+ * that `docs/legal/verification-payee-iban.md` describes.
+ *
+ * Its own type rather than a test on the message: recognising this case by matching text would
+ * break the day a wording changes, and what it gates is a deletion.
+ */
+open class BridgeInitiationNotStartedException(message: String) :
+    BadGatewayException(message)
+
+/**
+ * Thrown when Bridge **answered** the creation request and refused it — a `4xx`.
+ *
+ * Still a [BridgeInitiationNotStartedException], so the payout row is dropped like any other
+ * initiation that created nothing. What it changes is who gets woken up: Bridge is not
+ * unavailable, it understood the request perfectly and said no, so this raises no technical alert.
+ * On 2026-09-23 three e-mails went out because a tab character had been pasted into a payout's
+ * label — noise of that kind is what makes a real outage go unnoticed.
+ *
+ * It stays loud in the logs. With the statement label now rendered before it is sent, a refusal
+ * here means the integration disagrees with Bridge about what a valid request is, which is worth
+ * reading — just not worth paging anyone at night.
+ */
+class BridgeRequestRefusedException(message: String) :
+    BridgeInitiationNotStartedException(message)
+
+/**
+ * Thrown when Bridge read a payment link back with a destination it could not be vouched for.
+ *
+ * A link **exists** — unlike [BridgeInitiationNotStartedException] — and has been revoked on the
+ * way out, so the payout row is kept as evidence that the control ran. What this type adds over a
+ * plain [BadGatewayException] is the ability to tell an association *why* without reading the text
+ * of a message: "we could not vouch for where this money was going" is not "the bank was busy".
+ *
+ * Same discipline as [BridgeRequestRefusedException]: the distinction lives in the type, because
+ * recognising a cause from its wording breaks at the first rewording.
+ */
+class BridgeDestinationRefusedException(message: String) :
+    BadGatewayException(message)
 
 /** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */
 class UnprocessableEntityException(message: String) :

@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.config.MollieConnectConfig
 import org.commonlink.config.MollieProperties
 import org.commonlink.config.OnboardingApi
@@ -245,8 +246,14 @@ class MollieConnectTokenManager(
      * new access token. Must be called within a transaction holding the pessimistic write lock.
      *
      * Failures are classified rather than lumped together, because the remedies are opposites:
-     * [MollieRefreshRejectedException] (4xx — the grant is dead, only a re-OAuth recovers) versus
-     * [MollieRefreshUnavailableException] (429/5xx/IO — retrying works). This method deliberately
+     * [MollieRefreshRejectedException] (OAuth `invalid_grant` — the grant is dead, only a re-OAuth
+     * recovers) versus [MollieRefreshUnavailableException] (everything else — retrying may work).
+     *
+     * A bare 4xx status is **not** proof of a dead grant: Mollie's edge (Google Front End) answers
+     * `403` with an HTML page when it blocks our egress IP, before the request ever reaches Mollie,
+     * and `401 invalid_client` means *our* app credentials are wrong. Classifying those as rejected
+     * would mark every association BROKEN and email all of them at once. Only the OAuth error body
+     * `{"error":"invalid_grant"}` (RFC 6749 §5.2) proves this association's grant is dead. This method deliberately
      * does **not** persist [MollieConnectionState.BROKEN]: writing it here was dead code, since
      * throwing marks the surrounding transaction rollback-only and the row stayed ACTIVE anyway.
      * The decision belongs to the caller, which can commit it in its own transaction —
@@ -286,14 +293,24 @@ class MollieConnectTokenManager(
             ).body ?: throw MollieRefreshUnavailableException(message = "Empty refresh response from Mollie")
         } catch (ex: HttpStatusCodeException) {
             val status = ex.statusCode
-            // 429 is a 4xx but says nothing about the grant — never treat throttling as a dead grant.
-            val definitive = status.is4xxClientError && status.value() != TOO_MANY_REQUESTS
-            logger.warn(
-                "Mollie token refresh failed for association {}: status={} definitive={} body={}",
-                connection.association.id, status, definitive, ex.responseBodyAsString,
-            )
+            val body = ex.responseBodyAsString
+            val definitive = status.is4xxClientError && oauthErrorCode(body) == INVALID_GRANT
+            if (definitive || status.is5xxServerError || status.value() == TOO_MANY_REQUESTS) {
+                logger.warn(
+                    "Mollie token refresh failed for association {}: status={} definitive={} body={}",
+                    connection.association.id, status, definitive, body,
+                )
+            } else {
+                // A 4xx that is not invalid_grant is our problem (edge IP block, bad client
+                // credentials), not the association's — it will hit every connection alike.
+                logger.error(
+                    "Mollie token refresh refused for association {} without invalid_grant — likely an " +
+                        "egress IP block or invalid client credentials, connection kept ACTIVE: status={} body={}",
+                    connection.association.id, status, body,
+                )
+            }
             throw if (definitive) {
-                MollieRefreshRejectedException(status, ex.responseBodyAsString)
+                MollieRefreshRejectedException(status, body)
             } else {
                 MollieRefreshUnavailableException(status)
             }
@@ -313,9 +330,23 @@ class MollieConnectTokenManager(
         return tokenResponse.accessToken
     }
 
+    /**
+     * Extracts the RFC 6749 `error` code from an OAuth error body.
+     *
+     * @param body Raw response body — JSON from Mollie, or HTML from its edge.
+     * @return The `error` field, or null when the body is not a JSON OAuth error.
+     */
+    private fun oauthErrorCode(body: String): String? = try {
+        OAUTH_ERROR_READER.readTree(body)?.path("error")?.takeIf { it.isTextual }?.asText()
+    } catch (_: Exception) {
+        null
+    }
+
     companion object {
         private const val REFRESH_SAFETY_MARGIN_SECONDS = 60L
         private const val TOO_MANY_REQUESTS = 429
+        private const val INVALID_GRANT = "invalid_grant"
+        private val OAUTH_ERROR_READER = ObjectMapper()
     }
 }
 

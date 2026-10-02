@@ -57,6 +57,22 @@ const samplePage = {
   size: 20,
 };
 
+/** The page as it reads when the association has just returned from its bank. */
+const awaitingReturnPage = {
+  ...samplePage,
+  content: [
+    {
+      ...samplePage.content[0],
+      id: 'payout-9',
+      status: 'PENDING',
+      confirmedAt: null,
+      bridgeStatus: 'CREA',
+      bridgeLastErrorCode: null,
+      bridgeCheckoutUrl: 'https://pay.bridgeapi.io/link/abc',
+    },
+  ],
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockList.mockResolvedValue(samplePage);
@@ -141,12 +157,71 @@ describe('usePayments', () => {
     await waitFor(() => expect(result.current.isSaving).toBe(false));
   });
 
-  it('setPage triggers a new fetch with updated page number', async () => {
+  it('polls fast for the payout the association just came back from its bank for', async () => {
+    // The 30-second in-flight cadence is right for a SEPA settlement and far too slow here: on
+    // 2026-09-22 a transfer went CREA -> ACTC -> PDNG in 24 seconds, entirely inside one window,
+    // so the page the association returns to would keep showing the state it loaded with.
+    vi.useFakeTimers();
+    try {
+      mockList.mockResolvedValue(awaitingReturnPage);
+      const { result } = renderHook(() => usePayments(campaignId, 'payout-9'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.awaitingReturnPayoutId).toBe('payout-9');
+      const callsAfterMount = mockList.mock.calls.length;
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
+
+      // Three two-second ticks, where the ordinary cadence would not have fired once.
+      expect(mockList.mock.calls.length).toBeGreaterThanOrEqual(callsAfterMount + 3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stops watching the return once the fast window has lapsed', async () => {
+    vi.useFakeTimers();
+    try {
+      mockList.mockResolvedValue(awaitingReturnPage);
+      const { result } = renderHook(() => usePayments(campaignId, 'payout-9'));
+      await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(21_000); });
+
+      // An abandoned payout is CREA too, and indistinguishable from here: keeping the window open
+      // tells someone who pressed back to wait for a bank it never reached, with no way to resume.
+      expect(result.current.awaitingReturnPayoutId).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('loads every page of the history, not just the first', async () => {
+    // The journal searches, filters, counts and exports over the whole campaign, and numbers each
+    // payout by rank within its day. A first page would silently under-count all four.
+    mockList.mockImplementation((_id: string, page: number) =>
+      Promise.resolve({
+        ...samplePage,
+        content: [{ ...samplePage.content[0], id: `payout-p${page}` }],
+        totalElements: 3,
+        totalPages: 3,
+        number: page,
+      }));
+
     const { result } = renderHook(() => usePayments(campaignId));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    act(() => result.current.setPage(1));
+    expect(result.current.payouts.map((p) => p.id))
+      .toEqual(['payout-p0', 'payout-p1', 'payout-p2']);
+    expect(mockList).toHaveBeenCalledWith(campaignId, 0, 200);
+    expect(mockList).toHaveBeenCalledWith(campaignId, 1, 200);
+    expect(mockList).toHaveBeenCalledWith(campaignId, 2, 200);
+  });
 
-    await waitFor(() => expect(mockList).toHaveBeenCalledWith(campaignId, 1, 20));
+  it('asks for a single page when the history fits in one', async () => {
+    const { result } = renderHook(() => usePayments(campaignId));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockList).toHaveBeenCalledTimes(1);
   });
 });

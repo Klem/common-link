@@ -9,10 +9,17 @@ import { LegalSubnav } from '@/components/layout/LegalSubnav';
  * `.legal-subnav`, `.legal-hero`, `.legal-body`, `.legal-toc-auto`).
  * Ne pas remplacer par des classes Tailwind : le CSS de la maquette est la source de vérité.
  */
+interface Subsection {
+  title: string;
+  paragraphs: string[];
+}
+
 interface Article {
   title: string;
   callout?: string;
   paragraphs?: string[];
+  /** Sections numérotées internes, utilisées par l'annexe 2 seule. */
+  subsections?: Subsection[];
 }
 
 /** Paragraphes contenant un lien interne, indexés par `article.paragraphe`. */
@@ -88,6 +95,14 @@ export default async function CguAssociationsPage({ params }: { params: Promise<
                 </p>
               );
             })}
+            {article.subsections?.map((subsection, j) => (
+              <Fragment key={`s${j}`}>
+                <h4>{subsection.title}</h4>
+                {subsection.paragraphs.map((paragraph, k) => (
+                  <p key={k}>{paragraph}</p>
+                ))}
+              </Fragment>
+            ))}
           </Fragment>
         ))}
       </div>

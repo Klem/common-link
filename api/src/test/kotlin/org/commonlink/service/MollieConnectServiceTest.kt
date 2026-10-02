@@ -6,6 +6,8 @@ import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOAuthState
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.MollieRefreshRejectedException
+import org.commonlink.exception.MollieRefreshUnavailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.AssociationProfileRepository
@@ -501,26 +503,59 @@ class MollieConnectServiceTest {
     }
 
     @Test
-    fun `getValidAccessToken - throws when Mollie rejects refresh token`() {
-        mollieConnectionRepository.save(MollieConnection(
-            association = association,
-            accessToken = "old_token",
-            refreshToken = "invalid_refresh",
-            expiresAt = Instant.now().plusSeconds(30),
-        ))
-
-        mockServer.expect(requestTo("https://api.mollie.com/oauth2/tokens"))
-            .andExpect(method(HttpMethod.POST))
-            .andRespond(withStatus(HttpStatus.BAD_REQUEST))
+    fun `getValidAccessToken - invalid_grant is a definitive rejection`() {
+        stubRefreshFailure(
+            HttpStatus.BAD_REQUEST, """{"error":"invalid_grant"}""", MediaType.APPLICATION_JSON,
+        )
 
         // Exception marks the shared test transaction as rollback-only;
         // no further JPA assertions are possible after this call
-        assertThrows<IllegalStateException> {
+        assertThrows<MollieRefreshRejectedException> {
+            tokenManager.getValidAccessToken(associationId)
+        }
+    }
+
+    @Test
+    fun `getValidAccessToken - edge 403 HTML page is not a definitive rejection`() {
+        // Google Front End blocking our egress IP — the request never reached Mollie.
+        stubRefreshFailure(
+            HttpStatus.FORBIDDEN,
+            "<html><body><h1>Error: Forbidden</h1><h2>Your client does not have permission to get URL " +
+                "<code>/oauth2/tokens</code> from this server.</h2></body></html>",
+            MediaType.TEXT_HTML,
+        )
+
+        assertThrows<MollieRefreshUnavailableException> {
+            tokenManager.getValidAccessToken(associationId)
+        }
+    }
+
+    @Test
+    fun `getValidAccessToken - invalid_client is not a definitive rejection`() {
+        // Our app credentials are wrong — every association would be hit, none of their grants is dead.
+        stubRefreshFailure(
+            HttpStatus.UNAUTHORIZED, """{"error":"invalid_client"}""", MediaType.APPLICATION_JSON,
+        )
+
+        assertThrows<MollieRefreshUnavailableException> {
             tokenManager.getValidAccessToken(associationId)
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** Seeds a near-expiry connection and stubs a failing `/oauth2/tokens` refresh. */
+    private fun stubRefreshFailure(status: HttpStatus, body: String, contentType: MediaType) {
+        mollieConnectionRepository.save(MollieConnection(
+            association = association,
+            accessToken = "old_token",
+            refreshToken = "old_refresh",
+            expiresAt = Instant.now().plusSeconds(30),
+        ))
+        mockServer.expect(requestTo("https://api.mollie.com/oauth2/tokens"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withStatus(status).body(body).contentType(contentType))
+    }
 
     private fun stubTokenExchange() {
         mockServer.expect(requestTo("https://api.mollie.com/oauth2/tokens"))

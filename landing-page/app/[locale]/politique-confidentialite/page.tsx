@@ -128,6 +128,7 @@ export default async function PolitiqueConfidentialitePage({
         <h2>{t('hostedPages.title')}</h2>
         <p>{t('hostedPages.p1')}</p>
         <p>{t('hostedPages.p2')}</p>
+        <p>{t('hostedPages.p3')}</p>
 
         <h2>{t('changes.title')}</h2>
         <p>{t('changes.p1')}</p>

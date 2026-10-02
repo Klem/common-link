@@ -7,10 +7,19 @@ import {
   listPayments,
   getPaymentSummary,
 } from '@/lib/api/payment';
-import { isPayoutInFlight } from '@/types/payment';
+import { BridgePaymentStatus, isPayoutInFlight } from '@/types/payment';
 import type { CreatePayoutRequest, PayoutDto, PayoutSummaryDto } from '@/types/payment';
 
-const PAGE_SIZE = 20;
+/**
+ * Rows asked for per request while loading the journal.
+ *
+ * Sized to bring back a campaign's whole history in one round trip in practice, not to paginate:
+ * the journal searches, filters, sorts, counts and exports across every payout, and numbers each
+ * one `VIR-AAAAMMJJ-NNN` by rank within its day. None of that is computable from a slice — a
+ * counter reading "9 paiements affichés" over a 20-row window is simply wrong, and a rank-within-day
+ * would renumber itself as pages loaded. Anything beyond this size is fetched too, below.
+ */
+const PAGE_SIZE = 200;
 
 /**
  * How often the list is refreshed while a bank transfer is still in flight.
@@ -20,15 +29,37 @@ const PAGE_SIZE = 20;
  */
 const IN_FLIGHT_POLL_MS = 30_000;
 
+/**
+ * Cadence used in the seconds following the association's return from its bank.
+ *
+ * {@link IN_FLIGHT_POLL_MS} is right for a SEPA transfer that settles over hours, and far too slow
+ * for the moment the association lands back here: on 2026-09-22 a transfer went CREA → ACTC → PDNG
+ * in 24 seconds and settled 20 seconds later, entirely inside one 30-second window. So the page it
+ * returns to shows the state as of the instant it loaded, still offering the authorisation link for
+ * a transfer already on its way.
+ */
+const RETURN_POLL_MS = 2_000;
+
+/**
+ * How long that fast cadence lasts.
+ *
+ * Sized on how fast Bridge has actually reported rather than on generosity: on 2026-09-22 and
+ * 2026-09-23 the first notification landed 1 to 3 seconds after the link was created, and `ACTC`
+ * within 8. The reason not to be generous is that a payout the association *abandoned* is CREA
+ * too — the two are indistinguishable from here — so every second of this window is a second
+ * during which someone who pressed back is told to wait for a bank it never reached, with no way
+ * to resume. Once it lapses the authorisation link comes back and the ordinary in-flight poll
+ * takes over.
+ */
+const RETURN_POLL_WINDOW_MS = 20_000;
+
 export interface UsePaymentsReturn {
+  /** Every payout of the campaign, newest first. */
   payouts: PayoutDto[];
   summary: PayoutSummaryDto | null;
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
-  page: number;
-  totalPages: number;
-  setPage: (page: number) => void;
   /**
    * Creates a PENDING payout then confirms it, which orders the real SEPA transfer.
    *
@@ -37,29 +68,62 @@ export interface UsePaymentsReturn {
    * the money has arrived.
    */
   submit: (req: CreatePayoutRequest) => Promise<PayoutDto>;
+  /**
+   * Issues an existing payout again, without re-creating it.
+   *
+   * A payout whose initiation failed, or whose authorisation link died unused, is deliberately left
+   * PENDING and retryable rather than FAILED — nothing was debited, so retiring it would punish the
+   * association for closing a tab. That only means something if it can actually be re-issued: with
+   * no such action the association creates a second payout instead, which is how four identical
+   * rows appeared from one payment on 2026-09-23. The old link is gone by then, so this asks the
+   * backend for a fresh one and returns the payout carrying its new authorisation URL.
+   */
+  retry: (payoutId: string) => Promise<PayoutDto>;
   refetch: () => Promise<void>;
+  /**
+   * The payout the association has just come back from its bank for, while its fate is still
+   * unknown — null otherwise.
+   *
+   * The UI must not offer it an authorisation link: it is still CREA only because Bridge has not
+   * finished notifying, and the link it would re-open is one being consumed.
+   */
+  awaitingReturnPayoutId: string | null;
+}
+
+/**
+ * Every payout of a campaign, newest first.
+ *
+ * The list endpoint is paginated, so the first response is what says how many pages there are; the
+ * rest are fetched together rather than one after the other. Nothing is truncated: a journal
+ * missing its oldest rows would under-count its own totals without saying so.
+ */
+async function fetchEveryPayout(campaignId: string): Promise<PayoutDto[]> {
+  const first = await listPayments(campaignId, 0, PAGE_SIZE);
+  if (first.totalPages <= 1) return first.content;
+  const rest = await Promise.all(
+    Array.from({ length: first.totalPages - 1 }, (_, i) => listPayments(campaignId, i + 1, PAGE_SIZE)),
+  );
+  return [...first.content, ...rest.flatMap((p) => p.content)];
 }
 
 /**
  * Manages payout state for a campaign's Payments tab.
  *
- * Fetches summary KPIs and paginated list on mount/page change.
+ * Fetches summary KPIs and the campaign's complete payout history on mount.
  * `submit` creates a PENDING payout then confirms it in one user action.
  *
  * While any payout's bank transfer is still in flight the list is refreshed silently every
  * {@link IN_FLIGHT_POLL_MS}, so settlement shows up without the user reloading the page.
  */
-export function usePayments(campaignId: string): UsePaymentsReturn {
+export function usePayments(campaignId: string, returningPayoutId?: string | null): UsePaymentsReturn {
   const [payouts, setPayouts] = useState<PayoutDto[]>([]);
   const [summary, setSummary] = useState<PayoutSummaryDto | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   /**
-   * Fetches the list and summary.
+   * Fetches the whole history and the summary.
    *
    * @param silent When true, leaves `isLoading` untouched — used by the in-flight poll so the
    *   history does not flash a spinner every 30 seconds.
@@ -68,19 +132,18 @@ export function usePayments(campaignId: string): UsePaymentsReturn {
     if (!silent) setIsLoading(true);
     setError(null);
     try {
-      const [pageResult, sum] = await Promise.all([
-        listPayments(campaignId, page, PAGE_SIZE),
+      const [allPayouts, sum] = await Promise.all([
+        fetchEveryPayout(campaignId),
         getPaymentSummary(campaignId),
       ]);
-      setPayouts(pageResult.content);
-      setTotalPages(pageResult.totalPages);
+      setPayouts(allPayouts);
       setSummary(sum);
     } catch {
       setError('common.errors.serverError');
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, [campaignId, page]);
+  }, [campaignId]);
 
   useEffect(() => {
     fetchAll();
@@ -88,11 +151,32 @@ export function usePayments(campaignId: string): UsePaymentsReturn {
 
   const hasInFlightPayout = payouts.some(isPayoutInFlight);
 
+  /*
+   * Opens when the tab is entered on a return from the bank, and closes on its own timer rather
+   * than on a clock read taken during a render: nothing guarantees a render happens once the
+   * window lapses, so a comparison against `Date.now()` can stay true indefinitely.
+   */
+  const [returnWindowOpen, setReturnWindowOpen] = useState(returningPayoutId != null);
+
   useEffect(() => {
-    if (!hasInFlightPayout) return;
-    const timer = setInterval(() => { fetchAll(true); }, IN_FLIGHT_POLL_MS);
+    if (!returningPayoutId) return;
+    const timer = setTimeout(() => setReturnWindowOpen(false), RETURN_POLL_WINDOW_MS);
+    return () => clearTimeout(timer);
+  }, [returningPayoutId]);
+
+  // Still CREA means Bridge has not reported the authorisation yet, not that nothing was
+  // authorised: the association is back here seconds before the notification lands.
+  const awaitingReturn =
+    returnWindowOpen &&
+    returningPayoutId != null &&
+    payouts.some((p) => p.id === returningPayoutId && p.bridgeStatus === BridgePaymentStatus.CREA);
+
+  useEffect(() => {
+    if (!awaitingReturn && !hasInFlightPayout) return;
+    const everyMs = awaitingReturn ? RETURN_POLL_MS : IN_FLIGHT_POLL_MS;
+    const timer = setInterval(() => { fetchAll(true); }, everyMs);
     return () => clearInterval(timer);
-  }, [hasInFlightPayout, fetchAll]);
+  }, [awaitingReturn, hasInFlightPayout, fetchAll]);
 
   const submit = useCallback(
     async (req: CreatePayoutRequest): Promise<PayoutDto> => {
@@ -109,16 +193,29 @@ export function usePayments(campaignId: string): UsePaymentsReturn {
     [campaignId, fetchAll],
   );
 
+  const retry = useCallback(
+    async (payoutId: string): Promise<PayoutDto> => {
+      setIsSaving(true);
+      try {
+        const confirmed = await confirmPayment(campaignId, payoutId);
+        await fetchAll();
+        return confirmed;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [campaignId, fetchAll],
+  );
+
   return {
     payouts,
     summary,
     isLoading,
     isSaving,
     error,
-    page,
-    totalPages,
-    setPage,
     submit,
+    retry,
     refetch: fetchAll,
+    awaitingReturnPayoutId: awaitingReturn ? returningPayoutId : null,
   };
 }

@@ -10,6 +10,7 @@ import org.commonlink.dto.CreatePayoutRequest
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.exception.BadGatewayException
+import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.IbanVerificationStatus
@@ -17,6 +18,7 @@ import org.commonlink.entity.Payee
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
 import org.commonlink.entity.PayoutKind
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.User
@@ -90,6 +92,51 @@ class PayoutServiceTest {
         every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal(raised)
     }
 
+    /** A payee belonging to a different association, used to pin the ownership checks. */
+    private val foreignPayee = Payee(
+        association = AssociationProfile(
+            user = User(email = "b@test.com", role = UserRole.ASSOCIATION, provider = AuthProvider.MAGIC_LINK),
+            name = "Autre asso", identifier = "987654321",
+        ).also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) },
+        name = "Foreign Payee", identifier1 = "987654321",
+    ).also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) }
+
+    private val foreignIban = PayeeIban(
+        payee = foreignPayee, iban = "FR7630006000011111111111111", status = IbanVerificationStatus.VERIFIED,
+    ).also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) }
+
+    @Test
+    fun `create - refuses a payee belonging to another association`() {
+        // The campaign is scoped, the payee was not. Naming a foreign payee echoed its name and
+        // full IBAN back in the 201, and a confirmation would have sent this campaign's funds to an
+        // IBAN never registered nor VOP-verified under this association.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(foreignPayee.id!!) } returns Optional.of(foreignPayee)
+
+        val request = CreatePayoutRequest(
+            payeeId = foreignPayee.id, payeeIbanId = foreignIban.id, amount = BigDecimal("10"),
+            kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel pédagogique",
+        )
+
+        // "Not found", not "forbidden": the endpoint must disclose nothing about other associations.
+        assertThrows<NotFoundException> { service.create(campaignId, request, userId) }
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `computeBlockingReasons - refuses an IBAN belonging to another association`() {
+        // Unscoped, this endpoint answered 200 for a foreign IBAN and 404 otherwise, which makes it
+        // an oracle for the existence and verification status of any IBAN on the platform.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { payeeIbanRepository.findById(foreignIban.id!!) } returns Optional.of(foreignIban)
+
+        assertThrows<NotFoundException> {
+            service.computeBlockingReasons(campaignId, foreignIban.id!!, BigDecimal("10"), "Achat matériel pédagogique", userId)
+        }
+    }
+
     @Test
     fun `create - happy path returns PayoutDto`() {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
@@ -104,6 +151,31 @@ class PayoutServiceTest {
 
         assertThat(result.amount).isEqualByComparingTo("500")
         assertThat(result.status).isEqualTo(PayoutStatus.PENDING)
+    }
+
+    @Test
+    fun `create - derives the kind from the accounting code, ignoring the one in the body`() {
+        // Replaying the call with typeCode = "64-rem" and kind = EXPENSE filed a salary as an
+        // operating cost. The code is what the association picked from a closed list; the kind was
+        // only ever a projection of it computed in the browser.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(payeeIban)
+        stubBalance(confirmed = "0", raised = "1000")
+        every { payoutRepository.save(any()) } returnsArgument 0
+
+        val forged = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.EXPENSE, "64-rem", "Salaire coordinateur projet")
+        assertThat(service.create(campaignId, forged, userId).kind).isEqualTo(PayoutKind.REMUNERATION)
+
+        // And the converse, so the derivation is not simply pinned to one value.
+        val alsoForged = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.REMUNERATION, "60-mat", "Achat matériel pédagogique")
+        assertThat(service.create(campaignId, alsoForged, userId).kind).isEqualTo(PayoutKind.EXPENSE)
+
+        // A code the association typed itself is an operational expense, like the frontend's own
+        // mapping — only the closed 64-* set is personnel.
+        val custom = CreatePayoutRequest(payeeId, ibanId, BigDecimal("500"), PayoutKind.REMUNERATION, "Frais divers", "Achat matériel pédagogique")
+        assertThat(service.create(campaignId, custom, userId).kind).isEqualTo(PayoutKind.EXPENSE)
     }
 
     @Test
@@ -284,7 +356,42 @@ class PayoutServiceTest {
     }
 
     @Test
-    fun `confirm - sends the campaign payments tab as the bank return url`() {
+    fun `confirm - drops the payout when Bridge never accepted the initiation`() {
+        // No link exists, so the row records nothing but a form that failed to submit. Four
+        // identical rows appeared from a single payment on 2026-09-23 because the association could
+        // not tell that apart from a real attempt.
+        stubLoadForConfirm()
+        every { confirmer.reserve(campaignId, payoutId) } returns Unit
+        every {
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } throws BridgeInitiationNotStartedException("Bridge payment initiation unavailable: 400 Bad Request")
+        every { confirmer.discardNeverInitiated(payoutId) } returns Unit
+
+        assertThrows<BridgeInitiationNotStartedException> { service.confirm(campaignId, payoutId, userId) }
+
+        verify { confirmer.discardNeverInitiated(payoutId) }
+        verify(exactly = 0) { confirmer.releaseReservation(any(), any(), any()) }
+    }
+
+    @Test
+    fun `confirm - keeps the payout when a link may exist`() {
+        // The destination read-back refusal lands here: a link was created and revoked, and this
+        // row is the only local record that it existed at all.
+        stubLoadForConfirm()
+        every { confirmer.reserve(campaignId, payoutId) } returns Unit
+        every {
+            bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } throws BadGatewayException("Bridge recorded a different destination IBAN — transfer refused")
+        every { confirmer.releaseReservation(payoutId, any(), any()) } returns Unit
+
+        assertThrows<BadGatewayException> { service.confirm(campaignId, payoutId, userId) }
+
+        verify { confirmer.releaseReservation(payoutId, any(), any()) }
+        verify(exactly = 0) { confirmer.discardNeverInitiated(any()) }
+    }
+
+    @Test
+    fun `confirm - sends the campaign payments tab and the payout as the bank return url`() {
         val link = BridgePaymentLink("pl_1", "https://pay.bridgeapi.io/link/abc")
         val callbackSlot = slot<String>()
 
@@ -297,8 +404,12 @@ class PayoutServiceTest {
 
         service.confirm(campaignId, payoutId, userId)
 
+        // Both matter. Without the tab the association lands on Infos, hiding the row it came back
+        // to see; without the payout the page cannot watch that one settle, and the association
+        // returns while Bridge is still notifying — CREA, ACTC and PDNG landed within 24 seconds of
+        // each other on 2026-09-22.
         assertThat(callbackSlot.captured)
-            .isEqualTo("$FRONTEND_URL/dashboard/association/campaigns/$campaignId?tab=payments")
+            .isEqualTo("$FRONTEND_URL/fr/dashboard/association/campaigns/$campaignId?tab=payments&payout=$payoutId")
     }
 
     @Test
@@ -310,12 +421,12 @@ class PayoutServiceTest {
         every { confirmer.reserve(campaignId, payoutId) } returns Unit
         every { bridgeInitiation.createPaymentLink(any(), any(), any(), any(), any(), any(), any(), any(), any()) } throws
             BadGatewayException("Bridge payment initiation unavailable: timeout")
-        every { confirmer.releaseReservation(payoutId, any()) } returns Unit
+        every { confirmer.releaseReservation(payoutId, any(), any()) } returns Unit
 
         assertThrows<BadGatewayException> { service.confirm(campaignId, payoutId, userId) }
 
-        verify { confirmer.releaseReservation(payoutId, any()) }
-        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any()) }
+        verify { confirmer.releaseReservation(payoutId, any(), any()) }
+        verify(exactly = 0) { confirmer.finaliseFailed(any(), any(), any(), any()) }
         verify(exactly = 0) { confirmer.finaliseSettled(any(), any()) }
         verify(exactly = 0) { confirmer.attachPaymentLink(any(), any()) }
     }

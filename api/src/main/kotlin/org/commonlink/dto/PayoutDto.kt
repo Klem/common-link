@@ -2,6 +2,7 @@ package org.commonlink.dto
 
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.Payout
+import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
 import java.math.BigDecimal
@@ -47,13 +48,27 @@ data class PayoutDto(
      * without altering the three-state lifecycle that balance and KPI computations depend on.
      */
     val bridgeStatus: BridgePaymentStatus? = null,
-    /** Message of the last Bridge failure, surfaced so a failure is explainable to the user. */
-    val bridgeLastError: String? = null,
+    /**
+     * Stable cause of the last failure, which the frontend turns into a sentence.
+     *
+     * Replaces exposing [org.commonlink.entity.Payout.bridgeLastError], which mixed Bridge's bare
+     * ISO codes with our own English messages — one of them carrying a payout id — and was shown
+     * verbatim in a tooltip meant for an association.
+     */
+    val bridgeLastErrorCode: PayoutErrorCode? = null,
     /**
      * URL the association must open to authorise the transfer at its own bank. Non-null while a
      * confirmed payout still awaits that authorisation.
      */
     val bridgeCheckoutUrl: String? = null,
+    /**
+     * Bridge's own identifier for the transfer, or null until one has been ordered.
+     *
+     * The only reference a payout ever carries that also exists outside CommonLink, which is why
+     * the journal shows it: it is what a support request about "this transfer" can be about. It
+     * appears when Bridge reports the transaction, so a payout that never reached a bank has none.
+     */
+    val bridgePaymentTransactionId: String? = null,
 )
 
 fun Payout.toDto() = PayoutDto(
@@ -72,6 +87,7 @@ fun Payout.toDto() = PayoutDto(
     confirmedAt = confirmedAt,
     onchainJobId = onchainJobId,
     bridgeStatus = bridgeStatus,
-    bridgeLastError = bridgeLastError,
+    bridgeLastErrorCode = bridgeLastErrorCode,
     bridgeCheckoutUrl = bridgeCheckoutUrl,
+    bridgePaymentTransactionId = bridgePaymentTransactionId,
 )

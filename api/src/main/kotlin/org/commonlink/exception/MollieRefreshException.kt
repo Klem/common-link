@@ -16,8 +16,9 @@ import org.springframework.http.HttpStatusCode
 sealed class MollieRefreshException(message: String) : IllegalStateException(message)
 
 /**
- * Mollie has **definitively** rejected the refresh token — typically HTTP 400 `invalid_grant`
- * (revoked authorisation, deleted organisation, refresh token already rotated elsewhere).
+ * Mollie has **definitively** rejected the refresh token — a 4xx whose OAuth body carries
+ * `"error":"invalid_grant"` (revoked authorisation, deleted organisation, refresh token already
+ * rotated elsewhere). A 4xx without that code (edge 403 HTML page, `invalid_client`) is *not* this.
  *
  * Retrying cannot help: the association must re-authorise through the OAuth popup. This is the
  * only failure that justifies persisting [org.commonlink.entity.MollieConnectionState.BROKEN].
@@ -33,7 +34,8 @@ class MollieRefreshRejectedException(
 
 /**
  * The refresh could not be completed for a reason that says nothing about the grant's validity —
- * throttling (429), a Mollie outage (5xx), a timeout or any I/O error.
+ * throttling (429), a Mollie outage (5xx), a timeout, any I/O error, or a 4xx that is not an OAuth
+ * `invalid_grant` (edge IP block returning an HTML 403, our own `invalid_client`).
  *
  * The connection must stay [org.commonlink.entity.MollieConnectionState.ACTIVE]: marking it BROKEN
  * would turn a transient Mollie hiccup into a mandatory re-onboarding for every association at once.
