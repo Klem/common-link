@@ -1597,6 +1597,8 @@
           "noReceipt": "Non disponible",
           "project": "Projet",
           "receipt": "Reçu",
+          "sortAscendingAria": "Trier par {column}, ordre croissant",
+          "sortDescendingAria": "Trier par {column}, ordre décroissant",
           "traceability": "Traçabilité",
           "usedAmount": "Part utilisée",
           "usedAmountBadge": "{used} sur {total} utilisés",

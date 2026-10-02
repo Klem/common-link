@@ -1843,6 +1843,11 @@ tbody tr:last-child td { border-bottom: none; }
 .cm-table-empty-lg { font-size: 13px; color: var(--slate-lavender); text-align: center; padding: 28px 0; }
 .donor-name { font-weight: 500; }
 .tx-count   { color: var(--bright-teal); font-weight: 600; }
+.th-sort { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
+.th-sort:hover { color: var(--bright-teal); }
+.th-sort-chev { font-size: 9px; line-height: 1; color: var(--mist-lavender); transition: color .15s, transform .15s; }
+.th-sort.active .th-sort-chev { color: var(--bright-teal); }
+.th-sort-chev.desc { transform: rotate(180deg); }
 .spinner-wrap { display: flex; justify-content: center; padding: 16px; }
 .spinner-wrap.lg { padding: 32px; }
 
@@ -2691,11 +2696,6 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .card-head h3 { font-size: 16px; color: var(--ink-navy); }
 
 .tw { overflow-x: auto; position: relative; }
-table.donations-table { width: 100%; border-collapse: collapse; }
-.donations-table thead th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 700; color: var(--slate-readable); text-transform: uppercase; letter-spacing: .8px; border-bottom: 2px solid var(--mist-lavender); background: rgba(253,248,240,.5); }
-.donations-table tbody td { padding: 14px 16px; font-size: 14px; color: var(--ink-navy); border-bottom: 1px solid rgba(230,228,244,.5); }
-.donations-table tbody tr:hover { background: rgba(78,205,196,.03); }
-.donations-table tbody tr:last-child td { border-bottom: none; }
 
 /* Mobile stacked cards — alternative to the table below 768px. `.donations-cards` is a pure
    marker class (no properties): visibility AND layout (`flex flex-col gap-3 md:hidden`) are both

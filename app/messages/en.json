@@ -1597,6 +1597,8 @@
           "noReceipt": "Not available",
           "project": "Project",
           "receipt": "Receipt",
+          "sortAscendingAria": "Sort by {column}, ascending",
+          "sortDescendingAria": "Sort by {column}, descending",
           "traceability": "Traceability",
           "usedAmount": "Used share",
           "usedAmountBadge": "{used} of {total} used",

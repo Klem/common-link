@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
 import { EmptyStateCard } from '@/components/dashboard';
 import { ROUTES } from '@/lib/routes';
 import type { DonorDonationDto } from '@/types/donor';
@@ -14,6 +15,17 @@ interface Props {
   onOpenTraceability: (donation: DonorDonationDto) => void;
 }
 
+const SortKey = {
+  DATE: 'DATE',
+  PROJECT: 'PROJECT',
+  ASSOCIATION: 'ASSOCIATION',
+  AMOUNT: 'AMOUNT',
+  USED_PERCENT: 'USED_PERCENT',
+} as const;
+type SortKey = typeof SortKey[keyof typeof SortKey];
+
+type SortDirection = 'asc' | 'desc';
+
 function fmtEur(amount: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }
@@ -22,6 +34,25 @@ function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(
     new Date(iso),
   );
+}
+
+function usedPercent(donation: DonorDonationDto): number {
+  return donation.amount > 0 ? Math.min(100, (donation.usedAmount / donation.amount) * 100) : 0;
+}
+
+function compareDonations(a: DonorDonationDto, b: DonorDonationDto, key: SortKey): number {
+  switch (key) {
+    case SortKey.DATE:
+      return a.donatedAt.localeCompare(b.donatedAt);
+    case SortKey.PROJECT:
+      return a.campaignName.localeCompare(b.campaignName);
+    case SortKey.ASSOCIATION:
+      return a.associationName.localeCompare(b.associationName);
+    case SortKey.AMOUNT:
+      return a.amount - b.amount;
+    case SortKey.USED_PERCENT:
+      return usedPercent(a) - usedPercent(b);
+  }
 }
 
 /**
@@ -38,6 +69,45 @@ export function DonationHistoryTable({
 }: Props) {
   const t = useTranslations('dashboard.donor.donations');
   const locale = useLocale();
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const sortedDonations = useMemo(() => {
+    if (!sortKey) return donations;
+    const sorted = [...donations].sort((a, b) => compareDonations(a, b, sortKey));
+    if (sortDirection === 'desc') sorted.reverse();
+    return sorted;
+  }, [donations, sortKey, sortDirection]);
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  }
+
+  function sortButton(key: SortKey, label: string) {
+    const active = sortKey === key;
+    const nextDirection = active && sortDirection === 'asc' ? 'desc' : 'asc';
+    const aria = nextDirection === 'asc'
+      ? t('table.sortAscendingAria', { column: label })
+      : t('table.sortDescendingAria', { column: label });
+    return (
+      <button
+        type="button"
+        className={`th-sort${active ? ' active' : ''}`}
+        onClick={() => handleSort(key)}
+        aria-label={aria}
+      >
+        {label}
+        <span className={`th-sort-chev${active && sortDirection === 'desc' ? ' desc' : ''}`} aria-hidden="true">
+          ▲
+        </span>
+      </button>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -65,76 +135,82 @@ export function DonationHistoryTable({
     <>
       {/* ── Desktop / tablet: semantic table ──────────────────────────────── */}
       <div className="hidden md:block tw">
-        <table className="donations-table" aria-label={t('tableLabel')}>
+        <table className="cm-table" aria-label={t('tableLabel')}>
           <caption className="sr-only">{t('tableLabel')}</caption>
           <thead>
             <tr>
-              <th scope="col">{t('table.date')}</th>
-              <th scope="col">{t('table.project')}</th>
-              <th scope="col">{t('table.association')}</th>
-              <th scope="col">{t('table.amount')}</th>
-              <th scope="col">{t('table.usedAmount')}</th>
+              <th scope="col">{sortButton(SortKey.DATE, t('table.date'))}</th>
+              <th scope="col">{sortButton(SortKey.PROJECT, t('table.project'))}</th>
+              <th scope="col">{sortButton(SortKey.ASSOCIATION, t('table.association'))}</th>
+              <th scope="col">{sortButton(SortKey.AMOUNT, t('table.amount'))}</th>
+              <th scope="col">{sortButton(SortKey.USED_PERCENT, t('table.usedAmount'))}</th>
               <th scope="col">{t('table.traceability')}</th>
               <th scope="col">{t('table.receipt')}</th>
             </tr>
           </thead>
           <tbody>
-            {donations.map((donation) => (
-              <tr key={donation.id}>
-                <td>{fmtDate(donation.donatedAt)}</td>
-                <td>
-                  <Link href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}>
-                    {donation.campaignEmoji} {donation.campaignName}
-                  </Link>
-                </td>
-                <td>{donation.associationName}</td>
-                <td>{fmtEur(donation.amount)}</td>
-                <td>
-                  <span className="badge badge-active">
-                    {t('table.usedAmountBadge', {
-                      used: fmtEur(donation.usedAmount),
-                      total: fmtEur(donation.amount),
-                    })}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn-icon"
-                    onClick={() => onOpenTraceability(donation)}
-                    aria-label={t('table.viewTraceabilityAria', {
-                      date: fmtDate(donation.donatedAt),
-                      association: donation.associationName,
-                    })}
-                  >
-                    <span aria-hidden="true">🔍</span>
-                  </button>
-                </td>
-                <td>
-                  {donation.receiptAvailable ? (
+            {sortedDonations.map((donation) => {
+              const pct = usedPercent(donation);
+              return (
+                <tr key={donation.id}>
+                  <td>{fmtDate(donation.donatedAt)}</td>
+                  <td>
+                    <Link href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}>
+                      {donation.campaignEmoji} {donation.campaignName}
+                    </Link>
+                  </td>
+                  <td>{donation.associationName}</td>
+                  <td className="amount-teal">{fmtEur(donation.amount)}</td>
+                  <td>
+                    <span
+                      className="badge badge-active"
+                      style={{ background: `linear-gradient(to right, rgba(78,205,196,.12) ${pct}%, var(--white) ${pct}%)` }}
+                    >
+                      {t('table.usedAmountBadge', {
+                        used: fmtEur(donation.usedAmount),
+                        total: fmtEur(donation.amount),
+                      })}
+                    </span>
+                  </td>
+                  <td>
                     <button
                       type="button"
                       className="btn-icon"
-                      onClick={() => onDownloadReceipt(donation)}
-                      aria-label={t('table.downloadReceiptAria', {
-                        receiptNumber: donation.receiptNumber ?? donation.id,
+                      onClick={() => onOpenTraceability(donation)}
+                      aria-label={t('table.viewTraceabilityAria', {
+                        date: fmtDate(donation.donatedAt),
+                        association: donation.associationName,
                       })}
                     >
-                      <span aria-hidden="true">📥</span>
+                      <span aria-hidden="true">🔍</span>
                     </button>
-                  ) : (
-                    <span className="text-text-2 text-sm">{t('table.noReceipt')}</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>
+                    {donation.receiptAvailable ? (
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        onClick={() => onDownloadReceipt(donation)}
+                        aria-label={t('table.downloadReceiptAria', {
+                          receiptNumber: donation.receiptNumber ?? donation.id,
+                        })}
+                      >
+                        <span aria-hidden="true">📥</span>
+                      </button>
+                    ) : (
+                      <span className="text-text-2 text-sm">{t('table.noReceipt')}</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* ── Mobile: stacked cards ──────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 md:hidden donations-cards" aria-label={t('tableLabel')}>
-        {donations.map((donation) => (
+        {sortedDonations.map((donation) => (
           <article key={donation.id} className="donation-card">
             <Link
               href={`/${locale}${ROUTES.DONOR_CAMPAIGN_REPORT(donation.campaignId)}`}
@@ -154,7 +230,10 @@ export function DonationHistoryTable({
             <div className="donation-card-row">
               <span className="donation-card-label">{t('table.usedAmount')}</span>
               <span className="donation-card-value">
-                <span className="badge badge-active">
+                <span
+                  className="badge badge-active"
+                  style={{ background: `linear-gradient(to right, rgba(78,205,196,.12) ${usedPercent(donation)}%, var(--white) ${usedPercent(donation)}%)` }}
+                >
                   {t('table.usedAmountBadge', {
                     used: fmtEur(donation.usedAmount),
                     total: fmtEur(donation.amount),
