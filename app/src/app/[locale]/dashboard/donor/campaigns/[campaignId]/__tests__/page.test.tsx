@@ -85,15 +85,15 @@ describe('DonorCampaignReportPage', () => {
     vi.mocked(getCampaignReport).mockResolvedValue(report);
     render(<DonorCampaignReportPage />);
 
-    await waitFor(() => expect(screen.getByText(/funds.showDetail/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /funds.showDetail/ })).toBeInTheDocument());
     expect(screen.queryByText('Achat de graines')).not.toBeInTheDocument();
 
-    const toggle = screen.getByText(/funds.showDetail/);
+    const toggle = screen.getByRole('button', { name: /funds.showDetail/ });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(toggle);
 
     expect(screen.getByText(/Achat de graines/)).toBeInTheDocument();
-    expect(screen.getByText(/funds.hideDetail/)).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /funds.hideDetail/ })).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('only shows a category\'s own confirmed payouts, not other categories\'', async () => {
@@ -121,11 +121,45 @@ describe('DonorCampaignReportPage', () => {
     vi.mocked(getCampaignReport).mockResolvedValue(multiCategoryReport);
     render(<DonorCampaignReportPage />);
 
-    await waitFor(() => expect(screen.getAllByText(/funds.showDetail/)).toHaveLength(2));
-    fireEvent.click(screen.getAllByText(/funds.showDetail/)[0]);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /funds.showDetail/ })).toHaveLength(2));
+    fireEvent.click(screen.getAllByRole('button', { name: /funds.showDetail/ })[0]);
 
     expect(screen.getByText(/Achat de graines/)).toBeInTheDocument();
     expect(screen.queryByText(/Salaire coordinateur/)).not.toBeInTheDocument();
+  });
+
+  it('only keeps one category expanded at a time (accordion)', async () => {
+    const multiCategoryReport: DonorCampaignReportDto = {
+      ...report,
+      confirmedPayouts: [
+        ...report.confirmedPayouts,
+        {
+          payoutId: 'payout-2',
+          label: 'Salaire coordinateur',
+          amount: 800,
+          payeeName: 'J. Martin',
+          confirmedAt: '2026-02-10T00:00:00Z',
+          sectionCode: '64',
+        },
+      ],
+      variance: {
+        ...report.variance,
+        charges: [
+          ...report.variance.charges,
+          { sectionCode: '64', sectionName: 'Salaires', planned: 2000, actual: 800, variance: -1200 },
+        ],
+      },
+    };
+    vi.mocked(getCampaignReport).mockResolvedValue(multiCategoryReport);
+    render(<DonorCampaignReportPage />);
+
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /funds.showDetail/ })).toHaveLength(2));
+    fireEvent.click(screen.getAllByRole('button', { name: /funds.showDetail/ })[0]);
+    expect(screen.getByText(/Achat de graines/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /funds.showDetail/ }));
+    expect(screen.queryByText(/Achat de graines/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Salaire coordinateur/)).toBeInTheDocument();
   });
 
   it('never renders the word "engagé"', async () => {
@@ -148,8 +182,8 @@ describe('DonorCampaignReportPage', () => {
     });
     render(<DonorCampaignReportPage />);
 
-    await waitFor(() => expect(screen.getByText(/funds.showDetail/)).toBeInTheDocument());
-    fireEvent.click(screen.getByText(/funds.showDetail/));
+    await waitFor(() => expect(screen.getByRole('button', { name: /funds.showDetail/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /funds.showDetail/ }));
     fireEvent.click(screen.getByText('funds.viewBreakdown'));
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();

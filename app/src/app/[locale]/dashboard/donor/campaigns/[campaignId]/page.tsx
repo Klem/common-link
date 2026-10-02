@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { EmptyStateCard, StatCard, Topbar } from '@/components/dashboard';
 import { DonationTraceabilityModal } from '@/components/donor/DonationTraceabilityModal';
+import { FundUsageTable } from '@/components/donor/FundUsageTable';
 import { PayoutBreakdownModal } from '@/components/donor/PayoutBreakdownModal';
 import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
 import { useDonorCampaignReport } from '@/hooks/dashboard/useDonorCampaignReport';
@@ -16,12 +17,6 @@ import type { ShareableImpact } from '@/lib/impactWording';
 
 function fmtEur(amount: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
-}
-
-function fmtDate(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(
-    new Date(iso),
-  );
 }
 
 function milestoneBadge(status: MilestoneDto['status']): string {
@@ -44,23 +39,10 @@ export default function DonorCampaignReportPage() {
   const campaignId = params.campaignId as string;
   const t = useTranslations('dashboard.donor.report');
   const { report, isLoading, error } = useDonorCampaignReport(campaignId);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const [shareTarget, setShareTarget] = useState<ShareableImpact | null>(null);
   const [breakdownPayoutId, setBreakdownPayoutId] = useState<string | null>(null);
   const [traceabilityDonationId, setTraceabilityDonationId] = useState<string | null>(null);
-
-  function toggleSection(sectionCode: string): void {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(sectionCode)) {
-        next.delete(sectionCode);
-      } else {
-        next.add(sectionCode);
-      }
-      return next;
-    });
-  }
 
   async function handleDownloadPdf(): Promise<void> {
     if (!report) return;
@@ -166,80 +148,12 @@ export default function DonorCampaignReportPage() {
         <div className="card-h">
           <span className="font-display font-bold text-sm">{t('funds.title')}</span>
         </div>
-        <div className="card-b flex flex-col gap-4">
-          {report.variance.charges.length === 0 ? (
-            <p className="text-sm text-text-2">{t('funds.empty')}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table aria-label={t('funds.title')}>
-                <thead>
-                  <tr>
-                    <th scope="col">{t('funds.category')}</th>
-                    <th scope="col">{t('funds.planned')}</th>
-                    <th scope="col">{t('funds.spent')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.variance.charges.map((section) => (
-                    <tr key={section.sectionCode}>
-                      <td>{section.sectionName}</td>
-                      <td>{fmtEur(section.planned)}</td>
-                      <td>{fmtEur(section.actual)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-3">
-            {report.variance.charges.map((section) => {
-              const isExpanded = expandedSections.has(section.sectionCode);
-              const sectionPayouts = report.confirmedPayouts.filter(
-                (payout) => payout.sectionCode === section.sectionCode,
-              );
-              return (
-                <div key={section.sectionCode} className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm self-start"
-                    aria-expanded={isExpanded}
-                    aria-label={`${isExpanded ? t('funds.hideDetail') : t('funds.showDetail')} — ${section.sectionName}`}
-                    onClick={() => toggleSection(section.sectionCode)}
-                  >
-                    {section.sectionName} — {isExpanded ? t('funds.hideDetail') : t('funds.showDetail')}
-                  </button>
-
-                  {isExpanded && (
-                    sectionPayouts.length === 0 ? (
-                      <p className="text-sm text-text-2 pl-4">{t('funds.detailEmpty')}</p>
-                    ) : (
-                      <ul className="flex flex-col gap-2 pl-4">
-                        {sectionPayouts.map((payout) => (
-                          <li key={payout.payoutId} className="flex items-center justify-between text-sm gap-2">
-                            <span>
-                              {payout.label} — {payout.payeeName}{' '}
-                              <span className="text-text-2 text-xs">({fmtDate(payout.confirmedAt)})</span>
-                            </span>
-                            <span className="flex items-center gap-2">
-                              <span className="font-display font-bold">{fmtEur(payout.amount)}</span>
-                              <button
-                                type="button"
-                                className="btn btn-ghost btn-sm"
-                                onClick={() => setBreakdownPayoutId(payout.payoutId)}
-                              >
-                                {t('funds.viewBreakdown')}
-                              </button>
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        <div className="card-b">
+          <FundUsageTable
+            sections={report.variance.charges}
+            payouts={report.confirmedPayouts}
+            onViewBreakdown={(payoutId) => setBreakdownPayoutId(payoutId)}
+          />
         </div>
       </div>
 

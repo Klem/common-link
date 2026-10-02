@@ -1892,11 +1892,17 @@
         "errorSubtitle": "You may not have donated to this campaign, or it may no longer exist.",
         "funds": {
           "category": "Category",
+          "detailAmount": "Amount",
+          "detailDate": "Date",
           "detailEmpty": "No confirmed expense yet.",
+          "detailExpense": "Expense",
           "empty": "No budget data available yet.",
           "hideDetail": "Hide expense detail",
           "planned": "Planned",
+          "remaining": "Remaining",
           "showDetail": "Show expense detail",
+          "sortAscendingAria": "Sort by {column}, ascending",
+          "sortDescendingAria": "Sort by {column}, descending",
           "spent": "Spent",
           "title": "How the funds were used",
           "viewBreakdown": "View breakdown"

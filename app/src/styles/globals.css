@@ -1659,6 +1659,13 @@ textarea.form-input {
 .cm-stat-val.val-sm    { font-size: 14px; }
 .cm-stat-sub { font-size: 11px; color: var(--slate-lavender); margin-top: 2px; }
 .amount-teal { font-family: var(--font-syne), sans-serif; font-weight: 700; color: var(--teal-dark); }
+.amount-coral { font-family: var(--font-syne), sans-serif; font-weight: 700; color: var(--warm-coral); }
+.amount-amber { font-family: var(--font-syne), sans-serif; font-weight: 700; color: var(--soft-amber); }
+
+/* Fund-usage table detail row (donor "bilan de campagne"): payouts table left, spent/remaining
+   donut right — mirrors `.breakdown-split` but with the wide pane first. */
+.funds-detail-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 280px); gap: 24px; align-items: start; padding: 12px 4px; }
+@media (max-width: 900px) { .funds-detail-split { grid-template-columns: minmax(0, 1fr); } }
 
 /* ── Card dashboard extras ────────────────────────────────────────────────── */
 

@@ -1892,11 +1892,17 @@
         "errorSubtitle": "Il se peut que vous n'ayez pas donné à cette campagne, ou qu'elle n'existe plus.",
         "funds": {
           "category": "Catégorie",
+          "detailAmount": "Montant",
+          "detailDate": "Date",
           "detailEmpty": "Aucune dépense confirmée pour l'instant.",
+          "detailExpense": "Dépense",
           "empty": "Aucune donnée budgétaire disponible pour l'instant.",
           "hideDetail": "Masquer le détail des dépenses",
           "planned": "Prévu",
+          "remaining": "Restant",
           "showDetail": "Voir le détail des dépenses",
+          "sortAscendingAria": "Trier par {column}, ordre croissant",
+          "sortDescendingAria": "Trier par {column}, ordre décroissant",
           "spent": "Dépensé",
           "title": "Utilisation des fonds",
           "viewBreakdown": "Voir la répartition"
