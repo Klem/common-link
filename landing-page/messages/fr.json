@@ -620,8 +620,10 @@
         },
         {
           "paragraphs": [
-            "L'organisme conserve ses droits sur les contenus qu'il publie. Il concède à CommonLink, pour la durée des présentes et pour les besoins du service, le droit de les reproduire et de les représenter sur la plateforme et sur les supports de promotion des campagnes.",
-            "Il garantit détenir les droits nécessaires sur ces contenus, notamment sur les images représentant des personnes."
+            "L'organisme est seul responsable des contenus qu'il publie sur la plateforme, notamment les textes et images de ses campagnes, ses commentaires et ses bilans. Il en conserve les droits.",
+            "Il concède à CommonLink, pour les besoins du service, le droit de les reproduire et de les représenter sur la plateforme et sur les supports de promotion des campagnes. Ce droit vaut pour la durée des présentes et, pour les contenus déjà publiés, aussi longtemps que les pages des campagnes restent accessibles en application de l'article 34.",
+            "Il garantit détenir les droits nécessaires sur ces contenus, notamment sur les images représentant des personnes, y compris l'autorisation des représentants légaux lorsqu'elles représentent des mineurs. Il garantit CommonLink contre tout recours d'un tiers relatif à ces contenus. Cette garantie ne couvre pas les manquements imputables à CommonLink.",
+            "CommonLink peut retirer tout contenu manifestement illicite ou portant atteinte aux droits d'un tiers, notamment à la suite d'un signalement. Elle en informe l'organisme en indiquant le motif, et l'organisme peut présenter ses observations et contester cette décision."
           ],
           "title": "Article 26. Contenus publiés par l'organisme"
         },
@@ -823,7 +825,7 @@
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 28 septembre 2026",
+      "lastUpdated": "Version en vigueur au 5 octobre 2026",
       "title": "Conditions générales d'utilisation applicables aux organismes bénéficiaires"
     },
     "cguDonors": {
