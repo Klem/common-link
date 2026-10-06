@@ -1644,7 +1644,6 @@ textarea.form-input {
 .empty-text { font-size: 13px; color: var(--slate-lavender); text-align: center; padding: 24px 0; }
 
 .cm-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 12px; margin-bottom: 20px; }
-.cm-stats.cm-stats-tight { margin-bottom: 16px; }
 .cm-stat { background: var(--white); border: 1px solid var(--mist-lavender); border-radius: var(--radius-md); padding: 14px 16px; text-align: center; box-shadow: var(--shadow-sm); }
 .cm-stat.stat-coral { border-color: rgba(255,107,91,.2); }
 .cm-stat.stat-teal  { border-color: rgba(78,205,196,.2); }
@@ -1656,7 +1655,6 @@ textarea.form-input {
 .cm-stat-val.val-amber { color: #b37800; font-size: 14px; }
 .cm-stat-val.val-amber-color { color: #b37800; }
 .cm-stat-val.val-coral { color: var(--warm-coral); }
-.cm-stat-val.val-sm    { font-size: 14px; }
 .cm-stat-sub { font-size: 11px; color: var(--slate-lavender); margin-top: 2px; }
 .amount-teal { font-family: var(--font-syne), sans-serif; font-weight: 700; color: var(--teal-dark); }
 .amount-coral { font-family: var(--font-syne), sans-serif; font-weight: 700; color: var(--warm-coral); }
@@ -1675,11 +1673,9 @@ textarea.form-input {
 .card-b.flush { padding: 0; }
 
 .cm-card { background: var(--white); border: 1px solid var(--mist-lavender); border-radius: var(--radius-xl); padding: 22px 26px; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
-.cm-card.d-tx-card { margin-top: 10px; margin-bottom: 0; }
 .cm-card-title { font-family: var(--font-syne), sans-serif; font-size: 12.5px; font-weight: 700; color: var(--slate-lavender); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 .cm-card-title::before { content: ''; display: inline-block; width: 3px; height: 13px; background: var(--bright-teal); border-radius: 2px; }
 .cm-card-title.cm-card-title-split { justify-content: space-between; }
-.cm-card-title-close { margin-left: auto; }
 .cm-card-legend { font-size: 10px; color: var(--slate-lavender); font-weight: 400; text-transform: none; }
 
 /* ── Campaign hero ────────────────────────────────────────────────────────── */
@@ -2367,13 +2363,10 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .detail-ov.open .detail-modal { transform: scale(1); }
 .d-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(230,228,244,.4); font-size: 13px; }
 .d-row:last-child { border-bottom: none; }
-.d-row-btn { width: 100%; background: none; border: none; cursor: pointer; text-align: left; }
-.d-row-amt { display: flex; align-items: center; gap: 6px; }
 .d-key { color: var(--slate-lavender); }
 .d-val { font-weight: 500; text-align: right; max-width: 60%; }
 .d-section { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--slate-lavender); margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--mist-lavender); }
 .d-ref-code { font-size: 10px; background: var(--mist-lavender); padding: 2px 6px; border-radius: 4px; }
-.d-empty-note { font-size: 12px; color: var(--slate-lavender); padding: 8px 0; }
 
 /* ── CM overlay / modal ───────────────────────────────────────────────────── */
 

@@ -1185,13 +1185,8 @@
       "deleteConfirmAction": "Confirm deletion",
       "donors": {
         "detail": {
-          "close": "Close",
-          "lastDonation": "Last donation",
           "noTx": "No transactions.",
-          "title": "Donor detail",
-          "total": "Total",
-          "transactions": "Transactions",
-          "txCount": "Donations"
+          "transactions": "Transactions"
         },
         "empty": "No donors for this campaign.",
         "error": "Error loading donors.",
@@ -1201,11 +1196,6 @@
           "placeholder": "Search a donor…"
         },
         "showing": "{count} donor(s)",
-        "sort": {
-          "amount": "Amount ↓",
-          "date": "Recent date",
-          "name": "Name A→Z"
-        },
         "stats": {
           "avg": "Avg donation",
           "raised": "Total raised",
@@ -1214,18 +1204,20 @@
         },
         "table": {
           "amount": "Amount",
+          "caption": "Campaign donors",
           "donor": "Donor",
+          "hideDetail": "Hide transactions",
           "lastDonation": "Last donation",
-          "transactions": "Donations",
-          "view": "View"
+          "showDetail": "Show transactions",
+          "sortAscendingAria": "Sort by {column}, ascending",
+          "sortDescendingAria": "Sort by {column}, descending",
+          "transactions": "Donations"
         },
         "tx": {
-          "close": "Close",
+          "amount": "Amount",
           "date": "Date",
           "onChain": "On-chain",
-          "pending": "Pending",
-          "ref": "Reference",
-          "title": "Donation detail"
+          "ref": "Reference"
         }
       },
       "draftNoBudget": "Draft — budget undefined",

@@ -198,6 +198,10 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     /**
      * Donor aggregates (sum / count / last date) for all confirmed donations on [campaignId].
      * Grouped and sorted by DB — no in-memory sort.
+     *
+     * Sortable aliases: `totalAmount`, `txCount`, `lastDonationAt`, `sortName`.
+     * `sortName` is the lower-cased name as the association sees it: anonymous donors sort as
+     * "anonyme", never by their hidden display name (sorting on it would leak its position).
      */
     @Query(
         value = """
@@ -206,7 +210,9 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
                    d.donor.anonymous   AS anonymous,
                    SUM(d.amount)       AS totalAmount,
                    COUNT(d)            AS txCount,
-                   MAX(d.confirmedAt)  AS lastDonationAt
+                   MAX(d.confirmedAt)  AS lastDonationAt,
+                   CASE WHEN d.donor.anonymous = true OR d.donor.displayName IS NULL
+                        THEN 'anonyme' ELSE LOWER(d.donor.displayName) END AS sortName
             FROM Donation d
             WHERE d.campaign.id = :campaignId
               AND d.confirmedAt IS NOT NULL
@@ -236,7 +242,9 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
                    d.donor.anonymous   AS anonymous,
                    SUM(d.amount)       AS totalAmount,
                    COUNT(d)            AS txCount,
-                   MAX(d.confirmedAt)  AS lastDonationAt
+                   MAX(d.confirmedAt)  AS lastDonationAt,
+                   CASE WHEN d.donor.anonymous = true OR d.donor.displayName IS NULL
+                        THEN 'anonyme' ELSE LOWER(d.donor.displayName) END AS sortName
             FROM Donation d
             WHERE d.campaign.id = :campaignId
               AND d.confirmedAt IS NOT NULL

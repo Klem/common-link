@@ -6,8 +6,15 @@ export const DonorSort = {
   AMOUNT: 'amount',
   DATE: 'date',
   NAME: 'name',
+  COUNT: 'count',
 } as const;
 export type DonorSort = (typeof DonorSort)[keyof typeof DonorSort];
+
+export const SortDirection = {
+  ASC: 'asc',
+  DESC: 'desc',
+} as const;
+export type SortDirection = (typeof SortDirection)[keyof typeof SortDirection];
 
 /**
  * Aggregated view of a donor's contributions to a single campaign.

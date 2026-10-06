@@ -73,7 +73,7 @@ class CampaignDonorControllerTest {
 
     @Test
     fun `GET donors returns 200 with page`() {
-        every { donorAggregateService.listDonors(campaignId, assocId, null, "amount", 0, 20) } returns
+        every { donorAggregateService.listDonors(campaignId, assocId, null, "amount", "desc", 0, 20) } returns
             PageImpl(listOf(sampleDonorDto))
 
         mockMvc.perform(
@@ -88,7 +88,7 @@ class CampaignDonorControllerTest {
 
     @Test
     fun `GET donors with search passes search param to service`() {
-        every { donorAggregateService.listDonors(campaignId, assocId, "Marie", "amount", 0, 20) } returns
+        every { donorAggregateService.listDonors(campaignId, assocId, "Marie", "amount", "desc", 0, 20) } returns
             PageImpl(listOf(sampleDonorDto))
 
         mockMvc.perform(
@@ -100,8 +100,21 @@ class CampaignDonorControllerTest {
     }
 
     @Test
+    fun `GET donors passes sort and direction params to service`() {
+        every { donorAggregateService.listDonors(campaignId, assocId, null, "name", "asc", 1, 12) } returns
+            PageImpl(listOf(sampleDonorDto))
+
+        mockMvc.perform(
+            get("/api/campaigns/$campaignId/donors?sort=name&direction=asc&page=1&size=12")
+                .with(user(assocId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content[0].displayName").value("Marie Dupont"))
+    }
+
+    @Test
     fun `GET donors — anonymous donor exposes donorId but displayName is Anonyme`() {
-        every { donorAggregateService.listDonors(any(), any(), any(), any(), any(), any()) } returns
+        every { donorAggregateService.listDonors(any(), any(), any(), any(), any(), any(), any()) } returns
             PageImpl(listOf(anonymousDonorDto))
 
         mockMvc.perform(
@@ -115,7 +128,7 @@ class CampaignDonorControllerTest {
 
     @Test
     fun `GET donors returns 404 when campaign not found`() {
-        every { donorAggregateService.listDonors(any(), any(), any(), any(), any(), any()) } throws
+        every { donorAggregateService.listDonors(any(), any(), any(), any(), any(), any(), any()) } throws
             NotFoundException("Campaign not found")
 
         mockMvc.perform(

@@ -1185,13 +1185,8 @@
       "deleteConfirmAction": "Confirmer la suppression",
       "donors": {
         "detail": {
-          "close": "Fermer",
-          "lastDonation": "Dernier don",
           "noTx": "Aucune transaction.",
-          "title": "Détail donateur",
-          "total": "Total",
-          "transactions": "Transactions",
-          "txCount": "Dons"
+          "transactions": "Transactions"
         },
         "empty": "Aucun donateur pour cette campagne.",
         "error": "Erreur lors du chargement des donateurs.",
@@ -1201,11 +1196,6 @@
           "placeholder": "Rechercher un donateur…"
         },
         "showing": "{count} donateur(s)",
-        "sort": {
-          "amount": "Montant ↓",
-          "date": "Date récente",
-          "name": "Nom A→Z"
-        },
         "stats": {
           "avg": "Don moyen",
           "raised": "Total collecté",
@@ -1214,18 +1204,20 @@
         },
         "table": {
           "amount": "Montant",
+          "caption": "Donateurs de la campagne",
           "donor": "Donateur",
+          "hideDetail": "Masquer les transactions",
           "lastDonation": "Dernier don",
-          "transactions": "Dons",
-          "view": "Voir"
+          "showDetail": "Afficher les transactions",
+          "sortAscendingAria": "Trier par {column}, ordre croissant",
+          "sortDescendingAria": "Trier par {column}, ordre décroissant",
+          "transactions": "Dons"
         },
         "tx": {
-          "close": "Fermer",
+          "amount": "Montant",
           "date": "Date",
           "onChain": "On-chain",
-          "pending": "En attente",
-          "ref": "Référence",
-          "title": "Détail don"
+          "ref": "Référence"
         }
       },
       "draftNoBudget": "Brouillon — budget non défini",

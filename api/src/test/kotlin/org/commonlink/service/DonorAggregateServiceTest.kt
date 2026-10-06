@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
@@ -18,8 +19,11 @@ import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonationRepository.DonorAggregateRow
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.Optional
@@ -73,11 +77,41 @@ class DonorAggregateServiceTest {
         every { donationRepository.findDonorAggregatesByCampaignId(campaignId, any()) } returns
             PageImpl(listOf(makeRow()))
 
-        val result = service.listDonors(campaignId, userId, null, "amount", 0, 20)
+        val result = service.listDonors(campaignId, userId, null, "amount", null, 0, 20)
 
         assertThat(result.content).hasSize(1)
         assertThat(result.content[0].displayName).isEqualTo("Marie D.")
         assertThat(result.content[0].donorId).isEqualTo(donorId)
+    }
+
+    @Test
+    fun `listDonors defaults to totalAmount desc with donorId tiebreaker`() {
+        val pageable = slot<Pageable>()
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { donationRepository.findDonorAggregatesByCampaignId(campaignId, capture(pageable)) } returns PageImpl(emptyList())
+
+        service.listDonors(campaignId, userId, null, "unknown", "sideways", 0, 20)
+
+        assertThat(pageable.captured.sort).isEqualTo(Sort.by(Sort.Direction.DESC, "totalAmount").and(Sort.by("donorId")))
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "amount, asc,  totalAmount,    ASC",
+        "date,   desc, lastDonationAt, DESC",
+        "name,   asc,  sortName,       ASC",
+        "count,  ASC,  txCount,        ASC",
+    )
+    fun `listDonors maps sort and direction to aggregate aliases`(sort: String, direction: String, property: String, expected: Sort.Direction) {
+        val pageable = slot<Pageable>()
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { donationRepository.findDonorAggregatesByCampaignId(campaignId, capture(pageable)) } returns PageImpl(emptyList())
+
+        service.listDonors(campaignId, userId, null, sort, direction, 0, 20)
+
+        assertThat(pageable.captured.sort).isEqualTo(Sort.by(expected, property).and(Sort.by("donorId")))
     }
 
     @Test
@@ -87,7 +121,7 @@ class DonorAggregateServiceTest {
         every { donationRepository.findDonorAggregatesByCampaignId(campaignId, any()) } returns
             PageImpl(listOf(makeRow(anon = true, name = "Real Name")))
 
-        val result = service.listDonors(campaignId, userId, null, "amount", 0, 20)
+        val result = service.listDonors(campaignId, userId, null, "amount", null, 0, 20)
 
         assertThat(result.content[0].displayName).isEqualTo("Anonyme")
     }
@@ -99,7 +133,7 @@ class DonorAggregateServiceTest {
         every { donationRepository.findDonorAggregatesByCampaignIdAndSearch(campaignId, "Marie", any<Pageable>()) } returns
             PageImpl(listOf(makeRow()))
 
-        val result = service.listDonors(campaignId, userId, "Marie", "amount", 0, 20)
+        val result = service.listDonors(campaignId, userId, "Marie", "amount", null, 0, 20)
 
         assertThat(result.content).hasSize(1)
     }
@@ -112,7 +146,7 @@ class DonorAggregateServiceTest {
         every { campaignRepository.findById(campaignId) } returns Optional.of(foreignCampaign)
 
         assertThrows<NotFoundException> {
-            service.listDonors(campaignId, userId, null, null, 0, 20)
+            service.listDonors(campaignId, userId, null, null, null, 0, 20)
         }
     }
 
@@ -122,7 +156,7 @@ class DonorAggregateServiceTest {
         every { campaignRepository.findById(campaignId) } returns Optional.empty()
 
         assertThrows<NotFoundException> {
-            service.listDonors(campaignId, userId, null, null, 0, 20)
+            service.listDonors(campaignId, userId, null, null, null, 0, 20)
         }
     }
 
