@@ -11,8 +11,10 @@ import java.util.UUID
  * states as VOP (Verification of Payee) checks are performed. The [vopRawResponse] preserves
  * the full bank response for audit and compliance purposes.
  *
- * The pair (payee_id, iban) is unique — an association cannot register the same IBAN
- * twice for the same payee.
+ * The pair (payee_id, iban_fingerprint) is unique — an association cannot register the same IBAN
+ * twice for the same payee. [iban] itself is encrypted at rest (AES-256-GCM, random IV per write
+ * — see [ComplianceCryptoConverter]), so it can't back that constraint; [ibanFingerprint] (a
+ * deterministic HMAC, see [IbanFingerprint]) does instead (security audit 2026-10-06, finding #2).
  */
 @Entity
 @Table(name = "payee_ibans")
@@ -28,9 +30,20 @@ class PayeeIban(
     @JoinColumn(name = "payee_id", nullable = false)
     val payee: Payee,
 
-    /** The IBAN string in standard format (up to 34 characters). */
-    @Column(name = "iban", nullable = false, length = 34)
+    /** The IBAN string in standard format, encrypted at rest via [ComplianceCryptoConverter]. */
+    @Convert(converter = ComplianceCryptoConverter::class)
+    @Column(name = "iban", nullable = false)
     val iban: String,
+
+    /**
+     * Deterministic lookup value for [iban] — see [IbanFingerprint] and the class-level KDoc.
+     *
+     * Nullable because a row written outside [org.commonlink.service.PayeeService.addIban] (a
+     * seed script, a future bulk import) won't have one — every row created through `addIban`
+     * always does.
+     */
+    @Column(name = "iban_fingerprint", length = 64)
+    val ibanFingerprint: String? = null,
 
     /**
      * Current verification status of this IBAN.

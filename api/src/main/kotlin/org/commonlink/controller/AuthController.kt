@@ -21,6 +21,7 @@ import org.commonlink.security.AuthRateLimiter
 import org.commonlink.security.ClientIpResolver
 import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.service.AuthService
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -41,6 +42,7 @@ class AuthController(
     private val authRateLimiter: AuthRateLimiter,
     private val clientIpResolver: ClientIpResolver,
     private val refreshCookieFactory: RefreshCookieFactory,
+    @Value("\${app.frontend-url}") private val frontendUrl: String,
 ) {
 
     /**
@@ -51,6 +53,23 @@ class AuthController(
      * bypass every IP quota (security audit 2026-08-20, M2).
      */
     private fun HttpServletRequest.clientIp(): String = clientIpResolver.resolve(this)
+
+    /**
+     * Whether this request's `Origin` matches our own frontend.
+     *
+     * `/refresh` is the one route that authenticates via a cookie instead of a Bearer header (see
+     * [SecurityConfig]'s CSRF note), so Spring's CSRF filter does not cover it. This does NOT
+     * defend against a script running ON `app.frontend-url` itself (its `Origin` is legitimately
+     * ours, security audit 2026-10-06 finding #1) — only against a request forged from another
+     * origin/site, which a browser cannot spoof here.
+     *
+     * Absent `Origin` (same-origin GET-style navigations, some non-browser clients) is allowed
+     * through rather than rejected, to avoid breaking legitimate callers that omit it.
+     */
+    private fun HttpServletRequest.hasTrustedOrigin(): Boolean {
+        val origin = getHeader(HttpHeaders.ORIGIN) ?: return true
+        return origin.trimEnd('/') == frontendUrl.trimEnd('/')
+    }
 
 
     /** Moves the refresh token to an HttpOnly cookie and strips it from the JSON body. */
@@ -278,6 +297,7 @@ class AuthController(
         request: HttpServletRequest
     ): ResponseEntity<AuthResponseDto> {
         if (refreshToken == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        if (!request.hasTrustedOrigin()) return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         authRateLimiter.check("refresh:ip:${request.clientIp()}", maxAttempts = 20, windowMinutes = 10)
         return authResponse(authService.refreshAccessToken(refreshToken))
     }

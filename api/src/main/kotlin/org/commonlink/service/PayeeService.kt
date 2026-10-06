@@ -10,6 +10,7 @@ import org.commonlink.dto.VopVerifyResponseDto
 import org.commonlink.dto.toDto
 import org.commonlink.entity.Payee
 import org.commonlink.entity.PayeeIban
+import org.commonlink.entity.IbanFingerprint
 import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.VopResult
 import org.commonlink.exception.ConflictException
@@ -39,6 +40,7 @@ class PayeeService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val vopService: VopService,
     private val payoutRepository: PayoutRepository,
+    private val ibanFingerprint: IbanFingerprint,
 ) {
 
     /**
@@ -151,6 +153,7 @@ class PayeeService(
         val ibanEntry = PayeeIban(
             payee = payee,
             iban = normalised,
+            ibanFingerprint = ibanFingerprint.of(normalised),
             status = status
         )
         payee.ibans.add(ibanEntry)

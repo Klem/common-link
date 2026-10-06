@@ -489,6 +489,28 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.code").value("TOKEN_EXPIRED"))
     }
 
+    @Test
+    fun `refresh - 200 when Origin matches app frontend-url`() {
+        every { authService.refreshAccessToken("raw-refresh-token") } returns authResponse()
+
+        mockMvc.perform(
+            post("/api/auth/refresh")
+                .cookie(Cookie("cl-refresh", "raw-refresh-token"))
+                .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `refresh - 403 when Origin does not match app frontend-url`() {
+        mockMvc.perform(
+            post("/api/auth/refresh")
+                .cookie(Cookie("cl-refresh", "raw-refresh-token"))
+                .header(HttpHeaders.ORIGIN, "https://attacker.example")
+        )
+            .andExpect(status().isForbidden)
+    }
+
     // -------------------------------------------------------------------------
     // POST /api/auth/logout
     // -------------------------------------------------------------------------
