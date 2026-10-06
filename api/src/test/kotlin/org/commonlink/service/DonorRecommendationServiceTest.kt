@@ -5,6 +5,7 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.dto.PublicCampaignRow
 import org.commonlink.entity.AuthProvider
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
@@ -54,16 +55,21 @@ class DonorRecommendationServiceTest {
         }
     }
 
-    private fun categoryRow(assocId: UUID, category: String?) = object : AssociationCategoryRow {
+    private fun categoryRow(assocId: UUID, category: CampaignCause?) = object : AssociationCategoryRow {
         override fun getAssociationId() = assocId
         override fun getCategory() = category
     }
 
-    private fun row(assocId: UUID, category: String?, name: String, widgetToken: String) = PublicCampaignRow(
+    private fun row(assocId: UUID, category: CampaignCause?, name: String, widgetToken: String) = PublicCampaignRow(
         campaignId = UUID.randomUUID(),
         campaignName = name,
         campaignEmoji = "🌍",
         campaignCategory = category,
+        actionPlaceType = null,
+        actionPlaceCode = null,
+        actionPlaceLabel = null,
+        actionLatitude = null,
+        actionLongitude = null,
         coverImage = null,
         campaignUpdatedAt = Instant.now(),
         goal = BigDecimal("1000"),
@@ -77,26 +83,26 @@ class DonorRecommendationServiceTest {
 
     @Test
     fun `a campaign whose category matches the donor's history is ranked first`() {
-        stubDonor(listOf(categoryRow(supportedAssocId, "Education")))
+        stubDonor(listOf(categoryRow(supportedAssocId, CampaignCause.ENFANCE_EDUCATION)))
         every { campaignRepository.findPublicLive(any()) } returns listOf(
-            row(otherAssocId, "Environnement", "Other cause", "clk_other"),
-            row(matchingAssocId, "Education", "Matching cause", "clk_match"),
+            row(otherAssocId, CampaignCause.ENVIRONNEMENT, "Other cause", "clk_other"),
+            row(matchingAssocId, CampaignCause.ENFANCE_EDUCATION, "Matching cause", "clk_match"),
         )
 
         val result = service.getRecommendations(userId)
 
         assertThat(result).hasSize(2)
         assertThat(result[0].campaignName).isEqualTo("Matching cause")
-        assertThat(result[0].matchedCategory).isEqualTo("Education")
+        assertThat(result[0].matchedCategory).isEqualTo(CampaignCause.ENFANCE_EDUCATION)
         assertThat(result[1].matchedCategory).isNull()
     }
 
     @Test
     fun `an association the donor already supports is never recommended`() {
-        stubDonor(listOf(categoryRow(supportedAssocId, "Education")))
+        stubDonor(listOf(categoryRow(supportedAssocId, CampaignCause.ENFANCE_EDUCATION)))
         every { campaignRepository.findPublicLive(any()) } returns listOf(
-            row(supportedAssocId, "Education", "Already supported", "clk_supported"),
-            row(otherAssocId, "Environnement", "New cause", "clk_new"),
+            row(supportedAssocId, CampaignCause.ENFANCE_EDUCATION, "Already supported", "clk_supported"),
+            row(otherAssocId, CampaignCause.ENVIRONNEMENT, "New cause", "clk_new"),
         )
 
         val result = service.getRecommendations(userId)
@@ -109,7 +115,7 @@ class DonorRecommendationServiceTest {
     fun `falls back to the most recent live campaigns when the donor has no category history`() {
         stubDonor(emptyList())
         every { campaignRepository.findPublicLive(any()) } returns listOf(
-            row(otherAssocId, "Environnement", "Recent one", "clk_recent"),
+            row(otherAssocId, CampaignCause.ENVIRONNEMENT, "Recent one", "clk_recent"),
         )
 
         val result = service.getRecommendations(userId)

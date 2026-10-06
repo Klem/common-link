@@ -1,7 +1,9 @@
 package org.commonlink.dto
 
+import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Size
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -26,7 +28,9 @@ import java.time.LocalDate
  * @param status New lifecycle status. Must follow valid transition rules. Null = no change.
  * @param startDate New start date. Null = no change.
  * @param endDate New end date (min. 7 days after startDate). Null = no change.
- * @param category Campaign category (max 50 characters). Null = no change.
+ * @param category Cause of the campaign. Null = no change.
+ * @param actionPlace Place of action (kind + code), validated and resolved server-side by
+ *   [org.commonlink.service.ActionPlaceService]. Null = no change.
  * @param reason Why the association is launching this campaign. Null = no change.
  * @param impactGoals Concrete expected outcomes. Null = no change.
  * @param coverImage URL or path of the cover image. Null = no change.
@@ -52,8 +56,10 @@ data class UpdateCampaignRequest(
 
     val endDate: LocalDate? = null,
 
-    @field:Size(max = 50)
-    val category: String? = null,
+    val category: CampaignCause? = null,
+
+    @field:Valid
+    val actionPlace: ActionPlaceRequest? = null,
 
     val reason: String? = null,
 

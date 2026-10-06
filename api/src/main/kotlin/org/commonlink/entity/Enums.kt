@@ -524,3 +524,61 @@ enum class CampaignReviewRefusalReason {
     BANK_KYC_INCOMPLETE,
     CGU_NOT_ACCEPTED,
 }
+
+/**
+ * Cause of a campaign -- what the campaign funds, not what the association is. Exactly one per
+ * campaign, chosen in the campaign editor; it drives the discovery chips on the landing page.
+ *
+ * Persisted by name in `campaigns.category` (CHECK constraint in V82 mirrors this list exactly).
+ */
+enum class CampaignCause {
+    /** Poverty, housing, integration, social ties. Food aid belongs to [ALIMENTATION]. */
+    SOLIDARITE,
+    /** Food aid, sustainable food, agriculture. */
+    ALIMENTATION,
+    /** Care, diseases, medical research. */
+    SANTE,
+    /** Child protection, education, training, youth. */
+    ENFANCE_EDUCATION,
+    /** Shelters, animal care, wildlife. */
+    ANIMAUX,
+    /** Projects dedicated to people with disabilities, including sports or educational ones. */
+    HANDICAP,
+    /** Climate, biodiversity, natural environments, waste. Agriculture belongs to [ALIMENTATION]. */
+    ENVIRONNEMENT,
+    /** Creation, performing arts, heritage. */
+    CULTURE,
+    /** Sport practice, clubs. Disability sport belongs to [HANDICAP]. */
+    SPORT,
+    /** Human rights, equality, access to justice. */
+    DROITS_CITOYENNETE,
+    /** Anything else. Selectable in the editor but never displayed on public discovery. */
+    AUTRE,
+}
+
+/**
+ * Reach of a campaign, always **derived** from its [ActionPlaceType] -- never entered by the
+ * association.
+ */
+enum class CampaignScope {
+    LOCALE,
+    NATIONALE,
+    INTERNATIONALE,
+}
+
+/**
+ * Kind of "lieu de l'action" a campaign declares. Determines which code the campaign stores
+ * (`campaigns.action_place_code`) and its derived [scope].
+ *
+ * @property scope Reach derived from this place kind.
+ */
+enum class ActionPlaceType(val scope: CampaignScope) {
+    /** A French commune; code = INSEE commune code (e.g. `06155`). Carries coordinates. */
+    COMMUNE(CampaignScope.LOCALE),
+    /** A French department; code = department code (e.g. `06`, `2A`, `974`). No coordinates. */
+    DEPARTEMENT(CampaignScope.LOCALE),
+    /** The whole of France; no code. */
+    FRANCE(CampaignScope.NATIONALE),
+    /** A foreign country; code = ISO 3166-1 alpha-2 (never `FR`). */
+    PAYS(CampaignScope.INTERNATIONALE),
+}

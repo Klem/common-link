@@ -22,6 +22,7 @@ const baseCampaign: CampaignDto = {
   startDate: null,
   endDate: null,
   category: null,
+  actionPlace: null,
   reason: null,
   impactGoals: null,
   coverImage: null,

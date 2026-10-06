@@ -366,7 +366,20 @@
     "vopVerified": "Vérification VOP terminée.",
     "widgetAllowedOriginSaved": "Origine de redirection enregistrée.",
     "widgetDestinationSaved": "Campagne de destination enregistrée.",
-    "widgetTokenGenerated": "Token widget généré."
+    "widgetTokenGenerated": "Token widget généré.",
+    "campaignCause": {
+      "SOLIDARITE": "Solidarité",
+      "ALIMENTATION": "Alimentation",
+      "SANTE": "Santé",
+      "ENFANCE_EDUCATION": "Enfance & éducation",
+      "ANIMAUX": "Animaux",
+      "HANDICAP": "Handicap",
+      "ENVIRONNEMENT": "Environnement",
+      "CULTURE": "Culture",
+      "SPORT": "Sport",
+      "DROITS_CITOYENNETE": "Droits & citoyenneté",
+      "AUTRE": "Autre"
+    }
   },
   "compliance": {
     "alerts": {
@@ -1266,7 +1279,7 @@
         },
         "info": {
           "category": {
-            "label": "Catégorie"
+            "label": "Cause"
           },
           "coverImage": {
             "errorSize": "Image trop volumineuse. 5 Mo maximum.",
@@ -1311,7 +1324,30 @@
           "startDate": {
             "label": "Date de début"
           },
-          "title": "Informations générales"
+          "title": "Informations générales",
+          "actionPlace": {
+            "label": "Lieu de l'action",
+            "tip": "Où la campagne agit. La portée (locale, nationale, internationale) en est déduite et sert aux filtres de la page de découverte.",
+            "type": {
+              "LOCAL": "Commune ou département",
+              "FRANCE": "France entière",
+              "PAYS": "Pays"
+            },
+            "searchPlaceholder": "Ville, code postal ou département",
+            "searching": "Recherche…",
+            "noResult": "Aucun résultat",
+            "searchError": "Recherche indisponible pour le moment",
+            "department": "Département",
+            "countryPlaceholder": "Choisir un pays",
+            "current": "Lieu enregistré : {label}",
+            "none": "Aucun lieu renseigné",
+            "scope": {
+              "label": "Portée",
+              "LOCALE": "Locale",
+              "NATIONALE": "Nationale",
+              "INTERNATIONALE": "Internationale"
+            }
+          }
         },
         "loading": "Chargement de la campagne…",
         "milestones": {
@@ -1618,7 +1654,8 @@
         "recommended": {
           "milestones": "Jalons (augmente l'engagement des donateurs)",
           "reason": "« Pourquoi maintenant ? » (renforce la confiance)",
-          "section": "Recommandé — n'empêche pas la publication"
+          "section": "Recommandé — n'empêche pas la publication",
+          "actionPlace": "Indiquez le lieu de l'action"
         },
         "required": {
           "budget": "Budget prévisionnel équilibré (charges = produits)",

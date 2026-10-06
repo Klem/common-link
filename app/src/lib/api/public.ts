@@ -1,3 +1,4 @@
+import type { CampaignCause } from '@/types/campaign';
 import axios from 'axios';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -121,7 +122,7 @@ export interface PublicLandingDto {
   campaignDescription: string | null;
   campaignReason: string | null;
   campaignImpactGoals: string | null;
-  campaignCategory: string | null;
+  campaignCategory: CampaignCause | null;
   goal: number;
   raised: number;
   currency: string;

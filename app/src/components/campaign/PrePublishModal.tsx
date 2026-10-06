@@ -129,6 +129,12 @@ export function PrePublishModal({
       labelKey: 'recommended.reason',
       tab: 'info',
     },
+    {
+      ok: campaign.actionPlace !== null,
+      warn: false,
+      labelKey: 'recommended.actionPlace',
+      tab: 'info',
+    },
   ];
 
   const bankReady = mollieResolved && bankStatus === BankSetupStatus.COMPLETED;

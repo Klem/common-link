@@ -7,6 +7,7 @@ import { apiUrl } from '@/lib/api';
 import { ROUTES } from '@/lib/routes';
 import { DonationCta } from '@/components/donor/DonationCta';
 import { DonorCampaignStatus, type DonorAssociationDto } from '@/types/donor';
+import { useCauseLabel } from '@/lib/campaignCause';
 
 interface Props {
   association: DonorAssociationDto;
@@ -27,6 +28,7 @@ function getInitials(name: string): string {
 /** A supported association, shown as a card with its logo (or initials fallback). */
 export function DonorAssociationCard({ association, colorIndex }: Props) {
   const t = useTranslations('dashboard.donor.associations');
+  const causeLabel = useCauseLabel();
   const locale = useLocale();
   const [logoFailed, setLogoFailed] = useState(false);
   const avatarVariant = `a${(colorIndex % 3) + 1}`;
@@ -58,7 +60,7 @@ export function DonorAssociationCard({ association, colorIndex }: Props) {
             <h3 className="text-[17px] mb-0.5">{association.name}</h3>
             {association.category && (
               <span className="text-[13px]" style={{ color: 'var(--slate-readable)' }}>
-                {association.category}
+                {causeLabel(association.category)}
               </span>
             )}
           </div>

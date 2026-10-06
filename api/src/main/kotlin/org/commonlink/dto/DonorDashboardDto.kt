@@ -3,6 +3,7 @@ package org.commonlink.dto
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
+import org.commonlink.entity.CampaignCause
 
 /**
  * One row of the donor's donation history.
@@ -95,7 +96,7 @@ data class AssociationOptionDto(
 data class DonorAssociationDto(
     val associationId: UUID,
     val name: String,
-    val category: String?,
+    val category: CampaignCause?,
     val totalDonated: BigDecimal,
     val publishedPayoutCount: Long,
     val campaignCount: Int,

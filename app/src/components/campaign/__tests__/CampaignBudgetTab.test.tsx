@@ -33,6 +33,7 @@ const campaign: CampaignDto = {
   milestones: [],
   budgetSections: [],
   category: null,
+  actionPlace: null,
   reason: null,
   impactGoals: null,
   coverImage: null,

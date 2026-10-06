@@ -7,6 +7,7 @@ import org.commonlink.dto.CampaignStoryDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.Campaign
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.User
@@ -52,7 +53,7 @@ class DonorImpactServiceTest {
 
     private fun campaignRow(
         id: UUID = campaignId,
-        category: String? = "Éducation",
+        category: CampaignCause? = CampaignCause.ENFANCE_EDUCATION,
         impactGoals: String? = "50 enfants scolarisés",
         assocId: UUID = associationId,
     ): DonationRepository.DonorCampaignRow = mockk<DonationRepository.DonorCampaignRow>().also {
@@ -84,12 +85,12 @@ class DonorImpactServiceTest {
     fun `category and impactGoals are carried through`() {
         stubDonor()
         every { donationRepository.findDistinctCampaignsByDonorId(donorId) } returns
-            listOf(campaignRow(category = "Santé", impactGoals = "10 kits de soins"))
+            listOf(campaignRow(category = CampaignCause.SANTE, impactGoals = "10 kits de soins"))
         every { campaignStoryService.getPublishedStory(campaignId) } returns null
 
         val impact = service.listImpacts(userId).single()
 
-        assertThat(impact.category).isEqualTo("Santé")
+        assertThat(impact.category).isEqualTo(CampaignCause.SANTE)
         assertThat(impact.impactGoals).isEqualTo("10 kits de soins")
     }
 

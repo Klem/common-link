@@ -9,6 +9,7 @@ import org.commonlink.dto.SaveBudgetSectionRequest
 import org.commonlink.dto.UpdateCampaignRequest
 import org.commonlink.dto.UpdateMilestoneRequest
 import org.commonlink.entity.BudgetSide
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.LegalDocument
 import org.commonlink.entity.LegalDocumentType
@@ -376,12 +377,12 @@ class CampaignServiceTest {
         val updated = campaignService.updateCampaign(
             userId, created.id,
             UpdateCampaignRequest(
-                category = "Education",
+                category = CampaignCause.ENFANCE_EDUCATION,
                 reason = "Rénover les écoles",
                 impactGoals = "450 élèves bénéficiaires"
             )
         )
-        assertEquals("Education", updated.category)
+        assertEquals(CampaignCause.ENFANCE_EDUCATION, updated.category)
         assertEquals("Rénover les écoles", updated.reason)
         assertEquals("450 élèves bénéficiaires", updated.impactGoals)
     }

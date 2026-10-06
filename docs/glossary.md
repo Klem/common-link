@@ -135,7 +135,7 @@ signed independently.
 `functional` `security` `business`
 
 ### Campaign Category (Cause)
-The thematic classification of an association. Categories include: Environnement, Social, Éducation, Santé, Culture, Animal, Humanitaire. Used for filtering in the discovery grid.
+What a **campaign** funds — not what the association is. Exactly one per campaign, chosen in the campaign editor (`CampaignCause` enum, stored in `campaigns.category`): Solidarité, Alimentation, Santé, Enfance & éducation, Animaux, Handicap, Environnement, Culture, Sport, Droits & citoyenneté, Autre. Boundaries: food aid and agriculture belong to Alimentation, disability sport to Handicap. **Autre** can be chosen but is never displayed publicly (no discovery chip, no badge). On `/projets` a cause chip only appears when at least one live campaign has it.
 `functional`
 
 ### Card Payment
@@ -167,7 +167,7 @@ A payment made by an association to a third-party provider (e.g., a supplier, co
 `functional` `business`
 
 ### Discovery Grid
-The main public page where visitors browse associations. Displays association cards in a filterable, searchable grid layout. Filters include cause category, geographic scope, and campaign status.
+The public `/projets` page of the landing site, listing live campaigns. Filters (client-side, on the ≤ 60 campaigns returned by `GET /api/public/campaigns`): cause chips (« Plus » beyond 6, « Voir aussi » cross-links), geographic scope, and an optional proximity filter (see **Place of Action**).
 `functional`
 
 ### Donation Journey
@@ -253,8 +253,8 @@ A regulatory measure ordering the immediate blocking of all funds and economic r
 The small transaction cost for recording data on a blockchain network. On CommonLink, gas fees apply only when using a crypto wallet for payment (Polygon network). The estimated gas cost is displayed in the donation modal (e.g., ~€0.08).
 `blockchain`
 
-### Geographic Scope (Zone)
-An association's operational range: **locale** (one city/region), **nationale** (country-wide), or **internationale** (multiple countries). Used as a filter in the discovery grid.
+### Geographic Scope (Portée)
+A campaign's reach, **always derived** from its Place of Action, never entered: commune or department → **locale**, whole of France → **nationale**, foreign country → **internationale** (`CampaignScope`). Used as a filter in the discovery grid; with the proximity filter on, national campaigns are shown in a « Partout en France » block and international ones are excluded.
 `functional` `business`
 
 ### Goal-Budget Constraint
@@ -308,6 +308,8 @@ The identity verification process for associations. Involves validating the SIRE
 ---
 
 ## L
+
+### Lieu de l'action — see **Place of Action**
 
 ### Leaderboard
 A ranking of donors by total cumulative donations for a given association. Visible in the donor dashboard. Donors can opt out by enabling anonymous donations. The leaderboard encourages engagement through gamification.
@@ -410,6 +412,12 @@ A cryptographically random string (32 bytes, 64 hex characters) used for Magic L
 ---
 
 ## P
+
+### Place of Action (Lieu de l'action)
+Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation (and once for older campaigns, `ActionPlaceBackfill`). Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
+`functional`
+
+### Proximity Filter — see **Place of Action**
 
 ### Payment Method
 The means by which a donor completes a donation. Supported methods: **Card** (Visa/Mastercard), **SEPA transfer** (instant bank transfer), **Crypto Wallet** (Polygon/USDC), and **Apple Pay**.

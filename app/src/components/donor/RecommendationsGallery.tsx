@@ -5,16 +5,18 @@ import { useTranslations } from 'next-intl';
 import { EmptyStateCard } from '@/components/dashboard';
 import { RecommendationCard } from '@/components/donor/RecommendationCard';
 import { useDonorRecommendations } from '@/hooks/dashboard/useDonorRecommendations';
+import { CAMPAIGN_CAUSES, useCauseLabel } from '@/lib/campaignCause';
+import type { CampaignCause } from '@/types/campaign';
 
 /** "Projets recommandés" page content (D8, option A): simple category filter over the list. */
 export function RecommendationsGallery() {
   const t = useTranslations('dashboard.donor.recommendations');
+  const causeLabel = useCauseLabel();
   const { recommendations, isLoading, error } = useDonorRecommendations();
-  const [category, setCategory] = useState<string | null>(null);
+  const [category, setCategory] = useState<CampaignCause | null>(null);
 
   const categories = useMemo(
-    () =>
-      Array.from(new Set(recommendations.map((r) => r.category).filter((c): c is string => c !== null))).sort(),
+    () => CAMPAIGN_CAUSES.filter((c) => recommendations.some((r) => r.category === c)),
     [recommendations],
   );
   const filtered = useMemo(
@@ -58,7 +60,7 @@ export function RecommendationsGallery() {
               aria-pressed={category === c}
               onClick={() => setCategory(c)}
             >
-              {c}
+              {causeLabel(c)}
             </button>
           ))}
         </div>

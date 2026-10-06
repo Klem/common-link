@@ -18,19 +18,19 @@ const recommendations: DonorRecommendationDto[] = [
     campaignName: 'Reforestation',
     campaignEmoji: '🌳',
     associationName: 'Terre Verte',
-    category: 'Environnement',
+    category: 'ENVIRONNEMENT',
     coverImage: null,
     goal: 1000,
     raised: 250,
     donationUrl: 'https://commonlink.org/fr/lp/clk_1',
-    matchedCategory: 'Environnement',
+    matchedCategory: 'ENVIRONNEMENT',
   },
   {
     campaignId: 'camp-2',
     campaignName: 'Cantine scolaire',
     campaignEmoji: '🍎',
     associationName: 'École Kaolack',
-    category: 'Éducation',
+    category: 'ENFANCE_EDUCATION',
     coverImage: null,
     goal: 2000,
     raised: 500,
@@ -53,7 +53,7 @@ describe('RecommendationsGallery', () => {
     render(<RecommendationsGallery />);
 
     await waitFor(() => expect(screen.getByText('Reforestation')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Éducation' }));
+    fireEvent.click(screen.getByRole('button', { name: '📚 ENFANCE_EDUCATION' }));
 
     expect(screen.queryByText('Reforestation')).not.toBeInTheDocument();
     expect(screen.getByText('Cantine scolaire')).toBeInTheDocument();

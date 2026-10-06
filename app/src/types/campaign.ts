@@ -21,6 +21,69 @@ export const CampaignStatus = {
 export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus];
 
 /**
+ * Cause of a campaign — what it funds. Mirrors the backend `CampaignCause` enum exactly
+ * (`api/.../entity/Enums.kt`, CHECK constraint in V82). `AUTRE` can be chosen in the editor but
+ * is never displayed on public discovery.
+ */
+export const CampaignCause = {
+  SOLIDARITE: 'SOLIDARITE',
+  ALIMENTATION: 'ALIMENTATION',
+  SANTE: 'SANTE',
+  ENFANCE_EDUCATION: 'ENFANCE_EDUCATION',
+  ANIMAUX: 'ANIMAUX',
+  HANDICAP: 'HANDICAP',
+  ENVIRONNEMENT: 'ENVIRONNEMENT',
+  CULTURE: 'CULTURE',
+  SPORT: 'SPORT',
+  DROITS_CITOYENNETE: 'DROITS_CITOYENNETE',
+  AUTRE: 'AUTRE',
+} as const;
+export type CampaignCause = typeof CampaignCause[keyof typeof CampaignCause];
+
+/**
+ * Kind of place of action — mirrors the backend `ActionPlaceType` enum.
+ * - COMMUNE: French commune (INSEE code) · DEPARTEMENT: French department (code)
+ * - FRANCE: whole of France (no code) · PAYS: foreign country (ISO 3166-1 alpha-2)
+ */
+export const ActionPlaceType = {
+  COMMUNE: 'COMMUNE',
+  DEPARTEMENT: 'DEPARTEMENT',
+  FRANCE: 'FRANCE',
+  PAYS: 'PAYS',
+} as const;
+export type ActionPlaceType = typeof ActionPlaceType[keyof typeof ActionPlaceType];
+
+/** Reach of a campaign, always derived from its place of action — mirrors backend `CampaignScope`. */
+export const CampaignScope = {
+  LOCALE: 'LOCALE',
+  NATIONALE: 'NATIONALE',
+  INTERNATIONALE: 'INTERNATIONALE',
+} as const;
+export type CampaignScope = typeof CampaignScope[keyof typeof CampaignScope];
+
+/** Place of action as returned by the API (`ActionPlaceDto`). Label and coordinates are server-resolved. */
+export interface ActionPlaceDto {
+  type: ActionPlaceType;
+  /** INSEE commune code, department code or ISO country code; null for FRANCE. */
+  code: string | null;
+  /** Display label, e.g. `Vallauris (06)`. */
+  label: string;
+  /** Derived scope. */
+  scope: CampaignScope;
+  /** Commune centre latitude; null unless COMMUNE. */
+  latitude: number | null;
+  /** Commune centre longitude; null unless COMMUNE. */
+  longitude: number | null;
+}
+
+/** Place of action sent by the editor (`ActionPlaceRequest`): kind + code only. */
+export interface ActionPlaceRequest {
+  type: ActionPlaceType;
+  /** Code for that kind; omitted for FRANCE. */
+  code?: string;
+}
+
+/**
  * Side of the budget table — charges (expenses) or produits (income).
  */
 export const BudgetSide = {
@@ -122,8 +185,10 @@ export interface CampaignDto {
   startDate: string | null;
   /** ISO date when the campaign ends, or null. */
   endDate: string | null;
-  /** Campaign category, or null. */
-  category: string | null;
+  /** Cause of the campaign, or null until chosen. */
+  category: CampaignCause | null;
+  /** Place of action, or null until set (recommended, not required to publish). */
+  actionPlace: ActionPlaceDto | null;
   /** Why the association is launching this campaign, or null. */
   reason: string | null;
   /** Concrete expected outcomes, or null. */
@@ -208,8 +273,10 @@ export interface UpdateCampaignRequest {
   startDate?: string;
   /** ISO date string for campaign end. */
   endDate?: string;
-  /** Campaign category (max 50 chars). */
-  category?: string;
+  /** Cause of the campaign. */
+  category?: CampaignCause;
+  /** Place of action; validated and resolved server-side. */
+  actionPlace?: ActionPlaceRequest;
   /** Why the association is launching this campaign. */
   reason?: string;
   /** Concrete expected outcomes. */

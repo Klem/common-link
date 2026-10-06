@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import java.util.UUID
+import org.commonlink.entity.CampaignCause
 
 /** One campaign card of the "Impact de mes dons" gallery. */
 data class DonorImpactDto(
@@ -9,7 +10,7 @@ data class DonorImpactDto(
     val campaignEmoji: String,
     val associationName: String,
     /** Cause -- Campaign.category, used as the filter facet. Null when the campaign carries none. */
-    val category: String?,
+    val category: CampaignCause?,
     /** Free-text impact description written by the association at campaign creation. */
     val impactGoals: String?,
     /**

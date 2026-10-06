@@ -9,6 +9,8 @@ import { ShareImpactModal } from '@/components/donor/ShareImpactModal';
 import { useDonorImpacts } from '@/hooks/dashboard/useDonorImpacts';
 import { useDonorStats } from '@/hooks/dashboard/useDonorStats';
 import { impactWording, withTerminalPunctuation } from '@/lib/impactWording';
+import { CAMPAIGN_CAUSES, useCauseLabel } from '@/lib/campaignCause';
+import type { CampaignCause } from '@/types/campaign';
 import type { DonorImpactDto } from '@/types/donor';
 
 const PAGE_SIZE = 9;
@@ -24,18 +26,17 @@ function fmtEur(amount: number): string {
  */
 export function ImpactGallery() {
   const t = useTranslations('dashboard.donor.impact');
+  const causeLabel = useCauseLabel();
   const { impacts, isLoading, error } = useDonorImpacts();
   const { stats, isLoading: statsLoading } = useDonorStats();
-  const [category, setCategory] = useState<string | null>(null);
+  const [category, setCategory] = useState<CampaignCause | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [shareTarget, setShareTarget] = useState<DonorImpactDto | null>(null);
   const [storyTarget, setStoryTarget] = useState<DonorImpactDto | null>(null);
 
   const categories = useMemo(
     () =>
-      Array.from(new Set(impacts.map((i) => i.category).filter((c): c is string => c !== null))).sort((a, b) =>
-        a.localeCompare(b, 'fr', { sensitivity: 'base' }),
-      ),
+      CAMPAIGN_CAUSES.filter((c) => impacts.some((i) => i.category === c)),
     [impacts],
   );
   const filtered = useMemo(
@@ -44,7 +45,7 @@ export function ImpactGallery() {
   );
   const visible = filtered.slice(0, visibleCount);
 
-  function selectCategory(next: string | null): void {
+  function selectCategory(next: CampaignCause | null): void {
     setCategory(next);
     setVisibleCount(PAGE_SIZE);
   }
@@ -100,7 +101,7 @@ export function ImpactGallery() {
                 aria-pressed={category === c}
                 onClick={() => selectCategory(c)}
               >
-                {c}
+                {causeLabel(c)}
               </button>
             ))}
           </div>
@@ -125,7 +126,7 @@ export function ImpactGallery() {
                 <li key={impact.campaignId} className="imp-tile">
                   {impact.category && (
                     <div className="cause">
-                      <span aria-hidden="true">🏷️</span> {impact.category}
+                      {causeLabel(impact.category)}
                     </div>
                   )}
                   {wording ? (

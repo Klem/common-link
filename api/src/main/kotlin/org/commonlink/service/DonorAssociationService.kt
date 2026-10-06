@@ -3,6 +3,7 @@ package org.commonlink.service
 import org.commonlink.dto.DonorAssociationDto
 import org.commonlink.dto.DonorCampaignStatus
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
@@ -45,7 +46,7 @@ class DonorAssociationService(
 
         // Rows come oldest first, so the last one seen per association is the category of the
         // campaign funded most recently — see findAssociationCategoriesByDonorId.
-        val categories: Map<UUID, String?> = donationRepository.findAssociationCategoriesByDonorId(donorId)
+        val categories: Map<UUID, CampaignCause?> = donationRepository.findAssociationCategoriesByDonorId(donorId)
             .associate { it.getAssociationId() to it.getCategory() }
 
         return aggregates.map { row ->

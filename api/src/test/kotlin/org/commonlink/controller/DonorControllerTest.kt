@@ -27,6 +27,7 @@ import org.commonlink.dto.JourneyStepDto
 import org.commonlink.dto.TotalsVarianceDto
 import org.commonlink.dto.UpdateDonorProfileRequest
 import org.commonlink.dto.ReceiptDownloadDto
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.UserRepository
@@ -371,7 +372,7 @@ class DonorControllerTest {
             DonorAssociationDto(
                 associationId = associationId,
                 name = "Alpha Asso",
-                category = "Education",
+                category = CampaignCause.ENFANCE_EDUCATION,
                 totalDonated = BigDecimal("150.00"),
                 publishedPayoutCount = 4,
                 campaignCount = 2,
@@ -390,7 +391,7 @@ class DonorControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$[0].associationId").value(associationId.toString()))
             .andExpect(jsonPath("$[0].name").value("Alpha Asso"))
-            .andExpect(jsonPath("$[0].category").value("Education"))
+            .andExpect(jsonPath("$[0].category").value("ENFANCE_EDUCATION"))
             .andExpect(jsonPath("$[0].totalDonated").value(150.00))
             .andExpect(jsonPath("$[0].publishedPayoutCount").value(4))
             .andExpect(jsonPath("$[0].campaignCount").value(2))
@@ -685,7 +686,7 @@ class DonorControllerTest {
         every { donorImpactService.listImpacts(userId) } returns listOf(
             DonorImpactDto(
                 campaignId = campaignId, campaignName = "Camp", campaignEmoji = "🌍",
-                associationName = "Asso", category = "Éducation", impactGoals = "50 enfants scolarisés",
+                associationName = "Asso", category = CampaignCause.ENFANCE_EDUCATION, impactGoals = "50 enfants scolarisés",
                 storySummary = null, donationUrl = "https://commonlink.org/fr/lp/clk_x",
             )
         )
@@ -696,7 +697,7 @@ class DonorControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$[0].campaignId").value(campaignId.toString()))
-            .andExpect(jsonPath("$[0].category").value("Éducation"))
+            .andExpect(jsonPath("$[0].category").value("ENFANCE_EDUCATION"))
     }
 
     @Test
@@ -714,9 +715,9 @@ class DonorControllerTest {
         every { donorRecommendationService.getRecommendations(userId) } returns listOf(
             DonorRecommendationDto(
                 campaignId = campaignId, campaignName = "Camp", campaignEmoji = "🌍",
-                associationName = "Asso", category = "Éducation", coverImage = null,
+                associationName = "Asso", category = CampaignCause.ENFANCE_EDUCATION, coverImage = null,
                 goal = BigDecimal("1000"), raised = BigDecimal("100"),
-                donationUrl = "https://commonlink.org/fr/lp/clk_x", matchedCategory = "Éducation",
+                donationUrl = "https://commonlink.org/fr/lp/clk_x", matchedCategory = CampaignCause.ENFANCE_EDUCATION,
             )
         )
 
@@ -726,7 +727,7 @@ class DonorControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$[0].campaignId").value(campaignId.toString()))
-            .andExpect(jsonPath("$[0].matchedCategory").value("Éducation"))
+            .andExpect(jsonPath("$[0].matchedCategory").value("ENFANCE_EDUCATION"))
     }
 
     @Test

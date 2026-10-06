@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.assertj.core.api.Assertions.assertThat
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.DonationReceipt
 import org.commonlink.entity.MandateEligibility
@@ -75,15 +76,15 @@ class DonationRepositoryDonorDashboardTest(
         assocBId = assocB.id!!
 
         val campaignA1 = campaignRepository.save(
-            TestFixtures.campaign(assocA, name = "A1", status = CampaignStatus.LIVE).apply { category = "Education" }
+            TestFixtures.campaign(assocA, name = "A1", status = CampaignStatus.LIVE).apply { category = CampaignCause.ENFANCE_EDUCATION }
         )
         campaignA1Id = campaignA1.id!!
         val campaignA2 = campaignRepository.save(
-            TestFixtures.campaign(assocA, name = "A2", status = CampaignStatus.LIVE).apply { category = "Sante" }
+            TestFixtures.campaign(assocA, name = "A2", status = CampaignStatus.LIVE).apply { category = CampaignCause.SANTE }
         )
         campaignA2Id = campaignA2.id!!
         val campaignB1 = campaignRepository.save(
-            TestFixtures.campaign(assocB, name = "B1", status = CampaignStatus.LIVE).apply { category = "Environnement" }
+            TestFixtures.campaign(assocB, name = "B1", status = CampaignStatus.LIVE).apply { category = CampaignCause.ENVIRONNEMENT }
         )
         campaignB1Id = campaignB1.id!!
 
@@ -232,8 +233,8 @@ class DonationRepositoryDonorDashboardTest(
             .associateBy({ it.getAssociationId() }, { it.getCategory() })
 
         // Alpha: A1 (Education, 2024) then A2 (Sante, 2025) → the most recent one wins
-        assertThat(byAssociation[assocAId]).isEqualTo("Sante")
-        assertThat(byAssociation[assocBId]).isEqualTo("Environnement")
+        assertThat(byAssociation[assocAId]).isEqualTo(CampaignCause.SANTE)
+        assertThat(byAssociation[assocBId]).isEqualTo(CampaignCause.ENVIRONNEMENT)
     }
 
     // ── Tax reduction input ───────────────────────────────────────────────

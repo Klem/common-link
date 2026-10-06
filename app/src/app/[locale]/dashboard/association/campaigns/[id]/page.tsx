@@ -68,7 +68,7 @@ export default function CampaignEditorPage() {
    * then schedules a debounced API call (800 ms).
    */
   const scheduleHeroSave = useCallback(
-    (patch: UpdateCampaignRequest) => {
+    (patch: Pick<UpdateCampaignRequest, 'name' | 'emoji'>) => {
       setCampaign((prev) => (prev ? { ...prev, ...patch } : prev));
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => {

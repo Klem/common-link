@@ -9,6 +9,7 @@ import org.commonlink.dto.DonorCampaignStatus
 import org.commonlink.entity.AssociationStatus
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.Campaign
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.User
@@ -66,7 +67,7 @@ class DonorAssociationServiceTest {
         override fun getLastDonationAt() = at
     }
 
-    private fun categoryRow(assocId: UUID, category: String?) = object : AssociationCategoryRow {
+    private fun categoryRow(assocId: UUID, category: CampaignCause?) = object : AssociationCategoryRow {
         override fun getAssociationId() = assocId
         override fun getCategory() = category
     }
@@ -79,8 +80,8 @@ class DonorAssociationServiceTest {
             aggregate(assocBId, "Beta", "200.00", 1),
         )
         every { donationRepository.findAssociationCategoriesByDonorId(donorId) } returns listOf(
-            categoryRow(assocAId, "Education"),
-            categoryRow(assocBId, "Environnement"),
+            categoryRow(assocAId, CampaignCause.ENFANCE_EDUCATION),
+            categoryRow(assocBId, CampaignCause.ENVIRONNEMENT),
         )
         every { payoutRepository.countConfirmedByAssociationId(assocAId) } returns 4
         every { payoutRepository.countConfirmedByAssociationId(assocBId) } returns 0
@@ -92,7 +93,7 @@ class DonorAssociationServiceTest {
         with(result[0]) {
             assertThat(associationId).isEqualTo(assocAId)
             assertThat(name).isEqualTo("Alpha")
-            assertThat(category).isEqualTo("Education")
+            assertThat(category).isEqualTo(CampaignCause.ENFANCE_EDUCATION)
             assertThat(totalDonated).isEqualByComparingTo("150.00")
             assertThat(campaignCount).isEqualTo(2)
             assertThat(publishedPayoutCount).isEqualTo(4)
@@ -109,13 +110,13 @@ class DonorAssociationServiceTest {
         )
         // Rows arrive oldest first — the later one must win
         every { donationRepository.findAssociationCategoriesByDonorId(donorId) } returns listOf(
-            categoryRow(assocAId, "Education"),
-            categoryRow(assocAId, "Sante"),
+            categoryRow(assocAId, CampaignCause.ENFANCE_EDUCATION),
+            categoryRow(assocAId, CampaignCause.SANTE),
         )
         every { payoutRepository.countConfirmedByAssociationId(assocAId) } returns 0
         every { associationProfileRepository.findById(any()) } returns Optional.empty()
 
-        assertThat(service.listAssociations(userId)[0].category).isEqualTo("Sante")
+        assertThat(service.listAssociations(userId)[0].category).isEqualTo(CampaignCause.SANTE)
     }
 
     @Test

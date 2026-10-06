@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { CampaignCard } from '@/components/campaign/CampaignCard';
+import { ProjectsDiscovery } from '@/components/campaign/ProjectsDiscovery';
 import { fetchLiveCampaigns } from '@/lib/api/campaigns';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -17,14 +17,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 /**
- * Page « Tous les projets » — liste les campagnes actuellement ouvertes aux dons.
+ * "Tous les projets" page — lists the campaigns currently open to donations.
  *
- * Markup et classes repris de la maquette (`PAGE 4 — PROJETS / CAMPAGNES`,
- * `CommonLink UI V2 Julian.html`). Les filtres et le tri de la maquette ne sont pas repris pour
- * cette itération : un filtre qui ne filtre pas se lit comme un bug.
+ * Markup and classes taken from the mockup (`PAGE 4 — PROJETS / CAMPAGNES`). The cause, scope
+ * and proximity filters live in the client component {@link ProjectsDiscovery}, applied on the
+ * campaigns fetched here. The mockup's sort select and status pills ("En cours", "Objectif
+ * atteint") are still not ported: every listed campaign is live.
  *
- * `fetchLiveCampaigns` ne lève jamais : une API indisponible produit une liste vide, donc le même
- * `.empty-state` que « aucune campagne en cours ». La page publique ne tombe pas avec l'API.
+ * `fetchLiveCampaigns` never throws: an unavailable API yields an empty list, hence the same
+ * `.empty-state` as "no live campaign". The public page does not go down with the API.
  */
 export default async function ProjetsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -57,11 +58,7 @@ export default async function ProjetsPage({ params }: { params: Promise<{ locale
               <p>{t('emptyText')}</p>
             </div>
           ) : (
-            <div className="campaigns-grid">
-              {campaigns.map((campaign) => (
-                <CampaignCard key={campaign.campaignId} campaign={campaign} />
-              ))}
-            </div>
+            <ProjectsDiscovery campaigns={campaigns} />
           )}
         </div>
       </section>

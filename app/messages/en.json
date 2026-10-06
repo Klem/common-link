@@ -366,7 +366,20 @@
     "vopVerified": "VOP verification completed.",
     "widgetAllowedOriginSaved": "Redirect origin saved.",
     "widgetDestinationSaved": "Destination campaign saved.",
-    "widgetTokenGenerated": "Widget token generated."
+    "widgetTokenGenerated": "Widget token generated.",
+    "campaignCause": {
+      "SOLIDARITE": "Solidarity",
+      "ALIMENTATION": "Food",
+      "SANTE": "Health",
+      "ENFANCE_EDUCATION": "Children & education",
+      "ANIMAUX": "Animals",
+      "HANDICAP": "Disability",
+      "ENVIRONNEMENT": "Environment",
+      "CULTURE": "Culture",
+      "SPORT": "Sport",
+      "DROITS_CITOYENNETE": "Rights & citizenship",
+      "AUTRE": "Other"
+    }
   },
   "compliance": {
     "alerts": {
@@ -1266,7 +1279,7 @@
         },
         "info": {
           "category": {
-            "label": "Category"
+            "label": "Cause"
           },
           "coverImage": {
             "errorSize": "Image too large. Maximum 5 MB.",
@@ -1311,7 +1324,30 @@
           "startDate": {
             "label": "Start date"
           },
-          "title": "General information"
+          "title": "General information",
+          "actionPlace": {
+            "label": "Place of action",
+            "tip": "Where the campaign acts. Its scope (local, national, international) is derived from it and drives the discovery page filters.",
+            "type": {
+              "LOCAL": "Town or department",
+              "FRANCE": "All of France",
+              "PAYS": "Country"
+            },
+            "searchPlaceholder": "Town, postal code or department",
+            "searching": "Searching…",
+            "noResult": "No result",
+            "searchError": "Search unavailable right now",
+            "department": "Department",
+            "countryPlaceholder": "Choose a country",
+            "current": "Saved place: {label}",
+            "none": "No place set",
+            "scope": {
+              "label": "Scope",
+              "LOCALE": "Local",
+              "NATIONALE": "National",
+              "INTERNATIONALE": "International"
+            }
+          }
         },
         "loading": "Loading campaign…",
         "milestones": {
@@ -1618,7 +1654,8 @@
         "recommended": {
           "milestones": "Milestones (increases donor engagement)",
           "reason": "\"Why now?\" (builds trust)",
-          "section": "Recommended — does not block publishing"
+          "section": "Recommended — does not block publishing",
+          "actionPlace": "Set the place of action"
         },
         "required": {
           "budget": "Balanced estimated budget (expenses = revenues)",

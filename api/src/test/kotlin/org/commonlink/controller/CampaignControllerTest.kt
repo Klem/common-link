@@ -3,6 +3,9 @@ package org.commonlink.controller
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
+import io.mockk.verify
+import org.commonlink.dto.ActionPlaceDto
+import org.commonlink.dto.ActionPlaceRequest
 import org.commonlink.dto.BudgetItemDto
 import org.commonlink.dto.BudgetSectionDto
 import org.commonlink.dto.CampaignDto
@@ -10,7 +13,10 @@ import org.commonlink.dto.CampaignStoryDto
 import org.commonlink.dto.CampaignStoryImageDto
 import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.MilestoneDto
+import org.commonlink.entity.ActionPlaceType
 import org.commonlink.entity.BudgetSide
+import org.commonlink.entity.CampaignCause
+import org.commonlink.entity.CampaignScope
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.exception.NotFoundException
@@ -110,6 +116,7 @@ class CampaignControllerTest {
         endDate = null,
         budgetHash = null,
         category = null,
+        actionPlace = null,
         reason = null,
         impactGoals = null,
         coverImage = null,
@@ -248,7 +255,7 @@ class CampaignControllerTest {
     @Test
     fun `updateCampaign - 200 with info fields category, reason, impactGoals`() {
         val updated = sampleCampaign.copy(
-            category = "Education",
+            category = CampaignCause.ENFANCE_EDUCATION,
             reason = "Permettre à 450 élèves d'étudier dans de bonnes conditions.",
             impactGoals = "Rénovation de 3 écoles, réduction de l'absentéisme de 30%."
         )
@@ -258,12 +265,56 @@ class CampaignControllerTest {
             put("/api/association/campaigns/$campaignId")
                 .with(user(userId.toString()).roles("ASSOCIATION"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"category":"Education","reason":"Permettre à 450 élèves d'étudier dans de bonnes conditions.","impactGoals":"Rénovation de 3 écoles, réduction de l'absentéisme de 30%."}""")
+                .content("""{"category":"ENFANCE_EDUCATION","reason":"Permettre à 450 élèves d'étudier dans de bonnes conditions.","impactGoals":"Rénovation de 3 écoles, réduction de l'absentéisme de 30%."}""")
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.category").value("Education"))
+            .andExpect(jsonPath("$.category").value("ENFANCE_EDUCATION"))
             .andExpect(jsonPath("$.reason").value("Permettre à 450 élèves d'étudier dans de bonnes conditions."))
             .andExpect(jsonPath("$.impactGoals").value("Rénovation de 3 écoles, réduction de l'absentéisme de 30%."))
+    }
+
+    @Test
+    fun `updateCampaign - 400 when the cause is not a known enum value`() {
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"category":"Education"}""")
+        )
+            .andExpect(status().isBadRequest)
+        verify(exactly = 0) { campaignService.updateCampaign(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateCampaign - 422 when the place of action has no type (bean validation)`() {
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"actionPlace":{"code":"06155"}}""")
+        )
+            .andExpect(status().isUnprocessableEntity)
+        verify(exactly = 0) { campaignService.updateCampaign(any(), any(), any()) }
+    }
+
+    @Test
+    fun `updateCampaign - forwards the place of action and returns its derived scope`() {
+        val updated = sampleCampaign.copy(
+            actionPlace = ActionPlaceDto(ActionPlaceType.PAYS, "SN", "Sénégal", CampaignScope.INTERNATIONALE, null, null),
+        )
+        every {
+            campaignService.updateCampaign(userId, campaignId, match { it.actionPlace == ActionPlaceRequest(ActionPlaceType.PAYS, "SN") })
+        } returns updated
+
+        mockMvc.perform(
+            put("/api/association/campaigns/$campaignId")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"actionPlace":{"type":"PAYS","code":"SN"}}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.actionPlace.label").value("Sénégal"))
+            .andExpect(jsonPath("$.actionPlace.scope").value("INTERNATIONALE"))
     }
 
     // ── DELETE /api/association/campaigns/{id} ────────────────────────────────

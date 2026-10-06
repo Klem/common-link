@@ -11,7 +11,7 @@ vi.mock('next-intl', () => ({
 const association: DonorAssociationDto = {
   associationId: 'asso-1',
   name: 'Terre Verte',
-  category: 'Environnement',
+  category: 'ENVIRONNEMENT',
   totalDonated: 250,
   publishedPayoutCount: 4,
   campaignCount: 2,
@@ -26,7 +26,7 @@ describe('DonorAssociationCard', () => {
   it('renders the association name and category', () => {
     render(<DonorAssociationCard association={association} colorIndex={0} />);
     expect(screen.getByText('Terre Verte')).toBeInTheDocument();
-    expect(screen.getByText('Environnement')).toBeInTheDocument();
+    expect(screen.getByText('🌍 ENVIRONNEMENT')).toBeInTheDocument();
   });
 
   it('renders the aggregate figures (donated total and published payouts only)', () => {

@@ -642,6 +642,30 @@ textarea.form-input{resize:vertical;min-height:100px;}
 @media(max-width:700px){.campaigns-grid{grid-template-columns:1fr;}}
 
 /* ------------------------------------------------------------
+   OUTSIDE MOCKUP — discovery filters (`/projets`).
+   The mockup ships `.filter-bar`/`.filter-pill` (used as is) but no
+   « Plus », « Voir aussi », scope or proximity controls. These rules only
+   lay those out; colours and radii reuse the mockup tokens.
+   `.filter-pill` is a <div> in the mockup and a <button> here: buttons do
+   not inherit the font, hence `font-family:inherit`.
+   ------------------------------------------------------------ */
+button.filter-pill{font-family:inherit;}
+.discovery-filter-bar{margin-bottom:16px;}
+.discovery-inline{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.discovery-see-also{font-size:14px;color:var(--slate-lavender);margin:-4px 0 16px;}
+.discovery-link{background:none;border:none;padding:0 0 0 8px;font:inherit;font-size:14px;font-weight:600;color:var(--teal-dark);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.discovery-radius{width:auto;padding:8px 40px 8px 14px;}
+.discovery-search{position:relative;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.discovery-search .form-input{width:280px;max-width:100%;}
+.discovery-suggestions{position:absolute;top:100%;left:0;z-index:5;width:280px;max-width:100%;margin:4px 0 0;padding:4px 0;list-style:none;background:var(--white);border:2px solid var(--mist-lavender);border-radius:var(--radius-md);}
+.discovery-suggestions button{display:block;width:100%;text-align:left;padding:8px 16px;background:none;border:none;font:inherit;font-size:14px;color:var(--ink-navy);cursor:pointer;}
+.discovery-suggestions button:hover{background:rgba(78,205,196,0.08);}
+.discovery-hint{font-size:14px;color:var(--slate-lavender);margin:16px 0 0;}
+.discovery-block{margin-top:48px;}
+.discovery-block-title{font-size:24px;}
+.discovery-reset{margin-top:16px;}
+
+/* ------------------------------------------------------------
    HORS MAQUETTE — titre de niveau 4 dans un document légal.
    La maquette ne descend pas sous `h3` dans `.legal-body` : elle n'a aucune
    page où un article se subdivise. L'annexe 2 des CGU association, elle, est

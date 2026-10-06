@@ -15,6 +15,7 @@ import { useDonorDonations } from '@/hooks/dashboard/useDonorDonations';
 import { useDonorAssociations } from '@/hooks/dashboard/useDonorAssociations';
 import { useDonorRecommendations } from '@/hooks/dashboard/useDonorRecommendations';
 import { ROUTES } from '@/lib/routes';
+import { useCauseLabel } from '@/lib/campaignCause';
 
 function fmtEur(amount: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
@@ -22,6 +23,7 @@ function fmtEur(amount: number): string {
 
 export default function DonorDashboardPage() {
   const t = useTranslations('dashboard');
+  const causeLabel = useCauseLabel();
   const locale = useLocale();
   const user = useAuthStore((s) => s.user);
   const { stats, isLoading: statsLoading } = useDonorStats();
@@ -117,7 +119,7 @@ export default function DonorDashboardPage() {
                   </h3>
                   {topRecommendation.matchedCategory && (
                     <p className="suggest-rationale">
-                      {t('donor.recommendations.reason', { category: topRecommendation.matchedCategory })}
+                      {t('donor.recommendations.reason', { category: causeLabel(topRecommendation.matchedCategory) })}
                     </p>
                   )}
                   <div

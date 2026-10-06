@@ -62,9 +62,31 @@ class Campaign(
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
-    /** Campaign category (e.g. Education, Health). */
+    /** Cause of the campaign -- what it funds. One per campaign; null until the association picks one. */
+    @Enumerated(EnumType.STRING)
     @Column(name = "category", length = 50)
-    var category: String? = null,
+    var category: CampaignCause? = null,
+
+    /** Kind of place of action; null until set. Drives the derived [scope]. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "action_place_type", length = 20)
+    var actionPlaceType: ActionPlaceType? = null,
+
+    /** INSEE commune code, department code or ISO country code, per [actionPlaceType]; null for FRANCE. */
+    @Column(name = "action_place_code", length = 10)
+    var actionPlaceCode: String? = null,
+
+    /** Display label of the place of action, resolved server-side (never trusted from the client). */
+    @Column(name = "action_place_label", length = 255)
+    var actionPlaceLabel: String? = null,
+
+    /** WGS84 latitude of the commune centre; set only for [ActionPlaceType.COMMUNE]. */
+    @Column(name = "action_latitude")
+    var actionLatitude: Double? = null,
+
+    /** WGS84 longitude of the commune centre; set only for [ActionPlaceType.COMMUNE]. */
+    @Column(name = "action_longitude")
+    var actionLongitude: Double? = null,
 
     /** Why the association is launching this campaign; shown on the public page. */
     @Column(name = "reason", columnDefinition = "TEXT")

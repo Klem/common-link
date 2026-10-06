@@ -17,7 +17,7 @@ const base: DonorRecommendationDto = {
   campaignName: 'Reforestation',
   campaignEmoji: '🌳',
   associationName: 'Terre Verte',
-  category: 'Environnement',
+  category: 'ENVIRONNEMENT',
   coverImage: null,
   goal: 1000,
   raised: 250,
@@ -36,8 +36,8 @@ describe('RecommendationCard', () => {
     const { rerender } = render(<RecommendationCard recommendation={base} />);
     expect(screen.queryByText(/Parce que vous soutenez déjà/)).not.toBeInTheDocument();
 
-    rerender(<RecommendationCard recommendation={{ ...base, matchedCategory: 'Environnement' }} />);
-    expect(screen.getByText('Parce que vous soutenez déjà la cause Environnement')).toBeInTheDocument();
+    rerender(<RecommendationCard recommendation={{ ...base, matchedCategory: 'ENVIRONNEMENT' }} />);
+    expect(screen.getByText('Parce que vous soutenez déjà la cause 🌍 ENVIRONNEMENT')).toBeInTheDocument();
   });
 
   it('always offers a donation link, since findPublicLive already guarantees eligibility', () => {

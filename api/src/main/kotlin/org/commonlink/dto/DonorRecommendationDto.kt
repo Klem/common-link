@@ -2,6 +2,7 @@ package org.commonlink.dto
 
 import java.math.BigDecimal
 import java.util.UUID
+import org.commonlink.entity.CampaignCause
 
 /**
  * One recommended campaign for "Projets recommandés" and the home "Pour vous" block (D8, option A).
@@ -18,10 +19,10 @@ data class DonorRecommendationDto(
     val campaignName: String,
     val campaignEmoji: String,
     val associationName: String,
-    val category: String?,
+    val category: CampaignCause?,
     val coverImage: String?,
     val goal: BigDecimal,
     val raised: BigDecimal,
     val donationUrl: String,
-    val matchedCategory: String?,
+    val matchedCategory: CampaignCause?,
 )

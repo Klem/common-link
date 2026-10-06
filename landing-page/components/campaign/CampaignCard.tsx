@@ -1,12 +1,13 @@
 import { useTranslations } from 'next-intl';
 import { API_URL } from '@/lib/constants';
 import { coverImageUrl, type PublicCampaign } from '@/lib/api/campaigns';
+import { CAUSE_EMOJI, isDisplayedCause } from '@/lib/causes';
 
 interface CampaignCardProps {
   campaign: PublicCampaign;
 }
 
-/** Formate un montant en euros sans centimes, comme la maquette (« 4 200 € »). */
+/** Formats an amount in euros without cents, like the mockup ("4 200 €"). */
 function formatEur(amount: number): string {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -16,18 +17,23 @@ function formatEur(amount: number): string {
 }
 
 /**
- * Carte d'une campagne en cours.
+ * Card of a live campaign.
  *
- * Classes reprises du vocabulaire maquette déjà porté dans `globals.css`
+ * Classes taken from the mockup vocabulary already ported to `globals.css`
  * (`.campaign-card`, `.campaign-img`, `.category-badge`, `.campaign-asso`, `.campaign-title`,
- * `.campaign-progress`, `.campaign-amounts`, `.campaign-footer`, `.progress-bar`). Zéro Tailwind.
+ * `.campaign-progress`, `.campaign-amounts`, `.campaign-footer`, `.progress-bar`). No Tailwind.
  *
- * Images : `coverImage` et `associationLogo` sont des chemins de service qui répondent 404 quand
- * rien n'a été téléversé — on ne rend l'`<img>` que si le chemin est non nul, sinon on retombe sur
- * `.photo-placeholder` (emoji de campagne, initiale de l'association).
+ * Cause badge: only a known cause other than `AUTRE` is shown (`isDisplayedCause`). The place of
+ * action, when set, is shown in the footer meta (`📍 Vallauris (06)`), as in the mockup.
+ *
+ * Images: `coverImage` and `associationLogo` are serving paths that answer 404 when nothing was
+ * uploaded — the `<img>` is only rendered for a non-null path, otherwise `.photo-placeholder`
+ * (campaign emoji, association initial).
  */
 export function CampaignCard({ campaign }: CampaignCardProps) {
   const t = useTranslations('landing.campaigns');
+  const tCause = useTranslations('landing.causes');
+  const cause = isDisplayedCause(campaign.campaignCategory) ? campaign.campaignCategory : null;
 
   const pct = campaign.goal > 0 ? Math.round((campaign.raised / campaign.goal) * 100) : 0;
 
@@ -39,8 +45,10 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
         ) : (
           <div className="photo-placeholder">{campaign.campaignEmoji}</div>
         )}
-        {campaign.campaignCategory && (
-          <span className="badge badge-active category-badge">{campaign.campaignCategory}</span>
+        {cause && (
+          <span className="badge badge-active category-badge">
+            {CAUSE_EMOJI[cause]} {tCause(cause)}
+          </span>
         )}
       </div>
 
@@ -76,13 +84,14 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            {/* Largeur calculée : seul cas où un style inline est admis. */}
+            {/* Computed width: the only case where an inline style is allowed. */}
             <div className="progress-fill progress-teal" style={{ width: `${Math.min(pct, 100)}%` }} />
           </div>
         </div>
 
         <div className="campaign-footer">
           <span className="campaign-meta">
+            {campaign.actionPlace && <>📍 {campaign.actionPlace.label} · </>}
             🎯 {t('milestones', { count: campaign.milestoneCount })}
           </span>
           <a

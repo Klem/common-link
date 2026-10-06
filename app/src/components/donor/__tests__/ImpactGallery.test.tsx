@@ -31,7 +31,7 @@ const impacts: DonorImpactDto[] = [
     campaignName: 'Reforestation',
     campaignEmoji: '🌳',
     associationName: 'Terre Verte',
-    category: 'Environnement',
+    category: 'ENVIRONNEMENT',
     impactGoals: "50 arbres plantés",
     storySummary: null,
     donationUrl: 'https://commonlink.org/fr/lp/clk_terreverte',
@@ -41,7 +41,7 @@ const impacts: DonorImpactDto[] = [
     campaignName: 'Cantine scolaire',
     campaignEmoji: '🍎',
     associationName: 'École Kaolack',
-    category: 'Éducation',
+    category: 'ENFANCE_EDUCATION',
     impactGoals: null,
     storySummary: '200 repas servis cette année.',
     donationUrl: null,
@@ -64,7 +64,7 @@ describe('ImpactGallery', () => {
     render(<ImpactGallery />);
 
     await waitFor(() => expect(screen.getByText(/Reforestation/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Éducation' }));
+    fireEvent.click(screen.getByRole('button', { name: '📚 ENFANCE_EDUCATION' }));
 
     expect(screen.queryByText(/Reforestation/)).not.toBeInTheDocument();
     expect(screen.getByText(/Cantine scolaire/)).toBeInTheDocument();

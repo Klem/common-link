@@ -325,7 +325,37 @@
       "emptyText": "Les premières campagnes arrivent. Revenez très vite.",
       "emptyTitle": "Rien pour l'instant !",
       "subtitle": "Chaque page indique le budget prévu, le résultat attendu et les dépenses déjà publiées.",
-      "title": "Tous les projets"
+      "title": "Tous les projets",
+      "filters": {
+        "all": "Tous",
+        "more": "Plus",
+        "less": "Moins",
+        "causesLabel": "Filtrer par cause",
+        "seeAlso": "Voir aussi :",
+        "scopeLabel": "Filtrer par portée",
+        "scope": {
+          "all": "Toutes portées",
+          "LOCALE": "Locale",
+          "NATIONALE": "Nationale",
+          "INTERNATIONALE": "Internationale"
+        },
+        "proximity": {
+          "toggle": "Près de chez moi",
+          "placeholder": "Ville ou code postal",
+          "radiusLabel": "Rayon",
+          "radiusOption": "{km} km",
+          "around": "Autour de {label}",
+          "change": "Changer",
+          "off": "Désactiver",
+          "searching": "Recherche…",
+          "noResult": "Aucune commune trouvée",
+          "searchError": "Recherche indisponible pour le moment",
+          "nationalBlock": "Partout en France",
+          "localEmpty": "Aucune campagne locale dans ce rayon."
+        },
+        "noMatch": "Aucune campagne ne correspond à ces filtres.",
+        "reset": "Réinitialiser les filtres"
+      }
     },
     "transparency": {
       "ctaLabel": "Voir comment suivre un don",
@@ -427,6 +457,19 @@
       "subtitle": "Les associations paient leurs fournisseurs depuis la plateforme. Chaque paiement est publié aussitôt. Vous n'avez rien à demander.",
       "title": "Donner sans se demander",
       "titleAccent": "où va l'argent"
+    },
+    "causes": {
+      "SOLIDARITE": "Solidarité",
+      "ALIMENTATION": "Alimentation",
+      "SANTE": "Santé",
+      "ENFANCE_EDUCATION": "Enfance & éducation",
+      "ANIMAUX": "Animaux",
+      "HANDICAP": "Handicap",
+      "ENVIRONNEMENT": "Environnement",
+      "CULTURE": "Culture",
+      "SPORT": "Sport",
+      "DROITS_CITOYENNETE": "Droits & citoyenneté",
+      "AUTRE": "Autre"
     }
   },
   "legal": {

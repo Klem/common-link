@@ -15,7 +15,7 @@ const cspDirectives = [
   "frame-src 'self' https://accounts.google.com/ https://www.googletagmanager.com",
   // Both public registries are queried straight from the browser during association sign-up:
   // JOAFE for RNA numbers, Recherche d'entreprises for associations that only have a SIREN.
-  `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com https://recherche-entreprises.api.gouv.fr`,
+  `connect-src 'self' ${apiUrl} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com https://recherche-entreprises.api.gouv.fr https://geo.api.gouv.fr`,
   `img-src 'self' data: https: ${apiUrl}`,
 ];
 

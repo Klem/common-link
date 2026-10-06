@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import org.commonlink.dto.ActionPlaceDto
 import org.commonlink.dto.PublicCampaignListItemDto
 import org.commonlink.repository.CampaignRepository
 import org.slf4j.LoggerFactory
@@ -40,6 +41,10 @@ class PublicCampaignDirectoryService(
                 campaignName = row.campaignName,
                 campaignEmoji = row.campaignEmoji,
                 campaignCategory = row.campaignCategory,
+                actionPlace = ActionPlaceDto.of(
+                    row.actionPlaceType, row.actionPlaceCode, row.actionPlaceLabel,
+                    row.actionLatitude, row.actionLongitude,
+                ),
                 coverImage = row.coverImage,
                 campaignUpdatedAt = row.campaignUpdatedAt,
                 goal = row.goal,

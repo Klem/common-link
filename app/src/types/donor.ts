@@ -1,6 +1,6 @@
 import type { Page } from '@/types/payment';
 import type { BudgetVariance } from '@/types/reporting';
-import type { CampaignStatus, MilestoneDto } from '@/types/campaign';
+import type { CampaignCause, CampaignStatus, MilestoneDto } from '@/types/campaign';
 
 /**
  * Read model for a donor's profile as returned by `GET`/`PATCH /api/donor/me`.
@@ -99,7 +99,7 @@ export interface DonorAssociationDto {
   associationId: string;
   name: string;
   /** Category of the campaign the donor funded most recently for this association. */
-  category: string | null;
+  category: CampaignCause | null;
   totalDonated: number;
   /** Confirmed payouts of the association, all campaigns combined. */
   publishedPayoutCount: number;
@@ -267,7 +267,7 @@ export interface DonorImpactDto {
   campaignEmoji: string;
   associationName: string;
   /** Cause — the filter facet. Null when the campaign carries none. */
-  category: string | null;
+  category: CampaignCause | null;
   /** Free-text impact description written by the association at campaign creation. */
   impactGoals: string | null;
   /** Published story's plain-text summary, null if none or still draft. Never the rich-text HTML. */
@@ -311,11 +311,11 @@ export interface DonorRecommendationDto {
   campaignName: string;
   campaignEmoji: string;
   associationName: string;
-  category: string | null;
+  category: CampaignCause | null;
   coverImage: string | null;
   goal: number;
   raised: number;
   donationUrl: string;
   /** Non-null when explained by a cause the donor already funds — show the reason to the donor. */
-  matchedCategory: string | null;
+  matchedCategory: CampaignCause | null;
 }

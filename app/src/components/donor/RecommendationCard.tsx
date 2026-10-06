@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { apiUrl } from '@/lib/api';
 import { DonationCta } from '@/components/donor/DonationCta';
+import { useCauseLabel } from '@/lib/campaignCause';
 import type { DonorRecommendationDto } from '@/types/donor';
 
 interface Props {
@@ -16,6 +17,7 @@ function fmtEur(amount: number): string {
 /** One recommended-project card (D8, option A) — used by the "Pour vous" block and the dedicated page. */
 export function RecommendationCard({ recommendation }: Props) {
   const t = useTranslations('dashboard.donor.recommendations');
+  const causeLabel = useCauseLabel();
   const pct = recommendation.goal > 0 ? Math.round((recommendation.raised / recommendation.goal) * 100) : 0;
 
   return (
@@ -27,7 +29,7 @@ export function RecommendationCard({ recommendation }: Props) {
         ) : (
           <span aria-hidden="true">{recommendation.campaignEmoji}</span>
         )}
-        {recommendation.category && <span className="project-card-badge">{recommendation.category}</span>}
+        {recommendation.category && <span className="project-card-badge">{causeLabel(recommendation.category)}</span>}
       </div>
 
       <div className="project-card-body">
@@ -35,7 +37,7 @@ export function RecommendationCard({ recommendation }: Props) {
         <h3 className="project-card-title">{recommendation.campaignName}</h3>
 
         {recommendation.matchedCategory && (
-          <p className="text-xs text-text-2 mb-2">{t('reason', { category: recommendation.matchedCategory })}</p>
+          <p className="text-xs text-text-2 mb-2">{t('reason', { category: causeLabel(recommendation.matchedCategory) })}</p>
         )}
 
         <div

@@ -1,5 +1,6 @@
 package org.commonlink.repository
 
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.Donation
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -294,7 +295,7 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     /** One confirmed donation reduced to the campaign category of the association it funded. */
     interface AssociationCategoryRow {
         fun getAssociationId(): UUID
-        fun getCategory(): String?
+        fun getCategory(): CampaignCause?
     }
 
     /** One campaign the donor has funded with at least one confirmed donation -- feeds the impact gallery. */
@@ -302,7 +303,7 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         fun getCampaignId(): UUID
         fun getCampaignName(): String
         fun getCampaignEmoji(): String
-        fun getCategory(): String?
+        fun getCategory(): CampaignCause?
         fun getImpactGoals(): String?
         fun getAssociationId(): UUID
         fun getAssociationName(): String

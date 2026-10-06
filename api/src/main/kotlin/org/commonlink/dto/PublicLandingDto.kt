@@ -2,6 +2,7 @@ package org.commonlink.dto
 
 import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignBudgetSection
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.LandingTheme
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -45,7 +46,7 @@ data class PublicLandingDto(
     val campaignDescription: String?,
     val campaignReason: String?,
     val campaignImpactGoals: String?,
-    val campaignCategory: String?,
+    val campaignCategory: CampaignCause?,
     val goal: BigDecimal,
     val raised: BigDecimal,
     val currency: String = "EUR",
