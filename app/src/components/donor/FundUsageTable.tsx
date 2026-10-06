@@ -53,6 +53,24 @@ function compareSections(a: SectionVariance, b: SectionVariance, key: SortKey): 
   }
 }
 
+const DetailSortKey = {
+  DATE: 'DATE',
+  EXPENSE: 'EXPENSE',
+  AMOUNT: 'AMOUNT',
+} as const;
+type DetailSortKey = typeof DetailSortKey[keyof typeof DetailSortKey];
+
+function compareDetailPayouts(a: CampaignPayoutLineDto, b: CampaignPayoutLineDto, key: DetailSortKey): number {
+  switch (key) {
+    case DetailSortKey.DATE:
+      return a.confirmedAt.localeCompare(b.confirmedAt);
+    case DetailSortKey.EXPENSE:
+      return a.label.localeCompare(b.label);
+    case DetailSortKey.AMOUNT:
+      return a.amount - b.amount;
+  }
+}
+
 /**
  * "Utilisation des fonds" table — the donor-facing planned/spent/remaining breakdown per budget
  * section. Standard sortable `cm-table` (see app/CLAUDE.md "Tables"). Each row expands via its
@@ -64,6 +82,8 @@ export function FundUsageTable({ sections, payouts, onViewBreakdown }: Props) {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(SortDirection.ASC);
   const [openSectionCode, setOpenSectionCode] = useState<string | null>(null);
+  const [detailSortKey, setDetailSortKey] = useState<DetailSortKey | null>(null);
+  const [detailSortDirection, setDetailSortDirection] = useState<SortDirection>(SortDirection.ASC);
 
   const sortedSections = useMemo(() => {
     if (!sortKey) return sections;
@@ -81,16 +101,24 @@ export function FundUsageTable({ sections, payouts, onViewBreakdown }: Props) {
     }
   }
 
-  function sortButton(key: SortKey, label: string) {
-    const active = sortKey === key;
-    const nextDirection = active && sortDirection === SortDirection.ASC ? SortDirection.DESC : SortDirection.ASC;
+  function handleDetailSort(key: DetailSortKey): void {
+    if (detailSortKey === key) {
+      setDetailSortDirection((d) => (d === SortDirection.ASC ? SortDirection.DESC : SortDirection.ASC));
+    } else {
+      setDetailSortKey(key);
+      setDetailSortDirection(SortDirection.ASC);
+    }
+  }
+
+  function sortButton(label: string, active: boolean, direction: SortDirection, onClick: () => void) {
+    const nextDirection = active && direction === SortDirection.ASC ? SortDirection.DESC : SortDirection.ASC;
     const aria = nextDirection === SortDirection.ASC
       ? t('funds.sortAscendingAria', { column: label })
       : t('funds.sortDescendingAria', { column: label });
     return (
-      <button type="button" className={`th-sort${active ? ' active' : ''}`} onClick={() => handleSort(key)} aria-label={aria}>
+      <button type="button" className={`th-sort${active ? ' active' : ''}`} onClick={onClick} aria-label={aria}>
         {label}
-        <span className={`th-sort-chev${active && sortDirection === SortDirection.DESC ? ' desc' : ''}`} aria-hidden="true">
+        <span className={`th-sort-chev${active && direction === SortDirection.DESC ? ' desc' : ''}`} aria-hidden="true">
           ▲
         </span>
       </button>
@@ -108,10 +136,10 @@ export function FundUsageTable({ sections, payouts, onViewBreakdown }: Props) {
         <thead>
           <tr>
             <th scope="col" />
-            <th scope="col">{sortButton(SortKey.CATEGORY, t('funds.category'))}</th>
-            <th scope="col">{sortButton(SortKey.PLANNED, t('funds.planned'))}</th>
-            <th scope="col">{sortButton(SortKey.SPENT, t('funds.spent'))}</th>
-            <th scope="col">{sortButton(SortKey.REMAINING, t('funds.remaining'))}</th>
+            <th scope="col">{sortButton(t('funds.category'), sortKey === SortKey.CATEGORY, sortDirection, () => handleSort(SortKey.CATEGORY))}</th>
+            <th scope="col">{sortButton(t('funds.planned'), sortKey === SortKey.PLANNED, sortDirection, () => handleSort(SortKey.PLANNED))}</th>
+            <th scope="col">{sortButton(t('funds.spent'), sortKey === SortKey.SPENT, sortDirection, () => handleSort(SortKey.SPENT))}</th>
+            <th scope="col">{sortButton(t('funds.remaining'), sortKey === SortKey.REMAINING, sortDirection, () => handleSort(SortKey.REMAINING))}</th>
           </tr>
         </thead>
         <tbody>
@@ -119,6 +147,12 @@ export function FundUsageTable({ sections, payouts, onViewBreakdown }: Props) {
             const isOpen = openSectionCode === section.sectionCode;
             const remaining = remainingOf(section);
             const sectionPayouts = payouts.filter((payout) => payout.sectionCode === section.sectionCode);
+            const sortedSectionPayouts = detailSortKey
+              ? [...sectionPayouts].sort((a, b) => {
+                  const cmp = compareDetailPayouts(a, b, detailSortKey);
+                  return detailSortDirection === SortDirection.DESC ? -cmp : cmp;
+                })
+              : sectionPayouts;
             const detailId = `funds-detail-${section.sectionCode}`;
 
             return (
@@ -152,14 +186,14 @@ export function FundUsageTable({ sections, payouts, onViewBreakdown }: Props) {
                             <table className="cm-table">
                               <thead>
                                 <tr>
-                                  <th scope="col">{t('funds.detailDate')}</th>
-                                  <th scope="col">{t('funds.detailExpense')}</th>
-                                  <th scope="col" className="col-right">{t('funds.detailAmount')}</th>
+                                  <th scope="col">{sortButton(t('funds.detailDate'), detailSortKey === DetailSortKey.DATE, detailSortDirection, () => handleDetailSort(DetailSortKey.DATE))}</th>
+                                  <th scope="col">{sortButton(t('funds.detailExpense'), detailSortKey === DetailSortKey.EXPENSE, detailSortDirection, () => handleDetailSort(DetailSortKey.EXPENSE))}</th>
+                                  <th scope="col" className="col-right">{sortButton(t('funds.detailAmount'), detailSortKey === DetailSortKey.AMOUNT, detailSortDirection, () => handleDetailSort(DetailSortKey.AMOUNT))}</th>
                                   <th scope="col" />
                                 </tr>
                               </thead>
                               <tbody>
-                                {sectionPayouts.map((payout) => (
+                                {sortedSectionPayouts.map((payout) => (
                                   <tr key={payout.payoutId}>
                                     <td>{fmtDate(payout.confirmedAt)}</td>
                                     <td>{payout.label} — {payout.payeeName}</td>

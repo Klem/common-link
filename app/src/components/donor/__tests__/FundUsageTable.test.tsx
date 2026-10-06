@@ -67,6 +67,32 @@ describe('FundUsageTable', () => {
     expect(rowsText()[0]).toContain('Salaires');
   });
 
+  it('sorts the detail sub-table by a column when its header is clicked, toggling direction on repeat clicks', () => {
+    const multiPayoutSections: SectionVariance[] = [
+      { sectionCode: '60', sectionName: 'Achats', planned: 1200, actual: 500, variance: -700 },
+    ];
+    const multiPayouts: CampaignPayoutLineDto[] = [
+      { payoutId: 'p-1', label: 'Achat de graines', amount: 500, payeeName: 'Pépinière du Nord', confirmedAt: '2026-02-05T00:00:00Z', sectionCode: '60' },
+      { payoutId: 'p-2', label: 'Location de camion', amount: 150, payeeName: 'LocCam SARL', confirmedAt: '2026-02-10T00:00:00Z', sectionCode: '60' },
+    ];
+    render(<FundUsageTable sections={multiPayoutSections} payouts={multiPayouts} onViewBreakdown={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /funds.showDetail/ }));
+
+    // Detail table headers: Date, Dépense, Montant (the view-breakdown column has none).
+    const detailTable = screen.getByText(/Achat de graines/).closest('table')!;
+    const amountSortButton = within(detailTable).getAllByRole('button')[2];
+
+    const detailRowsText = () => within(detailTable).getAllByRole('row').slice(1).map((r) => r.textContent ?? '');
+    expect(detailRowsText()[0]).toContain('Achat de graines'); // default order: by confirmedAt, graines first
+
+    fireEvent.click(amountSortButton); // ascending by amount: camion (150) before graines (500)
+    expect(detailRowsText()[0]).toContain('Location de camion');
+
+    fireEvent.click(amountSortButton); // descending: graines (500) before camion (150)
+    expect(detailRowsText()[0]).toContain('Achat de graines');
+  });
+
   it('calls onViewBreakdown with the payout id when "voir la répartition" is clicked in the detail', () => {
     const onViewBreakdown = vi.fn();
     render(<FundUsageTable sections={sections} payouts={payouts} onViewBreakdown={onViewBreakdown} />);
