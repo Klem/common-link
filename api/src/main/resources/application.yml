@@ -158,6 +158,8 @@ app:
       mock: ${MOLLIE_CONNECT_MOCK:false}
       #Force the Onboarding / KYC to "true"
       allow-fake-completion: ${MOLLIE_CONNECT_ALLOW_FAKE_COMPLETION:false}
+      #Never re-poll Mollie for onboarding status — DB value (however set) stays authoritative for tests
+      disable-onboarding-sync: ${MOLLIE_CONNECT_DISABLE_ONBOARDING_SYNC:true}
       # Proactive access-token renewal. Refresh is otherwise lazy — nothing calls it until a
       # donation arrives — so a revoked authorisation is discovered by the donor and that donation
       # is lost. This sweep surfaces a dead grant hours earlier and emails the association.

@@ -85,6 +85,9 @@ import java.util.UUID
     // All tests here stub /v2/capabilities. Pin to CAPABILITIES so the default LEGACY does
     // not break these stubs if the production default changes.
     "app.mollie.connect.onboarding-api=CAPABILITIES",
+    // Explicitly disabled so the live-resync tests below are deterministic, independent of the
+    // app-wide default (which is true). The disabled path lives in MollieConnectDisableSyncTest.
+    "app.mollie.connect.disable-onboarding-sync=false",
 ])
 @Transactional
 class MollieConnectServiceTest {

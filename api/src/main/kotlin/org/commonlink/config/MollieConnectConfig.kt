@@ -34,6 +34,15 @@ enum class OnboardingApi {
  * @param onboardingApi Which Mollie API to use for KYC status polling. Defaults to [OnboardingApi.LEGACY]
  *                      (`GET /v2/onboarding/me`) which works today. Switch to [OnboardingApi.CAPABILITIES]
  *                      (`GET /v2/capabilities`) once Mollie enables the feature flag for this org.
+ * @param disableOnboardingSync Dev/staging escape hatch. When true,
+ *                              [org.commonlink.service.MollieConnectService.refreshOnboardingStatusIfStale]
+ *                              never calls Mollie — whatever [org.commonlink.entity.MollieConnection]
+ *                              row is in DB (any status, not just COMPLETED) is returned as-is and
+ *                              stays that way, so a manually-set test fixture (e.g. a NEEDS_DATA
+ *                              connection used to exercise the donation-refusal path) is never
+ *                              overwritten by the real KYC status on the next poll. Unlike
+ *                              [allowFakeCompletion] this does not force any particular status — it
+ *                              only stops the live resync. MUST stay false in production.
  * @param tokenRefresh Cadence of the scheduled proactive token refresh.
  */
 @ConfigurationProperties(prefix = "app.mollie.connect")
@@ -46,6 +55,7 @@ data class MollieConnectConfig(
     val mock: Boolean = false,
     val allowFakeCompletion: Boolean = false,
     val onboardingApi: OnboardingApi = OnboardingApi.LEGACY,
+    val disableOnboardingSync: Boolean = false,
     val tokenRefresh: TokenRefresh = TokenRefresh(),
 ) {
     /**
@@ -78,5 +88,5 @@ data class MollieConnectConfig(
     override fun toString(): String =
         "MollieConnectConfig(clientId=$clientId, clientSecret=***, redirectUri=$redirectUri, " +
         "scopes=$scopes, advancedToken=***, mock=$mock, allowFakeCompletion=$allowFakeCompletion, " +
-        "onboardingApi=$onboardingApi, tokenRefresh=$tokenRefresh)"
+        "onboardingApi=$onboardingApi, disableOnboardingSync=$disableOnboardingSync, tokenRefresh=$tokenRefresh)"
 }

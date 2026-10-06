@@ -196,6 +196,8 @@ app:
       #Mock the entire mollie process
       mock: false
       allow-fake-completion: false
+      #Must stay false in prod — real KYC status must always reflect Mollie's live answer
+      disable-onboarding-sync: false
       token-refresh:
         enabled: true
         # Gap between the end of one sweep and the start of the next (fixedDelay semantics).
