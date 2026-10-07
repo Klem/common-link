@@ -22,10 +22,11 @@ interface NavGroup {
 }
 
 const DONOR_NAV: NavItem[] = [
-  { icon: '🏠', labelKey: 'nav.overview',  href: ROUTES.DONOR_DASHBOARD },
-  { icon: '👤', labelKey: 'nav.profile',   href: ROUTES.DONOR_PROFILE },
-  { icon: '🎁', labelKey: 'nav.donations', href: '#' },
-  { icon: '🎯', labelKey: 'nav.campaigns', href: '#' },
+  { icon: '🏠', labelKey: 'nav.overview',     href: ROUTES.DONOR_DASHBOARD },
+  { icon: '🎁', labelKey: 'nav.donations',    href: ROUTES.DONOR_DONATIONS },
+  { icon: '🏢', labelKey: 'nav.associations', href: ROUTES.DONOR_ASSOCIATIONS },
+  { icon: '🌍', labelKey: 'nav.impact',       href: ROUTES.DONOR_IMPACT },
+  { icon: '⚙️', labelKey: 'nav.settings',     href: ROUTES.DONOR_SETTINGS },
 ];
 
 const ASSOCIATION_NAV_GROUPS: NavGroup[] = [
@@ -71,7 +72,6 @@ function getInitials(displayName: string, email: string): string {
 }
 
 function isNavActive(href: string, currentPath: string): boolean {
-  if (href === '#') return false;
   return currentPath === href;
 }
 
@@ -104,14 +104,6 @@ export function Sidebar({ user, currentPath, isOpen = false }: SidebarProps) {
         )}
       </>
     );
-
-    if (item.href === '#') {
-      return (
-        <li key={item.labelKey}>
-          <button type="button" disabled>{inner}</button>
-        </li>
-      );
-    }
 
     return (
       <li key={item.labelKey}>

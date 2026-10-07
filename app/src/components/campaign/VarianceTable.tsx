@@ -55,8 +55,8 @@ export function VarianceTable({ sections, isCharges }: VarianceTableProps) {
             return (
               <tr key={s.sectionCode}>
                 <td>{s.sectionName}</td>
-                <td>{fmt.format(s.planned)}</td>
-                <td>{fmt.format(s.actual)}</td>
+                <td className="amount-teal">{fmt.format(s.planned)}</td>
+                <td className="amount-coral">{fmt.format(s.actual)}</td>
                 <td style={{ color }}>{sign}{fmt.format(s.variance)}</td>
                 <td style={{ color }}>{sign}{pct}%</td>
               </tr>

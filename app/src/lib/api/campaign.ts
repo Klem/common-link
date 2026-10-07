@@ -9,7 +9,10 @@ import type {
   CreateMilestoneRequest,
   UpdateMilestoneRequest,
   ReorderMilestonesRequest,
+  UpsertCampaignStoryRequest,
+  CampaignStoryImageDto,
 } from '@/types/campaign';
+import type { CampaignStoryDto } from '@/types/donor';
 
 /**
  * Fetches the list of campaigns for the current association.
@@ -193,3 +196,45 @@ export const reorderMilestones = (
   api
     .put<MilestoneDto[]>(`/api/association/campaigns/${campaignId}/milestones/reorder`, data)
     .then((r) => r.data);
+
+/**
+ * Creates or replaces a campaign's impact story.
+ * Calls `PUT /api/association/campaigns/:campaignId/story`.
+ *
+ * @param campaignId - UUID of the campaign.
+ * @param data - Story text and whether to publish it now.
+ * @returns The saved story DTO.
+ */
+export const upsertCampaignStory = (
+  campaignId: string,
+  data: UpsertCampaignStoryRequest,
+): Promise<CampaignStoryDto> =>
+  api.put<CampaignStoryDto>(`/api/association/campaigns/${campaignId}/story`, data).then((r) => r.data);
+
+/**
+ * Fetches a campaign's own story, draft included.
+ * Calls `GET /api/association/campaigns/:campaignId/story`.
+ *
+ * @param campaignId - UUID of the campaign.
+ * @returns The story DTO, or null if nothing has been written yet (204).
+ */
+export const getCampaignStory = (campaignId: string): Promise<CampaignStoryDto | null> =>
+  api
+    .get<CampaignStoryDto>(`/api/association/campaigns/${campaignId}/story`)
+    .then((r) => (r.status === 204 ? null : r.data));
+
+/**
+ * Uploads an image to embed in a campaign's story via the rich-text editor.
+ * Calls `POST /api/association/campaigns/:campaignId/story/images`.
+ *
+ * @param campaignId - UUID of the campaign.
+ * @param file - Image file (JPEG, PNG or WebP, max 5 MB).
+ * @returns The stored image's id and public serving URL.
+ */
+export const uploadStoryImage = (campaignId: string, file: File): Promise<CampaignStoryImageDto> => {
+  const form = new FormData();
+  form.append('file', file);
+  return api
+    .post<CampaignStoryImageDto>(`/api/association/campaigns/${campaignId}/story/images`, form)
+    .then((r) => r.data);
+};

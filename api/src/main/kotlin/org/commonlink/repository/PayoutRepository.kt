@@ -94,6 +94,55 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
     fun sumInFlightAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 
     /**
+     * Number of confirmed payouts published by an association, all campaigns combined.
+     *
+     * Shown on the donor's "My associations" card as the association's transparency record.
+     * Only CONFIRMED payouts count: a pending one has not been executed and would overstate it.
+     */
+    @Query("""
+        SELECT COUNT(p)
+        FROM Payout p
+        WHERE p.campaign.association.id = :associationId
+          AND p.status = org.commonlink.entity.PayoutStatus.CONFIRMED
+    """)
+    fun countConfirmedByAssociationId(@Param("associationId") associationId: UUID): Long
+
+    /**
+     * Confirmed payouts of a campaign, oldest first — FIFO consumption order for
+     * [org.commonlink.service.DonationAllocationService].
+     */
+    fun findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId: UUID, status: PayoutStatus): List<Payout>
+
+    /**
+     * Payouts confirmed since [since] on associations [donorId] has funded -- feeds the donor
+     * engagement feed's "payout confirmé" event ([org.commonlink.service.DonorEngagementService]).
+     * Wording at render time must use the D2-validated sentence, never claim on-chain registration
+     * of the expense (see `docs/legal/registre-onchain-des-depenses.md`).
+     *
+     * [since] is never null at the call site -- pass `Instant.EPOCH` for "everything available".
+     * A nullable parameter compared with a bare `:since IS NULL OR ...` leaves PostgreSQL unable to
+     * infer that parameter's type ("could not determine data type of parameter"), since the `IS
+     * NULL` branch gives it no type context; `Instant.EPOCH` sidesteps this entirely.
+     *
+     * Filtered by **association**, not by the exact campaign the donor funded: a payout on another
+     * campaign of the same association is still relevant transparency for a donor who supports it.
+     */
+    @Query("""
+        SELECT p FROM Payout p
+        WHERE p.campaign.association.id IN (
+            SELECT DISTINCT d.campaign.association.id FROM Donation d
+            WHERE d.donor.id = :donorId AND d.confirmedAt IS NOT NULL
+        )
+        AND p.status = org.commonlink.entity.PayoutStatus.CONFIRMED
+        AND p.confirmedAt > :since
+        ORDER BY p.confirmedAt DESC
+    """)
+    fun findConfirmedSinceForDonor(
+        @Param("donorId") donorId: UUID,
+        @Param("since") since: Instant,
+    ): List<Payout>
+
+    /**
      * Everything webhook routing needs of a payout, and deliberately nothing more.
      *
      * Returning the entity here loaded it into the request-scoped persistence context

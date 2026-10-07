@@ -1,9 +1,10 @@
 'use client';
 
+import { Fragment, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCampaignDonors } from '@/hooks/campaign/useCampaignDonors';
-import { DonorSort } from '@/types/donor-campaign';
-import type { CampaignDonorDto, DonationDto } from '@/types/donor-campaign';
+import { DonorSort, SortDirection } from '@/types/donor-campaign';
+import type { DonationDto } from '@/types/donor-campaign';
 import type { CampaignDto } from '@/types/campaign';
 
 interface Props {
@@ -45,130 +46,117 @@ function OnChainChip({ onChain }: { onChain: boolean }) {
   return <span className="chip yellow">⏳</span>;
 }
 
-function DonationDetail({
-  donation,
-  onClose,
+const TxSortKey = {
+  DATE: 'DATE',
+  AMOUNT: 'AMOUNT',
+  REF: 'REF',
+  ON_CHAIN: 'ON_CHAIN',
+} as const;
+type TxSortKey = typeof TxSortKey[keyof typeof TxSortKey];
+
+function compareDonations(a: DonationDto, b: DonationDto, key: TxSortKey): number {
+  switch (key) {
+    case TxSortKey.DATE:
+      return a.createdAt.localeCompare(b.createdAt);
+    case TxSortKey.AMOUNT:
+      return a.amount - b.amount;
+    case TxSortKey.REF:
+      return a.providerRef.localeCompare(b.providerRef);
+    case TxSortKey.ON_CHAIN:
+      return Number(a.onChain) - Number(b.onChain);
+  }
+}
+
+/** Header sort button shared by the donor table (server sort) and the transactions sub-table (client sort). */
+function SortButton({
+  label,
+  active,
+  direction,
+  onClick,
 }: {
-  donation: DonationDto;
-  onClose: () => void;
+  label: string;
+  active: boolean;
+  direction: SortDirection;
+  onClick: () => void;
 }) {
   const t = useTranslations('dashboard.campaigns.donors');
+  const nextDirection = active && direction === SortDirection.ASC ? SortDirection.DESC : SortDirection.ASC;
+  const aria = nextDirection === SortDirection.ASC
+    ? t('table.sortAscendingAria', { column: label })
+    : t('table.sortDescendingAria', { column: label });
   return (
-    <div className="cm-card d-tx-card">
-      <div className="cm-card-title">
-        💸 {t('tx.title')}
-        <button
-          type="button"
-          className="cm-btn cm-btn-ghost cm-btn-sm cm-card-title-close"
-          onClick={onClose}
-        >
-          {t('tx.close')}
-        </button>
-      </div>
-      <div className="d-row">
-        <span className="d-key">{t('tx.date')}</span>
-        <span className="d-val">{fmtDate(donation.createdAt)}</span>
-      </div>
-      <div className="d-row">
-        <span className="d-key">{t('tx.title')}</span>
-        <span className="d-val amount-teal">
-          {fmtEur(donation.amount)}
-        </span>
-      </div>
-      <div className="d-row">
-        <span className="d-key">{t('tx.ref')}</span>
-        <code className="d-ref-code">
-          {fmtRef(donation.providerRef)}
-        </code>
-      </div>
-      <div className="d-row">
-        <span className="d-key">{t('tx.onChain')}</span>
-        <OnChainChip onChain={donation.onChain} />
-      </div>
-    </div>
+    <button type="button" className={`th-sort${active ? ' active' : ''}`} onClick={onClick} aria-label={aria}>
+      {label}
+      <span className={`th-sort-chev${active && direction === SortDirection.DESC ? ' desc' : ''}`} aria-hidden="true">
+        ▲
+      </span>
+    </button>
   );
 }
 
-function DonorDetail({
-  donor,
-  donations,
-  isLoading,
-  selectedDonation,
-  onSelectDonation,
-  onCloseDonation,
-  onClose,
-}: {
-  donor: CampaignDonorDto;
-  donations: DonationDto[];
-  isLoading: boolean;
-  selectedDonation: DonationDto | null;
-  onSelectDonation: (d: DonationDto) => void;
-  onCloseDonation: () => void;
-  onClose: () => void;
-}) {
+/**
+ * Expanded content of a donor row: every donation of the donor as a sortable `cm-table`
+ * (date · amount · reference · on-chain). Sort is local — the full history is already loaded.
+ */
+function DonorTransactions({ donations, isLoading }: { donations: DonationDto[]; isLoading: boolean }) {
   const t = useTranslations('dashboard.campaigns.donors');
+  const [sortKey, setSortKey] = useState<TxSortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(SortDirection.ASC);
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return donations;
+    return [...donations].sort((a, b) => {
+      const cmp = compareDonations(a, b, sortKey);
+      return sortDirection === SortDirection.DESC ? -cmp : cmp;
+    });
+  }, [donations, sortKey, sortDirection]);
+
+  function handleSort(key: TxSortKey): void {
+    if (sortKey === key) {
+      setSortDirection((d) => (d === SortDirection.ASC ? SortDirection.DESC : SortDirection.ASC));
+    } else {
+      setSortKey(key);
+      setSortDirection(SortDirection.ASC);
+    }
+  }
+
+  function header(label: string, key: TxSortKey) {
+    return <SortButton label={label} active={sortKey === key} direction={sortDirection} onClick={() => handleSort(key)} />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="spinner-wrap">
+        <div className="w-[20px] h-[20px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
+      </div>
+    );
+  }
+  if (donations.length === 0) {
+    return <p className="cm-table-empty">{t('detail.noTx')}</p>;
+  }
   return (
-    <div className="cm-card">
-      <div className="cm-card-title">
-        👤 {donor.displayName}
-        <button
-          type="button"
-          className="cm-btn cm-btn-ghost cm-btn-sm cm-card-title-close"
-          onClick={onClose}
-        >
-          {t('detail.close')}
-        </button>
-      </div>
-
-      <div className="cm-stats cm-stats-tight">
-        <div className="cm-stat">
-          <div className="cm-stat-lbl">{t('detail.total')}</div>
-          <div className="cm-stat-val val-dark">{fmtEur(donor.totalAmount)}</div>
-        </div>
-        <div className="cm-stat">
-          <div className="cm-stat-lbl">{t('detail.txCount')}</div>
-          <div className="cm-stat-val val-teal">{donor.txCount}</div>
-        </div>
-        <div className="cm-stat">
-          <div className="cm-stat-lbl">{t('detail.lastDonation')}</div>
-          <div className="cm-stat-val val-sm">{fmtDate(donor.lastDonationAt)}</div>
-        </div>
-      </div>
-
-      <div className="d-section">{t('detail.transactions')}</div>
-
-      {isLoading ? (
-        <div className="spinner-wrap">
-          <div className="w-[20px] h-[20px] rounded-full border-2 border-[var(--bright-teal)]/30 border-t-[var(--bright-teal)] animate-spin" />
-        </div>
-      ) : donations.length === 0 ? (
-        <p className="d-empty-note">
-          {t('detail.noTx')}
-        </p>
-      ) : (
-        donations.map((d) => (
-          <div key={d.id}>
-            <button
-              type="button"
-              onClick={() =>
-                selectedDonation?.id === d.id ? onCloseDonation() : onSelectDonation(d)
-              }
-              className="d-row d-row-btn"
-            >
-              <span className="d-key">{fmtDate(d.createdAt)}</span>
-              <span className="d-row-amt">
-                <span className="amount-teal">
-                  {fmtEur(d.amount)}
-                </span>
-                <OnChainChip onChain={d.onChain} />
-              </span>
-            </button>
-            {selectedDonation?.id === d.id && (
-              <DonationDetail donation={d} onClose={onCloseDonation} />
-            )}
-          </div>
-        ))
-      )}
+    <div className="overflow-x-auto">
+      <table className="cm-table">
+        <caption className="sr-only">{t('detail.transactions')}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{header(t('tx.date'), TxSortKey.DATE)}</th>
+            <th scope="col" className="col-right">{header(t('tx.amount'), TxSortKey.AMOUNT)}</th>
+            <th scope="col">{header(t('tx.ref'), TxSortKey.REF)}</th>
+            <th scope="col">{header(t('tx.onChain'), TxSortKey.ON_CHAIN)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((d) => (
+            <tr key={d.id}>
+              <td>{fmtDate(d.createdAt)}</td>
+              <td className="amount-teal col-right">{fmtEur(d.amount)}</td>
+              <td><code className="d-ref-code" title={d.providerRef}>{fmtRef(d.providerRef)}</code></td>
+              <td><OnChainChip onChain={d.onChain} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -217,6 +205,11 @@ function Pager({
   );
 }
 
+/**
+ * Donors tab of the association campaign editor. Standard sortable `cm-table` (see app/CLAUDE.md "Tables"):
+ * column headers drive the server-side sort, and each donor row expands via its chevron into the
+ * donor's transactions sub-table. Only one donor is expanded at a time.
+ */
 export function CampaignDonorsTab({ campaign }: Props) {
   const t = useTranslations('dashboard.campaigns.donors');
   const {
@@ -224,29 +217,30 @@ export function CampaignDonorsTab({ campaign }: Props) {
     page,
     search,
     sort,
+    direction,
     isLoading,
     error,
-    selectedDonor,
+    openDonorId,
     donorDonations,
     isDonorLoading,
-    selectedDonation,
     setPage,
     setSearch,
-    setSort,
-    selectDonor,
-    closeDonor,
-    selectDonation,
-    closeDonation,
+    toggleSort,
+    toggleDonor,
   } = useCampaignDonors(campaign.id);
 
   const donors = donorsPage?.content ?? [];
   const totalElements = donorsPage?.totalElements ?? 0;
   const totalPages = donorsPage?.totalPages ?? 0;
 
-  const topDonor =
-    sort === DonorSort.AMOUNT && donors.length > 0 ? donors[0].displayName : '—';
+  const isTopFirst = sort === DonorSort.AMOUNT && direction === SortDirection.DESC && page === 0;
+  const topDonor = isTopFirst && donors.length > 0 ? donors[0].displayName : '—';
   const avgAmount =
     donors.length > 0 ? donors.reduce((s, d) => s + d.totalAmount, 0) / donors.length : 0;
+
+  function header(label: string, key: DonorSort) {
+    return <SortButton label={label} active={sort === key} direction={direction} onClick={() => toggleSort(key)} />;
+  }
 
   function handleExportCsv() {
     if (donors.length === 0) return;
@@ -302,18 +296,6 @@ export function CampaignDonorsTab({ campaign }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <select
-            className="fsel"
-            value={sort}
-            onChange={(e) => {
-              setSort(e.target.value);
-              setPage(0);
-            }}
-          >
-            <option value={DonorSort.AMOUNT}>{t('sort.amount')}</option>
-            <option value={DonorSort.DATE}>{t('sort.date')}</option>
-            <option value={DonorSort.NAME}>{t('sort.name')}</option>
-          </select>
           <span className="filter-bar-count">
             {!isLoading && t('showing', { count: totalElements })}
           </span>
@@ -335,55 +317,68 @@ export function CampaignDonorsTab({ campaign }: Props) {
             {t('empty')}
           </p>
         ) : (
-          <div className="tw">
+          <div className="overflow-x-auto tw">
             <table className="cm-table">
+              <caption className="sr-only">{t('table.caption')}</caption>
               <thead>
                 <tr>
-                  <th>{t('table.donor')}</th>
-                  <th className="col-right">{t('table.amount')}</th>
-                  <th className="col-center">{t('table.transactions')}</th>
-                  <th>{t('table.lastDonation')}</th>
-                  <th />
+                  <th scope="col" />
+                  <th scope="col">{header(t('table.donor'), DonorSort.NAME)}</th>
+                  <th scope="col" className="col-right">{header(t('table.amount'), DonorSort.AMOUNT)}</th>
+                  <th scope="col" className="col-center">{header(t('table.transactions'), DonorSort.COUNT)}</th>
+                  <th scope="col">{header(t('table.lastDonation'), DonorSort.DATE)}</th>
                 </tr>
               </thead>
               <tbody>
-                {donors.map((donor) => (
-                  <tr key={donor.donorId}>
-                    <td>
-                      <div className="avatar-row">
-                        <div
-                          className="avatar avatar-xs"
-                          style={{ background: getAvatarBg(donor.donorId) }}
-                        >
-                          {getInitials(donor.displayName)}
-                        </div>
-                        <div className="donor-name">{donor.displayName}</div>
-                      </div>
-                    </td>
-                    <td className="amount-teal col-right">
-                      {fmtEur(donor.totalAmount)}
-                    </td>
-                    <td className="tx-count col-center">
-                      {donor.txCount}
-                    </td>
-                    <td className="col-muted">
-                      {fmtDate(donor.lastDonationAt)}
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="cm-btn cm-btn-ghost cm-btn-sm"
-                        onClick={() =>
-                          selectedDonor?.donorId === donor.donorId
-                            ? closeDonor()
-                            : selectDonor(donor)
-                        }
-                      >
-                        {t('table.view')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {donors.map((donor) => {
+                  const isOpen = openDonorId === donor.donorId;
+                  const detailId = `donor-detail-${donor.donorId}`;
+                  return (
+                    <Fragment key={donor.donorId}>
+                      <tr>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            aria-expanded={isOpen}
+                            aria-controls={detailId}
+                            aria-label={`${isOpen ? t('table.hideDetail') : t('table.showDetail')} — ${donor.displayName}`}
+                            onClick={() => toggleDonor(donor.donorId)}
+                          >
+                            <span className={`th-sort-chev${isOpen ? ' desc' : ''}`} aria-hidden="true">▲</span>
+                          </button>
+                        </td>
+                        <td>
+                          <div className="avatar-row">
+                            <div
+                              className="avatar avatar-xs"
+                              style={{ background: getAvatarBg(donor.donorId) }}
+                            >
+                              {getInitials(donor.displayName)}
+                            </div>
+                            <div className="donor-name">{donor.displayName}</div>
+                          </div>
+                        </td>
+                        <td className="amount-teal col-right">
+                          {fmtEur(donor.totalAmount)}
+                        </td>
+                        <td className="tx-count col-center">
+                          {donor.txCount}
+                        </td>
+                        <td className="col-muted">
+                          {fmtDate(donor.lastDonationAt)}
+                        </td>
+                      </tr>
+                      {isOpen && (
+                        <tr id={detailId}>
+                          <td colSpan={5}>
+                            <DonorTransactions donations={donorDonations} isLoading={isDonorLoading} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -391,19 +386,6 @@ export function CampaignDonorsTab({ campaign }: Props) {
 
         <Pager page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
-
-      {/* ── Donor detail panel ────────────────────────────────────────────── */}
-      {selectedDonor && (
-        <DonorDetail
-          donor={selectedDonor}
-          donations={donorDonations}
-          isLoading={isDonorLoading}
-          selectedDonation={selectedDonation}
-          onSelectDonation={selectDonation}
-          onCloseDonation={closeDonation}
-          onClose={closeDonor}
-        />
-      )}
     </div>
   );
 }

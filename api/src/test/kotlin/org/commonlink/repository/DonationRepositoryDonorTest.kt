@@ -80,6 +80,31 @@ class DonationRepositoryDonorTest(
     }
 
     @Test
+    fun `findDonorAggregatesByCampaignId sorts by sortName with anonymous donors as anonyme`() {
+        // Hidden name "Marie Secret" would sort after "Marie Dupont"; masked as "anonyme" it sorts first.
+        val pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "sortName"))
+        val page = donationRepository.findDonorAggregatesByCampaignId(campaignId, pageable)
+
+        assertThat(page.content.map { it.getDonorId() }).containsExactly(anonymousDonorId, donorId1, donorId2)
+    }
+
+    @Test
+    fun `findDonorAggregatesByCampaignId sorts by txCount`() {
+        val pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "txCount").and(Sort.by("donorId")))
+        val page = donationRepository.findDonorAggregatesByCampaignId(campaignId, pageable)
+
+        assertThat(page.content.first().getDonorId()).isEqualTo(donorId1)
+    }
+
+    @Test
+    fun `findDonorAggregatesByCampaignIdAndSearch supports sortName`() {
+        val pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "sortName"))
+        val page = donationRepository.findDonorAggregatesByCampaignIdAndSearch(campaignId, "r", pageable)
+
+        assertThat(page.content.map { it.getDonorId() }).containsExactly(donorId2, donorId1)
+    }
+
+    @Test
     fun `findDonorAggregatesByCampaignId excludes unconfirmed donations from sums`() {
         val pageable = PageRequest.of(0, 20)
         val page = donationRepository.findDonorAggregatesByCampaignId(campaignId, pageable)

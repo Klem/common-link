@@ -1,5 +1,20 @@
 import api from '@/lib/api';
-import type { DonorProfileDto, UpdateDonorProfileRequest } from '@/types/donor';
+import type {
+  DonorAssociationDto,
+  DonorCampaignReportDto,
+  DonorDonationFiltersDto,
+  DonorDonationJourneyDto,
+  DonorDonationsPage,
+  DonorDonationsQuery,
+  DonorFeedItemDto,
+  DonorImpactDto,
+  DonorProfileDto,
+  DonorReceiptYearDto,
+  DonorRecommendationDto,
+  DonorStatsDto,
+  PayoutFundingBreakdownDto,
+  UpdateDonorProfileRequest,
+} from '@/types/donor';
 
 /**
  * Fetches the current donor's profile from `GET /api/donor/me`.
@@ -19,3 +34,157 @@ export const getDonorProfile = (): Promise<DonorProfileDto> =>
  */
 export const updateDonorProfile = (data: UpdateDonorProfileRequest): Promise<DonorProfileDto> =>
   api.patch<DonorProfileDto>('/api/donor/me', data).then((r) => r.data);
+
+/**
+ * Fetches a page of the current donor's confirmed donations via `GET /api/donor/me/donations`.
+ * Both `associationId` and `year` are optional filters.
+ *
+ * @param query - Pagination and optional filters.
+ * @returns The requested page of donations.
+ */
+export const getDonorDonations = (query: DonorDonationsQuery = {}): Promise<DonorDonationsPage> =>
+  api
+    .get<DonorDonationsPage>('/api/donor/me/donations', {
+      params: { page: 0, size: 20, ...query },
+    })
+    .then((r) => r.data);
+
+/**
+ * Fetches the values available in the donation history filters via
+ * `GET /api/donor/me/donations/filters`.
+ *
+ * @returns Associations funded and years with at least one confirmed donation.
+ */
+export const getDonorDonationFilters = (): Promise<DonorDonationFiltersDto> =>
+  api.get<DonorDonationFiltersDto>('/api/donor/me/donations/filters').then((r) => r.data);
+
+/**
+ * Fetches the donor's headline figures via `GET /api/donor/me/stats`.
+ *
+ * @returns Total donated, donation count, association count, and estimated tax reduction.
+ */
+export const getDonorStats = (): Promise<DonorStatsDto> =>
+  api.get<DonorStatsDto>('/api/donor/me/stats').then((r) => r.data);
+
+/**
+ * Fetches the associations supported by the current donor via `GET /api/donor/me/associations`.
+ *
+ * @returns One entry per funded association, most funded first.
+ */
+export const getDonorAssociations = (): Promise<DonorAssociationDto[]> =>
+  api.get<DonorAssociationDto[]>('/api/donor/me/associations').then((r) => r.data);
+
+/**
+ * Downloads the fiscal receipt PDF of a donation via
+ * `GET /api/donor/me/donations/{donationId}/receipt`.
+ * Ownership is enforced server-side by `DonorReadScope.assertOwnsDonation`.
+ *
+ * @param donationId - Id of the donation to fetch the receipt for.
+ * @returns The PDF as a Blob.
+ */
+export const downloadDonationReceipt = (donationId: string): Promise<Blob> =>
+  api
+    .get<Blob>(`/api/donor/me/donations/${donationId}/receipt`, { responseType: 'blob' })
+    .then((r) => r.data);
+
+/**
+ * Fetches the 4-step journey of one donation via
+ * `GET /api/donor/me/donations/{donationId}/journey`.
+ * Ownership is enforced server-side by `DonorReadScope.assertOwnsDonation`.
+ *
+ * @param donationId - Id of the donation to fetch the journey for.
+ * @returns The journey steps, allocation detail, and prev/next navigation.
+ */
+export const getDonationJourney = (donationId: string): Promise<DonorDonationJourneyDto> =>
+  api.get<DonorDonationJourneyDto>(`/api/donor/me/donations/${donationId}/journey`).then((r) => r.data);
+
+/**
+ * Fetches the donor-facing "bilan de campagne" via
+ * `GET /api/donor/me/campaigns/{campaignId}/report`.
+ * Requires at least one confirmed donation of the donor on the campaign.
+ *
+ * @param campaignId - Id of the campaign to fetch the report for.
+ * @returns Hero data, the donor's own contribution, milestones, payouts, and budget variance.
+ */
+export const getCampaignReport = (campaignId: string): Promise<DonorCampaignReportDto> =>
+  api.get<DonorCampaignReportDto>(`/api/donor/me/campaigns/${campaignId}/report`).then((r) => r.data);
+
+/**
+ * Fetches which donations funded one payout ("Voir la répartition") via
+ * `GET /api/donor/me/campaigns/{campaignId}/payouts/{payoutId}/breakdown`.
+ *
+ * @param campaignId - Id of the campaign the payout belongs to.
+ * @param payoutId - Id of the payout to fetch the funding breakdown for.
+ * @returns The donor's own contributing lines, plus an aggregate of other donors (withheld below
+ *   a minimum contributor count — see `PayoutFundingBreakdownDto`).
+ */
+export const getPayoutBreakdown = (
+  campaignId: string,
+  payoutId: string,
+): Promise<PayoutFundingBreakdownDto> =>
+  api
+    .get<PayoutFundingBreakdownDto>(`/api/donor/me/campaigns/${campaignId}/payouts/${payoutId}/breakdown`)
+    .then((r) => r.data);
+
+/**
+ * Downloads the campaign report PDF via `GET /api/donor/me/campaigns/{campaignId}/report/pdf`.
+ *
+ * @param campaignId - Id of the campaign to fetch the report PDF for.
+ * @returns The PDF as a Blob.
+ */
+export const downloadCampaignReportPdf = (campaignId: string): Promise<Blob> =>
+  api
+    .get<Blob>(`/api/donor/me/campaigns/${campaignId}/report/pdf`, { responseType: 'blob' })
+    .then((r) => r.data);
+
+/**
+ * Fetches the donor's annual fiscal recap summaries via `GET /api/donor/me/receipts`.
+ *
+ * @returns One row per calendar year with at least one receipted donation.
+ */
+export const getDonorReceiptYears = (): Promise<DonorReceiptYearDto[]> =>
+  api.get<DonorReceiptYearDto[]>('/api/donor/me/receipts').then((r) => r.data);
+
+/**
+ * Downloads the annual fiscal recap PDF via `GET /api/donor/me/receipts/{year}/pdf`.
+ *
+ * @param year - Calendar year to fetch the recap for.
+ * @returns The PDF as a Blob.
+ */
+export const downloadAnnualReceiptsSummary = (year: number): Promise<Blob> =>
+  api
+    .get<Blob>(`/api/donor/me/receipts/${year}/pdf`, { responseType: 'blob' })
+    .then((r) => r.data);
+
+/**
+ * Fetches the donor's impact gallery via `GET /api/donor/me/impacts`.
+ *
+ * @returns One card per campaign the donor has funded, never a per-donor share (D6).
+ */
+export const getDonorImpacts = (): Promise<DonorImpactDto[]> =>
+  api.get<DonorImpactDto[]>('/api/donor/me/impacts').then((r) => r.data);
+
+/**
+ * Fetches recommended projects via `GET /api/donor/me/recommendations` (D8, option A).
+ *
+ * @returns At most 6 recommended campaigns, `donationUrl` always non-null.
+ */
+export const getDonorRecommendations = (): Promise<DonorRecommendationDto[]> =>
+  api.get<DonorRecommendationDto[]>('/api/donor/me/recommendations').then((r) => r.data);
+
+/**
+ * Fetches the donor's engagement feed since their last visit via `GET /api/donor/me/feed`.
+ * Read-only: does not mark the feed as seen — see {@link markDonorFeedSeen}.
+ *
+ * @returns Events newest first, already filtered by the donor's notification preferences.
+ */
+export const getDonorFeed = (): Promise<DonorFeedItemDto[]> =>
+  api.get<DonorFeedItemDto[]>('/api/donor/me/feed').then((r) => r.data);
+
+/**
+ * Marks the engagement feed as seen via `POST /api/donor/me/feed/seen`.
+ * Call this once the donor has actually viewed the "Depuis votre dernière visite" block, never as
+ * a side effect of loading it.
+ */
+export const markDonorFeedSeen = (): Promise<void> =>
+  api.post('/api/donor/me/feed/seen').then(() => undefined);

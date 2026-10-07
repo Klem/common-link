@@ -8,6 +8,7 @@ import type { CampaignDto } from '@/types/campaign';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => 'fr',
 }));
 
 vi.mock('@/lib/api/campaign', () => ({
@@ -30,6 +31,7 @@ const baseCampaign: CampaignDto = {
   startDate: null,
   endDate: null,
   category: null,
+  actionPlace: null,
   reason: null,
   impactGoals: null,
   coverImage: null,
@@ -49,6 +51,29 @@ describe('CampaignInfoTab', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('offers every cause from the enum and autosaves the chosen enum value', () => {
+    const onSave = vi.fn();
+    render(<CampaignInfoTab campaign={baseCampaign} onSave={onSave} onCoverChange={vi.fn()} isSaving={false} />);
+    const select = screen.getByRole('option', { name: '🍎 ALIMENTATION' }).closest('select')!;
+    // 11 causes + the empty option; AUTRE is selectable in the editor.
+    expect(select.querySelectorAll('option')).toHaveLength(12);
+    expect(screen.getByRole('option', { name: 'AUTRE' })).toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: 'ALIMENTATION' } });
+    act(() => { vi.advanceTimersByTime(800); });
+
+    expect(onSave).toHaveBeenCalledWith({ category: 'ALIMENTATION' }, true);
+  });
+
+  it('saves the place of action at once, silently', () => {
+    const onSave = vi.fn();
+    render(<CampaignInfoTab campaign={baseCampaign} onSave={onSave} onCoverChange={vi.fn()} isSaving={false} />);
+
+    fireEvent.click(screen.getByLabelText('type.FRANCE'));
+
+    expect(onSave).toHaveBeenCalledWith({ actionPlace: { type: 'FRANCE' } }, true);
   });
 
   it('does not autosave immediately when a field is edited', () => {

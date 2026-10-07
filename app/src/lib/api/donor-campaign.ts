@@ -1,11 +1,12 @@
 import api from '@/lib/api';
+import { DonorSort, SortDirection } from '@/types/donor-campaign';
 import type { CampaignDonorDto, DonationDto, Page } from '@/types/donor-campaign';
 
 const base = (campaignId: string) => `/api/campaigns/${campaignId}`;
 
 /**
- * Returns a paginated list of donor aggregates for a campaign.
- * Anonymous donors appear as "Anonyme" (masked by the API).
+ * Returns a paginated list of donor aggregates for a campaign, sorted server-side by [sort]/[direction].
+ * Anonymous donors appear as "Anonyme" (masked by the API) and sort as such on [DonorSort.NAME].
  * Calls `GET /api/campaigns/{campaignId}/donors`.
  */
 export const listDonors = (
@@ -13,11 +14,12 @@ export const listDonors = (
   page = 0,
   size = 12,
   search?: string,
-  sort = 'amount',
+  sort: DonorSort = DonorSort.AMOUNT,
+  direction: SortDirection = SortDirection.DESC,
 ): Promise<Page<CampaignDonorDto>> =>
   api
     .get<Page<CampaignDonorDto>>(`${base(campaignId)}/donors`, {
-      params: { page, size, ...(search ? { search } : {}), sort },
+      params: { page, size, ...(search ? { search } : {}), sort, direction },
     })
     .then((r) => r.data);
 

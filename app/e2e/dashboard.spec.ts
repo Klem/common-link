@@ -166,9 +166,9 @@ test.describe('Dashboard smoke tests', () => {
     await expect(page.getByText('Fonds collectés')).toBeVisible();
   });
 
-  // ── Profile page ───────────────────────────────────────────────────────────
+  // ── Settings page ──────────────────────────────────────────────────────────
 
-  test('donor profile page is accessible', async ({ page, context }) => {
+  test('donor settings page is accessible', async ({ page, context }) => {
     await setAuthCookies(context, 'DONOR', mockDonorUser.id);
 
     await page.route(`${API_BASE}/api/auth/refresh`, (route) =>
@@ -186,13 +186,23 @@ test.describe('Dashboard smoke tests', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: mockDonorUser.id, displayName: 'Jean Dupont', anonymous: false }),
+        body: JSON.stringify({
+          id: mockDonorUser.id,
+          firstName: 'Jean',
+          lastName: 'Dupont',
+          displayName: 'Jean Dupont',
+          anonymous: false,
+          notifyMonthlyReport: true,
+          notifyNewPayout: true,
+          notifyGoalReached: true,
+          notifySuggestions: false,
+        }),
       }),
     );
 
-    await page.goto('/fr/dashboard/donor/profile');
+    await page.goto('/fr/dashboard/donor/settings');
 
-    await expect(page).toHaveURL(/\/fr\/dashboard\/donor\/profile/, { timeout: 5000 });
+    await expect(page).toHaveURL(/\/fr\/dashboard\/donor\/settings/, { timeout: 5000 });
     await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 10000 });
   });
 

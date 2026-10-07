@@ -81,6 +81,10 @@ dependencies {
     implementation("org.apache.commons:commons-text:1.12.0")   // not in Spring BOM — pin explicitly
     implementation("commons-codec:commons-codec")               // DoubleMetaphone; version managed by Spring BOM
 
+    // HTML sanitization — association-authored rich text (campaign story) is stripped of any
+    // executable content server-side, at the point of persistence, before it is ever stored.
+    implementation("org.jsoup:jsoup:1.18.3")
+
     // Web3j codegen — only used by generateRegistryWrapper task, not deployed
     web3jCodegen("org.web3j:codegen:4.12.2")
 

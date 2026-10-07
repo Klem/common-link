@@ -8,31 +8,34 @@ import {
   deleteCampaignCover,
   campaignCoverUrl,
 } from '@/lib/api/campaign';
-import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
+import { useCauseLabel, CAMPAIGN_CAUSES } from '@/lib/campaignCause';
+import { ActionPlacePicker } from '@/components/campaign/ActionPlacePicker';
+import type { ActionPlaceRequest, CampaignCause, CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
 
-/** Types MIME acceptés pour la couverture — miroir de `COVER_IMAGE_ALLOWED_MIME` côté back (règle 8). */
+/** Accepted cover MIME types — mirror of the backend `COVER_IMAGE_ALLOWED_MIME` (rule 8). */
 const COVER_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Taille maximale de la couverture — miroir de `MAX_COVER_IMAGE_SIZE` côté back (règle 8). */
+/** Maximum cover size — mirror of the backend `MAX_COVER_IMAGE_SIZE` (rule 8). */
 const COVER_MAX_SIZE = 5 * 1024 * 1024;
 
 interface CampaignInfoTabProps {
   campaign: CampaignDto;
   onSave: (data: UpdateCampaignRequest, silent?: boolean) => void;
-  /** Appelé avec le DTO retourné après ajout ou retrait de la couverture. */
+  /** Called with the returned DTO after the cover is added or removed. */
   onCoverChange: (updated: CampaignDto) => void;
   isSaving: boolean;
 }
 
 export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: CampaignInfoTabProps) {
   const t = useTranslations('dashboard.campaigns');
+  const causeLabel = useCauseLabel();
 
   const [name, setName] = useState(campaign.name);
   const [goal, setGoal] = useState(String(campaign.goal));
   const [startDate, setStartDate] = useState(campaign.startDate ?? '');
   const [endDate, setEndDate] = useState(campaign.endDate ?? '');
   const [description, setDescription] = useState(campaign.description ?? '');
-  const [category, setCategory] = useState(campaign.category ?? '');
+  const [category, setCategory] = useState<CampaignCause | ''>(campaign.category ?? '');
   const [reason, setReason] = useState(campaign.reason ?? '');
   const [impactGoals, setImpactGoals] = useState(campaign.impactGoals ?? '');
 
@@ -65,12 +68,14 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
   };
   const handleStartDateChange = (v: string) => { setStartDate(v); schedule({ startDate: v || undefined }); };
   const handleEndDateChange = (v: string) => { setEndDate(v); schedule({ endDate: v || undefined }); };
-  const handleCategoryChange = (v: string) => { setCategory(v); schedule({ category: v || undefined }); };
+  const handleCategoryChange = (v: CampaignCause | '') => { setCategory(v); schedule({ category: v || undefined }); };
+  /** A place is a discrete choice (not typed text): saved at once, silently. */
+  const handleActionPlaceChange = (place: ActionPlaceRequest) => onSave({ actionPlace: place }, true);
   const handleDescriptionChange = (v: string) => { setDescription(v); schedule({ description: v }); };
   const handleReasonChange = (v: string) => { setReason(v); schedule({ reason: v || undefined }); };
   const handleImpactGoalsChange = (v: string) => { setImpactGoals(v); schedule({ impactGoals: v || undefined }); };
 
-  /* ── Image de couverture ─────────────────────────────────────────────── */
+  /* ── Cover image ─────────────────────────────────────────────────────── */
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -78,8 +83,8 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
   const [coverError, setCoverError] = useState('');
 
   /**
-   * Valide le fichier côté client (mêmes règles que le back) puis l'envoie.
-   * Un fichier refusé ne déclenche aucun appel réseau.
+   * Validates the file client-side (same rules as the backend), then uploads it.
+   * A rejected file triggers no network call.
    */
   const uploadCover = async (file: File) => {
     if (!COVER_ALLOWED_MIME.includes(file.type)) {
@@ -149,7 +154,7 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
     <div className="cm-card">
       <div className="cm-card-title">{t('editor.info.title')}</div>
 
-      {/* Row 1: Nom + Objectif */}
+      {/* Row 1: name + goal */}
       <div className="row2 mb-14">
         <div>
           <label className="cm-label">{t('editor.info.name.label')}</label>
@@ -212,17 +217,23 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
         </div>
       </div>
 
-      {/* Catégorie */}
+      {/* Cause */}
       <div className="mb-14">
         <label className="cm-label">{t('editor.info.category.label')}</label>
-        <select className="cm-fi" value={category} onChange={(e) => handleCategoryChange(e.target.value)}>
+        <select
+          className="cm-fi"
+          value={category}
+          onChange={(e) => handleCategoryChange(e.target.value as CampaignCause | '')}
+        >
           <option value="">—</option>
-          <option value="Education">🎓 Éducation</option>
-          <option value="Alimentation">🍎 Alimentation</option>
-          <option value="Environnement">🌱 Environnement</option>
-          <option value="Santé">🏥 Santé</option>
+          {CAMPAIGN_CAUSES.map((c) => (
+            <option key={c} value={c}>{causeLabel(c)}</option>
+          ))}
         </select>
       </div>
+
+      {/* Place of action */}
+      <ActionPlacePicker value={campaign.actionPlace} onChange={handleActionPlaceChange} />
 
       {/* Description */}
       <div className="mb-14">
@@ -236,7 +247,7 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
         />
       </div>
 
-      {/* Raison */}
+      {/* Reason */}
       <div className="mb-14">
         <label className="cm-label">
           {t('editor.info.reason.label')}{' '}
@@ -251,7 +262,7 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
         />
       </div>
 
-      {/* Objectifs d'impact */}
+      {/* Impact goals */}
       <div className="mt-14">
         <label className="cm-label">
           {t('editor.info.impactGoals.label')}{' '}
@@ -266,7 +277,7 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
         />
       </div>
 
-      {/* Image de couverture */}
+      {/* Cover image */}
       <div className="mt-14">
         <label className="cm-label">{t('editor.info.coverImage.label')}</label>
         {campaign.coverImage ? (
@@ -310,7 +321,7 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
           accept={COVER_ALLOWED_MIME.join(',')}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            // Réinitialise l'input pour que re-sélectionner le même fichier redéclenche onChange.
+            // Reset the input so re-selecting the same file fires onChange again.
             e.target.value = '';
             if (file) uploadCover(file);
           }}
@@ -318,7 +329,7 @@ export function CampaignInfoTab({ campaign, onSave, onCoverChange, isSaving }: C
         {coverError && <div className="upload-error">⚠ {coverError}</div>}
       </div>
 
-      {/* Enregistrer */}
+      {/* Save */}
       <div className="form-save-row">
         <button
           type="button"

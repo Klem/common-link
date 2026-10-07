@@ -1,5 +1,6 @@
 package org.commonlink.repository
 
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.Donation
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -197,6 +198,10 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     /**
      * Donor aggregates (sum / count / last date) for all confirmed donations on [campaignId].
      * Grouped and sorted by DB — no in-memory sort.
+     *
+     * Sortable aliases: `totalAmount`, `txCount`, `lastDonationAt`, `sortName`.
+     * `sortName` is the lower-cased name as the association sees it: anonymous donors sort as
+     * "anonyme", never by their hidden display name (sorting on it would leak its position).
      */
     @Query(
         value = """
@@ -205,7 +210,9 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
                    d.donor.anonymous   AS anonymous,
                    SUM(d.amount)       AS totalAmount,
                    COUNT(d)            AS txCount,
-                   MAX(d.confirmedAt)  AS lastDonationAt
+                   MAX(d.confirmedAt)  AS lastDonationAt,
+                   CASE WHEN d.donor.anonymous = true OR d.donor.displayName IS NULL
+                        THEN 'anonyme' ELSE LOWER(d.donor.displayName) END AS sortName
             FROM Donation d
             WHERE d.campaign.id = :campaignId
               AND d.confirmedAt IS NOT NULL
@@ -235,7 +242,9 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
                    d.donor.anonymous   AS anonymous,
                    SUM(d.amount)       AS totalAmount,
                    COUNT(d)            AS txCount,
-                   MAX(d.confirmedAt)  AS lastDonationAt
+                   MAX(d.confirmedAt)  AS lastDonationAt,
+                   CASE WHEN d.donor.anonymous = true OR d.donor.displayName IS NULL
+                        THEN 'anonyme' ELSE LOWER(d.donor.displayName) END AS sortName
             FROM Donation d
             WHERE d.campaign.id = :campaignId
               AND d.confirmedAt IS NOT NULL
@@ -274,6 +283,289 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         pageable: Pageable,
     ): Page<Donation>
 
+    // ── Donor dashboard (Sprint 1) ────────────────────────────────────────
+
+    /** Projection for the association selector of the donation history filter. */
+    interface AssociationOptionRow {
+        fun getId(): UUID
+        fun getName(): String
+    }
+
+    /** Per-association aggregates shown on the donor's "My associations" page. */
+    interface DonorAssociationRow {
+        fun getAssociationId(): UUID
+        fun getName(): String
+        fun getTotalAmount(): BigDecimal
+        fun getCampaignCount(): Long
+        fun getLastDonationAt(): Instant?
+    }
+
+    /** One confirmed donation reduced to the campaign category of the association it funded. */
+    interface AssociationCategoryRow {
+        fun getAssociationId(): UUID
+        fun getCategory(): CampaignCause?
+    }
+
+    /** One campaign the donor has funded with at least one confirmed donation -- feeds the impact gallery. */
+    interface DonorCampaignRow {
+        fun getCampaignId(): UUID
+        fun getCampaignName(): String
+        fun getCampaignEmoji(): String
+        fun getCategory(): CampaignCause?
+        fun getImpactGoals(): String?
+        fun getAssociationId(): UUID
+        fun getAssociationName(): String
+    }
+
+    /** A receipted donation reduced to what the estimated tax reduction needs: who, how much, when. */
+    interface ReceiptedDonationRow {
+        fun getAssociationId(): UUID
+        fun getAmount(): BigDecimal
+        fun getConfirmedAt(): Instant
+    }
+
+    /**
+     * A receipted donation of one calendar year, with the fields a fiscal recap PDF must show —
+     * association name and the receipt number the donor can cross-check against the per-donation
+     * PDF already downloadable via [org.commonlink.service.DonorDashboardService.getReceipt].
+     */
+    interface ReceiptedDonationDetailRow {
+        fun getAssociationId(): UUID
+        fun getAssociationName(): String
+        fun getAmount(): BigDecimal
+        fun getConfirmedAt(): Instant
+        fun getReceiptNumber(): String
+    }
+
+    /**
+     * Paginated confirmed-donation history of a donor, newest first, with both optional filters
+     * applied in the query.
+     *
+     * [associationId] and [year] are optional: a null value disables that filter. The campaign and
+     * its association are JOIN FETCHed because every row of the history renders both — without it
+     * each row would trigger two extra selects.
+     *
+     * The count query is supplied explicitly: Spring Data cannot derive one from a query carrying
+     * fetch joins.
+     *
+     * @param pageable page and size only — the ordering is fixed by the query.
+     */
+    @Query(
+        value = """
+            SELECT d FROM Donation d
+            JOIN FETCH d.campaign c
+            JOIN FETCH c.association a
+            WHERE d.donor.id  = :donorId
+              AND d.confirmedAt IS NOT NULL
+              AND (:associationId IS NULL OR a.id = :associationId)
+              AND (:year          IS NULL OR extract(year from d.confirmedAt) = :year)
+            ORDER BY d.confirmedAt DESC
+        """,
+        countQuery = """
+            SELECT COUNT(d) FROM Donation d
+            JOIN d.campaign c
+            JOIN c.association a
+            WHERE d.donor.id  = :donorId
+              AND d.confirmedAt IS NOT NULL
+              AND (:associationId IS NULL OR a.id = :associationId)
+              AND (:year          IS NULL OR extract(year from d.confirmedAt) = :year)
+        """,
+    )
+    fun findByDonorIdFiltered(
+        @Param("donorId") donorId: UUID,
+        @Param("associationId") associationId: UUID?,
+        @Param("year") year: Int?,
+        pageable: Pageable,
+    ): Page<Donation>
+
+    /**
+     * Total amount confirmed by a donor, all campaigns and associations combined.
+     * Returns null when the donor has no confirmed donation; callers treat null as zero.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(d.amount), 0)
+        FROM Donation d
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun sumConfirmedAmountByDonorId(@Param("donorId") donorId: UUID): BigDecimal?
+
+    /** Number of confirmed donations made by a donor. */
+    @Query("""
+        SELECT COUNT(d)
+        FROM Donation d
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun countConfirmedByDonorId(@Param("donorId") donorId: UUID): Long
+
+    /** Number of distinct associations a donor has funded with at least one confirmed donation. */
+    @Query("""
+        SELECT COUNT(DISTINCT c.association.id)
+        FROM Donation d
+        JOIN d.campaign c
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun countDistinctAssociationsByDonorId(@Param("donorId") donorId: UUID): Long
+
+    /**
+     * Years in which the donor has at least one confirmed donation, most recent first.
+     * Feeds the year selector of the history filter.
+     *
+     * Uses HQL `extract()` rather than native SQL so the query runs unchanged on PostgreSQL and H2.
+     */
+    @Query("""
+        SELECT DISTINCT extract(year from d.confirmedAt)
+        FROM Donation d
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        ORDER BY extract(year from d.confirmedAt) DESC
+    """)
+    fun findDistinctYearsByDonorId(@Param("donorId") donorId: UUID): List<Int>
+
+    /** Associations the donor has funded, alphabetically — feeds the association selector. */
+    @Query("""
+        SELECT DISTINCT a.id AS id, a.name AS name
+        FROM Donation d
+        JOIN d.campaign c
+        JOIN c.association a
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        ORDER BY a.name ASC
+    """)
+    fun findDistinctAssociationsByDonorId(@Param("donorId") donorId: UUID): List<AssociationOptionRow>
+
+    /**
+     * One row per association funded by the donor: cumulated amount, number of distinct campaigns
+     * supported, and date of the last confirmed donation.
+     *
+     * The category is **not** part of this projection: it is carried by [org.commonlink.entity.Campaign],
+     * not by the association, so there is no such thing as a single association-level category.
+     * See [findAssociationCategoriesByDonorId].
+     */
+    @Query("""
+        SELECT a.id               AS associationId,
+               a.name             AS name,
+               SUM(d.amount)      AS totalAmount,
+               COUNT(DISTINCT c.id) AS campaignCount,
+               MAX(d.confirmedAt) AS lastDonationAt
+        FROM Donation d
+        JOIN d.campaign c
+        JOIN c.association a
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        GROUP BY a.id, a.name
+        ORDER BY SUM(d.amount) DESC
+    """)
+    fun findAssociationAggregatesByDonorId(@Param("donorId") donorId: UUID): List<DonorAssociationRow>
+
+    /**
+     * Association id and campaign category for each confirmed donation of the donor, **oldest first**.
+     *
+     * The ordering is the contract: the caller keeps the last row seen per association, which is the
+     * category of the most recently funded campaign. Showing the category of the campaign the donor
+     * actually supported last is the only association-level category that means anything, since the
+     * attribute belongs to the campaign.
+     */
+    @Query("""
+        SELECT c.association.id AS associationId,
+               c.category       AS category
+        FROM Donation d
+        JOIN d.campaign c
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        ORDER BY d.confirmedAt ASC
+    """)
+    fun findAssociationCategoriesByDonorId(@Param("donorId") donorId: UUID): List<AssociationCategoryRow>
+
+    /**
+     * Confirmed donations of the donor that have a generated [org.commonlink.entity.DonationReceipt],
+     * reduced to beneficiary, amount and date.
+     *
+     * Only these donations contribute to the estimated tax reduction: the Cerfa receipt *is* the
+     * instrument of the reduction, and no receipt is issued without an active fiscal mandate.
+     * Counting a receiptless donation would show a non-zero reduction next to a row the donor can
+     * see carries no receipt.
+     */
+    @Query("""
+        SELECT c.association.id AS associationId,
+               d.amount         AS amount,
+               d.confirmedAt    AS confirmedAt
+        FROM Donation d
+        JOIN d.campaign c
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+          AND EXISTS (SELECT r.id FROM DonationReceipt r WHERE r.donation = d)
+    """)
+    fun findReceiptedRowsByDonorId(@Param("donorId") donorId: UUID): List<ReceiptedDonationRow>
+
+    /**
+     * Receipted donations of a donor, with the fields the annual fiscal recap PDF needs. Same
+     * "has a receipt" gate as [findReceiptedRowsByDonorId].
+     *
+     * Deliberately not filtered by year in SQL: `extract(year from ...)` would group by the
+     * database session's timezone, while [org.commonlink.service.DonorReceiptsService] groups by
+     * the Paris-zone year (same rule as [org.commonlink.service.DonorDashboardService]'s estimate)
+     * — the two would silently disagree on donations made within an hour of a new year. The
+     * caller filters to one Paris-zone year in memory instead, same bounded per-donor volume as
+     * [findReceiptedRowsByDonorId].
+     */
+    @Query("""
+        SELECT c.association.id   AS associationId,
+               c.association.name AS associationName,
+               d.amount           AS amount,
+               d.confirmedAt      AS confirmedAt,
+               r.receiptNumber    AS receiptNumber
+        FROM Donation d
+        JOIN d.campaign c
+        JOIN DonationReceipt r ON r.donation = d
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        ORDER BY d.confirmedAt ASC
+    """)
+    fun findReceiptedDetailRowsByDonorId(@Param("donorId") donorId: UUID): List<ReceiptedDonationDetailRow>
+
+    /**
+     * One row per campaign the donor has funded with at least one confirmed donation -- feeds the
+     * "Impact de mes dons" gallery. Distinct from [findAssociationCategoriesByDonorId] (grouped by
+     * association): the gallery is per-campaign, since impact goals and the story both belong to
+     * the campaign, not the association.
+     */
+    @Query("""
+        SELECT DISTINCT c.id AS campaignId, c.name AS campaignName, c.emoji AS campaignEmoji,
+               c.category AS category, c.impactGoals AS impactGoals,
+               a.id AS associationId, a.name AS associationName
+        FROM Donation d
+        JOIN d.campaign c
+        JOIN c.association a
+        WHERE d.donor.id = :donorId
+          AND d.confirmedAt IS NOT NULL
+        ORDER BY c.name ASC
+    """)
+    fun findDistinctCampaignsByDonorId(@Param("donorId") donorId: UUID): List<DonorCampaignRow>
+
+    // ── Donor read scope (Sprint 1 — donor dashboard) ─────────────────────
+
+    /**
+     * True when [donorId] has at least one **confirmed** donation on [campaignId].
+     *
+     * Backs [org.commonlink.security.DonorReadScope.assertHasDonatedTo]: a donor may only read a
+     * campaign they have actually funded. A pending payment grants nothing — the row exists but the
+     * money never arrived.
+     */
+    @Query("""
+        SELECT COUNT(d) > 0
+        FROM Donation d
+        WHERE d.donor.id    = :donorId
+          AND d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun existsConfirmedByDonorIdAndCampaignId(
+        @Param("donorId") donorId: UUID,
+        @Param("campaignId") campaignId: UUID,
+    ): Boolean
+
     /** Looks up a donation by the opaque [Donation.publicRef] handed to the donor on the Mollie redirect URL. */
     fun findByPublicRef(publicRef: UUID): Donation?
 
@@ -290,4 +582,29 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
           AND d.createdAt < :threshold
     """)
     fun findStalePending(@Param("threshold") threshold: Instant): List<Donation>
+
+    // ── Donor dashboard (Sprint 2 — allocation & campaign report) ─────────
+
+    /**
+     * All confirmed donations of a campaign, oldest first — FIFO input for
+     * [org.commonlink.service.DonationAllocationService], all donors combined.
+     */
+    fun findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId: UUID): List<Donation>
+
+    /**
+     * This donor's total confirmed amount on one campaign — for the campaign report's "votre
+     * contribution". Returns null when the donor has no confirmed donation on that campaign;
+     * callers treat null as zero.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(d.amount), 0)
+        FROM Donation d
+        WHERE d.donor.id    = :donorId
+          AND d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun sumConfirmedAmountByDonorIdAndCampaignId(
+        @Param("donorId") donorId: UUID,
+        @Param("campaignId") campaignId: UUID,
+    ): BigDecimal?
 }

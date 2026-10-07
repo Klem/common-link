@@ -6,6 +6,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.dto.PublicCampaignRow
+import org.commonlink.entity.CampaignCause
 import org.commonlink.repository.CampaignRepository
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.Pageable
@@ -25,12 +26,18 @@ class PublicCampaignDirectoryServiceTest {
         campaignId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
         campaignName = "Hiver Solidaire",
         campaignEmoji = "🍽",
-        campaignCategory = "Solidarité",
+        campaignCategory = CampaignCause.SOLIDARITE,
+        actionPlaceType = null,
+        actionPlaceCode = null,
+        actionPlaceLabel = null,
+        actionLatitude = null,
+        actionLongitude = null,
         coverImage = "/api/public/campaigns/00000000-0000-0000-0000-000000000001/cover",
         campaignUpdatedAt = Instant.parse("2026-01-01T00:00:00Z"),
         goal = BigDecimal("10000"),
         raised = BigDecimal("4200"),
         milestoneCount = 4,
+        associationId = UUID.fromString("00000000-0000-0000-0000-000000000002"),
         associationName = "Les Restos du Coeur",
         associationLogo = null,
         widgetToken = widgetToken,

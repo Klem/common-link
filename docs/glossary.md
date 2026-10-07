@@ -135,7 +135,7 @@ signed independently.
 `functional` `security` `business`
 
 ### Campaign Category (Cause)
-The thematic classification of an association. Categories include: Environnement, Social, Éducation, Santé, Culture, Animal, Humanitaire. Used for filtering in the discovery grid.
+What a **campaign** funds — not what the association is. Exactly one per campaign, chosen in the campaign editor (`CampaignCause` enum, stored in `campaigns.category`): Solidarité, Alimentation, Santé, Enfance & éducation, Animaux, Handicap, Environnement, Culture, Sport, Droits & citoyenneté, Autre. Boundaries: food aid and agriculture belong to Alimentation, disability sport to Handicap. **Autre** can be chosen but is never displayed publicly (no discovery chip, no badge). On `/projets` a cause chip only appears when at least one live campaign has it.
 `functional`
 
 ### Card Payment
@@ -167,8 +167,17 @@ A payment made by an association to a third-party provider (e.g., a supplier, co
 `functional` `business`
 
 ### Discovery Grid
-The main public page where visitors browse associations. Displays association cards in a filterable, searchable grid layout. Filters include cause category, geographic scope, and campaign status.
+The public `/projets` page of the landing site, listing live campaigns. Filters (client-side, on the ≤ 60 campaigns returned by `GET /api/public/campaigns`): cause chips (« Plus » beyond 6, « Voir aussi » cross-links), geographic scope, and an optional proximity filter (see **Place of Action**).
 `functional`
+
+### Donation Journey
+The 4-step derived timeline shown on the donor dashboard home for a single donation: **Don reçu**
+(received, `Donation.confirmedAt`), **Crédité / inscrit au registre public** (recorded on-chain,
+its `RECORD_DONATION` `OnchainJob` reaching `DONE`), **Utilisé pour des dépenses** (spent, per the
+FIFO donation allocation), and **Bilan d'impact** (impact reported, once the campaign's
+`CampaignStatus` reaches `COMPLETED`). Purely derived — no dedicated table, recomputed on each read
+(`DonorDonationJourneyService`).
+`functional` `technical`
 
 ### Donation Modal
 The UI popup that opens when a user clicks "Donate" on an association's page. It includes donation type selection (one-time, monthly, re-donate), amount presets, custom amount input, anonymous toggle, payment method selection, gas estimate (for wallet), and confirmation button.
@@ -184,6 +193,15 @@ One of the two user types on CommonLink. A donor is an individual or entity that
 
 ### Donor Aggregate
 A consolidated view of a single donor's activity within one campaign. Aggregates all confirmed transactions into: total amount donated, transaction count, and date of last donation. Anonymous donors (`DonorProfile.anonymous = true`) appear as "Anonyme" — identity is masked at the service layer, on-chain proof (`providerRef`) is always retained. Backed by `CampaignDonorDto` from `GET /api/campaigns/{campaignId}/donors` (`DonorAggregateService`, Step 6).
+`functional` `technical`
+
+### Donor Campaign Report
+The donor-facing "bilan de campagne" page: the campaign's hero (name, emoji, status), the
+requesting donor's own contribution (never a share of others'), three KPIs, milestones, the list of
+confirmed payouts with the FIFO-allocated spend breakdown (prévu vs. **dépensé**, never "engagé" —
+decision D4), and the on-chain registry banner. Not to be confused with `Campaign Report`, the
+unrelated abuse-reporting feature ("Report this campaign"). Backed by
+`DonorCampaignReportService.getReport`, gated by `DonorReadScope.assertHasDonatedTo`.
 `functional` `technical`
 
 ### Donor Profile
@@ -206,6 +224,15 @@ One of the three login methods. Users register with an email and a password (min
 Traditional government-issued currency (EUR in our case). On CommonLink, donors pay in euros — the platform is not a crypto payment system. The blockchain layer is used for certification, not for transferring funds.
 `business` `blockchain`
 
+### FIFO Donation Allocation
+The engine that determines which confirmed donations funded which confirmed payouts of a campaign:
+donations and payouts are each sorted by `confirmedAt` ascending, and payouts consume donations
+chronologically, oldest first, across all donors of the campaign combined — never per-donor. A
+single payout may span several donations; a single donation may (partially) fund several payouts.
+Computed on the fly (`DonationAllocationService`), not materialized. Feeds the "Part utilisée"
+column of the donor's donation history and the traceability modal.
+`functional` `technical`
+
 ### Flyway
 A database migration tool that manages the evolution of the database schema through versioned SQL files (V1, V2, V3…). Ensures the database structure is consistent across all environments.
 `technical`
@@ -226,8 +253,8 @@ A regulatory measure ordering the immediate blocking of all funds and economic r
 The small transaction cost for recording data on a blockchain network. On CommonLink, gas fees apply only when using a crypto wallet for payment (Polygon network). The estimated gas cost is displayed in the donation modal (e.g., ~€0.08).
 `blockchain`
 
-### Geographic Scope (Zone)
-An association's operational range: **locale** (one city/region), **nationale** (country-wide), or **internationale** (multiple countries). Used as a filter in the discovery grid.
+### Geographic Scope (Portée)
+A campaign's reach, **always derived** from its Place of Action, never entered: commune or department → **locale**, whole of France → **nationale**, foreign country → **internationale** (`CampaignScope`). Used as a filter in the discovery grid; with the proximity filter on, national campaigns are shown in a « Partout en France » block and international ones are excluded.
 `functional` `business`
 
 ### Goal-Budget Constraint
@@ -281,6 +308,8 @@ The identity verification process for associations. Involves validating the SIRE
 ---
 
 ## L
+
+### Lieu de l'action — see **Place of Action**
 
 ### Leaderboard
 A ranking of donors by total cumulative donations for a given association. Visible in the donor dashboard. Donors can opt out by enabling anonymous donations. The leaderboard encourages engagement through gamification.
@@ -383,6 +412,12 @@ A cryptographically random string (32 bytes, 64 hex characters) used for Magic L
 ---
 
 ## P
+
+### Place of Action (Lieu de l'action)
+Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation (and once for older campaigns, `ActionPlaceBackfill`). Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
+`functional`
+
+### Proximity Filter — see **Place of Action**
 
 ### Payment Method
 The means by which a donor completes a donation. Supported methods: **Card** (Visa/Mastercard), **SEPA transfer** (instant bank transfer), **Crypto Wallet** (Polygon/USDC), and **Apple Pay**.
@@ -656,6 +691,26 @@ French plan comptable accounting code stored on a payout, e.g. `"60-mat"` (mati�
 ### RECORD_PAYOUT
 14th `OnchainJobAction` variant, enqueued when a payout is confirmed. Carries `RecordPayoutPayload(payoutId, campaignId, amountCents)`. The Solidity function `recordPayout(bytes32, bytes32, uint256)` must be deployed to `CommonLinkRegistry` before the worker can dispatch it (currently stubs with `NotImplementedError`).
 `technical` `onchain`
+
+### Donor read scope
+The single place (`DonorReadScope`) through which every donor-side read resolves who is asking and what they may see. It answers three questions: which `DonorProfile` belongs to the authenticated user, whether that donor has actually made a confirmed donation to a given campaign, and whether a given donation is theirs. It exists as one component rather than one check per endpoint because the rest of the backend is built on the mirror path (association → ownership), and a rule restated per endpoint drifts. A resource that does not exist yields 404; one that exists but belongs to someone else yields 403 — never the reverse, so a probe learns nothing.
+`technical` `security` `backend`
+
+### Estimated tax reduction
+Figure shown on the donor dashboard: the sum, **over receipted donations only**, of `amount × the rate of the fiscal mandate in force on the date of that donation` (66 % or 75 % — see **MandateEligibility**). Three properties matter. It is a sum of lines, not a global percentage: a donor funding both a 66 % and a 75 % association mixes rates. The rate is historical, not current: a donation made under a mandate revoked since still opened a right at the time, and the donor has already declared it. And a donation without a `DonationReceipt` contributes nothing, because the Cerfa receipt is the instrument of the reduction and none is issued without an active mandate. The 20 %-of-taxable-income ceiling is not applied, so the wording must always say "estimated" and never present the amount as acquired.
+`functional` `business` `donor`
+
+### Récit d'impact (Campaign Story)
+A free-text narrative an association writes for one campaign, describing what the donations achieved. Stored one-to-one with the campaign (`CampaignStory`, `campaign_stories`), no version history — a second save overwrites the text in place. `publishedAt` gates visibility: null is a draft visible only to the authoring association in its campaign editor ("Récit" tab); once set by an explicit "Publier" action it becomes visible to donors who funded that campaign, on the campaign's bilan page. Publishing is one-directional this sprint — there is no unpublish action, and the editor's autosave of the text field always sends `publish: false` so it can never silently take a draft live. Distinct from [[Impact]] (`Campaign.impactGoals`), the shorter qualitative field an association fills in when creating the campaign — the story is optional, longer-form, and written any time after.
+`functional` `business`
+
+### Galerie d'impact (Impact Gallery)
+The donor-facing "Impact de mes dons" page (`/dashboard/donor/impact`): one card per campaign the donor has funded with at least one confirmed donation, filterable by cause. Each card's wording is built entirely from the campaign's [[Récit d'impact]] (once published) or its `impactGoals`, in the fixed collective phrasing "Ce projet a [texte]. Vous y avez contribué." — never a donor-specific amount or percentage, even for a single-donor campaign where the share would be trivial to compute (decision D6, option A: project-level figures only). The same wording and card feed a share modal (LinkedIn/X/WhatsApp links, downloadable SVG card) reachable from both the gallery and a campaign's bilan page.
+`functional` `business` `donor`
+
+### Récapitulatif fiscal annuel (Annual Fiscal Recap)
+One row per calendar year (Europe/Paris) with at least one receipted donation, shown in the "Reçus fiscaux" tab of Mes dons: donation count, total amount, and [[Estimated tax reduction]] restricted to that year — same rate-resolution algorithm as the dashboard-wide estimate, just grouped by year instead of summed globally. Each year has a downloadable PDF recap listing every receipted donation of that year with the association name, date, amount, Cerfa receipt number and applied rate. The per-line PDF total is computed the same unrounded-then-rounded-once way as the tab figure specifically so the two never disagree by a rounding cent on the same donations.
+`functional` `business` `donor`
 
 ## Z
 

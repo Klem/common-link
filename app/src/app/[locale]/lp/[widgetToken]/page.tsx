@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 import { getLanding, type PublicLandingDto } from '@/lib/api/public';
 import { LandingHeader } from './LandingHeader';
@@ -66,6 +67,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
   // depend on it.
   const previewToken = query.preview ?? null;
   const t = await getTranslations({ locale, namespace: 'landing' });
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
 
   let data: PublicLandingDto | null = null;
   let errorKey: 'error.notFound' | 'error.notLive' | null = null;
@@ -112,12 +114,14 @@ export default async function LandingPage({ params, searchParams }: Props) {
           also lives in this script rather than in CookieConsentBanner. */}
       {gtmId && (
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: consentBootstrapScript(widgetToken) }}
         />
       )}
       <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
       <script
+        nonce={nonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />

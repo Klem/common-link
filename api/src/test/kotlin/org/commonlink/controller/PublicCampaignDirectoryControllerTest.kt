@@ -3,6 +3,7 @@ package org.commonlink.controller
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.commonlink.dto.PublicCampaignListItemDto
+import org.commonlink.entity.CampaignCause
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
@@ -55,7 +56,8 @@ class PublicCampaignDirectoryControllerTest {
                 campaignId = campaignId,
                 campaignName = "Hiver Solidaire",
                 campaignEmoji = "🍽",
-                campaignCategory = "Solidarité",
+                campaignCategory = CampaignCause.SOLIDARITE,
+                actionPlace = null,
                 coverImage = "/api/public/campaigns/$campaignId/cover",
                 campaignUpdatedAt = Instant.parse("2026-01-01T00:00:00Z"),
                 goal = BigDecimal("10000"),
@@ -84,6 +86,7 @@ class PublicCampaignDirectoryControllerTest {
                 campaignName = "Hiver Solidaire",
                 campaignEmoji = "🍽",
                 campaignCategory = null,
+                actionPlace = null,
                 coverImage = null,
                 campaignUpdatedAt = Instant.parse("2026-01-01T00:00:00Z"),
                 goal = BigDecimal("10000"),

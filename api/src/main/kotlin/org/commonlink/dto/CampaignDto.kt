@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import org.commonlink.entity.Campaign
+import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.CampaignStatus
 import java.math.BigDecimal
 import java.time.Instant
@@ -21,7 +22,8 @@ import java.util.UUID
  * @param status Current lifecycle status.
  * @param startDate Optional start date for donation acceptance.
  * @param endDate Optional end date for donation acceptance.
- * @param category Campaign category (e.g. Education, Health).
+ * @param category Cause of the campaign, null until chosen.
+ * @param actionPlace Place of action, null until set (recommended, not required to publish).
  * @param reason Why the association is launching this campaign.
  * @param impactGoals Concrete expected outcomes.
  * @param coverImage URL or path of the cover image.
@@ -41,7 +43,8 @@ data class CampaignDto(
     val startDate: LocalDate?,
     val endDate: LocalDate?,
     val budgetHash: String?,
-    val category: String?,
+    val category: CampaignCause?,
+    val actionPlace: ActionPlaceDto?,
     val reason: String?,
     val impactGoals: String?,
     val coverImage: String?,
@@ -66,6 +69,7 @@ fun Campaign.toDto() = CampaignDto(
     endDate = endDate,
     budgetHash = budgetHash,
     category = category,
+    actionPlace = actionPlaceDto(),
     reason = reason,
     impactGoals = impactGoals,
     coverImage = coverImage,

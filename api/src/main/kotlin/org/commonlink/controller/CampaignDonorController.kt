@@ -29,7 +29,8 @@ class CampaignDonorController(private val donorAggregateService: DonorAggregateS
     @Operation(
         summary = "List donors",
         description = "Returns a paginated list of donor aggregates for a campaign. " +
-            "Anonymous donors appear as 'Anonyme' and are excluded from name search.",
+            "Anonymous donors appear as 'Anonyme' and are excluded from name search. " +
+            "sort: amount (default) | date | name | count; direction: asc | desc (default).",
     )
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Donor list returned", content = [Content()]),
@@ -42,10 +43,13 @@ class CampaignDonorController(private val donorAggregateService: DonorAggregateS
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) search: String?,
         @RequestParam(defaultValue = "amount") sort: String,
+        @RequestParam(defaultValue = "desc") direction: String,
         @AuthenticationPrincipal principal: UserDetails,
     ): ResponseEntity<PageResponse<CampaignDonorDto>> {
         val associationId = UUID.fromString(principal.username)
-        return ResponseEntity.ok(donorAggregateService.listDonors(campaignId, associationId, search, sort, page, size).toPageResponse())
+        return ResponseEntity.ok(
+            donorAggregateService.listDonors(campaignId, associationId, search, sort, direction, page, size).toPageResponse(),
+        )
     }
 
     @GetMapping("/donors/{donorId}/donations")

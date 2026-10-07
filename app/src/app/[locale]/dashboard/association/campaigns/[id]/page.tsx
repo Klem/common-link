@@ -13,6 +13,7 @@ import {
   CampaignPaymentsTab,
   CampaignDonorsTab,
   CampaignReportingTab,
+  CampaignStoryTab,
   PrePublishModal,
 } from '@/components/campaign';
 import { useCampaign } from '@/hooks/campaign/useCampaign';
@@ -67,7 +68,7 @@ export default function CampaignEditorPage() {
    * then schedules a debounced API call (800 ms).
    */
   const scheduleHeroSave = useCallback(
-    (patch: UpdateCampaignRequest) => {
+    (patch: Pick<UpdateCampaignRequest, 'name' | 'emoji'>) => {
       setCampaign((prev) => (prev ? { ...prev, ...patch } : prev));
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => {
@@ -195,6 +196,10 @@ export default function CampaignEditorPage() {
 
         {activeTab === 'reporting' && (
           <CampaignReportingTab campaign={campaign} />
+        )}
+
+        {activeTab === 'story' && (
+          <CampaignStoryTab campaignId={campaign.id} />
         )}
       </div>
 

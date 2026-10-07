@@ -316,6 +316,8 @@
   "common": {
     "addPayeeHint": "Add your beneficiary then come back to the campaign.",
     "budgetSaved": "Budget saved.",
+    "campaignStoryImageUploadFailed": "Image upload failed. Please try again.",
+    "campaignStoryPublished": "Story published.",
     "campaignUpdated": "Campaign updated.",
     "cancel": "Cancel",
     "confirm": "Confirm",
@@ -325,6 +327,7 @@
       "conflict": "This resource already exists.",
       "networkError": "Connection problem. Check your network.",
       "rateLimitExceeded": "Too many requests. Please wait {seconds} seconds.",
+      "receiptDownloadFailed": "Unable to download the receipt.",
       "serverError": "An error occurred. Please try again.",
       "sessionExpired": "Your session has expired. Please log in again."
     },
@@ -363,7 +366,20 @@
     "vopVerified": "VOP verification completed.",
     "widgetAllowedOriginSaved": "Redirect origin saved.",
     "widgetDestinationSaved": "Destination campaign saved.",
-    "widgetTokenGenerated": "Widget token generated."
+    "widgetTokenGenerated": "Widget token generated.",
+    "campaignCause": {
+      "SOLIDARITE": "Solidarity",
+      "ALIMENTATION": "Food",
+      "SANTE": "Health",
+      "ENFANCE_EDUCATION": "Children & education",
+      "ANIMAUX": "Animals",
+      "HANDICAP": "Disability",
+      "ENVIRONNEMENT": "Environment",
+      "CULTURE": "Culture",
+      "SPORT": "Sport",
+      "DROITS_CITOYENNETE": "Rights & citizenship",
+      "AUTRE": "Other"
+    }
   },
   "compliance": {
     "alerts": {
@@ -1169,13 +1185,8 @@
       "deleteConfirmAction": "Confirm deletion",
       "donors": {
         "detail": {
-          "close": "Close",
-          "lastDonation": "Last donation",
           "noTx": "No transactions.",
-          "title": "Donor detail",
-          "total": "Total",
-          "transactions": "Transactions",
-          "txCount": "Donations"
+          "transactions": "Transactions"
         },
         "empty": "No donors for this campaign.",
         "error": "Error loading donors.",
@@ -1185,11 +1196,6 @@
           "placeholder": "Search a donor…"
         },
         "showing": "{count} donor(s)",
-        "sort": {
-          "amount": "Amount ↓",
-          "date": "Recent date",
-          "name": "Name A→Z"
-        },
         "stats": {
           "avg": "Avg donation",
           "raised": "Total raised",
@@ -1198,18 +1204,20 @@
         },
         "table": {
           "amount": "Amount",
+          "caption": "Campaign donors",
           "donor": "Donor",
+          "hideDetail": "Hide transactions",
           "lastDonation": "Last donation",
-          "transactions": "Donations",
-          "view": "View"
+          "showDetail": "Show transactions",
+          "sortAscendingAria": "Sort by {column}, ascending",
+          "sortDescendingAria": "Sort by {column}, descending",
+          "transactions": "Donations"
         },
         "tx": {
-          "close": "Close",
+          "amount": "Amount",
           "date": "Date",
           "onChain": "On-chain",
-          "pending": "Pending",
-          "ref": "Reference",
-          "title": "Donation detail"
+          "ref": "Reference"
         }
       },
       "draftNoBudget": "Draft — budget undefined",
@@ -1263,7 +1271,7 @@
         },
         "info": {
           "category": {
-            "label": "Category"
+            "label": "Cause"
           },
           "coverImage": {
             "errorSize": "Image too large. Maximum 5 MB.",
@@ -1308,7 +1316,30 @@
           "startDate": {
             "label": "Start date"
           },
-          "title": "General information"
+          "title": "General information",
+          "actionPlace": {
+            "label": "Place of action",
+            "tip": "Where the campaign acts. Its scope (local, national, international) is derived from it and drives the discovery page filters.",
+            "type": {
+              "LOCAL": "Town or department",
+              "FRANCE": "All of France",
+              "PAYS": "Country"
+            },
+            "searchPlaceholder": "Town, postal code or department",
+            "searching": "Searching…",
+            "noResult": "No result",
+            "searchError": "Search unavailable right now",
+            "department": "Department",
+            "countryPlaceholder": "Choose a country",
+            "current": "Saved place: {label}",
+            "none": "No place set",
+            "scope": {
+              "label": "Scope",
+              "LOCALE": "Local",
+              "NATIONALE": "National",
+              "INTERNATIONALE": "International"
+            }
+          }
         },
         "loading": "Loading campaign…",
         "milestones": {
@@ -1348,13 +1379,41 @@
         },
         "notFound": "Campaign not found.",
         "publish": "🚀 Publish",
+        "story": {
+          "draft": "Draft",
+          "label": "Story text",
+          "loadError": "Unable to load the story. Please try again later.",
+          "loading": "Loading…",
+          "placeholder": "Describe the concrete impact of this campaign for your donors…",
+          "publish": "Publish",
+          "published": "Published",
+          "republish": "Update",
+          "summaryHint": "{count}/{max} characters — shown in the impact gallery and on the share card, never the full story.",
+          "summaryLabel": "Short summary",
+          "summaryPlaceholder": "One sentence — what this story is about",
+          "title": "Impact story",
+          "toolbar": {
+            "bold": "Bold",
+            "bulletList": "Bullet list",
+            "heading2": "Heading 2",
+            "heading3": "Heading 3",
+            "image": "Insert image",
+            "italic": "Italic",
+            "label": "Formatting",
+            "link": "Link",
+            "linkPrompt": "Link URL (leave empty to remove)",
+            "orderedList": "Numbered list",
+            "underline": "Underline"
+          }
+        },
         "tabs": {
           "budget": "Budget",
           "donors": "Donors",
           "info": "Info",
           "milestones": "Milestones",
           "payments": "Payments",
-          "reporting": "Budget tracking"
+          "reporting": "Budget tracking",
+          "story": "Story"
         }
       },
       "empty": {
@@ -1587,7 +1646,8 @@
         "recommended": {
           "milestones": "Milestones (increases donor engagement)",
           "reason": "\"Why now?\" (builds trust)",
-          "section": "Recommended — does not block publishing"
+          "section": "Recommended — does not block publishing",
+          "actionPlace": "Set the place of action"
         },
         "required": {
           "budget": "Balanced estimated budget (expenses = revenues)",
@@ -1614,13 +1674,291 @@
       }
     },
     "donor": {
+      "associations": {
+        "campaignCount": "Campaigns supported",
+        "campaignStatus": {
+          "completed": "Campaign closed",
+          "completedDescription": "Campaign « {campaignName} », now closed.",
+          "ctaCompleted": "View report",
+          "ctaLive": "Follow live",
+          "live": "Campaign in progress",
+          "liveDescription": "Campaign « {campaignName} », expenses tracked in real time."
+        },
+        "empty": {
+          "icon": "🏢",
+          "subtitle": "The associations you support will appear here.",
+          "title": "No association supported yet"
+        },
+        "error": "Unable to load your associations.",
+        "lastDonationAt": "Last donation",
+        "loading": "Loading associations…",
+        "publishedPayoutCount": "Published expenses",
+        "subtitle": "The associations you support and their recent activity.",
+        "title": "Associations you follow",
+        "totalDonated": "Total donated"
+      },
+      "cta": {
+        "donate": "Support {name}"
+      },
+      "donations": {
+        "empty": {
+          "subtitle": "Your confirmed donations will appear here.",
+          "title": "No donations yet"
+        },
+        "error": "Unable to load your donations.",
+        "filters": {
+          "allAssociations": "All associations",
+          "allYears": "All years",
+          "association": "Association",
+          "year": "Year"
+        },
+        "loading": "Loading donations…",
+        "next": "Next",
+        "pageOf": "Page {page} of {totalPages}",
+        "pagination": "Donation history pages",
+        "previous": "Previous",
+        "table": {
+          "amount": "Amount",
+          "association": "Association",
+          "date": "Date",
+          "downloadReceipt": "Download",
+          "downloadReceiptAria": "Download receipt {receiptNumber}",
+          "noReceipt": "Not available",
+          "project": "Project",
+          "receipt": "Receipt",
+          "sortAscendingAria": "Sort by {column}, ascending",
+          "sortDescendingAria": "Sort by {column}, descending",
+          "traceability": "Traceability",
+          "usedAmount": "Used share",
+          "usedAmountBadge": "{used} of {total} used",
+          "viewTraceability": "View traceability",
+          "viewTraceabilityAria": "View traceability for the {date} donation to {association}"
+        },
+        "tableLabel": "Donation history",
+        "tabs": {
+          "history": "History",
+          "receipts": "Fiscal receipts"
+        },
+        "title": "My donations"
+      },
       "empty": {
         "cta": "Explore campaigns",
         "icon": "🌱",
         "subtitle": "Explore campaigns and make your first donation to see your impact.",
         "title": "Your philanthropic journey starts here"
       },
-      "profile": {
+      "engagement": {
+        "feed": {
+          "actionsTitle": "Still to do on your side",
+          "empty": "Nothing new since your last visit.",
+          "loading": "Loading your activity…",
+          "proofsTitle": "New proof to discover",
+          "sectionTitle": "Since your last visit"
+        }
+      },
+      "home": {
+        "greetingSubtitle": "Here's what has been proven about your donations recently.",
+        "greetingTitle": "Hello {name}",
+        "narrative": {
+          "associations": "Associations",
+          "donated": "Donated",
+          "footer": "Your detailed impact, project by project, in My impact",
+          "projects": "Projects supported",
+          "tag": "Since 2024",
+          "text": "{name}, here's the essence of your engagement since 2024.",
+          "title": "Your cumulative contribution"
+        },
+        "shareImpact": "Share my impact",
+        "suggestion": {
+          "raisedOf": "raised out of"
+        },
+        "viewMoreProjects": "View other projects"
+      },
+      "impact": {
+        "cumulative": {
+          "associationCount": "Associations",
+          "campaignCount": "Projects supported",
+          "label": "Total donated",
+          "since": "Since 2024",
+          "tagline": "What always adds up, whatever the project",
+          "title": "Your cumulative contribution"
+        },
+        "empty": {
+          "icon": "🌍",
+          "subtitle": "The projects you fund will appear here.",
+          "title": "No supported project yet"
+        },
+        "error": "Unable to load your impact.",
+        "errorSubtitle": "Please try again later.",
+        "filter": {
+          "all": "All causes",
+          "label": "Filter by cause"
+        },
+        "gallery": {
+          "count": "{count, plural, =0 {No impact} one {# impact} other {# impacts}}",
+          "title": "Your concrete impact"
+        },
+        "loading": "Loading your impact…",
+        "notYetPublished": "Not yet published.",
+        "share": {
+          "cta": "Share"
+        },
+        "showMore": "Show more",
+        "story": {
+          "close": "Close",
+          "cta": "Read full story",
+          "error": "Unable to load the story.",
+          "loading": "Loading the story…",
+          "title": "Full story"
+        },
+        "subtitle": "The concrete impact of the projects you support.",
+        "title": "Impact of my donations",
+        "why": {
+          "ariaLabel": "Why different impacts?",
+          "tooltip": "Each project measures its results in its own unit -- trees, meals, students. This lets every project be measured in the unit that truly fits it, rather than one imposed from outside."
+        },
+        "wordingPrefix": "This project has",
+        "wordingSuffix": "You contributed to it."
+      },
+      "journey": {
+        "bannerTitle": "{amount} for {campaign}",
+        "empty": {
+          "subtitle": "Once you make your first donation, its journey will appear here.",
+          "title": "No donation yet"
+        },
+        "error": "Unable to load this donation's journey.",
+        "loading": "Loading the journey…",
+        "navigation": "Navigate between your donations",
+        "next": "Next donation",
+        "previous": "Previous donation",
+        "steps": {
+          "IMPACT_REPORTED": {
+            "label": "Impact report",
+            "pendingHint": "Available once the campaign ends"
+          },
+          "RECEIVED": {
+            "label": "Donation received",
+            "pendingHint": "Registering your donation…"
+          },
+          "RECORDED": {
+            "label": "Recorded in the public registry",
+            "pendingHint": "Registration in progress"
+          },
+          "SPENT": {
+            "label": "Used to fund an expense",
+            "pendingHint": "Not yet used"
+          }
+        },
+        "subtitle": "Step by step, through to the final impact report.",
+        "title": "Your donation's journey",
+        "viewTraceability": "View traceability"
+      },
+      "payoutBreakdown": {
+        "chart": {
+          "mine": "My donation #{index}",
+          "others": "Other donors ({count} donations)"
+        },
+        "chartEmpty": "No breakdown data yet.",
+        "close": "Close",
+        "error": "Unable to load this breakdown.",
+        "loading": "Loading breakdown…",
+        "myLines": {
+          "empty": "None of your own donations funded this expense.",
+          "title": "My contributing donations",
+          "viewTraceabilityAria": "View traceability for the {date} donation"
+        },
+        "others": {
+          "hidden": "Also funded by other donors",
+          "withAmount": "Also funded by other donors: {amount} across {count} donations"
+        },
+        "title": "See the breakdown"
+      },
+      "receipts": {
+        "banner": "One fiscal recap per calendar year with at least one receipted donation.",
+        "empty": {
+          "icon": "🧾",
+          "subtitle": "Your annual fiscal recaps will appear here.",
+          "title": "No receipted donation yet"
+        },
+        "error": "Unable to load your fiscal receipts.",
+        "errorSubtitle": "Please try again later.",
+        "list": {
+          "donationCount": "{count, plural, one {# donation} other {# donations}}",
+          "download": "Download PDF",
+          "downloadAria": "Download the {year} fiscal recap",
+          "footnote": "Each donation's receipt can also be downloaded individually from the History tab.",
+          "title": "Annual recaps"
+        },
+        "loading": "Loading your fiscal receipts…",
+        "stats": {
+          "receiptCount": "Number of receipts",
+          "totalDeduction": "Estimated tax reduction",
+          "totalDeductionHint": "Estimate only — never a guaranteed amount.",
+          "totalReceipted": "Total receipted"
+        }
+      },
+      "recommendations": {
+        "empty": {
+          "icon": "🔍",
+          "subtitle": "Make your first donation to get personalized recommendations.",
+          "title": "No recommendation yet"
+        },
+        "error": "Unable to load recommendations.",
+        "errorSubtitle": "Please try again later.",
+        "filter": {
+          "all": "All causes",
+          "label": "Filter by cause"
+        },
+        "loading": "Loading recommendations…",
+        "reason": "Because you already support the {category} cause",
+        "sectionTitle": "For you",
+        "subtitle": "Projects that may match causes you already support.",
+        "title": "Recommended projects"
+      },
+      "report": {
+        "downloadPdf": "Download the report as PDF",
+        "error": "Unable to load this campaign report.",
+        "errorSubtitle": "You may not have donated to this campaign, or it may no longer exist.",
+        "funds": {
+          "category": "Category",
+          "detailAmount": "Amount",
+          "detailDate": "Date",
+          "detailEmpty": "No confirmed expense yet.",
+          "detailExpense": "Expense",
+          "empty": "No budget data available yet.",
+          "hideDetail": "Hide expense detail",
+          "planned": "Planned",
+          "remaining": "Remaining",
+          "showDetail": "Show expense detail",
+          "sortAscendingAria": "Sort by {column}, ascending",
+          "sortDescendingAria": "Sort by {column}, descending",
+          "spent": "Spent",
+          "title": "How the funds were used",
+          "viewBreakdown": "View breakdown"
+        },
+        "kpi": {
+          "contribution": "Your contribution",
+          "raised": "Raised",
+          "spent": "Spent"
+        },
+        "loading": "Loading the campaign report…",
+        "milestones": {
+          "empty": "No milestones for this campaign.",
+          "title": "Milestones"
+        },
+        "story": {
+          "notYetPublished": "This association has not published a story for this campaign yet.",
+          "share": "Share",
+          "title": "Impact story"
+        }
+      },
+      "sections": {
+        "donationJourney": "Your donation's journey",
+        "myAssociations": "My associations",
+        "recentDonations": "My recent donations",
+        "viewAll": "View all"
+      },
+      "settings": {
         "anonymous": "Anonymous donations by default",
         "anonymousHint": "Your identity will be hidden on campaigns.",
         "cancel": "Cancel",
@@ -1628,8 +1966,21 @@
         "displayName": "Display name",
         "displayNamePlaceholder": "Your public name",
         "email": "Email",
-        "loading": "Loading profile…",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "loading": "Loading settings…",
         "memberSince": "Member since {date}",
+        "notifications": {
+          "goalReached": "Goal reached",
+          "goalReachedHint": "Get notified when a supported campaign reaches its goal.",
+          "monthlyReport": "Monthly impact report",
+          "monthlyReportHint": "Receive a summary of your impact by email every month.",
+          "newPayout": "New expense published",
+          "newPayoutHint": "Get notified when a supported association publishes an expense.",
+          "suggestions": "Campaign suggestions",
+          "suggestionsHint": "Receive suggestions of campaigns to support by email.",
+          "title": "Notifications"
+        },
         "save": "Save",
         "security": {
           "changePassword": "Set a password",
@@ -1639,20 +1990,45 @@
           "magicLink": "Magic link",
           "title": "Security"
         },
-        "success": "Profile updated.",
-        "title": "My profile"
+        "title": "My settings"
       },
-      "sections": {
-        "followedCampaigns": "My followed campaigns",
-        "nftBadges": "My NFT badges",
-        "recentDonations": "My recent donations",
-        "viewAll": "View all"
+      "share": {
+        "close": "Close",
+        "download": "Download image",
+        "linkedin": "LinkedIn",
+        "notYetPublished": "Not yet published.",
+        "shareText": "I support {campaignName} with {associationName} — see the impact on CommonLink.",
+        "title": "Share this impact",
+        "whatsapp": "WhatsApp",
+        "x": "X"
       },
       "stats": {
-        "campaignsFollowed": "Campaigns followed",
-        "donationsCount": "Donations made",
-        "impactScore": "Impact score",
+        "associationCount": "Associations supported",
+        "donationCount": "Donations made",
+        "estimatedTaxReduction": "Estimated tax reduction",
+        "estimatedTaxReductionHint": "Estimate, not a guaranteed amount",
         "totalDonated": "Total donated"
+      },
+      "traceability": {
+        "chart": {
+          "remaining": "Not yet used"
+        },
+        "chartEmpty": "No allocation data yet.",
+        "close": "Close",
+        "error": "Unable to load this donation's traceability.",
+        "fundedPayouts": {
+          "empty": "This donation has not funded any expense yet.",
+          "title": "Expenses this donation funded"
+        },
+        "loading": "Loading traceability…",
+        "remainingAmount": "Amount not yet used",
+        "title": "Your donation's traceability",
+        "usedAmount": "Amount already used",
+        "verifiedAccount": {
+          "body": "This donation is recorded on a public, tamper-proof registry. Anyone can verify that the amount and the date match what CommonLink shows you here.",
+          "cta": "What does \"verified account\" mean?",
+          "title": "Verified account"
+        }
       }
     },
     "greeting": "Hello, {name} 👋",
@@ -1668,6 +2044,7 @@
     },
     "nav": {
       "associationProfile": "Association profile",
+      "associations": "My associations",
       "campaigns": "Campaigns",
       "donations": "My donations",
       "donors": "Donors",
@@ -1676,11 +2053,11 @@
         "principal": "Main",
         "settings": "Settings"
       },
+      "impact": "My impact",
       "logout": "Log out",
       "orgType": "Non-profit (loi 1901)",
       "overview": "Dashboard",
       "payees": "Beneficiaries",
-      "profile": "My profile",
       "reporting": "Reporting",
       "settings": "Settings"
     },

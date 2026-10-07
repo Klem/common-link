@@ -12,8 +12,10 @@ import java.util.UUID
 /**
  * Business logic for managing donor profiles.
  *
- * A donor profile is created automatically when a donor account is registered and holds
- * the public-facing identity used in donation listings (display name, anonymity preference).
+ * A donor profile is created automatically when a donor account is registered. It holds the
+ * public-facing identity used in donation listings (display name, anonymity preference), the
+ * civil identity (first and last name) and the email notification preferences shown on the
+ * donor's Settings page.
  */
 @Service
 class DonorService(
@@ -47,8 +49,14 @@ class DonorService(
     fun updateProfile(userId: UUID, req: UpdateDonorProfileRequest): DonorProfileDto {
         val profile = donorProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Donor profile not found for user $userId") }
+        req.firstName?.let { profile.firstName = it }
+        req.lastName?.let { profile.lastName = it }
         req.displayName?.let { profile.displayName = it }
         req.anonymous?.let { profile.anonymous = it }
+        req.notifyMonthlyReport?.let { profile.notifyMonthlyReport = it }
+        req.notifyNewPayout?.let { profile.notifyNewPayout = it }
+        req.notifyGoalReached?.let { profile.notifyGoalReached = it }
+        req.notifySuggestions?.let { profile.notifySuggestions = it }
         return donorProfileRepository.save(profile).toDto()
     }
 }

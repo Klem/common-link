@@ -35,7 +35,11 @@ class DonorAggregateService(
     /**
      * Returns a page of donor aggregates for [campaignId].
      *
-     * [sort] accepts "amount" (default, total DESC) or "date" (lastDonationAt DESC).
+     * [sort] accepts "amount" (default, total), "date" (lastDonationAt), "name" (display name as
+     * shown to the association — anonymous donors sort as "Anonyme") or "count" (txCount).
+     * Unknown values fall back to "amount".
+     * [direction] accepts "asc" or "desc" (default); unknown values fall back to "desc".
+     * Ties are broken by donorId so pagination stays stable.
      * [search] filters by donor display name; anonymous donors are excluded from search results.
      *
      * @throws NotFoundException if [campaignId] does not belong to [associationId].
@@ -45,17 +49,14 @@ class DonorAggregateService(
         userId: UUID,
         search: String?,
         sort: String?,
+        direction: String?,
         page: Int,
         size: Int,
     ): Page<CampaignDonorDto> {
         val associationId = resolveAssociationId(userId)
         assertCampaignOwnership(campaignId, associationId)
 
-        val sortOrder = when (sort) {
-            "date"  -> Sort.by(Sort.Direction.DESC, "lastDonationAt")
-            else    -> Sort.by(Sort.Direction.DESC, "totalAmount")
-        }
-        val pageable = PageRequest.of(page, size, sortOrder)
+        val pageable = PageRequest.of(page, size, donorSort(sort, direction))
 
         val rows = if (!search.isNullOrBlank()) {
             donationRepository.findDonorAggregatesByCampaignIdAndSearch(campaignId, search.trim(), pageable)
@@ -104,6 +105,18 @@ class DonorAggregateService(
             .orElseThrow { NotFoundException("Donation not found: $donationId") }
         if (donation.campaign.id != campaignId) throw NotFoundException("Donation not found: $donationId")
         return donation.toDto()
+    }
+
+    /** Maps the API [sort]/[direction] params to a DB sort on the aggregate query aliases, donorId as tiebreaker. */
+    private fun donorSort(sort: String?, direction: String?): Sort {
+        val dir = if (direction.equals("asc", ignoreCase = true)) Sort.Direction.ASC else Sort.Direction.DESC
+        val property = when (sort) {
+            "date"  -> "lastDonationAt"
+            "name"  -> "sortName"
+            "count" -> "txCount"
+            else    -> "totalAmount"
+        }
+        return Sort.by(dir, property).and(Sort.by(Sort.Direction.ASC, "donorId"))
     }
 
     private fun assertCampaignOwnership(campaignId: UUID, associationId: UUID) {

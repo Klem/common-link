@@ -54,6 +54,9 @@ import java.util.UUID
     "app.mollie.connect.mock=false",
     "app.mollie.connect.allow-fake-completion=false",
     "app.mollie.connect.onboarding-api=LEGACY",
+    // Explicitly disabled so the live-resync stubs below actually fire, independent of the
+    // app-wide default (which is true). The disabled path lives in MollieConnectDisableSyncTest.
+    "app.mollie.connect.disable-onboarding-sync=false",
 ])
 @Transactional
 class MollieConnectLegacyApiTest {

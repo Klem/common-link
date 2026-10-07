@@ -26,7 +26,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
  *
  * Key security decisions:
  * - **Stateless sessions**: no HTTP session is created; authentication is entirely JWT-based.
- * - **CSRF disabled**: safe for a stateless REST API that does not use cookies for auth.
+ * - **CSRF disabled**: every state-changing route authenticates via `Authorization: Bearer`, never
+ *   a cookie, except `/api/auth/refresh` — which reads the `cl-refresh` cookie instead. That one
+ *   route cannot rely on Spring's CSRF filter (it runs before authentication is established) and
+ *   is protected in [org.commonlink.controller.AuthController] by an explicit `Origin` header check
+ *   instead (security audit 2026-10-06, finding #1).
  * - **CORS**: restricted to the configured `app.frontend-url` origin only.
  * - **Route-level authorization**: `/api/auth / **` and `/api/docs / **` are public; association and
  *   donor routes are role-gated; all other routes require a valid JWT.

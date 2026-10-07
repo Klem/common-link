@@ -81,6 +81,7 @@ class CampaignService(
     private val budgetHasher: CampaignBudgetHasher,
     private val outbox: OnchainOutboxService,
     private val legalAcceptanceService: LegalAcceptanceService,
+    private val actionPlaceService: ActionPlaceService,
 ) {
 
     private val logger = LoggerFactory.getLogger(CampaignService::class.java)
@@ -155,6 +156,10 @@ class CampaignService(
     /**
      * Creates a new campaign under the authenticated association.
      *
+     * The place of action is pre-filled, best-effort, with the commune of the association's
+     * headquarters ([ActionPlaceService.fromAssociationAddress]); it stays null when that address
+     * cannot be geocoded -- campaign creation never fails on geocoding.
+     *
      * @param userId UUID of the authenticated association user.
      * @param req Creation request with campaign details.
      * @return [CampaignDto] of the persisted campaign.
@@ -173,6 +178,8 @@ class CampaignService(
             startDate = req.startDate,
             endDate = req.endDate
         )
+        actionPlaceService.fromAssociationAddress(association.city, association.postalCode)
+            ?.let { actionPlaceService.applyTo(campaign, it) }
         val saved = campaignRepository.save(campaign)
         logger.info("Campaign created: id={}, name={}, associationId={}", saved.id, saved.name, association.id)
         return saved.toDto()
@@ -190,7 +197,10 @@ class CampaignService(
      * @return Updated [CampaignDto].
      * @throws UserNotFoundException if no association profile exists for this user.
      * @throws NotFoundException if the campaign is not found under this association.
-     * @throws UnprocessableEntityException if the requested status transition is invalid.
+     * @throws UnprocessableEntityException if the requested status transition is invalid, or the
+     *   submitted place of action is malformed or unknown.
+     * @throws org.commonlink.exception.BadGatewayException if a French place of action cannot be
+     *   checked because geo.api.gouv.fr is unreachable (only when [UpdateCampaignRequest.actionPlace] is set).
      */
     @Transactional
     fun updateCampaign(userId: UUID, campaignId: UUID, req: UpdateCampaignRequest): CampaignDto {
@@ -204,6 +214,9 @@ class CampaignService(
         if (req.startDate != null) campaign.startDate = req.startDate
         if (req.endDate != null) campaign.endDate = req.endDate
         if (req.category != null) campaign.category = req.category
+        if (req.actionPlace != null) {
+            actionPlaceService.applyTo(campaign, actionPlaceService.resolve(req.actionPlace.type!!, req.actionPlace.code))
+        }
         if (req.reason != null) campaign.reason = req.reason
         if (req.impactGoals != null) campaign.impactGoals = req.impactGoals
         if (req.coverImage != null) campaign.coverImage = req.coverImage

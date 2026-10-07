@@ -1,0 +1,78 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { EmptyStateCard } from '@/components/dashboard';
+import { RecommendationCard } from '@/components/donor/RecommendationCard';
+import { useDonorRecommendations } from '@/hooks/dashboard/useDonorRecommendations';
+import { CAMPAIGN_CAUSES, useCauseLabel } from '@/lib/campaignCause';
+import type { CampaignCause } from '@/types/campaign';
+
+/** "Projets recommandés" page content (D8, option A): simple category filter over the list. */
+export function RecommendationsGallery() {
+  const t = useTranslations('dashboard.donor.recommendations');
+  const causeLabel = useCauseLabel();
+  const { recommendations, isLoading, error } = useDonorRecommendations();
+  const [category, setCategory] = useState<CampaignCause | null>(null);
+
+  const categories = useMemo(
+    () => CAMPAIGN_CAUSES.filter((c) => recommendations.some((r) => r.category === c)),
+    [recommendations],
+  );
+  const filtered = useMemo(
+    () => (category === null ? recommendations : recommendations.filter((r) => r.category === category)),
+    [recommendations, category],
+  );
+
+  if (isLoading) {
+    return (
+      <p className="text-sm text-text-2" aria-live="polite">
+        {t('loading')}
+      </p>
+    );
+  }
+
+  if (error) {
+    return <EmptyStateCard icon="⚠️" title={t('error')} subtitle={t('errorSubtitle')} />;
+  }
+
+  if (recommendations.length === 0) {
+    return <EmptyStateCard icon={t('empty.icon')} title={t('empty.title')} subtitle={t('empty.subtitle')} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('filter.label')}>
+          <button
+            type="button"
+            className={`btn btn-sm ${category === null ? 'btn-primary' : 'btn-secondary'}`}
+            aria-pressed={category === null}
+            onClick={() => setCategory(null)}
+          >
+            {t('filter.all')}
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`btn btn-sm ${category === c ? 'btn-primary' : 'btn-secondary'}`}
+              aria-pressed={category === c}
+              onClick={() => setCategory(c)}
+            >
+              {causeLabel(c)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <ul className="project-grid">
+        {filtered.map((recommendation) => (
+          <li key={recommendation.campaignId}>
+            <RecommendationCard recommendation={recommendation} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

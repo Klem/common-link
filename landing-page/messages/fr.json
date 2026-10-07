@@ -325,7 +325,37 @@
       "emptyText": "Les premières campagnes arrivent. Revenez très vite.",
       "emptyTitle": "Rien pour l'instant !",
       "subtitle": "Chaque page indique le budget prévu, le résultat attendu et les dépenses déjà publiées.",
-      "title": "Tous les projets"
+      "title": "Tous les projets",
+      "filters": {
+        "all": "Tous",
+        "more": "Plus",
+        "less": "Moins",
+        "causesLabel": "Filtrer par cause",
+        "seeAlso": "Voir aussi :",
+        "scopeLabel": "Filtrer par portée",
+        "scope": {
+          "all": "Toutes portées",
+          "LOCALE": "Locale",
+          "NATIONALE": "Nationale",
+          "INTERNATIONALE": "Internationale"
+        },
+        "proximity": {
+          "toggle": "Près de chez moi",
+          "placeholder": "Ville ou code postal",
+          "radiusLabel": "Rayon",
+          "radiusOption": "{km} km",
+          "around": "Autour de {label}",
+          "change": "Changer",
+          "off": "Désactiver",
+          "searching": "Recherche…",
+          "noResult": "Aucune commune trouvée",
+          "searchError": "Recherche indisponible pour le moment",
+          "nationalBlock": "Partout en France",
+          "localEmpty": "Aucune campagne locale dans ce rayon."
+        },
+        "noMatch": "Aucune campagne ne correspond à ces filtres.",
+        "reset": "Réinitialiser les filtres"
+      }
     },
     "transparency": {
       "ctaLabel": "Voir comment suivre un don",
@@ -427,6 +457,19 @@
       "subtitle": "Les associations paient leurs fournisseurs depuis la plateforme. Chaque paiement est publié aussitôt. Vous n'avez rien à demander.",
       "title": "Donner sans se demander",
       "titleAccent": "où va l'argent"
+    },
+    "causes": {
+      "SOLIDARITE": "Solidarité",
+      "ALIMENTATION": "Alimentation",
+      "SANTE": "Santé",
+      "ENFANCE_EDUCATION": "Enfance & éducation",
+      "ANIMAUX": "Animaux",
+      "HANDICAP": "Handicap",
+      "ENVIRONNEMENT": "Environnement",
+      "CULTURE": "Culture",
+      "SPORT": "Sport",
+      "DROITS_CITOYENNETE": "Droits & citoyenneté",
+      "AUTRE": "Autre"
     }
   },
   "legal": {
@@ -620,8 +663,10 @@
         },
         {
           "paragraphs": [
-            "L'organisme conserve ses droits sur les contenus qu'il publie. Il concède à CommonLink, pour la durée des présentes et pour les besoins du service, le droit de les reproduire et de les représenter sur la plateforme et sur les supports de promotion des campagnes.",
-            "Il garantit détenir les droits nécessaires sur ces contenus, notamment sur les images représentant des personnes."
+            "L'organisme est seul responsable des contenus qu'il publie sur la plateforme, notamment les textes et images de ses campagnes, ses commentaires et ses bilans. Il en conserve les droits.",
+            "Il concède à CommonLink, pour les besoins du service, le droit de les reproduire et de les représenter sur la plateforme et sur les supports de promotion des campagnes. Ce droit vaut pour la durée des présentes et, pour les contenus déjà publiés, aussi longtemps que les pages des campagnes restent accessibles en application de l'article 34.",
+            "Il garantit détenir les droits nécessaires sur ces contenus, notamment sur les images représentant des personnes, y compris l'autorisation des représentants légaux lorsqu'elles représentent des mineurs. Il garantit CommonLink contre tout recours d'un tiers relatif à ces contenus. Cette garantie ne couvre pas les manquements imputables à CommonLink.",
+            "CommonLink peut retirer tout contenu manifestement illicite ou portant atteinte aux droits d'un tiers, notamment à la suite d'un signalement. Elle en informe l'organisme en indiquant le motif, et l'organisme peut présenter ses observations et contester cette décision."
           ],
           "title": "Article 26. Contenus publiés par l'organisme"
         },
@@ -823,7 +868,7 @@
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 28 septembre 2026",
+      "lastUpdated": "Version en vigueur au 5 octobre 2026",
       "title": "Conditions générales d'utilisation applicables aux organismes bénéficiaires"
     },
     "cguDonors": {

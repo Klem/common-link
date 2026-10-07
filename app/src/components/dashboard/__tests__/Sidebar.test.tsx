@@ -57,9 +57,9 @@ describe('Sidebar', () => {
   it('shows donor nav items when user.role is DONOR', () => {
     render(<Sidebar user={donorUser} currentPath="/dashboard/donor" />);
     expect(screen.getByText('nav.overview')).toBeInTheDocument();
-    expect(screen.getByText('nav.profile')).toBeInTheDocument();
     expect(screen.getByText('nav.donations')).toBeInTheDocument();
-    expect(screen.queryByText('nav.settings')).not.toBeInTheDocument();
+    expect(screen.getByText('nav.associations')).toBeInTheDocument();
+    expect(screen.getByText('nav.settings')).toBeInTheDocument();
   });
 
   it('shows association nav groups when user.role is ASSOCIATION', () => {

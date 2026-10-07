@@ -1,0 +1,25 @@
+package org.commonlink.dto
+
+import java.util.UUID
+import org.commonlink.entity.CampaignCause
+
+/** One campaign card of the "Impact de mes dons" gallery. */
+data class DonorImpactDto(
+    val campaignId: UUID,
+    val campaignName: String,
+    val campaignEmoji: String,
+    val associationName: String,
+    /** Cause -- Campaign.category, used as the filter facet. Null when the campaign carries none. */
+    val category: CampaignCause?,
+    /** Free-text impact description written by the association at campaign creation. */
+    val impactGoals: String?,
+    /**
+     * Published story's plain-text summary, null if none or still draft. Never the rich-text
+     * [org.commonlink.entity.CampaignStory.storyText] HTML -- the gallery composes this into the
+     * collective wording (D6) as plain text, never as markup.
+     */
+    val storySummary: String?,
+    /** Absolute public donation URL, or null when the association's widget isn't currently
+     * reachable -- see [org.commonlink.entity.AssociationProfile.hasEligibleWidget]. */
+    val donationUrl: String?,
+)

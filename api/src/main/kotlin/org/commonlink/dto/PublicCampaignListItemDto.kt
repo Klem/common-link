@@ -1,5 +1,7 @@
 package org.commonlink.dto
 
+import org.commonlink.entity.ActionPlaceType
+import org.commonlink.entity.CampaignCause
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -16,7 +18,12 @@ import java.util.UUID
  * @param campaignId UUID of the campaign (already public: it is the cover-image URL segment).
  * @param campaignName Display name of the campaign.
  * @param campaignEmoji Visual icon of the campaign, used as placeholder when no cover image is set.
- * @param campaignCategory Free-text category set by the association, or null.
+ * @param campaignCategory Cause set by the association, or null.
+ * @param actionPlaceType Kind of place of action, or null when unset.
+ * @param actionPlaceCode Code of the place of action (see [org.commonlink.entity.Campaign.actionPlaceCode]).
+ * @param actionPlaceLabel Display label of the place of action.
+ * @param actionLatitude Commune centre latitude (COMMUNE only).
+ * @param actionLongitude Commune centre longitude (COMMUNE only).
  * @param coverImage Public serving path of the cover image, or null if none was uploaded.
  * @param campaignUpdatedAt Timestamp of the campaign's last modification — used as a
  *   cache-busting version token for [coverImage], which is served from a stable, publicly
@@ -24,6 +31,9 @@ import java.util.UUID
  * @param goal Total fundraising goal in euros.
  * @param raised Amount raised so far in euros.
  * @param milestoneCount Number of milestones defined for this campaign.
+ * @param associationId UUID of the owning association -- used by
+ *   [org.commonlink.service.DonorRecommendationService] to exclude associations the donor already
+ *   supports; never serialized (see class doc).
  * @param associationName Official registered name of the owning association.
  * @param associationLogo Public serving path of the association landing logo, or null.
  * @param widgetToken Opaque public widget token, used to build the donation URL.
@@ -32,12 +42,18 @@ data class PublicCampaignRow(
     val campaignId: UUID,
     val campaignName: String,
     val campaignEmoji: String,
-    val campaignCategory: String?,
+    val campaignCategory: CampaignCause?,
+    val actionPlaceType: ActionPlaceType?,
+    val actionPlaceCode: String?,
+    val actionPlaceLabel: String?,
+    val actionLatitude: Double?,
+    val actionLongitude: Double?,
     val coverImage: String?,
     val campaignUpdatedAt: Instant,
     val goal: BigDecimal,
     val raised: BigDecimal,
     val milestoneCount: Int,
+    val associationId: UUID,
     val associationName: String,
     val associationLogo: String?,
     val widgetToken: String,
@@ -57,7 +73,10 @@ data class PublicCampaignRow(
  * @param campaignId UUID of the campaign; segment of the public cover-image URL.
  * @param campaignName Display name shown as the card title.
  * @param campaignEmoji Visual icon, rendered as placeholder when [coverImage] is null.
- * @param campaignCategory Free-text category badge, or null when the association set none.
+ * @param campaignCategory Cause of the campaign, or null when the association set none. The
+ *   landing page never shows [CampaignCause.AUTRE].
+ * @param actionPlace Place of action with its derived scope and coordinates, or null when unset;
+ *   feeds the scope and proximity filters of the discovery page.
  * @param coverImage Public serving path of the cover image (`/api/public/campaigns/{id}/cover`),
  *   or null. Never call that URL when this is null — it answers 404, not a placeholder.
  * @param campaignUpdatedAt Timestamp of the campaign's last modification. The cover-image URL is
@@ -76,7 +95,8 @@ data class PublicCampaignListItemDto(
     val campaignId: UUID,
     val campaignName: String,
     val campaignEmoji: String,
-    val campaignCategory: String?,
+    val campaignCategory: CampaignCause?,
+    val actionPlace: ActionPlaceDto?,
     val coverImage: String?,
     val campaignUpdatedAt: Instant,
     val goal: BigDecimal,

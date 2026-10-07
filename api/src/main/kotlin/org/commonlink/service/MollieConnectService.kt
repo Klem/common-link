@@ -730,9 +730,10 @@ class MollieConnectService(
      * [getValidAccessToken] is properly applied — avoids Spring self-invocation proxy bypass.
      *
      * @return the freshly-synced connection instance, or null when the sync was skipped
-     *         (BROKEN / COMPLETED / throttled) or failed — callers fall back to their instance.
+     *         (disabled / BROKEN / COMPLETED / throttled) or failed — callers fall back to their instance.
      */
     private fun refreshOnboardingStatusIfStale(connection: MollieConnection): MollieConnection? {
+        if (config.disableOnboardingSync) return null
         if (connection.state == MollieConnectionState.BROKEN) return null
         if (connection.onboardingStatus == MollieOnboardingStatus.COMPLETED) return null
         val fiveMinutesAgo = Instant.now().minusSeconds(300)

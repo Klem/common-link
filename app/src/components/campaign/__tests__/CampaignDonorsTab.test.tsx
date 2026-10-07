@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { CampaignDonorsTab } from '../CampaignDonorsTab';
 import type { CampaignDto } from '@/types/campaign';
 
@@ -29,8 +29,15 @@ const campaign: CampaignDto = {
   status: 'LIVE',
   startDate: null,
   endDate: null,
+  category: null,
+  actionPlace: null,
+  reason: null,
+  impactGoals: null,
+  coverImage: null,
   milestones: [],
   budgetSections: [],
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
 };
 
 const donor1 = {
@@ -58,6 +65,15 @@ const donation1 = {
   onChain: true,
 };
 
+const donation2 = {
+  id: 'don-2',
+  amount: 25,
+  providerRef: 'mollie:tr_def456',
+  confirmedAt: null,
+  createdAt: '2026-03-16T09:00:00Z',
+  onChain: false,
+};
+
 const basePage = {
   content: [donor1, anonymousDonor],
   totalElements: 2,
@@ -71,19 +87,16 @@ const defaultHook = {
   page: 0,
   search: '',
   sort: 'amount',
+  direction: 'desc',
   isLoading: false,
   error: null,
-  selectedDonor: null,
+  openDonorId: null,
   donorDonations: [],
   isDonorLoading: false,
-  selectedDonation: null,
   setPage: vi.fn(),
   setSearch: vi.fn(),
-  setSort: vi.fn(),
-  selectDonor: vi.fn(),
-  closeDonor: vi.fn(),
-  selectDonation: vi.fn(),
-  closeDonation: vi.fn(),
+  toggleSort: vi.fn(),
+  toggleDonor: vi.fn(),
 };
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -121,15 +134,10 @@ describe('CampaignDonorsTab', () => {
     expect(screen.getAllByText('Anonyme').length).toBeGreaterThan(0);
   });
 
-  it('shows "Anonyme" as-is for anonymous donors', () => {
-    render(<CampaignDonorsTab campaign={campaign} />);
-    expect(screen.getAllByText('Anonyme').length).toBeGreaterThan(0);
-  });
-
-  it('renders search input and sort select', () => {
+  it('renders search input and no sort select (headers sort instead)', () => {
     render(<CampaignDonorsTab campaign={campaign} />);
     expect(screen.getByPlaceholderText('search.placeholder')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('sort.amount')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
   it('calls setSearch when typing in search input', () => {
@@ -140,58 +148,74 @@ describe('CampaignDonorsTab', () => {
     expect(defaultHook.setSearch).toHaveBeenCalledWith('Marie');
   });
 
-  it('opens donor detail when clicking Voir', async () => {
-    const selectDonor = vi.fn();
-    mockUseDonors.mockReturnValue({ ...defaultHook, selectDonor });
+  it('no longer renders a "view" button', () => {
     render(<CampaignDonorsTab campaign={campaign} />);
-    const viewButtons = screen.getAllByText('table.view');
-    fireEvent.click(viewButtons[0]);
-    expect(selectDonor).toHaveBeenCalledWith(donor1);
+    expect(screen.queryByText('table.view')).not.toBeInTheDocument();
   });
 
-  it('renders donor detail panel when selectedDonor is set', () => {
-    mockUseDonors.mockReturnValue({
-      ...defaultHook,
-      selectedDonor: donor1,
-      donorDonations: [donation1],
-      isDonorLoading: false,
-    });
+  it.each([
+    ['table.donor', 'name'],
+    ['table.amount', 'amount'],
+    ['table.transactions', 'count'],
+    ['table.lastDonation', 'date'],
+  ])('clicking header %s sorts server-side by %s', (label, key) => {
     render(<CampaignDonorsTab campaign={campaign} />);
-    expect(screen.getAllByText('Marie L.').length).toBeGreaterThan(0);
-    expect(screen.getByText('detail.transactions')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`"column":"${label}"`) }));
+    expect(defaultHook.toggleSort).toHaveBeenCalledWith(key);
   });
 
-  it('shows donation list and hides noTx in donor detail panel', () => {
-    mockUseDonors.mockReturnValue({
-      ...defaultHook,
-      selectedDonor: donor1,
-      donorDonations: [donation1],
-      isDonorLoading: false,
-    });
+  it('marks the active sort header and its direction', () => {
     render(<CampaignDonorsTab campaign={campaign} />);
+    const amountHeader = screen.getByRole('button', { name: /"column":"table.amount"/ });
+    expect(amountHeader).toHaveClass('active');
+    expect(amountHeader.querySelector('.th-sort-chev')).toHaveClass('desc');
+  });
+
+  it('chevron toggles the donor row', () => {
+    render(<CampaignDonorsTab campaign={campaign} />);
+    const chevron = screen.getByRole('button', { name: 'table.showDetail — Marie L.' });
+    expect(chevron).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(chevron);
+    expect(defaultHook.toggleDonor).toHaveBeenCalledWith('donor-1');
+  });
+
+  it('renders the transactions sub-table under the open donor only', () => {
+    mockUseDonors.mockReturnValue({ ...defaultHook, openDonorId: 'donor-1', donorDonations: [donation1, donation2] });
+    render(<CampaignDonorsTab campaign={campaign} />);
+    expect(screen.getByRole('button', { name: 'table.hideDetail — Marie L.' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'table.showDetail — Anonyme' })).toHaveAttribute('aria-expanded', 'false');
+    const detailRow = document.getElementById('donor-detail-donor-1')!;
+    expect(detailRow).toBeInTheDocument();
+    expect(document.getElementById('donor-detail-donor-anon')).not.toBeInTheDocument();
+    expect(within(detailRow).getByText('tx.ref')).toBeInTheDocument();
+    expect(within(detailRow).getAllByRole('row')).toHaveLength(3); // header + 2 donations
     expect(screen.queryByText('detail.noTx')).not.toBeInTheDocument();
   });
 
-  it('calls closeDonor when closing detail panel', () => {
-    const closeDonor = vi.fn();
-    mockUseDonors.mockReturnValue({
-      ...defaultHook,
-      selectedDonor: donor1,
-      closeDonor,
-    });
+  it('sorts the transactions sub-table locally by amount', () => {
+    mockUseDonors.mockReturnValue({ ...defaultHook, openDonorId: 'donor-1', donorDonations: [donation1, donation2] });
     render(<CampaignDonorsTab campaign={campaign} />);
-    const closeBtn = screen.getByText('detail.close');
-    fireEvent.click(closeBtn);
-    expect(closeDonor).toHaveBeenCalled();
+    const detailRow = document.getElementById('donor-detail-donor-1')!;
+    const amountHeader = within(detailRow).getByRole('button', { name: /"column":"tx.amount"/ });
+
+    fireEvent.click(amountHeader);
+    let rows = within(detailRow).getAllByRole('row').slice(1);
+    expect(rows[0]).toHaveTextContent('25,00');
+    expect(rows[1]).toHaveTextContent('100,00');
+
+    fireEvent.click(amountHeader);
+    rows = within(detailRow).getAllByRole('row').slice(1);
+    expect(rows[0]).toHaveTextContent('100,00');
+  });
+
+  it('shows noTx when the open donor has no donations', () => {
+    mockUseDonors.mockReturnValue({ ...defaultHook, openDonorId: 'donor-1', donorDonations: [] });
+    render(<CampaignDonorsTab campaign={campaign} />);
+    expect(screen.getByText('detail.noTx')).toBeInTheDocument();
   });
 
   it('shows donor detail loading spinner', () => {
-    mockUseDonors.mockReturnValue({
-      ...defaultHook,
-      selectedDonor: donor1,
-      donorDonations: [],
-      isDonorLoading: true,
-    });
+    mockUseDonors.mockReturnValue({ ...defaultHook, openDonorId: 'donor-1', isDonorLoading: true });
     render(<CampaignDonorsTab campaign={campaign} />);
     const spinners = document.querySelectorAll('.animate-spin');
     expect(spinners.length).toBeGreaterThan(0);

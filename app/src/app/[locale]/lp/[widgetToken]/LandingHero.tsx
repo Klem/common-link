@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { campaignCoverUrl } from '@/lib/api/campaign';
+import { useCauseLabel } from '@/lib/campaignCause';
+import { CampaignCause } from '@/types/campaign';
 
 interface LandingHeroProps {
   campaignName: string;
-  campaignCategory: string | null;
+  campaignCategory: CampaignCause | null;
   campaignReason: string | null;
   campaignDescription: string | null;
   associationRna: string;
@@ -27,6 +29,7 @@ export function LandingHero({
   campaignUpdatedAt,
 }: LandingHeroProps) {
   const t = useTranslations('landing');
+  const causeLabel = useCauseLabel();
   const [imgError, setImgError] = useState(false);
 
   const tagline = campaignReason ?? campaignDescription;
@@ -35,8 +38,9 @@ export function LandingHero({
     <section className="lp-hero">
       <div className="lp-hero-inner">
         <div className="lp-hero-content">
-          {campaignCategory && (
-            <span className="lp-eyebrow">{campaignCategory}</span>
+          {/* AUTRE is never displayed publicly. */}
+          {campaignCategory && campaignCategory !== CampaignCause.AUTRE && (
+            <span className="lp-eyebrow">{causeLabel(campaignCategory)}</span>
           )}
           <h1 className="lp-hero-title">{campaignName}</h1>
           {tagline && <p className="lp-hero-tagline">{tagline}</p>}
