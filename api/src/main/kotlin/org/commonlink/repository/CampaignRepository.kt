@@ -19,13 +19,6 @@ import java.util.UUID
 interface CampaignRepository : JpaRepository<Campaign, UUID> {
 
     /**
-     * Campaigns with no place of action yet, with their association fetched -- input of the
-     * one-shot [org.commonlink.service.ActionPlaceBackfill], which reads the association address.
-     */
-    @Query("SELECT c FROM Campaign c JOIN FETCH c.association WHERE c.actionPlaceType IS NULL")
-    fun findAllWithoutActionPlace(): List<Campaign>
-
-    /**
      * Returns all campaigns belonging to the given association.
      *
      * @param associationId the UUID of the [org.commonlink.entity.AssociationProfile]

@@ -84,11 +84,6 @@ app:
   # geo.api.gouv.fr (key-less): validates and geocodes a campaign's place of action.
   geo:
     base-url: ${GEO_API_BASE_URL:https://geo.api.gouv.fr}
-  campaign:
-    # One-shot backfill of the place of action of pre-V82 campaigns (ActionPlaceBackfill).
-    # Enable for a single deploy, then set back to false.
-    action-place-backfill:
-      enabled: ${ACTION_PLACE_BACKFILL_ENABLED:false}
   bridge:
     # Safe default: boots with zero setup locally. Set BRIDGE_DEMO_MODE=false as an actual
     # environment variable (IDE run config / shell) to hit the real sandbox locally — never flip

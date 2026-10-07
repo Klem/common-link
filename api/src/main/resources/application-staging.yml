@@ -123,11 +123,6 @@ app:
   # geo.api.gouv.fr (key-less): validates and geocodes a campaign's place of action.
   geo:
     base-url: ${GEO_API_BASE_URL:https://geo.api.gouv.fr}
-  campaign:
-    # One-shot backfill of the place of action of pre-V82 campaigns (ActionPlaceBackfill).
-    # Enable for a single deploy, then set back to false.
-    action-place-backfill:
-      enabled: ${ACTION_PLACE_BACKFILL_ENABLED:false}
   # Bridge API — voir application.yml pour le détail des clés.
   # BRIDGE_CLIENT_ID / BRIDGE_CLIENT_SECRET (sandbox) sont provisionnés sur Clever Cloud : le
   # staging pointe désormais sur le vrai sandbox Bridge, plus sur la simulation en mémoire.

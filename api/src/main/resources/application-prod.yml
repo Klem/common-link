@@ -128,11 +128,6 @@ app:
   # geo.api.gouv.fr (key-less): validates and geocodes a campaign's place of action.
   geo:
     base-url: ${GEO_API_BASE_URL:https://geo.api.gouv.fr}
-  campaign:
-    # One-shot backfill of the place of action of pre-V82 campaigns (ActionPlaceBackfill).
-    # Enable for a single deploy, then set back to false.
-    action-place-backfill:
-      enabled: ${ACTION_PLACE_BACKFILL_ENABLED:false}
   bridge:
     # Exception assumée à la règle « tout drapeau de sûreté est explicite en prod » de l'en-tête :
     # les identifiants Bridge de PRODUCTION ne sont pas encore provisionnés. Avec l'ancien

@@ -414,7 +414,7 @@ A cryptographically random string (32 bytes, 64 hex characters) used for Magic L
 ## P
 
 ### Place of Action (Lieu de l'action)
-Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation (and once for older campaigns, `ActionPlaceBackfill`). Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
+Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation. Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
 `functional`
 
 ### Proximity Filter — see **Place of Action**
