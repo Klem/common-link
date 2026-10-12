@@ -273,6 +273,15 @@ class VerificationService(
      * Downloads the binary content of a document (any type).
      * Returns a pair of (metadata, content bytes).
      * Verifies ownership — throws NotFoundException if doc doesn't belong to this association.
+     *
+     * Every successful download is journaled as
+     * [ComplianceAuditLogService.ASSOCIATION_DOCUMENT_DOWNLOADED] (document id, type and acting
+     * user — never the file name or content). A refused download (unknown document, or one owned
+     * by another association) writes nothing.
+     *
+     * @param userId authenticated user's id (`principal.username`), resolved to its association.
+     * @param docId id of the document to download.
+     * @return the document metadata and its raw content.
      */
     fun downloadDocument(userId: UUID, docId: UUID): Pair<org.commonlink.repository.AssociationDocumentMetadata, ByteArray> {
         val profile = associationProfileRepository.findByUserId(userId)
@@ -283,6 +292,14 @@ class VerificationService(
 
         val content = documentRepository.findContentById(docId)
             ?: throw NotFoundException("Document $docId content not found")
+
+        complianceAuditLogService.appendAssociationDocumentDownloaded(
+            associationId = profile.id!!,
+            documentId = docId,
+            docType = meta.docType.name,
+            actorUserId = userId,
+        )
+        logger.info("Document {} ({}) downloaded by its association {}", docId, meta.docType, profile.id)
 
         return meta to content
     }

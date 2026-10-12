@@ -284,4 +284,48 @@ class ComplianceAuditLogServiceLogicTest {
         val result = service.findLastOnboardingFreezeScreenStatus(assocId, listOf(boId))
         assertEquals(FreezeScreenStatus.HIT_CLEARED, result.status)
     }
+
+    // ── Mollie self-completion attestation (sprint 20) ────────────────────────
+
+    @Test
+    fun `appendMollieSelfCompletionAttestedOnce - second attestation returns the first and writes no new event`() {
+        val associationId = UUID.randomUUID()
+        val actor = UUID.randomUUID()
+
+        val first = service.appendMollieSelfCompletionAttestedOnce(associationId, actor, "v1")
+        val second = service.appendMollieSelfCompletionAttestedOnce(associationId, actor, "v2")
+
+        assertEquals(first.id, second.id)
+        val events = repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(
+            associationId, listOf(ComplianceAuditLogService.MOLLIE_SELF_COMPLETION_ATTESTED),
+        )
+        assertEquals(1, events.size)
+        assertEquals(actor, events.single().actorUserId)
+        assertEquals(ComplianceAuditSubjectType.ASSOCIATION, events.single().subjectType)
+        val payload = events.single().payload
+        assertEquals("""{"textVersion":"v1"}""", payload, "first attestation payload must be kept unchanged")
+        org.junit.jupiter.api.Assertions.assertFalse(
+            payload.contains("ipAddress") || payload.contains("userAgent"),
+            "attestation payload must hold neither IP nor user-agent: $payload",
+        )
+        assertEquals(first.occurredAt, service.findMollieSelfCompletionAttestation(associationId)?.occurredAt)
+    }
+
+    @Test
+    fun `findMollieSelfCompletionAttestation - null when the association never attested`() {
+        assertNull(service.findMollieSelfCompletionAttestation(UUID.randomUUID()))
+    }
+
+    @Test
+    fun `appendAssociationDocumentDownloaded - payload holds document id and type only`() {
+        val associationId = UUID.randomUUID()
+        val documentId = UUID.randomUUID()
+        val row = service.appendAssociationDocumentDownloaded(associationId, documentId, "VERIF_STATUTS", UUID.randomUUID())
+        // REQUIRES_NEW commits outside this class's rollback wrapper: clean it up like the concurrent rows.
+        concurrentRowIds += row.id
+
+        assertEquals(ComplianceAuditLogService.ASSOCIATION_DOCUMENT_DOWNLOADED, row.eventType)
+        assertEquals(associationId, row.subjectId)
+        assertEquals("""{"documentId":"$documentId","docType":"VERIF_STATUTS"}""", row.payload)
+    }
 }
