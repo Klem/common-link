@@ -166,6 +166,20 @@ app:
         # Renew a token expiring within this window. Keep it >= 2x fixed-delay-ms, otherwise tokens
         # whose expiry falls between two ticks are missed and get refreshed lazily after all.
         lookahead-seconds: 1800
+      # Scheduled onboarding status sweep (Mollie has no onboarding webhook). Only connections that
+      # do not collect yet are polled; COMPLETED + canReceivePayments is never re-polled (sprint 20 Q1).
+      # No enabled flag: disable-onboarding-sync above is the single switch.
+      onboarding-sync:
+        # Gap between two sweep ticks (fixedDelay). A tick only polls the connections that are due.
+        fixed-delay-ms: 60000
+        initial-delay-ms: 120000
+        # Recheck interval of NEEDS_DATA / IN_REVIEW / COMPLETED-without-payments connections.
+        pending-recheck-seconds: 300
+        # NEEDS_DATA for longer than this many days is dormant and rechecked every dormant-recheck-seconds.
+        dormant-after-days: 7
+        dormant-recheck-seconds: 3600
+        # POST /api/mollie/connect/status/refresh calls Mollie at most once per association per window.
+        forced-refresh-min-interval-seconds: 30
   # Curator bootstrap — set both env vars to create a CURATOR user on first deploy, then remove them.
   # The bean is absent when APP_CURATOR_EMAIL is unset; no runtime cost in normal operation.
   curator:

@@ -4,6 +4,7 @@ import org.commonlink.entity.MollieConnection
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import org.commonlink.entity.MollieOnboardingStatus
 import java.time.Instant
 import java.util.UUID
 
@@ -19,6 +20,23 @@ import java.util.UUID
 data class MollieRefreshCandidate(
     val associationId: UUID,
     val refreshToken: String,
+)
+
+/**
+ * Exactly what the scheduled onboarding sweep needs about a candidate connection to decide whether
+ * it is due ([org.commonlink.service.MollieOnboardingSyncExecutor]).
+ *
+ * A projection for the same reason as [MollieRefreshCandidate]: the sweep reads outside any
+ * transaction and must not depend on the LAZY `association` proxy. [refreshToken] is decrypted by
+ * [org.commonlink.security.OAuthTokenConverter], so the mock sentinel is comparable in clear.
+ */
+data class MollieOnboardingSyncCandidate(
+    val associationId: UUID,
+    val refreshToken: String,
+    val onboardingStatus: MollieOnboardingStatus,
+    val canReceivePayments: Boolean,
+    val onboardingStatusSince: Instant,
+    val lastSyncedAt: Instant?,
 )
 
 interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
@@ -64,6 +82,26 @@ interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
             "AND c.expiresAt < :threshold",
     )
     fun findActiveExpiringBefore(@Param("threshold") threshold: Instant): List<MollieRefreshCandidate>
+
+    /**
+     * Returns every ACTIVE connection that does not collect donations yet — the candidate set for
+     * the scheduled onboarding sweep ([org.commonlink.service.MollieOnboardingSyncExecutor]).
+     *
+     * "Collects" is `COMPLETED AND can_receive_payments`: such a connection is never re-polled
+     * (sprint 20, Q1 — a regression would cut donations automatically). BROKEN connections are
+     * excluded: no token can be obtained for them. Mock rows are filtered by the caller in Kotlin,
+     * for the encrypted-token reason documented on [findActiveExpiringBefore]. Full scan of a table
+     * holding one row per association; no index needed.
+     */
+    @Query(
+        "SELECT new org.commonlink.repository.MollieOnboardingSyncCandidate(" +
+            "c.association.id, c.refreshToken, c.onboardingStatus, c.canReceivePayments, c.onboardingStatusSince, c.lastSyncedAt) " +
+            "FROM MollieConnection c " +
+            "WHERE c.state = org.commonlink.entity.MollieConnectionState.ACTIVE " +
+            "AND NOT (c.onboardingStatus = org.commonlink.entity.MollieOnboardingStatus.COMPLETED " +
+            "AND c.canReceivePayments = true)",
+    )
+    fun findActiveNotCollecting(): List<MollieOnboardingSyncCandidate>
 
     /**
      * Returns true if the given association already has a Mollie connection.

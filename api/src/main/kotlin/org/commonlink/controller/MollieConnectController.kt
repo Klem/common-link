@@ -27,6 +27,7 @@ import java.util.UUID
  * Exposes:
  * - [getAuthUrl] — generates and returns the Mollie Client Link authorization URL (association-only).
  * - [getStatus] — returns the association's Mollie KYC connection status.
+ * - [refreshStatus] — forces a rate-limited re-read of that status from Mollie.
  * - [getOnboardingContext] — KYB-derived context for the "Bank account" tab's onboarding guide.
  * - [attestSelfCompletion] — journals the association's self-completion attestation (unlocks nothing).
  *
@@ -75,9 +76,11 @@ class MollieConnectController(
     /**
      * Returns the Mollie KYC connection status for the authenticated association.
      *
-     * If a non-COMPLETED connection is stale (last sync > 5 minutes), the backend
-     * re-fetches `GET /v2/capabilities` from Mollie before responding — this is how
-     * transitions surface without webhooks (Mollie has none for KYC).
+     * If a connection that does not collect yet (anything but COMPLETED with payments enabled) is
+     * stale (last sync > 5 minutes), the backend re-fetches the configured Mollie onboarding API
+     * before responding — one of the ways transitions surface without webhooks (Mollie has none for
+     * KYC), alongside the scheduled sweep and [refreshStatus]. The DTO carries
+     * `complementRequested` (NEEDS_DATA after an observed IN_REVIEW).
      *
      * @param principal Authenticated user — must be an association profile.
      * @return [MollieKycStatusDto] with connection and onboarding details.
@@ -100,6 +103,38 @@ class MollieConnectController(
         val status = mollieConnectService.getConnectionStatus(UUID.fromString(principal.username))
         return ResponseEntity.ok(status)
     }
+
+    /**
+     * Forces a re-read of the association's onboarding status from Mollie and returns it.
+     *
+     * Bypasses the 5-minute throttle of [getStatus] but calls Mollie at most once every 30 seconds
+     * per association; beyond that the stored status is returned (still 200) without calling
+     * Mollie. Never calls Mollie for a connection that already collects (COMPLETED with payments
+     * enabled), for a BROKEN connection, or when `disable-onboarding-sync` is true. A Mollie
+     * failure is not an error: the stored status is returned. The association is always derived
+     * from the JWT, so an association can only refresh its own status.
+     *
+     * @param principal Authenticated user — must be an association profile.
+     * @return the same [MollieKycStatusDto] as [getStatus].
+     */
+    @PostMapping("/status/refresh")
+    @Operation(
+        summary = "Force a Mollie Connect KYC status refresh",
+        description = "Re-reads the onboarding status from Mollie, bypassing the 5-minute read throttle. " +
+            "At most one Mollie call per association every 30 seconds; beyond that the stored status is returned. " +
+            "Never re-polls a connection that already collects (COMPLETED with canReceivePayments)."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Status returned (refreshed, or stored when rate-limited, skipped or failed)",
+            content = [Content(schema = Schema(implementation = MollieKycStatusDto::class))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()])
+    )
+    fun refreshStatus(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<MollieKycStatusDto> =
+        ResponseEntity.ok(mollieConnectService.refreshConnectionStatus(UUID.fromString(principal.username)))
 
     /**
      * Returns the KYB-derived context the "Bank account" tab needs to guide the association

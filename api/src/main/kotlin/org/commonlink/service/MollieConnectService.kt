@@ -39,6 +39,7 @@ import java.net.URLEncoder
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Token value written by [MollieConnectService.buildMockConnection] when
@@ -96,7 +97,11 @@ private data class CapabilitiesResponse(
     data class Href(val href: String)
 }
 
-private data class OnboardingSnapshot(
+/**
+ * Onboarding state read from Mollie, already mapped to CommonLink's enum. Only ever written to
+ * [MollieConnection] through [MollieOnboardingSnapshotWriter].
+ */
+internal data class OnboardingSnapshot(
     val onboardingStatus: MollieOnboardingStatus,
     val canReceivePayments: Boolean,
     val canReceiveSettlements: Boolean,
@@ -351,6 +356,114 @@ class MollieConnectTokenManager(
 }
 
 /**
+ * True when a connection already collects donations as far as Mollie is concerned: onboarding
+ * COMPLETED **and** payments enabled.
+ *
+ * Such a connection is never re-polled (sprint 20, Q1): `canCollectDonations()` reads the status we
+ * write, so a regression observed on Mollie's side would cut donations, publishing and the
+ * widget/landing gates automatically — the opposite of "detect, alert, a human decides" (D3).
+ * How to handle a regression belongs to a dedicated sprint. A COMPLETED connection without
+ * payments does not collect and *is* re-polled: only an unlock can come out of it.
+ *
+ * Deliberately distinct from [MollieConnection.canCollectDonations], which also requires the
+ * connection to be ACTIVE and must not change in this sprint.
+ */
+internal fun isCollecting(status: MollieOnboardingStatus, canReceivePayments: Boolean): Boolean =
+    status == MollieOnboardingStatus.COMPLETED && canReceivePayments
+
+/**
+ * Single write path of the Mollie onboarding snapshot on [MollieConnection]: status,
+ * `canReceivePayments`, `canReceiveSettlements`, dashboard URL, sync timestamp, the
+ * "IN_REVIEW observed" flag and the status-since timestamp.
+ *
+ * ### Why this is its own bean
+ * [writePolled] must lock the row and commit in a real transaction, which a method on
+ * [MollieConnectService] reached by self-invocation would never get (same trap and remedy as
+ * [MollieConnectTokenManager] and [MollieConnectionBreaker]). Locking matters because three pollers
+ * exist — the throttled status read, the scheduled sweep and the forced refresh: the previous
+ * state is read from the locked row, so two concurrent polls observing the same transition
+ * publish one event, not two. Caveat: with `open-in-view: true` (current setting) the HTTP paths
+ * already hold the row in their persistence context, and Hibernate returns that cached instance
+ * from the locking query without re-reading it; the guarantee is therefore only strict on the
+ * scheduler thread. A concurrent HTTP-vs-sweep poll may still publish a duplicate event — the
+ * same race that already existed between two browser tabs. HTTP stays outside the transaction
+ * (jpa-rules).
+ */
+@Component
+class MollieOnboardingSnapshotWriter(
+    private val connectionRepo: MollieConnectionRepository,
+    private val eventPublisher: ApplicationEventPublisher,
+) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * Applies [snapshot] to [connection] in memory. Neither saves nor publishes anything.
+     *
+     * Every path that writes the onboarding fields goes through here: [writePolled] (the three
+     * pollers), the OAuth callback, and the two dev-only paths (mock connection, forced
+     * completion). Only the pollers publish [MollieOnboardingStatusChangedEvent]: the callback and
+     * the dev paths never did, and starting to would send transition emails on connect or on a
+     * simulated validation.
+     *
+     * @param connection Connection to update (new or persisted).
+     * @param snapshot State to write.
+     * @param observedAt Instant the snapshot was obtained; becomes `lastSyncedAt`, and
+     *                   `onboardingStatusSince` when the status changes.
+     * @return true when the status or `canReceivePayments` changed.
+     */
+    internal fun apply(connection: MollieConnection, snapshot: OnboardingSnapshot, observedAt: Instant): Boolean {
+        val statusChanged = connection.onboardingStatus != snapshot.onboardingStatus
+        val paymentsChanged = connection.canReceivePayments != snapshot.canReceivePayments
+        if (statusChanged) connection.onboardingStatusSince = observedAt
+        connection.onboardingStatus = snapshot.onboardingStatus
+        connection.canReceivePayments = snapshot.canReceivePayments
+        connection.canReceiveSettlements = snapshot.canReceiveSettlements
+        connection.onboardingDashboardUrl = snapshot.dashboardUrl
+        if (snapshot.onboardingStatus == MollieOnboardingStatus.IN_REVIEW) connection.inReviewObserved = true
+        connection.lastSyncedAt = observedAt
+        return statusChanged || paymentsChanged
+    }
+
+    /**
+     * Persists a snapshot polled from Mollie under a row lock and publishes
+     * [MollieOnboardingStatusChangedEvent] once when the status or `canReceivePayments` changed.
+     *
+     * A `canReceivePayments` flip with an unchanged status (COMPLETED → COMPLETED, possible on the
+     * LEGACY API) is published too, so the moment a connection starts collecting is observable; the
+     * existing email listener then sends its "completed" email for it.
+     *
+     * Refuses to overwrite a connection that started collecting while the HTTP call was in flight
+     * (another poller wrote it): such a connection is never re-polled, see [isCollecting].
+     *
+     * @param associationId Association whose connection was polled.
+     * @param snapshot State Mollie returned.
+     * @return the persisted connection, or null when it vanished meanwhile.
+     */
+    @Transactional
+    internal fun writePolled(associationId: UUID, snapshot: OnboardingSnapshot): MollieConnection? {
+        val connection = connectionRepo.findByAssociationIdForUpdate(associationId) ?: return null
+        if (isCollecting(connection.onboardingStatus, connection.canReceivePayments)) return connection
+        val previousStatus = connection.onboardingStatus
+        val changed = apply(connection, snapshot, Instant.now())
+        val saved = connectionRepo.save(connection)
+        logger.info(
+            "Refreshed Mollie onboarding status for association {}: {} (canReceivePayments={})",
+            associationId, saved.onboardingStatus, saved.canReceivePayments,
+        )
+        if (changed) {
+            eventPublisher.publishEvent(
+                MollieOnboardingStatusChangedEvent(
+                    associationId = associationId,
+                    previousStatus = previousStatus,
+                    newStatus = saved.onboardingStatus,
+                )
+            )
+        }
+        return saved
+    }
+}
+
+/**
  * Business logic for the Mollie Connect OAuth2 KYC onboarding flow.
  *
  * Flow: buildAuthorizationUrl → popup opens Client Link URL → Mollie redirects back →
@@ -368,12 +481,20 @@ class MollieConnectService(
     private val associationRepo: AssociationProfileRepository,
     private val restTemplate: RestTemplate,
     private val tokenManager: MollieConnectTokenManager,
+    private val snapshotWriter: MollieOnboardingSnapshotWriter,
     private val onboardingGate: OnboardingGateService,
-    private val eventPublisher: ApplicationEventPublisher,
     @Value("\${app.frontend-url}") private val frontendUrl: String,
     private val mollieProperties: MollieProperties,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * Last forced-refresh attempt per association, for the limit of [refreshConnectionStatus].
+     * In memory on purpose: it caps calls to Mollie, failed attempts included (a failing Mollie is
+     * not hammered either), and losing it on restart only allows one extra call. With several
+     * instances the limit applies per instance.
+     */
+    private val lastForcedRefreshAt = ConcurrentHashMap<UUID, Instant>()
 
     /**
      * Generates the Mollie authorization URL for the given user's association.
@@ -438,11 +559,18 @@ class MollieConnectService(
         mockConn.refreshToken = MOCK_TOKEN_SENTINEL
         mockConn.expiresAt = Instant.now().plusSeconds(3600)
         mockConn.state = MollieConnectionState.ACTIVE
-        mockConn.onboardingStatus = MollieOnboardingStatus.COMPLETED
-        mockConn.canReceivePayments = true
-        mockConn.canReceiveSettlements = true
+        // Shared writer, no event (the mock path never sent a transition email).
+        snapshotWriter.apply(
+            mockConn,
+            OnboardingSnapshot(
+                onboardingStatus = MollieOnboardingStatus.COMPLETED,
+                canReceivePayments = true,
+                canReceiveSettlements = true,
+                dashboardUrl = mockConn.onboardingDashboardUrl,
+            ),
+            Instant.now(),
+        )
         mockConn.mollieOrganizationId = "org_mock_${association.id}"
-        mockConn.lastSyncedAt = Instant.now()
         connectionRepo.save(mockConn)
         logger.info("Mock Mollie Connect: COMPLETED connection for association {}", association.id)
         return "$frontendUrl/en/mollie-connect/success"
@@ -613,17 +741,17 @@ class MollieConnectService(
         // defaults (NEEDS_DATA, cannot receive payments or settlements, no dashboard URL) — never
         // claim a collection capability Mollie has not confirmed. An existing row keeps its last
         // known status, so a transient Mollie failure cannot downgrade a COMPLETED connection.
+        // Written through the shared writer (no event, as before) so an IN_REVIEW read here still
+        // sets the "IN_REVIEW observed" flag behind complementRequested.
         if (snapshot != null) {
-            connection.onboardingStatus = snapshot.onboardingStatus
-            connection.canReceivePayments = snapshot.canReceivePayments
-            connection.canReceiveSettlements = snapshot.canReceiveSettlements
-            connection.onboardingDashboardUrl = snapshot.dashboardUrl
+            snapshotWriter.apply(connection, snapshot, Instant.now())
+        } else {
+            // null rather than now(): refreshOnboardingStatusIfStale treats a null lastSyncedAt as
+            // stale, so the very next status read resynchronises instead of waiting out the
+            // 5-minute throttle.
+            connection.lastSyncedAt = null
         }
         connection.mollieOrganizationId = organizationId
-        // null rather than now() when the snapshot is missing: refreshOnboardingStatusIfStale
-        // treats a null lastSyncedAt as stale, so the very next status read resynchronises instead
-        // of waiting out the 5-minute throttle.
-        connection.lastSyncedAt = if (snapshot != null) Instant.now() else null
         connectionRepo.save(connection)
 
         stateRepo.deleteById(state)
@@ -649,11 +777,14 @@ class MollieConnectService(
         tokenManager.forceRefreshAccessToken(associationId)
 
     /**
-     * Returns the Mollie KYC status for the given user's association. If a non-COMPLETED
-     * connection is stale (last sync > 5 minutes ago), triggers a throttled re-fetch via the
-     * configured onboarding API (see [org.commonlink.config.MollieConnectConfig.onboardingApi])
-     * before returning — this is how transitions surface without webhooks (Mollie has no onboarding webhook). On a status change, a
-     * [MollieOnboardingStatusChangedEvent] is published for async email delivery.
+     * Returns the Mollie KYC status for the given user's association. If a connection that does
+     * not collect yet (see [isCollecting]) is stale (last sync > 5 minutes ago), triggers a
+     * throttled re-fetch via the configured onboarding API (see
+     * [org.commonlink.config.MollieConnectConfig.onboardingApi]) before returning — one of the
+     * ways transitions surface without webhooks (Mollie has no onboarding webhook), alongside the
+     * scheduled sweep ([MollieOnboardingSyncExecutor]) and [refreshConnectionStatus]. On a change of
+     * status or `canReceivePayments`, a [MollieOnboardingStatusChangedEvent] is published for async
+     * email delivery.
      *
      * @param userId UUID of the authenticating user.
      */
@@ -664,9 +795,64 @@ class MollieConnectService(
         val stored = connectionRepo.findByAssociationId(associationId)
         // Use the refreshed instance when a sync happened, so the DTO reflects it immediately
         val connection = stored?.let { refreshOnboardingStatusIfStale(it) ?: it }
+        return toStatusDto(associationId, connection)
+    }
 
+    /**
+     * Forced refresh requested by the association from the Bank account tab
+     * (`POST /api/mollie/connect/status/refresh`).
+     *
+     * Calls Mollie bypassing the 5-minute throttle of [getConnectionStatus], at most once every
+     * `app.mollie.connect.onboarding-sync.forced-refresh-min-interval-seconds` (30 s) per
+     * association; beyond that, the stored status is returned without calling Mollie. Same guards
+     * as every poll: nothing is called when `disable-onboarding-sync` is true, when the connection
+     * is BROKEN, or when it already collects ([isCollecting], sprint 20 Q1). A Mollie failure is
+     * logged as WARN and the stored status returned — never an error.
+     *
+     * The association is always resolved from the authenticated user, so an association can only
+     * refresh its own connection.
+     *
+     * @param userId UUID of the authenticating user.
+     * @return the same DTO as [getConnectionStatus].
+     * @throws NotFoundException if the user has no association profile.
+     */
+    fun refreshConnectionStatus(userId: UUID): MollieKycStatusDto {
+        val association = associationRepo.findByUserId(userId)
+            .orElseThrow { NotFoundException("Association not found for user: $userId") }
+        val associationId = association.id!!
+        val stored = connectionRepo.findByAssociationId(associationId)
+        val connection = stored?.let { forceRefreshOnboardingStatus(it) ?: it }
+        return toStatusDto(associationId, connection)
+    }
+
+    /**
+     * Polls Mollie for [associationId] and persists the result through
+     * [MollieOnboardingSnapshotWriter.writePolled]. Entry point of the scheduled sweep
+     * ([MollieOnboardingSyncExecutor]), which owns the cadence and the per-connection error
+     * handling; also used by the two interactive paths.
+     *
+     * Does nothing when `disable-onboarding-sync` is true (the single switch). A connection that
+     * collects is never overwritten — the writer re-checks it under the row lock.
+     *
+     * @param associationId Association whose connection to sync.
+     * @return the persisted connection, or null when the sync is disabled or the connection vanished.
+     * @throws Exception any token or HTTP failure, for the caller to log.
+     */
+    fun syncOnboardingStatus(associationId: UUID): MollieConnection? {
+        if (config.disableOnboardingSync) return null
+        val token = tokenManager.getValidAccessToken(associationId)
+        val snapshot = fetchOnboardingSnapshot(token)
+        return snapshotWriter.writePolled(associationId, snapshot)
+    }
+
+    /**
+     * Builds the status DTO shared by [getConnectionStatus] and [refreshConnectionStatus].
+     *
+     * `complementRequested` = NEEDS_DATA and IN_REVIEW already observed: Mollie sent the dossier
+     * back for more information.
+     */
+    private fun toStatusDto(associationId: UUID, connection: MollieConnection?): MollieKycStatusDto {
         val pending = stateRepo.existsByAssociationIdAndExpiresAtAfter(associationId, Instant.now())
-
         return MollieKycStatusDto(
             connected = connection != null,
             pending = pending,
@@ -675,6 +861,9 @@ class MollieConnectService(
             canReceivePayments = connection?.canReceivePayments,
             dashboardUrl = connection?.onboardingDashboardUrl,
             canForceComplete = config.allowFakeCompletion,
+            complementRequested = connection != null &&
+                connection.onboardingStatus == MollieOnboardingStatus.NEEDS_DATA &&
+                connection.inReviewObserved,
         )
     }
 
@@ -695,8 +884,9 @@ class MollieConnectService(
      * base default — see the C1 finding in the 2026-07-24 security audit.
      *
      * Requires a connection to already exist (we never fabricate one here — that is
-     * [buildMockConnection]'s job). Once COMPLETED, [refreshOnboardingStatusIfStale] short-circuits
-     * and never re-polls Mollie, so the forced state is durable.
+     * [buildMockConnection]'s job). Once COMPLETED with payments enabled, no poll ever re-reads
+     * Mollie for it ([isCollecting]), so the forced state is durable. Writes through
+     * [MollieOnboardingSnapshotWriter.apply] and publishes no event.
      *
      * @param userId UUID of the authenticating user.
      * @throws IllegalStateException when no connection exists.
@@ -709,10 +899,17 @@ class MollieConnectService(
             ?: throw IllegalStateException("No Mollie connection to complete — connect first")
 
         connection.state = MollieConnectionState.ACTIVE
-        connection.onboardingStatus = MollieOnboardingStatus.COMPLETED
-        connection.canReceivePayments = true
-        connection.canReceiveSettlements = true
-        connection.lastSyncedAt = Instant.now()
+        // Shared writer, no event: a simulated validation never sent a transition email.
+        snapshotWriter.apply(
+            connection,
+            OnboardingSnapshot(
+                onboardingStatus = MollieOnboardingStatus.COMPLETED,
+                canReceivePayments = true,
+                canReceiveSettlements = true,
+                dashboardUrl = connection.onboardingDashboardUrl,
+            ),
+            Instant.now(),
+        )
         connectionRepo.save(connection)
         logger.warn(
             "DEV: forced Mollie onboarding COMPLETED for association {} (allowFakeCompletion=true)",
@@ -722,57 +919,75 @@ class MollieConnectService(
     }
 
     /**
-     * Re-fetches the onboarding status from Mollie if the connection is non-COMPLETED and
-     * the last sync is older than 5 minutes. All failures are caught and logged as WARN —
-     * the caller always receives the last-known DB state, never an error from this method.
+     * Re-fetches the onboarding status from Mollie if the connection does not collect yet and the
+     * last sync is older than 5 minutes. All failures are caught and logged as WARN — the caller
+     * always receives the last-known DB state, never an error from this method.
+     *
+     * The early return covers `COMPLETED && canReceivePayments` ([isCollecting]), not COMPLETED
+     * alone: a connection that collects is never re-polled (sprint 20, Q1 — a regression written
+     * here would cut donations automatically), while a COMPLETED connection without payments is
+     * re-polled every 5 minutes, otherwise its "active without payments" state would never move.
      *
      * Uses [tokenManager] (a separate bean) so the @Transactional pessimistic lock on
      * [getValidAccessToken] is properly applied — avoids Spring self-invocation proxy bypass.
      *
      * @return the freshly-synced connection instance, or null when the sync was skipped
-     *         (disabled / BROKEN / COMPLETED / throttled) or failed — callers fall back to their instance.
+     *         (disabled / BROKEN / collecting / throttled) or failed — callers fall back to their instance.
      */
     private fun refreshOnboardingStatusIfStale(connection: MollieConnection): MollieConnection? {
         if (config.disableOnboardingSync) return null
         if (connection.state == MollieConnectionState.BROKEN) return null
-        if (connection.onboardingStatus == MollieOnboardingStatus.COMPLETED) return null
-        val fiveMinutesAgo = Instant.now().minusSeconds(300)
-        if (connection.lastSyncedAt?.isAfter(fiveMinutesAgo) == true) return null
+        if (isCollecting(connection.onboardingStatus, connection.canReceivePayments)) return null
+        val throttleStart = Instant.now().minusSeconds(STATUS_READ_THROTTLE_SECONDS)
+        if (connection.lastSyncedAt?.isAfter(throttleStart) == true) return null
+        return syncLoggingFailures(connection.association.id!!)
+    }
 
+    /**
+     * Forced-refresh counterpart of [refreshOnboardingStatusIfStale]: same guards, but the
+     * 5-minute throttle is replaced by the per-association forced-refresh limit.
+     *
+     * @return the freshly-synced connection, or null when skipped, limited or failed.
+     */
+    private fun forceRefreshOnboardingStatus(connection: MollieConnection): MollieConnection? {
+        if (config.disableOnboardingSync) return null
+        if (connection.state == MollieConnectionState.BROKEN) return null
+        if (isCollecting(connection.onboardingStatus, connection.canReceivePayments)) return null
         val associationId = connection.association.id!!
-        val previousStatus = connection.onboardingStatus
-        return try {
-            val token = tokenManager.getValidAccessToken(associationId)
-            val snapshot = fetchOnboardingSnapshot(token)
-            // Re-fetch to avoid overwriting token updates that tokenManager committed above
-            val updated = connectionRepo.findByAssociationId(associationId) ?: return null
-            updated.onboardingStatus = snapshot.onboardingStatus
-            updated.canReceivePayments = snapshot.canReceivePayments
-            updated.canReceiveSettlements = snapshot.canReceiveSettlements
-            updated.onboardingDashboardUrl = snapshot.dashboardUrl
-            updated.lastSyncedAt = Instant.now()
-            connectionRepo.save(updated)
-            logger.info(
-                "Refreshed Mollie onboarding status for association {}: {}",
-                associationId, updated.onboardingStatus,
-            )
-            if (updated.onboardingStatus != previousStatus) {
-                eventPublisher.publishEvent(
-                    MollieOnboardingStatusChangedEvent(
-                        associationId = associationId,
-                        previousStatus = previousStatus,
-                        newStatus = updated.onboardingStatus,
-                    )
-                )
-            }
-            updated
-        } catch (ex: Exception) {
-            logger.warn(
-                "Failed to refresh Mollie onboarding status for association {} via {} API: {}",
-                associationId, config.onboardingApi, ex.message,
-            )
-            null
+        if (!tryReserveForcedRefresh(associationId, Instant.now())) {
+            logger.debug("Forced Mollie status refresh rate-limited for association {}", associationId)
+            return null
         }
+        return syncLoggingFailures(associationId)
+    }
+
+    /**
+     * Atomically reserves a forced-refresh slot for [associationId]: succeeds when no attempt was
+     * made within the configured minimum interval, and records [now] as the new attempt.
+     */
+    private fun tryReserveForcedRefresh(associationId: UUID, now: Instant): Boolean {
+        val windowStart = now.minusSeconds(config.onboardingSync.forcedRefreshMinIntervalSeconds)
+        var reserved = false
+        lastForcedRefreshAt.compute(associationId) { _, last ->
+            if (last == null || !last.isAfter(windowStart)) {
+                reserved = true
+                now
+            } else {
+                last
+            }
+        }
+        return reserved
+    }
+
+    /** Runs [syncOnboardingStatus] for the interactive paths, turning any failure into a WARN. */
+    private fun syncLoggingFailures(associationId: UUID): MollieConnection? = try {
+        syncOnboardingStatus(associationId)
+    } catch (ex: Exception) {
+        logger.warn(
+            "Failed to refresh Mollie onboarding status for association {} via {} API: {}",
+            associationId, config.onboardingApi, ex.message,
+        )
+        null
     }
 
     private fun exchangeCode(code: String): TokenResponse {
@@ -805,6 +1020,11 @@ class MollieConnectService(
         )
         return response.body?.id
             ?: throw IllegalStateException("Mollie organizations/me returned no organization id")
+    }
+
+    private companion object {
+        /** Throttle of the lazy re-fetch on status reads ([getConnectionStatus]) — unchanged 5 min. */
+        const val STATUS_READ_THROTTLE_SECONDS = 300L
     }
 
     private fun fetchOnboardingSnapshot(accessToken: String): OnboardingSnapshot = when (config.onboardingApi) {

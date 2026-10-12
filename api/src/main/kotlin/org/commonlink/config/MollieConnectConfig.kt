@@ -43,7 +43,11 @@ enum class OnboardingApi {
  *                              overwritten by the real KYC status on the next poll. Unlike
  *                              [allowFakeCompletion] this does not force any particular status — it
  *                              only stops the live resync. MUST stay false in production.
+ *                              Also the only switch of the scheduled onboarding sweep
+ *                              ([org.commonlink.service.MollieOnboardingSyncExecutor]) and of the
+ *                              association's forced refresh: when true, neither calls Mollie.
  * @param tokenRefresh Cadence of the scheduled proactive token refresh.
+ * @param onboardingSync Cadence of the scheduled onboarding status sweep.
  */
 @ConfigurationProperties(prefix = "app.mollie.connect")
 data class MollieConnectConfig(
@@ -57,6 +61,7 @@ data class MollieConnectConfig(
     val onboardingApi: OnboardingApi = OnboardingApi.LEGACY,
     val disableOnboardingSync: Boolean = false,
     val tokenRefresh: TokenRefresh = TokenRefresh(),
+    val onboardingSync: OnboardingSync = OnboardingSync(),
 ) {
     /**
      * Settings of the scheduled proactive refresh driven by
@@ -84,9 +89,42 @@ data class MollieConnectConfig(
         val lookaheadSeconds: Long = 1_800,
     )
 
+    /**
+     * Settings of the scheduled onboarding status sweep driven by
+     * [org.commonlink.service.MollieOnboardingSyncScheduler].
+     *
+     * Mollie has no onboarding webhook, so without a sweep a dossier only moves forward on the
+     * CommonLink side when the association reopens its dashboard. The sweep only covers connections
+     * that do not collect yet; a connection that collects (COMPLETED with payments enabled) is never
+     * re-polled (sprint 20, Q1). There is deliberately no `enabled` key: `disable-onboarding-sync`
+     * stays the single switch, so the two can never contradict each other.
+     *
+     * @param fixedDelayMs Gap between the end of one sweep tick and the start of the next. Each
+     *                     tick only polls the connections whose recheck interval has elapsed, so
+     *                     this must stay well below [pendingRecheckSeconds]. Default 1 min.
+     * @param initialDelayMs Grace period after startup before the first tick. Default 2 min.
+     * @param pendingRecheckSeconds Recheck interval of a connection that does not collect yet
+     *                              (NEEDS_DATA, IN_REVIEW, COMPLETED without payments). Default 5 min.
+     * @param dormantAfterDays A connection in NEEDS_DATA for longer than this is considered dormant.
+     *                         Default 7 days.
+     * @param dormantRecheckSeconds Recheck interval of a dormant connection. Default 1 h.
+     * @param forcedRefreshMinIntervalSeconds Minimum gap between two Mollie calls triggered by the
+     *                                        association's forced refresh
+     *                                        (`POST /api/mollie/connect/status/refresh`). Default 30 s.
+     */
+    data class OnboardingSync(
+        val fixedDelayMs: Long = 60_000,
+        val initialDelayMs: Long = 120_000,
+        val pendingRecheckSeconds: Long = 300,
+        val dormantAfterDays: Long = 7,
+        val dormantRecheckSeconds: Long = 3_600,
+        val forcedRefreshMinIntervalSeconds: Long = 30,
+    )
+
     /** Redacts [clientSecret] and [advancedToken] (Bearer with clients.write) so they never leak via logs. */
     override fun toString(): String =
         "MollieConnectConfig(clientId=$clientId, clientSecret=***, redirectUri=$redirectUri, " +
         "scopes=$scopes, advancedToken=***, mock=$mock, allowFakeCompletion=$allowFakeCompletion, " +
-        "onboardingApi=$onboardingApi, disableOnboardingSync=$disableOnboardingSync, tokenRefresh=$tokenRefresh)"
+        "onboardingApi=$onboardingApi, disableOnboardingSync=$disableOnboardingSync, tokenRefresh=$tokenRefresh, " +
+        "onboardingSync=$onboardingSync)"
 }

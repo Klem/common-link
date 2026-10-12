@@ -158,6 +158,63 @@ class MollieConnectControllerTest {
             .andExpect(status().isForbidden)
     }
 
+    @Test
+    fun `getStatus - exposes complementRequested`() {
+        every { mollieConnectService.getConnectionStatus(userId) } returns MollieKycStatusDto(
+            connected = true,
+            pending = false,
+            broken = false,
+            onboardingStatus = "NEEDS_DATA",
+            canReceivePayments = false,
+            dashboardUrl = null,
+            complementRequested = true,
+        )
+
+        mockMvc.perform(
+            get("/api/mollie/connect/status")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.complementRequested").value(true))
+    }
+
+    // ── POST /api/mollie/connect/status/refresh ───────────────────────────────
+
+    @Test
+    fun `refreshStatus - 200 delegates with the principal user id and returns the status DTO`() {
+        every { mollieConnectService.refreshConnectionStatus(userId) } returns MollieKycStatusDto(
+            connected = true,
+            pending = false,
+            broken = false,
+            onboardingStatus = "IN_REVIEW",
+            canReceivePayments = false,
+            dashboardUrl = null,
+        )
+
+        mockMvc.perform(
+            post("/api/mollie/connect/status/refresh")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.onboardingStatus").value("IN_REVIEW"))
+            .andExpect(jsonPath("$.complementRequested").value(false))
+    }
+
+    @Test
+    fun `refreshStatus - 401 when unauthenticated`() {
+        mockMvc.perform(post("/api/mollie/connect/status/refresh"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `refreshStatus - 403 when authenticated as DONOR`() {
+        mockMvc.perform(
+            post("/api/mollie/connect/status/refresh")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
     // ── GET /api/public/webhooks/mollie-connect ───────────────────────────────
 
     @Test
