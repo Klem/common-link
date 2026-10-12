@@ -2928,3 +2928,111 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .project-card-fill { height: 100%; border-radius: var(--radius-full); background: linear-gradient(90deg, var(--bright-teal), var(--teal-dark)); }
 .project-card-stats { display: flex; justify-content: space-between; font-size: 12px; color: var(--slate-readable); }
 .project-card-stats strong { color: var(--ink-navy); }
+/* ── Bank tab — Mollie onboarding flow (sprint 20, S3) ───────────────────────
+   Ported from minisite/onboarding-mollie.html (validated mockup, 12/10/2026).
+   Classes absent from this file are ported as-is; font stacks use the next/font
+   variables (`--font-nunito-sans`, `--font-inter`) like the rest of this file.
+   Mockup classes that already exist here with different values are NOT modified:
+   the mockup values are applied only inside `.mob-flow` (the flow's root), below. */
+
+/* Page-local helpers (mockup "PAGE-LOCAL HELPERS") */
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.muted{color:var(--slate-lavender)}
+.small{font-size:13px}
+.lead{font-size:15px;color:var(--slate-lavender);line-height:1.7;max-width:720px}
+.screen{display:none}
+/* `@keyframes fadeUp` already exists here with a 12px offset (mockup: 6px) — dedicated keyframes, the existing one is untouched. */
+.screen.visible{display:block;animation:mobFadeUp .3s ease}
+@keyframes mobFadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.screen-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--mist-lavender)}
+.kit-list>*+*{margin-top:12px}
+.kit-meta{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;font-size:13px;margin-top:8px}
+.kit-meta dt{color:var(--slate-lavender);font-weight:600}
+.kit-meta dd{color:var(--ink-navy)}
+.kit-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0;min-width:190px}
+
+/* DS primitives absent from this file (mockup "DS PRIMITIVES") */
+.stat-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.stat-card-icon{width:44px;height:44px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:20px}
+.stat-card-icon.teal{background:rgba(78,205,196,.12)}
+.stat-card-icon.indigo{background:rgba(50,50,125,.08)}
+.stat-card-icon.amber{background:rgba(255,179,71,.12)}
+.stat-card-value{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:28px;margin-bottom:2px}
+.stat-card-label{font-size:13px;color:var(--slate-lavender);font-weight:500}
+
+/* NEW COMPONENT: stepper (horizontal) */
+.stepper{display:flex;list-style:none;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-xl);padding:20px 24px;margin-bottom:24px;box-shadow:var(--shadow-sm)}
+.stepper-item{flex:1;display:flex;align-items:center;gap:10px;position:relative;font-size:13px;font-weight:600;color:var(--slate-lavender)}
+.stepper-item:not(:last-child)::after{content:'';flex:1;height:2px;background:var(--mist-lavender);margin:0 12px;border-radius:2px}
+.stepper-item.done:not(:last-child)::after{background:var(--bright-teal)}
+.stepper-num{width:30px;height:30px;border-radius:50%;border:2px solid var(--mist-lavender);background:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:13px;flex-shrink:0}
+.stepper-item.done .stepper-num{background:var(--bright-teal);border-color:var(--bright-teal);color:#fff}
+.stepper-item.current{color:var(--ink-navy)}
+.stepper-item.current .stepper-num{background:var(--deep-indigo);border-color:var(--deep-indigo);color:#fff;box-shadow:0 0 0 4px rgba(50,50,125,.12)}
+.stepper-item.warn .stepper-num{background:var(--soft-amber);border-color:var(--soft-amber);color:#fff}
+
+/* NEW COMPONENT: accordion (FAQ) */
+.acc-list{border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);overflow:hidden;background:var(--white)}
+.acc-item+.acc-item{border-top:1px solid var(--mist-lavender)}
+.acc-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:none;border:none;cursor:pointer;font-family:var(--font-nunito-sans),sans-serif;font-weight:800;font-size:15px;color:var(--ink-navy);text-align:left}
+.acc-trigger:hover{background:rgba(78,205,196,.04)}
+.acc-chev{width:24px;height:24px;border-radius:50%;background:var(--soft-cream);display:flex;align-items:center;justify-content:center;font-size:12px;transition:transform .2s;flex-shrink:0}
+.acc-trigger[aria-expanded="true"] .acc-chev{transform:rotate(180deg);background:rgba(78,205,196,.15);color:var(--teal-dark)}
+.acc-panel{padding:0 20px 18px;font-size:14px;color:var(--slate-lavender);line-height:1.7}
+.acc-panel p+p{margin-top:8px}
+.acc-panel strong{color:var(--ink-navy)}
+
+@media (prefers-reduced-motion:reduce){.screen.visible{animation:none}}
+
+/* Collisions: mockup values applied inside the flow only. Global values (left untouched):
+   .card-body 20px · .card-header-bar 16px 20px, no gap · .badge no nowrap · .badge-success .10 ·
+   .btn-ghost 8px 12px / 13px, no border · .expense-card centred + transition · .stat-card hover lift. */
+.mob-flow .card-body{padding:24px}
+.mob-flow .card-header-bar{padding:16px 24px;gap:12px}
+.mob-flow .card-header-bar h3{font-size:16px}
+.mob-flow .badge{white-space:nowrap}
+.mob-flow .badge-success{background:rgba(52,199,89,.12)}
+.mob-flow .btn-ghost{border:2px solid transparent;padding:12px 24px;font-size:14px}
+.mob-flow .btn-ghost.btn-sm{padding:8px 18px;font-size:13px}
+.mob-flow .expense-card{align-items:flex-start;transition:none}
+.mob-flow .expense-info h4{font-size:14px;font-weight:700;margin-bottom:2px}
+.mob-flow .expense-info span{font-size:12px;color:var(--slate-lavender)}
+.mob-flow .stat-card{transition:none}
+.mob-flow .stat-card:hover{transform:none;box-shadow:var(--shadow-sm)}
+
+/* Static inline styles of the mockup, as classes */
+.mob-head-top{align-items:flex-start}
+.mob-s0-title{font-size:26px;margin-bottom:8px}
+.mob-figures{margin-top:24px}
+.mob-card-spaced{margin-top:20px}
+.mob-screen-title{font-size:24px;margin-bottom:6px}
+.mob-title-row{margin-bottom:6px}
+.mob-kit-title{font-size:24px}
+.mob-lead-spaced{margin-bottom:20px}
+.mob-variant-caption{font-weight:600}
+.mob-variant-type{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:18px}
+.mob-variant-contact{margin-top:14px}
+.mob-be-intro{margin-bottom:16px}
+.mob-flow .expense-card.mob-be-row{align-items:center}
+.mob-alert-top{margin-top:16px}
+.mob-alert-top-sm{margin-top:12px}
+.mob-alert-bottom{margin-bottom:16px}
+.mob-card-gap{margin-bottom:16px}
+.mob-flow .card-body.mob-progress-body{padding:18px 24px}
+.mob-progress-head{margin-bottom:8px}
+.mob-warn-body{flex:1}
+.mob-warn-hint{margin-top:2px}
+.mob-warn-actions{margin-top:10px}
+
+/* Responsive (the mockup is desktop-only; same breakpoints as the rest of this file) */
+@media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+  .stepper { overflow-x: auto; padding: 16px; }
+  .stepper-item { flex: 0 0 auto; }
+  .mob-flow .expense-card { flex-wrap: wrap; }
+  .kit-side { align-items: flex-start; min-width: 0; }
+  .kit-meta { grid-template-columns: 1fr; }
+  .screen-foot { flex-wrap: wrap; }
+}

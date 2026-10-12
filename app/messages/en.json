@@ -1110,8 +1110,12 @@
         "tabs": {
           "bank": "Bank account",
           "bankBadge": {
-            "connected": "Connected",
-            "notConnected": "Not connected"
+            "notConnected": "Not connected",
+            "active": "Active",
+            "toComplete": "File to complete",
+            "inReview": "Under review",
+            "paymentsNotEnabled": "Payments not yet enabled",
+            "reconnect": "Reconnection required"
           },
           "infos": "Informations",
           "landing": "Landing page",
@@ -2469,12 +2473,12 @@
             "mollieLabel": "Bank account"
           },
           "identity": {
-            "meaning": "The ID card or passport of the legal representative (the chair), not a document belonging to the association.",
+            "meaning": "An identity document (ID card or passport) for each declared beneficial owner, legal representative included: these are personal documents, not documents belonging to the association.",
             "mollieLabel": "Proof of identity"
           },
           "registration": {
             "link": "Find my record on the Annuaire des Entreprises",
-            "meaning": "Your prefecture declaration receipt (récépissé de déclaration), your JOAFE publication extract, or your SIRENE status notice (avis de situation).",
+            "meaning": "Your prefecture declaration receipt (récépissé de déclaration) or your JOAFE publication extract; for an association recognised as being of public utility, the recognition decree; in Alsace-Moselle, the extract from the association register of the judicial court.",
             "mollieLabel": "Registration certificate"
           },
           "stakeholders": {
@@ -2508,7 +2512,7 @@
             "mollieLabel": "« Link a bank account »"
           },
           "identity": {
-            "meaning": "An identity document of the legal representative: a personal document, not one of the association. Mollie asks for it because the law requires it to verify the identity of the individuals behind the organisation.",
+            "meaning": "An identity document for each declared beneficial owner, legal representative included: these are personal documents, not documents of the association. Mollie asks for them because the law requires it to verify the identity of the individuals behind the organisation.",
             "mollieLabel": "« Identity document »"
           },
           "legalForm": {
@@ -2520,7 +2524,7 @@
             "mollieLabel": "« Business details »"
           },
           "registration": {
-            "meaning": "Mollie queries official registers with this number. We only forward a SIREN: an RNA number (W...) is not recognised by those registers. If your association has no SIREN, do not invent one - your receipt of declaration to the prefecture, or your publication in the Journal officiel, is what proves its existence. Should the field be mandatory, enter your RNA number and attach that document.",
+            "meaning": "Mollie queries official registers with this number. We only forward a SIREN: an RNA number (W...) is not recognised by those registers. If your association has no SIREN, do not invent one: your proof of existence (prefecture declaration receipt or Journal officiel publication, decree of recognition of public utility, or extract from the judicial court register in Alsace-Moselle) is what proves its existence.",
             "mollieLabel": "« Registration number »"
           },
           "review": {
@@ -2592,7 +2596,198 @@
         "pending": "Pending"
       },
       "title": "Mollie Payments",
-      "tryAgain": "Try again"
+      "tryAgain": "Try again",
+      "onboarding": {
+        "stepper": {
+          "label": "Steps to receive your donations",
+          "steps": {
+            "prepare": "Prepare",
+            "fill": "Fill in at Mollie",
+            "testPayment": "Test payment",
+            "review": "Review",
+            "active": "Active"
+          },
+          "state": {
+            "done": "{label} — done",
+            "current": "{label} — in progress",
+            "upcoming": "{label} — upcoming"
+          }
+        },
+        "welcome": {
+          "title": "Receive your donations",
+          "lead": "To collect donations online, your association opens an account with <strong>Mollie</strong>, a licensed institution. We guide you through every screen: you will know what to prepare, what to answer, and where you stand.",
+          "badgeToComplete": "File to complete",
+          "figures": {
+            "estimate": "estimate",
+            "duration": {
+              "value": "about 20 min",
+              "label": "of data entry at Mollie, if your documents are ready"
+            },
+            "testPayment": {
+              "value": "€0.01",
+              "label": "test payment, made by yourself. It stays on the association's Mollie balance"
+            },
+            "review": {
+              "value": "2 to 3 business days",
+              "label": "of review by Mollie. We write to you as soon as Mollie has answered"
+            }
+          },
+          "faq": {
+            "title": "Your questions before you start",
+            "hint": "Read at your own pace, nothing is committed.",
+            "items": {
+              "whyMollie": {
+                "question": "Why Mollie?",
+                "p1": "Online donations go through a licensed institution. Ours is <strong>Mollie B.V.</strong>, an electronic money institution licensed by <strong>De Nederlandsche Bank (DNB)</strong>, client number <strong>F0038</strong>.",
+                "p2": "The law requires Mollie to check who is behind every organisation that collects money: this is its anti-money-laundering obligation. That is why it asks you for documents.",
+                "p3": "Its forms speak of \"business\", \"registration\" or \"UBO\": that is normal, and it does not call your non-profit status into question. <strong>\"Business\" = your association.</strong>"
+              },
+              "documents": {
+                "question": "Who sees my documents?",
+                "p1": "You upload your documents directly on Mollie's website. <strong>The documents you upload to Mollie are not passed on to us. We only receive the progress status of your file.</strong>",
+                "p2": "The documents you gave us for your CommonLink verification stay in your space: you can retrieve them to upload them to Mollie yourself."
+              },
+              "cost": {
+                "question": "How much does it cost?",
+                "p1": "At Mollie, you will choose the \"Charities and donations\" category. <strong>Mollie may deduct onboarding fees from your first payout. Their amount is set by Mollie.</strong> Mollie does not publish it.",
+                "p2": "The €0.01 test payment is made by yourself; the money stays on your association's Mollie balance."
+              },
+              "genuine": {
+                "question": "Is it the genuine website?",
+                "p1": "Before typing anything, look at the address bar: it must show <strong>my.mollie.com</strong>. Otherwise, close the window and contact us.",
+                "p2": "CommonLink will never ask for your Mollie password."
+              },
+              "resume": {
+                "question": "Can I stop and come back later?",
+                "p1": "Yes. You can close the Mollie window at any time. Come back here and click <strong>\"Resume my file\"</strong>: we take you back to your file at Mollie."
+              },
+              "help": {
+                "question": "Need help?",
+                "p1": "Book a <strong>guided video call</strong>: a member of the CommonLink team talks you through it while you fill in the form. You keep control of your screen and keyboard.",
+                "p2": "CommonLink never asks for your password."
+              }
+            }
+          },
+          "resume": "Resume my file",
+          "start": "Get started"
+        },
+        "structure": {
+          "title": "Your organisation",
+          "lead": "We already know your association from your CommonLink verification. Just check that this is you.",
+          "typeCaption": "Type of organisation",
+          "types": {
+            "declared": "Declared association (1901 law)",
+            "arup": "Association recognised as being of public utility (ARUP)",
+            "alsaceMoselle": "Association registered under local law (Alsace-Moselle)",
+            "unknown": "Type of organisation not determined"
+          },
+          "unknownHint": "Your CommonLink verification does not let us determine your type of organisation automatically. The document list below still applies: the proof of existence depends on your status.",
+          "verifiedOn": "— verified by CommonLink on {date}",
+          "verifiedBadge": "✓ Verified",
+          "owners": {
+            "title": "Your beneficial owners",
+            "count": "{count, plural, one {# person} other {# people}}",
+            "intro": "For an association, these are the members of the administrative, management and supervisory bodies (article R. 561-3 of the French Monetary and Financial Code). CommonLink already confirmed this list during your verification.",
+            "empty": "No person is recorded in your CommonLink verification.",
+            "idAlert": "<strong>Mollie will ask for an identity document for {count, plural, one {this person} other {each of these # people}}.</strong> Remember to let them know now.",
+            "presidencyAlert": "<strong>Has the chair changed since your last declaration to the prefecture?</strong> Prepare the minutes of the general meeting that decided it."
+          },
+          "back": "Back",
+          "continue": "That's us, continue"
+        },
+        "kit": {
+          "title": "Your document kit",
+          "lead": "Gather these documents before opening Mollie: data entry will be faster. Accepted identity documents: <strong>passport, identity card (both sides), residence permit, French driving licence</strong>, in colour, 10 MB maximum.",
+          "progress": {
+            "title": "Your preparation",
+            "label": "{ready} / {total} documents ready",
+            "aria": "Documents ready"
+          },
+          "phoneAlert": "<strong>Keep your phone at hand.</strong> Mollie may ask you for a photo of the original identity document taken with your smartphone, and a selfie turning your head left then right.",
+          "meta": {
+            "mollieCalls": "Mollie calls it",
+            "whereToFindIt": "Where to find it",
+            "whereToFindThem": "Where to find them",
+            "whereToFindProof": "Where to find it",
+            "check": "To check",
+            "whatYouNeed": "What you need",
+            "whoHasOne": "Who has one?",
+            "yours": "Yours"
+          },
+          "identity": {
+            "title": "Identity document of {name}",
+            "titleWithRole": "Identity document of {name} ({role})",
+            "mollieLabel": "\"Identity document\"",
+            "whereProvided": "The one you gave us during your verification.",
+            "whereToPrepare": "Ask {name}: passport, identity card (both sides), residence permit or French driving licence.",
+            "checkProvided": "In colour, 10 MB maximum, both sides for an identity card.",
+            "checkToPrepare": "In colour, 10 MB maximum."
+          },
+          "statutes": {
+            "title": "Up-to-date, signed statutes",
+            "mollieLabel": "\"Statutes\"",
+            "whereProvided": "The ones you gave us during your verification.",
+            "whereToPrepare": "In your association's records: the latest adopted version.",
+            "check": "Signed. Check that this is the latest adopted version."
+          },
+          "proof": {
+            "title": "Proof of existence of the association",
+            "mollieLabel": "\"Registration certificate of your business\"",
+            "variants": {
+              "declared": {
+                "what": "Prefecture declaration receipt, or JOAFE publication.",
+                "where": "The receipt was given to you by the prefecture. The JOAFE publication can be downloaded free of charge on <link>journal-officiel.gouv.fr</link>.",
+                "whereWithRna": "The receipt was given to you by the prefecture. The JOAFE publication can be downloaded free of charge on <link>journal-officiel.gouv.fr</link> with your RNA number ({rna})."
+              },
+              "arup": {
+                "what": "The decree recognising the association as being of public utility, published in the Journal officiel.",
+                "where": "Published in the Journal officiel: find it on <link>legifrance.gouv.fr</link>."
+              },
+              "alsaceMoselle": {
+                "what": "An extract from the association register of the judicial court. No JOAFE or receipt for your status.",
+                "where": "To be requested from the judicial court, through the AMALIA portal."
+              },
+              "unknown": {
+                "what": "Depending on your status: prefecture declaration receipt or JOAFE publication, decree of recognition of public utility, or extract from the association register of the judicial court (Alsace-Moselle).",
+                "where": "The document you gave us during your CommonLink verification will do if it is up to date."
+              }
+            }
+          },
+          "rib": {
+            "title": "Bank details (RIB) in the association's name",
+            "mollieLabel": "\"Link a bank account\"",
+            "where": "In the online space of the association's bank, or from your branch.",
+            "check": "The account holder must be <strong>exactly</strong> the association's name as it appears in your statutes: \"{name}\". Mollie checks the IBAN with a test transfer, or automatically if you connect your bank.",
+            "checkWithoutName": "The account holder must be <strong>exactly</strong> the association's name as it appears in your statutes. Mollie checks the IBAN with a test transfer, or automatically if you connect your bank."
+          },
+          "siren": {
+            "title": "SIREN number, if you have one",
+            "mollieLabel": "\"Registration number\"",
+            "whoHasOne": "Only associations with employees, tax obligations or subsidies have one. If you do not have one, do not make one up.",
+            "lookup": "Find my record on the Annuaire des Entreprises"
+          },
+          "badges": {
+            "provided": "Already provided to CommonLink",
+            "toPrepare": "To prepare",
+            "optional": "Optional"
+          },
+          "download": "Retrieve my file",
+          "downloading": "Downloading…",
+          "downloadError": "The file could not be downloaded. Please try again.",
+          "have": "I have it",
+          "mistakesAlert": "<strong>The three most frequent mistakes:</strong> bank details whose name does not match the statutes; a change of chair not declared to the prefecture (prepare the general meeting minutes); statutes that are not the latest in force.",
+          "softWarning": {
+            "missing": "{count, plural, one {You are still missing # document.} other {You are still missing # documents.}}",
+            "hint": "You can open Mollie now and stop when a document is missing: \"Resume my file\" will take you back.",
+            "openAnyway": "Open Mollie anyway",
+            "keepPreparing": "Keep preparing"
+          },
+          "back": "Back",
+          "openMollie": "I have everything, open Mollie"
+        },
+        "contextError": "We could not load the information from your CommonLink verification.",
+        "retry": "Try again"
+      }
     },
     "widget": {
       "destination": {

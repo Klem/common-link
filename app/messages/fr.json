@@ -1110,8 +1110,12 @@
         "tabs": {
           "bank": "Compte bancaire",
           "bankBadge": {
-            "connected": "Connecté",
-            "notConnected": "Non connecté"
+            "notConnected": "Non connecté",
+            "active": "Actif",
+            "toComplete": "Dossier à compléter",
+            "inReview": "En cours de vérification",
+            "paymentsNotEnabled": "Encaissement pas encore activé",
+            "reconnect": "Reconnexion requise"
           },
           "infos": "Informations",
           "landing": "Landing page",
@@ -2469,12 +2473,12 @@
             "mollieLabel": "« Associez un compte bancaire »"
           },
           "identity": {
-            "meaning": "La carte d'identité ou le passeport du représentant légal (le président), pas un document de l'association.",
+            "meaning": "Une pièce d'identité (carte d'identité ou passeport) pour chaque bénéficiaire effectif déclaré, représentant légal compris : ce sont des documents personnels, pas des documents de l'association.",
             "mollieLabel": "« Pièce d'identité »"
           },
           "registration": {
             "link": "Retrouver ma fiche sur l'Annuaire des Entreprises",
-            "meaning": "Votre récépissé de déclaration en préfecture, votre extrait de publication au JOAFE, ou votre avis de situation SIRENE.",
+            "meaning": "Votre récépissé de déclaration en préfecture ou votre extrait de publication au JOAFE ; pour une association reconnue d'utilité publique, le décret de reconnaissance ; en Alsace-Moselle, l'extrait du registre des associations du tribunal judiciaire.",
             "mollieLabel": "« Certificat d'immatriculation de votre entreprise »"
           },
           "stakeholders": {
@@ -2508,7 +2512,7 @@
             "mollieLabel": "« Associez un compte bancaire »"
           },
           "identity": {
-            "meaning": "Une pièce d'identité du représentant légal : c'est un document personnel, pas un document de l'association. Mollie la demande parce que la loi lui impose de vérifier l'identité des personnes physiques derrière la structure.",
+            "meaning": "Une pièce d'identité pour chaque bénéficiaire effectif déclaré, représentant légal compris : ce sont des documents personnels, pas des documents de l'association. Mollie les demande parce que la loi lui impose de vérifier l'identité des personnes physiques derrière la structure.",
             "mollieLabel": "« Pièce d'identité »"
           },
           "legalForm": {
@@ -2520,7 +2524,7 @@
             "mollieLabel": "« Coordonnées de l'entreprise »"
           },
           "registration": {
-            "meaning": "Mollie interroge les registres officiels avec ce numéro. Nous ne lui transmettons que le SIREN : le numéro RNA (W...) n'y est pas reconnu. Si votre association n'a pas de SIREN, n'en inventez pas : c'est votre récépissé de déclaration en préfecture, ou votre publication au Journal officiel, qui atteste de son existence. Si le champ est obligatoire, saisissez votre numéro RNA et joignez ce justificatif.",
+            "meaning": "Mollie interroge les registres officiels avec ce numéro. Nous ne lui transmettons que le SIREN : le numéro RNA (W...) n'y est pas reconnu. Si votre association n'a pas de SIREN, n'en inventez pas : c'est votre preuve d'existence (récépissé de déclaration en préfecture ou publication au Journal officiel, décret de reconnaissance d'utilité publique, ou extrait du registre du tribunal judiciaire en Alsace-Moselle) qui atteste de son existence.",
             "mollieLabel": "« Numéro d'immatriculation »"
           },
           "review": {
@@ -2592,7 +2596,198 @@
         "pending": "En attente"
       },
       "title": "Paiements Mollie",
-      "tryAgain": "Réessayer"
+      "tryAgain": "Réessayer",
+      "onboarding": {
+        "stepper": {
+          "label": "Étapes pour recevoir vos dons",
+          "steps": {
+            "prepare": "Préparer",
+            "fill": "Remplir chez Mollie",
+            "testPayment": "Paiement test",
+            "review": "Vérification",
+            "active": "Actif"
+          },
+          "state": {
+            "done": "{label} — terminé",
+            "current": "{label} — en cours",
+            "upcoming": "{label} — à venir"
+          }
+        },
+        "welcome": {
+          "title": "Recevoir vos dons",
+          "lead": "Pour encaisser des dons en ligne, votre association ouvre un compte chez <strong>Mollie</strong>, un établissement agréé. Nous vous accompagnons à chaque écran : vous saurez quoi préparer, quoi répondre, et où vous en êtes.",
+          "badgeToComplete": "Dossier à compléter",
+          "figures": {
+            "estimate": "estimation",
+            "duration": {
+              "value": "environ 20 min",
+              "label": "de saisie chez Mollie, si vos pièces sont prêtes"
+            },
+            "testPayment": {
+              "value": "0,01 €",
+              "label": "de paiement test, fait par vous-même. Il reste sur le solde Mollie de l'association"
+            },
+            "review": {
+              "value": "2 à 3 jours ouvrés",
+              "label": "de vérification par Mollie. Nous vous écrivons dès qu'elle a répondu"
+            }
+          },
+          "faq": {
+            "title": "Vos questions avant de commencer",
+            "hint": "Lisez à votre rythme, rien n'est engagé.",
+            "items": {
+              "whyMollie": {
+                "question": "Pourquoi Mollie ?",
+                "p1": "Les dons en ligne passent par un établissement agréé. Le nôtre est <strong>Mollie B.V.</strong>, établissement de monnaie électronique agréé par <strong>De Nederlandsche Bank (DNB)</strong>, numéro de client <strong>F0038</strong>.",
+                "p2": "La loi oblige Mollie à vérifier qui se trouve derrière chaque organisation qui encaisse de l'argent : c'est son obligation de lutte contre le blanchiment. C'est pour cela qu'elle vous demande des pièces.",
+                "p3": "Ses formulaires parlent d'« entreprise », d'« immatriculation » ou d'« UBO » : c'est normal, et cela ne remet pas en cause votre statut associatif. <strong>« Entreprise » = votre association.</strong>"
+              },
+              "documents": {
+                "question": "Qui voit mes documents ?",
+                "p1": "Vous déposez vos pièces directement sur le site de Mollie. <strong>Les pièces que vous déposez chez Mollie ne nous sont pas transmises. Nous recevons uniquement l'état d'avancement de votre dossier.</strong>",
+                "p2": "Les documents que vous nous aviez fournis pour votre vérification CommonLink restent dans votre espace : vous pouvez les retrouver pour les déposer vous-même chez Mollie."
+              },
+              "cost": {
+                "question": "Combien ça coûte ?",
+                "p1": "Chez Mollie, vous choisirez la catégorie « Œuvres caritatives et dons ». <strong>Mollie peut prélever des frais d'ouverture sur votre premier versement. Leur montant est fixé par Mollie.</strong> Mollie ne le publie pas.",
+                "p2": "Le paiement test de 0,01 € est fait par vous-même ; l'argent reste sur le solde Mollie de votre association."
+              },
+              "genuine": {
+                "question": "Est-ce le vrai site ?",
+                "p1": "Avant de saisir quoi que ce soit, regardez la barre d'adresse : elle doit afficher <strong>my.mollie.com</strong>. Sinon, fermez la fenêtre et contactez-nous.",
+                "p2": "CommonLink ne vous demandera jamais votre mot de passe Mollie."
+              },
+              "resume": {
+                "question": "Je peux m'arrêter et reprendre ?",
+                "p1": "Oui. Vous pouvez fermer la fenêtre Mollie à tout moment. Revenez ici et cliquez sur <strong>« Reprendre mon dossier »</strong> : nous vous ramenons à votre dossier chez Mollie."
+              },
+              "help": {
+                "question": "Besoin d'aide ?",
+                "p1": "Réservez une <strong>visio accompagnée</strong> : un membre de l'équipe CommonLink vous guide à l'oral pendant que vous remplissez. Vous gardez la main sur votre écran et votre clavier.",
+                "p2": "CommonLink ne vous demande jamais votre mot de passe."
+              }
+            }
+          },
+          "resume": "Reprendre mon dossier",
+          "start": "Commencer"
+        },
+        "structure": {
+          "title": "Votre structure",
+          "lead": "Nous connaissons déjà votre association grâce à votre vérification CommonLink. Vérifiez simplement que c'est bien vous.",
+          "typeCaption": "Type de structure",
+          "types": {
+            "declared": "Association déclarée (loi 1901)",
+            "arup": "Association reconnue d'utilité publique (ARUP)",
+            "alsaceMoselle": "Association inscrite de droit local (Alsace-Moselle)",
+            "unknown": "Type de structure non déterminé"
+          },
+          "unknownHint": "Votre vérification CommonLink ne nous permet pas de déterminer automatiquement votre type de structure. La liste des pièces ci-après reste valable : la preuve d'existence dépend de votre statut.",
+          "verifiedOn": "— vérifiée par CommonLink le {date}",
+          "verifiedBadge": "✓ Vérifiée",
+          "owners": {
+            "title": "Vos bénéficiaires effectifs",
+            "count": "{count, plural, one {# personne} other {# personnes}}",
+            "intro": "Pour une association, ce sont les membres des organes d'administration, de direction et de surveillance (article R. 561-3 du Code monétaire et financier). CommonLink a déjà confirmé cette liste lors de votre vérification.",
+            "empty": "Aucune personne n'est enregistrée dans votre vérification CommonLink.",
+            "idAlert": "<strong>Mollie demandera une pièce d'identité pour {count, plural, one {cette personne} other {chacune de ces # personnes}}.</strong> Pensez à {count, plural, one {la prévenir} other {les prévenir}} dès maintenant.",
+            "presidencyAlert": "<strong>La présidence a changé depuis votre dernière déclaration en préfecture ?</strong> Préparez le procès-verbal de l'assemblée générale qui l'a décidé."
+          },
+          "back": "Retour",
+          "continue": "C'est bien nous, continuer"
+        },
+        "kit": {
+          "title": "Votre kit de pièces",
+          "lead": "Rassemblez ces pièces avant d'ouvrir Mollie : la saisie sera plus rapide. Formats acceptés pour les pièces d'identité : <strong>passeport, carte d'identité recto-verso, titre de séjour, permis de conduire français</strong>, en couleur, 10 Mo maximum.",
+          "progress": {
+            "title": "Votre préparation",
+            "label": "{ready} / {total} pièces prêtes",
+            "aria": "Pièces prêtes"
+          },
+          "phoneAlert": "<strong>Gardez votre téléphone à portée de main.</strong> Mollie peut vous demander une photo de la pièce d'identité originale prise avec votre smartphone, et un selfie en tournant la tête à gauche puis à droite.",
+          "meta": {
+            "mollieCalls": "Mollie l'appelle",
+            "whereToFindIt": "Où la trouver",
+            "whereToFindThem": "Où les trouver",
+            "whereToFindProof": "Où le trouver",
+            "check": "À vérifier",
+            "whatYouNeed": "Ce qu'il vous faut",
+            "whoHasOne": "Qui en a un ?",
+            "yours": "Le vôtre"
+          },
+          "identity": {
+            "title": "Pièce d'identité de {name}",
+            "titleWithRole": "Pièce d'identité de {name} ({role})",
+            "mollieLabel": "« Pièce d'identité »",
+            "whereProvided": "Celle que vous nous avez fournie lors de votre vérification.",
+            "whereToPrepare": "Auprès de {name} : passeport, carte d'identité recto-verso, titre de séjour ou permis de conduire français.",
+            "checkProvided": "En couleur, 10 Mo maximum, recto-verso pour une carte d'identité.",
+            "checkToPrepare": "En couleur, 10 Mo maximum."
+          },
+          "statutes": {
+            "title": "Statuts à jour, signés",
+            "mollieLabel": "« Statuts »",
+            "whereProvided": "Ceux que vous nous avez fournis lors de votre vérification.",
+            "whereToPrepare": "Dans les archives de votre association : la dernière version adoptée.",
+            "check": "Signés. Vérifiez qu'il s'agit bien de la dernière version adoptée."
+          },
+          "proof": {
+            "title": "Preuve d'existence de l'association",
+            "mollieLabel": "« Certificat d'immatriculation de votre entreprise »",
+            "variants": {
+              "declared": {
+                "what": "Récépissé de déclaration en préfecture, ou publication au JOAFE.",
+                "where": "Le récépissé vous a été remis par la préfecture. La publication au JOAFE est téléchargeable gratuitement sur <link>journal-officiel.gouv.fr</link>.",
+                "whereWithRna": "Le récépissé vous a été remis par la préfecture. La publication au JOAFE est téléchargeable gratuitement sur <link>journal-officiel.gouv.fr</link> avec votre numéro RNA ({rna})."
+              },
+              "arup": {
+                "what": "Le décret de reconnaissance d'utilité publique, publié au Journal officiel.",
+                "where": "Publié au Journal officiel : retrouvez-le sur <link>legifrance.gouv.fr</link>."
+              },
+              "alsaceMoselle": {
+                "what": "Un extrait du registre des associations du tribunal judiciaire. Pas de JOAFE ni de récépissé pour votre statut.",
+                "where": "À demander au tribunal judiciaire, via le portail AMALIA."
+              },
+              "unknown": {
+                "what": "Selon votre statut : récépissé de déclaration en préfecture ou publication au JOAFE, décret de reconnaissance d'utilité publique, ou extrait du registre des associations du tribunal judiciaire (Alsace-Moselle).",
+                "where": "Le document que vous nous avez fourni lors de votre vérification CommonLink fait l'affaire s'il est à jour."
+              }
+            }
+          },
+          "rib": {
+            "title": "RIB au nom de l'association",
+            "mollieLabel": "« Associez un compte bancaire »",
+            "where": "Dans l'espace en ligne de la banque de l'association, ou auprès de votre agence.",
+            "check": "Le titulaire doit porter <strong>exactement</strong> le nom de l'association tel qu'il figure dans vos statuts : « {name} ». Mollie vérifie l'IBAN par un virement test, ou automatiquement si vous connectez votre banque.",
+            "checkWithoutName": "Le titulaire doit porter <strong>exactement</strong> le nom de l'association tel qu'il figure dans vos statuts. Mollie vérifie l'IBAN par un virement test, ou automatiquement si vous connectez votre banque."
+          },
+          "siren": {
+            "title": "Numéro SIREN, si vous en avez un",
+            "mollieLabel": "« Numéro d'immatriculation »",
+            "whoHasOne": "Seules les associations qui ont des salariés, des obligations fiscales ou des subventions en ont un. Si vous n'en avez pas, n'en inventez pas.",
+            "lookup": "Retrouver ma fiche sur l'Annuaire des Entreprises"
+          },
+          "badges": {
+            "provided": "Déjà fourni à CommonLink",
+            "toPrepare": "À préparer",
+            "optional": "Optionnel"
+          },
+          "download": "Retrouver mon fichier",
+          "downloading": "Téléchargement…",
+          "downloadError": "Le fichier n'a pas pu être téléchargé. Réessayez.",
+          "have": "Je l'ai",
+          "mistakesAlert": "<strong>Les trois erreurs les plus fréquentes :</strong> un RIB dont le nom ne correspond pas à celui des statuts ; un changement de présidence non déclaré en préfecture (préparez le PV d'AG) ; des statuts qui ne sont pas les derniers en vigueur.",
+          "softWarning": {
+            "missing": "{count, plural, one {Il vous manque encore # pièce.} other {Il vous manque encore # pièces.}}",
+            "hint": "Vous pouvez ouvrir Mollie maintenant et vous arrêter quand une pièce vous manque : « Reprendre mon dossier » vous y ramènera.",
+            "openAnyway": "Ouvrir Mollie quand même",
+            "keepPreparing": "Continuer à préparer"
+          },
+          "back": "Retour",
+          "openMollie": "J'ai tout, ouvrir Mollie"
+        },
+        "contextError": "Nous n'avons pas pu charger les informations de votre vérification CommonLink.",
+        "retry": "Réessayer"
+      }
     },
     "widget": {
       "destination": {
