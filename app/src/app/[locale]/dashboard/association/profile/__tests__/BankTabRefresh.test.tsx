@@ -132,6 +132,19 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
     expect(await screen.findByText('notices.interrupted')).toBeInTheDocument();
   });
 
+  it('keeps the retry notice after retry then cancel, even while the server still reports pending', async () => {
+    mollie = { pending: true };
+    openBankTab();
+    fireEvent.click(screen.getByText('test.popupClosed'));
+    fireEvent.click(await screen.findByText('notices.retry'));
+
+    // The modal is cancelled (it only calls onClose): the interrupted notice must still win over
+    // the pending one, whose action is disabled, so the user can retry again.
+    expect(screen.getByText('notices.interrupted')).toBeInTheDocument();
+    expect(screen.queryByText('notices.pending')).not.toBeInTheDocument();
+    expect(screen.getByText('notices.retry')).toBeInTheDocument();
+  });
+
   it('stays on the bank tab after a successful connection (Q5)', async () => {
     openBankTab();
     fireEvent.click(screen.getByText('test.connected'));

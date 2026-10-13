@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { getMollieAuthUrl } from '@/lib/api/mollie-connect';
-import MollieDocumentChecklist from '@/components/dashboard/MollieDocumentChecklist';
 import MollieOnboardingGuide from '@/components/dashboard/MollieOnboardingGuide';
 import { MolliePopupMessage } from '@/types/mollie-connect';
 import { useToastStore } from '@/stores/toastStore';
@@ -19,10 +18,8 @@ interface MollieOnboardModalProps {
   contactEmail?: string | null;
   /** Association contact name — required by Mollie. If missing, the connect flow is blocked. */
   contactName?: string | null;
-  /** Association SIREN, forwarded to the document checklist for the registry deep link. */
+  /** Association SIREN, forwarded to the onboarding guide as a copyable value. */
   siren?: string | null;
-  /** Association RNA or legacy SIREN, used by the checklist when no SIREN is recorded. */
-  identifier?: string | null;
   /** Official name, forwarded to the onboarding guide as a copyable value. */
   name?: string | null;
   /** Registered-office address, forwarded to the onboarding guide as a copyable value. */
@@ -38,16 +35,17 @@ interface MollieOnboardModalProps {
  * Opens a popup window for the OAuth consent screen and listens for a postMessage
  * from the success popup page to update the connection state without a full page reload.
  *
- * Before the popup opens, [MollieDocumentChecklist] states which association document answers
- * each requirement of Mollie's hosted wizard — that wizard is not configurable and uses company
- * wording, so the association knows what to prepare instead of discovering it mid-flow.
+ * Before the popup opens, the modal only asks the user to confirm they have their documents ready
+ * (the screens of the bank tab already explain which ones). It is deliberately modal: the only way
+ * to dismiss it is the "cancel" button — no close cross, no backdrop click — so the popup lifecycle
+ * stays limited to connect, cancel, or popup closed/message.
  *
  * Once the popup is open, the same modal switches to [MollieOnboardingGuide] (the 10-step
  * translator also shown on screen 3 of the bank tab): the wizard is being filled in at that very
  * moment, in another window, so the waiting screen is where the field-by-field guidance is worth
  * the most. The modal has no onboarding context, so the stakeholder step lists no names here.
  */
-export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail, contactName, siren, identifier, name, addressLine1, postalCode, city, legalObject }: MollieOnboardModalProps) {
+export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail, contactName, siren, name, addressLine1, postalCode, city, legalObject }: MollieOnboardModalProps) {
   const t = useTranslations('settings');
   const { addToast } = useToastStore();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -122,14 +120,13 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal modal-scroll" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop">
+      <div className="modal modal-scroll">
         <div className="modal-header">
           <h2 className="font-semibold text-text">{t('mollie.modal.title')}</h2>
-          <button className="modal-close" onClick={onClose} aria-label="close">×</button>
         </div>
         <div className="modal-body">
-          <p className="text-sm text-text-2 leading-relaxed mb-6">{t('mollie.modal.description')}</p>
+          <p className="text-sm text-text-2 leading-relaxed">{t('mollie.modal.description')}</p>
           {!contactEmail && (
             <p className="alert alert-warning alert-spaced">
               {t('mollie.modal.missingContactEmail')}
@@ -140,7 +137,6 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
               {t('mollie.modal.missingContactName')}
             </p>
           )}
-          {contactEmail && contactName && !isConnecting && <MollieDocumentChecklist siren={siren} identifier={identifier} />}
           {contactEmail && contactName && isConnecting && (
             <>
               <div className="flex flex-col items-center gap-3 py-4">

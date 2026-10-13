@@ -612,6 +612,30 @@ export default function AssociationProfilePage() {
               )}
             </div>
           </div>
+
+          {/* Carte Sécurité */}
+          <div className="card no-hover">
+            <div className="card-h">
+              <h3>{t('association.profile.security.title')}</h3>
+            </div>
+            <div className="card-b">
+              <div className="security-row">
+                <div>
+                  <p className="fl">{t('association.profile.security.loginMethod')}</p>
+                  <p className="security-value">
+                    {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(true)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  {t('association.profile.security.changePassword')}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -638,38 +662,13 @@ export default function AssociationProfilePage() {
             interrupted={mollieInterrupted}
             onConnect={handleMollieConnect}
             onReconnect={() => setShowMollieModal(true)}
-            onRetryConnect={() => {
-              setMollieInterrupted(false);
-              setShowMollieModal(true);
-            }}
+            // The interrupted notice stays until a connection succeeds: cancelling the modal
+            // must bring the retry button back instead of exposing the server-side pending state.
+            onRetryConnect={() => setShowMollieModal(true)}
             onLearnMore={() => setShowMollieInfoModal(true)}
             onForceComplete={handleMollieForceComplete}
             onOpenTab={(tab) => tabUnlocked[tab] && setActiveTab(tab)}
           />
-
-          {/* Carte Sécurité */}
-          <div className="card no-hover">
-            <div className="card-h">
-              <h3>{t('association.profile.security.title')}</h3>
-            </div>
-            <div className="card-b">
-              <div className="security-row">
-                <div>
-                  <p className="fl">{t('association.profile.security.loginMethod')}</p>
-                  <p className="security-value">
-                    {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(true)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  {t('association.profile.security.changePassword')}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -743,7 +742,6 @@ export default function AssociationProfilePage() {
         contactEmail={profile?.contactEmail}
         contactName={profile?.contactName}
         siren={profile?.siren}
-        identifier={profile?.identifier}
         name={profile?.name}
         addressLine1={profile?.addressLine1}
         postalCode={profile?.postalCode}

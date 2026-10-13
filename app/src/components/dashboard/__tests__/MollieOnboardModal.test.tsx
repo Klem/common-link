@@ -29,24 +29,28 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof MollieOnboar
 }
 
 describe('MollieOnboardModal', () => {
-  it('shows the document checklist before the user starts the flow', () => {
-    renderModal({ siren: '775672272' });
+  it('offers only "cancel" and "continue" before the flow starts, with no close cross', () => {
+    const onClose = vi.fn();
+    renderModal({ onClose });
 
-    expect(screen.getByText('intro')).toBeInTheDocument();
-    expect(screen.getByText('items.registration.mollieLabel')).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: 'items.registration.link' }),
-    ).toHaveAttribute('href', 'https://annuaire-entreprises.data.gouv.fr/rechercher?terme=775672272');
+    expect(screen.getByText('mollie.modal.description')).toBeInTheDocument();
+    expect(screen.queryByLabelText('close')).not.toBeInTheDocument();
+    expect(screen.queryByText('items.registration.mollieLabel')).not.toBeInTheDocument();
+
+    fireEvent.click(document.querySelector('.modal-backdrop') as Element);
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('mollie.modal.cancel'));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('hides the checklist while contact details are missing, so the blocker stays visible', () => {
+  it('shows the blocker while contact details are missing', () => {
     renderModal({ contactEmail: null });
 
-    expect(screen.queryByText('intro')).not.toBeInTheDocument();
     expect(screen.getByText('mollie.modal.missingContactEmail')).toBeInTheDocument();
   });
 
-  it('swaps the checklist for the step-by-step guide once the Mollie window is open', async () => {
+  it('swaps the confirmation for the step-by-step guide once the Mollie window is open', async () => {
     vi.spyOn(window, 'open').mockReturnValue({ closed: false, close: vi.fn() } as unknown as Window);
     renderModal({ name: 'Fondation Lumiere' });
 
