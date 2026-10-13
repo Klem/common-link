@@ -143,11 +143,12 @@ class AssociationService(
     }
 
     /**
-     * Updates widget configuration: stores the normalized origin of [widgetAllowedOrigin].
-     * Null clears the setting, disabling post-payment redirects.
+     * Updates widget configuration: stores the URL of the association's campaign page, normalized by
+     * [normalizeCampaignPageUrl]. Null, blank or invalid clears the setting, disabling post-payment
+     * redirects.
      *
      * @param userId UUID of the authenticated association user.
-     * @param widgetAllowedOrigin Raw origin URL supplied by the association. Normalized to scheme+host.
+     * @param widgetAllowedOrigin Raw campaign page URL supplied by the association.
      * @throws UserNotFoundException if no profile exists for this user.
      * @throws org.commonlink.exception.ConflictException if the bank account (Mollie) is not completed.
      */
@@ -156,19 +157,25 @@ class AssociationService(
         onboardingGate.requireBankReady(userId)
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
-        profile.widgetAllowedOrigin = normalizeOrigin(widgetAllowedOrigin)
+        profile.widgetAllowedOrigin = normalizeCampaignPageUrl(widgetAllowedOrigin)
         associationProfileRepository.save(profile)
         logger.info("Widget config updated for association {}", profile.id)
     }
 
-    private fun normalizeOrigin(raw: String?): String? {
+    /**
+     * Keeps scheme, host, port, path and query of [raw] — the donor must come back to the exact
+     * campaign page — and drops the fragment. Returns null for anything that is not an absolute
+     * http(s) URL with a host, so an invalid value can never become a redirect target.
+     */
+    private fun normalizeCampaignPageUrl(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         return try {
             val uri = java.net.URI(raw.trim())
-            val scheme = uri.scheme?.takeIf { it == "http" || it == "https" } ?: return null
+            val scheme = uri.scheme?.lowercase()?.takeIf { it == "http" || it == "https" } ?: return null
             val host = uri.host?.takeIf { it.isNotBlank() } ?: return null
-            val port = if (uri.port != -1) ":${uri.port}" else ""
-            "$scheme://$host$port"
+            java.net.URI(scheme, null, host.lowercase(), uri.port, uri.path?.ifEmpty { "/" } ?: "/", uri.query, null)
+                .toString()
+                .take(2048)
         } catch (_: Exception) {
             null
         }

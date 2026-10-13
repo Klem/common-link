@@ -13,12 +13,20 @@ import { EmbedHeightReporter } from './EmbedHeightReporter';
 import { PreviewBanner } from './PreviewBanner';
 import { CookieConsentBanner } from './CookieConsentBanner';
 import { GtmSnippet } from '@/components/GtmSnippet';
+import { PurchaseRelay } from '@/components/donation/PurchaseRelay';
+import { resolveDonationRef } from '@/lib/donation/donationRef';
 import { consentBootstrapScript } from '@/lib/consentMode';
 import './landing.css';
 
 interface Props {
   params: Promise<{ locale: string; widgetToken: string }>;
-  searchParams: Promise<{ parentOrigin?: string; preview?: string }>;
+  searchParams: Promise<{
+    parentOrigin?: string;
+    preview?: string;
+    clRef?: string;
+    cl_donation?: string;
+    cl_ref?: string;
+  }>;
 }
 
 /**
@@ -63,6 +71,13 @@ export default async function LandingPage({ params, searchParams }: Props) {
   const { locale, widgetToken } = await params;
   const query = await searchParams;
   const parentOrigin = resolveParentOrigin(query.parentOrigin);
+  // Back from a confirmed payment, embedded: `landing.js` / the iframe bridge passes the ref as
+  // `clRef`, and the event is relayed to the association's page.
+  // Back from a confirmed payment on this page opened directly: `/return` sent the donor here with
+  // `?cl_donation=success&cl_ref=<ref>`, and the event is pushed into this page's own dataLayer.
+  const donationRef = parentOrigin
+    ? resolveDonationRef(query.clRef)
+    : query.cl_donation === 'success' ? resolveDonationRef(query.cl_ref) : null;
   // Kept for the render, not only for the fetch: the preview banner and the disabled form both
   // depend on it.
   const previewToken = query.preview ?? null;
@@ -105,7 +120,11 @@ export default async function LandingPage({ params, searchParams }: Props) {
   };
 
   // Skipped in preview mode: the association's own preview views must not pollute its analytics.
-  const gtmId = previewToken ? null : data.gtmContainerId;
+  // Also skipped when embedded through `landing.js` or the iframe bridge (`parentOrigin` set): the
+  // host page runs the association's container itself and receives every event through the
+  // postMessage bridge, so loading it here too would make each event fire in two GTM instances.
+  // The consent bootstrap and cookie banner below are GTM-only and disappear with it.
+  const gtmId = previewToken || parentOrigin ? null : data.gtmContainerId;
 
   return (
     <div className="lp-root" data-theme={data.landingTheme}>
@@ -115,13 +134,16 @@ export default async function LandingPage({ params, searchParams }: Props) {
       {gtmId && (
         <script
           nonce={nonce}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: consentBootstrapScript(widgetToken) }}
         />
       )}
       <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
+      {donationRef && !previewToken && <PurchaseRelay donationRef={donationRef} parentOrigin={parentOrigin} />}
       <script
         nonce={nonce}
+        suppressHydrationWarning
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
@@ -156,6 +178,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
         }}
         donationsEnabled={data.donationsEnabled}
         remainingCapacity={data.remainingCapacity}
+        parentOrigin={parentOrigin}
       >
         {/* Objet, montant cible, calendrier and résultat attendu are ACPR-mandated on a public
             collection page — this section is never gated by the association's landing preference. */}

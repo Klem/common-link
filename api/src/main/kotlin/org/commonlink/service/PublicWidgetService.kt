@@ -147,15 +147,10 @@ class PublicWidgetService(
         val idempotencyKey = publicRef.toString()
 
         val base = "${mollieProperties.redirectBaseUrl}/$safeLocale/embed/donate/$widgetToken/return"
-        // Carried on the success redirect only — the dataLayer `purchase` push on /return needs it,
-        // the cancelled path never fires that event so cancelUrl stays free of donation data.
-        val trackingQuery = "ref=$publicRef" +
-            "&amount=${request.amount.toPlainString()}" +
-            "&currency=EUR" +
-            "&campaignId=${campaign.id}" +
-            "&campaignName=${URLEncoder.encode(campaign.name, StandardCharsets.UTF_8)}" +
-            "&associationName=${URLEncoder.encode(association.name, StandardCharsets.UTF_8)}" +
-            "&anonymous=${request.anonymousDisplay}"
+        // Only the opaque ref rides on the success redirect: /return polls the status by it, and the
+        // `purchase` values are read from the server later (getDonationStatus), never from a URL a
+        // donor could edit. The cancelled path needs no ref at all.
+        val trackingQuery = "ref=$publicRef"
         val redirectUrl = if (encodedSource != null) "$base?$trackingQuery&source=$encodedSource" else "$base?$trackingQuery"
         val cancelUrl = if (encodedSource != null) "$base?cancelled=true&source=$encodedSource" else "$base?cancelled=true"
         val description = "Don - ${campaign.name}".take(255)
@@ -280,10 +275,11 @@ class PublicWidgetService(
     /**
      * Returns the public confirmation status of a donation by its opaque [Donation.publicRef].
      *
-     * Used by the `/return` page to poll for confirmation before pushing the `purchase` dataLayer
-     * event. Leaks no internal data: no providerRef, no donor/campaign id — [method] is the only
-     * addition beyond PENDING/CONFIRMED, and it is set only once confirmed (the donor already knows
-     * which method they used, so nothing new is disclosed).
+     * Used by the `/return` page to wait for confirmation before sending the donor back to the
+     * association's page, then by the CommonLink iframe on that page to read the confirmed values of
+     * the GA4 `purchase` event. Before confirmation only the status is returned; once confirmed, the
+     * donation values (amount, campaign, association, anonymity choice, payment method) — never the
+     * donor's identity, never providerRef.
      *
      * While still pending, makes a best-effort live Mollie status check ([tryLiveConfirm]) instead of
      * waiting on the webhook: Mollie confirms a card payment in seconds, but webhook *delivery* can lag
@@ -299,10 +295,17 @@ class PublicWidgetService(
             donation = tryLiveConfirm(publicRef, donation.providerRef) ?: donation
         }
 
-        val confirmed = donation.confirmedAt != null
+        if (donation.confirmedAt == null) return DonationStatusDto(DonationPublicStatus.PENDING)
         return DonationStatusDto(
-            status = if (confirmed) DonationPublicStatus.CONFIRMED else DonationPublicStatus.PENDING,
-            method = donation.paymentMethod.takeIf { confirmed },
+            status = DonationPublicStatus.CONFIRMED,
+            method = donation.paymentMethod,
+            amount = donation.amount,
+            // Every public-widget donation is created in EUR — see createDonation.
+            currency = "EUR",
+            campaignId = donation.campaign.id,
+            campaignName = donation.campaign.name,
+            associationName = donation.campaign.association.name,
+            anonymous = donation.donor.anonymous,
         )
     }
 

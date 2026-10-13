@@ -516,7 +516,7 @@ class PublicWidgetServiceIntegrationTest {
     // ── Tracking payload on the Mollie redirect URL ──────────────────────────
 
     @Test
-    fun `createDonation embeds the dataLayer tracking payload and a fresh public ref on redirectUrl`() {
+    fun `createDonation puts only a fresh public ref on redirectUrl, never the donation values`() {
         val req = validRequest(anonymousDisplay = true)
 
         publicWidgetService.createDonation(widgetToken, req)
@@ -537,13 +537,10 @@ class PublicWidgetServiceIntegrationTest {
             )
         }
         val redirectUrl = redirectUrlSlot.captured
-        assertTrue(redirectUrl.contains("&currency=EUR"), redirectUrl)
-        assertTrue(redirectUrl.contains("&amount=25.00"), redirectUrl)
-        assertTrue(redirectUrl.contains("&anonymous=true"), redirectUrl)
-        assertTrue(redirectUrl.contains("&campaignId="), redirectUrl)
-        assertTrue(redirectUrl.contains("&campaignName="), redirectUrl)
-        assertTrue(redirectUrl.contains("&associationName="), redirectUrl)
         assertTrue(Regex("ref=[0-9a-fA-F-]{36}").containsMatchIn(redirectUrl), "redirectUrl must carry a fresh public ref: $redirectUrl")
+        for (param in listOf("amount=", "currency=", "anonymous=", "campaignId=", "campaignName=", "associationName=")) {
+            assertTrue(!redirectUrl.contains(param), "redirectUrl must not carry $param: $redirectUrl")
+        }
     }
 
     @Test
@@ -581,6 +578,8 @@ class PublicWidgetServiceIntegrationTest {
 
         assertEquals(DonationPublicStatus.PENDING, status.status)
         assertNull(status.method)
+        assertNull(status.amount)
+        assertNull(status.campaignId)
     }
 
     @Test
@@ -597,6 +596,12 @@ class PublicWidgetServiceIntegrationTest {
 
         assertEquals(DonationPublicStatus.CONFIRMED, status.status)
         assertEquals("creditcard", status.method)
+        assertEquals(0, donation.amount.compareTo(status.amount!!))
+        assertEquals("EUR", status.currency)
+        assertEquals(donation.campaign.id, status.campaignId)
+        assertNotNull(status.campaignName)
+        assertNotNull(status.associationName)
+        assertNotNull(status.anonymous)
     }
 
     @Test

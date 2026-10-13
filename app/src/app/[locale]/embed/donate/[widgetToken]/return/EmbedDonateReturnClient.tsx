@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { getWidget, getDonationStatus, DonationReturnStatus } from '@/lib/api/public';
-import { pushDonationEvent } from '@/lib/gtm';
 
 /**
- * Worst-case Mollie webhook delivery lag, per `PublicWidgetService.getDonationStatus` — the
- * confirmation poll below must cover it, or a real confirmation lands after this page has already
- * redirected away and the GA4 `purchase` event is lost for good.
+ * Worst-case Mollie webhook delivery lag, per `PublicWidgetService.getDonationStatus`. The
+ * confirmation poll below must cover it: the success flag on the redirect back is only added once
+ * the server has confirmed the payment.
  */
 const CONFIRMATION_POLL_TIMEOUT_MS = 30000;
 
@@ -24,58 +23,101 @@ const STATUS_POLL_INTERVAL_MS = 1000;
  */
 const POST_RESULT_REDIRECT_DELAY_MS = 5000;
 
-/** Donation payload carried on the redirect URL, needed to push the `purchase` dataLayer event. */
-export interface ReturnTrackingContext {
-  ref: string;
-  amount: number;
-  currency: string;
-  campaignId: string;
-  campaignName: string;
-  associationName: string;
-  anonymous: boolean;
+/**
+ * Query parameters appended to the association's campaign page URL on the redirect back, once the
+ * server has confirmed the payment: `cl_donation=success&cl_ref=<donation ref>`. The CommonLink
+ * loader on that page (`widget.js`, `landing.js`, iframe bridge) reads them and has its iframe relay
+ * the GA4 `purchase` event to the page's own GTM, with values read from the server — never from
+ * these parameters. Must stay literal matches of the loaders' copies.
+ */
+export const DONATION_RESULT_PARAM = 'cl_donation';
+export const DONATION_REF_PARAM = 'cl_ref';
+export const DONATION_RESULT_SUCCESS = 'success';
+
+/**
+ * Returns [source] with the success flag and the donation [ref] added, or [source] unchanged when
+ * the payment was not confirmed by the server (`ref` null) — never flags a guess.
+ */
+export function withDonationSuccessFlag(source: string, ref: string | null): string {
+  if (!ref) return source;
+  const url = new URL(source);
+  url.searchParams.set(DONATION_RESULT_PARAM, DONATION_RESULT_SUCCESS);
+  url.searchParams.set(DONATION_REF_PARAM, ref);
+  return url.toString();
+}
+
+/** Origin of [url], or null when it is not an absolute URL. */
+function originOf(url: string): string | null {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether [source] is this widget's own landing page on this app's origin (`/{locale}/lp/{token}`):
+ * the donation started on the landing page opened directly (see `LandingClient`), so the donor goes
+ * back there. A same-origin page of this very widget — never an open redirect.
+ */
+function isOwnLandingPage(source: string, widgetToken: string): boolean {
+  try {
+    const url = new URL(source);
+    const [locale, segment, token, ...rest] = url.pathname.split('/').filter(Boolean);
+    return (
+      url.origin === window.location.origin &&
+      /^[a-z]{2}$/.test(locale ?? '') &&
+      segment === 'lp' &&
+      token === widgetToken &&
+      rest.length === 0
+    );
+  } catch {
+    return false;
+  }
 }
 
 interface Props {
   widgetToken: string;
   locale: string;
   cancelled: boolean;
+  /** Page the donor came from — the association's campaign page. */
   source: string | null;
-  tracking: ReturnTrackingContext | null;
+  /** Opaque public ref of the donation (`ref` on the Mollie success redirect). */
+  donationRef: string | null;
 }
 
-export function EmbedDonateReturnClient({ widgetToken, locale, cancelled, source, tracking }: Props) {
+/**
+ * Post-payment page, always top-level on CommonLink's own origin. It pushes no dataLayer event and
+ * loads no GTM: the `purchase` event belongs to the association's own page and runs under its
+ * consent (RGPD), so this page only waits for the server to confirm the payment, then sends the
+ * donor back to that page with the success flag.
+ */
+export function EmbedDonateReturnClient({ widgetToken, locale, cancelled, source, donationRef }: Props) {
   const t = useTranslations('widget.return');
   const [validatedSource, setValidatedSource] = useState<string | null>(null);
 
   // Whether the confirmation poll below has concluded — confirmed, or gave up after the timeout.
-  // No tracking data at all (or an already-cancelled payment) means there is nothing to poll for,
-  // so it starts settled: the redirect-back effect further down must not wait on it forever.
-  const [pollSettled, setPollSettled] = useState(() => !tracking || cancelled);
+  // No ref at all (or an already-cancelled payment) means there is nothing to poll for, so it
+  // starts settled: the redirect-back effect further down must not wait on it forever.
+  const [pollSettled, setPollSettled] = useState(() => !donationRef || cancelled);
 
-  // Independent of the redirect-to-source effect below: a donation made directly on the landing
-  // page (no widgetAllowedOrigin configured) never sets `source`, but must still be tracked.
+  // Set only when the server reported CONFIRMED — drives the success flag on the redirect back.
+  const [confirmedRef, setConfirmedRef] = useState<string | null>(null);
+
   useEffect(() => {
-    if (cancelled || !tracking) return;
+    if (cancelled || !donationRef) return;
     let stopped = false;
     const maxAttempts = Math.ceil(CONFIRMATION_POLL_TIMEOUT_MS / STATUS_POLL_INTERVAL_MS);
 
     const poll = async () => {
       for (let attempt = 0; attempt < maxAttempts && !stopped; attempt++) {
         try {
-          const status = await getDonationStatus(tracking.ref);
+          const status = await getDonationStatus(donationRef);
           if (status.status === DonationReturnStatus.CONFIRMED) {
-            pushDonationEvent(
-              'purchase',
-              {
-                transaction_id: tracking.ref,
-                value: tracking.amount,
-                currency: tracking.currency,
-                items: [{ item_id: tracking.campaignId, item_name: tracking.campaignName }],
-                affiliation: tracking.associationName,
-              },
-              { anonymous: tracking.anonymous, paymentMethod: status.method },
-            );
-            if (!stopped) setPollSettled(true);
+            if (!stopped) {
+              setConfirmedRef(donationRef);
+              setPollSettled(true);
+            }
             return;
           }
         } catch {
@@ -85,53 +127,58 @@ export function EmbedDonateReturnClient({ widgetToken, locale, cancelled, source
           await new Promise((resolve) => setTimeout(resolve, STATUS_POLL_INTERVAL_MS));
         }
       }
-      // Confirmation did not land within the window: no push — pushing on a guess would be a false
-      // conversion. The webhook may still confirm the donation later (receipt / on-chain enqueue
-      // happen server-side regardless of this poll), it just never becomes a dataLayer `purchase`.
+      // Confirmation did not land within the window: redirect without the flag rather than on a
+      // guess. The webhook may still confirm the donation later (receipt / on-chain enqueue happen
+      // server-side regardless), it just never becomes a `purchase` event.
       if (!stopped) setPollSettled(true);
     };
 
     poll();
     return () => { stopped = true; };
-  }, [cancelled, tracking]);
+  }, [cancelled, donationRef]);
 
   useEffect(() => {
     if (!source) return;
 
+    const redirectNowIfCancelled = (target: string) => {
+      if (!cancelled) return;
+      const top = typeof window !== 'undefined' ? (window.top ?? window) : null;
+      if (top) top.location.href = target;
+    };
+
     const run = async () => {
+      if (isOwnLandingPage(source, widgetToken)) {
+        setValidatedSource(source);
+        redirectNowIfCancelled(source);
+        return;
+      }
       try {
         const widget = await getWidget(widgetToken);
         if (!widget.widgetAllowedOrigin) {
           console.warn(
-            `[CommonLink widget/return] redirect blocked: this association has no widgetAllowedOrigin configured. Set it to the exact origin (scheme+host+port) of the embedding page.`,
+            `[CommonLink widget/return] redirect blocked: this association has no campaign page URL configured (widgetAllowedOrigin).`,
           );
           return;
         }
 
-        let sourceOrigin: string;
-        try {
-          sourceOrigin = new URL(source).origin;
-        } catch {
+        const sourceOrigin = originOf(source);
+        if (!sourceOrigin) {
           console.warn(`[CommonLink widget/return] redirect blocked: source is not a valid URL:`, source);
           return;
         }
 
-        // Compare by origin, tolerating a trailing slash on the stored allowlist value
-        // (URL.origin never carries one; a manually-set widgetAllowedOrigin might).
-        const allowedOrigin = widget.widgetAllowedOrigin.replace(/\/+$/, '');
+        // widgetAllowedOrigin holds the full campaign page URL (or, for values saved before V85, a
+        // bare origin): only its origin gates the redirect.
+        const allowedOrigin = originOf(widget.widgetAllowedOrigin);
         if (sourceOrigin !== allowedOrigin) {
           console.warn(
-            `[CommonLink widget/return] redirect blocked: source origin "${sourceOrigin}" !== widgetAllowedOrigin "${allowedOrigin}". They must match exactly (scheme + host + port).`,
+            `[CommonLink widget/return] redirect blocked: source origin "${sourceOrigin}" !== campaign page origin "${allowedOrigin}". They must match exactly (scheme + host + port).`,
           );
           return;
         }
 
         setValidatedSource(source);
-
-        if (cancelled) {
-          const top = typeof window !== 'undefined' ? (window.top ?? window) : null;
-          if (top) top.location.href = source;
-        }
+        redirectNowIfCancelled(source);
         // Non-cancelled: the redirect is scheduled by the effect below, once the confirmation poll
         // has settled — never on a fixed timer that could fire before a real (up to 30s late)
         // webhook confirmation.
@@ -150,9 +197,10 @@ export function EmbedDonateReturnClient({ widgetToken, locale, cancelled, source
     if (cancelled || !validatedSource || !pollSettled) return;
     const top = typeof window !== 'undefined' ? (window.top ?? window) : null;
     if (!top) return;
-    const timer = setTimeout(() => { top.location.href = validatedSource; }, POST_RESULT_REDIRECT_DELAY_MS);
+    const target = withDonationSuccessFlag(validatedSource, confirmedRef);
+    const timer = setTimeout(() => { top.location.href = target; }, POST_RESULT_REDIRECT_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [cancelled, validatedSource, pollSettled]);
+  }, [cancelled, validatedSource, pollSettled, confirmedRef]);
 
   const fallbackUrl = `/${locale}/embed/donate/${widgetToken}`;
 

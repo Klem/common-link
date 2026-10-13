@@ -40,6 +40,39 @@ class AssociationServiceTest {
         every { associationRepo.save(mockAssociation) } returns mockAssociation
     }
 
+    // ── updateWidgetConfig: campaign page URL ──────────────────────────────
+
+    private fun storedWidgetUrl(input: String?): String? {
+        val userId = UUID.randomUUID()
+        val profile: AssociationProfile = mockk(relaxed = true)
+        val stored = io.mockk.slot<String?>()
+        every { profile.widgetAllowedOrigin = captureNullable(stored) } returns Unit
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+        service.updateWidgetConfig(userId, input)
+        return stored.captured
+    }
+
+    @Test
+    fun `updateWidgetConfig - keeps the path and query of the campaign page, drops the fragment`() {
+        org.junit.jupiter.api.Assertions.assertEquals(
+            "https://www.asso.fr/campagnes/ete?ref=ads",
+            storedWidgetUrl("  HTTPS://www.Asso.fr/campagnes/ete?ref=ads#don  "),
+        )
+    }
+
+    @Test
+    fun `updateWidgetConfig - a bare origin stays valid`() {
+        org.junit.jupiter.api.Assertions.assertEquals("http://localhost:7001/", storedWidgetUrl("http://localhost:7001"))
+    }
+
+    @Test
+    fun `updateWidgetConfig - clears the setting on a blank or non-http value`() {
+        org.junit.jupiter.api.Assertions.assertNull(storedWidgetUrl(" "))
+        org.junit.jupiter.api.Assertions.assertNull(storedWidgetUrl("javascript:alert(1)"))
+        org.junit.jupiter.api.Assertions.assertNull(storedWidgetUrl("ftp://asso.fr/don"))
+    }
+
     // ── markVerified / revokeAssociation / restoreAssociation ─────────────
 
     @Test

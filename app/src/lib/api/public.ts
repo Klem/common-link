@@ -74,15 +74,28 @@ export const DonationReturnStatus = {
 } as const;
 export type DonationReturnStatus = (typeof DonationReturnStatus)[keyof typeof DonationReturnStatus];
 
+/**
+ * Public status of a donation. Every field beyond `status` is set only once CONFIRMED — these are
+ * the server-side values of the GA4 `purchase` event, never the donor's identity.
+ */
 export interface DonationStatusResponse {
   status: DonationReturnStatus;
-  /** Payment method used by the donor (e.g. `creditcard`, `banktransfer`). Set only when CONFIRMED. */
+  /** Payment method used by the donor (e.g. `creditcard`, `banktransfer`). */
   method?: string;
+  amount?: number;
+  /** ISO 4217 currency of `amount`. */
+  currency?: string;
+  campaignId?: string;
+  campaignName?: string;
+  associationName?: string;
+  /** Whether the donor chose an anonymous display. */
+  anonymous?: boolean;
 }
 
 /**
- * Polls donation confirmation status by the opaque `ref` carried on the Mollie return URL —
- * not the Mollie payment id, not any internal donor/campaign id.
+ * Reads a donation's status by the opaque `ref` carried on the Mollie return URL — not the Mollie
+ * payment id, not any internal donor id. Used by `/return` to wait for confirmation, and by the
+ * CommonLink iframe on the association's page to read the confirmed `purchase` values.
  */
 export const getDonationStatus = (ref: string): Promise<DonationStatusResponse> =>
   publicApi

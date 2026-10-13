@@ -148,16 +148,25 @@ describe('LandingTab — prerequisites and snippets', () => {
     await waitFor(() => screen.getByText('snippet.title'));
     expect(screen.getByText('prereq.tokenActive')).toBeInTheDocument();
     expect(screen.getByText(/Campagne Live/)).toBeInTheDocument();
-    // Direct URL appears twice: standalone link, and inside the iframe fallback snippet.
+    // Direct URL appears twice: standalone link, and inside the iframe snippet.
     expect(screen.getAllByText(/\/fr\/lp\/clk_abc/).length).toBe(2);
     expect(screen.getByText(/landing\.js/)).toBeInTheDocument();
     expect(screen.getByText(/^<iframe/)).toBeInTheDocument();
   });
 
+  it('reminds, in each embed card, to enter the campaign page URL in the Widget tab', async () => {
+    renderTab();
+    await waitFor(() => screen.getByText('snippet.title'));
+    // Script and iframe cards (no GTM configured here, so no standalone HTML card).
+    expect(screen.getAllByText('snippet.returnReminder')).toHaveLength(2);
+    // Prerequisites card + one per reminder.
+    expect(screen.getAllByText('prereq.goToWidget')).toHaveLength(3);
+  });
+
   it('delegates token and campaign configuration to the Widget tab', async () => {
     renderTab();
-    await waitFor(() => screen.getByText('prereq.goToWidget'));
-    fireEvent.click(screen.getByText('prereq.goToWidget'));
+    await waitFor(() => screen.getAllByText('prereq.goToWidget'));
+    fireEvent.click(screen.getAllByText('prereq.goToWidget')[0]);
 
     expect(onGoToWidget).toHaveBeenCalledTimes(1);
     expect(generateWidgetToken).not.toHaveBeenCalled();

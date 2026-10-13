@@ -110,10 +110,12 @@ class AssociationProfile(
     var widgetDestinationCampaign: Campaign? = null,
 
     /**
-     * Allowed origin for widget post-payment redirects (e.g. `https://www.asso-a.fr`).
+     * URL of the page where the association hosts its campaign (e.g. `https://www.asso-a.fr/don`):
+     * the donor is sent back there after payment, and only redirects to its origin are allowed.
+     * Historical values may be a bare origin (stored before V85), which stays valid.
      * Null means no dynamic redirect is permitted — open-redirect protection by default.
      */
-    @Column(name = "widget_allowed_origin", length = 255)
+    @Column(name = "widget_allowed_origin", length = 2048)
     var widgetAllowedOrigin: String? = null,
 
     /** Full street address of the association's registered office (e.g. "42 RUE DE CLICHY 75009 PARIS"). Printed on Cerfa receipts. */

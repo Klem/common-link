@@ -9,6 +9,23 @@ import { CampaignStatus } from '@/types/campaign';
 import type { AssociationProfileDto } from '@/types/association';
 import type { CampaignSummaryDto } from '@/types/campaign';
 
+/**
+ * Mirror of the backend check on `UpdateWidgetConfigRequest.widgetAllowedOrigin` (rule 8): an
+ * absolute http(s) URL with a host, at most 2048 characters. Empty is valid — it clears the setting.
+ */
+const CAMPAIGN_PAGE_URL_MAX_LENGTH = 2048;
+
+function isValidCampaignPageUrl(value: string): boolean {
+  if (!value) return true;
+  if (value.length > CAMPAIGN_PAGE_URL_MAX_LENGTH) return false;
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && !!url.hostname;
+  } catch {
+    return false;
+  }
+}
+
 interface WidgetTabProps {
   profile: AssociationProfileDto | null;
   /** Called after token generation/deletion so the parent hook re-fetches the full profile. */
@@ -28,6 +45,7 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
   const [isSavingCampaign, setIsSavingCampaign] = useState(false);
   const [isGeneratingToken, setIsGeneratingToken] = useState(false);
   const [isSavingOrigin, setIsSavingOrigin] = useState(false);
+  const [originError, setOriginError] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedIframe, setCopiedIframe] = useState(false);
 
@@ -91,9 +109,15 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
   };
 
   const handleSaveOrigin = async () => {
+    const trimmed = origin.trim();
+    if (!isValidCampaignPageUrl(trimmed)) {
+      setOriginError(true);
+      return;
+    }
+    setOriginError(false);
     setIsSavingOrigin(true);
     try {
-      await updateWidgetConfig({ widgetAllowedOrigin: origin.trim() || null });
+      await updateWidgetConfig({ widgetAllowedOrigin: trimmed || null });
       addToast('success', 'widgetAllowedOriginSaved');
     } catch {
       addToast('error', 'errors.serverError');
@@ -206,10 +230,14 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
               type="url"
               className="fi"
               value={origin}
-              onChange={(e) => setOrigin(e.target.value)}
+              onChange={(e) => {
+                setOrigin(e.target.value);
+                setOriginError(false);
+              }}
               placeholder={t('redirect.placeholder')}
               disabled={isSavingOrigin}
             />
+            {originError && <p className="fhint error">{t('redirect.error')}</p>}
           </div>
           <div className="frow-actions">
             <button
@@ -241,6 +269,7 @@ export function WidgetTab({ profile, onTokenChanged }: WidgetTabProps) {
               <div className="fg" style={{ marginBottom: 20 }}>
                 <label className="fl">{t('snippet.label')}</label>
                 <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.snippetHelp')}</p>
+                <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.gtmHint')}</p>
                 <div style={{ position: 'relative' }}>
                   <code
                     className="fi"

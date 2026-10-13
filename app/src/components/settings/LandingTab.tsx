@@ -12,7 +12,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { CampaignStatus } from '@/types/campaign';
 import { LandingTheme, LANDING_THEMES } from '@/types/association';
 import { apiUrl } from '@/lib/api';
-import { GTM_ID_PATTERN, gtmHeadScript, gtmNoscriptIframe } from '@/lib/gtm';
+import { GTM_ID_PATTERN, gtmHeadScript, gtmIframeBridgeScript, gtmNoscriptIframe } from '@/lib/gtm';
 import { CopyableCode } from './CopyableCode';
 import { LandingPreviewModal } from './LandingPreviewModal';
 import type { AssociationProfileDto, UpdateLandingConfigRequest } from '@/types/association';
@@ -39,6 +39,60 @@ const LOGO_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
  */
 const IFRAME_FALLBACK_HEIGHT = 2600;
 
+/** Read-only code field with its own copy button and transient "copied" state. */
+function CopyableTextarea({ value, rows, label, hint, copyLabel, copiedLabel }: {
+  value: string;
+  rows: number;
+  label: string;
+  hint?: string;
+  copyLabel: string;
+  copiedLabel: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <>
+      <label className="fl" style={{ marginTop: 8 }}>{label}</label>
+      {hint && <p className="fhint" style={{ marginBottom: 4 }}>{hint}</p>}
+      <textarea
+        className="fi"
+        readOnly
+        rows={rows}
+        value={value}
+        style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
+        onFocus={(e) => e.target.select()}
+      />
+      <div className="frow-actions" style={{ marginTop: 4 }}>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={copy}>
+          {copied ? copiedLabel : copyLabel}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Reminder shown in every embed card: the association must enter, in the Widget tab, the URL of the
+ * page where it publishes the code — the post-payment return target, and so where `purchase` is sent.
+ */
+function ReturnReminder({ onGoToWidget }: { onGoToWidget: () => void }) {
+  const t = useTranslations('settings.landing');
+  return (
+    <>
+      <p className="fhint" style={{ marginTop: 12, marginBottom: 6 }}>{t('snippet.returnReminder')}</p>
+      <div className="frow-actions">
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onGoToWidget}>
+          {t('prereq.goToWidget')}
+        </button>
+      </div>
+    </>
+  );
+}
+
 /**
  * Landing page settings tab — read-only.
  *
@@ -61,8 +115,6 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
   const [gtmExportCopied, setGtmExportCopied] = useState(false);
   const [gtmExportHtml, setGtmExportHtml] = useState<string | null>(null);
   const [gtmExportFailed, setGtmExportFailed] = useState(false);
-  const [gtmHeadTagCopied, setGtmHeadTagCopied] = useState(false);
-  const [gtmBodyTagCopied, setGtmBodyTagCopied] = useState(false);
 
   useEffect(() => {
     getCampaigns().then(setCampaigns).catch(() => {});
@@ -173,11 +225,14 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
   const showGtmExport = showSnippets && !!profile?.gtmContainerId;
   const gtmContainerId = profile?.gtmContainerId ?? null;
 
-  // The iframe/script embed loads the landing page cross-origin: our own GTM auto-injection
-  // (`GtmSnippet`) only fires inside that iframe's document, never on the association's own page.
-  // Offered as plain copy/paste — same builders the standalone export already uses.
+  // Embedded through `landing.js` or the iframe bridge, the landing page does not load GTM itself
+  // (it would double every event) and relays its events to the host page instead — so these tags
+  // on the association's own page are the only GTM instance. Offered as plain copy/paste — same
+  // builders the standalone export already uses.
   const gtmHeadTag = gtmContainerId ? `<script>${gtmHeadScript(gtmContainerId)}</script>` : '';
   const gtmBodyTag = gtmContainerId ? `<noscript>${gtmNoscriptIframe(gtmContainerId)}</noscript>` : '';
+  // Raw-iframe embed only: it has no CommonLink loader on the host page to relay `begin_checkout` and `purchase`.
+  const gtmBridgeTag = widgetToken ? `<script>${gtmIframeBridgeScript(frontUrl, widgetToken)}</script>` : '';
 
   /**
    * Fetches a fresh standalone export from `/api/gtm-export/{widgetToken}` — a snapshot of the
@@ -219,7 +274,7 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
           <h3>{t('prereq.title')}</h3>
         </div>
         <div className="card-b">
-          <p className="fhint" style={{ marginBottom: 12 }}>{t('prereq.hint')}</p>
+          <p className="fhint" style={{ marginBottom: 8 }}>{t('prereq.hint')}</p>
 
           <div className="lt-prereq-row">
             <span className="lt-prereq-label">{t('prereq.token')}</span>
@@ -255,9 +310,9 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
           <h3>{t('appearance.title')}</h3>
         </div>
         <div className="card-b">
-          <div className="fg" style={{ marginBottom: 24 }}>
+          <div className="fg" style={{ marginBottom: 16 }}>
             <label className="fl">{t('appearance.theme')}</label>
-            <p className="fhint" style={{ marginBottom: 10 }}>{t('appearance.themeHint')}</p>
+            <p className="fhint" style={{ marginBottom: 6 }}>{t('appearance.themeHint')}</p>
             <div className="lt-theme-grid">
               {LANDING_THEMES.map((theme) => (
                 <button
@@ -282,7 +337,7 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
 
           <div className="fg">
             <label className="fl">{t('appearance.logo')}</label>
-            <p className="fhint" style={{ marginBottom: 10 }}>{t('appearance.logoHint')}</p>
+            <p className="fhint" style={{ marginBottom: 6 }}>{t('appearance.logoHint')}</p>
             {profile?.landingLogo ? (
               <div className="lt-logo-row">
                 {/* eslint-disable-next-line @next/next/no-img-element -- served by the API, not /public */}
@@ -321,8 +376,8 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
           <h3>{t('gtm.title')}</h3>
         </div>
         <div className="card-b">
-          <p className="fhint" style={{ marginBottom: 12 }}>{t('gtm.hint')}</p>
-          <div className="fg" style={{ marginBottom: 20 }}>
+          <p className="fhint" style={{ marginBottom: 8 }}>{t('gtm.hint')}</p>
+          <div className="fg" style={{ marginBottom: 12 }}>
             <label className="fl">{t('gtm.label')}</label>
             <input
               type="text"
@@ -336,7 +391,7 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
               disabled={isSaving}
             />
             {gtmError && <p className="fhint error">{t('gtm.error')}</p>}
-            <div className="frow-actions" style={{ marginTop: 10 }}>
+            <div className="frow-actions" style={{ marginTop: 6 }}>
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
@@ -350,132 +405,130 @@ export function LandingTab({ profile, onGoToWidget, onConfigChanged }: LandingTa
         </div>
       </div>
 
-      {/* ── Landing page ──────────────────────────────────────────────── */}
-      <div className="card no-hover">
-        <div className="card-h">
-          <h3>{t('snippet.title')}</h3>
-          {widgetToken && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => setShowPreview(true)}
-            >
-              {t('preview.open')}
-            </button>
-          )}
-        </div>
-        <div className="card-b">
-          {!widgetToken && <p className="fhint">{t('snippet.noToken')}</p>}
-          {widgetToken && !isDestinationLive && (
-            <p className="fhint">{t('snippet.noLiveCampaign')}</p>
-          )}
-          {showSnippets && (
-            <>
-              <div className="fg" style={{ marginBottom: 20 }}>
-                <label className="fl">{t('snippet.url')}</label>
-                <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.urlHelp')}</p>
-                <CopyableCode value={landingUrl} copyLabel={copyLabel} copiedLabel={copiedLabel} />
-              </div>
-              <div className="fg" style={{ marginBottom: 20 }}>
-                <label className="fl">{t('snippet.script')}</label>
-                <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.scriptHelp')}</p>
-                <CopyableCode value={scriptCode} copyLabel={copyLabel} copiedLabel={copiedLabel} />
-              </div>
-              <div className="fg" style={{ marginBottom: showGtmExport ? 20 : 0 }}>
-                <label className="fl">{t('snippet.iframe')}</label>
-                <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.iframeHelp')}</p>
-                <CopyableCode value={iframeCode} copyLabel={copyLabel} copiedLabel={copiedLabel} />
-              </div>
-              {showGtmExport && (
-                <div className="fg" style={{ marginBottom: 20 }}>
-                  <label className="fl">{t('gtm.embed.title')}</label>
-                  <p className="fhint" style={{ marginBottom: 6 }}>{t('gtm.embed.hint')}</p>
-
-                  <p className="fhint" style={{ marginBottom: 4 }}>{t('gtm.embed.headLabel')}</p>
-                  <textarea
-                    className="fi"
-                    readOnly
-                    rows={4}
-                    value={gtmHeadTag}
-                    style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
-                    onFocus={(e) => e.target.select()}
-                  />
-                  <div className="frow-actions" style={{ marginTop: 6, marginBottom: 12 }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => copyToClipboard(gtmHeadTag, setGtmHeadTagCopied)}
-                    >
-                      {gtmHeadTagCopied ? copiedLabel : copyLabel}
-                    </button>
-                  </div>
-
-                  <p className="fhint" style={{ marginBottom: 4 }}>{t('gtm.embed.bodyLabel')}</p>
-                  <textarea
-                    className="fi"
-                    readOnly
-                    rows={2}
-                    value={gtmBodyTag}
-                    style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
-                    onFocus={(e) => e.target.select()}
-                  />
-                  <div className="frow-actions" style={{ marginTop: 6 }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => copyToClipboard(gtmBodyTag, setGtmBodyTagCopied)}
-                    >
-                      {gtmBodyTagCopied ? copiedLabel : copyLabel}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {showGtmExport && (
-                <div className="fg">
-                  <label className="fl">{t('gtm.export.title')}</label>
-                  <p className="fhint" style={{ marginBottom: 6 }}>{t('gtm.export.hint')}</p>
-                  {gtmExportFailed && <p className="fhint error">{t('gtm.export.failed')}</p>}
-                  {!gtmExportFailed && !gtmExportHtml && <p className="fhint">{t('gtm.export.loading')}</p>}
-                  {gtmExportHtml && (
-                    <textarea
-                      className="fi"
-                      readOnly
-                      rows={10}
-                      value={gtmExportHtml}
-                      data-testid="gtm-export-textarea"
-                      style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
-                      onFocus={(e) => e.target.select()}
-                    />
-                  )}
-                  <div className="frow-actions" style={{ marginTop: 10 }}>
-                    {gtmExportHtml && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => copyToClipboard(gtmExportHtml, setGtmExportCopied)}
-                        >
-                          {gtmExportCopied ? copiedLabel : copyLabel}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handleDownloadGtmExport(gtmExportHtml)}
-                        >
-                          {t('gtm.export.download')}
-                        </button>
-                      </>
-                    )}
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={loadGtmExport}>
-                      {t('gtm.export.reload')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      {/* ── Landing page : one card per integration type ──────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h3>{t('snippet.title')}</h3>
+        {widgetToken && (
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowPreview(true)}>
+            {t('preview.open')}
+          </button>
+        )}
       </div>
+      {!widgetToken && <p className="fhint">{t('snippet.noToken')}</p>}
+      {widgetToken && !isDestinationLive && <p className="fhint">{t('snippet.noLiveCampaign')}</p>}
+      {showSnippets && (
+        <>
+          {/* Direct link */}
+          <div className="card no-hover" style={{ marginBottom: 24 }}>
+            <div className="card-h">
+              <h3>{t('snippet.url')}</h3>
+            </div>
+            <div className="card-b">
+              <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.urlHelp')}</p>
+              <CopyableCode value={landingUrl} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+            </div>
+          </div>
+
+          {/* Google Tag Manager on the association's page — shared by the script and iframe cards */}
+          {showGtmExport && (
+            <div className="card no-hover" style={{ marginBottom: 24 }}>
+              <div className="card-h">
+                <h3>{t('gtm.embed.title')}</h3>
+              </div>
+              <div className="card-b">
+                <p className="fhint" style={{ marginBottom: 6 }}>{t('gtm.embed.hint')}</p>
+                <CopyableTextarea value={gtmHeadTag} rows={3} label={t('gtm.embed.headLabel')} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+                <CopyableTextarea value={gtmBodyTag} rows={2} label={t('gtm.embed.bodyLabel')} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+              </div>
+            </div>
+          )}
+
+          {/* Script snippet */}
+          <div className="card no-hover" style={{ marginBottom: 24 }}>
+            <div className="card-h">
+              <h3>{t('snippet.script')}</h3>
+            </div>
+            <div className="card-b">
+              <label className="fl">{t('snippet.scriptHelpTitle')}</label>
+              <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.scriptHelpDetail')}</p>
+              <CopyableCode value={scriptCode} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+              <ReturnReminder onGoToWidget={onGoToWidget} />
+            </div>
+          </div>
+
+          {/* Raw iframe */}
+          <div className="card no-hover" style={{ marginBottom: 24 }}>
+            <div className="card-h">
+              <h3>{t('snippet.iframe')}</h3>
+            </div>
+            <div className="card-b">
+              <label className="fl">{t('snippet.iframeHelpTitle')}</label>
+              <p className="fhint" style={{ marginBottom: 6 }}>{t('snippet.iframeHelpDetail')}</p>
+              <CopyableCode value={iframeCode} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+              {showGtmExport && (
+                <CopyableTextarea
+                  value={gtmBridgeTag}
+                  rows={3}
+                  label={t('gtm.embed.bridgeLabel')}
+                  hint={t('gtm.embed.bridgeHint')}
+                  copyLabel={copyLabel}
+                  copiedLabel={copiedLabel}
+                />
+              )}
+              <ReturnReminder onGoToWidget={onGoToWidget} />
+            </div>
+          </div>
+
+          {/* Standalone HTML */}
+          {showGtmExport && (
+            <div className="card no-hover" style={{ marginBottom: 24 }}>
+              <div className="card-h">
+                <h3>{t('gtm.export.title')}</h3>
+              </div>
+              <div className="card-b">
+                <p className="fhint" style={{ marginBottom: 6 }}>{t('gtm.export.hint')}</p>
+                {gtmExportFailed && <p className="fhint error">{t('gtm.export.failed')}</p>}
+                {!gtmExportFailed && !gtmExportHtml && <p className="fhint">{t('gtm.export.loading')}</p>}
+                {gtmExportHtml && (
+                  <textarea
+                    className="fi"
+                    readOnly
+                    rows={8}
+                    value={gtmExportHtml}
+                    data-testid="gtm-export-textarea"
+                    style={{ fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
+                    onFocus={(e) => e.target.select()}
+                  />
+                )}
+                <div className="frow-actions" style={{ marginTop: 6 }}>
+                  {gtmExportHtml && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => copyToClipboard(gtmExportHtml, setGtmExportCopied)}
+                      >
+                        {gtmExportCopied ? copiedLabel : copyLabel}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleDownloadGtmExport(gtmExportHtml)}
+                      >
+                        {t('gtm.export.download')}
+                      </button>
+                    </>
+                  )}
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={loadGtmExport}>
+                    {t('gtm.export.reload')}
+                  </button>
+                </div>
+                <ReturnReminder onGoToWidget={onGoToWidget} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {showPreview && widgetToken && (
         <LandingPreviewModal widgetToken={widgetToken} onClose={() => setShowPreview(false)} />

@@ -15,6 +15,7 @@ vi.mock('@/lib/api/association', () => ({
   generateWidgetToken: vi.fn(),
   deleteWidgetToken: vi.fn(),
   updateAssociationProfile: vi.fn(),
+  updateWidgetConfig: vi.fn(),
 }));
 
 vi.mock('@/stores/toastStore', () => ({
@@ -22,7 +23,7 @@ vi.mock('@/stores/toastStore', () => ({
 }));
 
 import { getCampaigns } from '@/lib/api/campaign';
-import { generateWidgetToken, updateAssociationProfile } from '@/lib/api/association';
+import { generateWidgetToken, updateAssociationProfile, updateWidgetConfig } from '@/lib/api/association';
 
 const mockGetCampaigns = getCampaigns as ReturnType<typeof vi.fn>;
 const mockGenerateWidgetToken = generateWidgetToken as ReturnType<typeof vi.fn>;
@@ -157,5 +158,38 @@ describe('WidgetTab', () => {
     await waitFor(() => screen.getAllByText('snippet.label'));
     expect(screen.getByText(/widget\.js/)).toBeInTheDocument();
     expect(screen.getByText(/embed\/donate\/clk_abc/)).toBeInTheDocument();
+  });
+});
+
+describe('WidgetTab campaign page URL', () => {
+  const mockUpdateWidgetConfig = updateWidgetConfig as ReturnType<typeof vi.fn>;
+
+  it('saves the full campaign page URL, path included', async () => {
+    mockGetCampaigns.mockResolvedValue([]);
+    mockUpdateWidgetConfig.mockResolvedValue(undefined);
+    render(<WidgetTab profile={baseProfile} onTokenChanged={onTokenChanged} />);
+
+    fireEvent.change(screen.getByPlaceholderText('redirect.placeholder'), {
+      target: { value: ' https://asso.fr/campagnes/ete ' },
+    });
+    fireEvent.click(screen.getByText('redirect.save'));
+
+    await waitFor(() =>
+      expect(mockUpdateWidgetConfig).toHaveBeenCalledWith({ widgetAllowedOrigin: 'https://asso.fr/campagnes/ete' }),
+    );
+    expect(screen.queryByText('redirect.error')).not.toBeInTheDocument();
+  });
+
+  it('refuses a value that is not an http(s) URL, without calling the API', async () => {
+    mockGetCampaigns.mockResolvedValue([]);
+    render(<WidgetTab profile={baseProfile} onTokenChanged={onTokenChanged} />);
+
+    fireEvent.change(screen.getByPlaceholderText('redirect.placeholder'), {
+      target: { value: 'asso.fr/campagne' },
+    });
+    fireEvent.click(screen.getByText('redirect.save'));
+
+    expect(await screen.findByText('redirect.error')).toBeInTheDocument();
+    expect(mockUpdateWidgetConfig).not.toHaveBeenCalled();
   });
 });
