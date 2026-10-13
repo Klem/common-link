@@ -7,6 +7,7 @@ import org.commonlink.config.MollieConnectConfig
 import org.commonlink.config.MollieProperties
 import org.commonlink.config.OnboardingApi
 import org.commonlink.dto.MollieKycStatusDto
+import org.commonlink.exception.MollieOrganizationAlreadyLinkedException
 import org.commonlink.event.MollieOnboardingStatusChangedEvent
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MollieConnection
@@ -720,7 +721,7 @@ class MollieConnectService(
                 "Refusing Mollie org {} link to association {} — already bound to {}",
                 organizationId, associationId, existingForOrg.association.id,
             )
-            throw IllegalStateException("Mollie organization already linked to another association")
+            throw MollieOrganizationAlreadyLinkedException()
         }
 
         val association = associationRepo.findById(associationId)

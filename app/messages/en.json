@@ -2039,7 +2039,9 @@
     "molliePopup": {
       "error": {
         "retry": "Please try again from the profile page.",
-        "title": "Connection failed"
+        "title": "Connection failed",
+        "organizationAlreadyLinked": "This Mollie account is already linked to another association on CommonLink: a Mollie account can only be linked to one association. Reconnect with your own association's Mollie account, or contact us if you think this is a mistake.",
+        "closing": "This window will close in {seconds} s."
       },
       "success": {
         "closing": "Closing window…",

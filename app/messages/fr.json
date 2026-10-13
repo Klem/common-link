@@ -2039,7 +2039,9 @@
     "molliePopup": {
       "error": {
         "retry": "Veuillez réessayer depuis la page profil.",
-        "title": "Connexion échouée"
+        "title": "Connexion échouée",
+        "organizationAlreadyLinked": "Ce compte Mollie est déjà rattaché à une autre association sur CommonLink : un compte Mollie ne peut être relié qu'à une seule association. Reconnectez-vous avec le compte Mollie de votre association, ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
+        "closing": "Cette fenêtre se fermera dans {seconds} s."
       },
       "success": {
         "closing": "Fermeture de la fenêtre…",

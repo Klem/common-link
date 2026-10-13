@@ -15,6 +15,7 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.exception.MollieOrganizationAlreadyLinkedException
 import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieOnboardingContextService
 import org.junit.jupiter.api.Test
@@ -259,6 +260,24 @@ class MollieConnectControllerTest {
         )
             .andExpect(status().isFound)
             .andExpect(header().string("Location", "http://localhost:3000/en/mollie-connect/error"))
+    }
+
+    @Test
+    fun `handleCallback - 302 to error with a reason when the Mollie organization is already linked`() {
+        every { mollieConnectService.handleCallback(any(), any()) } throws MollieOrganizationAlreadyLinkedException()
+
+        mockMvc.perform(
+            get("/api/public/webhooks/mollie-connect")
+                .param("code", "auth_123")
+                .param("state", "state_456")
+        )
+            .andExpect(status().isFound)
+            .andExpect(
+                header().string(
+                    "Location",
+                    "http://localhost:3000/en/mollie-connect/error?reason=organization-already-linked",
+                )
+            )
     }
 
     // ── GET /api/mollie/connect/onboarding-context ────────────────────────────

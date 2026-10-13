@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import MollieOnboardModal from '../MollieOnboardModal';
 
 vi.mock('next-intl', () => {
@@ -61,6 +61,30 @@ describe('MollieOnboardModal', () => {
     await waitFor(() => expect(screen.getByText('steps.account.title')).toBeInTheDocument());
     expect(screen.getByText('mollie.modal.waiting')).toBeInTheDocument();
     expect(screen.queryByText('items.registration.mollieLabel')).not.toBeInTheDocument();
+  });
+
+  it('keeps the Mollie popup and the modal on an error message, until the popup closes itself', async () => {
+    vi.useFakeTimers();
+    const popup = { closed: false, close: vi.fn() };
+    vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    const onClose = vi.fn();
+    const onPopupClosed = vi.fn();
+    renderModal({ onClose, onPopupClosed });
+
+    await act(async () => { fireEvent.click(screen.getByText('mollie.modal.connect')); });
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent('message', { origin: window.location.origin, data: { type: 'MOLLIE_KYC_ERROR' } }));
+    });
+
+    // The popup page explains the failure and closes itself: the opener must not kill it early.
+    expect(popup.close).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+
+    popup.closed = true;
+    await act(async () => { vi.advanceTimersByTime(600); });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onPopupClosed).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 
   it('renders nothing when closed', () => {

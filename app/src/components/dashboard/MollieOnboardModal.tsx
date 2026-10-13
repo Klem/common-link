@@ -82,17 +82,15 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
         onClose();
         addToast('success', 'mollieConnected');
       } else if (event.data?.type === MolliePopupMessage.ERROR) {
-        closePopup();
-        setIsConnecting(false);
+        // The popup stays up on purpose: its error page explains the failure and closes itself
+        // after a countdown. The modal is released by the "popup closed" poll below.
         addToast('error', 'mollieError');
-        onClose();
-        onPopupClosed?.();
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [isOpen, onConnected, onClose, addToast, closePopup, onPopupClosed]);
+  }, [isOpen, onConnected, onClose, addToast, closePopup]);
 
   /** Detects when the user manually closes the popup window and refreshes the status. */
   useEffect(() => {

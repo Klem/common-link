@@ -47,3 +47,13 @@ class MollieRefreshUnavailableException(
     val status: HttpStatusCode? = null,
     message: String = "Mollie refresh temporarily unavailable (status=$status)",
 ) : MollieRefreshException(message)
+
+/**
+ * Raised by [org.commonlink.service.MollieConnectService.handleCallback] when the Mollie organization
+ * the user authorised is already bound to another association (one Mollie organization maps to a
+ * single association).
+ * Extends [IllegalStateException] so existing callers keep treating it as a failed callback; the
+ * OAuth callback controller maps it to a dedicated reason so the popup can explain it.
+ */
+class MollieOrganizationAlreadyLinkedException :
+    IllegalStateException("Mollie organization already linked to another association")
