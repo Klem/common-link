@@ -2851,7 +2851,8 @@
             "refreshing": "Actualisation…"
           },
           "back": "Mon kit de pièces",
-          "next": "J'ai envoyé mon dossier, étape suivante"
+          "next": "J'ai envoyé mon dossier, étape suivante",
+          "nextBlocked": "Connectez-vous d'abord à Mollie : le paiement test se fait dans votre compte Mollie, qui n'existe pas encore tant que la connexion n'est pas établie."
         },
         "testPayment": {
           "title": "Paiement test de 0,01 €",

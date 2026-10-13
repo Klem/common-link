@@ -2851,7 +2851,8 @@
             "refreshing": "Refreshing…"
           },
           "back": "My document kit",
-          "next": "I have submitted my file, next step"
+          "next": "I have submitted my file, next step",
+          "nextBlocked": "Connect to Mollie first: the test payment is made in your Mollie account, which does not exist until the connection is established."
         },
         "testPayment": {
           "title": "0.01 € test payment",

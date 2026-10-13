@@ -77,8 +77,8 @@ export default function MollieOnboardingFlow({
   const tM = useTranslations('settings');
   const tO = useTranslations('settings.mollie.onboarding');
   const locale = useLocale();
-  const [screen, setScreen] = useState<OnboardingScreen>(() => readStoredScreen(profile?.id));
-  useEffect(() => storeScreen(profile?.id, screen), [profile?.id, screen]);
+  const [visitedScreen, setScreen] = useState<OnboardingScreen>(() => readStoredScreen(profile?.id));
+  useEffect(() => storeScreen(profile?.id, visitedScreen), [profile?.id, visitedScreen]);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [testAck, setTestAck] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -102,6 +102,9 @@ export default function MollieOnboardingFlow({
   const view = resolveFlowView(flowState);
   const notice = view === FlowView.FLOW ? flowNotice(flowState) : null;
   const connected = kyc.connected === true;
+  // Screens past "Remplir chez Mollie" announce a dossier that only exists once connected: without a
+  // connection (restored screen, or navigation before connecting) the user is held on screen 3.
+  const screen = !connected && visitedScreen > OnboardingScreen.FILL ? OnboardingScreen.FILL : visitedScreen;
   const connectedNeedsData = connected && kyc.onboardingStatus === MollieOnboardingStatus.NEEDS_DATA;
   const isActiveView = view === FlowView.ACTIVE || view === FlowView.ACTIVE_NO_PAYMENTS;
 
@@ -299,6 +302,7 @@ export default function MollieOnboardingFlow({
           onRefresh={() => void forceRefresh()}
           refreshing={refreshing}
           onBack={() => goTo(OnboardingScreen.KIT)}
+          nextDisabled={!connected}
           onNext={() => goTo(OnboardingScreen.TEST_PAYMENT)}
         />
       )}

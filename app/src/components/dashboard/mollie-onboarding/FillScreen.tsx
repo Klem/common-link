@@ -29,6 +29,8 @@ interface FillScreenProps {
   onRefresh: () => void;
   refreshing: boolean;
   onBack: () => void;
+  /** Disables "next": the test payment is made in the Mollie account, which needs a connection. */
+  nextDisabled: boolean;
   onNext: () => void;
 }
 
@@ -50,6 +52,7 @@ export default function FillScreen({
   onRefresh,
   refreshing,
   onBack,
+  nextDisabled,
   onNext,
 }: FillScreenProps) {
   const t = useTranslations('settings.mollie.onboarding.fill');
@@ -112,10 +115,11 @@ export default function FillScreen({
         <button type="button" className="btn btn-ghost" onClick={onBack}>
           <span aria-hidden="true">←</span> {t('back')}
         </button>
-        <button type="button" className="btn btn-primary" onClick={onNext}>
+        <button type="button" className="btn btn-primary" onClick={onNext} disabled={nextDisabled}>
           {t('next')}
         </button>
       </div>
+      {nextDisabled && <p className="small muted" role="status">{t('nextBlocked')}</p>}
     </section>
   );
 }

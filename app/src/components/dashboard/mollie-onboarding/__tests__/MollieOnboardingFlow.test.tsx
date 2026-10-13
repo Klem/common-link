@@ -120,6 +120,15 @@ describe('MollieOnboardingFlow — last visited screen', () => {
     expect(await screen.findByRole('button', { name: 'back' })).toBeInTheDocument();
   });
 
+  it('holds the user on screen 3 without a Mollie connection, with an explanation', () => {
+    window.localStorage.setItem('cl.mollieOnboarding.screen.asso-1', '4');
+    renderFlow({ profile: withId });
+
+    expect(screen.queryByText('testPayment.title')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'next' })).toBeDisabled();
+    expect(screen.getByText('nextBlocked')).toBeInTheDocument();
+  });
+
   it('starts on screen 0 for an association with no stored screen, or an invalid one', () => {
     window.localStorage.setItem('cl.mollieOnboarding.screen.asso-1', '99');
     renderFlow({ profile: withId });
