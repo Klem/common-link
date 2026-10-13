@@ -2809,6 +2809,12 @@
           "openMollie": "I have everything, open Mollie"
         },
         "contextError": "We could not load the information from your CommonLink verification.",
+        "devBanner": {
+          "title": "Test mode: simulated validation available",
+          "text": "This banner only exists when simulated validation is enabled on the server (dev and staging, never in production). \"Force\" marks your Mollie account as validated without going through Mollie's verification, so you can run the whole flow up to the \"Active\" screen and test the interface end to end.",
+          "needsConnection": "Connect Mollie first (\"Fill in at Mollie\" screen): there must be an existing connection to validate.",
+          "force": "Force"
+        },
         "retry": "Try again",
         "refreshedAt": "Status updated at {time}",
         "loading": {

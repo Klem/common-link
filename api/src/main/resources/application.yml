@@ -152,7 +152,7 @@ app:
       #Mock the entire mollie process
       mock: ${MOLLIE_CONNECT_MOCK:false}
       #Force the Onboarding / KYC to "true"
-      allow-fake-completion: ${MOLLIE_CONNECT_ALLOW_FAKE_COMPLETION:false}
+      allow-fake-completion: ${MOLLIE_CONNECT_ALLOW_FAKE_COMPLETION:true}
       #Never re-poll Mollie for onboarding status — DB value (however set) stays authoritative for tests
       disable-onboarding-sync: ${MOLLIE_CONNECT_DISABLE_ONBOARDING_SYNC:true}
       # Proactive access-token renewal. Refresh is otherwise lazy — nothing calls it until a

@@ -414,13 +414,23 @@ describe('MollieOnboardingFlow — screen 5 "Vérification" (S4)', () => {
     expect(open).toHaveBeenCalledWith('https://my.mollie.com/dashboard/onboarding', '_blank', 'noopener,noreferrer');
   });
 
-  it('keeps the dev force-complete button gated by canForceComplete', () => {
+  it('shows the red dev banner with its force button only when canForceComplete', () => {
     const { onForceComplete } = renderFlow({
       kyc: kyc({ connected: true, onboardingStatus: MollieOnboardingStatus.IN_REVIEW, canForceComplete: true }),
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'mollie.devForceComplete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'devBanner.force' }));
     expect(onForceComplete).toHaveBeenCalled();
+  });
+
+  it('hides the dev banner without canForceComplete, and disables "force" until Mollie is connected', () => {
+    const first = renderFlow();
+    expect(screen.queryByText('devBanner.title')).not.toBeInTheDocument();
+    first.unmount();
+
+    renderFlow({ kyc: kyc({ canForceComplete: true }) });
+    expect(screen.getByText('devBanner.needsConnection')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'devBanner.force' })).toBeDisabled();
   });
 });
 

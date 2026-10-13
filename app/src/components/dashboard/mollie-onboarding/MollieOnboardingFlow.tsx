@@ -164,10 +164,22 @@ export default function MollieOnboardingFlow({
     }
   };
 
-  const devForceCompleteButton = kyc.canForceComplete && kyc.connected && kyc.onboardingStatus !== 'COMPLETED' && (
-    <button type="button" onClick={onForceComplete} className="btn btn-ghost btn-sm mt-3">
-      {tM('mollie.devForceComplete')}
-    </button>
+  // DEV/STAGING only (server flag allow-fake-completion): lets a tester finish the flow without
+  // Mollie's real verification. The server rejects it without an existing connection.
+  const devBanner = kyc.canForceComplete && !(connected && kyc.onboardingStatus === MollieOnboardingStatus.COMPLETED) && (
+    <div className="alert alert-error mob-alert-bottom" role="region" aria-label={tO('devBanner.title')}>
+      <span className="alert-icon" aria-hidden="true">🛠️</span>
+      <div className="mob-warn-body">
+        <div><strong>{tO('devBanner.title')}</strong></div>
+        <div>{tO('devBanner.text')}</div>
+        {!connected && <div className="small">{tO('devBanner.needsConnection')}</div>}
+        <div className="row mob-warn-actions">
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onForceComplete} disabled={!connected}>
+            {tO('devBanner.force')}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 
   const refreshedAt = kyc.lastUpdatedAt && (
@@ -181,8 +193,8 @@ export default function MollieOnboardingFlow({
   if (view === FlowView.LOADING) {
     return (
       <div className="mob-flow">
+        {devBanner}
         <LoadingState />
-        {devForceCompleteButton}
       </div>
     );
   }
@@ -190,6 +202,7 @@ export default function MollieOnboardingFlow({
   if (view === FlowView.BROKEN) {
     return (
       <div className="mob-flow">
+        {devBanner}
         {refreshedAt}
         <BrokenState
           onReconnect={() => {
@@ -198,7 +211,6 @@ export default function MollieOnboardingFlow({
             onReconnect();
           }}
         />
-        {devForceCompleteButton}
       </div>
     );
   }
@@ -232,6 +244,7 @@ export default function MollieOnboardingFlow({
 
   return (
     <div className="mob-flow">
+      {devBanner}
       {refreshedAt}
       {stepper}
 
@@ -334,7 +347,6 @@ export default function MollieOnboardingFlow({
       )}
 
       <HelpCard />
-      {devForceCompleteButton}
     </div>
   );
 }

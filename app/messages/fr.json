@@ -2809,6 +2809,12 @@
           "openMollie": "J'ai tout, ouvrir Mollie"
         },
         "contextError": "Nous n'avons pas pu charger les informations de votre vérification CommonLink.",
+        "devBanner": {
+          "title": "Mode test : validation simulée disponible",
+          "text": "Ce bandeau n'existe que lorsque la validation simulée est activée sur le serveur (dev et staging, jamais en production). « Forcer » marque votre compte Mollie comme validé sans passer par la vérification de Mollie, pour parcourir tout le tunnel jusqu'à l'écran « Actif » et tester l'interface de bout en bout.",
+          "needsConnection": "Connectez d'abord Mollie (écran « Remplir chez Mollie ») : il faut une connexion existante à valider.",
+          "force": "Forcer"
+        },
         "retry": "Réessayer",
         "refreshedAt": "Statut actualisé à {time}",
         "loading": {
