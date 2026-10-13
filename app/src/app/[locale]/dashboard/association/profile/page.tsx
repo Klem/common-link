@@ -100,6 +100,34 @@ function toFormData(profile: AssociationProfileDto): ProfileFormData {
 
 type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget' | 'landing';
 
+const SETTINGS_TABS: readonly SettingsTab[] = ['infos', 'verif', 'bank', 'mandate', 'widget', 'landing'];
+
+/** @return the tab named by `value`, or null when it is not a known tab. */
+const parseSettingsTab = (value: string | null): SettingsTab | null =>
+  SETTINGS_TABS.find((tab) => tab === value) ?? null;
+
+const tabStorageKey = (associationId: string) => `cl.associationProfile.activeTab.${associationId}`;
+
+/** Last visited tab of an association; storage may be unavailable, so any failure yields null. */
+function readStoredTab(associationId: string | undefined): SettingsTab | null {
+  if (!associationId) return null;
+  try {
+    return parseSettingsTab(window.localStorage.getItem(tabStorageKey(associationId)));
+  } catch {
+    return null;
+  }
+}
+
+/** Remembers the last visited tab; a convenience only, failures are ignored. */
+function storeTab(associationId: string | undefined, tab: SettingsTab): void {
+  if (!associationId) return;
+  try {
+    window.localStorage.setItem(tabStorageKey(associationId), tab);
+  } catch {
+    // Persistence is a convenience only.
+  }
+}
+
 const PROVIDER_KEYS = {
   GOOGLE: 'association.profile.security.google',
   EMAIL: 'association.profile.security.email',
@@ -166,18 +194,21 @@ export default function AssociationProfilePage() {
   // changes later (e.g. bankDone flipping during the bank tab's background refresh) must not move the
   // user away from the tab they are on. A new query string (client navigation) is applied again.
   const appliedDeepLink = useRef<string | null>(null);
+  // Remembers the active tab, but only once the restore above has run: persisting the initial
+  // 'infos' would overwrite the stored tab before it is read.
+  const tabRestored = useRef(false);
+  useEffect(() => {
+    if (tabRestored.current) storeTab(profile?.id, activeTab);
+  }, [activeTab, profile?.id]);
   useEffect(() => {
     if (isLoading || mandateLoading || mollieLoading) return;
     const query = searchParams.toString();
     if (appliedDeepLink.current === query) return;
     appliedDeepLink.current = query;
-    const tab = searchParams.get('tab');
-    if (
-      tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' ||
-      tab === 'widget' || tab === 'landing'
-    ) {
-      setActiveTab(tabUnlocked[tab] ? tab : 'infos');
-    }
+    // An explicit ?tab= wins; otherwise the last visited tab is restored (e.g. after a page reload).
+    const tab = parseSettingsTab(searchParams.get('tab')) ?? readStoredTab(profile?.id);
+    if (tab) setActiveTab(tabUnlocked[tab] ? tab : 'infos');
+    tabRestored.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isLoading, mandateLoading, mollieLoading, verifDone, mandateDone, bankDone]);
 

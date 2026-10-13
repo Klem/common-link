@@ -116,6 +116,7 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
   beforeEach(() => {
     mollie = {};
     tabParam = null;
+    window.localStorage.clear();
     forceRefresh.mockReset().mockResolvedValue(undefined);
     refresh.mockReset().mockResolvedValue(undefined);
     mockAttest.mockReset().mockResolvedValue({ attestedAt: '2026-10-12T09:41:00Z' });
@@ -143,6 +144,29 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
     expect(screen.getByText('notices.interrupted')).toBeInTheDocument();
     expect(screen.queryByText('notices.pending')).not.toBeInTheDocument();
     expect(screen.getByText('notices.retry')).toBeInTheDocument();
+  });
+
+  it('remembers the active tab and reopens on it after a reload', async () => {
+    const first = openBankTab();
+    first.unmount();
+
+    render(<AssociationProfilePage />);
+    await waitFor(() => expect(tabButton('bank ')).toHaveClass('active'));
+  });
+
+  it('lets an explicit ?tab= deep link win over the remembered tab', async () => {
+    window.localStorage.setItem('cl.associationProfile.activeTab.uuid-1', 'bank');
+    tabParam = 'verif';
+    render(<AssociationProfilePage />);
+
+    await waitFor(() => expect(tabButton('verif')).toHaveClass('active'));
+  });
+
+  it('falls back to the first tab when the remembered one is still locked', async () => {
+    window.localStorage.setItem('cl.associationProfile.activeTab.uuid-1', 'widget');
+    render(<AssociationProfilePage />);
+
+    await waitFor(() => expect(tabButton('infos')).toHaveClass('active'));
   });
 
   it('stays on the bank tab after a successful connection (Q5)', async () => {

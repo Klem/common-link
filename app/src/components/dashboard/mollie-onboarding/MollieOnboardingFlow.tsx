@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { UseMollieKycStatusReturn } from '@/hooks/mollie/useMollieKycStatus';
 import { attestMollieSelfCompletion } from '@/lib/api/mollie-connect';
 import type { AssociationProfileDto } from '@/types/association';
 import { MollieOnboardingStatus } from '@/types/mollie-connect';
 import { buildKitRows, onboardingPeople } from './documentKit';
-import { FlowNotice, FlowView, OnboardingScreen, SCREEN_TO_STEP, flowNotice, resolveFlowView } from './onboardingFlow';
+import { FlowNotice, FlowView, OnboardingScreen, SCREEN_TO_STEP, flowNotice, readStoredScreen, resolveFlowView, storeScreen } from './onboardingFlow';
 import OnboardingStepper from './OnboardingStepper';
 import WelcomeScreen from './WelcomeScreen';
 import StructureScreen from './StructureScreen';
@@ -77,7 +77,8 @@ export default function MollieOnboardingFlow({
   const tM = useTranslations('settings');
   const tO = useTranslations('settings.mollie.onboarding');
   const locale = useLocale();
-  const [screen, setScreen] = useState<OnboardingScreen>(OnboardingScreen.WELCOME);
+  const [screen, setScreen] = useState<OnboardingScreen>(() => readStoredScreen(profile?.id));
+  useEffect(() => storeScreen(profile?.id, screen), [profile?.id, screen]);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [testAck, setTestAck] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

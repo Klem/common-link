@@ -16,6 +16,50 @@ export const OnboardingScreen = {
 } as const;
 export type OnboardingScreen = typeof OnboardingScreen[keyof typeof OnboardingScreen];
 
+/** Local screens (0-4) a user can navigate to; the others are driven by the server status. */
+const LOCAL_SCREENS: readonly OnboardingScreen[] = [
+  OnboardingScreen.WELCOME,
+  OnboardingScreen.STRUCTURE,
+  OnboardingScreen.KIT,
+  OnboardingScreen.FILL,
+  OnboardingScreen.TEST_PAYMENT,
+];
+
+const screenStorageKey = (associationId: string) => `cl.mollieOnboarding.screen.${associationId}`;
+
+/**
+ * Last local screen visited by an association, so coming back to the bank tab (tab switch or page
+ * reload) does not replay the earlier steps. Storage may be unavailable (private window, blocked
+ * site data): every failure falls back to the welcome screen.
+ *
+ * @param associationId profile id; without it nothing is persisted.
+ * @return the stored local screen, or [OnboardingScreen.WELCOME].
+ */
+export function readStoredScreen(associationId: string | undefined): OnboardingScreen {
+  if (!associationId || typeof window === 'undefined') return OnboardingScreen.WELCOME;
+  try {
+    const stored = Number(window.localStorage.getItem(screenStorageKey(associationId)));
+    return LOCAL_SCREENS.find((screen) => screen === stored) ?? OnboardingScreen.WELCOME;
+  } catch {
+    return OnboardingScreen.WELCOME;
+  }
+}
+
+/**
+ * Remembers the last local screen visited (see [readStoredScreen]); no-op without an id or storage.
+ *
+ * @param associationId profile id.
+ * @param screen the screen to remember.
+ */
+export function storeScreen(associationId: string | undefined, screen: OnboardingScreen): void {
+  if (!associationId || typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(screenStorageKey(associationId), String(screen));
+  } catch {
+    // Persistence is a convenience only.
+  }
+}
+
 /** Stepper steps, in display order; each value is the i18n key under `settings.mollie.onboarding.stepper.steps`. */
 export const ONBOARDING_STEPS = ['prepare', 'fill', 'testPayment', 'review', 'active'] as const;
 

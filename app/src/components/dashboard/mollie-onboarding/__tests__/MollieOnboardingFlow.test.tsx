@@ -100,6 +100,33 @@ async function goToScreen(target: 1 | 2) {
   if (target === 2) fireEvent.click(screen.getByRole('button', { name: 'continue' }));
 }
 
+describe('MollieOnboardingFlow — last visited screen', () => {
+  const withId = { ...profile, id: 'asso-1' } as AssociationProfileDto;
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    mockGetContext.mockReset().mockResolvedValue(context());
+  });
+  afterEach(() => window.localStorage.clear());
+
+  it('reopens on the last visited screen after leaving and coming back to the tab', async () => {
+    const first = renderFlow({ profile: withId });
+    await goToScreen(2);
+    first.unmount();
+
+    renderFlow({ profile: withId });
+    expect(screen.queryByRole('button', { name: 'start' })).not.toBeInTheDocument();
+    expect(screen.getByRole('listitem', { current: 'step' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'back' })).toBeInTheDocument();
+  });
+
+  it('starts on screen 0 for an association with no stored screen, or an invalid one', () => {
+    window.localStorage.setItem('cl.mollieOnboarding.screen.asso-1', '99');
+    renderFlow({ profile: withId });
+    expect(screen.getByRole('button', { name: 'start' })).toBeInTheDocument();
+  });
+});
+
 describe('MollieOnboardingFlow — preparation screens (S3)', () => {
   beforeEach(() => {
     mockGetContext.mockReset().mockResolvedValue(context());
