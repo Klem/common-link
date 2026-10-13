@@ -154,6 +154,10 @@ The act of recording a donation proof on the blockchain. This includes the amoun
 A visual chart in the donor dashboard showing the proportion of the donor's contribution relative to the total raised amount for a given campaign.
 `functional`
 
+### Complement Requested
+Bank account tab state meaning Mollie sent the dossier back for more information: the connection is `NEEDS_DATA` **and** a sync has already observed `IN_REVIEW` for it (`in_review_observed`, V84, never reset). Exposed as `complementRequested` in the KYC status DTO. Only as reliable as the observations: an `IN_REVIEW` phase shorter than the sync interval (5 min) is never observed, and with `disable-onboarding-sync` true (local, staging) it cannot appear at all. See [[Mollie Status Sync]].
+`functional` `integration` `association`
+
 ### CORS (Cross-Origin Resource Sharing)
 A security mechanism that restricts which domains can communicate with the backend API. Only the authorized frontend URL is allowed — no other website can make requests to the API.
 `technical` `security`
@@ -203,6 +207,10 @@ decision D4), and the on-chain registry banner. Not to be confused with `Campaig
 unrelated abuse-reporting feature ("Report this campaign"). Backed by
 `DonorCampaignReportService.getReport`, gated by `DonorReadScope.assertHasDonatedTo`.
 `functional` `technical`
+
+### Dormant Connection
+A Mollie connection that has been `NEEDS_DATA` for more than `app.mollie.connect.onboarding-sync.dormant-after-days` (7) days, measured from `onboarding_status_since`. The scheduled sweep of [[Mollie Status Sync]] polls it every hour instead of every 5 minutes. Only `NEEDS_DATA` can be dormant: an `IN_REVIEW` connection keeps the 5-minute cadence however long the review lasts. For rows that existed before V84, `onboarding_status_since` was backfilled from `connected_at`.
+`technical` `integration`
 
 ### Donor Profile
 The profile attached to a donor account. Contains: display name, avatar, and anonymity preference. Created automatically (empty) at registration.
@@ -352,8 +360,9 @@ A local-development mode for the blockchain layer. Activated by setting `onchain
   OAuth popup + client-link / partner creation intact: you go through the genuine flow, then simulate
   only the final validation Mollie has no dashboard button for. Gated declaratively via
   `@ConditionalOnProperty` (same style as `MockOnchainRegistry`): in production the flag is `false`,
-  the controller bean never exists, and the route returns **404**. Once COMPLETED,
-  `refreshOnboardingStatusIfStale` never re-polls Mollie, so the state is durable.
+  the controller bean never exists, and the route returns **404**. The forced state is COMPLETED
+  **with** `canReceivePayments`, i.e. a connection that collects: no [[Mollie Status Sync]] path
+  ever re-polls such a connection, so the state is durable.
 
 - **Mollie test mode** — In Mollie's sandbox, payment methods are active immediately even while KYC
   shows "pending"; card test payments work without a validated onboarding. There is no dashboard
@@ -378,12 +387,20 @@ Beta Mollie API (`GET /v2/capabilities`) that replaced the deprecated `GET /v2/o
 `technical` `integration`
 
 ### Mollie Onboarding Status
-The KYC approval state derived from the [[Mollie Capabilities API]]. Three values: `NEEDS_DATA` (action required — Mollie needs information or documents), `IN_REVIEW` (dossier submitted, Mollie reviewing), `COMPLETED` (merchant approved, payments enabled). CommonLink polls at most once every 5 minutes per association (throttled re-fetch triggered by status reads). Stored as `MollieOnboardingStatus` enum in DB.
+The KYC approval state derived from the [[Mollie Capabilities API]]. Three values: `NEEDS_DATA` (action required — Mollie needs information or documents), `IN_REVIEW` (dossier submitted, Mollie reviewing), `COMPLETED` (merchant approved, payments enabled). CommonLink re-reads it through the three paths of [[Mollie Status Sync]] (throttled status read, scheduled sweep, forced refresh); a connection that already collects (COMPLETED **and** `canReceivePayments`) is never re-read. Stored as `MollieOnboardingStatus` enum in DB, together with `onboarding_status_since` (when the current status was first observed, see [[Dormant Connection]]) and `in_review_observed` (see [[Complement Requested]]) since V84.
 `technical` `integration` `association`
 
 ### Mollie Hosted Onboarding
-Mollie's own onboarding wizard, reached via the `_links.dashboard` deep link from the [[Mollie Capabilities API]] requirements array. It is the only way to complete KYC steps requiring human review (identity verification, UBO declaration, bank account verification). CommonLink stores the link on `MollieConnection.onboardingDashboardUrl`, exposes it as `dashboardUrl` in the KYC status DTO, and the association profile page shows a "Complete my onboarding" button opening it in a new tab while the status is `NEEDS_DATA`. There is no redirect back to CommonLink; completion surfaces through the throttled capabilities poll.
+Mollie's own onboarding wizard, reached via the `_links.dashboard` deep link from the [[Mollie Capabilities API]] requirements array. It is the only way to complete KYC steps requiring human review (identity verification, UBO declaration, bank account verification). CommonLink stores the link on `MollieConnection.onboardingDashboardUrl` and exposes it as `dashboardUrl` in the KYC status DTO; the "Bank account" tab's onboarding flow opens it in a new window (`noopener`) to fill or resume the dossier. There is no redirect back to CommonLink; completion surfaces through [[Mollie Status Sync]] — the tab forces a refresh when the association comes back to it, and the scheduled sweep catches it without any visit.
 `technical` `integration` `association`
+
+### Mollie Status Sync
+How CommonLink keeps `MollieConnection`'s onboarding fields current, since Mollie has no onboarding webhook. Three paths share one write method (`MollieOnboardingSnapshotWriter.writePolled`): (1) the **throttled status read** — `GET /api/mollie/connect/status` calls Mollie when the last sync is older than 5 minutes; (2) the **scheduled sweep** — `MollieOnboardingSyncExecutor`, ticking every minute, polls each due ACTIVE connection every 5 minutes, or every hour for a [[Dormant Connection]]; (3) the **forced refresh** — `POST /api/mollie/connect/status/refresh`, at most one Mollie call per association every 30 seconds (in-memory limit, per instance). A connection that collects (`COMPLETED && canReceivePayments`) is **never** re-polled by any path, and the writer refuses to overwrite one under its row lock (sprint 20, question Q1): consequently a validation lost on Mollie's side is **not detected** — an open gap, see `docs/legal/suivi-statut-prestataire-paiement.md`. BROKEN and mock connections are skipped. `app.mollie.connect.disable-onboarding-sync` is the single switch (true in local and staging, false in prod). A change of status or of `canReceivePayments` publishes `MollieOnboardingStatusChangedEvent` (transition emails only; nothing is journaled). The browser never calls Mollie: the Bank account tab re-reads CommonLink's status every 60 s and forces a refresh on return to the tab.
+`technical` `integration` `association`
+
+### Mollie Test Payment
+A 0.01 € payment the association makes **itself, from its own Mollie account**, because Mollie requires a first transaction to fully approve an account (Mollie's written answer of 2026-10-09, not yet confirmed on a real dossier). Shown as step 4 of the Bank account onboarding flow. It is an **instruction, not a detected state**: CommonLink neither detects nor records it — the "I made my test payment" checkbox lives in browser state only and is lost on reload. Never described as free (transaction fees unknown).
+`functional` `integration` `association`
 
 ### Monorepo
 A single Git repository containing both the frontend (`app/`) and backend (`api/`) projects. Each project is fully autonomous — there is no build tool at the root level.
@@ -511,6 +528,10 @@ One recorded pairing between a screened name and an entry of the national asset-
 ### Screened Normalized Name (Valeur criblée normalisée)
 The string actually compared during a freeze screening, after `NameNormalizer` strips accents, uppercases and collapses punctuation — the association "TECHNO +" is compared as "TECHNO". It is frozen at screening time on each Screening Correspondence, because it is the value that produced the score and must survive a later correction of the dossier name. Showing only the raw name leaves a high score against a dissimilar-looking register entry unexplained.
 `functional` `compliance`
+
+### Self-completion Attestation
+The association's declaration "Je confirme avoir rempli moi-même mon dossier Mollie", offered on the last screen ("Actif") of the Bank account onboarding flow (`POST /api/mollie/connect/self-completion-attestation`). Journaled as `MOLLIE_SELF_COMPLETION_ATTESTED` in the compliance audit log with the acting user, the timestamp and the wording version (`textVersion`) only — no IP address, no user-agent, because the hash-chained journal can never be erased. Idempotent (one event per association; a second call returns the first), cannot be withdrawn, and **unlocks nothing**: the collection lock stays `canCollectDonations()`. It records a declaration; it does not prove who filled the Mollie dossier.
+`functional` `compliance` `association`
 
 ### SHA-256
 A cryptographic hash function used to store sensitive tokens (Magic Links, Refresh Tokens) in the database. Only the hash is persisted — the original token cannot be reconstructed from the hash.

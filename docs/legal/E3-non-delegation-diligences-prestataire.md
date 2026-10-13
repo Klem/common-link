@@ -106,12 +106,17 @@ inchangé — de CommonLink vers le prestataire, et jamais l'inverse — et la r
 l'association elle-même. Une modale d'information, accessible depuis le même écran, expose par
 ailleurs le statut réglementaire du prestataire et le fait que les pièces déposées chez lui ne sont
 ni reçues ni conservées par CommonLink, ce qui est exactement le constat établi au présent point.
+*(Mise à jour du 12 octobre 2026 : depuis la refonte du parcours décrite au point 4.5, cette
+modale est accessible depuis l'écran d'accueil du parcours, et non plus depuis l'écran où figure
+l'aide au remplissage. L'aide au remplissage elle-même est inchangée.)*
 
 Lors du retour du prestataire après sa propre procédure de vérification, le traitement effectué
 par la plateforme n'écrit que des données techniques liées à la connexion elle-même : jetons
 d'accès, identifiant de l'organisation chez le prestataire, indicateurs d'état de la connexion,
 indicateurs de capacité d'encaissement, adresse du tableau de bord de l'association chez le
-prestataire, date de dernière synchronisation.
+prestataire, date de dernière synchronisation. Depuis le 12 octobre 2026, deux indicateurs
+s'y ajoutent, et l'état du dossier est relu à d'autres occasions que ce seul retour (voir le
+point 4.5).
 
 Aucun champ du dossier d'identification de l'association tenu par CommonLink — ni l'identité
 de ses représentants, ni sa forme juridique, ni son numéro d'identification, ni son statut de
@@ -161,6 +166,67 @@ La tâche de contrat de tierce introduction rattachée à ce prestataire dans le
 déjà mise hors objet par la décision interne D11 du 7 août 2026, est ainsi privée de tout support
 technique résiduel.
 
+### 4.5 Complément du 12 octobre 2026 — suivi de l'état du dossier, parcours guidé, re-téléchargement des pièces et attestation
+
+Le 12 octobre 2026, le parcours d'ouverture du compte bancaire de l'association a été refondu.
+Quatre éléments touchent l'analyse de la présente fiche. Aucun ne modifie sa conclusion.
+
+**Suivi de l'état du dossier chez le prestataire.** L'état du dossier de l'association chez le
+prestataire n'est plus relu seulement au retour du prestataire et à l'affichage de l'espace de
+l'association : il l'est aussi par une consultation périodique automatique et à la demande de
+l'association. Ce mécanisme est décrit par la fiche *Suivi de l'état du dossier de l'association
+chez le prestataire de paiement*, hors dispositif LCB-FT. Les quatre occasions aboutissent au
+même enregistrement, qui porte exclusivement sur la connexion elle-même. Deux indicateurs y sont
+ajoutés : le fait qu'un examen par le prestataire a déjà été observé, et la date depuis laquelle
+l'état courant du dossier est observé. Tous deux sont déduits des seules observations de l'état du
+dossier par la plateforme ; aucun ne comporte de donnée d'identification. **Le constat du point 4.2
+demeure : aucune donnée d'identification ne revient du prestataire vers le dossier tenu par
+CommonLink**, et la réserve énoncée au point 6 n'est pas mise en jeu.
+
+**Parcours guidé et retour à l'association de ses propres informations.** Le nouveau parcours
+présente à l'association, pour l'aider à constituer son dossier chez le prestataire, des
+informations issues de son propre dossier CommonLink : la forme de sa structure telle qu'établie
+par la consultation des registres publics, la date de validation de son dossier, les nom et
+qualité des bénéficiaires effectifs retenus au dossier par le curateur — jamais leur date de
+naissance —, la liste des pièces qu'elle a déjà fournies et son numéro SIREN. Ces informations,
+qu'elles aient été fournies par l'association ou établies par CommonLink lors de l'instruction de
+son dossier, ne sont présentées qu'à cette association ; leur présentation ne donne lieu à aucun
+échange avec le prestataire. Le sens de circulation décrit au
+point 4.2 est inchangé.
+
+**Re-téléchargement par l'association de ses propres pièces.** L'association peut télécharger à
+nouveau les pièces qu'elle a déposées dans son dossier CommonLink, afin de les déposer elle-même
+chez le prestataire. Cette faculté existait ; elle est désormais proposée par le parcours, et
+**chaque téléchargement réussi est inscrit au journal d'audit** de la conformité, avec
+l'identification de la pièce, sa catégorie et le compte utilisateur à l'origine de la demande —
+jamais le nom du fichier ni son contenu. Une demande portant sur une pièce d'une autre association
+est refusée et n'est pas inscrite. L'inscription intervient au moment où la pièce est remise pour
+envoi : une interruption ultérieure de la transmission n'est pas distinguée. **Aucune pièce n'est
+transmise par CommonLink au prestataire** : c'est l'association qui la dépose elle-même.
+
+**Attestation de saisie personnelle.** À l'étape finale du parcours, l'association peut cocher
+« Je confirme avoir rempli moi-même mon dossier Mollie » *(libellé reproduit verbatim)*. Cette déclaration est inscrite au journal
+d'audit de la conformité avec le compte utilisateur à l'origine de la déclaration, sa date, et la
+version du libellé affiché — **ni adresse IP, ni identification du navigateur** : le journal ne
+pouvant être ni modifié ni effacé, de telles données ne pourraient jamais en être retirées
+(décision du 12 octobre 2026). Elle est enregistrée **une seule fois par association** : une
+nouvelle déclaration renvoie la première sans rien inscrire. Elle **ne peut pas être retirée**.
+Elle **ne débloque rien** : elle n'a aucun effet sur l'ouverture d'une collecte ni sur aucun autre
+verrou. La plateforme l'accepte quel que soit l'état du dossier chez le prestataire, l'interface ne
+la proposant qu'à l'étape finale. Elle reste affichée à l'association une fois faite.
+
+La portée de cette attestation doit être lue strictement : **elle enregistre une déclaration de
+l'association ; elle n'établit pas qui a effectivement rempli le dossier chez le prestataire**, et
+CommonLink n'en tire aucune conséquence pour ses propres diligences. Elle traduit le principe selon
+lequel le dossier du prestataire est constitué par l'association sur le site du prestataire, sans
+qu'aucune personne de CommonLink n'y saisisse quoi que ce soit pour elle.
+
+**Lecture des inscriptions au journal.** Les deux nouvelles inscriptions — téléchargement d'une
+pièce et attestation — rejoignent le journal d'audit de la conformité. Aucun libellé en français
+ne leur a été attribué : l'écran du responsable de la conformité, qui présente les vingt
+inscriptions les plus récentes du journal toutes catégories confondues, les affiche sous leur
+intitulé technique.
+
 ## 5. Les éléments de preuve
 
 La démonstration du point 4.1 — indépendance et cumul des deux procédures — est établie par
@@ -205,11 +271,36 @@ confirme que les données écrites lors du retour sont, **exhaustivement** : jet
 de rafraîchissement, date d'expiration des jetons, état de la connexion, état de la vérification
 prestataire, indicateur de capacité d'encaissement, indicateur de capacité de virement, adresse
 du tableau de bord chez le prestataire, identifiant de l'organisation chez le prestataire, date
-de dernière synchronisation. Aucun de ces éléments n'appartient au dossier d'identification de
-l'association tenu par CommonLink.
+de dernière synchronisation. *(Mise à jour du 12 octobre 2026 : s'y ajoutent l'indication qu'un
+examen par le prestataire a déjà été observé et la date depuis laquelle l'état courant du dossier
+est observé — voir le point 4.5.)* Aucun de ces éléments n'appartient au dossier d'identification
+de l'association tenu par CommonLink.
 
 L'ensemble des contrôles automatisés de la plateforme a été exécuté après les modifications
 décrites dans la présente fiche, sans régression sur les fonctionnements existants.
+
+**Éléments de preuve du complément du 12 octobre 2026 (point 4.5).** Les contrôles automatisés
+suivants ont été écrits et exécutés avec succès le 12 octobre 2026. L'exécution de l'ensemble des
+contrôles évoquée au paragraphe précédent n'a pas été reconduite à cette date pour les contrôles
+qui requièrent une base de données réelle.
+
+| Ce qui est vérifié | État |
+|---|---|
+| Le téléchargement par l'association de sa propre pièce renvoie la pièce et inscrit l'événement au journal exactement une fois | Exécuté — vérifié |
+| Le téléchargement d'une pièce d'une autre association est refusé et n'inscrit rien au journal | Exécuté — vérifié |
+| L'inscription du téléchargement ne comporte que l'identification et la catégorie de la pièce | Exécuté — vérifié |
+| Une seconde attestation renvoie la première et n'inscrit aucun nouvel événement | Exécuté — vérifié |
+| L'inscription de l'attestation ne comporte que la version du libellé, ni adresse IP ni identification du navigateur | Exécuté — vérifié |
+| Les informations restituées à l'association écartent les bénéficiaires effectifs non retenus et ne comportent jamais de date de naissance | Exécuté — vérifié |
+| Côté espace de l'association : l'attestation ne déverrouille aucun module de collecte d'un compte validé sans autorisation d'encaisser | Exécuté — vérifié |
+
+L'absence d'effet de l'attestation sur l'ouverture d'une collecte côté serveur résulte de
+l'examen du code : le traitement de l'attestation n'a accès ni à la connexion avec le prestataire
+ni aux verrous d'ouverture. Aucun contrôle automatisé ne l'établit côté serveur.
+
+Le maintien du constat du point 4.2 au 12 octobre 2026 résulte de la même méthode qu'au 10 août
+2026 : l'examen de l'ensemble des traitements qui écrivent l'état de la connexion, désormais
+regroupés en un point d'écriture unique.
 
 ## 6. Ce que ce contrôle ne couvre pas
 
@@ -225,6 +316,20 @@ d'identification à CommonLink. **Si une reprise de données du prestataire vers
 CommonLink était un jour introduite**, la question de la tierce introduction devrait être
 entièrement réexaminée à la lumière des informations effectivement transmises et de l'usage qui
 en serait fait par CommonLink. La présente fiche deviendrait caduque sur ce point.
+
+**Réserve du 12 octobre 2026 — fraîcheur de la condition « prestataire ».** Le point 4.1 énonce
+que la validation par le prestataire est vérifiée à chaque tentative d'ouverture de collecte. Elle
+l'est, mais sur la base de l'état du dossier **tel que la plateforme l'a enregistré**. Or la
+plateforme cesse de consulter le prestataire dès qu'un compte est validé et autorisé à encaisser.
+Cette limite est antérieure au 12 octobre 2026 — la plateforme cessait alors de consulter le
+prestataire dès la validation du dossier, autorisation d'encaisser ou non — ; elle a été rendue
+explicite et restreinte à cette date. **Si le prestataire retirait sa validation à un compte qui
+encaisse, la plateforme ne le détecterait pas** et continuerait de tenir la condition pour remplie.
+Cet écart est ouvert, dans
+l'attente d'une décision sur la conduite à tenir — alerte de la conformité sans coupure
+automatique, ou coupure automatique. Il est décrit par la fiche *Suivi de l'état du dossier de
+l'association chez le prestataire de paiement*, point 6. Il ne remet pas en cause l'indépendance des
+deux procédures établie ici : il porte sur l'actualité de l'une d'elles, non sur leur cumul.
 
 Cette fiche ne couvre pas non plus :
 
@@ -267,6 +372,7 @@ référentiel interne de gestion de projet aux références suivantes.
 | Surveillance des opérations atypiques et déclaration de soupçon *(épique E5)* | [1216210853624511](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624511) · [1216210853624512](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624512) · [1216210853624513](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624513) · [1216210853624514](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624514) |
 | Conservation des pièces justificatives et rapport annuel *(épique E6)* | [1216210853624518](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624518) · [1216210853624517](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624517) · [1216210853624520](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624520) |
 | Reconsultation périodique programmée des registres publics | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Détection de la perte de validation chez le prestataire d'un compte qui encaisse déjà *(limite antérieure, déclarée par la réserve du 12 octobre 2026)* | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 ## 7. Situation de ce contrôle dans le dispositif d'ensemble
 
@@ -290,9 +396,10 @@ vérifications sont appliquées à l'ouverture d'une collecte. L'objectif est qu
 ultérieure ne supprime pas l'une des deux conditions en la jugeant redondante avec l'autre.
 
 La liste exhaustive des données écrites lors du retour du prestataire, citée au point 5, est
-issue de la lecture directe du traitement correspondant dans le code source au 10 août 2026.
+issue de la lecture directe du traitement correspondant dans le code source au 10 août 2026,
+complétée le 12 octobre 2026 par la lecture du point d'écriture unique décrit au point 4.5.
 
 ---
 
-*Document établi le 10 août 2026, complété le 21 août 2026 (point 4.4 — retrait intégral du prestataire antérieur) puis le 21 septembre 2026 (point 4.2 — aide au remplissage et modale d'information affichées à l'association). Une fiche de même nature sera produite pour chaque contrôle
+*Document établi le 10 août 2026, complété le 21 août 2026 (point 4.4 — retrait intégral du prestataire antérieur), le 21 septembre 2026 (point 4.2 — aide au remplissage et modale d'information affichées à l'association) puis le 12 octobre 2026 (point 4.5 — suivi de l'état du dossier, parcours guidé, re-téléchargement des pièces et attestation de saisie personnelle). Une fiche de même nature sera produite pour chaque contrôle
 du dispositif LCB-FT au fur et à mesure de sa réalisation.*
