@@ -24,6 +24,17 @@ export interface MollieKycStatus {
   dashboardUrl: string | null;
   /** True when the dev/staging "simulate KYC validation" endpoint is enabled. Always false in prod. */
   canForceComplete: boolean;
+  /**
+   * True when Mollie sent the dossier back for more information: NEEDS_DATA after an IN_REVIEW
+   * status has already been observed. False when not connected.
+   */
+  complementRequested: boolean;
+}
+
+/** `POST /api/mollie/connect/self-completion-attestation` — the (first) attestation, idempotent. Unlocks nothing. */
+export interface MollieSelfCompletionAttestation {
+  /** ISO-8601 instant of the first attestation recorded in the compliance journal. */
+  attestedAt: string;
 }
 
 /** Legal structure variant derived server-side from the KYB INSEE legal category (`structureVariantOf`). */

@@ -2,6 +2,7 @@ package org.commonlink.security
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import org.hamcrest.Matchers.containsString
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -108,5 +109,18 @@ class SecurityConfigTest {
                 .header("Origin", "http://localhost:3000")
         )
             .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+    }
+
+    @Test
+    fun `CORS actual request exposes Authorization and Content-Disposition to scripts`() {
+        every { jwtService.extractUserId(any()) } throws RuntimeException("invalid token")
+
+        // Expose-Headers is only sent on actual (non-preflight) requests.
+        mockMvc.perform(
+            get("/api/auth/me")
+                .header("Origin", "http://localhost:3000")
+        )
+            .andExpect(header().string("Access-Control-Expose-Headers", containsString("Authorization")))
+            .andExpect(header().string("Access-Control-Expose-Headers", containsString("Content-Disposition")))
     }
 }

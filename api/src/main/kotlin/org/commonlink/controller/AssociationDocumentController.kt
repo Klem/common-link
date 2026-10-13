@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 @RestController
@@ -90,6 +91,17 @@ class AssociationDocumentController(
         return ResponseEntity.noContent().build()
     }
 
+    /**
+     * Streams one of the association's own documents (ownership-checked by [VerificationService.downloadDocument]).
+     *
+     * The original file name is sent in `Content-Disposition` encoded as UTF-8 (RFC 5987 `filename*`,
+     * plus an RFC 2047 `filename` fallback), so names outside Latin-1 (e.g. "œ") survive the header.
+     * The header is exposed to the cross-origin frontend by the CORS configuration.
+     *
+     * @param principal authenticated user (UUID of the `User`).
+     * @param id document id.
+     * @return the raw file content with its content type and file name.
+     */
     @GetMapping("/{id}/content")
     @Operation(
         summary = "Download document content",
@@ -108,7 +120,7 @@ class AssociationDocumentController(
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(meta.contentType)
         headers.contentDisposition = ContentDisposition.attachment()
-            .filename(meta.fileName)
+            .filename(meta.fileName, StandardCharsets.UTF_8)
             .build()
         return ResponseEntity.ok().headers(headers).body(content)
     }

@@ -2,8 +2,8 @@ import { MollieOnboardingStatus } from '@/types/mollie-connect';
 
 /**
  * Screens of the "Bank account" onboarding flow, numbered as in the validated mockup
- * (`app/minisite/onboarding-mollie.html`). Screens 0-2 ("Préparer") are local navigation; screens
- * 3-6 are delivered in sprint S4.
+ * (`app/minisite/onboarding-mollie.html`). Screens 0-4 are local navigation (while no Mollie
+ * onboarding exists or it needs data); screens 5 and 6 are driven by the server status.
  */
 export const OnboardingScreen = {
   WELCOME: 0,
@@ -31,23 +31,44 @@ export const SCREEN_TO_STEP: Record<OnboardingScreen, number> = {
 };
 
 /**
- * What the bank tab renders, derived from the server-side Mollie status.
+ * Public booking page of the CommonLink "visio accompagnée" (decision R4, 12/10/2026). Single source
+ * for every "book a video call" entry point of the bank tab (FAQ 6 of screen 0, help card).
+ * Always opened with `target="_blank" rel="noopener noreferrer"`.
+ */
+export const VISIO_BOOKING_URL = 'https://calendar.proton.me/bookings/guest#HwvqIxtLuDJOaPIrg1-JrTXq9Cj-N2Y79_u2UXr_MiQ=';
+
+/** Interval of the bank tab's background re-read of `GET /api/mollie/connect/status`, in milliseconds. */
+export const STATUS_POLL_INTERVAL_MS = 60_000;
+
+/**
+ * What the bank tab renders, derived from the server-side Mollie status (mockup `render` /
+ * `currentScreen`).
  *
- * `PREPARE` is the new guided flow (stepper + screens 0-2). Every other value keeps the rendering
- * the tab had before sprint 20, until S4 replaces it with screens 3-6 and the dedicated states.
+ * - `FLOW`: screens 0-4, navigated locally (no Mollie onboarding yet, or NEEDS_DATA).
+ * - `REVIEW`: screen 5 (IN_REVIEW, or NEEDS_DATA after a review: complement requested).
+ * - `ACTIVE`: screen 6, collecting (`bankDone`).
+ * - `ACTIVE_NO_PAYMENTS`: screen 6, COMPLETED but payments not enabled yet — never "Connect Mollie".
  */
 export const FlowView = {
   LOADING: 'LOADING',
-  ACTIVE: 'ACTIVE',
   BROKEN: 'BROKEN',
-  IN_REVIEW: 'IN_REVIEW',
-  PREPARE: 'PREPARE',
-  INTERRUPTED: 'INTERRUPTED',
-  PENDING: 'PENDING',
-  /** Connected but neither NEEDS_DATA, IN_REVIEW nor collecting (e.g. COMPLETED without payments): legacy branch, S4. */
-  CONNECT_FALLBACK: 'CONNECT_FALLBACK',
+  FLOW: 'FLOW',
+  REVIEW: 'REVIEW',
+  ACTIVE: 'ACTIVE',
+  ACTIVE_NO_PAYMENTS: 'ACTIVE_NO_PAYMENTS',
 } as const;
 export type FlowView = typeof FlowView[keyof typeof FlowView];
+
+/**
+ * Notice shown above the local screens when no Mollie connection exists yet but a connection
+ * attempt was made: the OAuth popup was closed before completion, or an authorization is still
+ * pending server-side. Each value is the i18n key under `settings.mollie.onboarding.notices`.
+ */
+export const FlowNotice = {
+  INTERRUPTED: 'interrupted',
+  PENDING: 'pending',
+} as const;
+export type FlowNotice = typeof FlowNotice[keyof typeof FlowNotice];
 
 /** Server-side Mollie state the bank tab is rendered from (subset of `useMollieKycStatus`). */
 export interface MollieFlowState {
@@ -56,6 +77,8 @@ export interface MollieFlowState {
   pending: boolean | null;
   broken: boolean | null;
   onboardingStatus: MollieOnboardingStatus | null;
+  canReceivePayments: boolean | null;
+  complementRequested: boolean | null;
   /** The page's `bankDone` (collection lock predicate), passed through unchanged. */
   bankDone: boolean;
   /** The OAuth popup was closed before completion (`mollieInterrupted` in the page). */
@@ -63,8 +86,8 @@ export interface MollieFlowState {
 }
 
 /**
- * Picks the bank tab view, in the exact precedence order the tab used before sprint 20 — only the
- * not-connected and connected-NEEDS_DATA cases now lead to the guided flow.
+ * Picks the bank tab view. Precedence: loading, collecting (`bankDone`), broken connection,
+ * COMPLETED without payments, in review / complement requested, then the local flow.
  *
  * @param state server-side Mollie state plus the page's `bankDone` and interruption flag.
  * @return the view to render.
@@ -73,11 +96,25 @@ export function resolveFlowView(state: MollieFlowState): FlowView {
   if (state.isLoading) return FlowView.LOADING;
   if (state.bankDone) return FlowView.ACTIVE;
   if (state.broken) return FlowView.BROKEN;
-  if (state.connected && state.onboardingStatus === MollieOnboardingStatus.IN_REVIEW) return FlowView.IN_REVIEW;
-  if (state.connected && state.onboardingStatus === MollieOnboardingStatus.NEEDS_DATA) return FlowView.PREPARE;
-  if (state.interrupted) return FlowView.INTERRUPTED;
-  if (state.pending) return FlowView.PENDING;
-  return state.connected ? FlowView.CONNECT_FALLBACK : FlowView.PREPARE;
+  if (state.connected && state.onboardingStatus === MollieOnboardingStatus.COMPLETED) return FlowView.ACTIVE_NO_PAYMENTS;
+  if (state.connected && state.onboardingStatus === MollieOnboardingStatus.IN_REVIEW) return FlowView.REVIEW;
+  if (state.connected && state.onboardingStatus === MollieOnboardingStatus.NEEDS_DATA && state.complementRequested) {
+    return FlowView.REVIEW;
+  }
+  return FlowView.FLOW;
+}
+
+/**
+ * Notice to show on the local flow (see [FlowNotice]); only before any Mollie connection exists.
+ *
+ * @param state same state as [resolveFlowView].
+ * @return the notice, or null.
+ */
+export function flowNotice(state: MollieFlowState): FlowNotice | null {
+  if (state.connected) return null;
+  if (state.interrupted) return FlowNotice.INTERRUPTED;
+  if (state.pending) return FlowNotice.PENDING;
+  return null;
 }
 
 /**

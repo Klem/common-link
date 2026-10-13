@@ -206,6 +206,33 @@ class AssociationDocumentControllerTest {
     }
 
     @Test
+    fun `downloadDocument - encodes a non-Latin-1 file name as UTF-8 (RFC 5987)`() {
+        val fakeContent = "PDF binary content".toByteArray()
+        val fakeMeta = object : AssociationDocumentMetadata {
+            override val id = docId
+            override val docType = org.commonlink.entity.AssociationDocumentType.VERIF_STATUTS
+            override val category: String? = null
+            override val fileName = "Procès-verbal œuvre.pdf"
+            override val contentType = "application/pdf"
+            override val sizeBytes = fakeContent.size.toLong()
+            override val uploadedAt: Instant = Instant.parse("2025-01-10T10:00:00Z")
+        }
+        every { verificationService.downloadDocument(userId, docId) } returns (fakeMeta to fakeContent)
+
+        mockMvc.perform(
+            get("/api/association/documents/$docId/content")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(
+                header().string(
+                    "Content-Disposition",
+                    org.hamcrest.Matchers.containsString("filename*=UTF-8''Proc%C3%A8s-verbal%20%C5%93uvre.pdf"),
+                )
+            )
+    }
+
+    @Test
     fun `downloadDocument - 404 when document not found`() {
         every { verificationService.downloadDocument(userId, docId) } throws
             NotFoundException("Document $docId not found")

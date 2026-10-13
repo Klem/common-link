@@ -3036,3 +3036,124 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .kit-meta { grid-template-columns: 1fr; }
   .screen-foot { flex-wrap: wrap; }
 }
+
+/* ── Bank tab — Mollie onboarding flow (sprint 20, S4: screens 3-6 and states) ──────────
+   Same rules as the S3 block above: classes absent from this file ported as-is from
+   minisite/onboarding-mollie.html; existing classes with different values left untouched
+   globally and overridden inside `.mob-flow` only (decision R3). */
+
+/* DS primitives absent from this file */
+.timeline-item{position:relative;padding-left:52px;padding-bottom:28px}
+.timeline-item:last-child{padding-bottom:0}
+.timeline-dot{position:absolute;left:8px;top:2px;width:24px;height:24px;border-radius:50%;background:var(--white);border:3px solid var(--mist-lavender);display:flex;align-items:center;justify-content:center;font-size:10px;z-index:1}
+.timeline-dot.done{border-color:var(--bright-teal);background:var(--bright-teal);color:var(--white)}
+.timeline-dot.current{border-color:var(--soft-amber);background:var(--soft-amber);color:var(--white)}
+.timeline-dot.error{border-color:var(--warm-coral);background:var(--warm-coral);color:var(--white)}
+.timeline-item h4{font-size:14px;margin-bottom:2px}
+.timeline-item p{font-size:13px;color:var(--slate-lavender);line-height:1.5}
+.timeline-item .timeline-date{font-size:11px;color:var(--bright-teal);font-weight:600;margin-top:2px}
+
+/* Page-local helpers */
+.ol-steps{padding-left:20px;font-size:14px}
+.ol-steps li{margin-bottom:8px}
+.help-card{display:flex;align-items:center;gap:16px}
+
+/* NEW COMPONENT: copy-row */
+.copy-row{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-md)}
+.copy-row+.copy-row{margin-top:6px}
+.copy-row-label{font-size:11px;font-weight:700;color:var(--slate-lavender);text-transform:uppercase;letter-spacing:.06em;width:120px;flex-shrink:0}
+.copy-row-value{flex:1;font-size:14px;font-weight:600;color:var(--ink-navy);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy-btn{background:var(--soft-cream);border:1px solid var(--mist-lavender);border-radius:var(--radius-full);padding:4px 12px;font-size:12px;font-weight:700;color:var(--deep-indigo);cursor:pointer;font-family:var(--font-inter),sans-serif;flex-shrink:0}
+.copy-btn:hover{border-color:var(--bright-teal)}
+.copy-btn.copied{background:rgba(78,205,196,.15);border-color:var(--bright-teal);color:var(--teal-dark)}
+
+/* NEW COMPONENT: translator panel */
+.translator{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+.mollie-window{position:sticky;top:84px;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-md)}
+.mw-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--soft-cream);border-bottom:1px solid var(--mist-lavender)}
+.mw-dots{display:flex;gap:5px}
+.mw-dots i{width:9px;height:9px;border-radius:50%;background:var(--mist-lavender);display:block}
+.mw-url{flex:1;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-full);padding:3px 12px;font-size:12px;font-family:monospace;color:var(--ink-navy)}
+.mw-url b{color:var(--teal-dark)}
+.mw-body{padding:24px;text-align:center}
+.tr-steps{list-style:none}
+.tr-step{background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);overflow:hidden}
+.tr-step+.tr-step{margin-top:10px}
+.tr-step.current{border-color:var(--bright-teal);box-shadow:0 0 0 3px rgba(78,205,196,.12)}
+.tr-head{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--font-inter),sans-serif}
+.tr-num{width:28px;height:28px;border-radius:50%;background:var(--mist-lavender);color:var(--deep-indigo);display:flex;align-items:center;justify-content:center;font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:12px;flex-shrink:0}
+.tr-step.prefilled .tr-num{background:var(--bright-teal);color:#fff}
+.tr-title{flex:1;font-family:var(--font-nunito-sans),sans-serif;font-weight:800;font-size:14px;color:var(--ink-navy)}
+.tr-body{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--mist-lavender)}
+.tr-col{padding:16px 18px;font-size:13px;line-height:1.6}
+.tr-col+.tr-col{border-left:1px solid var(--mist-lavender);background:var(--soft-cream)}
+.tr-col-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate-lavender);margin-bottom:6px}
+.tr-mollie-label{font-family:var(--font-nunito-sans),sans-serif;font-weight:800;font-size:15px;color:var(--deep-indigo)}
+.tr-col p+p,.tr-col p+.copy-row,.tr-col p+.alert,.tr-col .alert+p{margin-top:8px}
+.tr-col .copy-row{margin-top:8px}
+
+/* NEW COMPONENT: skeleton (loading) */
+.skel{background:linear-gradient(90deg,var(--mist-lavender) 0%,rgba(230,228,244,.4) 50%,var(--mist-lavender) 100%);background-size:200% 100%;animation:skel 1.4s ease-in-out infinite;border-radius:var(--radius-md)}
+@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+
+/* Collisions: mockup values applied inside the flow only. Global values (left untouched):
+   .empty-state flex column, 48px 24px, fadeUp animation · .empty-state-icon 44px / 14px / .7 ·
+   .empty-state h4/p absent (a global rule would restyle EmptyStateCard and campaign empty states) ·
+   .camp-tabs margin-bottom 24px + overflow-x auto · .camp-tab transition. */
+.mob-flow .empty-state{display:block;padding:40px 24px;text-align:center;animation:none}
+.mob-flow .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:.6}
+.mob-flow .empty-state h4{font-size:20px;margin-bottom:8px}
+.mob-flow .empty-state p{font-size:14px;color:var(--slate-lavender);margin:0 auto 20px;max-width:460px;line-height:1.6}
+.mob-flow .camp-tabs{margin-bottom:0}
+.mob-flow .camp-tab{transition:none}
+/* After the `.mob-flow .empty-state-icon` override, which has the same specificity. */
+.mw-body .empty-state-icon{font-size:40px;margin-bottom:10px}
+
+/* Static inline styles of the mockup, as classes */
+.mob-faq-visio{margin-top:10px}
+.mob-tr-hint{margin-top:6px}
+.tr-col .alert.mob-tr-alert{margin-top:10px}
+.mob-mw-title{font-size:17px;margin-bottom:6px}
+.mob-mw-text{margin-bottom:16px}
+.mob-mw-alert{text-align:left;margin-bottom:16px}
+.mob-mw-actions{display:flex;flex-direction:column;gap:8px}
+.mob-grid-2{grid-template-columns:1fr 1fr}
+.mob-p-spaced{margin-top:10px}
+.mob-how-after{margin-top:6px}
+.mob-alert-bottom-lg{margin-bottom:20px}
+.mob-flow .empty-state.mob-active-state{padding:24px}
+.mob-attest-hint{margin-left:30px}
+.mob-tabs-wrap{margin-top:20px}
+.mob-tabs-hint{margin-top:8px}
+.mob-help-card{margin-top:28px}
+.mob-flow .card-body.mob-help-body{padding:18px 24px}
+.mob-help-text{flex:1}
+.mob-row-center{justify-content:center}
+.mob-broken-hint{margin-top:16px}
+.mob-flow .empty-state p.mob-broken-hint{margin-top:16px}
+.mob-skel-stepper{height:72px;border-radius:var(--radius-xl);margin-bottom:24px}
+.mob-skel-title{height:26px;width:40%;margin-bottom:14px}
+.mob-skel-line{height:14px;width:75%;margin-bottom:8px}
+.mob-skel-line-short{height:14px;width:60%;margin-bottom:28px}
+.mob-skel-block{height:120px}
+/* Not in the mockup: "Statut actualisé à HH:MM" moved from the topbar into the tab (Q4). */
+.mob-refresh-info{text-align:right;margin-bottom:8px}
+/* Not in the mockup: "En savoir plus" link under the FAQ of screen 0 (decision R10). */
+.mob-learn-more{margin-top:12px}
+
+/* Responsive (the mockup is desktop-only) and the narrower OAuth modal, which also shows the translator */
+.modal-body .tr-body{grid-template-columns:1fr}
+.modal-body .tr-col+.tr-col{border-left:none;border-top:1px solid var(--mist-lavender)}
+@media (max-width: 900px) {
+  .translator { grid-template-columns: 1fr; }
+  .mollie-window { position: static; }
+  .mob-grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .tr-body { grid-template-columns: 1fr; }
+  .tr-col + .tr-col { border-left: none; border-top: 1px solid var(--mist-lavender); }
+  .copy-row { flex-wrap: wrap; }
+  .copy-row-label { width: auto; }
+  .help-card { flex-wrap: wrap; }
+}

@@ -140,8 +140,11 @@ class SecurityConfig(
      * Configures CORS to allow requests only from the configured frontend URL.
      *
      * Credentials (`allowCredentials = true`) are enabled to support cookie-based flows
-     * if they are introduced in the future. The `Authorization` header is exposed so the
-     * frontend can read it in JavaScript (e.g. for token rotation).
+     * if they are introduced in the future. Exposed response headers (readable from JavaScript):
+     * - `Authorization`, e.g. for token rotation;
+     * - `Content-Disposition`, so a document downloaded through the API (e.g. the association
+     *   re-downloading its own KYB document, `GET /api/association/documents/{id}/content`) is
+     *   saved under its original file name.
      */
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
@@ -155,7 +158,7 @@ class SecurityConfig(
         config.allowedOrigins = listOf(frontendUrl.trimEnd('/'))
         config.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         config.allowedHeaders = listOf("Authorization", "Content-Type")
-        config.exposedHeaders = listOf("Authorization")
+        config.exposedHeaders = listOf("Authorization", "Content-Disposition")
         config.allowCredentials = true
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", config)

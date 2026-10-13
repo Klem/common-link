@@ -42,9 +42,10 @@ interface MollieOnboardModalProps {
  * each requirement of Mollie's hosted wizard — that wizard is not configurable and uses company
  * wording, so the association knows what to prepare instead of discovering it mid-flow.
  *
- * Once the popup is open, the same modal switches to [MollieOnboardingGuide]: the wizard is being
- * filled in at that very moment, in another window, so the waiting screen is where the field-by-
- * field guidance is worth the most. It used to hold a bare spinner.
+ * Once the popup is open, the same modal switches to [MollieOnboardingGuide] (the 10-step
+ * translator also shown on screen 3 of the bank tab): the wizard is being filled in at that very
+ * moment, in another window, so the waiting screen is where the field-by-field guidance is worth
+ * the most. The modal has no onboarding context, so the stakeholder step lists no names here.
  */
 export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPopupClosed, contactEmail, contactName, siren, identifier, name, addressLine1, postalCode, city, legalObject }: MollieOnboardModalProps) {
   const t = useTranslations('settings');
@@ -152,7 +153,6 @@ export default function MollieOnboardModal({ isOpen, onClose, onConnected, onPop
                 postalCode={postalCode}
                 city={city}
                 siren={siren}
-                identifier={identifier}
                 legalObject={legalObject}
                 contactName={contactName}
                 contactEmail={contactEmail}

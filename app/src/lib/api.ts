@@ -15,7 +15,8 @@
  *
  * 3. **Response interceptor — error toasts** — 409 (conflict), 429 (rate limit),
  *    and 500+ (server error) automatically enqueue a toast notification via
- *    `useToastStore`.
+ *    `useToastStore`. A request can opt out with `silentErrors: true` (background
+ *    re-reads the user did not trigger); the error is still rejected to the caller.
  *
  * Import this singleton everywhere HTTP calls are needed — never create a second
  * Axios instance, as that would bypass the token refresh logic.
@@ -23,6 +24,18 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * Opt-in, per request: suppresses the global error toasts (409 / 429 / 500+) of the response
+     * interceptor. Meant for background re-reads the user did not trigger (e.g. the bank tab's
+     * periodic Mollie status re-read), so an outage does not toast every minute. The error is
+     * still rejected; 401 handling is unchanged. Default (absent): toasts as before.
+     */
+    silentErrors?: boolean;
+  }
+}
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 const apiBaseURL = rawApiUrl.startsWith('http') ? rawApiUrl : `https://${rawApiUrl}`;
@@ -155,6 +168,11 @@ api.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
+    }
+
+    // Opt-in silent request: no toast, the caller handles (or ignores) the rejection.
+    if (originalRequest?.silentErrors === true) {
+      return Promise.reject(error);
     }
 
     // 409 — conflict

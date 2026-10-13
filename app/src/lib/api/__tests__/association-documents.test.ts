@@ -12,6 +12,12 @@ describe('fileNameFromDisposition', () => {
     expect(fileNameFromDisposition('attachment; filename="recepisse.pdf"')).toBe('recepisse.pdf');
     expect(fileNameFromDisposition('')).toBeNull();
   });
+
+  it('decodes the UTF-8 name Spring sends for non-Latin-1 characters (R11)', () => {
+    const header =
+      "attachment; filename=\"=?UTF-8?Q?Proc=C3=A8s-verbal_=C5=93uvre.pdf?=\"; filename*=UTF-8''Proc%C3%A8s-verbal%20%C5%93uvre.pdf";
+    expect(fileNameFromDisposition(header)).toBe('Procès-verbal œuvre.pdf');
+  });
 });
 
 describe('downloadOwnAssociationDocument', () => {

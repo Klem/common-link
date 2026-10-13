@@ -2493,58 +2493,80 @@
       "description": "Connectez votre compte Mollie pour recevoir des dons.",
       "devForceComplete": "Simuler la validation KYC (dev)",
       "guide": {
-        "copied": "Copié",
         "copy": "Copier",
-        "intro": "Le formulaire est hébergé par Mollie et rédigé en vocabulaire d'entreprise. Voici, écran par écran, ce qui est attendu d'une association - et les informations que vous nous avez déjà données, prêtes à recopier. L'ordre des écrans peut varier légèrement selon votre dossier.",
-        "note": "Mollie peut demander des pièces complémentaires selon votre dossier. Vous pouvez fermer sa fenêtre à tout moment et reprendre plus tard : le bouton « Compléter mon dossier » vous y ramène.",
+        "copied": "Copié",
+        "copyAria": "Copier : {label}",
         "prefilled": "Déjà pré-rempli",
+        "toConfirm": "À confirmer avec Mollie",
+        "colMollie": "Mollie affiche",
+        "colMeaning": "Ce que ça veut dire pour vous",
+        "values": {
+          "contactName": "Nom du contact",
+          "contactEmail": "Email",
+          "name": "Nom",
+          "address": "Adresse",
+          "siren": "SIREN",
+          "activity": "Objet",
+          "person": "Bénéficiaire effectif"
+        },
         "steps": {
           "account": {
-            "meaning": "Mollie ouvre un compte au nom de la personne qui pilote la connexion. Nous avons transmis le nom et l'email de contact de votre association : vérifiez-les, ils identifient l'interlocuteur du dossier.",
-            "mollieLabel": "Création de votre compte Mollie"
-          },
-          "activity": {
-            "meaning": "Décrivez en clair l'objet de votre association et la nature des fonds collectés. Mollie attend une description, pas un code d'activité. Votre objet social, tel qu'enregistré sur CommonLink, répond à la question.",
-            "mollieLabel": "« Activité de l'entreprise »"
-          },
-          "bank": {
-            "meaning": "L'IBAN du compte de l'association, ouvert au nom de l'association. C'est sur ce compte que Mollie reversera les dons.",
-            "mollieLabel": "« Associez un compte bancaire »"
-          },
-          "identity": {
-            "meaning": "Une pièce d'identité pour chaque bénéficiaire effectif déclaré, représentant légal compris : ce sont des documents personnels, pas des documents de l'association. Mollie les demande parce que la loi lui impose de vérifier l'identité des personnes physiques derrière la structure.",
-            "mollieLabel": "« Pièce d'identité »"
+            "title": "Création de votre compte Mollie",
+            "mollieLabel": "Création de votre compte Mollie",
+            "p1": "Nous avons pré-rempli le nom et l'email du contact : vérifiez-les."
           },
           "legalForm": {
-            "meaning": "Nous avons déclaré votre structure comme association française. Si Mollie vous redemande une forme juridique, choisissez « association » et non « entreprise individuelle » : la suite du formulaire en dépend.",
-            "mollieLabel": "« Type d'entreprise »"
+            "title": "Forme juridique",
+            "mollieLabel": "« Forme juridique »",
+            "p1": "« Entreprise » = votre association. Dans la liste « Forme juridique », choisissez <strong>« Association »</strong>. Nous l'avons pré-indiqué : vérifiez que c'est bien ce choix qui s'affiche.",
+            "warning": "Ne choisissez pas « Association de fait » : ce terme désigne une association non déclarée en préfecture. Ni « Fondation », ni « Une autre entité »."
           },
           "organization": {
-            "meaning": "Le nom exact et l'adresse du siège de votre association, tels qu'ils figurent sur votre déclaration en préfecture.",
-            "mollieLabel": "« Coordonnées de l'entreprise »"
+            "title": "Coordonnées de l'entreprise",
+            "mollieLabel": "« Coordonnées de l'entreprise »",
+            "p1": "Le nom exact et l'adresse du siège de votre association, tels qu'ils figurent dans vos statuts."
           },
           "registration": {
-            "meaning": "Mollie interroge les registres officiels avec ce numéro. Nous ne lui transmettons que le SIREN : le numéro RNA (W...) n'y est pas reconnu. Si votre association n'a pas de SIREN, n'en inventez pas : c'est votre preuve d'existence (récépissé de déclaration en préfecture ou publication au Journal officiel, décret de reconnaissance d'utilité publique, ou extrait du registre du tribunal judiciaire en Alsace-Moselle) qui atteste de son existence.",
-            "mollieLabel": "« Numéro d'immatriculation »"
+            "title": "Numéro d'immatriculation",
+            "mollieLabel": "« Numéro d'immatriculation »",
+            "p1": "Saisissez votre <strong>SIREN</strong> si vous en avez un. Votre numéro RNA (W…) n'est pas reconnu par Mollie. Si vous n'avez pas de SIREN, n'en inventez pas."
           },
-          "review": {
-            "meaning": "Une fois le dossier envoyé, Mollie l'examine. Le statut affiché ici passera de « Onboarding requis » à « En cours de vérification », puis à « Actif » dès que Mollie autorise l'encaissement. Vous n'avez rien d'autre à faire pendant ce temps.",
-            "mollieLabel": "Envoi et vérification"
+          "activity": {
+            "title": "Activité de l'entreprise",
+            "mollieLabel": "« Activité de l'entreprise »",
+            "p1": "Choisissez la catégorie <strong>« Œuvres caritatives et dons »</strong>, puis décrivez l'objet de votre association.",
+            "fees": "Cette catégorie entraîne une vérification renforcée. <strong>Mollie peut prélever des frais d'ouverture sur votre premier versement. Leur montant est fixé par Mollie.</strong>"
+          },
+          "publicInterest": {
+            "title": "Organisation d'intérêt public et pays d'activité",
+            "mollieLabel": "« Organisation d'intérêt public » ?",
+            "mollieHint": "Puis : dans quels pays l'organisation opère, et dans quels pays se trouvent ceux qui en bénéficient.",
+            "p1": "Nous attendons la réponse de Mollie sur ce point ; répondez selon votre situation."
           },
           "stakeholders": {
-            "meaning": "Les dirigeants et bénéficiaires effectifs : président, trésorier, et toute personne exerçant un contrôle effectif sur l'association - en pratique, les membres du bureau. Prévoyez pour chacun nom, date de naissance et adresse.",
-            "mollieLabel": "« Informations relatives aux parties prenantes »"
+            "title": "Informations relatives aux parties prenantes",
+            "mollieLabel": "« Informations relatives aux parties prenantes »",
+            "mollieHint": "Mollie peut aussi parler d'« UBO ».",
+            "p1": "Déclarez {count, plural, =0 {vos <strong>bénéficiaires effectifs</strong>, ceux que CommonLink a déjà confirmés.} one {votre <strong># bénéficiaire effectif</strong>, celui que CommonLink a déjà confirmé :} other {vos <strong># bénéficiaires effectifs</strong>, ceux que CommonLink a déjà confirmés :}}"
+          },
+          "identity": {
+            "title": "Pièce d'identité",
+            "mollieLabel": "« Pièce d'identité »",
+            "p1": "Une pièce d'identité <strong>{count, plural, =0 {pour chaque personne} one {pour la personne} other {pour chacune des # personnes}}</strong> {count, plural, one {déclarée} other {déclarées}} : passeport, carte d'identité recto-verso, titre de séjour ou permis de conduire français, en couleur, 10 Mo maximum.",
+            "p2": "Mollie peut demander une photo de l'original prise au smartphone, et un selfie en tournant la tête à gauche puis à droite. <strong>Gardez votre téléphone à portée de main.</strong>"
+          },
+          "bank": {
+            "title": "Associez un compte bancaire",
+            "mollieLabel": "« Associez un compte bancaire »",
+            "p1": "L'IBAN du compte de l'association. Le titulaire doit porter exactement le nom de vos statuts : « {name} ».",
+            "p1WithoutName": "L'IBAN du compte de l'association. Le titulaire doit porter exactement le nom de vos statuts.",
+            "p2": "Mollie vérifie l'IBAN par un virement test, ou automatiquement si vous connectez votre banque."
+          },
+          "review": {
+            "title": "Envoi et vérification",
+            "mollieLabel": "Envoi et vérification",
+            "p1": "Une fois votre dossier envoyé, il vous reste le paiement test de 0,01 € (étape suivante). L'état affiché ici passera de « Dossier à compléter » à « En cours de vérification », puis à « Actif »."
           }
-        },
-        "title": "Pas à pas : remplir le formulaire Mollie",
-        "values": {
-          "activity": "Objet de l'association",
-          "address": "Adresse du siège",
-          "contactEmail": "Email de contact",
-          "contactName": "Nom du contact",
-          "name": "Nom de l'association",
-          "rna": "Numéro RNA",
-          "siren": "SIREN"
         }
       },
       "info": {
@@ -2664,7 +2686,8 @@
               "help": {
                 "question": "Besoin d'aide ?",
                 "p1": "Réservez une <strong>visio accompagnée</strong> : un membre de l'équipe CommonLink vous guide à l'oral pendant que vous remplissez. Vous gardez la main sur votre écran et votre clavier.",
-                "p2": "CommonLink ne vous demande jamais votre mot de passe."
+                "p2": "CommonLink ne vous demande jamais votre mot de passe.",
+                "book": "Réserver une visio accompagnée"
               }
             }
           },
@@ -2786,7 +2809,128 @@
           "openMollie": "J'ai tout, ouvrir Mollie"
         },
         "contextError": "Nous n'avons pas pu charger les informations de votre vérification CommonLink.",
-        "retry": "Réessayer"
+        "retry": "Réessayer",
+        "refreshedAt": "Statut actualisé à {time}",
+        "loading": {
+          "aria": "Chargement de votre dossier",
+          "text": "Chargement de l'état de votre dossier Mollie…"
+        },
+        "broken": {
+          "title": "Reconnexion requise",
+          "text": "Le lien entre CommonLink et votre compte Mollie a été interrompu. Nous ne pouvons plus actualiser l'état de votre dossier. Reconnectez votre compte : cela prend une minute.",
+          "reconnect": "Reconnecter mon compte Mollie",
+          "help": "Besoin d'aide ?",
+          "hint": "Avant de saisir quoi que ce soit, vérifiez que l'adresse affichée est bien <strong>my.mollie.com</strong>."
+        },
+        "notices": {
+          "interrupted": "La connexion à Mollie n'a pas abouti : la fenêtre a été fermée avant la fin. Vous pouvez réessayer quand vous voulez.",
+          "pending": "Une autorisation Mollie est en cours. Terminez-la dans la fenêtre Mollie : cet écran se met à jour à votre retour.",
+          "retry": "Réessayer"
+        },
+        "help": {
+          "title": "Un doute ? Faites-le à deux.",
+          "text": "Un membre de l'équipe CommonLink vous guide en visio. Vous gardez la main sur votre écran et votre clavier. CommonLink ne vous demande jamais votre mot de passe.",
+          "book": "Réserver une visio"
+        },
+        "fill": {
+          "title": "Remplir chez Mollie",
+          "badge": "Dossier à compléter",
+          "lead": "Le formulaire s'ouvre dans une nouvelle fenêtre, sur <strong>my.mollie.com</strong>. Gardez cette page ouverte à côté : elle traduit chaque écran de Mollie en langage associatif.",
+          "window": {
+            "aria": "Fenêtre Mollie",
+            "urlHost": "my.mollie.com",
+            "urlPath": "/onboarding",
+            "openedTitle": "Fenêtre Mollie ouverte",
+            "openedText": "Remplissez votre dossier dans la fenêtre Mollie. Quand vous la fermez, nous actualisons l'état de votre dossier.",
+            "notOpenedTitle": "Fenêtre Mollie pas encore ouverte",
+            "notOpenedText": "Ouvrez Mollie pour commencer votre dossier : cette page vous guide écran par écran.",
+            "checkAddress": "Vérifiez que l'adresse est bien <strong>my.mollie.com</strong> avant de saisir quoi que ce soit.",
+            "open": "Ouvrir Mollie",
+            "reopen": "Rouvrir la fenêtre Mollie",
+            "refresh": "Actualiser l'état du dossier",
+            "refreshing": "Actualisation…"
+          },
+          "back": "Mon kit de pièces",
+          "next": "J'ai envoyé mon dossier, étape suivante"
+        },
+        "testPayment": {
+          "title": "Paiement test de 0,01 €",
+          "lead": "Dernière action de votre côté.",
+          "why": {
+            "title": "Pourquoi ?",
+            "p1": "Mollie a besoin d'une première transaction pour valider complètement votre compte. Un paiement de <strong>0,01 €</strong>, fait par vous-même, suffit.",
+            "p2": "L'argent n'est pas perdu : <strong>il reste sur le solde Mollie de votre association.</strong>"
+          },
+          "how": {
+            "title": "Comment ?",
+            "hint": "dans votre compte Mollie",
+            "steps": {
+              "s1": "Ouvrez le lien de paiement de votre compte Mollie.",
+              "s2": "Payez vous-même 0,01 €.",
+              "s3": "C'est fait."
+            },
+            "after": "Une fois ce paiement fait, la vérification démarre automatiquement."
+          },
+          "checkAddress": "Comme toujours, vérifiez que l'adresse est bien <strong>my.mollie.com</strong>.",
+          "back": "Retour",
+          "openMollie": "Ouvrir mon compte Mollie",
+          "ack": "J'ai fait mon paiement test",
+          "acked": "Vous nous avez indiqué l'avoir fait. Les 0,01 € restent sur le solde Mollie de votre association."
+        },
+        "review": {
+          "title": "Vérification de votre dossier",
+          "badgeInReview": "En cours de vérification",
+          "badgeComplement": "Dossier à compléter",
+          "lead": "Mollie examine votre dossier. Vous pouvez fermer cette page : nous vous prévenons dès qu'il y a du nouveau.",
+          "complement": {
+            "text": "<strong>Mollie demande un complément.</strong> Il manque une information ou une pièce : Mollie vous a précisé laquelle par email.",
+            "action": "Compléter mon dossier"
+          },
+          "timeline": {
+            "connected": {
+              "title": "Compte Mollie connecté",
+              "text": "Le lien entre CommonLink et votre compte Mollie est en place."
+            },
+            "sent": {
+              "title": "Dossier envoyé",
+              "text": "Vos informations et vos pièces sont chez Mollie."
+            },
+            "test": {
+              "title": "Paiement test",
+              "todo": "À faire depuis votre compte Mollie : 0,01 €, qui reste sur votre solde.",
+              "acked": "Vous nous avez indiqué l'avoir fait. Les 0,01 € restent sur le solde Mollie de votre association."
+            },
+            "review": {
+              "title": "En vérification",
+              "text": "Mollie examine votre dossier : 2 à 3 jours ouvrés. Si quelque chose manque, Mollie vous écrit par email.",
+              "complement": "Mollie vous a écrit pour demander un complément. Une fois votre dossier complété, la vérification reprend."
+            },
+            "active": {
+              "title": "Actif",
+              "text": "Vous pourrez recevoir des dons."
+            }
+          },
+          "emailNotice": "<strong>Nous vous écrivons dès que Mollie a répondu.</strong>"
+        },
+        "active": {
+          "title": "Votre association peut recevoir des dons",
+          "text": "Mollie a validé votre dossier. Votre widget de don et votre page de collecte sont maintenant ouverts.",
+          "badge": "Actif",
+          "noPayments": "<strong>Encaissement pas encore activé par Mollie.</strong> Votre dossier est validé, mais Mollie n'a pas encore ouvert l'encaissement des paiements. Nous vous écrivons dès que c'est le cas.",
+          "attest": {
+            "label": "Je confirme avoir rempli moi-même mon dossier Mollie",
+            "hint": "Cette confirmation est enregistrée dans le journal de conformité de votre association.",
+            "error": "La confirmation n'a pas pu être enregistrée. Réessayez."
+          },
+          "tabs": {
+            "aria": "Collecte",
+            "widget": "Widget de don",
+            "landing": "Page de collecte",
+            "open": "Ouvert",
+            "locked": "Verrouillé",
+            "hint": "Les onglets s'ouvrent dès que Mollie active l'encaissement."
+          }
+        }
       }
     },
     "widget": {

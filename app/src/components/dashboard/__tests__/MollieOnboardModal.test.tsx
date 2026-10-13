@@ -2,9 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MollieOnboardModal from '../MollieOnboardModal';
 
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
-}));
+vi.mock('next-intl', () => {
+  const t = Object.assign((key: string) => key, { rich: (key: string) => key });
+  return { useTranslations: () => t };
+});
 
 vi.mock('@/lib/api/mollie-connect', () => ({
   getMollieAuthUrl: vi.fn().mockResolvedValue({ authUrl: 'https://my.mollie.com/oauth2/authorize' }),
@@ -52,7 +53,8 @@ describe('MollieOnboardModal', () => {
     fireEvent.click(screen.getByText('mollie.modal.connect'));
 
     // The wizard is being filled in right now, in the other window: guidance beats a bare spinner.
-    await waitFor(() => expect(screen.getByText('title')).toBeInTheDocument());
+    // Same 10-step translator as screen 3 of the bank tab.
+    await waitFor(() => expect(screen.getByText('steps.account.title')).toBeInTheDocument());
     expect(screen.getByText('mollie.modal.waiting')).toBeInTheDocument();
     expect(screen.queryByText('items.registration.mollieLabel')).not.toBeInTheDocument();
   });

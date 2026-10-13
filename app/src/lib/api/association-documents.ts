@@ -33,10 +33,10 @@ export function fileNameFromDisposition(disposition: string): string | null {
  * Downloads one of the association's own KYB documents
  * (`GET /api/association/documents/{id}/content`, ownership-checked and journalled server-side).
  *
- * The server sends the original file name in `Content-Disposition`, but the API is cross-origin and
- * only exposes `Authorization` to scripts (CORS `exposedHeaders`), so the header is usually
- * unreadable from the browser. In that case the file is saved as `fallbackBaseName` plus an
- * extension derived from the response content type.
+ * The file is saved under the original name the server sends in `Content-Disposition` (the API is
+ * cross-origin; the backend CORS configuration exposes that header to scripts). When the header is
+ * missing or carries no file name, the file is saved as `fallbackBaseName` plus an extension derived
+ * from the response content type.
  *
  * Unlike `downloadDocument` in `lib/api/verification.ts`, this function does not require the caller
  * to know the file name: the onboarding context deliberately exposes only document ids and types.

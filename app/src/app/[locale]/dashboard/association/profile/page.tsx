@@ -129,6 +129,7 @@ export default function AssociationProfilePage() {
     canReceivePayments,
     isLoading: mollieLoading,
     refresh: refreshMollie,
+    forceRefresh: forceRefreshMollie,
   } = mollieKyc;
   const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
     useMandate();
@@ -159,11 +160,17 @@ export default function AssociationProfilePage() {
     landing: bankDone,
   };
 
-  // Deep-link ?tab= : n'active l'onglet demandé que s'il est déverrouillé, et
-  // seulement une fois les données chargées (sinon un user déjà onboardé serait
-  // renvoyé sur "infos" au premier render tant que les flags sont encore false).
+  // Deep-link ?tab=: activates the requested tab only if it is unlocked, and only once the data has
+  // loaded (otherwise an already onboarded user would be sent back to "infos" on the first render,
+  // while the flags are still false). Applied once per query string (decision R9): a lock flag that
+  // changes later (e.g. bankDone flipping during the bank tab's background refresh) must not move the
+  // user away from the tab they are on. A new query string (client navigation) is applied again.
+  const appliedDeepLink = useRef<string | null>(null);
   useEffect(() => {
     if (isLoading || mandateLoading || mollieLoading) return;
+    const query = searchParams.toString();
+    if (appliedDeepLink.current === query) return;
+    appliedDeepLink.current = query;
     const tab = searchParams.get('tab');
     if (
       tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' ||
@@ -174,10 +181,11 @@ export default function AssociationProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isLoading, mandateLoading, mollieLoading, verifDone, mandateDone, bankDone]);
 
+  // The OAuth popup closed (success, error or manual close): ask the server to re-read Mollie now.
   const handleMolliePopupClosed = useCallback(async () => {
     setMollieInterrupted(true);
-    await refreshMollie();
-  }, [refreshMollie]);
+    await forceRefreshMollie({ silent: true });
+  }, [forceRefreshMollie]);
 
   // DEV/STAGING only — simulates a Mollie KYC validation (button gated by mollieCanForceComplete).
   const handleMollieForceComplete = useCallback(async () => {
@@ -636,6 +644,7 @@ export default function AssociationProfilePage() {
             }}
             onLearnMore={() => setShowMollieInfoModal(true)}
             onForceComplete={handleMollieForceComplete}
+            onOpenTab={(tab) => tabUnlocked[tab] && setActiveTab(tab)}
           />
 
           {/* Carte Sécurité */}
@@ -725,10 +734,10 @@ export default function AssociationProfilePage() {
       <MollieOnboardModal
         isOpen={showMollieModal}
         onClose={() => setShowMollieModal(false)}
+        // Q5: stay on the bank tab (screen 3) after a successful connection.
         onConnected={async () => {
           setMollieInterrupted(false);
-          await refreshMollie();
-          setActiveTab('widget');
+          await forceRefreshMollie({ silent: true });
         }}
         onPopupClosed={handleMolliePopupClosed}
         contactEmail={profile?.contactEmail}
