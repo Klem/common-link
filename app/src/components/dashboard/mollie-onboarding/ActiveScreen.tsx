@@ -5,15 +5,14 @@ import { useTranslations } from 'next-intl';
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>;
 
-/** Settings tabs screen 6 links to; values are the page's `SettingsTab` ids. */
+/** Settings tab screen 6 links to; values are the page's `SettingsTab` ids. */
 export const CollectionTab = {
-  WIDGET: 'widget',
-  LANDING: 'landing',
+  DIFFUSION: 'diffusion',
 } as const;
 export type CollectionTab = typeof CollectionTab[keyof typeof CollectionTab];
 
 interface ActiveScreenProps {
-  /** The page's `bankDone` (COMPLETED and payments enabled): the only thing that opens Widget/Landing. */
+  /** The page's `bankDone` (COMPLETED and payments enabled): the only thing that opens the Diffusion tab. */
   collecting: boolean;
   /** ISO instant of the self-completion attestation, null when never attested. */
   attestedAt: string | null;
@@ -30,8 +29,8 @@ interface ActiveScreenProps {
  * "Encaissement pas encore activé" warning for a COMPLETED account without payments (never
  * "Connecter Mollie" there).
  *
- * The self-completion attestation is journalled server-side and unlocks nothing: the Widget and
- * Landing links follow `collecting` (`bankDone`) only. Once recorded it cannot be withdrawn
+ * The self-completion attestation is journalled server-side and unlocks nothing: the Diffusion
+ * link follows `collecting` (`bankDone`) only. Once recorded it cannot be withdrawn
  * (append-only journal), so the box stays checked and disabled.
  */
 export default function ActiveScreen({ collecting, attestedAt, attestBusy, attestError, onAttest, onOpenTab }: ActiveScreenProps) {
@@ -39,8 +38,7 @@ export default function ActiveScreen({ collecting, attestedAt, attestBusy, attes
   const attested = attestedAt !== null;
 
   const tabs = [
-    { id: CollectionTab.WIDGET, icon: '🧩', label: t('tabs.widget') },
-    { id: CollectionTab.LANDING, icon: '📄', label: t('tabs.landing') },
+    { id: CollectionTab.DIFFUSION, icon: '🌐', label: t('tabs.diffusion') },
   ];
 
   return (

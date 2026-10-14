@@ -23,7 +23,7 @@ interface LandingPreviewModalProps {
  * cached token would eventually render a 409 error page indistinguishable from a genuine failure.
  */
 export function LandingPreviewModal({ widgetToken, onClose }: LandingPreviewModalProps) {
-  const t = useTranslations('settings.landing.preview');
+  const t = useTranslations('settings.diffusion.preview');
 
   const [device, setDevice] = useState<Device>('desktop');
   const [src, setSrc] = useState<string | null>(null);

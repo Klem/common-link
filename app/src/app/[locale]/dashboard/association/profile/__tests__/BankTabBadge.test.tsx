@@ -56,8 +56,7 @@ vi.mock('@/hooks/mollie/useMollieKycStatus', () => ({
   }),
 }));
 
-vi.mock('@/components/settings/WidgetTab', () => ({ WidgetTab: () => null }));
-vi.mock('@/components/settings/LandingTab', () => ({ LandingTab: () => null }));
+vi.mock('@/components/settings/diffusion/DiffusionTab', () => ({ DiffusionTab: () => null }));
 vi.mock('@/components/settings/VerificationTab', () => ({ VerificationTab: () => null }));
 vi.mock('@/components/settings/MandateTab', () => ({ MandateTab: () => null }));
 vi.mock('@/hooks/auth/useSetPassword', () => ({ useSetPassword: () => ({ onSubmit: vi.fn(), loading: false }) }));
@@ -96,12 +95,12 @@ describe('Bank tab badge — profile/page.tsx (Q7)', () => {
     expect(bankBadge()).not.toHaveClass('ok');
   });
 
-  it('carries the ok class exactly when bankDone, which also unlocks the widget tab', () => {
+  it('carries the ok class exactly when bankDone, which also unlocks the diffusion tab', () => {
     mollie = { connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED, canReceivePayments: true };
     render(<AssociationProfilePage />);
 
     expect(bankBadge()).toHaveTextContent('association.profile.tabs.bankBadge.active');
     expect(bankBadge()).toHaveClass('ok');
-    expect(screen.getByText((_, el) => el?.tagName === 'BUTTON' && !!el.textContent?.includes('association.profile.tabs.widget'))).not.toBeDisabled();
+    expect(screen.getByText((_, el) => el?.tagName === 'BUTTON' && !!el.textContent?.includes('association.profile.tabs.diffusion'))).not.toBeDisabled();
   });
 });

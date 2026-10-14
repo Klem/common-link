@@ -22,8 +22,7 @@ import { MollieOnboardingStatus } from '@/types/mollie-connect';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
-import { WidgetTab } from '@/components/settings/WidgetTab';
-import { LandingTab } from '@/components/settings/LandingTab';
+import { DiffusionTab } from '@/components/settings/diffusion/DiffusionTab';
 import { useMandate } from '@/hooks/dashboard/useMandate';
 import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
 import { VerificationStatus } from '@/types/association';
@@ -98,9 +97,16 @@ function toFormData(profile: AssociationProfileDto): ProfileFormData {
   };
 }
 
-type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget' | 'landing';
+const SettingsTab = {
+  INFOS: 'infos',
+  VERIF: 'verif',
+  BANK: 'bank',
+  MANDATE: 'mandate',
+  DIFFUSION: 'diffusion',
+} as const;
+type SettingsTab = typeof SettingsTab[keyof typeof SettingsTab];
 
-const SETTINGS_TABS: readonly SettingsTab[] = ['infos', 'verif', 'bank', 'mandate', 'widget', 'landing'];
+const SETTINGS_TABS: readonly SettingsTab[] = Object.values(SettingsTab);
 
 /** @return the tab named by `value`, or null when it is not a known tab. */
 const parseSettingsTab = (value: string | null): SettingsTab | null =>
@@ -182,10 +188,9 @@ export default function AssociationProfilePage() {
     verif: true,
     mandate: verifDone || (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING,
     bank: mandateDone,
-    widget: bankDone,
-    // Même prérequis que le widget : la landing page sert le même formulaire de don, sur la
-    // même campagne publiée. Un gate plus permissif afficherait un lien renvoyant un 409.
-    landing: bankDone,
+    // Widget, landing page et page HTML servent le même formulaire de don sur la même campagne
+    // publiée : un gate plus permissif afficherait des codes renvoyant un 409.
+    diffusion: bankDone,
   };
 
   // Deep-link ?tab=: activates the requested tab only if it is unlocked, and only once the data has
@@ -411,20 +416,12 @@ export default function AssociationProfilePage() {
           </span>
         </button>
         <button
-          className={`set-tab${activeTab === 'widget' ? ' active' : ''}${tabUnlocked.widget ? '' : ' locked'}`}
-          onClick={() => tabUnlocked.widget && setActiveTab('widget')}
-          disabled={!tabUnlocked.widget}
-          title={tabUnlocked.widget ? undefined : t('association.profile.tabs.locked')}
+          className={`set-tab${activeTab === 'diffusion' ? ' active' : ''}${tabUnlocked.diffusion ? '' : ' locked'}`}
+          onClick={() => tabUnlocked.diffusion && setActiveTab('diffusion')}
+          disabled={!tabUnlocked.diffusion}
+          title={tabUnlocked.diffusion ? undefined : t('association.profile.tabs.locked')}
         >
-          {tabUnlocked.widget ? '🎁' : '🔒'} {t('association.profile.tabs.widget')}
-        </button>
-        <button
-          className={`set-tab${activeTab === 'landing' ? ' active' : ''}${tabUnlocked.landing ? '' : ' locked'}`}
-          onClick={() => tabUnlocked.landing && setActiveTab('landing')}
-          disabled={!tabUnlocked.landing}
-          title={tabUnlocked.landing ? undefined : t('association.profile.tabs.locked')}
-        >
-          {tabUnlocked.landing ? '🌐' : '🔒'} {t('association.profile.tabs.landing')}
+          {tabUnlocked.diffusion ? '🌐' : '🔒'} {t('association.profile.tabs.diffusion')}
         </button>
       </div>
 
@@ -721,24 +718,10 @@ export default function AssociationProfilePage() {
         </div>
       )}
 
-      {/* ══ Onglet : Widget de don ═══════════════════════════════════════ */}
-      {activeTab === 'widget' && (
+      {/* ══ Onglet : Diffusion (campagne, page de campagne, suivi, landing page, intégration) ══ */}
+      {activeTab === 'diffusion' && (
         <div className="set-tab-content active">
-          <WidgetTab
-            profile={profile}
-            onTokenChanged={refreshProfile}
-          />
-        </div>
-      )}
-
-      {/* ══ Onglet : Landing page ════════════════════════════════════════ */}
-      {activeTab === 'landing' && (
-        <div className="set-tab-content active">
-          <LandingTab
-            profile={profile}
-            onGoToWidget={() => setActiveTab('widget')}
-            onConfigChanged={refreshProfile}
-          />
+          <DiffusionTab profile={profile} onProfileChanged={refreshProfile} />
         </div>
       )}
 

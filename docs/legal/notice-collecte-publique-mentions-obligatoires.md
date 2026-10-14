@@ -96,7 +96,7 @@ Les trois colonnes sont physiquement supprimées de `association_profiles` par l
 | Le résultat attendu (objectifs d'impact) est rendu | `ProjectSection.test.tsx` |
 | La publication est refusée si `startDate` ou `endDate` est absent | `CampaignServiceTest.publish - missing calendrier returns 422` |
 | Les gates existants (budget, résultat attendu) continuent de fonctionner une fois le calendrier ajouté à `preparePublish` | `CampaignServiceTest` (54 tests, dont les gates de publication mis à jour pour fournir des dates) |
-| Le réglage de landing page n'expose plus aucune case de section (carte « Sections de la page » retirée) | `LandingTab.test.tsx` (« no longer offers any section toggle ») |
+| Le réglage de landing page n'expose plus aucune case de section (carte « Sections de la page » retirée) | `settings/diffusion/__tests__/DiffusionTab.test.tsx` (« no longer offers any section toggle ») — ex-`LandingTab.test.tsx`, réglages fusionnés dans l'onglet Diffusion le 14/10/2026 |
 | Un poste de budget à 0 % n'est pas affiché, seul ou parmi d'autres postes | `TransparencySection.test.tsx` (2 tests) |
 | Le schéma après `V71` (colonnes supprimées) reste cohérent avec l'entité JPA (`ddl-auto=validate`) — migrations `V1`…`V71` rejouées sur une base vierge | `FlywayMigrationTest` |
 | Aucune référence résiduelle aux 3 champs côté backend Kotlin (entité, DTOs, services, tests) — le compilateur l'aurait bloqué | `compileKotlin` / `compileTestKotlin` |
@@ -150,10 +150,10 @@ Si la commission juridique (Julian) retient que toute surface présentant une ca
 | **Projection landing page** | `api/src/main/kotlin/org/commonlink/service/PublicWidgetService.kt` (`getLanding`) |
 | **Gate de publication** | `api/src/main/kotlin/org/commonlink/service/CampaignService.kt` (`preparePublish`) |
 | **Landing page publique** | `app/src/app/[locale]/lp/[widgetToken]/page.tsx`, `ProjectSection.tsx`, `TransparencySection.tsx`, `landing.css` |
-| **Réglages association** | `app/src/components/settings/LandingTab.tsx` |
+| **Réglages association** | `app/src/components/settings/diffusion/LandingAppearanceCard.tsx` (onglet Diffusion ; ex-`LandingTab.tsx`) |
 | **Widget embarqué (hors périmètre, section 6)** | `app/src/app/[locale]/embed/donate/[widgetToken]/EmbedDonateClient.tsx` |
 | **Annuaire public des projets (section 6)** | `api/src/main/kotlin/org/commonlink/dto/PublicCampaignListItemDto.kt`, `controller/PublicCampaignDirectoryController.kt`, `service/PublicCampaignDirectoryService.kt`, `repository/CampaignRepository.kt` (`findPublicLive`) ; `landing-page/app/[locale]/projets/page.tsx`, `components/campaign/CampaignCard.tsx`, `lib/api/campaigns.ts` |
-| **Contrôles automatisés** | `PublicWidgetServiceIntegrationTest.kt`, `PublicWidgetControllerTest.kt`, `CampaignServiceTest.kt`, `AssociationLandingServiceTest.kt`, `AssociationControllerTest.kt`, `FlywayMigrationTest.kt`, `ProjectSection.test.tsx`, `TransparencySection.test.tsx`, `LandingTab.test.tsx` |
+| **Contrôles automatisés** | `PublicWidgetServiceIntegrationTest.kt`, `PublicWidgetControllerTest.kt`, `CampaignServiceTest.kt`, `AssociationLandingServiceTest.kt`, `AssociationControllerTest.kt`, `FlywayMigrationTest.kt`, `ProjectSection.test.tsx`, `TransparencySection.test.tsx`, `DiffusionTab.test.tsx` (ex-`LandingTab.test.tsx`) |
 | **Traductions** | `app/messages/fr.json`, `app/messages/en.json` (clés `landing.project.*`) |
 | **Suppression complète (4.5)** | Migration `api/src/main/resources/db/migration/V71__drop_landing_section_toggles.sql` (+ rollback `U71`) ; `entity/AssociationProfile.kt` ; `dto/AssociationProfileDto.kt`, `dto/UpdateLandingConfigRequest.kt` ; `service/AssociationLandingService.kt` ; `types/association.ts`, `lib/api/public.ts` ; `api/.http/AssociationController.http` (scénario 11 corrigé, envoyait un champ supprimé) |
 

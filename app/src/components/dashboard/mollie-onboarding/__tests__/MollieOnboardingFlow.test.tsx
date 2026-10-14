@@ -445,15 +445,13 @@ describe('MollieOnboardingFlow — screen 6 "Actif" (S4)', () => {
     mockAttest.mockReset().mockResolvedValue({ attestedAt: '2026-10-12T09:41:00Z' });
   });
 
-  it('celebrates an active account, with every step done, and links to the Widget and Landing tabs', async () => {
+  it('celebrates an active account, with every step done, and links to the Diffusion tab', async () => {
     const { onOpenTab } = renderFlow({ kyc: collecting(), bankDone: true });
 
     expect(screen.getByRole('heading', { name: 'title' })).toBeInTheDocument();
     expect(screen.queryByRole('listitem', { current: 'step' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /tabs\.widget/ }));
-    fireEvent.click(screen.getByRole('button', { name: /tabs\.landing/ }));
-    expect(onOpenTab).toHaveBeenNthCalledWith(1, 'widget');
-    expect(onOpenTab).toHaveBeenNthCalledWith(2, 'landing');
+    fireEvent.click(screen.getByRole('button', { name: /tabs\.diffusion/ }));
+    expect(onOpenTab).toHaveBeenCalledWith('diffusion');
     await waitFor(() => expect(mockGetContext).toHaveBeenCalled());
   });
 
@@ -489,10 +487,10 @@ describe('MollieOnboardingFlow — screen 6 "Actif" (S4)', () => {
     fireEvent.click(box);
     await waitFor(() => expect(box).toBeChecked());
 
-    const widget = screen.getByRole('button', { name: /tabs\.widget/ });
-    expect(widget).toBeDisabled();
-    expect(widget).toHaveClass('tab-locked');
-    fireEvent.click(widget);
+    const diffusion = screen.getByRole('button', { name: /tabs\.diffusion/ });
+    expect(diffusion).toBeDisabled();
+    expect(diffusion).toHaveClass('tab-locked');
+    fireEvent.click(diffusion);
     expect(onOpenTab).not.toHaveBeenCalled();
     expect(onConnect).not.toHaveBeenCalled();
     expect(screen.getByText('tabs.hint')).toBeInTheDocument();

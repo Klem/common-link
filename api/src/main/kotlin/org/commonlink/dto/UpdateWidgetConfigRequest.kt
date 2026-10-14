@@ -7,7 +7,7 @@ data class UpdateWidgetConfigRequest(
     /**
      * URL of the page where the association hosts its campaign (e.g. `https://www.asso-a.fr/don`),
      * kept whole: it is the post-payment return target, and its origin gates every redirect.
-     * Null clears the setting. Mirrors the frontend check in `WidgetTab` (rule 8).
+     * Null clears the setting. Mirrors the frontend check in `CampaignPageUrlCard` (rule 8).
      */
     @field:Size(max = 2048)
     @field:Pattern(regexp = "^(https?://.*)?$", message = "must start with http:// or https://")

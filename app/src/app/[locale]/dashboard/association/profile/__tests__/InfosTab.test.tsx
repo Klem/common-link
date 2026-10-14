@@ -52,8 +52,8 @@ vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({
   }),
 }));
 
-vi.mock('@/components/settings/WidgetTab', () => ({
-  WidgetTab: () => null,
+vi.mock('@/components/settings/diffusion/DiffusionTab', () => ({
+  DiffusionTab: () => null,
 }));
 
 vi.mock('@/lib/api/campaign', () => ({

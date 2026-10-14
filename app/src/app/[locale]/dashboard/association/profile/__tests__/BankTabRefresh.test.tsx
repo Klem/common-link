@@ -88,8 +88,7 @@ vi.mock('@/components/dashboard/MollieOnboardModal', () => ({
   ),
 }));
 
-vi.mock('@/components/settings/WidgetTab', () => ({ WidgetTab: () => <p>test.widgetTab</p> }));
-vi.mock('@/components/settings/LandingTab', () => ({ LandingTab: () => null }));
+vi.mock('@/components/settings/diffusion/DiffusionTab', () => ({ DiffusionTab: () => <p>test.diffusionTab</p> }));
 vi.mock('@/components/settings/VerificationTab', () => ({ VerificationTab: () => null }));
 vi.mock('@/components/settings/MandateTab', () => ({ MandateTab: () => null }));
 vi.mock('@/hooks/auth/useSetPassword', () => ({ useSetPassword: () => ({ onSubmit: vi.fn(), loading: false }) }));
@@ -163,7 +162,7 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
   });
 
   it('falls back to the first tab when the remembered one is still locked', async () => {
-    window.localStorage.setItem('cl.associationProfile.activeTab.uuid-1', 'widget');
+    window.localStorage.setItem('cl.associationProfile.activeTab.uuid-1', 'diffusion');
     render(<AssociationProfilePage />);
 
     await waitFor(() => expect(tabButton('infos')).toHaveClass('active'));
@@ -175,10 +174,10 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
 
     await waitFor(() => expect(forceRefresh).toHaveBeenCalledTimes(1));
     expect(tabButton('bank ')).toHaveClass('active');
-    expect(screen.queryByText('test.widgetTab')).not.toBeInTheDocument();
+    expect(screen.queryByText('test.diffusionTab')).not.toBeInTheDocument();
   });
 
-  it('keeps Widget and Landing locked after the attestation of a COMPLETED account without payments', async () => {
+  it('keeps the Diffusion tab locked after the attestation of a COMPLETED account without payments', async () => {
     mollie = { connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED, canReceivePayments: false };
     openBankTab();
 
@@ -187,15 +186,14 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
     fireEvent.click(box);
     await waitFor(() => expect(box).toBeChecked());
 
-    expect(tabButton('widget')).toBeDisabled();
-    expect(tabButton('landing')).toBeDisabled();
+    expect(tabButton('diffusion')).toBeDisabled();
   });
 
   it('applies ?tab= once: an account becoming active while on the bank tab stays there (R9)', () => {
-    tabParam = 'widget';
+    tabParam = 'diffusion';
     mollie = { connected: true, onboardingStatus: MollieOnboardingStatus.IN_REVIEW, canReceivePayments: false };
     const { rerender } = render(<AssociationProfilePage />);
-    // Widget is locked on arrival: the deep link falls back to "infos".
+    // Diffusion is locked on arrival: the deep link falls back to "infos".
     expect(tabButton('infos')).toHaveClass('active');
 
     fireEvent.click(tabButton('bank '));
@@ -203,23 +201,23 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
     rerender(<AssociationProfilePage />);
 
     expect(tabButton('bank ')).toHaveClass('active');
-    expect(tabButton('widget')).not.toBeDisabled();
-    expect(screen.queryByText('test.widgetTab')).not.toBeInTheDocument();
+    expect(tabButton('diffusion')).not.toBeDisabled();
+    expect(screen.queryByText('test.diffusionTab')).not.toBeInTheDocument();
   });
 
   it('applies an unlocked ?tab= on the first complete load, as before', () => {
-    tabParam = 'widget';
+    tabParam = 'diffusion';
     mollie = { connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED, canReceivePayments: true };
     render(<AssociationProfilePage />);
 
-    expect(screen.getByText('test.widgetTab')).toBeInTheDocument();
+    expect(screen.getByText('test.diffusionTab')).toBeInTheDocument();
   });
 
-  it('opens the Widget tab from screen 6 once collecting', async () => {
+  it('opens the Diffusion tab from screen 6 once collecting', async () => {
     mollie = { connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED, canReceivePayments: true };
     openBankTab();
 
-    fireEvent.click(screen.getByRole('button', { name: /^tabs\.widget/ }));
-    expect(await screen.findByText('test.widgetTab')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^tabs\.diffusion/ }));
+    expect(await screen.findByText('test.diffusionTab')).toBeInTheDocument();
   });
 });
