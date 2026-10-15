@@ -178,6 +178,14 @@ class AssociationProfile(
     var gtmContainerId: String? = null,
 
     /**
+     * Diffusion method picked in the settings "Diffusion" tab. Null until the association picks one;
+     * the settings UI then shows its own default. Settings state only: no public endpoint reads it.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "embed_type", length = 10)
+    var embedType: EmbedType? = null,
+
+    /**
      * Compliance status of the association. `ACTIVE` is the normal operating state.
      *
      * `ALERT` means a campaign report is open and awaiting compliance review — internal only,

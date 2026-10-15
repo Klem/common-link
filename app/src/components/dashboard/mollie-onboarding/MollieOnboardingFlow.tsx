@@ -16,7 +16,6 @@ import FillScreen from './FillScreen';
 import TestPaymentScreen from './TestPaymentScreen';
 import ReviewScreen from './ReviewScreen';
 import ActiveScreen from './ActiveScreen';
-import type { CollectionTab } from './ActiveScreen';
 import { BrokenState, HelpCard, LoadingState } from './FlowStates';
 import { useMollieOnboardingContext } from './useMollieOnboardingContext';
 import { useBankTabAutoRefresh } from './useBankTabAutoRefresh';
@@ -42,8 +41,6 @@ interface MollieOnboardingFlowProps {
   onLearnMore?: () => void;
   /** DEV/STAGING only — simulates a Mollie KYC validation. */
   onForceComplete: () => void;
-  /** Switches the page to the Widget or Landing tab (only offered when `bankDone`). */
-  onOpenTab: (tab: CollectionTab) => void;
 }
 
 /**
@@ -55,8 +52,8 @@ interface MollieOnboardingFlowProps {
  * and screen 6 (active, or COMPLETED without payments). Navigation between screens 0-4 is local.
  *
  * While mounted (i.e. while the bank tab is shown), the status is refreshed on return to the tab
- * and every 60 s ([useBankTabAutoRefresh]); "Statut actualisé à HH:MM" sits in the flow header
- * (Q4). A Mollie connection is never started from here once one exists: `onConnect` is only called
+ * and every 60 s ([useBankTabAutoRefresh]); "Statut actualisé à HH:MM" sits right under the
+ * stepper (Q4), so the stepper keeps the usual gap under the settings tabs. A Mollie connection is never started from here once one exists: `onConnect` is only called
  * when not connected.
  *
  * The flow never unlocks anything: `bankDone`, the tab lock and the badge stay computed by the page;
@@ -72,7 +69,6 @@ export default function MollieOnboardingFlow({
   onRetryConnect,
   onLearnMore,
   onForceComplete,
-  onOpenTab,
 }: MollieOnboardingFlowProps) {
   const tM = useTranslations('settings');
   const tO = useTranslations('settings.mollie.onboarding');
@@ -245,8 +241,8 @@ export default function MollieOnboardingFlow({
   return (
     <div className="mob-flow">
       {devBanner}
-      {refreshedAt}
       {stepper}
+      {refreshedAt}
 
       {notice && (
         <div className={`alert ${notice === FlowNotice.INTERRUPTED ? 'alert-warning' : 'alert-info'} mob-alert-bottom`} role="status">
@@ -342,7 +338,6 @@ export default function MollieOnboardingFlow({
           attestBusy={attesting || contextLoading}
           attestError={attestError}
           onAttest={() => void attest()}
-          onOpenTab={onOpenTab}
         />
       )}
 

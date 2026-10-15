@@ -6,10 +6,8 @@ import { CampaignStatus } from '@/types/campaign';
 import type { AssociationProfileDto } from '@/types/association';
 import type { CampaignSummaryDto } from '@/types/campaign';
 import { CampaignSetupCard } from './CampaignSetupCard';
-import { CampaignPageUrlCard } from './CampaignPageUrlCard';
-import { TrackingCard } from './TrackingCard';
 import { LandingAppearanceCard } from './LandingAppearanceCard';
-import { EmbedMethods } from './EmbedMethods';
+import { DiffusionMethodCard } from './DiffusionMethodCard';
 
 interface Props {
   profile: AssociationProfileDto | null;
@@ -18,9 +16,9 @@ interface Props {
 }
 
 /**
- * Diffusion tab — everything the association needs to publish its collection on its own site,
- * in the order it fills it in: the campaign and its token, the campaign page URL, GTM tracking,
- * the landing page appearance, then one embed method to copy.
+ * Diffusion tab — everything the association needs to publish its collection, in the order it fills
+ * it in: the campaign and its diffusion link, the donation page appearance, then ONE diffusion method
+ * with its own settings (campaign page URL, code, GTM).
  */
 export function DiffusionTab({ profile, onProfileChanged }: Props) {
   const [campaigns, setCampaigns] = useState<CampaignSummaryDto[]>([]);
@@ -35,10 +33,12 @@ export function DiffusionTab({ profile, onProfileChanged }: Props) {
   return (
     <div>
       <CampaignSetupCard profile={profile} campaigns={campaigns} onProfileChanged={onProfileChanged} />
-      <CampaignPageUrlCard profile={profile} onProfileChanged={onProfileChanged} />
-      <TrackingCard profile={profile} onProfileChanged={onProfileChanged} />
       <LandingAppearanceCard profile={profile} onProfileChanged={onProfileChanged} />
-      <EmbedMethods profile={profile} isDestinationLive={isDestinationLive} />
+      <DiffusionMethodCard
+        profile={profile}
+        isDestinationLive={isDestinationLive}
+        onProfileChanged={onProfileChanged}
+      />
     </div>
   );
 }

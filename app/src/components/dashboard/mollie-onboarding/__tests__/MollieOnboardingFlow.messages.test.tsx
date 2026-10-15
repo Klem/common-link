@@ -70,7 +70,6 @@ describe.each([
           onRetryConnect={vi.fn()}
           onLearnMore={vi.fn()}
           onForceComplete={vi.fn()}
-          onOpenTab={vi.fn()}
         />
       </NextIntlClientProvider>,
     );
@@ -139,7 +138,6 @@ describe.each([
           onReconnect={vi.fn()}
           onRetryConnect={vi.fn()}
           onForceComplete={vi.fn()}
-          onOpenTab={vi.fn()}
         />
       </NextIntlClientProvider>,
     );

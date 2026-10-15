@@ -5,14 +5,8 @@ import { useTranslations } from 'next-intl';
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>;
 
-/** Settings tab screen 6 links to; values are the page's `SettingsTab` ids. */
-export const CollectionTab = {
-  DIFFUSION: 'diffusion',
-} as const;
-export type CollectionTab = typeof CollectionTab[keyof typeof CollectionTab];
-
 interface ActiveScreenProps {
-  /** The page's `bankDone` (COMPLETED and payments enabled): the only thing that opens the Diffusion tab. */
+  /** The page's `bankDone` (COMPLETED and payments enabled): success screen, else the "no payments" warning. */
   collecting: boolean;
   /** ISO instant of the self-completion attestation, null when never attested. */
   attestedAt: string | null;
@@ -20,8 +14,6 @@ interface ActiveScreenProps {
   attestBusy: boolean;
   attestError: boolean;
   onAttest: () => void;
-  /** Switches to another settings tab of the page (simple `setActiveTab`). */
-  onOpenTab: (tab: CollectionTab) => void;
 }
 
 /**
@@ -30,16 +22,12 @@ interface ActiveScreenProps {
  * "Connecter Mollie" there).
  *
  * The self-completion attestation is journalled server-side and unlocks nothing: the Diffusion
- * link follows `collecting` (`bankDone`) only. Once recorded it cannot be withdrawn
+ * tab of the page follows `collecting` (`bankDone`) only. Once recorded it cannot be withdrawn
  * (append-only journal), so the box stays checked and disabled.
  */
-export default function ActiveScreen({ collecting, attestedAt, attestBusy, attestError, onAttest, onOpenTab }: ActiveScreenProps) {
+export default function ActiveScreen({ collecting, attestedAt, attestBusy, attestError, onAttest }: ActiveScreenProps) {
   const t = useTranslations('settings.mollie.onboarding.active');
   const attested = attestedAt !== null;
-
-  const tabs = [
-    { id: CollectionTab.DIFFUSION, icon: '🌐', label: t('tabs.diffusion') },
-  ];
 
   return (
     <section className="screen visible" aria-labelledby={collecting ? 'mob-s6-title' : undefined}>
@@ -78,27 +66,6 @@ export default function ActiveScreen({ collecting, attestedAt, attestBusy, attes
           <p className="form-hint mob-attest-hint">{t('attest.hint')}</p>
           {attestError && <p className="form-hint mob-attest-hint" role="alert">{t('attest.error')}</p>}
         </div>
-      </div>
-
-      <div className="mob-tabs-wrap">
-        <div className="camp-tabs" role="group" aria-label={t('tabs.aria')}>
-          {tabs.map((tab, index) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`camp-tab${collecting ? '' : ' tab-locked'}${collecting && index === 0 ? ' active' : ''}`}
-              aria-disabled={!collecting}
-              disabled={!collecting}
-              onClick={() => collecting && onOpenTab(tab.id)}
-            >
-              <span aria-hidden="true">{tab.icon}</span> {tab.label}{' '}
-              <span className={`badge ${collecting ? 'badge-success' : 'badge-neutral'}`}>
-                {collecting ? t('tabs.open') : t('tabs.locked')}
-              </span>
-            </button>
-          ))}
-        </div>
-        {!collecting && <p className="form-hint mob-tabs-hint">{t('tabs.hint')}</p>}
       </div>
     </section>
   );

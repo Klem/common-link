@@ -2692,6 +2692,60 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .lp-preview-body { max-height: 75vh; overflow: auto; display: flex; justify-content: center; background: var(--soft-cream); }
 .lp-preview-frame { height: 70vh; max-width: 100%; border: 1px solid var(--mist-lavender); background: var(--white); }
 
+/* Diffusion tab (settings) — campaign and link, then one diffusion method and its settings */
+/* Subgrid: both columns share their label / control / message rows, so every badge and button of
+   the control row sits on the same line whatever the height of the select. */
+.dif-setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 6px 32px; align-items: start; }
+.dif-setup > .fg { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 6px; margin-bottom: 0; }
+.dif-setup .fl { margin-bottom: 0; }
+.dif-setup > .fg > .dif-inline { align-self: stretch; }
+.dif-setup-warning { grid-column: 1 / -1; margin-top: 4px; }
+.dif-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dif-inline > .fi { flex: 1 1 240px; width: auto; min-width: 0; }
+.dif-btn-danger { color: var(--error-red); }
+.dif-btn-danger:hover { border-color: var(--error-red); background: rgba(232,69,60,.06); }
+.dif-methods-h { justify-content: flex-start; }
+.dif-methods-intro { flex: 1 1 100%; margin-top: 0; }
+.dif-picker { border: 0; margin: 0 0 16px; padding: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 16px; }
+.dif-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dif-group-commonlink { flex: 1 1 200px; }
+.dif-group-site { flex: 4 1 600px; }
+.dif-group-title { font-size: 12px; font-weight: 700; color: var(--slate-lavender); padding-bottom: 6px; border-bottom: 2px solid var(--mist-lavender); }
+.dif-group-cards { flex: 1 1 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.dif-method { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; height: 100%; padding: 14px; border: 2px solid var(--mist-lavender); border-radius: var(--radius-lg); background: var(--white); cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.dif-method:hover { border-color: var(--slate-lavender); }
+.dif-method.active { border-color: var(--deep-indigo); background: var(--soft-cream); box-shadow: 0 4px 12px rgba(23,23,68,.10); }
+.dif-method:focus-within { outline: 2px solid var(--bright-teal); outline-offset: 2px; }
+.dif-method-head { display: flex; align-items: center; gap: 8px; }
+.dif-method-input { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--deep-indigo); }
+.dif-method-title { font-family: var(--font-nunito-sans), sans-serif; font-weight: 800; font-size: 15px; color: var(--ink-navy); }
+.dif-method-desc { font-size: 13px; color: var(--slate-lavender); }
+.dif-facts { display: flex; flex-direction: column; gap: 4px; width: 100%; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--mist-lavender); }
+.dif-fact { display: flex; flex-direction: column; }
+.dif-fact-label { font-size: 11px; color: var(--slate-lavender); }
+.dif-fact-value { font-size: 12px; font-weight: 600; color: var(--ink-navy); }
+.dif-fact-value.warn { align-self: flex-start; padding: 1px 8px; border-radius: var(--radius-full); background: rgba(255,179,71,.15); color: #c98400; font-weight: 800; }
+.dif-note { padding: 12px 16px; border-radius: var(--radius-md); background: rgba(50,50,125,.08); color: var(--ink-navy); font-size: 13px; line-height: 1.5; }
+.dif-note.warn { background: rgba(255,179,71,.15); }
+.dif-picker + .dif-note { margin-bottom: 16px; }
+.dif-settings { border: 2px solid var(--deep-indigo); border-radius: var(--radius-lg); overflow: hidden; }
+.dif-settings-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 16px 20px; background: var(--soft-cream); border-bottom: 1px solid var(--mist-lavender); }
+.dif-settings-heading { flex: 1 1 280px; }
+.dif-settings-title { font-family: var(--font-nunito-sans), sans-serif; font-weight: 900; font-size: 18px; color: var(--ink-navy); }
+.dif-status { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.dif-settings-b { padding: 20px; display: flex; flex-direction: column; gap: 24px; background: var(--white); }
+.dif-settings-b .fg { margin-bottom: 0; display: flex; flex-direction: column; gap: 6px; }
+.dif-settings-b .fl { margin-bottom: 0; }
+.dif-optional { margin-left: 8px; font-size: 12px; font-weight: 600; color: var(--slate-lavender); }
+.dif-file-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border: 2px solid var(--mist-lavender); border-radius: var(--radius-md); }
+.dif-file-name { flex: 1 1 240px; font-size: 13px; }
+.dif-details > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-family: var(--font-nunito-sans), sans-serif; font-weight: 700; font-size: 14px; color: var(--deep-indigo); }
+.dif-details[open] > summary { margin-bottom: 8px; }
+.dif-details-dev { border-top: 1px solid var(--mist-lavender); padding-top: 8px; }
+.dif-params { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: 13px; }
+.dif-params-box { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--soft-cream); border: 1px solid var(--mist-lavender); color: var(--ink-navy); }
+.dif-params-note { grid-column: 1 / -1; margin-top: 0; }
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 
 @media(max-width:1200px) {
@@ -3101,14 +3155,11 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 
 /* Collisions: mockup values applied inside the flow only. Global values (left untouched):
    .empty-state flex column, 48px 24px, fadeUp animation · .empty-state-icon 44px / 14px / .7 ·
-   .empty-state h4/p absent (a global rule would restyle EmptyStateCard and campaign empty states) ·
-   .camp-tabs margin-bottom 24px + overflow-x auto · .camp-tab transition. */
+   .empty-state h4/p absent (a global rule would restyle EmptyStateCard and campaign empty states). */
 .mob-flow .empty-state{display:block;padding:40px 24px;text-align:center;animation:none}
 .mob-flow .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:.6}
 .mob-flow .empty-state h4{font-size:20px;margin-bottom:8px}
 .mob-flow .empty-state p{font-size:14px;color:var(--slate-lavender);margin:0 auto 20px;max-width:460px;line-height:1.6}
-.mob-flow .camp-tabs{margin-bottom:0}
-.mob-flow .camp-tab{transition:none}
 /* After the `.mob-flow .empty-state-icon` override, which has the same specificity. */
 .mw-body .empty-state-icon{font-size:40px;margin-bottom:10px}
 
@@ -3126,8 +3177,6 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .mob-alert-bottom-lg{margin-bottom:20px}
 .mob-flow .empty-state.mob-active-state{padding:24px}
 .mob-attest-hint{margin-left:30px}
-.mob-tabs-wrap{margin-top:20px}
-.mob-tabs-hint{margin-top:8px}
 .mob-help-card{margin-top:28px}
 .mob-flow .card-body.mob-help-body{padding:18px 24px}
 .mob-help-text{flex:1}
@@ -3140,7 +3189,7 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .mob-skel-line-short{height:14px;width:60%;margin-bottom:28px}
 .mob-skel-block{height:120px}
 /* Not in the mockup: "Statut actualisé à HH:MM" moved from the topbar into the tab (Q4). */
-.mob-refresh-info{text-align:right;margin-bottom:8px}
+.mob-refresh-info{text-align:right;margin:-16px 0 8px}
 /* Not in the mockup: "En savoir plus" link under the FAQ of screen 0 (decision R10). */
 .mob-learn-more{margin-top:12px}
 

@@ -695,7 +695,6 @@ export default function AssociationProfilePage() {
             onRetryConnect={() => setShowMollieModal(true)}
             onLearnMore={() => setShowMollieInfoModal(true)}
             onForceComplete={handleMollieForceComplete}
-            onOpenTab={(tab) => tabUnlocked[tab] && setActiveTab(tab)}
           />
         </div>
       )}

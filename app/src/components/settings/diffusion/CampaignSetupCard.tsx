@@ -16,8 +16,9 @@ interface Props {
 }
 
 /**
- * Block 1 of the Diffusion tab — the campaign every embed collects for, and the diffusion token
- * that every embed code carries (regenerating it breaks the codes already published).
+ * Block 1 of the Diffusion tab, in one card — the campaign every diffusion collects for (only LIVE
+ * campaigns are offered), and the diffusion link token that every code carries (regenerating or
+ * disabling it breaks the diffusions already published).
  */
 export function CampaignSetupCard({ profile, campaigns, onProfileChanged }: Props) {
   const t = useTranslations('settings.diffusion');
@@ -35,6 +36,9 @@ export function CampaignSetupCard({ profile, campaigns, onProfileChanged }: Prop
 
   const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId) ?? null;
   const isDestinationLive = selectedCampaign?.status === CampaignStatus.LIVE;
+  // Only a LIVE campaign can collect donations, so it is the only one offered as a destination.
+  // A destination that has since left LIVE stays resolved above, so the warning still shows.
+  const liveCampaigns = campaigns.filter((c) => c.status === CampaignStatus.LIVE);
 
   const handleCampaignChange = async (campaignId: string) => {
     setSelectedCampaignId(campaignId);
@@ -78,74 +82,76 @@ export function CampaignSetupCard({ profile, campaigns, onProfileChanged }: Prop
   };
 
   return (
-    <>
-      <div className="card no-hover" style={{ marginBottom: 24 }}>
-        <div className="card-h">
-          <h3>{t('campaign.title')}</h3>
-        </div>
-        <div className="card-b">
-          <div className="fg">
-            <label className="fl">{t('campaign.label')}</label>
+    <div className="card no-hover" style={{ marginBottom: 24 }}>
+      <div className="card-h">
+        <h3>{t('campaign.title')}</h3>
+      </div>
+      <div className="card-b dif-setup">
+        <div className="fg">
+          <label className="fl" htmlFor="dif-campaign">{t('campaign.label')}</label>
+          <div className="dif-inline">
             <select
+              id="dif-campaign"
               className="fi"
               value={selectedCampaignId}
               onChange={(e) => handleCampaignChange(e.target.value)}
               disabled={isSavingCampaign}
             >
               <option value="">{t('campaign.placeholder')}</option>
-              {campaigns.map((c) => (
+              {liveCampaigns.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.emoji} {c.name}
-                  {c.status !== CampaignStatus.LIVE ? ` (${c.status})` : ''}
                 </option>
               ))}
             </select>
-            {selectedCampaignId && !isDestinationLive && (
-              <p className="fhint error">{t('campaign.warningNotLive')}</p>
-            )}
+            {isDestinationLive && <span className="badge badge-active">{t('campaign.live')}</span>}
           </div>
-        </div>
-      </div>
-
-      <div className="card no-hover" style={{ marginBottom: 24 }}>
-        <div className="card-h">
-          <h3>{t('token.label')}</h3>
-          <span className={`set-tab-badge${widgetToken ? ' ok' : ''}`}>
-            {widgetToken ? t('token.active') : t('token.inactive')}
-          </span>
-        </div>
-        <div className="card-b">
-          {widgetToken && (
-            <>
-              <p className="fhint" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{widgetToken}</p>
-              <p className="fhint error">⚠️ {t('token.regenerateWarning')}</p>
-              <p className="fhint error">⚠️ {t('token.disableWarning')}</p>
-            </>
+          {selectedCampaign && !isDestinationLive && (
+            <p className="fhint error">{t('campaign.warningNotLive', { name: selectedCampaign.name })}</p>
           )}
-          <div className="frow-actions">
+        </div>
+
+        <div className="fg">
+          <span className="fl">{t('token.label')}</span>
+          <div className="dif-inline">
+            <span className={`badge ${widgetToken ? 'badge-active' : 'badge-neutral'}`}>
+              {widgetToken ? t('token.active') : t('token.inactive')}
+            </span>
             {widgetToken && (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
-                style={{ color: 'var(--error, #dc3545)', borderColor: 'var(--error, #dc3545)' }}
+                onClick={handleGenerateToken}
+                disabled={isGeneratingToken}
+              >
+                {t('token.regenerate')}
+              </button>
+            )}
+            {widgetToken && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm dif-btn-danger"
                 onClick={handleDeleteToken}
                 disabled={isGeneratingToken}
               >
                 {t('token.disable')}
               </button>
             )}
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              style={widgetToken ? { background: 'var(--error, #dc3545)', borderColor: 'var(--error, #dc3545)' } : undefined}
-              onClick={handleGenerateToken}
-              disabled={isGeneratingToken}
-            >
-              {widgetToken ? t('token.regenerate') : t('token.generate')}
-            </button>
+            {!widgetToken && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleGenerateToken}
+                disabled={isGeneratingToken}
+              >
+                {t('token.generate')}
+              </button>
+            )}
           </div>
         </div>
+
+        {widgetToken && <p className="fhint dif-setup-warning">{t('token.warning')}</p>}
       </div>
-    </>
+    </div>
   );
 }

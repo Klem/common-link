@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import jakarta.validation.constraints.Pattern
+import org.commonlink.entity.EmbedType
 import org.commonlink.entity.LandingTheme
 
 /**
@@ -23,4 +24,11 @@ data class UpdateLandingConfigRequest(
      */
     @field:Pattern(regexp = "^(GTM-[A-Z0-9]{4,10})?$", message = "must be empty or match GTM-XXXXXXX")
     val gtmContainerId: String? = null,
+
+    /**
+     * Diffusion method picked in the settings tab, as its lowercase wire value (`direct`, `script`,
+     * `iframe`, `html`, `widget`). Null leaves the current value unchanged; an unknown value is
+     * rejected at deserialization.
+     */
+    val embedType: EmbedType? = null,
 )

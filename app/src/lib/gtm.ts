@@ -127,8 +127,9 @@ export type AmountSource = (typeof AmountSource)[keyof typeof AmountSource];
  * How the association published the donation form, reported as `embed_type` on both donation
  * events. Each embed code tells the page through the `clEmbed` query parameter: `landing.js` →
  * `script`, the iframe bridge → `iframe`, `widget.js` → `widget`, or `html` when its tag carries
- * `data-embed="html"` (standalone export). Analytics only: never stored, never trusted for anything
- * else — see {@link resolveEmbedType} for the fallbacks.
+ * `data-embed="html"` (standalone export). The reported value is analytics only, never trusted for
+ * anything else — see {@link resolveEmbedType} for the fallbacks. The same values name the diffusion
+ * method an association picks in its settings, which the backend stores (`AssociationProfile.embedType`).
  */
 export const EmbedType = {
   DIRECT: 'direct',

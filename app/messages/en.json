@@ -366,7 +366,7 @@
     "vopVerified": "VOP verification completed.",
     "widgetAllowedOriginSaved": "Campaign page URL saved.",
     "widgetDestinationSaved": "Destination campaign saved.",
-    "widgetTokenGenerated": "Widget token generated.",
+    "widgetTokenGenerated": "Diffusion token generated.",
     "campaignCause": {
       "SOLIDARITE": "Solidarity",
       "ALIMENTATION": "Food",
@@ -2847,63 +2847,73 @@
         },
         "active": {
           "title": "Your association can receive donations",
-          "text": "Mollie has validated your file. Your donation widget and your fundraising page are now open.",
+          "text": "Mollie has validated your file. Your donation page and its diffusions are now open.",
           "badge": "Active",
           "noPayments": "<strong>Payments not enabled by Mollie yet.</strong> Your file is validated, but Mollie has not yet enabled payment collection. We will email you as soon as it has.",
           "attest": {
             "label": "I confirm that I filled in my Mollie file myself",
             "hint": "This confirmation is recorded in your association's compliance log.",
             "error": "The confirmation could not be recorded. Please try again."
-          },
-          "tabs": {
-            "aria": "Fundraising",
-            "diffusion": "Distribution",
-            "open": "Open",
-            "locked": "Locked",
-            "hint": "The tabs open as soon as Mollie enables payment collection."
           }
         }
       }
     },
     "diffusion": {
       "campaign": {
-        "title": "Donation Widget",
+        "title": "1 · Promoted campaign",
         "label": "Destination campaign",
         "placeholder": "Select a campaign",
-        "warningNotLive": "This campaign is not live. The widget will refuse donations until it goes live."
+        "live": "Live",
+        "warningNotLive": "The campaign \"{name}\" is not live: donations are refused. Choose a live campaign."
       },
       "token": {
-        "label": "Widget token",
+        "label": "Diffusion link",
         "active": "Active",
         "inactive": "Inactive",
-        "generate": "Generate link",
-        "regenerate": "Regenerate link",
+        "generate": "Generate the link",
+        "regenerate": "Regenerate the link",
         "disable": "Disable",
-        "regenerateWarning": "Regenerating revokes the current token: existing widget integrations AND your landing page stop working.",
-        "disableWarning": "Disabling immediately breaks all existing widget integrations and your landing page."
+        "warning": "Regenerating or disabling the link immediately cuts every live diffusion, direct link included."
       },
       "pageUrl": {
-        "title": "Post-payment redirect",
         "label": "URL of your campaign page",
-        "hint": "Address of the page where you publish your campaign. After payment, donors come back to it, and your tracking events (purchase) are sent there to your Google Tag Manager.",
+        "hint": "The page where you paste the code. After payment, the donor comes back there and the purchase event is sent there. Returns are only allowed to this exact domain: without this URL, no return and no conversion.",
         "placeholder": "https://your-site.com/campaign",
         "save": "Save",
         "error": "Enter a full address starting with http:// or https:// (2048 characters at most)."
       },
       "tracking": {
-        "title": "Google Tag Manager",
-        "hint": "Enter your GTM container ID to enable Google Ad Grants tracking on your landing page and your widget.",
-        "label": "GTM container ID",
+        "label": "Google Tag Manager",
+        "optional": "Optional",
         "placeholder": "GTM-XXXXXXX",
         "save": "Save",
         "error": "Invalid format: expected GTM-XXXXXXX.",
-        "tags": {
-          "title": "Google Tag Manager on your page (script and iframe embeds)",
-          "hint": "Embedded on your site, the CommonLink page does not load Google Tag Manager itself: it forwards its events (begin_checkout, purchase) to your page, where your container must therefore be installed. If it is not already, add these two official Google tags: the first in the head of your page, the second right after your body tag opens. If it already is, do not add them: it would load twice.",
-          "headLabel": "Tag to add in the head",
-          "bodyLabel": "Tag to add right after the body tag opens"
+        "help": {
+          "direct": "CommonLink loads this container on the donation page and sends begin_checkout then purchase to it. The cookie consent banner is shown by CommonLink.",
+          "html": "Required for this method: the container and a cookie consent banner are added to the exported file. Changed here? Regenerate the export.",
+          "host": "Here, CommonLink does not load Google Tag Manager: it relays begin_checkout and purchase to your page. Your container must therefore be installed on it."
         },
-        "paramsHint": "With begin_checkout and purchase, we also send embed_type (integration type: direct, script, iframe, html or widget) and anonymous. With begin_checkout only: amount_source (preset when the amount comes from a button, custom when typed), first_amount (first amount chosen) and amount_changes (number of amount changes before submitting). To use them in your tags, create data layer variables in GTM."
+        "consent": {
+          "title": "Cookie consent: your responsibility.",
+          "text": "Since your page loads Google Tag Manager, your site must collect visitor consent (cookie banner, Google Consent Mode) before any tracking. The CommonLink banner is not shown in this integration."
+        },
+        "tags": {
+          "toggle": "Show the installation tags",
+          "hint": "Already installed on your site? Add nothing: the container would load twice.",
+          "headLabel": "In the head",
+          "bodyLabel": "Right after the opening body tag"
+        },
+        "params": {
+          "toggle": "Technical details for your developer",
+          "bothTitle": "begin_checkout and purchase",
+          "embedType": "{embedType} for this method",
+          "anonymous": "anonymous donation or not",
+          "paymentMethod": "when known",
+          "checkoutTitle": "begin_checkout only",
+          "amountSource": "preset or custom",
+          "utm": "campaign parameters of the URL",
+          "howTo": "To use them, create data layer variables in GTM."
+        }
       },
       "appearance": {
         "logo": "Logo",
@@ -2911,15 +2921,15 @@
         "logoNone": "No logo yet: your initials are shown instead.",
         "logoRemove": "Remove",
         "theme": "Colour palette",
-        "themeHint": "Pick a palette: it applies to your whole donation page. Every palette is checked for readability.",
+        "themeHint": "Pick a palette: it applies to your whole donation page. Every palette is checked to stay readable.",
         "themes": {
           "DEFAULT": "Original",
           "NATURE": "Nature",
-          "SOBER": "Understated",
-          "TRUST": "Confidence",
+          "SOBER": "Sober",
+          "TRUST": "Trust",
           "WARM": "Warm"
         },
-        "title": "Appearance"
+        "title": "2 · Appearance"
       },
       "preview": {
         "close": "Close",
@@ -2932,42 +2942,100 @@
         "title": "Preview of your donation page"
       },
       "methods": {
-        "title": "Embed on your site: pick one method",
-        "noToken": "Generate a diffusion token in the Widget tab to get your landing page.",
-        "noLiveCampaign": "Select a published campaign in the Widget tab to activate your landing page.",
+        "title": "3 · Diffusion method",
+        "oneAtATime": "One at a time",
+        "intro": "Choose where your donation page lives. Only the settings of the chosen method are shown below.",
+        "noToken": "Generate the diffusion link above to get your donation page.",
+        "noLiveCampaign": "Select a live campaign above to activate your donation page.",
         "copy": "Copy",
         "copied": "Copied",
-        "pageUrlSet": "After payment, donors come back to: {url}",
-        "pageUrlMissing": "Your campaign page URL is not set (\"Post-payment redirect\" block above): without it, donors do not come back to your page and the purchase event is not sent.",
+        "groups": {
+          "commonlink": "Hosted by CommonLink",
+          "site": "Embedded in your site"
+        },
+        "facts": {
+          "returnTo": "Return after payment",
+          "gtm": "Google Tag Manager",
+          "update": "Updates",
+          "consent": "Cookie consent"
+        },
+        "factValues": {
+          "returnCommonLink": "Your CommonLink page",
+          "returnSite": "Your page · URL required",
+          "gtmCommonLink": "Loaded by CommonLink",
+          "gtmSite": "On your page",
+          "gtmFile": "Included in the file",
+          "updateAuto": "Automatic",
+          "updateManual": "Manual: regenerate",
+          "consentCommonLink": "CommonLink banner",
+          "consentFile": "CommonLink banner included",
+          "consentYours": "Your responsibility"
+        },
+        "onePerPage": {
+          "title": "One method per page.",
+          "text": "Two integrations on the same page would load the form twice and send every donation twice to Google. Switching method here does not remove the code already pasted on your site."
+        },
+        "settings": "Settings · {method}",
+        "status": {
+          "label": "Method status",
+          "campaignLive": "Campaign live",
+          "linkActive": "Link active",
+          "noReturnUrl": "No return URL needed",
+          "returnUrlSet": "Return URL set",
+          "returnUrlMissing": "Return URL missing",
+          "gtmRequired": "GTM required for the export",
+          "consentYours": "Cookie consent: your responsibility"
+        },
         "direct": {
           "title": "Direct link",
-          "help": "Use it as the destination URL of your ads, or share it as is."
+          "tag": "The simplest",
+          "desc": "An address to share or to use in your ads.",
+          "where": "Page hosted by CommonLink: nothing to install on your site.",
+          "label": "Your link",
+          "open": "Open",
+          "help": "Share it as is, or use it as the final URL of your Google Ad Grants ads.",
+          "returnTitle": "Return after payment: nothing to set.",
+          "returnText": "The donor comes back to this same CommonLink page, where the purchase event is sent. Your campaign page URL is only used by the methods embedded in your site."
         },
         "script": {
-          "title": "Snippet to embed (recommended)",
-          "helpTitle": "Paste this code into a blank page of your website",
-          "helpDetail": "The landing page renders full width and its height adjusts automatically."
+          "title": "Embedded page",
+          "tag": "Recommended",
+          "desc": "The whole donation page in a blank page of your site. Automatic height.",
+          "where": "A code to paste into a blank page of your site.",
+          "codeLabel": "Code to paste into a blank page of your site",
+          "codeHint": "Full width, the height adjusts by itself."
         },
         "iframe": {
-          "title": "Iframe embed",
-          "helpTitle": "Paste this iframe tag into your page, then the bridge script right after it",
-          "helpDetail": "The height is fixed and has to be adjusted by hand. Without the bridge script, the page displays but no event reaches your Google Tag Manager.",
+          "title": "Iframe",
+          "desc": "Same page, fixed height to adjust, plus a bridge script for tracking.",
+          "where": "An iframe tag, followed by the bridge script if you use Google Tag Manager.",
+          "codeLabel": "1 · Iframe tag",
+          "codeHint": "Fixed height: adjust height to your layout.",
           "frameTitle": "Donate",
-          "bridgeLabel": "Bridge script to add right after the iframe",
-          "bridgeHint": "Paste right after the iframe tag. Forwards the begin_checkout and purchase events to your page's dataLayer."
+          "bridgeLabel": "2 · Bridge script, right after the iframe",
+          "bridgeHint": "Relays begin_checkout and purchase to your page's dataLayer: without it, no event reaches your Google Tag Manager.",
+          "bridgeMissing": "The bridge script appears here once your Google Tag Manager ID is saved."
         },
-        "export": {
+        "html": {
+          "title": "Standalone HTML page",
+          "desc": "A copy of the page, which you host yourself.",
+          "where": "A file to publish as is on your site.",
+          "label": "Your HTML page",
+          "file": "File landing-gtm.html",
+          "hint": "The donation form always keeps working; the text and appearance are frozen: regenerate then republish after every change.",
+          "gtmMissing": "First save your Google Tag Manager ID below: the export includes it.",
           "download": "Download",
-          "failed": "The export could not be generated. Please try again.",
-          "hint": "Copy this HTML or download it to publish it as-is on your own site: it's a snapshot of your CommonLink landing page's actual content (taken now, not updated automatically) with Google Tag Manager tracking added and the donation form served via widget.js — it stays fully functional and never breaks, even after a CommonLink update. Regenerate it after any content change.",
-          "loading": "Generating the export…",
+          "copy": "Copy the HTML",
           "reload": "Regenerate",
-          "title": "Standalone HTML page"
+          "loading": "Generating the export…",
+          "failed": "The export could not be generated. Please try again."
         },
         "widget": {
-          "title": "Donation form only (script)",
-          "help": "Paste this script tag into your site's HTML to display the donation widget.",
-          "gtmHint": "The form does not load Google Tag Manager itself: it forwards its events (begin_checkout, purchase) to your page. To track them, your Google Tag Manager container must be installed on that page."
+          "title": "Form only",
+          "desc": "Only the donation form, in an existing page.",
+          "where": "A tag to place where the form must appear.",
+          "codeLabel": "Tag to paste where the form must appear",
+          "codeHint": "The height adjusts by itself."
         }
       }
     }

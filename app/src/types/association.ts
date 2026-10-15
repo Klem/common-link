@@ -1,3 +1,5 @@
+import type { EmbedType } from '@/lib/gtm';
+
 /** KYC verification lifecycle states for an association. */
 export const VerificationStatus = {
   UNVERIFIED: 'UNVERIFIED',
@@ -88,6 +90,11 @@ export interface AssociationProfileDto {
   landingLogo: string | null;
   /** Google Tag Manager container ID for Ad Grants tracking. Null if not configured. */
   gtmContainerId: string | null;
+  /**
+   * Diffusion method picked in the settings "Diffusion" tab. Null if never picked. Optional only so
+   * that profile fixtures outside that tab need not change; the API always sends it.
+   */
+  embedType?: EmbedType | null;
 }
 
 /**
@@ -101,6 +108,8 @@ export interface UpdateLandingConfigRequest {
    * value unchanged; an empty string clears it.
    */
   gtmContainerId?: string;
+  /** Diffusion method picked in the settings "Diffusion" tab. Omitted leaves it unchanged. */
+  embedType?: EmbedType;
 }
 
 /** Response shape for `POST /api/association/me/landing/preview-session`. */

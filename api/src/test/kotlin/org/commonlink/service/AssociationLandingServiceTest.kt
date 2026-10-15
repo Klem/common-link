@@ -8,6 +8,7 @@ import io.mockk.verify
 import org.commonlink.dto.UpdateLandingConfigRequest
 import org.commonlink.entity.AssociationLogo
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.EmbedType
 import org.commonlink.entity.LandingTheme
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
@@ -117,6 +118,26 @@ class AssociationLandingServiceTest {
         val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(theme = LandingTheme.WARM))
 
         assertEquals("GTM-ABC1234", dto.gtmContainerId)
+    }
+
+    @Test
+    fun `updateLandingConfig - sets the embed type`() {
+        val profile = profile()
+        stubProfile(profile)
+
+        val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(embedType = EmbedType.HTML))
+
+        assertEquals(EmbedType.HTML, dto.embedType)
+    }
+
+    @Test
+    fun `updateLandingConfig - absent embed type leaves it untouched`() {
+        val profile = profile().apply { embedType = EmbedType.WIDGET }
+        stubProfile(profile)
+
+        val dto = service.updateLandingConfig(userId, UpdateLandingConfigRequest(theme = LandingTheme.WARM))
+
+        assertEquals(EmbedType.WIDGET, dto.embedType)
     }
 
     @Test

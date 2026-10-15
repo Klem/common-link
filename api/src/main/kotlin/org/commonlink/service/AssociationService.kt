@@ -3,6 +3,7 @@ package org.commonlink.service
 import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.dto.toDto
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -67,6 +68,9 @@ class AssociationService(
      * @param req Partial update request; null fields are left unchanged.
      * @return Updated [AssociationProfileDto].
      * @throws UserNotFoundException if no profile exists for this user.
+     * @throws NotFoundException if the destination campaign does not belong to this association.
+     * @throws ConflictException if the destination campaign is not LIVE, or if contact fields change
+     *   once the Mollie KYC flow has started.
      */
     @Transactional
     fun updateProfile(userId: UUID, req: UpdateAssociationProfileRequest): AssociationProfileDto {
@@ -108,6 +112,12 @@ class AssociationService(
             onboardingGate.requireBankReady(userId)
             val campaign = campaignRepository.findByIdAndAssociationId(campaignId, profile.id!!)
                 .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
+            // Mirror of the settings selector, which only offers LIVE campaigns (rule 8): a replayed
+            // request must not point every diffusion at a campaign that refuses donations.
+            if (campaign.status != CampaignStatus.LIVE) {
+                logger.warn("Rejected non-LIVE destination campaign {} ({}) for association {}", campaignId, campaign.status, profile.id)
+                throw ConflictException("Destination campaign must be LIVE")
+            }
             profile.widgetDestinationCampaign = campaign
         }
         req.addressLine1?.let { profile.addressLine1 = it }

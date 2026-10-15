@@ -213,11 +213,10 @@ describe('Bank tab — status refresh and navigation (S4)', () => {
     expect(screen.getByText('test.diffusionTab')).toBeInTheDocument();
   });
 
-  it('opens the Diffusion tab from screen 6 once collecting', async () => {
+  it('shows no Diffusion shortcut on screen 6: the settings tabs already lead there', () => {
     mollie = { connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED, canReceivePayments: true };
     openBankTab();
 
-    fireEvent.click(screen.getByRole('button', { name: /^tabs\.diffusion/ }));
-    expect(await screen.findByText('test.diffusionTab')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^tabs\.diffusion/ })).not.toBeInTheDocument();
   });
 });

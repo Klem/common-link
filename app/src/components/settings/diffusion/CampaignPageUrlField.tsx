@@ -25,15 +25,16 @@ export function isValidCampaignPageUrl(value: string): boolean {
 
 interface Props {
   profile: AssociationProfileDto | null;
-  /** Re-fetches the profile: the embed cards show the saved URL. */
+  /** Re-fetches the profile: the method status shows whether the URL is set. */
   onProfileChanged: () => Promise<void>;
 }
 
 /**
- * Block 2 of the Diffusion tab — the URL of the page where the association publishes its campaign
- * (`widgetAllowedOrigin`): donors come back there after payment, and that is where `purchase` is sent.
+ * Settings field of every method embedded in the association's site — the URL of the page where it
+ * publishes its campaign (`widgetAllowedOrigin`): donors come back there after payment, and that is
+ * where `purchase` is sent. The direct link needs none, so it never shows this field.
  */
-export function CampaignPageUrlCard({ profile, onProfileChanged }: Props) {
+export function CampaignPageUrlField({ profile, onProfileChanged }: Props) {
   const t = useTranslations('settings.diffusion');
   const { addToast } = useToastStore();
 
@@ -65,33 +66,29 @@ export function CampaignPageUrlCard({ profile, onProfileChanged }: Props) {
   };
 
   return (
-    <div className="card no-hover" style={{ marginBottom: 24 }}>
-      <div className="card-h">
-        <h3>{t('pageUrl.title')}</h3>
+    <div className="fg">
+      <label className="fl" htmlFor="dif-page-url">
+        {t('pageUrl.label')} <span className="req">*</span>
+      </label>
+      <div className="dif-inline">
+        <input
+          id="dif-page-url"
+          type="url"
+          className="fi"
+          value={url}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setUrlError(false);
+          }}
+          placeholder={t('pageUrl.placeholder')}
+          disabled={isSaving}
+        />
+        <button type="button" className="btn btn-primary btn-sm" onClick={handleSave} disabled={isSaving}>
+          {t('pageUrl.save')}
+        </button>
       </div>
-      <div className="card-b">
-        <div className="fg">
-          <label className="fl">{t('pageUrl.label')}</label>
-          <p className="fhint" style={{ marginBottom: 6 }}>{t('pageUrl.hint')}</p>
-          <input
-            type="url"
-            className="fi"
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              setUrlError(false);
-            }}
-            placeholder={t('pageUrl.placeholder')}
-            disabled={isSaving}
-          />
-          {urlError && <p className="fhint error">{t('pageUrl.error')}</p>}
-        </div>
-        <div className="frow-actions">
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSave} disabled={isSaving}>
-            {t('pageUrl.save')}
-          </button>
-        </div>
-      </div>
+      {urlError && <p className="fhint error">{t('pageUrl.error')}</p>}
+      <p className="fhint">{t('pageUrl.hint')}</p>
     </div>
   );
 }

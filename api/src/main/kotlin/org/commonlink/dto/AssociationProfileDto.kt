@@ -1,6 +1,7 @@
 package org.commonlink.dto
 
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.EmbedType
 import org.commonlink.entity.LandingTheme
 import org.commonlink.entity.VerificationStatus
 import java.time.Instant
@@ -42,6 +43,8 @@ data class AssociationProfileDto(
     val landingLogo: String?,
     /** Google Tag Manager container ID for Ad Grants tracking. Null if not configured. */
     val gtmContainerId: String?,
+    /** Diffusion method picked in the settings "Diffusion" tab. Null if never picked. */
+    val embedType: EmbedType?,
 )
 
 fun AssociationProfile.toDto() = AssociationProfileDto(
@@ -70,4 +73,5 @@ fun AssociationProfile.toDto() = AssociationProfileDto(
     landingTheme = landingTheme,
     landingLogo = landingLogo,
     gtmContainerId = gtmContainerId,
+    embedType = embedType,
 )

@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multi
 import org.commonlink.dto.ActivityItemDto
 import org.commonlink.dto.ActivityType
 import org.commonlink.dto.AssociationProfileDto
+import org.commonlink.entity.EmbedType
 import org.commonlink.entity.LandingTheme
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.dto.DashboardStatsDto
@@ -104,6 +105,7 @@ class AssociationControllerTest {
         landingTheme = LandingTheme.DEFAULT,
         landingLogo = null,
         gtmContainerId = null,
+        embedType = null,
     )
 
     // -------------------------------------------------------------------------
@@ -414,6 +416,37 @@ class AssociationControllerTest {
                 .content("""{"theme":"RAINBOW"}""")
         )
             .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `updateLandingConfig - embed type is read from its lowercase wire value`() {
+        val slot = slot<UpdateLandingConfigRequest>()
+        every { landingService.updateLandingConfig(userId, capture(slot)) } returns
+            sampleProfile.copy(embedType = EmbedType.IFRAME)
+
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"embedType":"iframe"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.embedType").value("iframe"))
+
+        assertEquals(EmbedType.IFRAME, slot.captured.embedType)
+    }
+
+    @Test
+    fun `updateLandingConfig - 400 on unknown embed type value`() {
+        mockMvc.perform(
+            patch("/api/association/me/landing")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"embedType":"popup"}""")
+        )
+            .andExpect(status().isBadRequest)
+
+        verify(exactly = 0) { landingService.updateLandingConfig(any(), any()) }
     }
 
     @Test

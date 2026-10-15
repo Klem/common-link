@@ -85,7 +85,6 @@ function renderFlow(props: Partial<React.ComponentProps<typeof MollieOnboardingF
     onRetryConnect: vi.fn(),
     onLearnMore: vi.fn(),
     onForceComplete: vi.fn(),
-    onOpenTab: vi.fn(),
   };
   const view = render(
     <MollieOnboardingFlow kyc={kyc()} profile={profile} bankDone={false} interrupted={false} {...handlers} {...props} />,
@@ -445,13 +444,12 @@ describe('MollieOnboardingFlow — screen 6 "Actif" (S4)', () => {
     mockAttest.mockReset().mockResolvedValue({ attestedAt: '2026-10-12T09:41:00Z' });
   });
 
-  it('celebrates an active account, with every step done, and links to the Diffusion tab', async () => {
-    const { onOpenTab } = renderFlow({ kyc: collecting(), bankDone: true });
+  it('celebrates an active account, with every step done, without a redundant Diffusion card', async () => {
+    renderFlow({ kyc: collecting(), bankDone: true });
 
     expect(screen.getByRole('heading', { name: 'title' })).toBeInTheDocument();
     expect(screen.queryByRole('listitem', { current: 'step' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /tabs\.diffusion/ }));
-    expect(onOpenTab).toHaveBeenCalledWith('diffusion');
+    expect(screen.queryByRole('button', { name: /tabs\.diffusion/ })).not.toBeInTheDocument();
     await waitFor(() => expect(mockGetContext).toHaveBeenCalled());
   });
 
@@ -477,7 +475,7 @@ describe('MollieOnboardingFlow — screen 6 "Actif" (S4)', () => {
   });
 
   it('never offers "Connecter Mollie" to a COMPLETED account without payments, and the attestation unlocks nothing', async () => {
-    const { onConnect, onOpenTab } = renderFlow({ kyc: noPayments(), bankDone: false });
+    const { onConnect } = renderFlow({ kyc: noPayments(), bankDone: false });
 
     expect(screen.getByRole('status')).toHaveTextContent('noPayments');
     expect(screen.queryByRole('button', { name: 'mollie.connect' })).not.toBeInTheDocument();
@@ -487,13 +485,7 @@ describe('MollieOnboardingFlow — screen 6 "Actif" (S4)', () => {
     fireEvent.click(box);
     await waitFor(() => expect(box).toBeChecked());
 
-    const diffusion = screen.getByRole('button', { name: /tabs\.diffusion/ });
-    expect(diffusion).toBeDisabled();
-    expect(diffusion).toHaveClass('tab-locked');
-    fireEvent.click(diffusion);
-    expect(onOpenTab).not.toHaveBeenCalled();
     expect(onConnect).not.toHaveBeenCalled();
-    expect(screen.getByText('tabs.hint')).toBeInTheDocument();
   });
 });
 
