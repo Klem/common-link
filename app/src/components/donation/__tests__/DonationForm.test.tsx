@@ -504,3 +504,37 @@ describe('DonationForm — date de naissance facultative', () => {
     expect(cgvCheckbox.checked).toBe(false);
   });
 });
+
+describe('DonationForm — amount choice on begin_checkout', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.dataLayer = [];
+    Object.defineProperty(window, 'top', { value: { location: { href: '' } }, writable: true });
+  });
+
+  it('sends the first amount, the number of changes and the source of the submitted amount', async () => {
+    mockCreateGuestDonation.mockResolvedValue({ publicRef: 'ref-1', checkoutUrl: 'https://pay.example' });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    fireEvent.click(screen.getByText('10 €'));
+    fillValidForm(); // clicks 25 €
+    const custom = screen.getByLabelText('amounts.custom');
+    // Focusing the field that displays the clicked preset, then leaving it, is not a new choice.
+    fireEvent.focus(custom);
+    fireEvent.blur(custom);
+    fireEvent.change(custom, { target: { value: '30' } });
+    fireEvent.blur(custom);
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => expect(window.dataLayer).toHaveLength(1));
+    expect(window.dataLayer?.[0]).toMatchObject({
+      event: 'begin_checkout',
+      amount_source: 'custom',
+      first_amount: 10,
+      amount_changes: 3,
+    });
+  });
+});

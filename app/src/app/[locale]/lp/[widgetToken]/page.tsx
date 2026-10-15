@@ -15,6 +15,7 @@ import { CookieConsentBanner } from './CookieConsentBanner';
 import { GtmSnippet } from '@/components/GtmSnippet';
 import { PurchaseRelay } from '@/components/donation/PurchaseRelay';
 import { resolveDonationRef } from '@/lib/donation/donationRef';
+import { EmbedType, resolveEmbedType } from '@/lib/gtm';
 import { consentBootstrapScript } from '@/lib/consentMode';
 import './landing.css';
 
@@ -24,6 +25,7 @@ interface Props {
     parentOrigin?: string;
     preview?: string;
     clRef?: string;
+    clEmbed?: string;
     cl_donation?: string;
     cl_ref?: string;
   }>;
@@ -71,6 +73,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
   const { locale, widgetToken } = await params;
   const query = await searchParams;
   const parentOrigin = resolveParentOrigin(query.parentOrigin);
+  const embedType = resolveEmbedType(query.clEmbed, parentOrigin ? EmbedType.IFRAME : EmbedType.DIRECT);
   // Back from a confirmed payment, embedded: `landing.js` / the iframe bridge passes the ref as
   // `clRef`, and the event is relayed to the association's page.
   // Back from a confirmed payment on this page opened directly: `/return` sent the donor here with
@@ -140,7 +143,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
       )}
       <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedHeightReporter parentOrigin={parentOrigin} />}
-      {donationRef && !previewToken && <PurchaseRelay donationRef={donationRef} parentOrigin={parentOrigin} />}
+      {donationRef && !previewToken && <PurchaseRelay donationRef={donationRef} parentOrigin={parentOrigin} embedType={embedType} />}
       <script
         nonce={nonce}
         suppressHydrationWarning
@@ -175,6 +178,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
           campaignName: data.campaignName,
           associationName: data.associationName,
           currency: data.currency,
+          embedType,
         }}
         donationsEnabled={data.donationsEnabled}
         remainingCapacity={data.remainingCapacity}

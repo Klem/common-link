@@ -103,7 +103,7 @@ describe('GET /api/gtm-export/[widgetToken]', () => {
     // Donation panel replaced by the stable widget.js loader, anchor preserved for the hero CTA.
     expect(html).not.toContain('lp-donation-panel');
     expect(html).toContain('<div id="don">');
-    expect(html).toContain('src="https://app.common-link.org/widget.js" data-widget-token="clk_abc" async');
+    expect(html).toContain('src="https://app.common-link.org/widget.js" data-widget-token="clk_abc" data-embed="html" async');
 
     // Real content survives.
     expect(html).toContain('Mon Asso');
@@ -163,7 +163,7 @@ describe('GET /api/gtm-export/[widgetToken]', () => {
     const { html } = await res.json();
 
     expect(html).not.toContain('localhost:8080');
-    expect(html).toContain('src="https://app.common-link.org/widget.js" data-widget-token="clk_abc" async');
+    expect(html).toContain('src="https://app.common-link.org/widget.js" data-widget-token="clk_abc" data-embed="html" async');
     expect(html).toContain('href="https://app.common-link.org/fr/report/clk_abc"');
   });
 });

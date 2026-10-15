@@ -16,6 +16,8 @@
  *   data-width   — iframe CSS width (default: "100%")
  *   data-height  — initial CSS height, used until the first height message (default: "640px")
  *   data-locale  — UI language: "fr" or "en" (default: "fr")
+ *   data-embed   — set to "html" by the standalone HTML export only; reported as the `embed_type`
+ *                  of the donation events (default: "widget")
  */
 (function () {
   'use strict';
@@ -93,6 +95,8 @@
   var width = script.getAttribute('data-width') || '100%';
   var height = script.getAttribute('data-height') || '640px';
   var locale = script.getAttribute('data-locale') || 'fr';
+  // Integration mode reported on the donation events (`embed_type`) — the page validates it.
+  var embedType = script.getAttribute('data-embed') === 'html' ? 'html' : 'widget';
 
   // Derive FRONT_URL from this script's own src — never hardcode the environment.
   // e.g. "https://app.common-link.org/widget.js" → "https://app.common-link.org"
@@ -141,7 +145,7 @@
     '/embed/donate/' +
     encodeURIComponent(token);
 
-  var iframeParams = [];
+  var iframeParams = ['clEmbed=' + embedType];
   if (sourceUrl) {
     iframeParams.push('source=' + encodeURIComponent(sourceUrl));
   }

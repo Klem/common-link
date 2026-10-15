@@ -34,7 +34,7 @@ export function gtmNoscriptIframe(id: string): string {
  *  1. Adds `?parentOrigin=<host origin>` to the iframe `src` (a copied `<iframe>` tag is static and
  *     cannot know the host origin) — the iframe will not forward events without it, and loads no
  *     GTM of its own once it is set. This reloads the iframe once; the tag keeps working without
- *     JavaScript, just without the bridge.
+ *     JavaScript, just without the bridge. Also adds `clEmbed=iframe` (see {@link EmbedType}).
  *  2. Back from a confirmed payment (`?cl_donation=success&cl_ref=<ref>`, added by `/return`):
  *     removes both parameters from the address bar and passes the ref to the iframe as `clRef`, so
  *     it relays the `purchase` event with server-side values. A ref already relayed in this tab
@@ -62,6 +62,7 @@ export function gtmIframeBridgeScript(frontOrigin: string, widgetToken: string):
     `history.replaceState(history.state,'',location.pathname+(qs?'?'+qs:'')+location.hash);}` +
     `try{if(ref&&sessionStorage.getItem('cl-purchase-'+ref))ref=null;}catch(x){}` +
     `var u=new URL(f.src),c=false;if(!u.searchParams.get('parentOrigin')){u.searchParams.set('parentOrigin',location.origin);c=true;}` +
+    `if(!u.searchParams.get('clEmbed')){u.searchParams.set('clEmbed','iframe');c=true;}` +
     `if(ref){u.searchParams.set('clRef',ref);c=true;}if(c)f.src=u.toString();` +
     `window.addEventListener('message',function(e){if(e.source!==f.contentWindow||e.origin!==ORIGIN)return;` +
     `var d=e.data;if(!d||d.type!==TYPE)return;window.dataLayer=window.dataLayer||[];window.dataLayer.push(d.payload);` +
@@ -115,9 +116,64 @@ export function captureUtmParams(): UtmParams {
   return utm;
 }
 
+/** How the donor's final amount was chosen: a suggested-amount button, or typed in the free field. */
+export const AmountSource = {
+  PRESET: 'preset',
+  CUSTOM: 'custom',
+} as const;
+export type AmountSource = (typeof AmountSource)[keyof typeof AmountSource];
+
+/**
+ * How the association published the donation form, reported as `embed_type` on both donation
+ * events. Each embed code tells the page through the `clEmbed` query parameter: `landing.js` →
+ * `script`, the iframe bridge → `iframe`, `widget.js` → `widget`, or `html` when its tag carries
+ * `data-embed="html"` (standalone export). Analytics only: never stored, never trusted for anything
+ * else — see {@link resolveEmbedType} for the fallbacks.
+ */
+export const EmbedType = {
+  DIRECT: 'direct',
+  SCRIPT: 'script',
+  IFRAME: 'iframe',
+  HTML: 'html',
+  WIDGET: 'widget',
+} as const;
+export type EmbedType = (typeof EmbedType)[keyof typeof EmbedType];
+
+const EMBED_TYPES: readonly string[] = Object.values(EmbedType);
+
+/**
+ * Validates the raw `clEmbed` query parameter, or falls back to what the route itself implies when
+ * it is missing or unknown — an embed code copied before `clEmbed` existed:
+ * - `/embed/donate` is only opened by `widget.js` → `widget` (an older HTML export is reported so);
+ * - `/lp` with a `parentOrigin` is only opened by `landing.js` (always current) or the iframe
+ *   bridge → `iframe`;
+ * - `/lp` without one → `direct`, refined to `iframe` in the browser when the page turns out to be
+ *   framed (a raw iframe pasted without its bridge) — see {@link buildDonationEventPayload}.
+ */
+export function resolveEmbedType(raw: string | undefined | null, fallback: EmbedType): EmbedType {
+  return raw && EMBED_TYPES.includes(raw) ? (raw as EmbedType) : fallback;
+}
+
+/**
+ * How the donor reached the submitted amount — sent on `begin_checkout` only, to show whether donors
+ * hesitate between amounts. See `useGuestDonation` for the counting rules.
+ */
+export interface AmountChoiceStats {
+  /** Source of the last choice, i.e. of the submitted amount. */
+  source: AmountSource;
+  /** The first amount the donor chose. */
+  firstAmount: number;
+  /** Number of distinct consecutive choices before submitting — 1 means chosen straight away. */
+  changes: number;
+}
+
 /** Donation-specific params outside the GA4-standard `ecommerce` object. */
 export interface DonationEventExtras {
   anonymous: boolean;
+  /** See {@link EmbedType} — sent on both events. */
+  embedType?: EmbedType;
+  /** See {@link AmountChoiceStats} — only ever populated on `begin_checkout`. */
+  amountChoice?: AmountChoiceStats;
   /** Payment method chosen on Mollie's page — only known once the donation is confirmed. */
   paymentMethod?: string;
   /** See {@link captureUtmParams} — only ever populated on `begin_checkout`. */
@@ -143,6 +199,15 @@ export const DonationEventName = {
 } as const;
 export type DonationEventName = (typeof DonationEventName)[keyof typeof DonationEventName];
 
+/**
+ * `direct` is only what the server could tell from the URL: a page that turns out to be framed is a
+ * raw iframe pasted without its bridge.
+ */
+function refineEmbedType(embedType: EmbedType): EmbedType {
+  if (embedType !== EmbedType.DIRECT || typeof window === 'undefined') return embedType;
+  return window.top !== window.self ? EmbedType.IFRAME : embedType;
+}
+
 /** The dataLayer object of a donation event — the same shape whether pushed locally or relayed. */
 function buildDonationEventPayload(
   event: DonationEventName,
@@ -153,6 +218,14 @@ function buildDonationEventPayload(
     event,
     ecommerce,
     anonymous: extras.anonymous,
+    ...(extras.embedType ? { embed_type: refineEmbedType(extras.embedType) } : {}),
+    ...(extras.amountChoice
+      ? {
+          amount_source: extras.amountChoice.source,
+          first_amount: extras.amountChoice.firstAmount,
+          amount_changes: extras.amountChoice.changes,
+        }
+      : {}),
     ...(extras.paymentMethod ? { payment_method: extras.paymentMethod } : {}),
     ...extras.utm,
   };

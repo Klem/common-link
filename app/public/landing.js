@@ -125,7 +125,8 @@
   // Locale is pinned to "fr": the landing page is French-only for now (a data-locale
   // attribute will be added when the other locales are actually served).
   var iframeSrc = frontUrl + '/fr/lp/' + encodeURIComponent(token);
-  var iframeParams = [];
+  // Integration mode reported on the donation events (`embed_type`).
+  var iframeParams = ['clEmbed=script'];
   if (parentOrigin) {
     iframeParams.push('parentOrigin=' + encodeURIComponent(parentOrigin));
   }

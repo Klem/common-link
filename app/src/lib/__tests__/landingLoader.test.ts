@@ -13,11 +13,16 @@ const REF = '8e8a8e77-2c48-4634-a306-9cb86f630de8';
 
 const LOADERS = ['landing.js', 'widget.js'] as const;
 
-function load(file: (typeof LOADERS)[number], pageUrl = '/campagne'): HTMLIFrameElement {
+function load(
+  file: (typeof LOADERS)[number],
+  pageUrl = '/campagne',
+  attributes: Record<string, string> = {},
+): HTMLIFrameElement {
   history.pushState({}, '', pageUrl);
   const script = document.createElement('script');
   script.src = `${FRONT}/${file}`;
   script.setAttribute('data-widget-token', 'clk_abc');
+  Object.entries(attributes).forEach(([name, value]) => script.setAttribute(name, value));
   document.body.appendChild(script);
   Object.defineProperty(document, 'currentScript', { value: script, configurable: true });
   new Function(readFileSync(resolve(__dirname, `../../../public/${file}`), 'utf-8'))();
@@ -35,11 +40,39 @@ afterEach(() => {
   history.pushState({}, '', '/');
 });
 
+describe('embed type passed to the iframe (clEmbed)', () => {
+  it('reports script for landing.js', () => {
+    expect(new URL(load('landing.js').src).searchParams.get('clEmbed')).toBe('script');
+  });
+
+  it('reports widget for widget.js', () => {
+    expect(new URL(load('widget.js').src).searchParams.get('clEmbed')).toBe('widget');
+  });
+
+  it('reports html for the widget.js tag of the standalone export', () => {
+    const iframe = load('widget.js', '/campagne', { 'data-embed': 'html' });
+    expect(new URL(iframe.src).searchParams.get('clEmbed')).toBe('html');
+  });
+
+  it('falls back to widget for any other data-embed value', () => {
+    const iframe = load('widget.js', '/campagne', { 'data-embed': 'direct' });
+    expect(new URL(iframe.src).searchParams.get('clEmbed')).toBe('widget');
+  });
+});
+
 describe.each(LOADERS)('%s', (file) => {
   it('pushes the events sent by its own iframe', () => {
     window.dataLayer = [];
     const iframe = load(file);
-    const payload = { event: 'begin_checkout' };
+    // Pushed whole: params outside `ecommerce` (amount choice, anonymous) must survive the relay.
+    const payload = {
+      event: 'begin_checkout',
+      ecommerce: { value: 30 },
+      anonymous: false,
+      amount_source: 'custom',
+      first_amount: 10,
+      amount_changes: 3,
+    };
     post(FRONT, iframe.contentWindow, { type: GTM_EVENT_MESSAGE_TYPE, payload });
     expect(window.dataLayer).toEqual([payload]);
   });

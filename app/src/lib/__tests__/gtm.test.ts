@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { gtmIframeBridgeScript, relayDonationEvent, GTM_EVENT_MESSAGE_TYPE } from '../gtm';
+import {
+  gtmIframeBridgeScript,
+  pushDonationEvent,
+  relayDonationEvent,
+  resolveEmbedType,
+  EmbedType,
+  GTM_EVENT_MESSAGE_TYPE,
+} from '../gtm';
 
 const FRONT = 'https://app.example.org';
 const TOKEN = 'clk_abc';
@@ -24,6 +31,11 @@ describe('gtmIframeBridgeScript', () => {
   const post = (origin: string, source: Window | null, data: unknown) =>
     window.dispatchEvent(new MessageEvent('message', { origin, source, data }));
 
+  it('reports the iframe embed to the page (clEmbed=iframe)', () => {
+    run();
+    expect(new URL(iframe.src).searchParams.get('clEmbed')).toBe('iframe');
+  });
+
   it('adds the host origin as parentOrigin to the iframe src', () => {
     run();
     expect(new URL(iframe.src).searchParams.get('parentOrigin')).toBe(window.location.origin);
@@ -31,7 +43,15 @@ describe('gtmIframeBridgeScript', () => {
 
   it('pushes the payload of a message from our iframe and origin', () => {
     run();
-    const payload = { event: 'begin_checkout', ecommerce: { value: 20 } };
+    // Pushed whole: params outside `ecommerce` (amount choice, anonymous) must survive the relay.
+    const payload = {
+      event: 'begin_checkout',
+      ecommerce: { value: 20 },
+      anonymous: false,
+      amount_source: 'preset',
+      first_amount: 20,
+      amount_changes: 1,
+    };
     post(FRONT, iframe.contentWindow, { type: GTM_EVENT_MESSAGE_TYPE, payload });
     expect(window.dataLayer).toEqual([payload]);
   });
@@ -104,6 +124,83 @@ describe('gtmIframeBridgeScript', () => {
       run();
       expect(new URL(iframe.src).searchParams.get('clRef')).toBeNull();
     });
+  });
+});
+
+describe('pushDonationEvent — amount choice', () => {
+  it('flattens the amount stats into snake_case params outside ecommerce', () => {
+    window.dataLayer = [];
+    try {
+      pushDonationEvent(
+        'begin_checkout',
+        { transaction_id: 'r', value: 50, currency: 'EUR', items: [{ item_id: 'c', item_name: 'n' }], affiliation: 'a' },
+        { anonymous: false, amountChoice: { source: 'preset', firstAmount: 25, changes: 3 } },
+      );
+      expect(window.dataLayer[0]).toMatchObject({
+        event: 'begin_checkout',
+        amount_source: 'preset',
+        first_amount: 25,
+        amount_changes: 3,
+      });
+    } finally {
+      delete window.dataLayer;
+    }
+  });
+
+  it('sends no amount params when there are no stats', () => {
+    window.dataLayer = [];
+    try {
+      pushDonationEvent(
+        'purchase',
+        { transaction_id: 'r', value: 50, currency: 'EUR', items: [{ item_id: 'c', item_name: 'n' }], affiliation: 'a' },
+        { anonymous: false },
+      );
+      expect(window.dataLayer[0]).not.toHaveProperty('amount_source');
+      expect(window.dataLayer[0]).not.toHaveProperty('amount_changes');
+    } finally {
+      delete window.dataLayer;
+    }
+  });
+});
+
+describe('resolveEmbedType', () => {
+  it('keeps a known value', () => {
+    expect(resolveEmbedType('script', EmbedType.IFRAME)).toBe('script');
+    expect(resolveEmbedType('html', EmbedType.WIDGET)).toBe('html');
+  });
+
+  it('falls back on a missing or unknown value', () => {
+    expect(resolveEmbedType(undefined, EmbedType.DIRECT)).toBe('direct');
+    expect(resolveEmbedType('', EmbedType.WIDGET)).toBe('widget');
+    expect(resolveEmbedType('<script>', EmbedType.IFRAME)).toBe('iframe');
+  });
+});
+
+describe('pushDonationEvent — embed type', () => {
+  const ecommerce = { transaction_id: 'r', value: 5, currency: 'EUR', items: [{ item_id: 'c', item_name: 'n' }], affiliation: 'a' };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete window.dataLayer;
+  });
+
+  it('sends embed_type as given', () => {
+    window.dataLayer = [];
+    pushDonationEvent('purchase', ecommerce, { anonymous: false, embedType: EmbedType.SCRIPT });
+    expect(window.dataLayer[0]).toMatchObject({ embed_type: 'script' });
+  });
+
+  it('keeps direct on a top-level page', () => {
+    window.dataLayer = [];
+    pushDonationEvent('begin_checkout', ecommerce, { anonymous: false, embedType: EmbedType.DIRECT });
+    expect(window.dataLayer[0]).toMatchObject({ embed_type: 'direct' });
+  });
+
+  it('turns direct into iframe when the page is framed (iframe pasted without its bridge)', () => {
+    window.dataLayer = [];
+    vi.stubGlobal('top', {});
+    pushDonationEvent('begin_checkout', ecommerce, { anonymous: false, embedType: EmbedType.DIRECT });
+    expect(window.dataLayer[0]).toMatchObject({ embed_type: 'iframe' });
   });
 });
 

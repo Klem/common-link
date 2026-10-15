@@ -42,7 +42,7 @@ beforeEach(() => {
 describe('PurchaseRelay', () => {
   it('relays purchase to the host with the server-side values', async () => {
     mockStatus.mockResolvedValue(confirmed);
-    render(<PurchaseRelay donationRef={REF} parentOrigin={HOST} />);
+    render(<PurchaseRelay donationRef={REF} parentOrigin={HOST} embedType="script" />);
 
     await waitFor(() => expect(mockRelay).toHaveBeenCalledTimes(1));
     expect(mockStatus).toHaveBeenCalledWith(REF);
@@ -55,7 +55,7 @@ describe('PurchaseRelay', () => {
         items: [{ item_id: 'camp-1', item_name: 'Soirée ZoFest' }],
         affiliation: 'ZO PROD.',
       },
-      { anonymous: false, paymentMethod: 'creditcard' },
+      { anonymous: false, paymentMethod: 'creditcard', embedType: 'script' },
       HOST,
     );
   });
@@ -64,7 +64,7 @@ describe('PurchaseRelay', () => {
     vi.useFakeTimers();
     try {
       mockStatus.mockResolvedValue({ status: 'PENDING' });
-      render(<PurchaseRelay donationRef={REF} parentOrigin={HOST} />);
+      render(<PurchaseRelay donationRef={REF} parentOrigin={HOST} embedType="script" />);
       await vi.advanceTimersByTimeAsync(10000);
       expect(mockRelay).not.toHaveBeenCalled();
       expect(mockStatus.mock.calls.length).toBeGreaterThan(1);
@@ -75,7 +75,7 @@ describe('PurchaseRelay', () => {
 
   it('never relays a confirmed status without its values', async () => {
     mockStatus.mockResolvedValue({ status: 'CONFIRMED', method: 'creditcard' });
-    render(<PurchaseRelay donationRef={REF} parentOrigin={HOST} />);
+    render(<PurchaseRelay donationRef={REF} parentOrigin={HOST} embedType="script" />);
     await waitFor(() => expect(mockStatus).toHaveBeenCalled());
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mockRelay).not.toHaveBeenCalled();
@@ -86,20 +86,20 @@ describe('PurchaseRelay on the landing page opened directly', () => {
   it('pushes purchase into its own dataLayer, cleans the URL and never replays it', async () => {
     mockStatus.mockResolvedValue(confirmed);
     history.pushState({}, '', `/fr/lp/clk_abc?utm_source=ads&cl_donation=success&cl_ref=${REF}`);
-    const { unmount } = render(<PurchaseRelay donationRef={REF} />);
+    const { unmount } = render(<PurchaseRelay donationRef={REF} embedType="direct" />);
 
     await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1));
     expect(mockRelay).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith(
       'purchase',
       expect.objectContaining({ transaction_id: REF, value: 50, currency: 'EUR' }),
-      { anonymous: false, paymentMethod: 'creditcard' },
+      { anonymous: false, paymentMethod: 'creditcard', embedType: 'direct' },
     );
     expect(window.location.search).toBe('?utm_source=ads');
     unmount();
 
     // Reload of the same tab: already sent.
-    render(<PurchaseRelay donationRef={REF} />);
+    render(<PurchaseRelay donationRef={REF} embedType="direct" />);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mockPush).toHaveBeenCalledTimes(1);
   });

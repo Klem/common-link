@@ -2902,7 +2902,8 @@
           "hint": "Intégrée sur votre site, la page CommonLink ne charge pas Google Tag Manager elle-même : elle transmet ses événements (begin_checkout, purchase) à votre page, où votre conteneur doit donc être installé. S'il ne l'est pas déjà, ajoutez ces deux balises officielles Google : la première dans le head de votre page, la seconde juste après l'ouverture du body. S'il l'est déjà, ne les ajoutez pas : il serait chargé deux fois.",
           "headLabel": "Balise à ajouter dans le head",
           "bodyLabel": "Balise à ajouter juste après l'ouverture du body"
-        }
+        },
+        "paramsHint": "Avec begin_checkout et purchase, nous envoyons aussi embed_type (type d'intégration : direct, script, iframe, html ou widget) et anonymous. Avec begin_checkout seulement : amount_source (preset si le montant vient d'un bouton, custom s'il a été saisi), first_amount (premier montant choisi) et amount_changes (nombre de changements de montant avant validation). Pour les utiliser dans vos balises, créez des variables de couche de données dans GTM."
       },
       "appearance": {
         "logo": "Logo",

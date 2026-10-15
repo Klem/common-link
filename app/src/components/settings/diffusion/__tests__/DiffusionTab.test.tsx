@@ -359,6 +359,7 @@ describe('DiffusionTab — GTM', () => {
     renderTab({ ...liveProfile, gtmContainerId: 'GTM-ABC1234' });
     expect(screen.getAllByText('tracking.tags.headLabel')).toHaveLength(1);
     expect(screen.getAllByText('tracking.tags.bodyLabel')).toHaveLength(1);
+    expect(screen.getByText('tracking.paramsHint')).toBeInTheDocument();
   });
 
   it('hides the export without a configured GTM container ID', async () => {

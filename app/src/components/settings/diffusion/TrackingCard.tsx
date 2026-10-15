@@ -89,6 +89,8 @@ export function TrackingCard({ profile, onProfileChanged }: Props) {
               copyLabel={copyLabel}
               copiedLabel={copiedLabel}
             />
+            {/* Params outside `ecommerce` reach no tag until the association maps them in GTM. */}
+            <p className="fhint" style={{ marginTop: 10 }}>{t('tracking.paramsHint')}</p>
           </>
         )}
       </div>

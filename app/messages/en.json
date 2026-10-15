@@ -2902,7 +2902,8 @@
           "hint": "Embedded on your site, the CommonLink page does not load Google Tag Manager itself: it forwards its events (begin_checkout, purchase) to your page, where your container must therefore be installed. If it is not already, add these two official Google tags: the first in the head of your page, the second right after your body tag opens. If it already is, do not add them: it would load twice.",
           "headLabel": "Tag to add in the head",
           "bodyLabel": "Tag to add right after the body tag opens"
-        }
+        },
+        "paramsHint": "With begin_checkout and purchase, we also send embed_type (integration type: direct, script, iframe, html or widget) and anonymous. With begin_checkout only: amount_source (preset when the amount comes from a button, custom when typed), first_amount (first amount chosen) and amount_changes (number of amount changes before submitting). To use them in your tags, create data layer variables in GTM."
       },
       "appearance": {
         "logo": "Logo",

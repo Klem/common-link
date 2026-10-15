@@ -4,10 +4,11 @@ import { EmbedDonateClient } from './EmbedDonateClient';
 import { EmbedWidgetHeightReporter } from './EmbedWidgetHeightReporter';
 import { PurchaseRelay } from '@/components/donation/PurchaseRelay';
 import { resolveDonationRef } from '@/lib/donation/donationRef';
+import { EmbedType, resolveEmbedType } from '@/lib/gtm';
 
 interface Props {
   params: Promise<{ locale: string; widgetToken: string }>;
-  searchParams: Promise<{ source?: string; parentOrigin?: string; clRef?: string }>;
+  searchParams: Promise<{ source?: string; parentOrigin?: string; clRef?: string; clEmbed?: string }>;
 }
 
 /**
@@ -31,10 +32,12 @@ function resolveParentOrigin(raw: string | undefined): string | null {
 
 export default async function EmbedDonatePage({ params, searchParams }: Props) {
   const { locale, widgetToken } = await params;
-  const { source, parentOrigin: rawParentOrigin, clRef } = await searchParams;
+  const { source, parentOrigin: rawParentOrigin, clRef, clEmbed } = await searchParams;
   const parentOrigin = resolveParentOrigin(rawParentOrigin);
   // Set by `widget.js` when the donor is back from a confirmed payment — see PurchaseRelay.
   const donationRef = resolveDonationRef(clRef);
+  // Only `widget.js` opens this route — itself, or inside a standalone HTML export.
+  const embedType = resolveEmbedType(clEmbed, EmbedType.WIDGET);
 
   // Separate server-side fetch just for GTM: the script must be part of the initial HTML to
   // execute (see GtmSnippet), which rules out reusing EmbedDonateClient's client-side fetch.
@@ -57,12 +60,13 @@ export default async function EmbedDonatePage({ params, searchParams }: Props) {
     <>
       <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedWidgetHeightReporter parentOrigin={parentOrigin} />}
-      {parentOrigin && donationRef && <PurchaseRelay donationRef={donationRef} parentOrigin={parentOrigin} />}
+      {parentOrigin && donationRef && <PurchaseRelay donationRef={donationRef} parentOrigin={parentOrigin} embedType={embedType} />}
       <EmbedDonateClient
         widgetToken={widgetToken}
         sourceSite={source ?? null}
         locale={locale}
         parentOrigin={parentOrigin}
+        embedType={embedType}
       />
     </>
   );

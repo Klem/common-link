@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { getDonationStatus, DonationReturnStatus } from '@/lib/api/public';
-import { DonationEventName, pushDonationEvent, relayDonationEvent } from '@/lib/gtm';
+import { DonationEventName, pushDonationEvent, relayDonationEvent, type EmbedType } from '@/lib/gtm';
 
 /**
  * The donor reaches the campaign page only after `/return` saw the payment confirmed, so the
@@ -26,6 +26,8 @@ interface Props {
    * pushed into this page's own dataLayer, where `begin_checkout` fired.
    */
   parentOrigin?: string | null;
+  /** See `EmbedType` — how the association published the form the donation came from. */
+  embedType: EmbedType;
 }
 
 function alreadySent(donationRef: string): boolean {
@@ -65,7 +67,7 @@ function stripReturnParams(): void {
  *
  * Renders nothing.
  */
-export function PurchaseRelay({ donationRef, parentOrigin }: Props) {
+export function PurchaseRelay({ donationRef, parentOrigin, embedType }: Props) {
   useEffect(() => {
     let stopped = false;
     const local = !parentOrigin;
@@ -88,7 +90,7 @@ export function PurchaseRelay({ donationRef, parentOrigin }: Props) {
               items: [{ item_id: campaignId, item_name: campaignName }],
               affiliation: associationName,
             };
-            const extras = { anonymous: status.anonymous ?? false, paymentMethod: status.method };
+            const extras = { anonymous: status.anonymous ?? false, paymentMethod: status.method, embedType };
             if (parentOrigin) {
               relayDonationEvent(DonationEventName.PURCHASE, ecommerce, extras, parentOrigin);
             } else if (!alreadySent(donationRef)) {
@@ -109,7 +111,7 @@ export function PurchaseRelay({ donationRef, parentOrigin }: Props) {
 
     send();
     return () => { stopped = true; };
-  }, [donationRef, parentOrigin]);
+  }, [donationRef, parentOrigin, embedType]);
 
   return null;
 }
