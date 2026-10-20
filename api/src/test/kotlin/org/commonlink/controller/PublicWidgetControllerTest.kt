@@ -390,19 +390,34 @@ class PublicWidgetControllerTest {
     // ── GET /widget/donations/{ref}/status ────────────────────────────────────
 
     @Test
-    fun `getDonationStatus - 200 CONFIRMED when donation is confirmed`() {
+    fun `getDonationStatus - 200 CONFIRMED exposes the donation values, never an identity`() {
         val ref = UUID.randomUUID()
+        val campaignId = UUID.randomUUID()
         every { publicWidgetService.getDonationStatus(ref) } returns
-            DonationStatusDto(DonationPublicStatus.CONFIRMED, method = "creditcard")
+            DonationStatusDto(
+                status = DonationPublicStatus.CONFIRMED,
+                method = "creditcard",
+                amount = java.math.BigDecimal("25.00"),
+                currency = "EUR",
+                campaignId = campaignId,
+                campaignName = "Collecte",
+                associationName = "Asso",
+                anonymous = false,
+            )
 
         mockMvc.perform(get("/api/public/widget/donations/$ref/status"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.status").value("CONFIRMED"))
             .andExpect(jsonPath("$.method").value("creditcard"))
+            .andExpect(jsonPath("$.amount").value(25.00))
+            .andExpect(jsonPath("$.currency").value("EUR"))
+            .andExpect(jsonPath("$.campaignId").value(campaignId.toString()))
+            .andExpect(jsonPath("$.campaignName").value("Collecte"))
+            .andExpect(jsonPath("$.associationName").value("Asso"))
+            .andExpect(jsonPath("$.anonymous").value(false))
             .andExpect(jsonPath("$.id").doesNotExist())
             .andExpect(jsonPath("$.donorId").doesNotExist())
-            .andExpect(jsonPath("$.campaignId").doesNotExist())
-            .andExpect(jsonPath("$.amount").doesNotExist())
+            .andExpect(jsonPath("$.donorFullName").doesNotExist())
     }
 
     @Test
@@ -415,6 +430,8 @@ class PublicWidgetControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.status").value("PENDING"))
             .andExpect(jsonPath("$.method").doesNotExist())
+            .andExpect(jsonPath("$.amount").doesNotExist())
+            .andExpect(jsonPath("$.campaignId").doesNotExist())
     }
 
     @Test

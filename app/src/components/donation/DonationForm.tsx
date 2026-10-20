@@ -7,6 +7,7 @@ import { LegalLinkButton } from '@/components/legal/LegalLinkButton';
 import { LegalDocumentType } from '@/types/legal';
 import { SUGGESTED_AMOUNTS } from '@/lib/donation/donationSchema';
 import { useGuestDonation, type DonationTrackingContext } from '@/lib/donation/useGuestDonation';
+import { AmountSource } from '@/lib/gtm';
 
 type Skin = 'default' | 'landing';
 
@@ -81,7 +82,7 @@ export function DonationForm({
   const t = useTranslations('widget');
   const s = SKINS[skin];
 
-  const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked } =
+  const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked, recordAmountChoice } =
     useGuestDonation({ widgetToken, sourceSite, locale, tracking, parentOrigin });
 
   const [openLegalDoc, setOpenLegalDoc] = useState<LegalDocumentType | null>(null);
@@ -118,6 +119,7 @@ export function DonationForm({
 
   function handleAmountSelect(preset: number) {
     setValue('amount', preset, { shouldValidate: true });
+    recordAmountChoice(preset, AmountSource.PRESET);
     onAmountChange?.(preset);
   }
 
@@ -159,6 +161,8 @@ export function DonationForm({
             {...register('amount', {
               valueAsNumber: true,
               onChange: (e) => onAmountChange?.(e.target.valueAsNumber || undefined),
+              // One choice per typed amount, not per keystroke.
+              onBlur: (e) => recordAmountChoice(e.target.valueAsNumber, AmountSource.CUSTOM),
             })}
           />
           {capExceeded && (

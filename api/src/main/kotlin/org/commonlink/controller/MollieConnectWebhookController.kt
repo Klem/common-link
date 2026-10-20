@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.commonlink.exception.MollieOrganizationAlreadyLinkedException
 import org.commonlink.service.MollieConnectService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -15,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
+
+/** `reason` query parameter of the error page when the Mollie organization belongs to another association. */
+private const val REASON_ORGANIZATION_ALREADY_LINKED = "organization-already-linked"
 
 /**
  * Public webhook controller for the Mollie Connect OAuth2 callback.
@@ -41,6 +45,8 @@ class MollieConnectWebhookController(
      * - `code` or `state` absent without `error`: malformed callback — redirects to error page.
      * - `code` and `state` present: exchanges the authorization code, persists the connection,
      *   and redirects the popup to the frontend success page.
+     * - the Mollie organization is already linked to another association: error page with
+     *   `?reason=organization-already-linked`, so the popup can explain why.
      *
      * @param code Authorization code returned by Mollie (absent when user denies).
      * @param state CSRF state UUID echoed by Mollie; used to validate the callback origin.
@@ -73,6 +79,9 @@ class MollieConnectWebhookController(
                 mollieConnectService.handleCallback(code, state)
                 logger.info("Mollie Connect callback succeeded for state {}", state)
                 "$redirectBase/success"
+            } catch (e: MollieOrganizationAlreadyLinkedException) {
+                logger.warn("Mollie Connect callback failed for state {}: {}", state, e.message)
+                "$redirectBase/error?reason=$REASON_ORGANIZATION_ALREADY_LINKED"
             } catch (e: Exception) {
                 logger.warn("Mollie Connect callback failed for state {}: {}", state, e.message)
                 "$redirectBase/error"

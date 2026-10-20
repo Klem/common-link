@@ -129,6 +129,21 @@ class ComplianceAuditLogService(
 
         /** Same as [ASSOCIATION_DOSSIER_CONSULTED], for a single campaign's dossier. */
         const val CAMPAIGN_DOSSIER_CONSULTED = "CAMPAIGN_DOSSIER_CONSULTED"
+
+        /**
+         * An association downloaded one of its own uploaded documents
+         * (`GET /api/association/documents/{id}/content`). Written by
+         * [appendAssociationDocumentDownloaded]. The payload carries the document id and type
+         * only — never its file name or content.
+         */
+        const val ASSOCIATION_DOCUMENT_DOWNLOADED = "ASSOCIATION_DOCUMENT_DOWNLOADED"
+
+        /**
+         * An association attested having filled its Mollie onboarding dossier itself (decision
+         * D10, sprint 20). Written at most once per association by
+         * [appendMollieSelfCompletionAttestedOnce]. A journal fact only: it never unlocks anything.
+         */
+        const val MOLLIE_SELF_COMPLETION_ATTESTED = "MOLLIE_SELF_COMPLETION_ATTESTED"
     }
 
     /**
@@ -585,6 +600,73 @@ class ComplianceAuditLogService(
         actorUserId = actorUserId,
         payload = mapOf("associationId" to associationId.toString()),
     )
+
+    // -----------------------------------------------------------------------------------------
+    // Association self-service journal helpers (sprint 20, "Bank account" tab)
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     * Records that [actorUserId] downloaded document [documentId] of [associationId]. Committed in
+     * a **new, independent transaction** ([Propagation.REQUIRES_NEW]), like the dossier-consultation
+     * helpers: the read that triggers it must not be able to roll the record back.
+     *
+     * @param docType the document slot name; the file name and content are never journaled.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun appendAssociationDocumentDownloaded(
+        associationId: UUID,
+        documentId: UUID,
+        docType: String,
+        actorUserId: UUID,
+    ): ComplianceAuditLog = append(
+        eventType = ASSOCIATION_DOCUMENT_DOWNLOADED,
+        subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+        subjectId = associationId,
+        actorUserId = actorUserId,
+        payload = mapOf("documentId" to documentId.toString(), "docType" to docType),
+    )
+
+    /**
+     * Records the association's self-completion attestation for its Mollie dossier, **idempotently**:
+     * if an attestation already exists for [associationId], it is returned unchanged and no new
+     * event is written.
+     *
+     * The existence check runs under the journal write lock
+     * ([ComplianceAuditLogRepository.acquireWriteLock]) and in the same transaction as the append,
+     * so two concurrent requests cannot both write an event — the second one waits for the lock,
+     * then sees the first one's committed row.
+     *
+     * No IP address or user-agent is recorded (GDPR decision of 2026-10-12): this journal is
+     * append-only and hash-chained, so such data could never be erased.
+     *
+     * @param textVersion version of the attestation wording shown to the user.
+     * @return the first (and only) attestation event for this association.
+     */
+    @Transactional
+    fun appendMollieSelfCompletionAttestedOnce(
+        associationId: UUID,
+        actorUserId: UUID,
+        textVersion: String,
+    ): ComplianceAuditLog {
+        repo.acquireWriteLock()
+        findMollieSelfCompletionAttestation(associationId)?.let { return it }
+        return append(
+            eventType = MOLLIE_SELF_COMPLETION_ATTESTED,
+            subjectType = ComplianceAuditSubjectType.ASSOCIATION,
+            subjectId = associationId,
+            actorUserId = actorUserId,
+            payload = mapOf("textVersion" to textVersion),
+        )
+    }
+
+    /**
+     * Returns the first Mollie self-completion attestation of [associationId], or null if the
+     * association never attested.
+     */
+    @Transactional(readOnly = true)
+    fun findMollieSelfCompletionAttestation(associationId: UUID): ComplianceAuditLog? =
+        repo.findBySubjectIdAndEventTypeInOrderBySequenceNoAsc(associationId, listOf(MOLLIE_SELF_COMPLETION_ATTESTED))
+            .firstOrNull()
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun appendSyncFailure(reason: String, lastSuccessAt: Instant?): ComplianceAuditLog = append(

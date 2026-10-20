@@ -5,12 +5,19 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.runs
 import org.commonlink.dto.MollieKycStatusDto
+import org.commonlink.dto.MollieOnboardingContextDto
+import org.commonlink.dto.MollieSelfCompletionAttestationDto
+import org.commonlink.dto.MollieStructureVariant
+import org.commonlink.dto.OnboardingBeneficialOwnerDto
+import org.commonlink.entity.BeneficialOwnerType
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.exception.MollieOrganizationAlreadyLinkedException
 import org.commonlink.service.MollieConnectService
+import org.commonlink.service.MollieOnboardingContextService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -19,9 +26,11 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -43,6 +52,9 @@ class MollieConnectControllerTest {
 
     @MockkBean
     private lateinit var mollieConnectService: MollieConnectService
+
+    @MockkBean
+    private lateinit var onboardingContextService: MollieOnboardingContextService
 
     @MockkBean
     private lateinit var jwtService: JwtService
@@ -147,6 +159,63 @@ class MollieConnectControllerTest {
             .andExpect(status().isForbidden)
     }
 
+    @Test
+    fun `getStatus - exposes complementRequested`() {
+        every { mollieConnectService.getConnectionStatus(userId) } returns MollieKycStatusDto(
+            connected = true,
+            pending = false,
+            broken = false,
+            onboardingStatus = "NEEDS_DATA",
+            canReceivePayments = false,
+            dashboardUrl = null,
+            complementRequested = true,
+        )
+
+        mockMvc.perform(
+            get("/api/mollie/connect/status")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.complementRequested").value(true))
+    }
+
+    // ── POST /api/mollie/connect/status/refresh ───────────────────────────────
+
+    @Test
+    fun `refreshStatus - 200 delegates with the principal user id and returns the status DTO`() {
+        every { mollieConnectService.refreshConnectionStatus(userId) } returns MollieKycStatusDto(
+            connected = true,
+            pending = false,
+            broken = false,
+            onboardingStatus = "IN_REVIEW",
+            canReceivePayments = false,
+            dashboardUrl = null,
+        )
+
+        mockMvc.perform(
+            post("/api/mollie/connect/status/refresh")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.onboardingStatus").value("IN_REVIEW"))
+            .andExpect(jsonPath("$.complementRequested").value(false))
+    }
+
+    @Test
+    fun `refreshStatus - 401 when unauthenticated`() {
+        mockMvc.perform(post("/api/mollie/connect/status/refresh"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `refreshStatus - 403 when authenticated as DONOR`() {
+        mockMvc.perform(
+            post("/api/mollie/connect/status/refresh")
+                .with(user(userId.toString()).roles("DONOR"))
+        )
+            .andExpect(status().isForbidden)
+    }
+
     // ── GET /api/public/webhooks/mollie-connect ───────────────────────────────
 
     @Test
@@ -191,5 +260,77 @@ class MollieConnectControllerTest {
         )
             .andExpect(status().isFound)
             .andExpect(header().string("Location", "http://localhost:3000/en/mollie-connect/error"))
+    }
+
+    @Test
+    fun `handleCallback - 302 to error with a reason when the Mollie organization is already linked`() {
+        every { mollieConnectService.handleCallback(any(), any()) } throws MollieOrganizationAlreadyLinkedException()
+
+        mockMvc.perform(
+            get("/api/public/webhooks/mollie-connect")
+                .param("code", "auth_123")
+                .param("state", "state_456")
+        )
+            .andExpect(status().isFound)
+            .andExpect(
+                header().string(
+                    "Location",
+                    "http://localhost:3000/en/mollie-connect/error?reason=organization-already-linked",
+                )
+            )
+    }
+
+    // ── GET /api/mollie/connect/onboarding-context ────────────────────────────
+
+    @Test
+    fun `getOnboardingContext - 200 returns the context without any date of birth`() {
+        every { onboardingContextService.getOnboardingContext(userId) } returns MollieOnboardingContextDto(
+            structureVariant = MollieStructureVariant.ARUP,
+            verifiedAt = Instant.parse("2026-09-12T10:00:00Z"),
+            beneficialOwners = listOf(OnboardingBeneficialOwnerDto("Claire Martin", "Présidente", BeneficialOwnerType.REPRESENTATIVE)),
+            providedDocuments = emptyList(),
+            siren = "912345678",
+            selfCompletionAttestedAt = null,
+        )
+
+        mockMvc.perform(
+            get("/api/mollie/connect/onboarding-context")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.structureVariant").value("ARUP"))
+            .andExpect(jsonPath("$.siren").value("912345678"))
+            .andExpect(jsonPath("$.beneficialOwners[0].name").value("Claire Martin"))
+            .andExpect(jsonPath("$.beneficialOwners[0].role").value("Présidente"))
+            .andExpect(jsonPath("$.beneficialOwners[0].dateOfBirth").doesNotExist())
+    }
+
+    @Test
+    fun `getOnboardingContext - 401 when unauthenticated`() {
+        mockMvc.perform(get("/api/mollie/connect/onboarding-context"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // ── POST /api/mollie/connect/self-completion-attestation ──────────────────
+
+    @Test
+    fun `attestSelfCompletion - 200 delegates with the user id only`() {
+        every {
+            onboardingContextService.attestSelfCompletion(userId)
+        } returns MollieSelfCompletionAttestationDto(attestedAt = Instant.parse("2026-10-12T09:00:00Z"))
+
+        mockMvc.perform(
+            post("/api/mollie/connect/self-completion-attestation")
+                .header("User-Agent", "JUnit-Agent")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.attestedAt").value("2026-10-12T09:00:00Z"))
+    }
+
+    @Test
+    fun `attestSelfCompletion - 401 when unauthenticated`() {
+        mockMvc.perform(post("/api/mollie/connect/self-completion-attestation"))
+            .andExpect(status().isUnauthorized)
     }
 }

@@ -25,6 +25,51 @@ export function gtmNoscriptIframe(id: string): string {
   return `<iframe src="https://www.googletagmanager.com/ns.html?id=${id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
 }
 
+/**
+ * Host-side bridge for the raw `<iframe src=".../fr/lp/{token}">` embed — the one embed with no
+ * CommonLink loader (`landing.js`/`widget.js`) on the host page. Returned without a wrapping
+ * `<script>` tag, same rationale as {@link gtmHeadScript}. Must be pasted right after the iframe.
+ *
+ * Mirrors what `landing.js` does for the script embed:
+ *  1. Adds `?parentOrigin=<host origin>` to the iframe `src` (a copied `<iframe>` tag is static and
+ *     cannot know the host origin) — the iframe will not forward events without it, and loads no
+ *     GTM of its own once it is set. This reloads the iframe once; the tag keeps working without
+ *     JavaScript, just without the bridge. Also adds `clEmbed=iframe` (see {@link EmbedType}).
+ *  2. Back from a confirmed payment (`?cl_donation=success&cl_ref=<ref>`, added by `/return`):
+ *     removes both parameters from the address bar and passes the ref to the iframe as `clRef`, so
+ *     it relays the `purchase` event with server-side values. A ref already relayed in this tab
+ *     (`sessionStorage`) is not passed again, so a reload never repeats the event.
+ *  3. Pushes each `cl-widget-gtm-event` message (`begin_checkout`, `purchase`) into the host
+ *     `dataLayer`, accepting only our own iframe and our own origin.
+ *
+ * DEBUG (remove when no longer needed): with `?clDebug=1` on the host page (remembered for the tab
+ * in `sessionStorage`, `?clDebug=0` to stop), every host `dataLayer.push` is logged to the console
+ * together with the full current state.
+ */
+export function gtmIframeBridgeScript(frontOrigin: string, widgetToken: string): string {
+  const origin = JSON.stringify(frontOrigin);
+  const prefix = JSON.stringify(`${frontOrigin}/fr/lp/${widgetToken}`);
+  return (
+    `(function(){var ORIGIN=${origin},TYPE=${JSON.stringify(GTM_EVENT_MESSAGE_TYPE)},` +
+    `f=document.querySelector('iframe[src^='+JSON.stringify(${prefix})+']');if(!f)return;` +
+    `var p=new URLSearchParams(location.search).get('clDebug'),on=false;try{if(p==='1')sessionStorage.setItem('clDebug','1');else if(p==='0')sessionStorage.removeItem('clDebug');on=sessionStorage.getItem('clDebug')==='1';}catch(x){on=p==='1';}` +
+    `if(on){window.dataLayer=window.dataLayer||[];var dl=window.dataLayer,orig=dl.push;console.log('[CL dataLayer] initial state',dl.slice());` +
+    `dl.push=function(){console.log('%c[CL dataLayer] push','background:#0a7;color:#fff;padding:1px 6px;border-radius:3px',arguments[0]);` +
+    `var r=orig.apply(dl,arguments);console.log('[CL dataLayer] state',dl.slice());return r;};}` +
+    `var q=new URLSearchParams(location.search),ref=q.get('cl_donation')==='success'?q.get('cl_ref'):null;` +
+    `if(ref&&!/^[0-9a-f-]{36}$/i.test(ref))ref=null;` +
+    `if(q.has('cl_donation')||q.has('cl_ref')){q.delete('cl_donation');q.delete('cl_ref');var qs=q.toString();` +
+    `history.replaceState(history.state,'',location.pathname+(qs?'?'+qs:'')+location.hash);}` +
+    `try{if(ref&&sessionStorage.getItem('cl-purchase-'+ref))ref=null;}catch(x){}` +
+    `var u=new URL(f.src),c=false;if(!u.searchParams.get('parentOrigin')){u.searchParams.set('parentOrigin',location.origin);c=true;}` +
+    `if(!u.searchParams.get('clEmbed')){u.searchParams.set('clEmbed','iframe');c=true;}` +
+    `if(ref){u.searchParams.set('clRef',ref);c=true;}if(c)f.src=u.toString();` +
+    `window.addEventListener('message',function(e){if(e.source!==f.contentWindow||e.origin!==ORIGIN)return;` +
+    `var d=e.data;if(!d||d.type!==TYPE)return;window.dataLayer=window.dataLayer||[];window.dataLayer.push(d.payload);` +
+    `if(d.payload&&d.payload.event==='purchase'&&d.payload.ecommerce){try{sessionStorage.setItem('cl-purchase-'+d.payload.ecommerce.transaction_id,'1');}catch(x){}}});})();`
+  );
+}
+
 /** One line item in a GA4 ecommerce event's `items` array — a donation always has exactly one. */
 export interface DonationItem {
   item_id: string;
@@ -57,8 +102,8 @@ export type UtmParams = Partial<Record<(typeof UTM_PARAM_NAMES)[number], string>
  * and the host's UTMs are cross-origin, unreadable from here. Not fixed by this function; would
  * need the embed snippet to forward them explicitly, the way it already forwards `parentOrigin`.
  *
- * Only meaningful at `begin_checkout` time: by the time `purchase` fires on `/return`, the URL is
- * this app's own return route, not wherever the donor actually arrived from.
+ * Only meaningful at `begin_checkout` time: `purchase` is built from server-side values once the
+ * donor is back from the payment page, and carries no UTM.
  */
 export function captureUtmParams(): UtmParams {
   if (typeof window === 'undefined') return {};
@@ -71,29 +116,138 @@ export function captureUtmParams(): UtmParams {
   return utm;
 }
 
+/** How the donor's final amount was chosen: a suggested-amount button, or typed in the free field. */
+export const AmountSource = {
+  PRESET: 'preset',
+  CUSTOM: 'custom',
+} as const;
+export type AmountSource = (typeof AmountSource)[keyof typeof AmountSource];
+
+/**
+ * How the association published the donation form, reported as `embed_type` on both donation
+ * events. Each embed code tells the page through the `clEmbed` query parameter: `landing.js` →
+ * `script`, the iframe bridge → `iframe`, `widget.js` → `widget`, or `html` when its tag carries
+ * `data-embed="html"` (standalone export). The reported value is analytics only, never trusted for
+ * anything else — see {@link resolveEmbedType} for the fallbacks. The same values name the diffusion
+ * method an association picks in its settings, which the backend stores (`AssociationProfile.embedType`).
+ */
+export const EmbedType = {
+  DIRECT: 'direct',
+  SCRIPT: 'script',
+  IFRAME: 'iframe',
+  HTML: 'html',
+  WIDGET: 'widget',
+} as const;
+export type EmbedType = (typeof EmbedType)[keyof typeof EmbedType];
+
+const EMBED_TYPES: readonly string[] = Object.values(EmbedType);
+
+/**
+ * Validates the raw `clEmbed` query parameter, or falls back to what the route itself implies when
+ * it is missing or unknown — an embed code copied before `clEmbed` existed:
+ * - `/embed/donate` is only opened by `widget.js` → `widget` (an older HTML export is reported so);
+ * - `/lp` with a `parentOrigin` is only opened by `landing.js` (always current) or the iframe
+ *   bridge → `iframe`;
+ * - `/lp` without one → `direct`, refined to `iframe` in the browser when the page turns out to be
+ *   framed (a raw iframe pasted without its bridge) — see {@link buildDonationEventPayload}.
+ */
+export function resolveEmbedType(raw: string | undefined | null, fallback: EmbedType): EmbedType {
+  return raw && EMBED_TYPES.includes(raw) ? (raw as EmbedType) : fallback;
+}
+
+/**
+ * How the donor reached the submitted amount — sent on `begin_checkout` only, to show whether donors
+ * hesitate between amounts. See `useGuestDonation` for the counting rules.
+ */
+export interface AmountChoiceStats {
+  /** Source of the last choice, i.e. of the submitted amount. */
+  source: AmountSource;
+  /** The first amount the donor chose. */
+  firstAmount: number;
+  /** Number of distinct consecutive choices before submitting — 1 means chosen straight away. */
+  changes: number;
+}
+
 /** Donation-specific params outside the GA4-standard `ecommerce` object. */
 export interface DonationEventExtras {
   anonymous: boolean;
+  /** See {@link EmbedType} — sent on both events. */
+  embedType?: EmbedType;
+  /** See {@link AmountChoiceStats} — only ever populated on `begin_checkout`. */
+  amountChoice?: AmountChoiceStats;
   /** Payment method chosen on Mollie's page — only known once the donation is confirmed. */
   paymentMethod?: string;
   /** See {@link captureUtmParams} — only ever populated on `begin_checkout`. */
   utm?: UtmParams;
   /**
    * Validated host origin (scheme://host[:port]) to forward this event to via `postMessage`, when
-   * running inside the `widget.js` iframe — the host page's own GTM cannot see into a cross-origin
-   * child document otherwise. Omit outside that context (e.g. `/return`, which always runs
-   * top-level — see `useGuestDonation`'s `window.top` redirect).
+   * running inside a CommonLink iframe (`widget.js`, `landing.js`, iframe bridge) — the host page's
+   * own GTM cannot see into a cross-origin child document otherwise.
    */
   parentOrigin?: string | null;
 }
 
 /**
- * Message contract with `public/widget.js` for forwarding a GA4 ecommerce event to the host page's
- * own `dataLayer`. Mirrors `EmbedWidgetHeightReporter`'s `cl-widget-height`; a separate constant
- * for the same reason that one is independent from `cl-landing-height` — `widget.js` is the only
- * loader this bridges today.
+ * Message contract with the host-side loaders (`public/widget.js`, `public/landing.js`, the iframe
+ * bridge) for forwarding a GA4 ecommerce event to the host page's own `dataLayer`. Each loader keeps
+ * a literal copy of this string.
  */
 export const GTM_EVENT_MESSAGE_TYPE = 'cl-widget-gtm-event';
+
+export const DonationEventName = {
+  BEGIN_CHECKOUT: 'begin_checkout',
+  PURCHASE: 'purchase',
+} as const;
+export type DonationEventName = (typeof DonationEventName)[keyof typeof DonationEventName];
+
+/**
+ * `direct` is only what the server could tell from the URL: a page that turns out to be framed is a
+ * raw iframe pasted without its bridge.
+ */
+function refineEmbedType(embedType: EmbedType): EmbedType {
+  if (embedType !== EmbedType.DIRECT || typeof window === 'undefined') return embedType;
+  return window.top !== window.self ? EmbedType.IFRAME : embedType;
+}
+
+/** The dataLayer object of a donation event — the same shape whether pushed locally or relayed. */
+function buildDonationEventPayload(
+  event: DonationEventName,
+  ecommerce: DonationEcommercePayload,
+  extras: DonationEventExtras,
+) {
+  return {
+    event,
+    ecommerce,
+    anonymous: extras.anonymous,
+    ...(extras.embedType ? { embed_type: refineEmbedType(extras.embedType) } : {}),
+    ...(extras.amountChoice
+      ? {
+          amount_source: extras.amountChoice.source,
+          first_amount: extras.amountChoice.firstAmount,
+          amount_changes: extras.amountChoice.changes,
+        }
+      : {}),
+    ...(extras.paymentMethod ? { payment_method: extras.paymentMethod } : {}),
+    ...extras.utm,
+  };
+}
+
+/**
+ * Sends a GA4 ecommerce donation event to the host page only, via `postMessage` to [parentOrigin],
+ * without pushing it into this iframe's own `dataLayer`. Used for `purchase`, which belongs to the
+ * association's page and must run once, under that page's GTM and consent. A no-op when not
+ * running inside an iframe.
+ */
+export function relayDonationEvent(
+  event: DonationEventName,
+  ecommerce: DonationEcommercePayload,
+  extras: Omit<DonationEventExtras, 'parentOrigin'>,
+  parentOrigin: string,
+): void {
+  if (typeof window === 'undefined' || window.parent === window) return;
+  const payload = buildDonationEventPayload(event, ecommerce, extras);
+  window.parent.postMessage({ type: GTM_EVENT_MESSAGE_TYPE, payload }, parentOrigin);
+}
 
 /**
  * Pushes a GA4 ecommerce donation event (`begin_checkout` or `purchase`) to `window.dataLayer`, and,
@@ -107,18 +261,12 @@ export const GTM_EVENT_MESSAGE_TYPE = 'cl-widget-gtm-event';
  * (e.g. no container configured at all), or outside the browser (SSR).
  */
 export function pushDonationEvent(
-  event: 'begin_checkout' | 'purchase',
+  event: DonationEventName,
   ecommerce: DonationEcommercePayload,
   extras: DonationEventExtras,
 ): void {
   if (typeof window === 'undefined') return;
-  const payload = {
-    event,
-    ecommerce,
-    anonymous: extras.anonymous,
-    ...(extras.paymentMethod ? { payment_method: extras.paymentMethod } : {}),
-    ...extras.utm,
-  };
+  const payload = buildDonationEventPayload(event, ecommerce, extras);
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push(payload);
 

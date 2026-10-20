@@ -93,10 +93,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   // Swap the React donation form for the stable widget.js loader. `id="don"` is preserved so the
   // hero's "#don" anchor (rendered above, untouched) still scrolls to the right place.
+  // `data-embed="html"` makes the donation events report this export, not a plain widget embed.
   const sidebar = lpRoot.querySelector('.lp-sidebar-sticky') ?? lpRoot.querySelector('.lp-sidebar');
   if (sidebar) {
     sidebar.innerHTML =
-      `<div id="don"><script src="${origin}/widget.js" data-widget-token="${escapeHtml(widgetToken)}" async></script></div>`;
+      `<div id="don"><script src="${origin}/widget.js" data-widget-token="${escapeHtml(widgetToken)}" data-embed="html" async></script></div>`;
   }
 
   // The "report this campaign" footer button only works via React state (opens an in-page

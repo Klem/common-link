@@ -2,10 +2,13 @@ import { getWidget } from '@/lib/api/public';
 import { GtmSnippet } from '@/components/GtmSnippet';
 import { EmbedDonateClient } from './EmbedDonateClient';
 import { EmbedWidgetHeightReporter } from './EmbedWidgetHeightReporter';
+import { PurchaseRelay } from '@/components/donation/PurchaseRelay';
+import { resolveDonationRef } from '@/lib/donation/donationRef';
+import { EmbedType, resolveEmbedType } from '@/lib/gtm';
 
 interface Props {
   params: Promise<{ locale: string; widgetToken: string }>;
-  searchParams: Promise<{ source?: string; parentOrigin?: string }>;
+  searchParams: Promise<{ source?: string; parentOrigin?: string; clRef?: string; clEmbed?: string }>;
 }
 
 /**
@@ -29,30 +32,41 @@ function resolveParentOrigin(raw: string | undefined): string | null {
 
 export default async function EmbedDonatePage({ params, searchParams }: Props) {
   const { locale, widgetToken } = await params;
-  const { source, parentOrigin: rawParentOrigin } = await searchParams;
+  const { source, parentOrigin: rawParentOrigin, clRef, clEmbed } = await searchParams;
   const parentOrigin = resolveParentOrigin(rawParentOrigin);
+  // Set by `widget.js` when the donor is back from a confirmed payment — see PurchaseRelay.
+  const donationRef = resolveDonationRef(clRef);
+  // Only `widget.js` opens this route — itself, or inside a standalone HTML export.
+  const embedType = resolveEmbedType(clEmbed, EmbedType.WIDGET);
 
   // Separate server-side fetch just for GTM: the script must be part of the initial HTML to
   // execute (see GtmSnippet), which rules out reusing EmbedDonateClient's client-side fetch.
-  const gtmId = await getWidget(widgetToken)
-    .then((w) => w.gtmContainerId)
-    .catch((err: unknown) => {
-      console.warn(
-        `[CommonLink embed/donate] Failed to fetch widget config for GTM injection (widgetToken=${widgetToken}) — no GTM will be injected.`,
-        err,
-      );
-      return null;
-    });
+  // Skipped entirely when embedded through `widget.js` (`parentOrigin` set): the host page runs
+  // the association's container itself and receives every event through the postMessage bridge,
+  // so loading it here too would make each event fire in two GTM instances.
+  const gtmId = parentOrigin
+    ? null
+    : await getWidget(widgetToken)
+      .then((w) => w.gtmContainerId)
+      .catch((err: unknown) => {
+        console.warn(
+          `[CommonLink embed/donate] Failed to fetch widget config for GTM injection (widgetToken=${widgetToken}) — no GTM will be injected.`,
+          err,
+        );
+        return null;
+      });
 
   return (
     <>
       <GtmSnippet id={gtmId} />
       {parentOrigin && <EmbedWidgetHeightReporter parentOrigin={parentOrigin} />}
+      {parentOrigin && donationRef && <PurchaseRelay donationRef={donationRef} parentOrigin={parentOrigin} embedType={embedType} />}
       <EmbedDonateClient
         widgetToken={widgetToken}
         sourceSite={source ?? null}
         locale={locale}
         parentOrigin={parentOrigin}
+        embedType={embedType}
       />
     </>
   );

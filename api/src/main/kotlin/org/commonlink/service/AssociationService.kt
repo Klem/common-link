@@ -3,6 +3,7 @@ package org.commonlink.service
 import org.commonlink.dto.AssociationProfileDto
 import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.dto.toDto
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -67,6 +68,9 @@ class AssociationService(
      * @param req Partial update request; null fields are left unchanged.
      * @return Updated [AssociationProfileDto].
      * @throws UserNotFoundException if no profile exists for this user.
+     * @throws NotFoundException if the destination campaign does not belong to this association.
+     * @throws ConflictException if the destination campaign is not LIVE, or if contact fields change
+     *   once the Mollie KYC flow has started.
      */
     @Transactional
     fun updateProfile(userId: UUID, req: UpdateAssociationProfileRequest): AssociationProfileDto {
@@ -108,6 +112,12 @@ class AssociationService(
             onboardingGate.requireBankReady(userId)
             val campaign = campaignRepository.findByIdAndAssociationId(campaignId, profile.id!!)
                 .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
+            // Mirror of the settings selector, which only offers LIVE campaigns (rule 8): a replayed
+            // request must not point every diffusion at a campaign that refuses donations.
+            if (campaign.status != CampaignStatus.LIVE) {
+                logger.warn("Rejected non-LIVE destination campaign {} ({}) for association {}", campaignId, campaign.status, profile.id)
+                throw ConflictException("Destination campaign must be LIVE")
+            }
             profile.widgetDestinationCampaign = campaign
         }
         req.addressLine1?.let { profile.addressLine1 = it }
@@ -143,11 +153,12 @@ class AssociationService(
     }
 
     /**
-     * Updates widget configuration: stores the normalized origin of [widgetAllowedOrigin].
-     * Null clears the setting, disabling post-payment redirects.
+     * Updates widget configuration: stores the URL of the association's campaign page, normalized by
+     * [normalizeCampaignPageUrl]. Null, blank or invalid clears the setting, disabling post-payment
+     * redirects.
      *
      * @param userId UUID of the authenticated association user.
-     * @param widgetAllowedOrigin Raw origin URL supplied by the association. Normalized to scheme+host.
+     * @param widgetAllowedOrigin Raw campaign page URL supplied by the association.
      * @throws UserNotFoundException if no profile exists for this user.
      * @throws org.commonlink.exception.ConflictException if the bank account (Mollie) is not completed.
      */
@@ -156,19 +167,25 @@ class AssociationService(
         onboardingGate.requireBankReady(userId)
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
-        profile.widgetAllowedOrigin = normalizeOrigin(widgetAllowedOrigin)
+        profile.widgetAllowedOrigin = normalizeCampaignPageUrl(widgetAllowedOrigin)
         associationProfileRepository.save(profile)
         logger.info("Widget config updated for association {}", profile.id)
     }
 
-    private fun normalizeOrigin(raw: String?): String? {
+    /**
+     * Keeps scheme, host, port, path and query of [raw] — the donor must come back to the exact
+     * campaign page — and drops the fragment. Returns null for anything that is not an absolute
+     * http(s) URL with a host, so an invalid value can never become a redirect target.
+     */
+    private fun normalizeCampaignPageUrl(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         return try {
             val uri = java.net.URI(raw.trim())
-            val scheme = uri.scheme?.takeIf { it == "http" || it == "https" } ?: return null
+            val scheme = uri.scheme?.lowercase()?.takeIf { it == "http" || it == "https" } ?: return null
             val host = uri.host?.takeIf { it.isNotBlank() } ?: return null
-            val port = if (uri.port != -1) ":${uri.port}" else ""
-            "$scheme://$host$port"
+            java.net.URI(scheme, null, host.lowercase(), uri.port, uri.path?.ifEmpty { "/" } ?: "/", uri.query, null)
+                .toString()
+                .take(2048)
         } catch (_: Exception) {
             null
         }

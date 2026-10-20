@@ -14,16 +14,15 @@ import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
-import MollieDocumentChecklist from '@/components/dashboard/MollieDocumentChecklist';
-import MollieOnboardingGuide from '@/components/dashboard/MollieOnboardingGuide';
 import MollieInfoModal from '@/components/dashboard/MollieInfoModal';
+import MollieOnboardingFlow from '@/components/dashboard/mollie-onboarding/MollieOnboardingFlow';
+import { bankTabBadge } from '@/components/dashboard/mollie-onboarding/onboardingFlow';
 import { forceCompleteMollieOnboarding } from '@/lib/api/mollie-connect';
 import { MollieOnboardingStatus } from '@/types/mollie-connect';
 import { useSetPassword } from '@/hooks/auth/useSetPassword';
 import { VerificationTab } from '@/components/settings/VerificationTab';
 import { MandateTab } from '@/components/settings/MandateTab';
-import { WidgetTab } from '@/components/settings/WidgetTab';
-import { LandingTab } from '@/components/settings/LandingTab';
+import { DiffusionTab } from '@/components/settings/diffusion/DiffusionTab';
 import { useMandate } from '@/hooks/dashboard/useMandate';
 import { useDebouncedPatchSave } from '@/hooks/campaign/useDebouncedSave';
 import { VerificationStatus } from '@/types/association';
@@ -98,7 +97,45 @@ function toFormData(profile: AssociationProfileDto): ProfileFormData {
   };
 }
 
-type SettingsTab = 'infos' | 'verif' | 'bank' | 'mandate' | 'widget' | 'landing';
+const SettingsTab = {
+  INFOS: 'infos',
+  VERIF: 'verif',
+  BANK: 'bank',
+  MANDATE: 'mandate',
+  DIFFUSION: 'diffusion',
+} as const;
+type SettingsTab = typeof SettingsTab[keyof typeof SettingsTab];
+
+const SETTINGS_TABS: readonly SettingsTab[] = Object.values(SettingsTab);
+
+/** @return the tab named by `value`, or null when it is not a known tab. */
+const parseSettingsTab = (value: string | null): SettingsTab | null =>
+  SETTINGS_TABS.find((tab) => tab === value) ?? null;
+
+const tabStorageKey = (associationId: string) => `cl.associationProfile.activeTab.${associationId}`;
+
+/** sessionStorage flag: the "not required to draft campaigns" notice was closed in this session. */
+const SETUP_NOTICE_DISMISSED_KEY = 'cl.associationProfile.setupNoticeDismissed';
+
+/** Last visited tab of an association; storage may be unavailable, so any failure yields null. */
+function readStoredTab(associationId: string | undefined): SettingsTab | null {
+  if (!associationId) return null;
+  try {
+    return parseSettingsTab(window.localStorage.getItem(tabStorageKey(associationId)));
+  } catch {
+    return null;
+  }
+}
+
+/** Remembers the last visited tab; a convenience only, failures are ignored. */
+function storeTab(associationId: string | undefined, tab: SettingsTab): void {
+  if (!associationId) return;
+  try {
+    window.localStorage.setItem(tabStorageKey(associationId), tab);
+  } catch {
+    // Persistence is a convenience only.
+  }
+}
 
 const PROVIDER_KEYS = {
   GOOGLE: 'association.profile.security.google',
@@ -110,7 +147,6 @@ const PROVIDER_KEYS = {
 
 export default function AssociationProfilePage() {
   const t = useTranslations('dashboard');
-  const tM = useTranslations('settings');
   const user = useAuthStore((s) => s.user);
   const { profile, isLoading, updateProfile, refreshProfile } = useAssociationProfile();
   const { addToast } = useToastStore();
@@ -121,17 +157,17 @@ export default function AssociationProfilePage() {
   const [showMollieModal, setShowMollieModal] = useState(false);
   const [showMollieInfoModal, setShowMollieInfoModal] = useState(false);
   const [mollieInterrupted, setMollieInterrupted] = useState(false);
+  const mollieKyc = useMollieKycStatus();
   const {
     connected: mollieConnected,
     pending: molliePending,
     broken: mollieBroken,
     onboardingStatus,
     canReceivePayments,
-    dashboardUrl: mollieDashboardUrl,
-    canForceComplete: mollieCanForceComplete,
     isLoading: mollieLoading,
     refresh: refreshMollie,
-  } = useMollieKycStatus();
+    forceRefresh: forceRefreshMollie,
+  } = mollieKyc;
   const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
     useMandate();
 
@@ -155,31 +191,61 @@ export default function AssociationProfilePage() {
     verif: true,
     mandate: verifDone || (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING,
     bank: mandateDone,
-    widget: bankDone,
-    // Même prérequis que le widget : la landing page sert le même formulaire de don, sur la
-    // même campagne publiée. Un gate plus permissif afficherait un lien renvoyant un 409.
-    landing: bankDone,
+    // Widget, landing page et page HTML servent le même formulaire de don sur la même campagne
+    // publiée : un gate plus permissif afficherait des codes renvoyant un 409.
+    diffusion: bankDone,
   };
 
-  // Deep-link ?tab= : n'active l'onglet demandé que s'il est déverrouillé, et
-  // seulement une fois les données chargées (sinon un user déjà onboardé serait
-  // renvoyé sur "infos" au premier render tant que les flags sont encore false).
+  // "Not required to draft campaigns" notice: shown until the bank setup is COMPLETED (the last gate
+  // before publishing), dismissable for the browser session. Read after mount — sessionStorage is
+  // client-only — and hidden while Mollie loads so a done association never sees it flash.
+  const [setupNoticeDismissed, setSetupNoticeDismissed] = useState(true);
+  useEffect(() => {
+    try {
+      setSetupNoticeDismissed(sessionStorage.getItem(SETUP_NOTICE_DISMISSED_KEY) === '1');
+    } catch {
+      setSetupNoticeDismissed(false);
+    }
+  }, []);
+  const dismissSetupNotice = () => {
+    setSetupNoticeDismissed(true);
+    try {
+      sessionStorage.setItem(SETUP_NOTICE_DISMISSED_KEY, '1');
+    } catch {
+      // Storage blocked: the notice stays hidden until the next page load.
+    }
+  };
+  const showSetupNotice = !setupNoticeDismissed && !mollieLoading && !bankDone;
+
+  // Deep-link ?tab=: activates the requested tab only if it is unlocked, and only once the data has
+  // loaded (otherwise an already onboarded user would be sent back to "infos" on the first render,
+  // while the flags are still false). Applied once per query string (decision R9): a lock flag that
+  // changes later (e.g. bankDone flipping during the bank tab's background refresh) must not move the
+  // user away from the tab they are on. A new query string (client navigation) is applied again.
+  const appliedDeepLink = useRef<string | null>(null);
+  // Remembers the active tab, but only once the restore above has run: persisting the initial
+  // 'infos' would overwrite the stored tab before it is read.
+  const tabRestored = useRef(false);
+  useEffect(() => {
+    if (tabRestored.current) storeTab(profile?.id, activeTab);
+  }, [activeTab, profile?.id]);
   useEffect(() => {
     if (isLoading || mandateLoading || mollieLoading) return;
-    const tab = searchParams.get('tab');
-    if (
-      tab === 'verif' || tab === 'bank' || tab === 'mandate' || tab === 'infos' ||
-      tab === 'widget' || tab === 'landing'
-    ) {
-      setActiveTab(tabUnlocked[tab] ? tab : 'infos');
-    }
+    const query = searchParams.toString();
+    if (appliedDeepLink.current === query) return;
+    appliedDeepLink.current = query;
+    // An explicit ?tab= wins; otherwise the last visited tab is restored (e.g. after a page reload).
+    const tab = parseSettingsTab(searchParams.get('tab')) ?? readStoredTab(profile?.id);
+    if (tab) setActiveTab(tabUnlocked[tab] ? tab : 'infos');
+    tabRestored.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isLoading, mandateLoading, mollieLoading, verifDone, mandateDone, bankDone]);
 
+  // The OAuth popup closed (success, error or manual close): ask the server to re-read Mollie now.
   const handleMolliePopupClosed = useCallback(async () => {
     setMollieInterrupted(true);
-    await refreshMollie();
-  }, [refreshMollie]);
+    await forceRefreshMollie({ silent: true });
+  }, [forceRefreshMollie]);
 
   // DEV/STAGING only — simulates a Mollie KYC validation (button gated by mollieCanForceComplete).
   const handleMollieForceComplete = useCallback(async () => {
@@ -190,18 +256,19 @@ export default function AssociationProfilePage() {
     }
   }, [refreshMollie]);
 
-  // Rendu dans les trois branches d'action de l'onglet banque : avant la première connexion, mais
-  // aussi quand le dossier est incomplet ou la connexion cassée — c'est là que l'association doute
-  // le plus de ce prestataire qu'elle ne connaît pas.
-  const mollieLearnMoreButton = (
-    <button
-      type="button"
-      onClick={() => setShowMollieInfoModal(true)}
-      className="btn btn-ghost btn-sm"
-    >
-      {tM('mollie.learnMore')}
-    </button>
-  );
+  // First Mollie connection: contact name and email are sent to Mollie with the client link, so they
+  // must be filled in (Infos tab) before the connection modal opens.
+  const handleMollieConnect = useCallback(() => {
+    if (!profile?.contactEmail) {
+      addToast('error', 'mollieErrorMissingContactEmail');
+      return;
+    }
+    if (!profile?.contactName) {
+      addToast('error', 'mollieErrorMissingContactName');
+      return;
+    }
+    setShowMollieModal(true);
+  }, [profile?.contactEmail, profile?.contactName, addToast]);
 
   const { onSubmit: submitPassword, loading: passwordLoading } = useSetPassword();
 
@@ -294,538 +361,451 @@ export default function AssociationProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="page">
+    <div>
       <Topbar title={t('association.profile.title')} />
-
-      {/* ── Page header ──────────────────────────────────────────────────── */}
-      <div className="page-head">
-        <div>
-          <h1>{t('association.profile.title')}</h1>
-          <p>{t('association.profile.subtitle')}</p>
-        </div>
-      </div>
-
-      {/* ── Settings sub-tabs ────────────────────────────────────────────── */}
-      <div className="set-tabs">
-        <button
-          className={`set-tab${activeTab === 'infos' ? ' active' : ''}`}
-          onClick={() => setActiveTab('infos')}
-        >
-          📋 {t('association.profile.tabs.infos')}
-        </button>
-        <button
-          className={`set-tab${activeTab === 'verif' ? ' active' : ''}`}
-          onClick={() => setActiveTab('verif')}
-        >
-          ✓ {t('association.profile.tabs.verif')}{' '}
-          <span className={`set-tab-badge${
-            (verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED ? ' ok' :
-            (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING ? ' pending' : ''
-          }`}>
-            {(verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED
-              ? t('association.profile.tabs.verifBadge.ok')
-              : (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING
-              ? t('association.profile.tabs.verifBadge.pending')
-              : (verifStatus ?? profile?.verificationStatus) === VerificationStatus.REJECTED
-              ? t('association.profile.tabs.verifBadge.rejected')
-              : t('association.profile.tabs.verifBadge.todo')}
-          </span>
-        </button>
-        <button
-          className={`set-tab${activeTab === 'mandate' ? ' active' : ''}${tabUnlocked.mandate ? '' : ' locked'}`}
-          onClick={() => tabUnlocked.mandate && setActiveTab('mandate')}
-          disabled={!tabUnlocked.mandate}
-          title={tabUnlocked.mandate ? undefined : t('association.profile.tabs.locked')}
-        >
-          {tabUnlocked.mandate ? '🧾' : '🔒'} {t('association.profile.tabs.mandate')}{' '}
-          <span
-            className={`set-tab-badge${
-              mandateState?.signed
-                ? ' ok'
-                : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
-                ? ' pending'
-                : ''
-            }`}
-          >
-            {mandateState?.signed
-              ? t('association.profile.tabs.mandateBadge.active')
-              : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
-              ? t('association.profile.tabs.mandateBadge.readyToSign')
-              : t('association.profile.tabs.mandateBadge.notSigned')}
-          </span>
-        </button>
-        <button
-          className={`set-tab${activeTab === 'bank' ? ' active' : ''}${tabUnlocked.bank ? '' : ' locked'}`}
-          onClick={() => tabUnlocked.bank && setActiveTab('bank')}
-          disabled={!tabUnlocked.bank}
-          title={tabUnlocked.bank ? undefined : t('association.profile.tabs.locked')}
-        >
-          {tabUnlocked.bank ? '🏦' : '🔒'} {t('association.profile.tabs.bank')}{' '}
-          <span className={`set-tab-badge${bankDone ? ' ok' : ''}`}>
-            {bankDone
-              ? t('association.profile.tabs.bankBadge.connected')
-              : t('association.profile.tabs.bankBadge.notConnected')}
-          </span>
-        </button>
-        <button
-          className={`set-tab${activeTab === 'widget' ? ' active' : ''}${tabUnlocked.widget ? '' : ' locked'}`}
-          onClick={() => tabUnlocked.widget && setActiveTab('widget')}
-          disabled={!tabUnlocked.widget}
-          title={tabUnlocked.widget ? undefined : t('association.profile.tabs.locked')}
-        >
-          {tabUnlocked.widget ? '🎁' : '🔒'} {t('association.profile.tabs.widget')}
-        </button>
-        <button
-          className={`set-tab${activeTab === 'landing' ? ' active' : ''}${tabUnlocked.landing ? '' : ' locked'}`}
-          onClick={() => tabUnlocked.landing && setActiveTab('landing')}
-          disabled={!tabUnlocked.landing}
-          title={tabUnlocked.landing ? undefined : t('association.profile.tabs.locked')}
-        >
-          {tabUnlocked.landing ? '🌐' : '🔒'} {t('association.profile.tabs.landing')}
-        </button>
-      </div>
-
-      {/* ══ Onglet : Informations ═════════════════════════════════════════ */}
-      {activeTab === 'infos' && (
-        <div className="set-tab-content active">
-          <div className="card no-hover">
-            <div className="card-h">
-              <h3>{t('association.profile.infos.title')}</h3>
-            </div>
-            <div className="card-b">
-              {isLoading ? (
-                <p className="profile-loading">
-                  {t('association.profile.loading')}
-                </p>
-              ) : (
-                <form onSubmit={onSubmit} noValidate>
-                  {/* Ligne 1 : Nom (read-only) | N° RNA */}
-                  <div className="frow">
-                    <div className="fg">
-                      <label className="fl">{t('association.profile.name')}</label>
-                      <input className="fi" type="text" value={profile?.name ?? ''} disabled />
-                      <p className="fhint">{t('association.profile.readOnly.permanent')}</p>
-                    </div>
-                    <div className="fg">
-                      <label htmlFor="siren" className="fl">
-                        {t('association.profile.siren')}
-                      </label>
-                      <input
-                        id="siren"
-                        type="text"
-                        className="fi"
-                        placeholder="123456789"
-                        disabled={verifDone}
-                        {...autosave('siren')}
-                      />
-                      {verifDone && (
-                        <p className="fhint">{t('association.profile.readOnly.verified')}</p>
-                      )}
-                      {errors.siren && (
-                        <p className="fhint error">{t(errors.siren.message as Parameters<typeof t>[0])}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Ligne 2 : SIRET (read-only) | Année de création */}
-                  <div className="frow">
-                    <div className="fg">
-                      <label className="fl">{t('association.profile.identifier')}</label>
-                      <input className="fi" type="text" value={profile?.identifier ?? ''} disabled />
-                      <p className="fhint">{t('association.profile.readOnly.permanent')}</p>
-                    </div>
-                    <div className="fg">
-                      <label htmlFor="creationYear" className="fl">
-                        {t('association.profile.creationYear')}
-                      </label>
-                      <input
-                        id="creationYear"
-                        type="number"
-                        className="fi"
-                        min={1800}
-                        max={CURRENT_YEAR}
-                        disabled={verifDone}
-                        {...autosave('creationYear', { valueAsNumber: true })}
-                      />
-                      {verifDone && (
-                        <p className="fhint">{t('association.profile.readOnly.verified')}</p>
-                      )}
-                      {errors.creationYear && (
-                        <p className="fhint error">{t(errors.creationYear.message as Parameters<typeof t>[0])}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Ligne 3 : Nom du contact * | Email de contact * */}
-                  <div className="frow">
-                    <div className="fg">
-                      <label htmlFor="contactName" className="fl">
-                        {t('association.profile.contactName')}<span className="text-red-500 ml-0.5">*</span>{' '}
-                        <span className="tip" data-tip={t('association.profile.contactNameTip')}>?</span>
-                      </label>
-                      <input
-                        id="contactName"
-                        type="text"
-                        className="fi"
-                        placeholder={t('association.profile.contactNamePlaceholder')}
-                        disabled={contactLocked}
-                        {...autosave('contactName')}
-                      />
-                      {contactLocked && (
-                        <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
-                      )}
-                      {errors.contactName && (
-                        <p className="fhint error">{t(errors.contactName.message as Parameters<typeof t>[0])}</p>
-                      )}
-                    </div>
-                    <div className="fg">
-                      <label htmlFor="contactEmail" className="fl">
-                        {t('association.profile.contactEmail')}<span className="text-red-500 ml-0.5">*</span>{' '}
-                        <span className="tip" data-tip={t('association.profile.contactEmailTip')}>?</span>
-                      </label>
-                      <input
-                        id="contactEmail"
-                        type="email"
-                        className="fi"
-                        disabled={contactLocked}
-                        {...autosave('contactEmail')}
-                      />
-                      {contactLocked && (
-                        <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
-                      )}
-                      {errors.contactEmail && (
-                        <p className="fhint error">{t(errors.contactEmail.message as Parameters<typeof t>[0])}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Ligne 4 : Téléphone */}
-                  <div className="frow">
-                    <div className="fg">
-                      <label htmlFor="phone" className="fl">
-                        {t('association.profile.phone')}
-                      </label>
-                      <input
-                        id="phone"
-                        type="tel"
-                        className="fi"
-                        {...autosave('phone')}
-                      />
-                      {errors.phone && (
-                        <p className="fhint error">{t(errors.phone.message as Parameters<typeof t>[0])}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Ligne 4 : Adresse postale (full width) */}
-                  <div className="frow">
-                    <div className="fg" style={{ flex: '1 1 100%' }}>
-                      <label htmlFor="addressLine1" className="fl">
-                        {t('association.profile.addressLine1')}
-                      </label>
-                      <input
-                        id="addressLine1"
-                        type="text"
-                        className="fi"
-                        placeholder={t('association.profile.addressLine1Placeholder')}
-                        {...autosave('addressLine1')}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Ligne 5 : Objet social (full width) */}
-                  <div className="frow">
-                    <div className="fg" style={{ flex: '1 1 100%' }}>
-                      <label htmlFor="legalObject" className="fl">
-                        {t('association.profile.legalObject')}
-                      </label>
-                      <input
-                        id="legalObject"
-                        type="text"
-                        className="fi"
-                        placeholder={t('association.profile.legalObjectPlaceholder')}
-                        {...autosave('legalObject')}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Ligne 6 : Signataire nom | Fonction */}
-                  <div className="frow">
-                    <div className="fg">
-                      <label htmlFor="signerName" className="fl">
-                        {t('association.profile.signerName')}<span className="text-red-500 ml-0.5">*</span>{' '}
-                        <span className="tip" data-tip={t('association.profile.signerNameTip')}>?</span>
-                      </label>
-                      <input
-                        id="signerName"
-                        type="text"
-                        className="fi"
-                        placeholder={t('association.profile.signerNamePlaceholder')}
-                        {...autosave('signerName')}
-                      />
-                    </div>
-                    <div className="fg">
-                      <label htmlFor="signerRole" className="fl">
-                        {t('association.profile.signerRole')}<span className="text-red-500 ml-0.5">*</span>{' '}
-                        <span className="tip" data-tip={t('association.profile.signerRoleTip')}>?</span>
-                      </label>
-                      <input
-                        id="signerRole"
-                        type="text"
-                        className="fi"
-                        placeholder={t('association.profile.signerRolePlaceholder')}
-                        {...autosave('signerRole')}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="frow-actions">
-                    <button
-                      type="button"
-                      onClick={() => reset()}
-                      disabled={!isDirty}
-                      className="btn btn-secondary btn-sm"
-                    >
-                      {t('association.profile.cancel')}
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!isDirty || isSubmitting}
-                      className="btn btn-primary btn-sm"
-                    >
-                      {t('association.profile.save')}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+      <div className="page">
+        {/* ── Page header ──────────────────────────────────────────────────── */}
+        <div className="page-head">
+          <div>
+            <h1>{t('association.profile.title')}</h1>
+            <p>{t('association.profile.subtitle')}</p>
           </div>
-        </div>
-      )}
-
-      {/* ══ Onglet : Vérification ════════════════════════════════════════ */}
-      {activeTab === 'verif' && (
-        <div className="set-tab-content active">
-          <VerificationTab
-            onGoToVerif={() => setActiveTab('verif')}
-            onVerificationSubmitted={() => {
-              setVerifStatus(VerificationStatus.PENDING);
-              setActiveTab('mandate');
-            }}
-          />
-        </div>
-      )}
-
-      {/* ══ Onglet : Compte bancaire ══════════════════════════════════════ */}
-      {activeTab === 'bank' && (
-        <div className="set-tab-content active">
-          {/* Carte Mollie */}
-          <div className="card no-hover mollie-kyc-card mb-5">
-            <div className="card-h">
-              <h3>{tM('mollie.title')}</h3>
+          {/* None of these settings gates campaign drafting — only publishing and collecting funds. */}
+          {showSetupNotice && (
+            <div role="note" className="alert alert-info profile-setup-notice">
+              <span className="alert-icon" aria-hidden="true">ℹ️</span>
+              <div>
+                <strong>{t('association.profile.setupNotice.title')}</strong>{' '}
+                {t('association.profile.setupNotice.text')}
+              </div>
+              <button
+                type="button"
+                className="alert-close"
+                aria-label={t('association.profile.setupNotice.close')}
+                onClick={dismissSetupNotice}
+              >
+                ×
+              </button>
             </div>
-            <div className="card-b">
-              <p className="mollie-desc">{tM('mollie.description')}</p>
-              {mollieLoading ? (
-                <div className="mollie-spinner" />
-              ) : bankDone ? (
-                <span className="badge badge-active">{tM('mollie.status.completed')}</span>
-              ) : mollieBroken ? (
-                <div className="flex items-center gap-3">
-                  <span className="badge badge-error">{tM('mollie.status.broken')}</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowMollieModal(true)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    {tM('mollie.reconnect')}
-                  </button>
-                  {mollieLearnMoreButton}
-                </div>
-              ) : mollieConnected && onboardingStatus === 'IN_REVIEW' ? (
-                <span className="badge badge-warning">{tM('mollie.status.inReview')}</span>
-              ) : mollieConnected && onboardingStatus === 'NEEDS_DATA' ? (
-                <>
-                  <div className="flex items-center gap-3">
-                    <span className="badge badge-warning">{tM('mollie.status.needsData')}</span>
-                    {mollieDashboardUrl && (
-                      <a
-                        href={mollieDashboardUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+          )}
+        </div>
+
+        {/* ── Settings sub-tabs ────────────────────────────────────────────── */}
+        <div className="set-tabs">
+          <button
+            className={`set-tab${activeTab === 'infos' ? ' active' : ''}`}
+            onClick={() => setActiveTab('infos')}
+          >
+            📋 {t('association.profile.tabs.infos')}
+          </button>
+          <button
+            className={`set-tab${activeTab === 'verif' ? ' active' : ''}`}
+            onClick={() => setActiveTab('verif')}
+          >
+            ✓ {t('association.profile.tabs.verif')}{' '}
+            <span className={`set-tab-badge${
+              (verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED ? ' ok' :
+              (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING ? ' pending' : ''
+            }`}>
+              {(verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED
+                ? t('association.profile.tabs.verifBadge.ok')
+                : (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING
+                ? t('association.profile.tabs.verifBadge.pending')
+                : (verifStatus ?? profile?.verificationStatus) === VerificationStatus.REJECTED
+                ? t('association.profile.tabs.verifBadge.rejected')
+                : t('association.profile.tabs.verifBadge.todo')}
+            </span>
+          </button>
+          <button
+            className={`set-tab${activeTab === 'mandate' ? ' active' : ''}${tabUnlocked.mandate ? '' : ' locked'}`}
+            onClick={() => tabUnlocked.mandate && setActiveTab('mandate')}
+            disabled={!tabUnlocked.mandate}
+            title={tabUnlocked.mandate ? undefined : t('association.profile.tabs.locked')}
+          >
+            {tabUnlocked.mandate ? '🧾' : '🔒'} {t('association.profile.tabs.mandate')}{' '}
+            <span
+              className={`set-tab-badge${
+                mandateState?.signed
+                  ? ' ok'
+                  : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
+                  ? ' pending'
+                  : ''
+              }`}
+            >
+              {mandateState?.signed
+                ? t('association.profile.tabs.mandateBadge.active')
+                : !mandateState?.blocked && mandateState?.mandateDocs.filter((d) => d.uploaded).length === 2
+                ? t('association.profile.tabs.mandateBadge.readyToSign')
+                : t('association.profile.tabs.mandateBadge.notSigned')}
+            </span>
+          </button>
+          <button
+            className={`set-tab${activeTab === 'bank' ? ' active' : ''}${tabUnlocked.bank ? '' : ' locked'}`}
+            onClick={() => tabUnlocked.bank && setActiveTab('bank')}
+            disabled={!tabUnlocked.bank}
+            title={tabUnlocked.bank ? undefined : t('association.profile.tabs.locked')}
+          >
+            {tabUnlocked.bank ? '🏦' : '🔒'} {t('association.profile.tabs.bank')}{' '}
+            {/* Only the label follows the onboarding state (Q7); the `ok` class stays strictly `bankDone`. */}
+            <span className={`set-tab-badge${bankDone ? ' ok' : ''}`}>
+              {t(`association.profile.tabs.bankBadge.${bankTabBadge({
+                connected: mollieConnected,
+                broken: mollieBroken,
+                onboardingStatus,
+                canReceivePayments,
+                bankDone,
+              })}`)}
+            </span>
+          </button>
+          <button
+            className={`set-tab${activeTab === 'diffusion' ? ' active' : ''}${tabUnlocked.diffusion ? '' : ' locked'}`}
+            onClick={() => tabUnlocked.diffusion && setActiveTab('diffusion')}
+            disabled={!tabUnlocked.diffusion}
+            title={tabUnlocked.diffusion ? undefined : t('association.profile.tabs.locked')}
+          >
+            {tabUnlocked.diffusion ? '🌐' : '🔒'} {t('association.profile.tabs.diffusion')}
+          </button>
+        </div>
+
+        {/* ══ Onglet : Informations ═════════════════════════════════════════ */}
+        {activeTab === 'infos' && (
+          <div className="set-tab-content active">
+            <div className="card no-hover">
+              <div className="card-h">
+                <h3>{t('association.profile.infos.title')}</h3>
+              </div>
+              <div className="card-b">
+                {isLoading ? (
+                  <p className="profile-loading">
+                    {t('association.profile.loading')}
+                  </p>
+                ) : (
+                  <form onSubmit={onSubmit} noValidate>
+                    {/* Ligne 1 : Nom (read-only) | N° RNA */}
+                    <div className="frow">
+                      <div className="fg">
+                        <label className="fl">{t('association.profile.name')}</label>
+                        <input className="fi" type="text" value={profile?.name ?? ''} disabled />
+                        <p className="fhint">{t('association.profile.readOnly.permanent')}</p>
+                      </div>
+                      <div className="fg">
+                        <label htmlFor="siren" className="fl">
+                          {t('association.profile.siren')}
+                        </label>
+                        <input
+                          id="siren"
+                          type="text"
+                          className="fi"
+                          placeholder="123456789"
+                          disabled={verifDone}
+                          {...autosave('siren')}
+                        />
+                        {verifDone && (
+                          <p className="fhint">{t('association.profile.readOnly.verified')}</p>
+                        )}
+                        {errors.siren && (
+                          <p className="fhint error">{t(errors.siren.message as Parameters<typeof t>[0])}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ligne 2 : SIRET (read-only) | Année de création */}
+                    <div className="frow">
+                      <div className="fg">
+                        <label className="fl">{t('association.profile.identifier')}</label>
+                        <input className="fi" type="text" value={profile?.identifier ?? ''} disabled />
+                        <p className="fhint">{t('association.profile.readOnly.permanent')}</p>
+                      </div>
+                      <div className="fg">
+                        <label htmlFor="creationYear" className="fl">
+                          {t('association.profile.creationYear')}
+                        </label>
+                        <input
+                          id="creationYear"
+                          type="number"
+                          className="fi"
+                          min={1800}
+                          max={CURRENT_YEAR}
+                          disabled={verifDone}
+                          {...autosave('creationYear', { valueAsNumber: true })}
+                        />
+                        {verifDone && (
+                          <p className="fhint">{t('association.profile.readOnly.verified')}</p>
+                        )}
+                        {errors.creationYear && (
+                          <p className="fhint error">{t(errors.creationYear.message as Parameters<typeof t>[0])}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ligne 3 : Nom du contact * | Email de contact * */}
+                    <div className="frow">
+                      <div className="fg">
+                        <label htmlFor="contactName" className="fl">
+                          {t('association.profile.contactName')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                          <span className="tip" data-tip={t('association.profile.contactNameTip')}>?</span>
+                        </label>
+                        <input
+                          id="contactName"
+                          type="text"
+                          className="fi"
+                          placeholder={t('association.profile.contactNamePlaceholder')}
+                          disabled={contactLocked}
+                          {...autosave('contactName')}
+                        />
+                        {contactLocked && (
+                          <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
+                        )}
+                        {errors.contactName && (
+                          <p className="fhint error">{t(errors.contactName.message as Parameters<typeof t>[0])}</p>
+                        )}
+                      </div>
+                      <div className="fg">
+                        <label htmlFor="contactEmail" className="fl">
+                          {t('association.profile.contactEmail')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                          <span className="tip" data-tip={t('association.profile.contactEmailTip')}>?</span>
+                        </label>
+                        <input
+                          id="contactEmail"
+                          type="email"
+                          className="fi"
+                          disabled={contactLocked}
+                          {...autosave('contactEmail')}
+                        />
+                        {contactLocked && (
+                          <p className="fhint">{t('association.profile.readOnly.mollieCompleted')}</p>
+                        )}
+                        {errors.contactEmail && (
+                          <p className="fhint error">{t(errors.contactEmail.message as Parameters<typeof t>[0])}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ligne 4 : Téléphone */}
+                    <div className="frow">
+                      <div className="fg">
+                        <label htmlFor="phone" className="fl">
+                          {t('association.profile.phone')}
+                        </label>
+                        <input
+                          id="phone"
+                          type="tel"
+                          className="fi"
+                          {...autosave('phone')}
+                        />
+                        {errors.phone && (
+                          <p className="fhint error">{t(errors.phone.message as Parameters<typeof t>[0])}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ligne 4 : Adresse postale (full width) */}
+                    <div className="frow">
+                      <div className="fg" style={{ flex: '1 1 100%' }}>
+                        <label htmlFor="addressLine1" className="fl">
+                          {t('association.profile.addressLine1')}
+                        </label>
+                        <input
+                          id="addressLine1"
+                          type="text"
+                          className="fi"
+                          placeholder={t('association.profile.addressLine1Placeholder')}
+                          {...autosave('addressLine1')}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Ligne 5 : Objet social (full width) */}
+                    <div className="frow">
+                      <div className="fg" style={{ flex: '1 1 100%' }}>
+                        <label htmlFor="legalObject" className="fl">
+                          {t('association.profile.legalObject')}
+                        </label>
+                        <input
+                          id="legalObject"
+                          type="text"
+                          className="fi"
+                          placeholder={t('association.profile.legalObjectPlaceholder')}
+                          {...autosave('legalObject')}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Ligne 6 : Signataire nom | Fonction */}
+                    <div className="frow">
+                      <div className="fg">
+                        <label htmlFor="signerName" className="fl">
+                          {t('association.profile.signerName')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                          <span className="tip" data-tip={t('association.profile.signerNameTip')}>?</span>
+                        </label>
+                        <input
+                          id="signerName"
+                          type="text"
+                          className="fi"
+                          placeholder={t('association.profile.signerNamePlaceholder')}
+                          {...autosave('signerName')}
+                        />
+                      </div>
+                      <div className="fg">
+                        <label htmlFor="signerRole" className="fl">
+                          {t('association.profile.signerRole')}<span className="text-red-500 ml-0.5">*</span>{' '}
+                          <span className="tip" data-tip={t('association.profile.signerRoleTip')}>?</span>
+                        </label>
+                        <input
+                          id="signerRole"
+                          type="text"
+                          className="fi"
+                          placeholder={t('association.profile.signerRolePlaceholder')}
+                          {...autosave('signerRole')}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="frow-actions">
+                      <button
+                        type="button"
+                        onClick={() => reset()}
+                        disabled={!isDirty}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        {t('association.profile.cancel')}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!isDirty || isSubmitting}
                         className="btn btn-primary btn-sm"
                       >
-                        {tM('mollie.completeOnboarding')}
-                      </a>
-                    )}
-                    {mollieLearnMoreButton}
+                        {t('association.profile.save')}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            {/* Carte Sécurité */}
+            <div className="card no-hover">
+              <div className="card-h">
+                <h3>{t('association.profile.security.title')}</h3>
+              </div>
+              <div className="card-b">
+                <div className="security-row">
+                  <div>
+                    <p className="fl">{t('association.profile.security.loginMethod')}</p>
+                    <p className="security-value">
+                      {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
+                    </p>
                   </div>
-                  <p className="mollie-desc mt-4">{tM('mollie.needsDataHint')}</p>
-                  <MollieDocumentChecklist siren={profile?.siren} identifier={profile?.identifier} />
-                  <MollieOnboardingGuide
-                    name={profile?.name}
-                    addressLine1={profile?.addressLine1}
-                    postalCode={profile?.postalCode}
-                    city={profile?.city}
-                    siren={profile?.siren}
-                    identifier={profile?.identifier}
-                    legalObject={profile?.legalObject}
-                    contactName={profile?.contactName}
-                    contactEmail={profile?.contactEmail}
-                  />
-                </>
-              ) : mollieInterrupted ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMollieInterrupted(false);
-                    setShowMollieModal(true);
-                  }}
-                  className="btn btn-secondary btn-sm"
-                >
-                  {tM('mollie.tryAgain')}
-                </button>
-              ) : molliePending ? (
-                <span className="badge badge-warning">{tM('mollie.status.pending')}</span>
-              ) : (
-                <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!profile?.contactEmail) {
-                        addToast('error', 'mollieErrorMissingContactEmail');
-                        return;
-                      }
-                      if (!profile?.contactName) {
-                        addToast('error', 'mollieErrorMissingContactName');
-                        return;
-                      }
-                      setShowMollieModal(true);
-                    }}
-                    className="btn btn-primary btn-sm"
+                    onClick={() => setShowPasswordModal(true)}
+                    className="btn btn-secondary btn-sm"
                   >
-                    {tM('mollie.connect')}
+                    {t('association.profile.security.changePassword')}
                   </button>
-                  {mollieLearnMoreButton}
                 </div>
-              )}
-              {mollieCanForceComplete && mollieConnected && onboardingStatus !== 'COMPLETED' && (
-                <button
-                  type="button"
-                  onClick={handleMollieForceComplete}
-                  className="btn btn-ghost btn-sm mt-3"
-                >
-                  {tM('mollie.devForceComplete')}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Carte Sécurité */}
-          <div className="card no-hover">
-            <div className="card-h">
-              <h3>{t('association.profile.security.title')}</h3>
-            </div>
-            <div className="card-b">
-              <div className="security-row">
-                <div>
-                  <p className="fl">{t('association.profile.security.loginMethod')}</p>
-                  <p className="security-value">
-                    {t(PROVIDER_KEYS[user.provider] as Parameters<typeof t>[0])}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(true)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  {t('association.profile.security.changePassword')}
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ══ Onglet : Mandat fiscal ══════════════════════════════════════════ */}
-      {activeTab === 'mandate' && (
-        <div className="set-tab-content active">
-          <MandateTab
-            state={mandateState}
-            isLoading={mandateLoading}
-            onGoToVerif={() => setActiveTab('verif')}
-            onUploadDoc={uploadDoc}
-            onDeleteDoc={deleteDoc}
-            onSign={async (request) => { await sign(request); setActiveTab('bank'); }}
-            signerName={profile?.signerName}
-            signerRole={profile?.signerRole}
-            onRevoke={revoke}
-            onDownloadPdf={downloadPdf}
-          />
-        </div>
-      )}
+        {/* ══ Onglet : Vérification ════════════════════════════════════════ */}
+        {activeTab === 'verif' && (
+          <div className="set-tab-content active">
+            <VerificationTab
+              onGoToVerif={() => setActiveTab('verif')}
+              onVerificationSubmitted={() => {
+                setVerifStatus(VerificationStatus.PENDING);
+                setActiveTab('mandate');
+              }}
+            />
+          </div>
+        )}
 
-      {/* ══ Onglet : Widget de don ═══════════════════════════════════════ */}
-      {activeTab === 'widget' && (
-        <div className="set-tab-content active">
-          <WidgetTab
-            profile={profile}
-            onTokenChanged={refreshProfile}
-          />
-        </div>
-      )}
+        {/* ══ Onglet : Compte bancaire ══════════════════════════════════════ */}
+        {activeTab === 'bank' && (
+          <div className="set-tab-content active">
+            <MollieOnboardingFlow
+              kyc={mollieKyc}
+              profile={profile}
+              bankDone={bankDone}
+              interrupted={mollieInterrupted}
+              onConnect={handleMollieConnect}
+              onReconnect={() => setShowMollieModal(true)}
+              // The interrupted notice stays until a connection succeeds: cancelling the modal
+              // must bring the retry button back instead of exposing the server-side pending state.
+              onRetryConnect={() => setShowMollieModal(true)}
+              onLearnMore={() => setShowMollieInfoModal(true)}
+              onForceComplete={handleMollieForceComplete}
+            />
+          </div>
+        )}
 
-      {/* ══ Onglet : Landing page ════════════════════════════════════════ */}
-      {activeTab === 'landing' && (
-        <div className="set-tab-content active">
-          <LandingTab
-            profile={profile}
-            onGoToWidget={() => setActiveTab('widget')}
-            onConfigChanged={refreshProfile}
-          />
-        </div>
-      )}
+        {/* ══ Onglet : Mandat fiscal ══════════════════════════════════════════ */}
+        {activeTab === 'mandate' && (
+          <div className="set-tab-content active">
+            <MandateTab
+              state={mandateState}
+              isLoading={mandateLoading}
+              onGoToVerif={() => setActiveTab('verif')}
+              onUploadDoc={uploadDoc}
+              onDeleteDoc={deleteDoc}
+              onSign={async (request) => { await sign(request); setActiveTab('bank'); }}
+              signerName={profile?.signerName}
+              signerRole={profile?.signerRole}
+              onRevoke={revoke}
+              onDownloadPdf={downloadPdf}
+            />
+          </div>
+        )}
 
-      {/* ── SetPassword modal ────────────────────────────────────────────── */}
-      {showPasswordModal && (
-        <div className="ov on" onClick={() => setShowPasswordModal(false)}>
-          <div className="mod" onClick={(e) => e.stopPropagation()}>
-            <div className="mod-h">
-              <h3>{t('association.profile.security.changePassword')}</h3>
-              <button className="mod-x" onClick={() => setShowPasswordModal(false)}>✕</button>
-            </div>
-            <div className="mod-b">
-              <SetPasswordForm
-                onSubmit={handlePasswordSubmit}
-                onSkip={() => setShowPasswordModal(false)}
-                loading={passwordLoading}
-              />
+        {/* ══ Onglet : Diffusion (campagne, page de campagne, suivi, landing page, intégration) ══ */}
+        {activeTab === 'diffusion' && (
+          <div className="set-tab-content active">
+            <DiffusionTab profile={profile} onProfileChanged={refreshProfile} />
+          </div>
+        )}
+
+        {/* ── SetPassword modal ────────────────────────────────────────────── */}
+        {showPasswordModal && (
+          <div className="ov on" onClick={() => setShowPasswordModal(false)}>
+            <div className="mod" onClick={(e) => e.stopPropagation()}>
+              <div className="mod-h">
+                <h3>{t('association.profile.security.changePassword')}</h3>
+                <button className="mod-x" onClick={() => setShowPasswordModal(false)}>✕</button>
+              </div>
+              <div className="mod-b">
+                <SetPasswordForm
+                  onSubmit={handlePasswordSubmit}
+                  onSkip={() => setShowPasswordModal(false)}
+                  loading={passwordLoading}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <MollieOnboardModal
-        isOpen={showMollieModal}
-        onClose={() => setShowMollieModal(false)}
-        onConnected={async () => {
-          setMollieInterrupted(false);
-          await refreshMollie();
-          setActiveTab('widget');
-        }}
-        onPopupClosed={handleMolliePopupClosed}
-        contactEmail={profile?.contactEmail}
-        contactName={profile?.contactName}
-        siren={profile?.siren}
-        identifier={profile?.identifier}
-        name={profile?.name}
-        addressLine1={profile?.addressLine1}
-        postalCode={profile?.postalCode}
-        city={profile?.city}
-        legalObject={profile?.legalObject}
-      />
+        <MollieOnboardModal
+          isOpen={showMollieModal}
+          onClose={() => setShowMollieModal(false)}
+          // Q5: stay on the bank tab (screen 3) after a successful connection.
+          onConnected={async () => {
+            setMollieInterrupted(false);
+            await forceRefreshMollie({ silent: true });
+          }}
+          onPopupClosed={handleMolliePopupClosed}
+          contactEmail={profile?.contactEmail}
+          contactName={profile?.contactName}
+          siren={profile?.siren}
+          name={profile?.name}
+          addressLine1={profile?.addressLine1}
+          postalCode={profile?.postalCode}
+          city={profile?.city}
+          legalObject={profile?.legalObject}
+        />
 
-      <MollieInfoModal isOpen={showMollieInfoModal} onClose={() => setShowMollieInfoModal(false)} />
+        <MollieInfoModal isOpen={showMollieInfoModal} onClose={() => setShowMollieInfoModal(false)} />
+      </div>
     </div>
   );
 }

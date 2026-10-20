@@ -1,3 +1,6 @@
+import type { BeneficialOwnerType } from './admin';
+import type { VerificationDocType } from './verification';
+
 export const MollieOnboardingStatus = {
   NEEDS_DATA: 'NEEDS_DATA',
   IN_REVIEW: 'IN_REVIEW',
@@ -21,4 +24,49 @@ export interface MollieKycStatus {
   dashboardUrl: string | null;
   /** True when the dev/staging "simulate KYC validation" endpoint is enabled. Always false in prod. */
   canForceComplete: boolean;
+  /**
+   * True when Mollie sent the dossier back for more information: NEEDS_DATA after an IN_REVIEW
+   * status has already been observed. False when not connected.
+   */
+  complementRequested: boolean;
+}
+
+/** `POST /api/mollie/connect/self-completion-attestation` — the (first) attestation, idempotent. Unlocks nothing. */
+export interface MollieSelfCompletionAttestation {
+  /** ISO-8601 instant of the first attestation recorded in the compliance journal. */
+  attestedAt: string;
+}
+
+/** Legal structure variant derived server-side from the KYB INSEE legal category (`structureVariantOf`). */
+export const MollieStructureVariant = {
+  DECLARED: 'DECLARED',
+  ARUP: 'ARUP',
+  ALSACE_MOSELLE: 'ALSACE_MOSELLE',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+export type MollieStructureVariant = typeof MollieStructureVariant[keyof typeof MollieStructureVariant];
+
+/** A confirmed, non-discarded person from the KYB dossier — name and role only, never a birth date. */
+export interface OnboardingBeneficialOwner {
+  name: string;
+  role: string | null;
+  type: BeneficialOwnerType;
+}
+
+/** A KYB document already provided to CommonLink, re-downloadable via `GET /api/association/documents/{id}/content`. */
+export interface OnboardingProvidedDocument {
+  id: string;
+  type: VerificationDocType;
+}
+
+/** `GET /api/mollie/connect/onboarding-context` — read-only projection of CommonLink's KYB data. Unlocks nothing. */
+export interface MollieOnboardingContext {
+  structureVariant: MollieStructureVariant;
+  /** ISO-8601 instant of the KYB approval, null if not verified. */
+  verifiedAt: string | null;
+  beneficialOwners: OnboardingBeneficialOwner[];
+  providedDocuments: OnboardingProvidedDocument[];
+  siren: string | null;
+  /** ISO-8601 instant of the self-completion attestation, null if never attested. */
+  selfCompletionAttestedAt: string | null;
 }

@@ -4,6 +4,7 @@ import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.Donation
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -566,7 +567,12 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         @Param("campaignId") campaignId: UUID,
     ): Boolean
 
-    /** Looks up a donation by the opaque [Donation.publicRef] handed to the donor on the Mollie redirect URL. */
+    /**
+     * Looks up a donation by the opaque [Donation.publicRef] handed to the donor on the Mollie redirect
+     * URL. Fetches campaign, its association and the donor in the same query: the confirmed status
+     * response reads all three.
+     */
+    @EntityGraph(attributePaths = ["campaign", "campaign.association", "donor"])
     fun findByPublicRef(publicRef: UUID): Donation?
 
     /**

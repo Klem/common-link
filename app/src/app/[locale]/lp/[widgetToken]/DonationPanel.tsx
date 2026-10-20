@@ -14,6 +14,8 @@ interface Props {
   /** Amount the campaign may still accept; forwarded to the form's collection-cap guard. */
   remainingCapacity?: number;
   onAmountChange?: (amount: number | undefined) => void;
+  /** Validated host origin when the landing runs inside `landing.js`/an iframe — see `DonationEventExtras.parentOrigin`. */
+  parentOrigin?: string | null;
 }
 
 export function DonationPanel({
@@ -24,6 +26,7 @@ export function DonationPanel({
   disabled,
   remainingCapacity,
   onAmountChange,
+  parentOrigin,
 }: Props) {
   const t = useTranslations('landing');
 
@@ -41,6 +44,7 @@ export function DonationPanel({
         disabled={disabled}
         remainingCapacity={remainingCapacity}
         onAmountChange={onAmountChange}
+        parentOrigin={parentOrigin}
       />
       <div className="lp-payment-methods">
         <span className="lp-payment-pill">CB</span>

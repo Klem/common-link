@@ -5,6 +5,7 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.config.RiskClassificationProperties
+import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.entity.BeneficialOwnerType
@@ -13,7 +14,9 @@ import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
+import org.commonlink.repository.AssociationDocumentMetadata
 import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
@@ -432,5 +435,47 @@ class VerificationServiceTest {
         every { meta.sizeBytes } returns sizeBytes
         every { meta.uploadedAt } returns java.time.Instant.now()
         return meta
+    }
+
+    // -------------------------------------------------------------------------
+    // downloadDocument — journaled re-download of the association's own document
+    // -------------------------------------------------------------------------
+
+    private val docId: UUID = UUID.fromString("00000000-0000-0000-0000-0000000000d1")
+
+    private fun ownProfile(): AssociationProfile {
+        val profile: AssociationProfile = mockk(relaxed = true)
+        every { profile.id } returns associationId
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        return profile
+    }
+
+    @Test
+    fun `downloadDocument - own document returns content and writes exactly one journal event`() {
+        ownProfile()
+        val meta: AssociationDocumentMetadata = mockk(relaxed = true)
+        every { meta.docType } returns AssociationDocumentType.VERIF_STATUTS
+        every { meta.fileName } returns "statuts-secret-name.pdf"
+        every { documentRepo.findMetadataByIdAndAssociationId(docId, associationId) } returns meta
+        every { documentRepo.findContentById(docId) } returns "PDF".toByteArray()
+
+        val (_, content) = service.downloadDocument(userId, docId)
+
+        assertEquals("PDF", String(content))
+        verify(exactly = 1) {
+            complianceAuditLogService.appendAssociationDocumentDownloaded(associationId, docId, "VERIF_STATUTS", userId)
+        }
+    }
+
+    @Test
+    fun `downloadDocument - document of another association is 404 and writes no journal event`() {
+        ownProfile()
+        // The ownership-scoped query returns null for a document owned by another association.
+        every { documentRepo.findMetadataByIdAndAssociationId(docId, associationId) } returns null
+
+        assertThrows(NotFoundException::class.java) { service.downloadDocument(userId, docId) }
+
+        verify(exactly = 0) { documentRepo.findContentById(any()) }
+        verify(exactly = 0) { complianceAuditLogService.appendAssociationDocumentDownloaded(any(), any(), any(), any()) }
     }
 }

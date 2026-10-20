@@ -4,6 +4,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.Campaign
+import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.dto.UpdateAssociationProfileRequest
 import org.commonlink.exception.ConflictException
@@ -38,6 +40,39 @@ class AssociationServiceTest {
         every { mockAssociation.verifiedAt = any() } returns Unit
         every { associationRepo.findById(associationId) } returns Optional.of(mockAssociation)
         every { associationRepo.save(mockAssociation) } returns mockAssociation
+    }
+
+    // ── updateWidgetConfig: campaign page URL ──────────────────────────────
+
+    private fun storedWidgetUrl(input: String?): String? {
+        val userId = UUID.randomUUID()
+        val profile: AssociationProfile = mockk(relaxed = true)
+        val stored = io.mockk.slot<String?>()
+        every { profile.widgetAllowedOrigin = captureNullable(stored) } returns Unit
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+        service.updateWidgetConfig(userId, input)
+        return stored.captured
+    }
+
+    @Test
+    fun `updateWidgetConfig - keeps the path and query of the campaign page, drops the fragment`() {
+        org.junit.jupiter.api.Assertions.assertEquals(
+            "https://www.asso.fr/campagnes/ete?ref=ads",
+            storedWidgetUrl("  HTTPS://www.Asso.fr/campagnes/ete?ref=ads#don  "),
+        )
+    }
+
+    @Test
+    fun `updateWidgetConfig - a bare origin stays valid`() {
+        org.junit.jupiter.api.Assertions.assertEquals("http://localhost:7001/", storedWidgetUrl("http://localhost:7001"))
+    }
+
+    @Test
+    fun `updateWidgetConfig - clears the setting on a blank or non-http value`() {
+        org.junit.jupiter.api.Assertions.assertNull(storedWidgetUrl(" "))
+        org.junit.jupiter.api.Assertions.assertNull(storedWidgetUrl("javascript:alert(1)"))
+        org.junit.jupiter.api.Assertions.assertNull(storedWidgetUrl("ftp://asso.fr/don"))
     }
 
     // ── markVerified / revokeAssociation / restoreAssociation ─────────────
@@ -197,6 +232,53 @@ class AssociationServiceTest {
         )
 
         assertThrows<NotFoundException> { service.updateProfile(userId, req) }
+    }
+
+    @Test
+    fun `updateProfile - a non-LIVE destination campaign is rejected with a conflict`() {
+        val userId = UUID.randomUUID()
+        val assocId = UUID.randomUUID()
+        val campaignId = UUID.randomUUID()
+
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.id } returns assocId
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        val draft = mockk<Campaign>(relaxed = true)
+        every { draft.status } returns CampaignStatus.DRAFT
+        every { campaignRepo.findByIdAndAssociationId(campaignId, assocId) } returns Optional.of(draft)
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = null, creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = campaignId,
+        )
+
+        assertThrows<ConflictException> { service.updateProfile(userId, req) }
+        verify(exactly = 0) { profile.widgetDestinationCampaign = any() }
+    }
+
+    @Test
+    fun `updateProfile - a LIVE destination campaign is stored`() {
+        val userId = UUID.randomUUID()
+        val assocId = UUID.randomUUID()
+        val campaignId = UUID.randomUUID()
+
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.id } returns assocId
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+        val live = mockk<Campaign>(relaxed = true)
+        every { live.status } returns CampaignStatus.LIVE
+        every { campaignRepo.findByIdAndAssociationId(campaignId, assocId) } returns Optional.of(live)
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = null, city = null, postalCode = null, description = null,
+            siren = null, creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = campaignId,
+        )
+
+        service.updateProfile(userId, req)
+        verify(exactly = 1) { profile.widgetDestinationCampaign = live }
     }
 
     @Test

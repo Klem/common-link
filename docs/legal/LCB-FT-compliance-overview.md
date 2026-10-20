@@ -227,6 +227,44 @@ par aucune des sources consultées — aucune des cinq annonces anciennes éprou
 2026 n'a pu être résolue. Cette restriction est en tension avec le point 2 ci-dessus, qui inclut les
 dossiers identifiés par leur seul numéro RNA ; elle est portée à l'arbitrage en section 7.3.
 
+**Complément du 12 octobre 2026 — suivi du dossier chez le prestataire de paiement**
+
+Le parcours d'ouverture du compte bancaire a été refondu le 12 octobre 2026. Trois points sont
+portés à la connaissance de la commission ; le détail figure dans la fiche *E3 — Non-délégation*,
+point 4.5, et dans la fiche *Suivi de l'état du dossier de l'association chez le prestataire de
+paiement*, hors dispositif LCB-FT.
+
+**L'état du dossier chez le prestataire est désormais suivi activement.** La plateforme le relit à
+l'affichage de l'espace de l'association (au plus toutes les cinq minutes), par une consultation
+périodique automatique (toutes les cinq minutes ; toutes les heures pour un dossier resté « à
+compléter » depuis plus de sept jours) et à la demande de l'association (au plus toutes les trente
+secondes). Cette consultation est désactivée en développement et en recette, activée dans la
+configuration de production. Seuls des indicateurs d'état de la connexion sont enregistrés :
+**aucune donnée d'identification ne revient du prestataire vers le dossier tenu par CommonLink**,
+et la conclusion de la fiche *Non-délégation* est inchangée. Le verrou d'ouverture de collecte est
+lui aussi inchangé.
+
+**Écart ouvert — la perte de validation d'un compte qui encaisse déjà n'est pas détectée.** Dès
+qu'un compte est validé par le prestataire et autorisé à encaisser, la plateforme cesse de
+consulter le prestataire pour lui. Cette limite est antérieure au 12 octobre 2026 — la consultation
+cessait alors dès la validation, autorisation d'encaisser ou non — ; elle a été rendue explicite et
+restreinte à cette date. Si le prestataire retirait ensuite sa validation, la plateforme
+ne le constaterait pas, n'émettrait aucune alerte et laisserait les collectes ouvertes de son côté.
+Ce choix est délibéré : l'enregistrement automatique d'une régression couperait automatiquement les
+collectes, à rebours de l'orientation du 9 octobre 2026 selon laquelle une régression doit être
+signalée à la conformité et tranchée par un humain. La manière de concilier les deux n'est pas
+tranchée ; **tant qu'elle ne l'est pas, l'écart demeure**. Seule la rupture du lien technique avec
+le compte de l'association chez le prestataire est détectée et suspend la collecte, comportement
+antérieur. Aucun changement d'état du dossier chez le prestataire n'est inscrit au journal d'audit.
+
+**Deux inscriptions nouvelles au journal d'audit.** Le téléchargement par l'association de ses
+propres pièces, désormais proposé pour qu'elle les dépose elle-même chez le prestataire, et sa
+déclaration d'avoir rempli elle-même son dossier chez le prestataire, sont inscrits au journal —
+sans adresse IP ni identification du navigateur pour la déclaration. Cette déclaration ne débloque
+rien et n'établit pas qui a rempli le dossier. Le paiement test de 0,01 € que le prestataire exige
+pour achever sa validation est une consigne donnée à l'association : la plateforme ne le détecte
+pas et ne l'enregistre pas.
+
 **Exigence couverte** : Responsabilité n° 3 — Entrée en relation et vérification de l'association. *(Partiellement — vérifications à l'entrée livrées ; surveillance périodique et révision des dossiers existants restent à compléter.)*
 
 ---
@@ -323,7 +361,7 @@ Les tableaux suivants couvrent l'intégralité du parcours, des contrôles pré-
 | Objectif de campagne strictement positif | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée | Association (corriger l'objectif) |
 | Vérification KYB avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée si statut KYB non vérifié | Curateur (compléter la procédure de vérification) |
 | Compte Mollie connecté avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée sans compte de paiement connecté | Association (se connecter à Mollie) |
-| KYC Mollie complète avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée si KYC Mollie incomplète | Association (finaliser l'onboarding Mollie) |
+| KYC Mollie complète avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée si KYC Mollie incomplète. *Apprécié sur l'état enregistré par la plateforme, qui n'est plus réactualisé une fois le compte validé et autorisé à encaisser : une perte de validation ultérieure chez Mollie n'est pas détectée (section 7.2, responsabilité n° 3)* | Association (finaliser l'onboarding Mollie) |
 
 ### 5.2 Contrôles ajoutés dans ce sprint (LCB-FT)
 
@@ -406,6 +444,17 @@ introduit le premier écran s'adressant au donateur qui mentionne ce registre. C
 précédentes, aucune conclusion sur le dispositif LCB-FT ne peut en être tirée. Son nom de fichier ne
 porte volontairement aucun préfixe `E`, pour la même raison que les fiches précédentes.
 
+**Une sixième fiche, hors dispositif LCB-FT, a été ajoutée le 12 octobre 2026 :
+`suivi-statut-prestataire-paiement.md`.** Elle décrit la manière dont la plateforme se tient
+informée de l'avancement du dossier de l'association chez le prestataire de paiement, ce qui
+détermine le moment où la seconde condition du verrou cumulatif décrit par la fiche
+*E3 — Non-délégation* est tenue pour remplie. Elle n'est pas comptée parmi les seize fiches du
+dispositif : la vérification qu'elle suit est conduite par le prestataire pour son propre compte,
+et la présenter comme un contrôle LCB-FT de CommonLink contredirait la conclusion de la fiche
+*Non-délégation*. Elle déclare un écart ouvert — la perte de validation d'un compte qui encaisse
+déjà n'est pas détectée — repris en section 7.2. Aucune conclusion sur le dispositif LCB-FT ne peut
+en être tirée. Son nom de fichier ne porte volontairement aucun préfixe `E`.
+
 La saisie des représentants légaux comme bénéficiaires effectifs faisait initialement l'objet d'une fiche séparée, rédigée dans un registre technique. Elle est intégrée à la fiche *Filtrage à l'entrée en relation d'affaires*, dont elle constitue le périmètre d'application : le contrôle de gel porte sur les personnes physiques identifiées au dossier, et les conditions de leur identification ne se lisent pas utilement séparément du contrôle qu'elles alimentent.
 
 ---
@@ -456,6 +505,7 @@ L'infrastructure est livrée. Le seul travail restant est le prérequis non tech
 | Contrainte d'unicité du numéro SIREN au niveau du schéma de base de données — l'unicité n'est aujourd'hui assurée que par le logiciel, sur la seule voie de création de compte | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Statut d'activité des associations identifiées par leur seul numéro SIREN sans numéro RNA connu — la consultation du Journal officiel, qui s'effectue sur le numéro RNA, n'a pas lieu pour elles | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Voie d'entrée pour les associations dépourvues de numéro SIREN dont les annonces au Journal officiel sont antérieures à 2010 — leur numéro RNA n'est retrouvable par aucune source consultée ; conditionné à l'arbitrage de la section 7.3 | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Détection de la perte de validation chez le prestataire de paiement d'un compte qui encaisse déjà, alerte de la conformité et journal des changements d'état — **limite antérieure, déclarée comme écart ouvert le 12 octobre 2026**, la conduite à tenir (alerte sans coupure automatique, ou coupure automatique) restant à trancher. Mécanisme hors dispositif LCB-FT ; il conditionne l'actualité de la seconde condition du verrou cumulatif *(fiche Suivi de l'état du dossier chez le prestataire, point 6)* | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 **Responsabilité n° 4 — Gel des avoirs**
 
@@ -523,5 +573,7 @@ Deux travaux sont exigibles avant l'ouverture de l'encaissement, indépendamment
 *Document établi le 11 août 2026, mis à jour les 14, 17 et 21 août 2026 : état des livrables arrêté au 21 août 2026.*
 
 *La mise à jour du 21 août porte sur les développements survenus depuis le 18 août 2026 et sur ce qu'ils modifient dans les affirmations du présent document. Six points en constituent la substance : la voie de contournement du cloisonnement de la fonction conformité, constatée et corrigée le 20 août 2026 (épique E1) ; l'état réel de la responsabilité n° 2 — absence de tout point d'entrée d'attribution d'un niveau de risque, révision du document de classification rédigée sans être mise en vigueur, divergence sur sa date d'adoption ; l'ouverture de l'entrée en relation aux associations dont le numéro RNA n'est pas connu, et les deux écarts de conception qu'elle rend significatifs (épique E3) ; l'indépendance désormais requise du déclencheur de mise à jour du registre de gel vis-à-vis du composant blockchain (épique E4) ; la portée exacte de la couverture automatisée des mécanismes de niveau base de données, qui établit l'application des migrations sans établir l'effet du garde-fou d'immuabilité ; et la tenue d'une revue de sécurité du dispositif, avec trois risques explicitement acceptés en l'état.*
+
+*Complément du 12 octobre 2026 : suivi du dossier de l'association chez le prestataire de paiement (épique E3, section 6 et section 7.2) — sans modification de l'état des livrables du dispositif arrêté au 21 août 2026.*
 
 *Ce document est une synthèse de travaux en cours. Il sera mis à jour à chaque sprint livrant des éléments du dispositif LCB-FT.*

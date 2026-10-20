@@ -154,6 +154,10 @@ The act of recording a donation proof on the blockchain. This includes the amoun
 A visual chart in the donor dashboard showing the proportion of the donor's contribution relative to the total raised amount for a given campaign.
 `functional`
 
+### Complement Requested
+Bank account tab state meaning Mollie sent the dossier back for more information: the connection is `NEEDS_DATA` **and** a sync has already observed `IN_REVIEW` for it (`in_review_observed`, V84, never reset). Exposed as `complementRequested` in the KYC status DTO. Only as reliable as the observations: an `IN_REVIEW` phase shorter than the sync interval (5 min) is never observed, and with `disable-onboarding-sync` true (local, staging) it cannot appear at all. See [[Mollie Status Sync]].
+`functional` `integration` `association`
+
 ### CORS (Cross-Origin Resource Sharing)
 A security mechanism that restricts which domains can communicate with the backend API. Only the authorized frontend URL is allowed — no other website can make requests to the API.
 `technical` `security`
@@ -203,6 +207,10 @@ decision D4), and the on-chain registry banner. Not to be confused with `Campaig
 unrelated abuse-reporting feature ("Report this campaign"). Backed by
 `DonorCampaignReportService.getReport`, gated by `DonorReadScope.assertHasDonatedTo`.
 `functional` `technical`
+
+### Dormant Connection
+A Mollie connection that has been `NEEDS_DATA` for more than `app.mollie.connect.onboarding-sync.dormant-after-days` (7) days, measured from `onboarding_status_since`. The scheduled sweep of [[Mollie Status Sync]] polls it every hour instead of every 5 minutes. Only `NEEDS_DATA` can be dormant: an `IN_REVIEW` connection keeps the 5-minute cadence however long the review lasts. For rows that existed before V84, `onboarding_status_since` was backfilled from `connected_at`.
+`technical` `integration`
 
 ### Donor Profile
 The profile attached to a donor account. Contains: display name, avatar, and anonymity preference. Created automatically (empty) at registration.
@@ -352,8 +360,9 @@ A local-development mode for the blockchain layer. Activated by setting `onchain
   OAuth popup + client-link / partner creation intact: you go through the genuine flow, then simulate
   only the final validation Mollie has no dashboard button for. Gated declaratively via
   `@ConditionalOnProperty` (same style as `MockOnchainRegistry`): in production the flag is `false`,
-  the controller bean never exists, and the route returns **404**. Once COMPLETED,
-  `refreshOnboardingStatusIfStale` never re-polls Mollie, so the state is durable.
+  the controller bean never exists, and the route returns **404**. The forced state is COMPLETED
+  **with** `canReceivePayments`, i.e. a connection that collects: no [[Mollie Status Sync]] path
+  ever re-polls such a connection, so the state is durable.
 
 - **Mollie test mode** — In Mollie's sandbox, payment methods are active immediately even while KYC
   shows "pending"; card test payments work without a validated onboarding. There is no dashboard
@@ -378,12 +387,20 @@ Beta Mollie API (`GET /v2/capabilities`) that replaced the deprecated `GET /v2/o
 `technical` `integration`
 
 ### Mollie Onboarding Status
-The KYC approval state derived from the [[Mollie Capabilities API]]. Three values: `NEEDS_DATA` (action required — Mollie needs information or documents), `IN_REVIEW` (dossier submitted, Mollie reviewing), `COMPLETED` (merchant approved, payments enabled). CommonLink polls at most once every 5 minutes per association (throttled re-fetch triggered by status reads). Stored as `MollieOnboardingStatus` enum in DB.
+The KYC approval state derived from the [[Mollie Capabilities API]]. Three values: `NEEDS_DATA` (action required — Mollie needs information or documents), `IN_REVIEW` (dossier submitted, Mollie reviewing), `COMPLETED` (merchant approved, payments enabled). CommonLink re-reads it through the three paths of [[Mollie Status Sync]] (throttled status read, scheduled sweep, forced refresh); a connection that already collects (COMPLETED **and** `canReceivePayments`) is never re-read. Stored as `MollieOnboardingStatus` enum in DB, together with `onboarding_status_since` (when the current status was first observed, see [[Dormant Connection]]) and `in_review_observed` (see [[Complement Requested]]) since V84.
 `technical` `integration` `association`
 
 ### Mollie Hosted Onboarding
-Mollie's own onboarding wizard, reached via the `_links.dashboard` deep link from the [[Mollie Capabilities API]] requirements array. It is the only way to complete KYC steps requiring human review (identity verification, UBO declaration, bank account verification). CommonLink stores the link on `MollieConnection.onboardingDashboardUrl`, exposes it as `dashboardUrl` in the KYC status DTO, and the association profile page shows a "Complete my onboarding" button opening it in a new tab while the status is `NEEDS_DATA`. There is no redirect back to CommonLink; completion surfaces through the throttled capabilities poll.
+Mollie's own onboarding wizard, reached via the `_links.dashboard` deep link from the [[Mollie Capabilities API]] requirements array. It is the only way to complete KYC steps requiring human review (identity verification, UBO declaration, bank account verification). CommonLink stores the link on `MollieConnection.onboardingDashboardUrl` and exposes it as `dashboardUrl` in the KYC status DTO; the "Bank account" tab's onboarding flow opens it in a new window (`noopener`) to fill or resume the dossier. There is no redirect back to CommonLink; completion surfaces through [[Mollie Status Sync]] — the tab forces a refresh when the association comes back to it, and the scheduled sweep catches it without any visit.
 `technical` `integration` `association`
+
+### Mollie Status Sync
+How CommonLink keeps `MollieConnection`'s onboarding fields current, since Mollie has no onboarding webhook. Three paths share one write method (`MollieOnboardingSnapshotWriter.writePolled`): (1) the **throttled status read** — `GET /api/mollie/connect/status` calls Mollie when the last sync is older than 5 minutes; (2) the **scheduled sweep** — `MollieOnboardingSyncExecutor`, ticking every minute, polls each due ACTIVE connection every 5 minutes, or every hour for a [[Dormant Connection]]; (3) the **forced refresh** — `POST /api/mollie/connect/status/refresh`, at most one Mollie call per association every 30 seconds (in-memory limit, per instance). A connection that collects (`COMPLETED && canReceivePayments`) is **never** re-polled by any path, and the writer refuses to overwrite one under its row lock (sprint 20, question Q1): consequently a validation lost on Mollie's side is **not detected** — an open gap, see `docs/legal/suivi-statut-prestataire-paiement.md`. BROKEN and mock connections are skipped. `app.mollie.connect.disable-onboarding-sync` is the single switch (true in local and staging, false in prod). A change of status or of `canReceivePayments` publishes `MollieOnboardingStatusChangedEvent` (transition emails only; nothing is journaled). The browser never calls Mollie: the Bank account tab re-reads CommonLink's status every 60 s and forces a refresh on return to the tab.
+`technical` `integration` `association`
+
+### Mollie Test Payment
+A 0.01 € payment the association makes **itself, from its own Mollie account**, because Mollie requires a first transaction to fully approve an account (Mollie's written answer of 2026-10-09, not yet confirmed on a real dossier). Shown as step 4 of the Bank account onboarding flow. It is an **instruction, not a detected state**: CommonLink neither detects nor records it — the "I made my test payment" checkbox lives in browser state only and is lost on reload. Never described as free (transaction fees unknown).
+`functional` `integration` `association`
 
 ### Monorepo
 A single Git repository containing both the frontend (`app/`) and backend (`api/`) projects. Each project is fully autonomous — there is no build tool at the root level.
@@ -414,7 +431,7 @@ A cryptographically random string (32 bytes, 64 hex characters) used for Magic L
 ## P
 
 ### Place of Action (Lieu de l'action)
-Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation (and once for older campaigns, `ActionPlaceBackfill`). Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
+Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation. Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
 `functional`
 
 ### Proximity Filter — see **Place of Action**
@@ -511,6 +528,10 @@ One recorded pairing between a screened name and an entry of the national asset-
 ### Screened Normalized Name (Valeur criblée normalisée)
 The string actually compared during a freeze screening, after `NameNormalizer` strips accents, uppercases and collapses punctuation — the association "TECHNO +" is compared as "TECHNO". It is frozen at screening time on each Screening Correspondence, because it is the value that produced the score and must survive a later correction of the dossier name. Showing only the raw name leaves a high score against a dissimilar-looking register entry unexplained.
 `functional` `compliance`
+
+### Self-completion Attestation
+The association's declaration "Je confirme avoir rempli moi-même mon dossier Mollie", offered on the last screen ("Actif") of the Bank account onboarding flow (`POST /api/mollie/connect/self-completion-attestation`). Journaled as `MOLLIE_SELF_COMPLETION_ATTESTED` in the compliance audit log with the acting user, the timestamp and the wording version (`textVersion`) only — no IP address, no user-agent, because the hash-chained journal can never be erased. Idempotent (one event per association; a second call returns the first), cannot be withdrawn, and **unlocks nothing**: the collection lock stays `canCollectDonations()`. It records a declaration; it does not prove who filled the Mollie dossier.
+`functional` `compliance` `association`
 
 ### SHA-256
 A cryptographic hash function used to store sensitive tokens (Magic Links, Refresh Tokens) in the database. Only the hash is persisted — the original token cannot be reconstructed from the hash.
@@ -641,13 +662,33 @@ Dashboard field identifying the campaign milestone closest to being reached — 
 `technical` `backend` `association`
 
 ### Donation Public Ref
-An opaque UUID minted server-side (`PublicWidgetService.createDonation`) before the Mollie payment is created, since Mollie's own payment id does not exist yet at redirect-URL construction time. Carried as the `ref` query param on the Mollie success redirect URL alongside the dataLayer tracking payload (amount, currency, campaign, association, anonymous flag) — never on the cancel URL. Stored on `Donation.publicRef` (`donations.public_ref`, partial unique index). Looked up by the public, unauthenticated `GET /api/public/widget/donations/{ref}/status` endpoint, which the `/return` page polls to decide whether to push the GA4 `purchase` event. Leaks no internal data beyond PENDING/CONFIRMED and, once confirmed, the payment method.
+An opaque UUID minted server-side (`PublicWidgetService.createDonation`) before the Mollie payment is created, since Mollie's own payment id does not exist yet at redirect-URL construction time. Carried alone as the `ref` query param on the Mollie success redirect URL — no donation value rides on a URL — and never on the cancel URL. Stored on `Donation.publicRef` (`donations.public_ref`, partial unique index). Looked up by the public, unauthenticated `GET /api/public/widget/donations/{ref}/status` endpoint: `/return` polls it to wait for confirmation, and the CommonLink iframe on the association's page reads the confirmed `purchase` values from it. Before confirmation it returns only PENDING; once CONFIRMED, the payment method, amount, currency, campaign id and name, association name and anonymity choice — never the donor's identity. Whoever holds the ref can read those values, so the ref is removed from the association's address bar as soon as the loader reads it ([[Donation Success Flag]]).
 `technical` `backend`
+
+### Donation Success Flag
+Query parameters `cl_donation=success&cl_ref=<donation ref>` that `/return` appends to the association's campaign page URL on the redirect back (`withDonationSuccessFlag` in `EmbedDonateReturnClient.tsx`), only after the server reported the payment `CONFIRMED` — never on a cancelled payment or an expired confirmation poll. The CommonLink loader on that page (`widget.js`, `landing.js`, iframe bridge) removes both from the address bar at once, passes the ref to its iframe as `clRef` (loaded eagerly), and remembers a relayed ref in `sessionStorage` so a reload never repeats the `purchase` event. The flag itself is only a trigger: the event values are read from the server, so editing the URL cannot change them. When the donation started on the landing page opened directly (`/lp` top-level, e.g. an ad's destination), the return target is that `/lp` page itself — `/return` accepts this widget's own landing page without the allowlist — and `/lp` reads the flag server-side, cleans the URL and pushes `purchase` into its own dataLayer (its GTM and cookie banner), where `begin_checkout` fired.
+`technical`
+
+### Campaign Page URL (`widgetAllowedOrigin`)
+The full URL of the page where the association publishes its campaign, on its own site and with the technique of its choice (static HTML export, `landing.js` script or iframe). Stored whole in `AssociationProfile.widgetAllowedOrigin` (scheme, host, port, path and query; fragment dropped; up to 2048 characters since V85 — values saved earlier may be a bare origin, still valid). It is the post-payment return target of the landing page embeds, and its origin is the only one `/return` redirects to. The field keeps its historical name.
+`technical` `functional`
+
+### Diffusion Tab
+The association settings tab (`components/settings/diffusion/DiffusionTab.tsx`, tab id `diffusion`) that merged the former Widget and Landing page tabs on 2026-10-14, then was reorganised on 2026-10-15 into three numbered cards: 1 · destination campaign and diffusion link (`CampaignSetupCard`, LIVE campaigns only), 2 · landing page theme, logo and preview (`LandingAppearanceCard`), 3 · [[Diffusion Method]] (`DiffusionMethodCard`): the association picks ONE method in a radio group (`MethodPicker`) and only its settings are shown (`MethodSettings`): status badges, the direct link or the campaign page URL (`CampaignPageUrlField`, see [[Campaign Page URL (`widgetAllowedOrigin`)]]), the code(s) to paste or the standalone HTML export (`HtmlExport`, generated only while that method is selected and once GTM is set), the GTM container (`GtmField`, with the cookie-consent warning and head/body tags when the host page loads GTM) and the event parameters for a developer. The bare `/embed/donate` iframe URL is not offered: it had no bridge, so no event reached the association's GTM. Unlocked with the same gate as before (`bankDone`). Translation keys live under `settings.diffusion.*` (`campaign`, `token`, `pageUrl`, `tracking`, `appearance`, `preview`, `methods`); the former `settings.widget.*` and `settings.landing.*` namespaces no longer exist.
+`functional` `technical`
+
+### Diffusion Method
+How an association publishes its donation page, picked in the [[Diffusion Tab]] and stored on its profile (`association_profiles.embed_type`, Kotlin enum `EmbedType`, migration V86; NULL until first picked, the tab then defaults to `script`, or `direct` while no campaign page URL is set). The values are the `embed_type` wire values sent to GTM (`direct`, `script`, `iframe`, `html`, `widget`, see `EmbedType` in `app/src/lib/gtm.ts`), serialised in lowercase over the API. Settings state only: no public endpoint reads it, and switching method does not remove a code already pasted on the association's site. FR: « méthode de diffusion ».
+`functional` `technical`
+
+### dataLayer Bridge (iframe to host)
+The postMessage channel (`cl-widget-gtm-event`, constant `GTM_EVENT_MESSAGE_TYPE` in `app/src/lib/gtm.ts`) that delivers the GA4 ecommerce events (`begin_checkout`, `purchase`) from the CommonLink iframe to the association's own page `window.dataLayer`, since a cross-origin iframe's `dataLayer` is invisible to the host's GTM. Receivers: `public/widget.js` (widget embed and the `gtm-export` page), `public/landing.js` (script embed) and `gtmIframeBridgeScript` (raw `<iframe>` embed — pasted by the host right after the iframe tag, it also adds `?parentOrigin=` to the iframe `src`). Every receiver accepts only its own iframe and the CommonLink origin. When embedded through one of these receivers (`parentOrigin` set), `/embed/donate` and `/lp` do not load GTM themselves, so each event is processed once, by the association's container and under its consent; a host page without the GTM tags tracks nothing. With `?clDebug=1` on the host page, the receivers log every host `dataLayer.push` and the full state (debug aid, removable).
+`technical`
 
 ## G
 
 ### GA4 Ecommerce Donation Tracking
-Google Analytics 4 ecommerce events pushed to `window.dataLayer` (via `app/src/lib/gtm.ts#pushDonationEvent`) to track the donation funnel for Ad Grants reporting. `begin_checkout` fires client-side right before the donor is redirected to Mollie's hosted checkout (`useGuestDonation`), using the [[Donation Public Ref]] as `transaction_id`. `purchase` fires on the `/return` page once `GET .../donations/{ref}/status` reports CONFIRMED, polled every 750ms bounded to the existing 3s auto-redirect window — never fired for a cancelled payment, and never guessed optimistically. Both events carry `items: [{item_id: campaignId, item_name: campaignName}]` and `affiliation: associationName`; `purchase` additionally carries the Mollie payment method once known. The push is a no-op with nothing to read it when the association has no `gtmContainerId` configured.
+Google Analytics 4 ecommerce events delivered to the association's own page `window.dataLayer` (via `app/src/lib/gtm.ts`) to track the donation funnel for Ad Grants reporting, under the association's GTM and consent. `begin_checkout` fires client-side right before the donor is redirected to Mollie's hosted checkout (`useGuestDonation`), using the [[Donation Public Ref]] as `transaction_id`, and is relayed to the host page through the [[dataLayer Bridge (iframe to host)]]. `purchase` fires on the association's page after the donor comes back: `/return` waits (up to 30s) for the server to confirm the payment, redirects with the [[Donation Success Flag]], the host loader hands the ref to its iframe, and `PurchaseRelay` reads the confirmed values from `GET .../donations/{ref}/status` and relays the event — relay only, never pushed in the iframe. Never fired for a cancelled or unconfirmed payment, never built from URL values, never sent from `/return` (which loads no GTM, RGPD). Both events carry `items: [{item_id: campaignId, item_name: campaignName}]` and `affiliation: associationName`; `purchase` additionally carries the payment method. `begin_checkout` additionally carries how the amount was chosen: `amount_source` (`preset` button or `custom` typed amount, for the submitted amount), `first_amount` and `amount_changes` (distinct consecutive choices; a typed amount counts once, on blur or on submit) — see `lib/donation/amountChoice.ts`. Both events also carry `embed_type` (`direct`, `script`, `iframe`, `html` or `widget`): each embed code passes it to the page as `clEmbed` (`landing.js`, the iframe bridge, `widget.js` — `html` when its tag carries `data-embed="html"`, set by the standalone export), and the page falls back on what its route implies for codes copied before it existed — see `EmbedType` / `resolveEmbedType` in `lib/gtm.ts`. These params, like `anonymous`, sit outside `ecommerce`: they reach a tag only once the association maps them to data layer variables in GTM, which the Diffusion tab's GTM card tells it.
 `technical` `functional`
 
 ## P (continued)

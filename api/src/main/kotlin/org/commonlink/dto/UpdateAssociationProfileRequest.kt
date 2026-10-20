@@ -56,9 +56,10 @@ data class UpdateAssociationProfileRequest(
 
     /**
      * UUID of the campaign to use as the widget donation destination.
-     * Null = no change. The campaign must belong to the same association;
-     * non-LIVE campaigns are accepted here — the widget (B4) refuses donations
-     * at request time if the destination is not LIVE.
+     * Null = no change. The campaign must belong to the same association and be LIVE
+     * (409 otherwise), mirroring the settings selector that only offers LIVE campaigns.
+     * A destination that leaves LIVE later stays stored; the widget (B4) then refuses
+     * donations at request time.
      */
     val widgetDestinationCampaignId: UUID?,
 

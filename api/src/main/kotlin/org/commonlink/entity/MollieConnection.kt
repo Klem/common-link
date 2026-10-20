@@ -10,8 +10,12 @@ import java.util.UUID
  *
  * One-to-one with [AssociationProfile]; holds the access/refresh tokens returned after the
  * authorization code exchange. The presence of this record means the association has initiated
- * Mollie KYC onboarding. [onboardingStatus] tracks KYC progress and is refreshed throttled
- * (at most once every 5 minutes) on each status read.
+ * Mollie KYC onboarding. [onboardingStatus] tracks KYC progress. It is refreshed from Mollie
+ * (no onboarding webhook exists) by three paths sharing one write method,
+ * `MollieOnboardingSnapshotWriter`: the throttled status read (at most once every 5 minutes), the
+ * scheduled sweep (`MollieOnboardingSyncExecutor`) and the association's forced refresh (at most
+ * once every 30 seconds). A connection that already collects ([onboardingStatus] COMPLETED **and**
+ * [canReceivePayments]) is never re-polled — see sprint 20, question Q1.
  */
 @Entity
 @Table(name = "mollie_connections")
@@ -55,8 +59,9 @@ class MollieConnection(
     var state: MollieConnectionState = MollieConnectionState.ACTIVE,
 
     /**
-     * KYC onboarding status derived from Mollie's GET /v2/capabilities.
-     * Refreshed throttled on status reads when not yet COMPLETED.
+     * KYC onboarding status derived from the configured Mollie onboarding API
+     * (`GET /v2/onboarding/me` or `GET /v2/capabilities`). Refreshed while the connection does not
+     * collect yet (anything but COMPLETED with [canReceivePayments]).
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "onboarding_status", nullable = false, length = 16)
@@ -88,6 +93,22 @@ class MollieConnection(
      */
     @Column(name = "onboarding_dashboard_url", columnDefinition = "TEXT")
     var onboardingDashboardUrl: String? = null,
+
+    /**
+     * True once a sync has ever observed [MollieOnboardingStatus.IN_REVIEW] for this connection.
+     * Never reset. Together with a current [MollieOnboardingStatus.NEEDS_DATA] it means Mollie sent
+     * the dossier back for more information ("complement requested" in the Bank account tab).
+     */
+    @Column(name = "in_review_observed", nullable = false)
+    var inReviewObserved: Boolean = false,
+
+    /**
+     * When the current [onboardingStatus] was first observed. Updated only when the status changes.
+     * Drives the sweep cadence: a connection stuck in NEEDS_DATA for longer than
+     * `app.mollie.connect.onboarding-sync.dormant-after-days` is polled less often.
+     */
+    @Column(name = "onboarding_status_since", nullable = false)
+    var onboardingStatusSince: Instant = Instant.now(),
 ) {
 
     /**

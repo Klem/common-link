@@ -68,12 +68,12 @@ describe('EmbedDonateClient', () => {
 
   it('shows loading state initially', () => {
     mockGetWidget.mockReturnValue(new Promise(() => {}));
-    render(<EmbedDonateClient widgetToken="clk_test" sourceSite={null} locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
     expect(screen.getByText('loading')).toBeInTheDocument();
   });
 
   it('renders campaign info after widget loads', async () => {
-    render(<EmbedDonateClient widgetToken="clk_test" sourceSite={null} locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
     await waitFor(() => {
       expect(screen.getByText('Les Petits Écoliers')).toBeInTheDocument();
       expect(screen.getByText(/Collecte de livres/)).toBeInTheDocument();
@@ -83,14 +83,14 @@ describe('EmbedDonateClient', () => {
 
   it('shows error when widget token is 404', async () => {
     mockGetWidget.mockRejectedValue({ response: { status: 404 } });
-    render(<EmbedDonateClient widgetToken="clk_bad" sourceSite={null} locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_bad" sourceSite={null} locale="fr" />);
     await waitFor(() => {
       expect(screen.getByText('unavailable')).toBeInTheDocument();
     });
   });
 
   it('refuses submit when amount is below minimum', async () => {
-    render(<EmbedDonateClient widgetToken="clk_test" sourceSite={null} locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
     await waitFor(() => screen.getByText('Les Petits Écoliers'));
 
     // Set amount to 0 (below min)
@@ -124,7 +124,7 @@ describe('EmbedDonateClient', () => {
   });
 
   it('refuses submit when consent is missing', async () => {
-    render(<EmbedDonateClient widgetToken="clk_test" sourceSite={null} locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
     await waitFor(() => screen.getByText('Les Petits Écoliers'));
 
     fireEvent.click(screen.getByText('25 €'));
@@ -153,7 +153,7 @@ describe('EmbedDonateClient', () => {
   });
 
   it('refuses submit when fullName is empty', async () => {
-    render(<EmbedDonateClient widgetToken="clk_test" sourceSite={null} locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
     await waitFor(() => screen.getByText('Les Petits Écoliers'));
 
     fireEvent.click(screen.getByText('25 €'));
@@ -182,7 +182,7 @@ describe('EmbedDonateClient', () => {
   });
 
   it('refuses submit when addressLine1 is empty', async () => {
-    render(<EmbedDonateClient widgetToken="clk_test" sourceSite={null} locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
     await waitFor(() => screen.getByText('Les Petits Écoliers'));
 
     fireEvent.click(screen.getByText('25 €'));
@@ -226,7 +226,7 @@ describe('EmbedDonateClient', () => {
       writable: true,
     });
 
-    render(<EmbedDonateClient widgetToken="clk_test" sourceSite="https://example.com" locale="fr" />);
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite="https://example.com" locale="fr" />);
     await waitFor(() => screen.getByText('Les Petits Écoliers'));
 
     fillValidForm();

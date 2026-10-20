@@ -29,4 +29,12 @@ data class MollieKycStatusDto(
      * "simulate KYC validation" button in the frontend. Always false in production.
      */
     val canForceComplete: Boolean = false,
+    /**
+     * True when Mollie sent the dossier back for more information: the status is NEEDS_DATA and an
+     * IN_REVIEW status has already been observed for this connection
+     * ([org.commonlink.entity.MollieConnection.inReviewObserved]). False when not connected.
+     * Reliable because the scheduled sweep observes IN_REVIEW even when the association does not
+     * visit the dashboard during the review.
+     */
+    val complementRequested: Boolean = false,
 )

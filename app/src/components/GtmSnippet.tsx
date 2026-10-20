@@ -14,13 +14,17 @@ interface Props {
  *
  * `nonce` comes from `middleware.ts`'s per-request CSP (security audit 2026-10-06, finding #1) —
  * without it this script is blocked outright under the nonce-based `script-src`.
+ *
+ * `suppressHydrationWarning`: browsers deliberately blank the `nonce` attribute in the DOM once the
+ * script is parsed (anti-exfiltration), so the client always sees `nonce=""` against the server's
+ * value. React keeps the server DOM untouched in that case — the warning is benign noise.
  */
 export async function GtmSnippet({ id }: Props) {
   if (!id) return null;
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <>
-      <script nonce={nonce} dangerouslySetInnerHTML={{ __html: gtmHeadScript(id) }} />
+      <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: gtmHeadScript(id) }} />
       <noscript dangerouslySetInnerHTML={{ __html: gtmNoscriptIframe(id) }} />
     </>
   );

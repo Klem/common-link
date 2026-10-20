@@ -364,9 +364,9 @@
     "verificationOptDocUploaded": "Document ajouté.",
     "verificationSubmitted": "📨 Dossier envoyé. Votre association sera notifiée par email.",
     "vopVerified": "Vérification VOP terminée.",
-    "widgetAllowedOriginSaved": "Origine de redirection enregistrée.",
+    "widgetAllowedOriginSaved": "URL de la page de campagne enregistrée.",
     "widgetDestinationSaved": "Campagne de destination enregistrée.",
-    "widgetTokenGenerated": "Token widget généré.",
+    "widgetTokenGenerated": "Token de diffusion généré.",
     "campaignCause": {
       "SOLIDARITE": "Solidarité",
       "ALIMENTATION": "Alimentation",
@@ -1106,15 +1106,24 @@
         "signerRoleTip": "Fonction de la personne qui apparaîtra sur les reçus fiscaux.",
         "siren": "SIREN",
         "subtitle": "Gérez les informations et la vérification de votre association.",
+        "setupNotice": {
+          "title": "Aucune de ces étapes n'est requise pour créer vos campagnes.",
+          "text": "Elles ne sont nécessaires que pour publier une campagne et collecter des fonds.",
+          "close": "Masquer ce message"
+        },
         "success": "Profil mis à jour.",
         "tabs": {
           "bank": "Compte bancaire",
           "bankBadge": {
-            "connected": "Connecté",
-            "notConnected": "Non connecté"
+            "notConnected": "Non connecté",
+            "active": "Actif",
+            "toComplete": "Dossier à compléter",
+            "inReview": "En cours de vérification",
+            "paymentsNotEnabled": "Encaissement pas encore activé",
+            "reconnect": "Reconnexion requise"
           },
           "infos": "Informations",
-          "landing": "Landing page",
+          "diffusion": "Diffusion",
           "locked": "Terminez d'abord l'étape précédente",
           "mandate": "Mandat fiscal",
           "mandateBadge": {
@@ -1128,8 +1137,7 @@
             "pending": "En cours",
             "rejected": "Rejetée",
             "todo": "À faire"
-          },
-          "widget": "Widget de don"
+          }
         },
         "title": "Paramètres",
         "verification": {
@@ -2035,7 +2043,9 @@
     "molliePopup": {
       "error": {
         "retry": "Veuillez réessayer depuis la page profil.",
-        "title": "Connexion échouée"
+        "title": "Connexion échouée",
+        "organizationAlreadyLinked": "Ce compte Mollie est déjà rattaché à une autre association sur CommonLink : un compte Mollie ne peut être relié qu'à une seule association. Reconnectez-vous avec le compte Mollie de votre association, ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
+        "closing": "Cette fenêtre se fermera dans {seconds} s."
       },
       "success": {
         "closing": "Fermeture de la fenêtre…",
@@ -2381,81 +2391,6 @@
     "version": "Version {version}"
   },
   "settings": {
-    "landing": {
-      "appearance": {
-        "logo": "Logo",
-        "logoHint": "Affiché en haut de votre page de don, à côté de votre nom. JPEG, PNG ou WebP, 2 Mo maximum.",
-        "logoNone": "Aucun logo pour le moment : vos initiales sont affichées à la place.",
-        "logoRemove": "Retirer",
-        "theme": "Palette de couleurs",
-        "themeHint": "Choisissez une palette : elle s'applique à toute votre page de don. Chaque palette est vérifiée pour rester lisible.",
-        "themes": {
-          "DEFAULT": "Originale",
-          "NATURE": "Nature",
-          "SOBER": "Sobre",
-          "TRUST": "Confiance",
-          "WARM": "Chaleureuse"
-        },
-        "title": "Apparence"
-      },
-      "gtm": {
-        "embed": {
-          "bodyLabel": "Balise à ajouter juste après l'ouverture du body",
-          "headLabel": "Balise à ajouter dans le head",
-          "hint": "Le suivi GTM ci-dessus ne s'exécute qu'à l'intérieur de la page CommonLink chargée dans l'iframe. Pour un suivi fiable sur votre propre site, ajoutez ces deux balises officielles Google : la première dans le head de votre page, la seconde juste après l'ouverture du body.",
-          "title": "Balises pour votre propre site (intégration iframe/script)"
-        },
-        "error": "Format invalide : attendu GTM-XXXXXXX.",
-        "export": {
-          "download": "Télécharger",
-          "failed": "L'export n'a pas pu être généré. Veuillez réessayer.",
-          "hint": "Copiez ce HTML ou téléchargez-le pour le publier tel quel sur votre propre site : c'est un instantané du contenu actuel de votre landing page CommonLink (pris maintenant, non mis à jour automatiquement), avec le suivi Google Tag Manager ajouté et le formulaire de don servi via widget.js — il reste pleinement fonctionnel et ne casse jamais, même après une mise à jour de CommonLink. Régénérez-le après toute modification du contenu. Si widget.js est déjà installé sur ce même site avec cet identifiant, chaque visite sera comptée deux fois tant que le suivi par événements n'est pas configuré dans GTM.",
-          "loading": "Génération de l'export…",
-          "reload": "Régénérer",
-          "title": "Page HTML autonome"
-        },
-        "hint": "Renseignez l'identifiant de votre conteneur GTM pour activer le suivi Google Ad Grants sur votre landing page et votre widget.",
-        "label": "Identifiant du conteneur GTM",
-        "placeholder": "GTM-XXXXXXX",
-        "save": "Enregistrer",
-        "title": "Google Tag Manager"
-      },
-      "iframeTitle": "Faire un don",
-      "prereq": {
-        "campaign": "Campagne de destination",
-        "campaignNone": "Aucune campagne sélectionnée",
-        "campaignNotLive": "Cette campagne n'est pas publiée : la landing page restera indisponible jusqu'à sa mise en ligne.",
-        "goToWidget": "Configurer dans l'onglet Widget",
-        "hint": "Votre landing page réutilise le token de diffusion et la campagne de destination du widget. Modifiez-les depuis l'onglet Widget.",
-        "title": "Prérequis",
-        "token": "Token de diffusion",
-        "tokenActive": "Actif",
-        "tokenInactive": "Inactif"
-      },
-      "preview": {
-        "close": "Fermer",
-        "desktop": "Ordinateur",
-        "failed": "L'aperçu n'a pas pu être chargé. Veuillez réessayer.",
-        "loading": "Chargement de l'aperçu…",
-        "mobile": "Téléphone",
-        "open": "Prévisualiser",
-        "reload": "Rafraîchir",
-        "title": "Aperçu de votre page de don"
-      },
-      "snippet": {
-        "copied": "Copié",
-        "copy": "Copier",
-        "iframe": "Intégration sans JavaScript",
-        "iframeHelp": "Solution de repli si les scripts sont interdits : la hauteur est fixe et devra être ajustée à la main.",
-        "noLiveCampaign": "Sélectionnez une campagne publiée dans l'onglet Widget pour activer votre landing page.",
-        "noToken": "Générez un token de diffusion dans l'onglet Widget pour obtenir votre landing page.",
-        "script": "Snippet à intégrer (recommandé)",
-        "scriptHelp": "Collez ce code dans une page vide de votre site : la landing page s'affiche en pleine largeur et sa hauteur s'ajuste automatiquement.",
-        "title": "Votre landing page",
-        "url": "Lien direct",
-        "urlHelp": "À utiliser comme URL de destination de vos annonces, ou à partager telle quelle."
-      }
-    },
     "mollie": {
       "checklist": {
         "intro": "Mollie est notre prestataire de paiement agréé. Son formulaire emploie un vocabulaire d'entreprise : c'est normal, et cela ne remet pas en cause votre statut associatif. Voici les pièces à préparer.",
@@ -2469,12 +2404,12 @@
             "mollieLabel": "« Associez un compte bancaire »"
           },
           "identity": {
-            "meaning": "La carte d'identité ou le passeport du représentant légal (le président), pas un document de l'association.",
+            "meaning": "Une pièce d'identité (carte d'identité ou passeport) pour chaque bénéficiaire effectif déclaré, représentant légal compris : ce sont des documents personnels, pas des documents de l'association.",
             "mollieLabel": "« Pièce d'identité »"
           },
           "registration": {
             "link": "Retrouver ma fiche sur l'Annuaire des Entreprises",
-            "meaning": "Votre récépissé de déclaration en préfecture, votre extrait de publication au JOAFE, ou votre avis de situation SIRENE.",
+            "meaning": "Votre récépissé de déclaration en préfecture ou votre extrait de publication au JOAFE ; pour une association reconnue d'utilité publique, le décret de reconnaissance ; en Alsace-Moselle, l'extrait du registre des associations du tribunal judiciaire.",
             "mollieLabel": "« Certificat d'immatriculation de votre entreprise »"
           },
           "stakeholders": {
@@ -2489,58 +2424,80 @@
       "description": "Connectez votre compte Mollie pour recevoir des dons.",
       "devForceComplete": "Simuler la validation KYC (dev)",
       "guide": {
-        "copied": "Copié",
         "copy": "Copier",
-        "intro": "Le formulaire est hébergé par Mollie et rédigé en vocabulaire d'entreprise. Voici, écran par écran, ce qui est attendu d'une association - et les informations que vous nous avez déjà données, prêtes à recopier. L'ordre des écrans peut varier légèrement selon votre dossier.",
-        "note": "Mollie peut demander des pièces complémentaires selon votre dossier. Vous pouvez fermer sa fenêtre à tout moment et reprendre plus tard : le bouton « Compléter mon dossier » vous y ramène.",
+        "copied": "Copié",
+        "copyAria": "Copier : {label}",
         "prefilled": "Déjà pré-rempli",
+        "toConfirm": "À confirmer avec Mollie",
+        "colMollie": "Mollie affiche",
+        "colMeaning": "Ce que ça veut dire pour vous",
+        "values": {
+          "contactName": "Nom du contact",
+          "contactEmail": "Email",
+          "name": "Nom",
+          "address": "Adresse",
+          "siren": "SIREN",
+          "activity": "Objet",
+          "person": "Bénéficiaire effectif"
+        },
         "steps": {
           "account": {
-            "meaning": "Mollie ouvre un compte au nom de la personne qui pilote la connexion. Nous avons transmis le nom et l'email de contact de votre association : vérifiez-les, ils identifient l'interlocuteur du dossier.",
-            "mollieLabel": "Création de votre compte Mollie"
-          },
-          "activity": {
-            "meaning": "Décrivez en clair l'objet de votre association et la nature des fonds collectés. Mollie attend une description, pas un code d'activité. Votre objet social, tel qu'enregistré sur CommonLink, répond à la question.",
-            "mollieLabel": "« Activité de l'entreprise »"
-          },
-          "bank": {
-            "meaning": "L'IBAN du compte de l'association, ouvert au nom de l'association. C'est sur ce compte que Mollie reversera les dons.",
-            "mollieLabel": "« Associez un compte bancaire »"
-          },
-          "identity": {
-            "meaning": "Une pièce d'identité du représentant légal : c'est un document personnel, pas un document de l'association. Mollie la demande parce que la loi lui impose de vérifier l'identité des personnes physiques derrière la structure.",
-            "mollieLabel": "« Pièce d'identité »"
+            "title": "Création de votre compte Mollie",
+            "mollieLabel": "Création de votre compte Mollie",
+            "p1": "Nous avons pré-rempli le nom et l'email du contact : vérifiez-les."
           },
           "legalForm": {
-            "meaning": "Nous avons déclaré votre structure comme association française. Si Mollie vous redemande une forme juridique, choisissez « association » et non « entreprise individuelle » : la suite du formulaire en dépend.",
-            "mollieLabel": "« Type d'entreprise »"
+            "title": "Forme juridique",
+            "mollieLabel": "« Forme juridique »",
+            "p1": "« Entreprise » = votre association. Dans la liste « Forme juridique », choisissez <strong>« Association »</strong>. Nous l'avons pré-indiqué : vérifiez que c'est bien ce choix qui s'affiche.",
+            "warning": "Ne choisissez pas « Association de fait » : ce terme désigne une association non déclarée en préfecture. Ni « Fondation », ni « Une autre entité »."
           },
           "organization": {
-            "meaning": "Le nom exact et l'adresse du siège de votre association, tels qu'ils figurent sur votre déclaration en préfecture.",
-            "mollieLabel": "« Coordonnées de l'entreprise »"
+            "title": "Coordonnées de l'entreprise",
+            "mollieLabel": "« Coordonnées de l'entreprise »",
+            "p1": "Le nom exact et l'adresse du siège de votre association, tels qu'ils figurent dans vos statuts."
           },
           "registration": {
-            "meaning": "Mollie interroge les registres officiels avec ce numéro. Nous ne lui transmettons que le SIREN : le numéro RNA (W...) n'y est pas reconnu. Si votre association n'a pas de SIREN, n'en inventez pas : c'est votre récépissé de déclaration en préfecture, ou votre publication au Journal officiel, qui atteste de son existence. Si le champ est obligatoire, saisissez votre numéro RNA et joignez ce justificatif.",
-            "mollieLabel": "« Numéro d'immatriculation »"
+            "title": "Numéro d'immatriculation",
+            "mollieLabel": "« Numéro d'immatriculation »",
+            "p1": "Saisissez votre <strong>SIREN</strong> si vous en avez un. Votre numéro RNA (W…) n'est pas reconnu par Mollie. Si vous n'avez pas de SIREN, n'en inventez pas."
           },
-          "review": {
-            "meaning": "Une fois le dossier envoyé, Mollie l'examine. Le statut affiché ici passera de « Onboarding requis » à « En cours de vérification », puis à « Actif » dès que Mollie autorise l'encaissement. Vous n'avez rien d'autre à faire pendant ce temps.",
-            "mollieLabel": "Envoi et vérification"
+          "activity": {
+            "title": "Activité de l'entreprise",
+            "mollieLabel": "« Activité de l'entreprise »",
+            "p1": "Choisissez la catégorie <strong>« Œuvres caritatives et dons »</strong>, puis décrivez l'objet de votre association.",
+            "fees": "Cette catégorie entraîne une vérification renforcée. <strong>Mollie peut prélever des frais d'ouverture sur votre premier versement. Leur montant est fixé par Mollie.</strong>"
+          },
+          "publicInterest": {
+            "title": "Organisation d'intérêt public et pays d'activité",
+            "mollieLabel": "« Organisation d'intérêt public » ?",
+            "mollieHint": "Puis : dans quels pays l'organisation opère, et dans quels pays se trouvent ceux qui en bénéficient.",
+            "p1": "Nous attendons la réponse de Mollie sur ce point ; répondez selon votre situation."
           },
           "stakeholders": {
-            "meaning": "Les dirigeants et bénéficiaires effectifs : président, trésorier, et toute personne exerçant un contrôle effectif sur l'association - en pratique, les membres du bureau. Prévoyez pour chacun nom, date de naissance et adresse.",
-            "mollieLabel": "« Informations relatives aux parties prenantes »"
+            "title": "Informations relatives aux parties prenantes",
+            "mollieLabel": "« Informations relatives aux parties prenantes »",
+            "mollieHint": "Mollie peut aussi parler d'« UBO ».",
+            "p1": "Déclarez {count, plural, =0 {vos <strong>bénéficiaires effectifs</strong>, ceux que CommonLink a déjà confirmés.} one {votre <strong># bénéficiaire effectif</strong>, celui que CommonLink a déjà confirmé :} other {vos <strong># bénéficiaires effectifs</strong>, ceux que CommonLink a déjà confirmés :}}"
+          },
+          "identity": {
+            "title": "Pièce d'identité",
+            "mollieLabel": "« Pièce d'identité »",
+            "p1": "Une pièce d'identité <strong>{count, plural, =0 {pour chaque personne} one {pour la personne} other {pour chacune des # personnes}}</strong> {count, plural, one {déclarée} other {déclarées}} : passeport, carte d'identité recto-verso, titre de séjour ou permis de conduire français, en couleur, 10 Mo maximum.",
+            "p2": "Mollie peut demander une photo de l'original prise au smartphone, et un selfie en tournant la tête à gauche puis à droite. <strong>Gardez votre téléphone à portée de main.</strong>"
+          },
+          "bank": {
+            "title": "Associez un compte bancaire",
+            "mollieLabel": "« Associez un compte bancaire »",
+            "p1": "L'IBAN du compte de l'association. Le titulaire doit porter exactement le nom de vos statuts : « {name} ».",
+            "p1WithoutName": "L'IBAN du compte de l'association. Le titulaire doit porter exactement le nom de vos statuts.",
+            "p2": "Mollie vérifie l'IBAN par un virement test, ou automatiquement si vous connectez votre banque."
+          },
+          "review": {
+            "title": "Envoi et vérification",
+            "mollieLabel": "Envoi et vérification",
+            "p1": "Une fois votre dossier envoyé, il vous reste le paiement test de 0,01 € (étape suivante). L'état affiché ici passera de « Dossier à compléter » à « En cours de vérification », puis à « Actif »."
           }
-        },
-        "title": "Pas à pas : remplir le formulaire Mollie",
-        "values": {
-          "activity": "Objet de l'association",
-          "address": "Adresse du siège",
-          "contactEmail": "Email de contact",
-          "contactName": "Nom du contact",
-          "name": "Nom de l'association",
-          "rna": "Numéro RNA",
-          "siren": "SIREN"
         }
       },
       "info": {
@@ -2592,45 +2549,499 @@
         "pending": "En attente"
       },
       "title": "Paiements Mollie",
-      "tryAgain": "Réessayer"
+      "tryAgain": "Réessayer",
+      "onboarding": {
+        "stepper": {
+          "label": "Étapes pour recevoir vos dons",
+          "steps": {
+            "prepare": "Préparer",
+            "fill": "Remplir chez Mollie",
+            "testPayment": "Paiement test",
+            "review": "Vérification",
+            "active": "Actif"
+          },
+          "state": {
+            "done": "{label} — terminé",
+            "current": "{label} — en cours",
+            "upcoming": "{label} — à venir"
+          }
+        },
+        "welcome": {
+          "title": "Recevoir vos dons",
+          "lead": "Pour encaisser des dons en ligne, votre association ouvre un compte chez <strong>Mollie</strong>, un établissement agréé. Nous vous accompagnons à chaque écran : vous saurez quoi préparer, quoi répondre, et où vous en êtes.",
+          "badgeToComplete": "Dossier à compléter",
+          "figures": {
+            "estimate": "estimation",
+            "duration": {
+              "value": "environ 20 min",
+              "label": "de saisie chez Mollie, si vos pièces sont prêtes"
+            },
+            "testPayment": {
+              "value": "0,01 €",
+              "label": "de paiement test, fait par vous-même. Il reste sur le solde Mollie de l'association"
+            },
+            "review": {
+              "value": "2 à 3 jours ouvrés",
+              "label": "de vérification par Mollie. Nous vous écrivons dès qu'elle a répondu"
+            }
+          },
+          "faq": {
+            "title": "Vos questions avant de commencer",
+            "hint": "Lisez à votre rythme, rien n'est engagé.",
+            "items": {
+              "whyMollie": {
+                "question": "Pourquoi Mollie ?",
+                "p1": "Les dons en ligne passent par un établissement agréé. Le nôtre est <strong>Mollie B.V.</strong>, établissement de monnaie électronique agréé par <strong>De Nederlandsche Bank (DNB)</strong>, numéro de client <strong>F0038</strong>.",
+                "p2": "La loi oblige Mollie à vérifier qui se trouve derrière chaque organisation qui encaisse de l'argent : c'est son obligation de lutte contre le blanchiment. C'est pour cela qu'elle vous demande des pièces.",
+                "p3": "Ses formulaires parlent d'« entreprise », d'« immatriculation » ou d'« UBO » : c'est normal, et cela ne remet pas en cause votre statut associatif. <strong>« Entreprise » = votre association.</strong>"
+              },
+              "documents": {
+                "question": "Qui voit mes documents ?",
+                "p1": "Vous déposez vos pièces directement sur le site de Mollie. <strong>Les pièces que vous déposez chez Mollie ne nous sont pas transmises. Nous recevons uniquement l'état d'avancement de votre dossier.</strong>",
+                "p2": "Les documents que vous nous aviez fournis pour votre vérification CommonLink restent dans votre espace : vous pouvez les retrouver pour les déposer vous-même chez Mollie."
+              },
+              "cost": {
+                "question": "Combien ça coûte ?",
+                "p1": "Chez Mollie, vous choisirez la catégorie « Œuvres caritatives et dons ». <strong>Mollie peut prélever des frais d'ouverture sur votre premier versement. Leur montant est fixé par Mollie.</strong> Mollie ne le publie pas.",
+                "p2": "Le paiement test de 0,01 € est fait par vous-même ; l'argent reste sur le solde Mollie de votre association."
+              },
+              "genuine": {
+                "question": "Est-ce le vrai site ?",
+                "p1": "Avant de saisir quoi que ce soit, regardez la barre d'adresse : elle doit afficher <strong>my.mollie.com</strong>. Sinon, fermez la fenêtre et contactez-nous.",
+                "p2": "CommonLink ne vous demandera jamais votre mot de passe Mollie."
+              },
+              "resume": {
+                "question": "Je peux m'arrêter et reprendre ?",
+                "p1": "Oui. Vous pouvez fermer la fenêtre Mollie à tout moment. Revenez ici et cliquez sur <strong>« Reprendre mon dossier »</strong> : nous vous ramenons à votre dossier chez Mollie."
+              },
+              "help": {
+                "question": "Besoin d'aide ?",
+                "p1": "Réservez une <strong>visio accompagnée</strong> : un membre de l'équipe CommonLink vous guide à l'oral pendant que vous remplissez. Vous gardez la main sur votre écran et votre clavier.",
+                "p2": "CommonLink ne vous demande jamais votre mot de passe.",
+                "book": "Réserver une visio accompagnée"
+              }
+            }
+          },
+          "resume": "Reprendre mon dossier",
+          "start": "Commencer"
+        },
+        "structure": {
+          "title": "Votre structure",
+          "lead": "Nous connaissons déjà votre association grâce à votre vérification CommonLink. Vérifiez simplement que c'est bien vous.",
+          "typeCaption": "Type de structure",
+          "types": {
+            "declared": "Association déclarée (loi 1901)",
+            "arup": "Association reconnue d'utilité publique (ARUP)",
+            "alsaceMoselle": "Association inscrite de droit local (Alsace-Moselle)",
+            "unknown": "Type de structure non déterminé"
+          },
+          "unknownHint": "Votre vérification CommonLink ne nous permet pas de déterminer automatiquement votre type de structure. La liste des pièces ci-après reste valable : la preuve d'existence dépend de votre statut.",
+          "verifiedOn": "— vérifiée par CommonLink le {date}",
+          "verifiedBadge": "✓ Vérifiée",
+          "owners": {
+            "title": "Vos bénéficiaires effectifs",
+            "count": "{count, plural, one {# personne} other {# personnes}}",
+            "intro": "Pour une association, ce sont les membres des organes d'administration, de direction et de surveillance (article R. 561-3 du Code monétaire et financier). CommonLink a déjà confirmé cette liste lors de votre vérification.",
+            "empty": "Aucune personne n'est enregistrée dans votre vérification CommonLink.",
+            "idAlert": "<strong>Mollie demandera une pièce d'identité pour {count, plural, one {cette personne} other {chacune de ces # personnes}}.</strong> Pensez à {count, plural, one {la prévenir} other {les prévenir}} dès maintenant.",
+            "presidencyAlert": "<strong>La présidence a changé depuis votre dernière déclaration en préfecture ?</strong> Préparez le procès-verbal de l'assemblée générale qui l'a décidé."
+          },
+          "back": "Retour",
+          "continue": "C'est bien nous, continuer"
+        },
+        "kit": {
+          "title": "Votre kit de pièces",
+          "lead": "Rassemblez ces pièces avant d'ouvrir Mollie : la saisie sera plus rapide. Formats acceptés pour les pièces d'identité : <strong>passeport, carte d'identité recto-verso, titre de séjour, permis de conduire français</strong>, en couleur, 10 Mo maximum.",
+          "progress": {
+            "title": "Votre préparation",
+            "label": "{ready} / {total} pièces prêtes",
+            "aria": "Pièces prêtes"
+          },
+          "phoneAlert": "<strong>Gardez votre téléphone à portée de main.</strong> Mollie peut vous demander une photo de la pièce d'identité originale prise avec votre smartphone, et un selfie en tournant la tête à gauche puis à droite.",
+          "meta": {
+            "mollieCalls": "Mollie l'appelle",
+            "whereToFindIt": "Où la trouver",
+            "whereToFindThem": "Où les trouver",
+            "whereToFindProof": "Où le trouver",
+            "check": "À vérifier",
+            "whatYouNeed": "Ce qu'il vous faut",
+            "whoHasOne": "Qui en a un ?",
+            "yours": "Le vôtre"
+          },
+          "identity": {
+            "title": "Pièce d'identité de {name}",
+            "titleWithRole": "Pièce d'identité de {name} ({role})",
+            "mollieLabel": "« Pièce d'identité »",
+            "whereProvided": "Celle que vous nous avez fournie lors de votre vérification.",
+            "whereToPrepare": "Auprès de {name} : passeport, carte d'identité recto-verso, titre de séjour ou permis de conduire français.",
+            "checkProvided": "En couleur, 10 Mo maximum, recto-verso pour une carte d'identité.",
+            "checkToPrepare": "En couleur, 10 Mo maximum."
+          },
+          "statutes": {
+            "title": "Statuts à jour, signés",
+            "mollieLabel": "« Statuts »",
+            "whereProvided": "Ceux que vous nous avez fournis lors de votre vérification.",
+            "whereToPrepare": "Dans les archives de votre association : la dernière version adoptée.",
+            "check": "Signés. Vérifiez qu'il s'agit bien de la dernière version adoptée."
+          },
+          "proof": {
+            "title": "Preuve d'existence de l'association",
+            "mollieLabel": "« Certificat d'immatriculation de votre entreprise »",
+            "variants": {
+              "declared": {
+                "what": "Récépissé de déclaration en préfecture, ou publication au JOAFE.",
+                "where": "Le récépissé vous a été remis par la préfecture. La publication au JOAFE est téléchargeable gratuitement sur <link>journal-officiel.gouv.fr</link>.",
+                "whereWithRna": "Le récépissé vous a été remis par la préfecture. La publication au JOAFE est téléchargeable gratuitement sur <link>journal-officiel.gouv.fr</link> avec votre numéro RNA ({rna})."
+              },
+              "arup": {
+                "what": "Le décret de reconnaissance d'utilité publique, publié au Journal officiel.",
+                "where": "Publié au Journal officiel : retrouvez-le sur <link>legifrance.gouv.fr</link>."
+              },
+              "alsaceMoselle": {
+                "what": "Un extrait du registre des associations du tribunal judiciaire. Pas de JOAFE ni de récépissé pour votre statut.",
+                "where": "À demander au tribunal judiciaire, via le portail AMALIA."
+              },
+              "unknown": {
+                "what": "Selon votre statut : récépissé de déclaration en préfecture ou publication au JOAFE, décret de reconnaissance d'utilité publique, ou extrait du registre des associations du tribunal judiciaire (Alsace-Moselle).",
+                "where": "Le document que vous nous avez fourni lors de votre vérification CommonLink fait l'affaire s'il est à jour."
+              }
+            }
+          },
+          "rib": {
+            "title": "RIB au nom de l'association",
+            "mollieLabel": "« Associez un compte bancaire »",
+            "where": "Dans l'espace en ligne de la banque de l'association, ou auprès de votre agence.",
+            "check": "Le titulaire doit porter <strong>exactement</strong> le nom de l'association tel qu'il figure dans vos statuts : « {name} ». Mollie vérifie l'IBAN par un virement test, ou automatiquement si vous connectez votre banque.",
+            "checkWithoutName": "Le titulaire doit porter <strong>exactement</strong> le nom de l'association tel qu'il figure dans vos statuts. Mollie vérifie l'IBAN par un virement test, ou automatiquement si vous connectez votre banque."
+          },
+          "siren": {
+            "title": "Numéro SIREN, si vous en avez un",
+            "mollieLabel": "« Numéro d'immatriculation »",
+            "whoHasOne": "Seules les associations qui ont des salariés, des obligations fiscales ou des subventions en ont un. Si vous n'en avez pas, n'en inventez pas.",
+            "lookup": "Retrouver ma fiche sur l'Annuaire des Entreprises"
+          },
+          "badges": {
+            "provided": "Déjà fourni à CommonLink",
+            "toPrepare": "À préparer",
+            "optional": "Optionnel"
+          },
+          "download": "Retrouver mon fichier",
+          "downloading": "Téléchargement…",
+          "downloadError": "Le fichier n'a pas pu être téléchargé. Réessayez.",
+          "have": "Je l'ai",
+          "mistakesAlert": "<strong>Les trois erreurs les plus fréquentes :</strong> un RIB dont le nom ne correspond pas à celui des statuts ; un changement de présidence non déclaré en préfecture (préparez le PV d'AG) ; des statuts qui ne sont pas les derniers en vigueur.",
+          "softWarning": {
+            "missing": "{count, plural, one {Il vous manque encore # pièce.} other {Il vous manque encore # pièces.}}",
+            "hint": "Vous pouvez ouvrir Mollie maintenant et vous arrêter quand une pièce vous manque : « Reprendre mon dossier » vous y ramènera.",
+            "openAnyway": "Ouvrir Mollie quand même",
+            "keepPreparing": "Continuer à préparer"
+          },
+          "back": "Retour",
+          "openMollie": "J'ai tout, ouvrir Mollie"
+        },
+        "contextError": "Nous n'avons pas pu charger les informations de votre vérification CommonLink.",
+        "devBanner": {
+          "title": "Mode test : validation simulée disponible",
+          "text": "Ce bandeau n'existe que lorsque la validation simulée est activée sur le serveur (dev et staging, jamais en production). « Forcer » marque votre compte Mollie comme validé sans passer par la vérification de Mollie, pour parcourir tout le tunnel jusqu'à l'écran « Actif » et tester l'interface de bout en bout.",
+          "needsConnection": "Connectez d'abord Mollie (écran « Remplir chez Mollie ») : il faut une connexion existante à valider.",
+          "force": "Forcer"
+        },
+        "retry": "Réessayer",
+        "refreshedAt": "Statut actualisé à {time}",
+        "loading": {
+          "aria": "Chargement de votre dossier",
+          "text": "Chargement de l'état de votre dossier Mollie…"
+        },
+        "broken": {
+          "title": "Reconnexion requise",
+          "text": "Le lien entre CommonLink et votre compte Mollie a été interrompu. Nous ne pouvons plus actualiser l'état de votre dossier. Reconnectez votre compte : cela prend une minute.",
+          "reconnect": "Reconnecter mon compte Mollie",
+          "help": "Besoin d'aide ?",
+          "hint": "Avant de saisir quoi que ce soit, vérifiez que l'adresse affichée est bien <strong>my.mollie.com</strong>."
+        },
+        "notices": {
+          "interrupted": "La connexion à Mollie n'a pas abouti : la fenêtre a été fermée avant la fin. Vous pouvez réessayer quand vous voulez.",
+          "pending": "Une autorisation Mollie est en cours. Terminez-la dans la fenêtre Mollie : cet écran se met à jour à votre retour.",
+          "retry": "Réessayer"
+        },
+        "help": {
+          "title": "Un doute ? Faites-le à deux.",
+          "text": "Un membre de l'équipe CommonLink vous guide en visio. Vous gardez la main sur votre écran et votre clavier. CommonLink ne vous demande jamais votre mot de passe.",
+          "book": "Réserver une visio"
+        },
+        "fill": {
+          "title": "Remplir chez Mollie",
+          "badge": "Dossier à compléter",
+          "lead": "Le formulaire s'ouvre dans une nouvelle fenêtre, sur <strong>my.mollie.com</strong>. Gardez cette page ouverte à côté : elle traduit chaque écran de Mollie en langage associatif.",
+          "window": {
+            "aria": "Fenêtre Mollie",
+            "urlHost": "my.mollie.com",
+            "urlPath": "/onboarding",
+            "openedTitle": "Fenêtre Mollie ouverte",
+            "openedText": "Remplissez votre dossier dans la fenêtre Mollie. Quand vous la fermez, nous actualisons l'état de votre dossier.",
+            "notOpenedTitle": "Fenêtre Mollie pas encore ouverte",
+            "notOpenedText": "Ouvrez Mollie pour commencer votre dossier : cette page vous guide écran par écran.",
+            "checkAddress": "Vérifiez que l'adresse est bien <strong>my.mollie.com</strong> avant de saisir quoi que ce soit.",
+            "open": "Ouvrir Mollie",
+            "reopen": "Rouvrir la fenêtre Mollie",
+            "refresh": "Actualiser l'état du dossier",
+            "refreshing": "Actualisation…"
+          },
+          "back": "Mon kit de pièces",
+          "next": "J'ai envoyé mon dossier, étape suivante",
+          "nextBlocked": "Connectez-vous d'abord à Mollie : le paiement test se fait dans votre compte Mollie, qui n'existe pas encore tant que la connexion n'est pas établie."
+        },
+        "testPayment": {
+          "title": "Paiement test de 0,01 €",
+          "lead": "Dernière action de votre côté.",
+          "why": {
+            "title": "Pourquoi ?",
+            "p1": "Mollie a besoin d'une première transaction pour valider complètement votre compte. Un paiement de <strong>0,01 €</strong>, fait par vous-même, suffit.",
+            "p2": "L'argent n'est pas perdu : <strong>il reste sur le solde Mollie de votre association.</strong>"
+          },
+          "how": {
+            "title": "Comment ?",
+            "hint": "dans votre compte Mollie",
+            "steps": {
+              "s1": "Ouvrez le lien de paiement de votre compte Mollie.",
+              "s2": "Payez vous-même 0,01 €.",
+              "s3": "C'est fait."
+            },
+            "after": "Une fois ce paiement fait, la vérification démarre automatiquement."
+          },
+          "checkAddress": "Comme toujours, vérifiez que l'adresse est bien <strong>my.mollie.com</strong>.",
+          "back": "Retour",
+          "openMollie": "Ouvrir mon compte Mollie",
+          "ack": "J'ai fait mon paiement test",
+          "acked": "Vous nous avez indiqué l'avoir fait. Les 0,01 € restent sur le solde Mollie de votre association."
+        },
+        "review": {
+          "title": "Vérification de votre dossier",
+          "badgeInReview": "En cours de vérification",
+          "badgeComplement": "Dossier à compléter",
+          "lead": "Mollie examine votre dossier. Vous pouvez fermer cette page : nous vous prévenons dès qu'il y a du nouveau.",
+          "complement": {
+            "text": "<strong>Mollie demande un complément.</strong> Il manque une information ou une pièce : Mollie vous a précisé laquelle par email.",
+            "action": "Compléter mon dossier"
+          },
+          "timeline": {
+            "connected": {
+              "title": "Compte Mollie connecté",
+              "text": "Le lien entre CommonLink et votre compte Mollie est en place."
+            },
+            "sent": {
+              "title": "Dossier envoyé",
+              "text": "Vos informations et vos pièces sont chez Mollie."
+            },
+            "test": {
+              "title": "Paiement test",
+              "todo": "À faire depuis votre compte Mollie : 0,01 €, qui reste sur votre solde.",
+              "acked": "Vous nous avez indiqué l'avoir fait. Les 0,01 € restent sur le solde Mollie de votre association."
+            },
+            "review": {
+              "title": "En vérification",
+              "text": "Mollie examine votre dossier : 2 à 3 jours ouvrés. Si quelque chose manque, Mollie vous écrit par email.",
+              "complement": "Mollie vous a écrit pour demander un complément. Une fois votre dossier complété, la vérification reprend."
+            },
+            "active": {
+              "title": "Actif",
+              "text": "Vous pourrez recevoir des dons."
+            }
+          },
+          "emailNotice": "<strong>Nous vous écrivons dès que Mollie a répondu.</strong>"
+        },
+        "active": {
+          "title": "Votre association peut recevoir des dons",
+          "text": "Mollie a validé votre dossier. Votre page de don et ses diffusions sont maintenant ouvertes.",
+          "badge": "Actif",
+          "noPayments": "<strong>Encaissement pas encore activé par Mollie.</strong> Votre dossier est validé, mais Mollie n'a pas encore ouvert l'encaissement des paiements. Nous vous écrivons dès que c'est le cas.",
+          "attest": {
+            "label": "Je confirme avoir rempli moi-même mon dossier Mollie",
+            "hint": "Cette confirmation est enregistrée dans le journal de conformité de votre association.",
+            "error": "La confirmation n'a pas pu être enregistrée. Réessayez."
+          }
+        }
+      }
     },
-    "widget": {
-      "destination": {
-        "error": "Erreur lors de la mise à jour",
+    "diffusion": {
+      "campaign": {
+        "title": "1 · Campagne diffusée",
         "label": "Campagne de destination",
         "placeholder": "Sélectionner une campagne",
-        "saved": "Campagne de destination mise à jour",
-        "warningNotLive": "Cette campagne n'est pas en ligne. Le widget refusera les dons tant qu'elle n'est pas publiée."
+        "live": "En ligne",
+        "warningNotLive": "La campagne « {name} » n'est pas en ligne : les dons sont refusés. Choisissez une campagne en ligne."
       },
-      "redirect": {
-        "hint": "Après paiement, les donateurs sont redirigés vers cette origine. Seules les pages de ce domaine exact seront acceptées.",
-        "label": "Origine de redirection autorisée",
-        "placeholder": "https://votre-site.com",
-        "save": "Enregistrer",
-        "title": "Redirection post-paiement"
-      },
-      "snippet": {
-        "copied": "Copié !",
-        "copy": "Copier",
-        "iframeHelp": "Utilisez cette URL pour intégrer le widget directement via une iframe.",
-        "iframeUrl": "URL directe de l'iframe",
-        "label": "Snippet à intégrer",
-        "noLiveCampaign": "Sélectionnez une campagne en ligne pour afficher le snippet.",
-        "noToken": "Générez d’abord un token pour obtenir le snippet.",
-        "snippetHelp": "Collez cette balise script dans le HTML de votre site pour afficher le widget de don."
-      },
-      "title": "Widget de don",
       "token": {
+        "label": "Lien de diffusion",
         "active": "Actif",
-        "disable": "Désactiver",
-        "disableWarning": "Désactiver casse immédiatement toutes les intégrations existantes du widget et votre landing page.",
-        "error": "Erreur lors de la génération du token",
-        "generate": "Générer le lien",
-        "generated": "Token généré avec succès",
         "inactive": "Inactif",
-        "label": "Token du widget",
+        "generate": "Générer le lien",
         "regenerate": "Régénérer le lien",
-        "regenerateWarning": "Régénérer révoque le token actuel : les intégrations existantes du widget ET votre landing page cessent de fonctionner."
+        "disable": "Désactiver",
+        "warning": "Régénérer ou désactiver le lien coupe immédiatement toutes les diffusions en place, lien direct compris."
+      },
+      "pageUrl": {
+        "label": "URL de votre page de campagne",
+        "hint": "La page où vous collez le code. Après paiement, le donateur y revient et l'événement purchase y est envoyé. Le retour n'est autorisé que vers ce domaine exact : sans cette URL, pas de retour ni de conversion.",
+        "placeholder": "https://votre-site.com/campagne",
+        "save": "Enregistrer",
+        "error": "Saisissez une adresse complète commençant par http:// ou https:// (2048 caractères au plus)."
+      },
+      "tracking": {
+        "label": "Google Tag Manager",
+        "optional": "Facultatif",
+        "placeholder": "GTM-XXXXXXX",
+        "save": "Enregistrer",
+        "error": "Format invalide : attendu GTM-XXXXXXX.",
+        "help": {
+          "direct": "CommonLink charge ce conteneur sur la page de don et y envoie begin_checkout puis purchase. Le bandeau de consentement aux cookies est affiché par CommonLink.",
+          "html": "Obligatoire pour cette méthode : le conteneur et un bandeau de consentement aux cookies sont ajoutés au fichier exporté. Changé ici ? Régénérez l'export.",
+          "host": "Ici, CommonLink ne charge pas Google Tag Manager : il transmet begin_checkout et purchase à votre page. Votre conteneur doit donc être installé sur celle-ci."
+        },
+        "consent": {
+          "title": "Consentement aux cookies : à votre charge.",
+          "text": "Comme c'est votre page qui charge Google Tag Manager, c'est à votre site de recueillir le consentement des visiteurs (bandeau cookies, mode Consentement de Google) avant tout suivi. Le bandeau de CommonLink ne s'affiche pas dans cette intégration."
+        },
+        "tags": {
+          "toggle": "Voir les balises d'installation",
+          "hint": "Déjà installé sur votre site ? N'ajoutez rien : le conteneur serait chargé deux fois.",
+          "headLabel": "Dans le head",
+          "bodyLabel": "Juste après l'ouverture du body"
+        },
+        "params": {
+          "toggle": "Détails techniques pour votre développeur",
+          "bothTitle": "begin_checkout et purchase",
+          "embedType": "{embedType} pour cette méthode",
+          "anonymous": "don anonyme ou non",
+          "paymentMethod": "quand il est connu",
+          "checkoutTitle": "begin_checkout uniquement",
+          "amountSource": "preset ou custom",
+          "utm": "paramètres de campagne de l'URL",
+          "howTo": "Pour les exploiter, créez des variables de couche de données dans GTM."
+        }
+      },
+      "appearance": {
+        "logo": "Logo",
+        "logoHint": "Affiché en haut de votre page de don, à côté de votre nom. JPEG, PNG ou WebP, 2 Mo maximum.",
+        "logoNone": "Aucun logo pour le moment : vos initiales sont affichées à la place.",
+        "logoRemove": "Retirer",
+        "theme": "Palette de couleurs",
+        "themeHint": "Choisissez une palette : elle s'applique à toute votre page de don. Chaque palette est vérifiée pour rester lisible.",
+        "themes": {
+          "DEFAULT": "Originale",
+          "NATURE": "Nature",
+          "SOBER": "Sobre",
+          "TRUST": "Confiance",
+          "WARM": "Chaleureuse"
+        },
+        "title": "2 · Apparence"
+      },
+      "preview": {
+        "close": "Fermer",
+        "desktop": "Ordinateur",
+        "failed": "L'aperçu n'a pas pu être chargé. Veuillez réessayer.",
+        "loading": "Chargement de l'aperçu…",
+        "mobile": "Téléphone",
+        "open": "Prévisualiser",
+        "reload": "Rafraîchir",
+        "title": "Aperçu de votre page de don"
+      },
+      "methods": {
+        "title": "3 · Méthode de diffusion",
+        "oneAtATime": "Une seule à la fois",
+        "intro": "Choisissez où vit votre page de don. Seuls les réglages de la méthode choisie s'affichent en dessous.",
+        "noToken": "Générez le lien de diffusion ci-dessus pour obtenir votre page de don.",
+        "noLiveCampaign": "Sélectionnez une campagne en ligne ci-dessus pour activer votre page de don.",
+        "copy": "Copier",
+        "copied": "Copié",
+        "groups": {
+          "commonlink": "Hébergée par CommonLink",
+          "site": "Intégrée à votre site"
+        },
+        "facts": {
+          "returnTo": "Retour après paiement",
+          "gtm": "Google Tag Manager",
+          "update": "Mise à jour",
+          "consent": "Consentement cookies"
+        },
+        "factValues": {
+          "returnCommonLink": "Votre page CommonLink",
+          "returnSite": "Votre page · URL requise",
+          "gtmCommonLink": "Chargé par CommonLink",
+          "gtmSite": "Sur votre page",
+          "gtmFile": "Inclus dans le fichier",
+          "updateAuto": "Automatique",
+          "updateManual": "Manuelle : à régénérer",
+          "consentCommonLink": "Bandeau CommonLink",
+          "consentFile": "Bandeau CommonLink inclus",
+          "consentYours": "À votre charge"
+        },
+        "onePerPage": {
+          "title": "Une seule méthode par page.",
+          "text": "Deux intégrations sur la même page chargeraient le formulaire deux fois et enverraient chaque don en double à Google. Changer de méthode ici ne retire pas le code déjà collé sur votre site."
+        },
+        "settings": "Réglages · {method}",
+        "status": {
+          "label": "État de la méthode",
+          "campaignLive": "Campagne en ligne",
+          "linkActive": "Lien actif",
+          "noReturnUrl": "Aucune URL de retour à fournir",
+          "returnUrlSet": "URL de retour renseignée",
+          "returnUrlMissing": "URL de retour manquante",
+          "gtmRequired": "GTM requis pour l'export",
+          "consentYours": "Consentement cookies : à votre charge"
+        },
+        "direct": {
+          "title": "Lien direct",
+          "tag": "Le plus simple",
+          "desc": "Une adresse à partager ou à mettre dans vos annonces.",
+          "where": "Page hébergée par CommonLink : rien à installer sur votre site.",
+          "label": "Votre lien",
+          "open": "Ouvrir",
+          "help": "À partager tel quel, ou comme URL finale de vos annonces Google Ad Grants.",
+          "returnTitle": "Retour après paiement : rien à régler.",
+          "returnText": "Le donateur revient sur cette même page CommonLink, où l'événement purchase est envoyé. L'URL de votre page de campagne ne sert qu'aux méthodes intégrées à votre site."
+        },
+        "script": {
+          "title": "Page intégrée",
+          "tag": "Recommandé",
+          "desc": "Toute la page de don dans une page vide de votre site. Hauteur automatique.",
+          "where": "Un code à coller dans une page vide de votre site.",
+          "codeLabel": "Code à coller dans une page vide de votre site",
+          "codeHint": "Pleine largeur, la hauteur s'ajuste toute seule."
+        },
+        "iframe": {
+          "title": "Iframe",
+          "desc": "Même page, hauteur fixe à régler, plus un script de liaison pour le suivi.",
+          "where": "Une balise iframe, suivie du script de liaison si vous utilisez Google Tag Manager.",
+          "codeLabel": "1 · Balise iframe",
+          "codeHint": "Hauteur fixe : ajustez height à votre mise en page.",
+          "frameTitle": "Faire un don",
+          "bridgeLabel": "2 · Script de liaison, juste après l'iframe",
+          "bridgeHint": "Transmet begin_checkout et purchase au dataLayer de votre page : sans lui, aucun événement n'arrive à votre Google Tag Manager.",
+          "bridgeMissing": "Le script de liaison apparaît ici une fois votre identifiant Google Tag Manager enregistré."
+        },
+        "html": {
+          "title": "Page HTML autonome",
+          "desc": "Une copie de la page, que vous hébergez vous-même.",
+          "where": "Un fichier à publier tel quel sur votre site.",
+          "label": "Votre page HTML",
+          "file": "Fichier landing-gtm.html",
+          "hint": "Le formulaire de don reste toujours fonctionnel ; le texte et l'apparence, eux, sont figés : régénérez puis republiez après chaque modification.",
+          "gtmMissing": "Enregistrez d'abord votre identifiant Google Tag Manager ci-dessous : l'export l'inclut.",
+          "download": "Télécharger",
+          "copy": "Copier le HTML",
+          "reload": "Régénérer",
+          "loading": "Génération de l'export…",
+          "failed": "L'export n'a pas pu être généré. Veuillez réessayer."
+        },
+        "widget": {
+          "title": "Formulaire seul",
+          "desc": "Uniquement le formulaire de don, dans une page existante.",
+          "where": "Une balise à placer là où le formulaire doit apparaître.",
+          "codeLabel": "Balise à coller là où le formulaire doit apparaître",
+          "codeHint": "La hauteur s'ajuste toute seule."
+        }
       }
     }
   },

@@ -47,6 +47,7 @@ import org.commonlink.service.DonorService
 import org.commonlink.service.MandatePdfService
 import org.commonlink.service.MandateService
 import org.commonlink.service.MollieConnectService
+import org.commonlink.service.MollieOnboardingContextService
 import org.commonlink.service.MollieConnectTokenManager
 import org.commonlink.service.ComplianceAlertService
 import org.commonlink.service.ComplianceAssociationService
@@ -112,6 +113,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var bridgeWebhookService: BridgeWebhookService
     @MockkBean private lateinit var bridgeWebhookSignatureVerifier: BridgeWebhookSignatureVerifier
     @MockkBean private lateinit var mollieConnectService: MollieConnectService
+    @MockkBean private lateinit var mollieOnboardingContextService: MollieOnboardingContextService
     @MockkBean private lateinit var mollieConnectTokenManager: MollieConnectTokenManager
     @MockkBean private lateinit var freezeScreeningOnboardingService: FreezeScreeningOnboardingService
     @MockkBean private lateinit var onboardingGateService: OnboardingGateService

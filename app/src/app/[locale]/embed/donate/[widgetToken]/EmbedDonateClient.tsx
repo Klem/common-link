@@ -6,6 +6,7 @@ import { apiUrl } from '@/lib/api';
 import { getWidget } from '@/lib/api/public';
 import type { PublicWidgetDto } from '@/lib/api/public';
 import { DonationForm } from '@/components/donation/DonationForm';
+import type { EmbedType } from '@/lib/gtm';
 
 interface Props {
   widgetToken: string;
@@ -13,9 +14,11 @@ interface Props {
   locale: string;
   /** See `DonationEventExtras.parentOrigin` — forwarded to the `begin_checkout` push. */
   parentOrigin?: string | null;
+  /** See `EmbedType` — forwarded to the `begin_checkout` push. */
+  embedType: EmbedType;
 }
 
-export function EmbedDonateClient({ widgetToken, sourceSite, locale, parentOrigin }: Props) {
+export function EmbedDonateClient({ widgetToken, sourceSite, locale, parentOrigin, embedType }: Props) {
   const t = useTranslations('widget');
 
   const [widget, setWidget] = useState<PublicWidgetDto | null>(null);
@@ -90,6 +93,7 @@ export function EmbedDonateClient({ widgetToken, sourceSite, locale, parentOrigi
           campaignName: widget.campaignName,
           associationName: widget.associationName,
           currency: widget.currency,
+          embedType,
         }}
         skin="default"
         remainingCapacity={widget.remainingCapacity}

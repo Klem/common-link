@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { createLandingPreviewSession } from '@/lib/api/association';
 
@@ -21,9 +22,13 @@ interface LandingPreviewModalProps {
  * never drift from what a donor sees. A preview token is requested **on every load** — not cached in
  * state: the token lives 10 minutes, and the real usage loop is open → tweak a palette → reopen, so a
  * cached token would eventually render a 409 error page indistinguishable from a genuine failure.
+ *
+ * Rendered into `document.body` through a portal: it is opened from a `.card`, whose hover lift
+ * (`transform`) would otherwise become the containing block of the fixed overlay, clipping it to the
+ * card and making it flicker as the pointer moves.
  */
 export function LandingPreviewModal({ widgetToken, onClose }: LandingPreviewModalProps) {
-  const t = useTranslations('settings.landing.preview');
+  const t = useTranslations('settings.diffusion.preview');
 
   const [device, setDevice] = useState<Device>('desktop');
   const [src, setSrc] = useState<string | null>(null);
@@ -53,7 +58,7 @@ export function LandingPreviewModal({ widgetToken, onClose }: LandingPreviewModa
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div className="ov on" onClick={onClose}>
       <div className="mod lp-preview-modal" onClick={(e) => e.stopPropagation()}>
         <div className="mod-h">
@@ -97,6 +102,7 @@ export function LandingPreviewModal({ widgetToken, onClose }: LandingPreviewModa
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
