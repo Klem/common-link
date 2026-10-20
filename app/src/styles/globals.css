@@ -2527,6 +2527,7 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
 .page-head h1 { font-size: 28px; color: var(--ink-navy); }
 .page-head p { font-size: 15px; color: var(--slate-lavender); margin-top: 4px; }
+.profile-setup-notice { max-width: 460px; }
 
 /* ── Badge / Tag / Chip ───────────────────────────────────────────────────── */
 

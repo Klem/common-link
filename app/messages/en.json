@@ -1106,6 +1106,11 @@
         "signerRoleTip": "Role of the person who will appear on tax receipts.",
         "siren": "SIREN",
         "subtitle": "Manage your association's information and verification.",
+        "setupNotice": {
+          "title": "None of these steps is required to start creating campaigns.",
+          "text": "They are only needed to publish a campaign and collect funds.",
+          "close": "Hide this message"
+        },
         "success": "Profile updated.",
         "tabs": {
           "bank": "Bank account",

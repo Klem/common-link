@@ -1106,6 +1106,11 @@
         "signerRoleTip": "Fonction de la personne qui apparaîtra sur les reçus fiscaux.",
         "siren": "SIREN",
         "subtitle": "Gérez les informations et la vérification de votre association.",
+        "setupNotice": {
+          "title": "Aucune de ces étapes n'est requise pour créer vos campagnes.",
+          "text": "Elles ne sont nécessaires que pour publier une campagne et collecter des fonds.",
+          "close": "Masquer ce message"
+        },
         "success": "Profil mis à jour.",
         "tabs": {
           "bank": "Compte bancaire",
