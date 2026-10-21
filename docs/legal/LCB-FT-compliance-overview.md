@@ -436,11 +436,15 @@ La troisième fiche hors dispositif est `verification-payee-iban.md` (6 septembr
 
 **Une cinquième fiche, hors dispositif LCB-FT, a été ajoutée le 29 septembre 2026 :
 `registre-onchain-des-depenses.md`.** Elle documente l'état réel de l'inscription au registre
-public on-chain : les dons y sont réellement inscrits (`recordDonation` câblé au contrat), les
-dépenses ne le sont pas (`OnchainRegistryClient.recordPayout` est un stub qui lève
-`NotImplementedError` ; chaque décaissement confirmé produit un job `RECORD_PAYOUT` qui échoue et
-s'accumule à l'état `FAILED`). Cette fiche est produite parce que le sprint 2 du dashboard donateur
-introduit le premier écran s'adressant au donateur qui mentionne ce registre. Comme pour les fiches
+public on-chain. **Mise à jour du 20 octobre 2026** : dons (`recordDonation`) et dépenses
+(`recordPayout`) sont désormais câblés vers le contrat dans le code, mais **le contrat n'est déployé
+sur aucune chaîne publique** — `onchain.mock: true` dans tous les profils, production comprise :
+aucune inscription réelle n'a lieu aujourd'hui. Le contrat est un « notaire » : il enregistre des
+faits déjà décidés par le backend, ne rejoue aucune règle métier et n'a aucun cycle de vie (association
+et campagne inscrites une seule fois, jamais retirées sur la chaîne). La fiche signale aussi un écart
+entre certains libellés donateur (« inscrit sur un registre public ») et cet état réel. Cette fiche
+est produite parce que le sprint 2 du dashboard donateur introduit le premier écran s'adressant au
+donateur qui mentionne ce registre. Comme pour les fiches
 précédentes, aucune conclusion sur le dispositif LCB-FT ne peut en être tirée. Son nom de fichier ne
 porte volontairement aucun préfixe `E`, pour la même raison que les fiches précédentes.
 

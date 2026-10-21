@@ -47,10 +47,17 @@ class PayoutConfirmerTest {
     private val payeeIbanRepository = mockk<PayeeIbanRepository>()
     private val donationRepository  = mockk<DonationRepository>()
     private val outbox              = mockk<OnchainOutboxService>()
+    private val onchainRegistration = mockk<OnchainRegistrationService>()
+    private val registrationJob     = mockk<OnchainJob>()
 
     private val confirmer = PayoutConfirmer(
-        payoutRepository, campaignRepository, payeeIbanRepository, donationRepository, outbox,
+        payoutRepository, campaignRepository, payeeIbanRepository, donationRepository, outbox, onchainRegistration,
     )
+
+    init {
+        // RECORD_PAYOUT always depends on the campaign registration (registry v2 checks the campaign exists).
+        every { onchainRegistration.ensureCampaignRegistered(any()) } returns registrationJob
+    }
 
     private val assocId    = UUID.randomUUID()
     private val campaignId = UUID.randomUUID()
@@ -229,7 +236,7 @@ class PayoutConfirmerTest {
         assertThat(result.bridgePaymentLinkId).isEqualTo("pl_1")
         assertThat(result.bridgeCheckoutUrl).isEqualTo("https://pay.bridgeapi.io/link/abc")
         // Nothing is settled yet, so no attestation may exist.
-        verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any(), any()) }
     }
 
     @Test
@@ -245,7 +252,7 @@ class PayoutConfirmerTest {
         every { payoutRepository.save(payout) } returns payout
         every { job.id } returns jobId
         every {
-            outbox.enqueue(OnchainJobAction.RECORD_PAYOUT, capture(payloadSlot), "PAYOUT:${payout.id}")
+            outbox.enqueue(OnchainJobAction.RECORD_PAYOUT, capture(payloadSlot), "PAYOUT:${payout.id}", registrationJob)
         } returns job
 
         val result = confirmer.finaliseSettled(payout.id, "tx_1")
@@ -271,7 +278,7 @@ class PayoutConfirmerTest {
         // the outbox unique constraint and answering 502 for a settlement that had succeeded.
         verify(exactly = 0) { payoutRepository.findById(any()) }
 
-        verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any(), any()) }
         verify(exactly = 0) { payoutRepository.save(any()) }
     }
 
@@ -327,7 +334,7 @@ class PayoutConfirmerTest {
         assertThat(payout.status).isEqualTo(PayoutStatus.PENDING)
         assertThat(payout.bridgeStatus).isNull()
         assertThat(payout.bridgeLastError).isEqualTo("Bridge payment initiation unavailable: timeout")
-        verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any(), any()) }
     }
 
     @Test
@@ -398,7 +405,7 @@ class PayoutConfirmerTest {
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
         assertThat(payout.bridgeLastError).isEqualTo("AM04")
         assertThat(payout.bridgeLastErrorCode).isEqualTo(PayoutErrorCode.AM04)
-        verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any(), any()) }
     }
 
     @Test
@@ -426,7 +433,7 @@ class PayoutConfirmerTest {
         assertThat(payout.status).isEqualTo(PayoutStatus.PENDING)
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.PDNG)
         assertThat(payout.bridgePaymentTransactionId).isEqualTo("tx_1")
-        verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any(), any()) }
     }
 
     @Test

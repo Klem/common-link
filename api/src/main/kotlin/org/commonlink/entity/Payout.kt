@@ -77,6 +77,11 @@ class Payout(
     var confirmedAt: Instant? = null,
 
     /** UUID of the [OnchainJob] enqueued on confirmation; null until confirmed. */
+    /**
+     * The RECORD_PAYOUT job enqueued when the payout was confirmed, on the chain current at that time
+     * (possibly the mock chain 0). Historical pointer only: on-chain proofs are resolved through the
+     * `PAYOUT:<id>` correlation key on the current chain, never through this column.
+     */
     @Column(name = "onchain_job_id")
     var onchainJobId: UUID? = null,
 

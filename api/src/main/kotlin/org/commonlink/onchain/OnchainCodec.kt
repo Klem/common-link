@@ -29,6 +29,19 @@ object OnchainCodec {
         return cents
     }
 
+    /**
+     * Validates that an amount already expressed in cents fits a Solidity `uint96`, so an out-of-range
+     * value is rejected cleanly before sending instead of failing inside web3j ABI encoding.
+     *
+     * @param cents amount in EUR cents
+     * @return [cents] unchanged when within `[0, 2^96 - 1]`
+     * @throws IllegalArgumentException when [cents] is negative or exceeds `uint96`
+     */
+    fun requireUint96(cents: BigInteger): BigInteger {
+        require(cents.signum() >= 0 && cents <= UINT96_MAX) { "amountCents $cents out of uint96 range" }
+        return cents
+    }
+
     /** Hex string (with or without 0x) → bytes32 (left-padded). */
     fun hexToBytes32(hex: String): ByteArray {
         val clean = hex.removePrefix("0x")

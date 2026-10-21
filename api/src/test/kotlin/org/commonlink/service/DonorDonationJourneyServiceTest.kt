@@ -19,7 +19,6 @@ import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
-import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.security.DonorReadScope
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
@@ -38,11 +37,11 @@ class DonorDonationJourneyServiceTest {
 
     private val donorProfileRepository = mockk<DonorProfileRepository>()
     private val donationRepository = mockk<DonationRepository>()
-    private val onchainJobRepository = mockk<OnchainJobRepository>()
+    private val outbox = mockk<OnchainOutboxService>()
     private val donationAllocationService = mockk<DonationAllocationService>()
 
     private val readScope = DonorReadScope(donorProfileRepository, donationRepository)
-    private val service = DonorDonationJourneyService(readScope, donationAllocationService, onchainJobRepository, donationRepository)
+    private val service = DonorDonationJourneyService(readScope, donationAllocationService, outbox, donationRepository)
 
     // Distinct on purpose: donorId (DonorProfile PK) must never be conflated with userId (the JWT
     // subject) — that conflation is exactly the bug that shipped in this service (see DonorReadScope).
@@ -79,7 +78,7 @@ class DonorDonationJourneyServiceTest {
         val camp = campaign(CampaignStatus.COMPLETED)
         val d = donation(camp)
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey("DONATION:$donationId") } returns
+        every { outbox.findCurrent("DONATION:$donationId") } returns
             OnchainJob(action = OnchainJobAction.RECORD_DONATION, payloadJson = "{}", status = OnchainJobStatus.DONE)
         every { donationAllocationService.allocateCampaign(campaignId) } returns listOf(
             DonationAllocationDto(donationId, usedAmount = BigDecimal("100"), remainingAmount = BigDecimal.ZERO, fundedPayouts = emptyList())
@@ -101,7 +100,7 @@ class DonorDonationJourneyServiceTest {
         val d = donation(camp)
         val payoutId = UUID.randomUUID()
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey("DONATION:$donationId") } returns null
+        every { outbox.findCurrent("DONATION:$donationId") } returns null
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
             PageImpl(listOf(d), PageRequest.of(0, 1000), 1)
         every { donationAllocationService.allocateCampaign(campaignId) } returns listOf(
@@ -128,7 +127,7 @@ class DonorDonationJourneyServiceTest {
         val camp = campaign()
         val d = donation(camp)
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey("DONATION:$donationId") } returns null
+        every { outbox.findCurrent("DONATION:$donationId") } returns null
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
             PageImpl(listOf(d), PageRequest.of(0, 1000), 1)
         every { donationAllocationService.allocateCampaign(campaignId) } returns noAllocation()
@@ -145,7 +144,7 @@ class DonorDonationJourneyServiceTest {
         val camp = campaign()
         val d = donation(camp)
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey("DONATION:$donationId") } returns null
+        every { outbox.findCurrent("DONATION:$donationId") } returns null
         every { donationAllocationService.allocateCampaign(campaignId) } returns noAllocation()
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
             PageImpl(listOf(d), PageRequest.of(0, 1000), 1)
@@ -165,7 +164,7 @@ class DonorDonationJourneyServiceTest {
             PageImpl(listOf(d), PageRequest.of(0, 1000), 1)
 
         for (status in listOf(OnchainJobStatus.PENDING, OnchainJobStatus.RUNNING, OnchainJobStatus.FAILED)) {
-            every { onchainJobRepository.findByCorrelationKey("DONATION:$donationId") } returns
+            every { outbox.findCurrent("DONATION:$donationId") } returns
                 OnchainJob(action = OnchainJobAction.RECORD_DONATION, payloadJson = "{}", status = status)
 
             val journey = service.getJourney(userId, donationId)
@@ -178,7 +177,7 @@ class DonorDonationJourneyServiceTest {
         val camp = campaign()
         val d = donation(camp)
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey("DONATION:$donationId") } returns null
+        every { outbox.findCurrent("DONATION:$donationId") } returns null
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
             PageImpl(listOf(d), PageRequest.of(0, 1000), 1)
 
@@ -197,7 +196,7 @@ class DonorDonationJourneyServiceTest {
     fun `IMPACT_REPORTED step is reached only when the campaign is COMPLETED`() {
         val d = donation(campaign(CampaignStatus.LIVE))
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey("DONATION:$donationId") } returns null
+        every { outbox.findCurrent("DONATION:$donationId") } returns null
         every { donationAllocationService.allocateCampaign(campaignId) } returns noAllocation()
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
             PageImpl(listOf(d), PageRequest.of(0, 1000), 1)
@@ -211,7 +210,7 @@ class DonorDonationJourneyServiceTest {
         val d = donation(camp, Instant.parse("2026-03-01T00:00:00Z"))
         val older = donation(camp, Instant.parse("2026-01-01T00:00:00Z")).setId(UUID.randomUUID())
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey(any()) } returns null
+        every { outbox.findCurrent(any()) } returns null
         every { donationAllocationService.allocateCampaign(campaignId) } returns noAllocation()
         // newest first: d is at index 0
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
@@ -229,7 +228,7 @@ class DonorDonationJourneyServiceTest {
         val newer = donation(camp, Instant.parse("2026-03-01T00:00:00Z")).setId(UUID.randomUUID())
         val d = donation(camp, Instant.parse("2026-01-01T00:00:00Z"))
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey(any()) } returns null
+        every { outbox.findCurrent(any()) } returns null
         every { donationAllocationService.allocateCampaign(campaignId) } returns noAllocation()
         // newest first: newer at index 0, d (tail) at index 1
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
@@ -248,7 +247,7 @@ class DonorDonationJourneyServiceTest {
         val d = donation(camp, Instant.parse("2026-02-01T00:00:00Z"))
         val oldest = donation(camp, Instant.parse("2026-01-01T00:00:00Z")).setId(UUID.randomUUID())
         every { donationRepository.findById(donationId) } returns Optional.of(d)
-        every { onchainJobRepository.findByCorrelationKey(any()) } returns null
+        every { outbox.findCurrent(any()) } returns null
         every { donationAllocationService.allocateCampaign(campaignId) } returns noAllocation()
         every { donationRepository.findByDonorIdFiltered(donorId, null, null, any()) } returns
             PageImpl(listOf(newest, d, oldest), PageRequest.of(0, 1000), 3)

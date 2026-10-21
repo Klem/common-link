@@ -12,7 +12,6 @@ class OnchainConfigTest {
         chainId = 31337L,
         registryAddress = "0xRegistry",
         recorderPk = "0xDEADBEEFrecorderPrivKey",
-        curatorPk = "0xDEADBEEFcuratorPrivKey",
         pollingIntervalMs = 1500L,
         receiptTimeoutMs = 60000L,
         donorAddressSecret = "super-secret-hmac-key",
@@ -26,11 +25,6 @@ class OnchainConfigTest {
     }
 
     @Test
-    fun `toString does not contain curatorPk value`() {
-        assertFalse(cfg.toString().contains("0xDEADBEEFcuratorPrivKey"))
-    }
-
-    @Test
     fun `toString does not contain donorAddressSecret value`() {
         assertFalse(cfg.toString().contains("super-secret-hmac-key"))
     }
@@ -41,10 +35,9 @@ class OnchainConfigTest {
     }
 
     @Test
-    fun `toString contains redacted placeholder for all four secrets`() {
+    fun `toString contains redacted placeholder for all three secrets`() {
         val s = cfg.toString()
         assertTrue(s.contains("recorderPk=***"))
-        assertTrue(s.contains("curatorPk=***"))
         assertTrue(s.contains("donorAddressSecret=***"))
         assertTrue(s.contains("associationAddressSecret=***"))
     }
@@ -54,5 +47,12 @@ class OnchainConfigTest {
         // Regression guard: annotation previously appended "00", turning 5000 ms into 500000 ms (8m20s)
         assertEquals(5000L, cfg.worker.fixedDelayMs)
         assertTrue(cfg.worker.fixedDelayMs < 10_000L, "fixedDelayMs must stay below 10s; was ${cfg.worker.fixedDelayMs}")
+    }
+
+    @Test
+    fun `toString shows the mock flag and the explorer`() {
+        val s = cfg.toString()
+        assertTrue(s.contains("mock="))
+        assertTrue(s.contains("explorer="))
     }
 }

@@ -15,7 +15,6 @@ class OnchainMockGuardTest {
         chainId = 31337L,
         registryAddress = "0x0000000000000000000000000000000000000000",
         recorderPk = "0x0000000000000000000000000000000000000000000000000000000000000001",
-        curatorPk = "0x0000000000000000000000000000000000000000000000000000000000000001",
         pollingIntervalMs = 1500L,
         receiptTimeoutMs = 60000L,
         donorAddressSecret = "test-secret",

@@ -9,7 +9,7 @@ import org.web3j.protocol.Web3j
 
 /**
  * Guards the `onchain.mock=true` boot path: [Web3jConfig] must stay out of the context, otherwise
- * the credential beans are built from the empty `recorder-pk` / `curator-pk` prod defaults and
+ * the credential beans are built from the empty `recorder-pk` prod default and
  * startup dies with `Zero length BigInteger`.
  */
 class Web3jConfigConditionTest {
@@ -23,7 +23,6 @@ class Web3jConfigConditionTest {
                     chainId = 31337L,
                     registryAddress = "0x0000000000000000000000000000000000000000",
                     recorderPk = "0x0000000000000000000000000000000000000000000000000000000000000001",
-                    curatorPk = "0x0000000000000000000000000000000000000000000000000000000000000002",
                     pollingIntervalMs = 1500L,
                     receiptTimeoutMs = 60000L,
                     donorAddressSecret = "test-secret",
@@ -41,7 +40,6 @@ class Web3jConfigConditionTest {
             assertThat(ctx).doesNotHaveBean(Web3jConfig::class.java)
             assertThat(ctx).doesNotHaveBean(Web3j::class.java)
             assertThat(ctx).doesNotHaveBean("recorderCredentials")
-            assertThat(ctx).doesNotHaveBean("curatorCredentials")
         }
     }
 
@@ -51,7 +49,7 @@ class Web3jConfigConditionTest {
             assertThat(ctx).hasNotFailed()
             assertThat(ctx).hasSingleBean(Web3jConfig::class.java)
             assertThat(ctx).hasBean("recorderCredentials")
-            assertThat(ctx).hasBean("curatorCredentials")
+            assertThat(ctx).doesNotHaveBean("curatorCredentials") // registry v2: single recorder role
         }
     }
 

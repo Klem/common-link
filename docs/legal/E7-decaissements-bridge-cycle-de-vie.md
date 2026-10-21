@@ -67,6 +67,13 @@ Cinq étapes. La colonne qui compte est la troisième.
 constaté par la banque. Jamais avant. C'est la contrainte qui explique la prudence de tout ce qui
 suit : une attestation publiée est irrétractable, alors qu'attendre ne coûte rien.
 
+*État au 20 octobre 2026 : c'est le **job d'enregistrement** qui n'est enfilé qu'à cette étape (code
+câblé vers la fonction `recordPayout` du contrat). Tant que le contrat n'est pas déployé et que
+`onchain.mock` vaut `true` (local, staging et production), aucune attestation n'est réellement publiée
+sur une chaîne publique — voir `registre-onchain-des-depenses.md`. Le contrat se contente
+d'enregistrer ce que CommonLink a décidé ; il ne revérifie ni le statut de la campagne, ni le solde, et
+n'exige que l'inscription préalable de la campagne (registre v2, sans cycle de vie).*
+
 ---
 
 ## 4. Quand les fonds sont verrouillés — et quand ils sont rendus

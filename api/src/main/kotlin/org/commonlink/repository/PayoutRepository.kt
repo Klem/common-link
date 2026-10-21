@@ -228,7 +228,7 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
      * `payment.link.updated` for one settlement arrived 7 ms apart on 2026-09-22 — so two threads
      * reached [org.commonlink.service.PayoutConfirmer.finaliseSettled] before either had committed,
      * both read a payout that was not yet CONFIRMED, and both enqueued the on-chain job. The second
-     * insert hit the `onchain_jobs_correlation_key_key` unique constraint and the webhook answered
+     * insert hit the `(chain_id, correlation_key)` unique constraint (formerly `onchain_jobs_correlation_key_key`) and the webhook answered
      * 502 with a technical alert, on a settlement that had in fact succeeded.
      *
      * Every webhook-driven transition takes this lock, not settlement alone: each one guards itself

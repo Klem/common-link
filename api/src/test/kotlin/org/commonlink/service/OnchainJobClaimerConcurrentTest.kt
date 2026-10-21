@@ -1,12 +1,16 @@
 package org.commonlink.service
 
+import org.commonlink.config.OnchainConfig
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestcontainersConfig
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,8 +24,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 
 /**
- * Proves that two concurrent [OnchainJobClaimer.claimBatch] calls never return the same job id.
- * Uses a real PostgreSQL container so FOR UPDATE SKIP LOCKED semantics are exercised end-to-end.
+ * Exercises [OnchainJobClaimer.claimBatch] against a real PostgreSQL container: FOR UPDATE SKIP LOCKED
+ * under concurrency, current-chain scoping, and job dependencies.
  */
 @Tag("testcontainers")
 @SpringBootTest
@@ -36,34 +40,47 @@ class OnchainJobClaimerConcurrentTest {
 
     @Autowired private lateinit var claimer: OnchainJobClaimer
     @Autowired private lateinit var repo: OnchainJobRepository
+    @Autowired private lateinit var outbox: OnchainOutboxService
+    @Autowired private lateinit var cfg: OnchainConfig
     @Autowired private lateinit var txTemplate: TransactionTemplate
 
     private val insertedIds = mutableListOf<UUID>()
 
-    @BeforeEach
-    fun insertPendingJobs() {
-        txTemplate.execute {
-            repeat(6) { i ->
-                val job = repo.save(
-                    OnchainJob(
-                        action = OnchainJobAction.VERIFY_ASSOCIATION,
-                        payloadJson = """{"address":"0x${"0".repeat(39)}$i"}""",
-                        correlationKey = "CONCURRENT-TEST-${UUID.randomUUID()}",
-                    )
-                )
-                insertedIds += job.id
-            }
-        }
-    }
+    private fun insert(
+        chainId: Long = cfg.currentChainId(),
+        status: OnchainJobStatus = OnchainJobStatus.PENDING,
+        dependsOn: UUID? = null,
+        key: String = "CLAIMER-TEST-${UUID.randomUUID()}",
+    ): OnchainJob = txTemplate.execute {
+        repo.save(
+            OnchainJob(
+                action = OnchainJobAction.REGISTER_ASSOCIATION,
+                payloadJson = """{"address":"0x1","sirenHashHex":"0x01"}""",
+                correlationKey = key,
+                status = status,
+                chainId = chainId,
+                dependsOnJobId = dependsOn,
+            )
+        )
+    }!!.also { insertedIds += it.id }
+
+    /** Claims everything claimable and returns only the ids this test inserted. */
+    private fun claimOwn(): Set<UUID> = claimer.claimBatch(500).map { it.id }.filter { it in insertedIds }.toSet()
 
     @AfterEach
     fun cleanup() {
-        txTemplate.execute { repo.deleteAllById(insertedIds) }
+        txTemplate.execute {
+            // Dependents first (FK to their prerequisite).
+            val jobs = repo.findAllById(insertedIds)
+            repo.deleteAll(jobs.filter { it.dependsOnJobId != null })
+            repo.deleteAll(jobs.filter { it.dependsOnJobId == null })
+        }
         insertedIds.clear()
     }
 
     @Test
     fun `two concurrent claimBatch calls never return the same job id`() {
+        repeat(6) { insert() }
         val ready = CountDownLatch(2)
         val executor = Executors.newFixedThreadPool(2)
 
@@ -85,5 +102,55 @@ class OnchainJobClaimerConcurrentTest {
             all.size, all.toSet().size,
             "Jobs dispatched by both workers (overlap): ${ids1.toSet().intersect(ids2.toSet())}",
         )
+    }
+
+    @Test
+    fun `a job whose dependency is not DONE is not claimed and consumes no attempt`() {
+        val prerequisite = insert(status = OnchainJobStatus.RUNNING)
+        val dependent = insert(dependsOn = prerequisite.id)
+
+        assertFalse(dependent.id in claimOwn())
+        val reloaded = repo.findById(dependent.id).get()
+        assertEquals(OnchainJobStatus.PENDING, reloaded.status)
+        assertEquals(0, reloaded.attempts)
+    }
+
+    @Test
+    fun `a job whose dependency is DONE is claimed`() {
+        val prerequisite = insert(status = OnchainJobStatus.DONE)
+        val dependent = insert(dependsOn = prerequisite.id)
+
+        assertTrue(dependent.id in claimOwn())
+    }
+
+    @Test
+    fun `a job whose dependency FAILED stays PENDING`() {
+        val prerequisite = insert(status = OnchainJobStatus.FAILED)
+        val dependent = insert(dependsOn = prerequisite.id)
+
+        assertFalse(dependent.id in claimOwn())
+        assertEquals(OnchainJobStatus.PENDING, repo.findById(dependent.id).get().status)
+        assertTrue(repo.countBlockedByFailedDependency(cfg.currentChainId()) >= 1)
+    }
+
+    @Test
+    fun `jobs of another chain are never claimed`() {
+        val otherChain = insert(chainId = cfg.currentChainId() + 10_200)
+        assertFalse(otherChain.id in claimOwn())
+        assertEquals(OnchainJobStatus.PENDING, repo.findById(otherChain.id).get().status)
+    }
+
+    @Test
+    fun `the same correlation key can be recorded once per chain`() {
+        val key = "CLAIMER-TEST-SAME-KEY-${UUID.randomUUID()}"
+        val onOtherChain = insert(chainId = cfg.currentChainId() + 10_200, key = key)
+
+        val onCurrentChain = outbox.enqueue(OnchainJobAction.REGISTER_ASSOCIATION, mapOf("k" to "v"), key)
+        insertedIds += onCurrentChain.id
+        val replay = outbox.enqueue(OnchainJobAction.REGISTER_ASSOCIATION, mapOf("k" to "v"), key)
+
+        assertNotEquals(onOtherChain.id, onCurrentChain.id, "a key known on another chain must not block the current one")
+        assertEquals(onCurrentChain.id, replay.id, "idempotent on the current chain")
+        assertEquals(cfg.currentChainId(), onCurrentChain.chainId)
     }
 }

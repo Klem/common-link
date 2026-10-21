@@ -39,8 +39,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
-import org.web3j.crypto.Hash
-import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -79,48 +77,13 @@ class CampaignService(
     private val mollieConnectionRepository: MollieConnectionRepository,
     private val complianceAuditLogService: ComplianceAuditLogService,
     private val budgetHasher: CampaignBudgetHasher,
+    private val onchainRegistration: OnchainRegistrationService,
     private val outbox: OnchainOutboxService,
     private val legalAcceptanceService: LegalAcceptanceService,
     private val actionPlaceService: ActionPlaceService,
 ) {
 
     private val logger = LoggerFactory.getLogger(CampaignService::class.java)
-
-    /** Returns true if a campaign with the given id exists (admin use — no association scoping). */
-    fun existsById(id: UUID): Boolean = campaignRepository.existsById(id)
-
-    /**
-     * Applies an admin-initiated off-chain status transition and saves the campaign.
-     *
-     * Used by [org.commonlink.controller.AdminOnchainController] — not scoped to any association.
-     * The caller is responsible for enqueueing the corresponding on-chain job afterwards.
-     *
-     * REVERT_TO_DRAFT is only allowed when [Campaign.raised] is zero, mirroring the
-     * contract's `CampaignHasDonations` revert guard.
-     *
-     * @param id UUID of the campaign.
-     * @param target The target [CampaignStatus].
-     * @throws org.commonlink.exception.NotFoundException if the campaign does not exist.
-     * @throws UnprocessableEntityException if the transition is invalid or REVERT_TO_DRAFT on funded campaign.
-     */
-    @Transactional
-    fun adminTransition(id: UUID, target: CampaignStatus) {
-        val campaign = campaignRepository.findById(id)
-            .orElseThrow { NotFoundException("Campaign not found: $id") }
-        if (target == CampaignStatus.DRAFT) {
-            if (campaign.status != CampaignStatus.REVERT_REQUESTED) {
-                throw UnprocessableEntityException("Campaign must be in REVERT_REQUESTED state to revert to draft (current: ${campaign.status})")
-            }
-            if (campaign.raised > BigDecimal.ZERO) {
-                throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
-            }
-        } else {
-            validateStatusTransition(campaign.status, target)
-        }
-        campaign.status = target
-        campaignRepository.save(campaign)
-        logger.info("Admin transition: campaignId={}, newStatus={}", id, target)
-    }
 
     /**
      * Returns all campaigns for the authenticated association, sorted by creation date descending.
@@ -228,7 +191,11 @@ class CampaignService(
         }
 
         val previousStatus = campaign.status
-        if (req.status != null) {
+        // A revert request (REVERT_REQUESTED) is decided right here, by the backend: it is accepted only
+        // when nothing was raised, and the campaign goes straight back to DRAFT. Campaign statuses are
+        // not recorded on-chain (registry v2: a campaign is registered once, without lifecycle).
+        val targetStatus = if (req.status == CampaignStatus.REVERT_REQUESTED) CampaignStatus.DRAFT else req.status
+        if (req.status != null && targetStatus != null) {
             validateStatusTransition(campaign.status, req.status)
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
                 preparePublish(campaign, associationId, req.cguAccepted)
@@ -236,13 +203,15 @@ class CampaignService(
             if (req.status == CampaignStatus.REVERT_REQUESTED && campaign.raised > BigDecimal.ZERO) {
                 throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
             }
-            campaign.status = req.status
+            campaign.status = targetStatus
         }
         campaign.updatedAt = Instant.now()
         campaignRepository.save(campaign)
 
-        if (req.status != null && req.status != previousStatus) {
-            enqueueForTransition(previousStatus, req.status, campaign)
+        // Registry v2: the campaign is registered on-chain once, at its first publication (with its budget
+        // hash); a republication after a revert to draft records the current budget hash. No status is recorded.
+        if (previousStatus == CampaignStatus.DRAFT && targetStatus == CampaignStatus.LIVE) {
+            onchainRegistration.recordCurrentBudget(campaign)
         }
 
         logger.debug("Campaign updated: id={}, associationId={}", campaignId, associationId)
@@ -441,13 +410,9 @@ class CampaignService(
         if (newHash != campaign.budgetHash) {
             campaign.budgetHash = newHash
             campaignRepository.save(campaign)
+            // A draft's budget is recorded when it goes live; a live (or past-live) campaign records the change now.
             if (campaign.status != CampaignStatus.DRAFT) {
-                outbox.enqueue(
-                    OnchainJobAction.UPDATE_CAMPAIGN_BUDGET,
-                    UpdateCampaignBudgetPayload(campaign.id!!, newHash),
-                    correlationKey = null,
-                )
-                logger.info("UPDATE_CAMPAIGN_BUDGET enqueued: campaignId={}", campaign.id)
+                onchainRegistration.recordCurrentBudget(campaign)
             }
         }
 
@@ -554,17 +519,14 @@ class CampaignService(
     }
 
     /**
-     * Marks a milestone as reached, sets its [CampaignMilestone.reachedAt] timestamp, and
-     * enqueues a [OnchainJobAction.MARK_MILESTONE_REACHED] job with the keccak256 hash of [proofUrl].
+     * Marks a milestone as reached and sets its [CampaignMilestone.reachedAt] timestamp.
      *
-     * The milestone's [CampaignMilestone.sortOrder] is used as the 0-based on-chain index — it
-     * must match the position the milestone occupied when [OnchainJobAction.CREATE_CAMPAIGN] was
-     * dispatched.
+     * Off-chain only: registry v2 records no milestone (goals and milestones are backend concerns).
      *
      * @param userId UUID of the authenticated association user.
      * @param campaignId UUID of the campaign that owns the milestone.
      * @param milestoneId UUID of the milestone to mark as reached.
-     * @param proofUrl URL of the proof document. Its keccak256 hash is stored on-chain.
+     * @param proofUrl URL of the proof document (kept for API compatibility; not recorded on-chain).
      * @return Updated [MilestoneDto].
      * @throws NotFoundException if the campaign or milestone is not found.
      * @throws UnprocessableEntityException if the milestone is already reached.
@@ -583,14 +545,7 @@ class CampaignService(
         milestone.status = MilestoneStatus.REACHED
         milestone.reachedAt = Instant.now()
         campaignMilestoneRepository.save(milestone)
-
-        val proofHashHex = Numeric.toHexString(Hash.sha3(proofUrl.toByteArray(Charsets.UTF_8)))
-        outbox.enqueue(
-            OnchainJobAction.MARK_MILESTONE_REACHED,
-            MilestonePayload(campaignId, milestone.sortOrder, proofHashHex),
-            correlationKey = "MILESTONE:${campaignId}:${milestone.sortOrder}",
-        )
-        logger.info("MARK_MILESTONE_REACHED enqueued: campaignId={}, index={}", campaignId, milestone.sortOrder)
+        logger.info("Milestone reached: campaignId={}, index={}", campaignId, milestone.sortOrder)
         return milestone.toDto()
     }
 
@@ -821,29 +776,4 @@ class CampaignService(
             .filter { it.side == side }
             .flatMap { it.items }
             .fold(BigDecimal.ZERO) { acc, item -> acc + item.amount }
-
-    /**
-     * Enqueues on-chain jobs for the given status transition.
-     * Must be called after the campaign has been saved so [Campaign.id] is stable.
-     *
-     * DRAFT→LIVE has no arm here: it used to enqueue CREATE_CAMPAIGN/PUBLISH_CAMPAIGN gated on the
-     * association's Monerium wallet address, the only source of an on-chain association address.
-     * Monerium was removed (V67) with no replacement wallet-provisioning mechanism, so publishing a
-     * campaign is now off-chain only — see `.tasks/todo.md` history for the removal scope.
-     */
-    private fun enqueueForTransition(from: CampaignStatus, to: CampaignStatus, campaign: Campaign) {
-        val id = campaign.id!!
-        when {
-            to == CampaignStatus.PAUSED ->
-                outbox.enqueue(OnchainJobAction.PAUSE_CAMPAIGN, CampaignIdPayload(id), null)
-            from == CampaignStatus.PAUSED && to == CampaignStatus.LIVE ->
-                outbox.enqueue(OnchainJobAction.UNPAUSE_CAMPAIGN, CampaignIdPayload(id), null)
-            to == CampaignStatus.CANCELLED ->
-                outbox.enqueue(OnchainJobAction.CANCEL_CAMPAIGN, CampaignIdPayload(id), null)
-            to == CampaignStatus.COMPLETED || to == CampaignStatus.ENDED ->
-                outbox.enqueue(OnchainJobAction.COMPLETE_CAMPAIGN, CampaignIdPayload(id), null)
-            to == CampaignStatus.REVERT_REQUESTED ->
-                outbox.enqueue(OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT, CampaignIdPayload(id), "REVERT_CAMPAIGN_TO_DRAFT:$id")
-        }
-    }
 }

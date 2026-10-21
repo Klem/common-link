@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.IbanVerificationStatus
+import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
@@ -80,6 +81,7 @@ class PayoutConfirmer(
     private val payeeIbanRepository: PayeeIbanRepository,
     private val donationRepository: DonationRepository,
     private val outbox: OnchainOutboxService,
+    private val onchainRegistration: OnchainRegistrationService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -188,6 +190,29 @@ class PayoutConfirmer(
     }
 
     /**
+     * Enqueues the RECORD_PAYOUT job of a CONFIRMED payout on the current chain, after the registration of its
+     * campaign (registry v2 checks the campaign exists). Idempotent through the `PAYOUT:<id>` correlation key.
+     * Runs inside the [finaliseSettled] transaction.
+     *
+     * @param payout a payout already settled by the bank.
+     * @return the RECORD_PAYOUT job (existing or new) of the current chain.
+     */
+    private fun enqueueRecordPayout(payout: Payout): OnchainJob {
+        val campaignRegistration = onchainRegistration.ensureCampaignRegistered(payout.campaign)
+        return outbox.enqueue(
+            action = OnchainJobAction.RECORD_PAYOUT,
+            payload = RecordPayoutPayload(
+                payoutId = payout.id,
+                campaignId = payout.campaign.id!!,
+                // movePointRight, not toLong() * 100: truncating first turned 10.50 € into 1000 cents.
+                amountCents = payout.amount.movePointRight(2).toBigIntegerExact(),
+            ),
+            correlationKey = "PAYOUT:${payout.id}",
+            dependsOn = campaignRegistration,
+        )
+    }
+
+    /**
      * Promotes the payout to CONFIRMED and enqueues the on-chain attestation, the transfer having
      * been settled by the bank.
      *
@@ -225,16 +250,7 @@ class PayoutConfirmer(
         payout.bridgeSyncedAt = Instant.now()
         val saved = payoutRepository.save(payout)
 
-        val job = outbox.enqueue(
-            action = OnchainJobAction.RECORD_PAYOUT,
-            payload = RecordPayoutPayload(
-                payoutId = saved.id,
-                campaignId = saved.campaign.id!!,
-                // movePointRight, not toLong() * 100: truncating first turned 10.50 € into 1000 cents.
-                amountCents = saved.amount.movePointRight(2).toBigIntegerExact(),
-            ),
-            correlationKey = "PAYOUT:${saved.id}",
-        )
+        val job = enqueueRecordPayout(saved)
         saved.onchainJobId = job.id
         payoutRepository.save(saved)
 

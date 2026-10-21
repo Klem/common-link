@@ -6,7 +6,6 @@ import org.commonlink.dto.JourneyStepDto
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.repository.DonationRepository
-import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.security.DonorReadScope
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -26,7 +25,7 @@ private const val MAX_HISTORY_FOR_NAVIGATION = 1000
 class DonorDonationJourneyService(
     private val donorReadScope: DonorReadScope,
     private val donationAllocationService: DonationAllocationService,
-    private val onchainJobRepository: OnchainJobRepository,
+    private val outbox: OnchainOutboxService,
     private val donationRepository: DonationRepository,
 ) {
 
@@ -41,8 +40,8 @@ class DonorDonationJourneyService(
         val donation = donorReadScope.assertOwnsDonation(donorId, donationId)
         val campaignId = donation.campaign.id!!
 
-        val recorded = onchainJobRepository.findByCorrelationKey("DONATION:$donationId")
-            ?.status == OnchainJobStatus.DONE
+        // Only a job on the CURRENT chain counts: after a chain switch, a mock (chain 0) job is no proof.
+        val recorded = outbox.findCurrent("DONATION:$donationId")?.status == OnchainJobStatus.DONE
 
         val allocation = donationAllocationService.allocateCampaign(campaignId)
             .firstOrNull { it.donationId == donationId }

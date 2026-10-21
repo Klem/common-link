@@ -24,10 +24,12 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     fun findByProviderRef(providerRef: String): Donation?
 
     /**
-     * Returns confirmed donations that have no matching RECORD_DONATION outbox job.
+     * Returns confirmed donations that have no matching RECORD_DONATION outbox job **on any chain**.
      *
-     * Used by the receipt reconciler to recover from failures in the async event listener.
-     * Each row's correlationKey pattern is `DONATION:<donationId>`.
+     * Used by the receipt reconciler to recover from failures in the async event listener (receipt
+     * generation + first enqueue). Deliberately not scoped to the current chain: the history is never
+     * replayed on a new chain, the reconciler only catches listener failures. Each row's correlationKey
+     * pattern is `DONATION:<donationId>`.
      */
     @Query("""
         SELECT d FROM Donation d

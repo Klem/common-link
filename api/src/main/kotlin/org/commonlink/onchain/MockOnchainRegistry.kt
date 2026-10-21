@@ -13,7 +13,8 @@ import kotlin.random.Random
  *
  * Active when `onchain.mock=true` (set in `application.yml` for local dev). Logs every call at
  * INFO level and returns a synthetic [TransactionReceipt] — random tx hash, auto-incremented block
- * number, status `0x1`. No web3j RPC calls, no private keys, no network I/O.
+ * number, status `0x1`. No web3j RPC calls, no private keys, no network I/O. Nothing is written on
+ * any chain.
  *
  * **Temporarily tolerated in production** until the blockchain component is deployed:
  * [org.commonlink.config.OnchainMockGuard] only logs a WARN when profile `prod` is active with
@@ -37,44 +38,19 @@ class MockOnchainRegistry : OnchainRegistry {
 
     private fun ByteArray.shortHex() = take(4).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
 
-    override fun verifyAssociation(address: String, sirenHash: ByteArray) =
-        syntheticReceipt("verifyAssociation address=$address")
+    /** Returns a synthetic receipt; nothing is sent on-chain (mock mode). */
+    override fun registerAssociation(address: String, sirenHash: ByteArray) =
+        syntheticReceipt("registerAssociation address=$address")
 
-    override fun revokeAssociation(address: String) =
-        syntheticReceipt("revokeAssociation address=$address")
+    /** Returns a synthetic receipt; nothing is sent on-chain (mock mode). */
+    override fun registerCampaign(id: ByteArray, association: String, budgetHash: ByteArray) =
+        syntheticReceipt("registerCampaign id=${id.shortHex()} association=$association")
 
-    override fun restoreAssociation(address: String) =
-        syntheticReceipt("restoreAssociation address=$address")
-
-    override fun createCampaign(
-        id: ByteArray,
-        association: String,
-        goalCents: BigInteger,
-        milestoneCount: BigInteger,
-        budgetHash: ByteArray,
-    ) = syntheticReceipt("createCampaign id=${id.shortHex()} association=$association goalCents=$goalCents")
-
-    override fun publishCampaign(id: ByteArray) =
-        syntheticReceipt("publishCampaign id=${id.shortHex()}")
-
+    /** Returns a synthetic receipt; nothing is sent on-chain (mock mode). */
     override fun updateCampaignBudget(id: ByteArray, newBudgetHash: ByteArray) =
         syntheticReceipt("updateCampaignBudget id=${id.shortHex()}")
 
-    override fun pauseCampaign(id: ByteArray) =
-        syntheticReceipt("pauseCampaign id=${id.shortHex()}")
-
-    override fun unpauseCampaign(id: ByteArray) =
-        syntheticReceipt("unpauseCampaign id=${id.shortHex()}")
-
-    override fun cancelCampaign(id: ByteArray) =
-        syntheticReceipt("cancelCampaign id=${id.shortHex()}")
-
-    override fun completeCampaign(id: ByteArray) =
-        syntheticReceipt("completeCampaign id=${id.shortHex()}")
-
-    override fun revertCampaignToDraft(id: ByteArray) =
-        syntheticReceipt("revertCampaignToDraft id=${id.shortHex()}")
-
+    /** Returns a synthetic receipt; nothing is sent on-chain (mock mode). */
     override fun recordDonation(
         donationId: ByteArray,
         donor: String,
@@ -84,9 +60,7 @@ class MockOnchainRegistry : OnchainRegistry {
         txRef: ByteArray,
     ) = syntheticReceipt("recordDonation donor=$donor amountCents=$amountCents")
 
-    override fun markMilestoneReached(campaignId: ByteArray, index: BigInteger, proofHash: ByteArray) =
-        syntheticReceipt("markMilestoneReached campaignId=${campaignId.shortHex()} index=$index")
-
+    /** Returns a synthetic receipt; nothing is sent on-chain (mock mode). */
     override fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger) =
         syntheticReceipt("recordPayout amountCents=$amountCents")
 }

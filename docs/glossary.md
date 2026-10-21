@@ -147,7 +147,7 @@ The maximum a campaign may collect: `goal × (1 + margin)`, where the margin is 
 `functional` `business` `technical`
 
 ### Certification (On-Chain)
-The act of recording a donation proof on the blockchain. This includes the amount, date, and campaign reference. Once recorded, the certification is permanent, tamper-proof, and publicly verifiable. The donor does not interact with the blockchain directly — certification happens automatically in the backend.
+The act of recording a donation proof on the blockchain. This includes the amount, date, and campaign reference. Once recorded on a public chain, the certification is permanent, tamper-proof, and publicly verifiable. The donor does not interact with the blockchain directly — certification happens automatically in the backend. What it proves is that CommonLink *declared* the fact at that date and cannot rewrite it — see **Proof Registry (Notary Principle)**. Until the registry contract is deployed on a public chain, the platform runs in simulated mode (`onchain.mock=true`) and no real on-chain write takes place.
 `blockchain` `functional`
 
 ### Contribution Donut
@@ -258,8 +258,16 @@ A regulatory measure ordering the immediate blocking of all funds and economic r
 `security` `business`
 
 ### Gas Fee
-The small transaction cost for recording data on a blockchain network. On CommonLink, gas fees apply only when using a crypto wallet for payment (Polygon network). The estimated gas cost is displayed in the donation modal (e.g., ~€0.08).
+The small transaction cost for recording data on a blockchain network. On CommonLink, **no user ever pays gas**: donors and associations never sign or pay a transaction. The platform's hot wallets pay the fees in **xDAI** on the Gnosis network.
 `blockchain`
+
+### Gnosis
+The public EVM blockchain network on which CommonLink records its proofs (chain id 100 for mainnet). Gas is paid in **xDAI**, a dollar-pegged stablecoin, which keeps recording costs low and predictable. The testnet used before mainnet is **Gnosis Chiado**. Replaces the Polygon network referenced in earlier documents.
+`blockchain` `technical`
+
+### Gnosis Chiado
+The public test network of Gnosis (chain id 10200) used to deploy and verify the registry contract before the Gnosis mainnet. Test xDAI comes from a faucet and has no value.
+`blockchain` `technical`
 
 ### Geographic Scope (Portée)
 A campaign's reach, **always derived** from its Place of Action, never entered: commune or department → **locale**, whole of France → **nationale**, foreign country → **internationale** (`CampaignScope`). Used as a filter in the discovery grid; with the proximity filter on, national campaigns are shown in a « Partout en France » block and international ones are excluded.
@@ -419,7 +427,7 @@ A unique digital token recorded on a blockchain. On CommonLink, NFTs are used ex
 ## O
 
 ### On-Chain
-Recorded on a blockchain. When a donation is "certified on-chain," it means the proof of that donation is permanently and publicly stored in an immutable ledger. This is the core value proposition of CommonLink.
+Recorded on a blockchain. When a donation is "certified on-chain," it means the proof of that donation is stored in an immutable public ledger once the registry contract is deployed (see **Certification (On-Chain)** for the current simulated state). This is the core value proposition of CommonLink.
 `blockchain`
 
 ### Opaque Token
@@ -437,15 +445,31 @@ Where a campaign acts: a French commune (INSEE code) or department, the whole of
 ### Proximity Filter — see **Place of Action**
 
 ### Payment Method
-The means by which a donor completes a donation. Supported methods: **Card** (Visa/Mastercard), **SEPA transfer** (instant bank transfer), **Crypto Wallet** (Polygon/USDC), and **Apple Pay**.
+The means by which a donor completes a donation. Supported methods: **Card** (Visa/Mastercard), **SEPA transfer** (instant bank transfer), and **Apple Pay**. There is no crypto payment: the donor journey is fiat-first and never involves a wallet or gas.
 `functional`
 
 ### Mode de versement (Payment Method on the Receipt)
 The line on the fiscal receipt stating how the donor actually paid. The provider's method code is captured when the payment is confirmed (`donations.payment_method`) and mapped to a French label — _Carte bancaire_, _Virement bancaire_, _Prélèvement SEPA_, _Virement bancaire en ligne_. An unrecognised provider code is printed verbatim rather than forced into a category, and a donation confirmed without a provider payload prints _Non précisé_. Previously the receipt printed the list of accepted methods, which was false for every individual donation. See `docs/legal/E5-recu-fiscal-mentions.md`.
 `functional` `business`
 
-### Polygon
-A Layer 2 blockchain network used by CommonLink for on-chain certifications and wallet-based donations. Polygon offers low gas fees (~€0.08 per transaction) and fast confirmation times, making it suitable for micro-certifications.
+### Payout Record (On-Chain)
+The on-chain proof that a payout (a disbursement of campaign funds to a beneficiary) was settled by the bank. It is written by `recordPayout(payoutId, campaignId, amountCents)` once the bank settlement is confirmed, emitting a `PayoutRecorded` event. The registry moves no funds and only checks that the campaign is registered; the available balance and payout eligibility are backend rules.
+`blockchain` `technical`
+
+### Job Dependency (On-Chain Outbox)
+The ordering mechanism of the `onchain_jobs` outbox: a job may name a prerequisite job (`depends_on_job_id`) and is only claimed by the worker once that prerequisite is `DONE`. Campaign registration depends on the association registration; donations, payouts and budget updates depend on the campaign registration. A prerequisite that `FAILED` leaves its dependents `PENDING` (logged at WARN) — no attempt is consumed.
+`technical` `blockchain`
+
+### Explorer Deep Link
+A link to the public block explorer page of an on-chain address or transaction (Blockscout: `<base>/address/<a>`, `<base>/tx/<hash>`). Built by `ExplorerLinkBuilder` from `onchain.explorer.base-url` (Chiado: `gnosis-chiado.blockscout.com`, mainnet: `gnosis.blockscout.com`); never hard-coded, and null in simulated mode (mock transaction hashes exist on no chain).
+`technical` `blockchain`
+
+### HMAC Address Secret
+One of the two server secrets (`DONOR_ADDRESS_SECRET`, `ASSOCIATION_ADDRESS_SECRET`) from which the pseudonymous on-chain addresses are derived (HMAC-SHA256 of the profile UUID). They must be random, distinct per environment, and **frozen** as soon as anything real is recorded on a chain: changing them afterwards breaks the link between a profile and its on-chain history. Addresses are never re-derived: those computed before the real secrets were set (staging test data) stay as they are.
+`technical` `security` `blockchain`
+
+### Proof Registry (Notary Principle)
+The design rule of the `CommonLinkRegistry` contract (v2): it only records facts the backend has **already decided and confirmed**, and re-implements **no business rule** (campaign status, KYC eligibility, goals, balances, fees, badge criteria). It has **no lifecycle**: an association is registered once (when it becomes able to collect) and a campaign once (at its first LIVE, with its budget hash); neither is ever removed, paused or re-activated on-chain — making them read-only is a backend decision. On-chain records: registrations, budget hash updates, donations (with donor totals), settled payouts, badge mints relayed to the soulbound badge contract. The registry only guards its own integrity: access control, pause, duplicate identifiers, referential existence and input sanity. It proves that CommonLink *declared* a fact at a given date and cannot rewrite it — never that a business rule was satisfied.
 `blockchain` `technical`
 
 ### Post-Publish Locking
@@ -593,10 +617,6 @@ A UX safety pattern used throughout the campaign editor (budget lines, milestone
 
 ## U
 
-### USDC
-A stablecoin (digital currency pegged 1:1 to the US Dollar) used on the Polygon network for crypto wallet donations. Donors who choose the wallet payment method transact in USDC on Polygon.
-`blockchain`
-
 ### UserDto
 The data object representing a user in API responses. Contains: id, email, role, display name, avatar URL, auth provider, email verification status, and creation date. Entities are never exposed directly — they are always mapped to DTOs.
 `technical`
@@ -621,17 +641,22 @@ An association that has completed the KYC process: SIREN validated via the Annua
 A cryptographically random public identifier (`clk_` prefix + 24 bytes Base64url = 32 chars, 192 bits of entropy) that authorises a donation widget embed. Scoped to one association; the backend resolves the token to the association and its destination campaign on every request. Rotatable/revocable at any time from the association dashboard — rotation is immediate and invalidates any existing embed snippets using the old token. Stored as `widgetToken VARCHAR UNIQUE` on `association_profiles`; generated via `POST /api/association/me/widget/token`.
 `technical` `security`
 
-### Wallet (Crypto Wallet)
-A payment method for donors who prefer to donate via cryptocurrency. Transactions use the Polygon network with USDC. When selected, the donation modal displays the estimated gas fee. This is the only payment method that involves direct blockchain interaction by the user.
+### Wallet (Pseudonymous Address)
+The deterministic blockchain address derived server-side for a donor or an association (HMAC-SHA256 of the profile UUID with a secret). **No private key exists** for it: neither the donor nor the association ever signs a transaction or pays gas, and the address cannot be used to move funds. It only identifies the party in on-chain proofs. Sharing the address with a third party makes the history attached to it traceable.
 `functional` `blockchain`
 
----
+## X
+
+### xDAI
+The dollar-pegged stablecoin used to pay gas on the **Gnosis** network. Only CommonLink's hot wallets hold and spend it (a low balance must be monitored); donors and associations never handle it.
+`blockchain` `technical`
 
 ## A
 
 ### Async Receipt
 The asynchronous generation of a Cerfa 2041-RD tax receipt PDF after a donation is confirmed. Triggered by a `DonationConfirmedEvent` published synchronously at the end of `DonationService.confirmDonation`. The event listener (`DonationReceiptService.onDonationConfirmed`) is annotated `@TransactionalEventListener(AFTER_COMMIT)` + `@Async`: it fires only after the confirmation transaction commits, on a separate thread. Steps: generate PDF → compute `keccak256` hash → enqueue `RECORD_DONATION` on-chain job via `OnchainOutboxService` with `correlationKey="DONATION:<id>"`. A `@Scheduled` reconciler re-enqueues confirmed donations whose job is missing (crash-safe). The webhook response path is never blocked by PDF generation.
 `technical` `blockchain`
+
 
 ---
 

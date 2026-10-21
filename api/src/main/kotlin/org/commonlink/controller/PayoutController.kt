@@ -54,9 +54,9 @@ class PayoutController(private val payoutService: PayoutService) {
     }
 
     @PostMapping("/{payoutId}/confirm")
-    @Operation(summary = "Confirm a payout", description = "Transitions a PENDING payout to CONFIRMED and enqueues an on-chain job.")
+    @Operation(summary = "Confirm a payout", description = "Initiates the bank transfer of a PENDING payout and returns the payment link. The payout stays PENDING until the bank settlement webhook confirms it, which is when the on-chain RECORD_PAYOUT job is enqueued.")
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Payout confirmed",
+        ApiResponse(responseCode = "200", description = "Transfer initiated (payout stays PENDING until bank settlement)",
             content = [Content(schema = Schema(implementation = PayoutDto::class))]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Payout not found", content = [Content()]),

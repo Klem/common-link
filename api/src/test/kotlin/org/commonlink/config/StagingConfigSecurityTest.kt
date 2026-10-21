@@ -46,4 +46,21 @@ class StagingConfigSecurityTest {
     fun `compliance officer password is required with no empty default in staging`() {
         assertEquals("\${APP_COMPLIANCE_OFFICER_PASSWORD}", prop("app.compliance-officer.password"))
     }
+
+    // ── On-chain (sprint B3.1): staging carries no default for the on-chain identity and secrets ──
+
+    @Test
+    fun `on-chain secrets and identity are required with no default in staging`() {
+        assertEquals("\${DONOR_ADDRESS_SECRET}", prop("onchain.donor-address-secret"))
+        assertEquals("\${ASSOCIATION_ADDRESS_SECRET}", prop("onchain.association-address-secret"))
+        assertEquals("\${ONCHAIN_RECORDER_PK}", prop("onchain.recorder-pk"))
+        assertEquals("\${ONCHAIN_RPC_URL}", prop("onchain.rpc-url"))
+        assertEquals("\${ONCHAIN_CHAIN_ID}", prop("onchain.chain-id"))
+        assertEquals("\${ONCHAIN_REGISTRY_ADDRESS}", prop("onchain.registry-address"))
+    }
+
+    @Test
+    fun `staging explorer defaults to Chiado Blockscout`() {
+        assertEquals("\${ONCHAIN_EXPLORER_BASE_URL:https://gnosis-chiado.blockscout.com}", prop("onchain.explorer.base-url"))
+    }
 }

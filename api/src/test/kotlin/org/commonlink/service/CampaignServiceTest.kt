@@ -22,6 +22,7 @@ import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.LegalDocumentRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.OnchainJobRepository
@@ -84,6 +85,9 @@ class CampaignServiceTest {
     private lateinit var onchainJobRepository: OnchainJobRepository
 
     @Autowired
+    private lateinit var campaignRepository: CampaignRepository
+
+    @Autowired
     private lateinit var entityManager: EntityManager
 
     @Autowired
@@ -114,6 +118,67 @@ class CampaignServiceTest {
         if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) == null) {
             legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGU, version = "test", content = "test CGU"))
         }
+    }
+
+    // ── Revert to draft: the backend decides, the registry only records ─────────────────────
+
+    private fun liveCampaignId(): UUID {
+        linkMollie(userId)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "Revert test", goal = BigDecimal("5000"))
+        )
+        makePublishable(userId, campaign.id)
+        campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        return campaign.id
+    }
+
+    private fun setRaised(campaignId: UUID, raised: BigDecimal) {
+        val entity = campaignRepository.findById(campaignId).get()
+        entity.raised = raised
+        campaignRepository.save(entity)
+    }
+
+    @Test
+    fun `revert - a request on an unfunded campaign goes straight to DRAFT and nothing is enqueued`() {
+        val id = liveCampaignId()
+        val jobsBefore = onchainJobRepository.findAll().size
+
+        campaignService.updateCampaign(userId, id, UpdateCampaignRequest(status = CampaignStatus.REVERT_REQUESTED))
+
+        assertEquals(CampaignStatus.DRAFT, campaignRepository.findById(id).get().status,
+            "the backend decides and applies DRAFT itself")
+        assertEquals(jobsBefore, onchainJobRepository.findAll().size,
+            "registry v2 records no campaign status: a revert is purely off-chain")
+    }
+
+    @Test
+    fun `revert - a request is refused on a funded campaign`() {
+        val id = liveCampaignId()
+        setRaised(id, BigDecimal("100"))
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, id, UpdateCampaignRequest(status = CampaignStatus.REVERT_REQUESTED))
+        }
+        assertEquals(CampaignStatus.LIVE, campaignRepository.findById(id).get().status)
+    }
+
+    @Test
+    fun `status changes enqueue no on-chain job`() {
+        val id = liveCampaignId()
+        val jobsBefore = onchainJobRepository.findAll().size
+
+        campaignService.updateCampaign(userId, id, UpdateCampaignRequest(status = CampaignStatus.PAUSED))
+        campaignService.updateCampaign(userId, id, UpdateCampaignRequest(status = CampaignStatus.LIVE))
+        campaignService.updateCampaign(userId, id, UpdateCampaignRequest(status = CampaignStatus.CANCELLED))
+
+        assertEquals(jobsBefore, onchainJobRepository.findAll().size)
+    }
+
+    /** Gives the association its pseudonymous on-chain address (derived at creation in production, V68). */
+    private fun withOnchainAddress(ownerId: UUID) {
+        val assoc = associationProfileRepository.findByUserId(ownerId).get()
+        assoc.walletAddress = "0x00000000000000000000000000000000000a5500"
+        associationProfileRepository.save(assoc)
     }
 
     /**
@@ -973,8 +1038,8 @@ class CampaignServiceTest {
     }
 
     /**
-     * Publishing never enqueues an on-chain job (Monerium removed, V67 — see the "happy path" test
-     * above), so this only exercises the plain LIVE→LIVE transition guard.
+     * Exercises the plain LIVE→LIVE transition guard (the on-chain registration of a first publication is
+     * covered by the saveBudget test).
      */
     @Test
     fun `publish - republishing an already-LIVE campaign is rejected`() {
@@ -995,6 +1060,7 @@ class CampaignServiceTest {
     @Test
     fun `saveBudget - LIVE campaign with changed budget enqueues UPDATE_CAMPAIGN_BUDGET, identical budget enqueues nothing`() {
         linkMollie(userId)
+        withOnchainAddress(userId)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "Budget test", goal = BigDecimal("5000"))
         )
@@ -1016,6 +1082,12 @@ class CampaignServiceTest {
         )
         campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
 
+        // First publication registers the association, then the campaign (registry v2, once and forever).
+        val afterPublish = onchainJobRepository.findAll()
+        val associationRegistration = afterPublish.single { it.action == OnchainJobAction.REGISTER_ASSOCIATION }
+        val campaignRegistration = afterPublish.single { it.action == OnchainJobAction.REGISTER_CAMPAIGN }
+        assertEquals(associationRegistration.id, campaignRegistration.dependsOnJobId)
+
         // Edit with different amount — should enqueue UPDATE_CAMPAIGN_BUDGET
         val changedBudget = SaveBudgetRequest(listOf(
             SaveBudgetSectionRequest(BudgetSide.EXPENSE, "60", "Achats", 0,
@@ -1025,7 +1097,8 @@ class CampaignServiceTest {
         ))
         campaignService.saveBudget(userId, campaign.id, changedBudget)
         val jobsAfterChange = onchainJobRepository.findAll()
-        assertEquals(1, jobsAfterChange.count { it.action == OnchainJobAction.UPDATE_CAMPAIGN_BUDGET })
+        val update = jobsAfterChange.single { it.action == OnchainJobAction.UPDATE_CAMPAIGN_BUDGET }
+        assertEquals(campaignRegistration.id, update.dependsOnJobId, "a budget update is ordered after the registration")
 
         // Edit with same content — hash unchanged, no new job
         campaignService.saveBudget(userId, campaign.id, changedBudget)

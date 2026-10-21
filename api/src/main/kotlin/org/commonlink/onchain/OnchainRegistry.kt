@@ -4,40 +4,56 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt
 import java.math.BigInteger
 
 /**
- * Abstraction over all write operations sent to the on-chain registry.
+ * Abstraction over all write operations sent to the on-chain registry (`CommonLinkRegistry` v2).
+ *
+ * The registry is a notary that records facts the backend already decided, and it has no lifecycle:
+ * an association and a campaign are each registered once and forever. Making an entity read-only is
+ * a backend decision that never reaches the chain.
  *
  * Two implementations:
  * - [OnchainRegistryClient] — real web3j-backed client, active when `onchain.mock=false` (default).
  * - [MockOnchainRegistry]   — synthetic receipts, zero network I/O, active when `onchain.mock=true`.
  *
- * [org.commonlink.service.OnchainJobWorker] depends exclusively on this interface — never on a
- * concrete implementation — so the swap is transparent to the worker.
+ * [org.commonlink.service.OnchainJobWorker] depends exclusively on this interface, so the swap is
+ * transparent to the worker.
  */
 interface OnchainRegistry {
 
-    // ── Association writes ───────────────────────────────────────────────────
-    fun verifyAssociation(address: String, sirenHash: ByteArray): TransactionReceipt
-    fun revokeAssociation(address: String): TransactionReceipt
-    fun restoreAssociation(address: String): TransactionReceipt
+    /**
+     * Registers an association once and forever (called when it becomes able to collect).
+     *
+     * @param address pseudonymous association address
+     * @param sirenHash keccak256 of the canonical SIREN (see [OnchainCodec.keccakSiren])
+     */
+    fun registerAssociation(address: String, sirenHash: ByteArray): TransactionReceipt
 
-    // ── Campaign writes ──────────────────────────────────────────────────────
-    fun createCampaign(
-        id: ByteArray,
-        association: String,
-        goalCents: BigInteger,
-        milestoneCount: BigInteger,
-        budgetHash: ByteArray,
-    ): TransactionReceipt
+    /**
+     * Registers a campaign once and forever, with its budget hash (called at its first LIVE).
+     *
+     * @param id campaign UUID encoded as bytes32
+     * @param association pseudonymous address of the owning association, which must already be registered
+     * @param budgetHash keccak256 of the canonical budget JSON
+     */
+    fun registerCampaign(id: ByteArray, association: String, budgetHash: ByteArray): TransactionReceipt
 
-    fun publishCampaign(id: ByteArray): TransactionReceipt
+    /**
+     * Declares a new budget hash for a registered campaign.
+     *
+     * @param id campaign UUID encoded as bytes32
+     * @param newBudgetHash keccak256 of the canonical budget JSON
+     */
     fun updateCampaignBudget(id: ByteArray, newBudgetHash: ByteArray): TransactionReceipt
-    fun pauseCampaign(id: ByteArray): TransactionReceipt
-    fun unpauseCampaign(id: ByteArray): TransactionReceipt
-    fun cancelCampaign(id: ByteArray): TransactionReceipt
-    fun completeCampaign(id: ByteArray): TransactionReceipt
-    fun revertCampaignToDraft(id: ByteArray): TransactionReceipt
 
-    // ── Donation / payout writes ─────────────────────────────────────────────
+    /**
+     * Records a confirmed donation on a registered campaign.
+     *
+     * @param donationId donation UUID encoded as bytes32
+     * @param donor pseudonymous donor address
+     * @param campaignId campaign UUID encoded as bytes32
+     * @param amountCents amount in EUR cents (Solidity `uint96`)
+     * @param receiptHash hash of the fiscal receipt
+     * @param txRef payment provider reference encoded as bytes32
+     */
     fun recordDonation(
         donationId: ByteArray,
         donor: String,
@@ -47,8 +63,13 @@ interface OnchainRegistry {
         txRef: ByteArray,
     ): TransactionReceipt
 
-    fun markMilestoneReached(campaignId: ByteArray, index: BigInteger, proofHash: ByteArray): TransactionReceipt
-
-    /** Stub — Solidity `recordPayout` not yet deployed. Dispatched by [org.commonlink.entity.OnchainJobAction.RECORD_PAYOUT]. */
+    /**
+     * Records a settled payout (disbursement of campaign funds) on-chain. Proof only: no funds move.
+     * Dispatched by [org.commonlink.entity.OnchainJobAction.RECORD_PAYOUT].
+     *
+     * @param payoutId payout UUID encoded as bytes32 (see [OnchainCodec.uuidToBytes32])
+     * @param campaignId campaign UUID encoded as bytes32; the campaign must be registered on-chain
+     * @param amountCents amount in EUR cents (Solidity `uint96`)
+     */
     fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger): TransactionReceipt
 }

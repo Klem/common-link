@@ -43,6 +43,7 @@ class DonationReceiptService(
     private val receiptNumberService: ReceiptNumberService,
     private val emailService: EmailService,
     private val outbox: OnchainOutboxService,
+    private val onchainRegistration: OnchainRegistrationService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val parisZone = ZoneId.of("Europe/Paris")
@@ -116,6 +117,8 @@ class DonationReceiptService(
 
         val receiptHashHex = Numeric.toHexString(Hash.sha3(receiptBytes))
 
+        // The donation is recorded after the campaign registration (registry v2 checks the campaign exists).
+        val campaignRegistration = onchainRegistration.ensureCampaignRegistered(donation.campaign)
         outbox.enqueue(
             action = OnchainJobAction.RECORD_DONATION,
             payload = RecordDonationPayload(
@@ -127,6 +130,7 @@ class DonationReceiptService(
                 txRef          = donation.providerRef,
             ),
             correlationKey = "DONATION:$donationId",
+            dependsOn = campaignRegistration,
         )
         logger.info("Enqueued RECORD_DONATION for donation {}", donationId)
     }

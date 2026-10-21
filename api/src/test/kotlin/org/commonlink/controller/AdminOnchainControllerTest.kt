@@ -2,7 +2,6 @@ package org.commonlink.controller
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import io.mockk.justRun
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.repository.UserRepository
@@ -10,7 +9,6 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
-import org.commonlink.service.CampaignService
 import org.commonlink.service.OnchainOutboxService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,6 +17,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -35,107 +34,68 @@ class AdminOnchainControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockkBean private lateinit var campaignService: CampaignService
     @MockkBean private lateinit var outbox: OnchainOutboxService
     @MockkBean private lateinit var jwtService: JwtService
     @MockkBean private lateinit var userDetailsService: UserDetailsServiceImpl
     @MockkBean private lateinit var userRepository: UserRepository
 
-    private val campaignId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val jobId = UUID.fromString("00000000-0000-0000-0000-000000000003")
 
-    private fun pendingJob(action: OnchainJobAction) = OnchainJob(
-        id = jobId,
-        action = action,
-        payloadJson = "{}",
-    )
-
-    // ── Security ───────────────────────────────────────────────────────────
-
     @Test
-    fun `campaign action - 401 without JWT`() {
-        mockMvc.perform(post("/api/admin/onchain/campaigns/$campaignId/pause"))
+    fun `job - 401 without JWT`() {
+        mockMvc.perform(get("/api/admin/onchain/jobs/$jobId"))
             .andExpect(status().isUnauthorized)
     }
 
     @Test
-    fun `campaign action - 403 for DONOR role`() {
+    fun `job - 403 for DONOR role`() {
         mockMvc.perform(
-            post("/api/admin/onchain/campaigns/$campaignId/pause")
-                .with(user("donor-user").roles("DONOR"))
+            get("/api/admin/onchain/jobs/$jobId").with(user("donor-user").roles("DONOR"))
         ).andExpect(status().isForbidden)
     }
 
     @Test
-    fun `campaign action - 403 for ASSOCIATION role`() {
+    fun `job - 200 returns the job status`() {
+        every { outbox.find(jobId) } returns OnchainJob(
+            id = jobId,
+            action = OnchainJobAction.RECORD_DONATION,
+            payloadJson = "{}",
+            txHash = "0xabc",
+            blockNumber = 7,
+        )
+
         mockMvc.perform(
-            post("/api/admin/onchain/campaigns/$campaignId/pause")
-                .with(user("assoc-user").roles("ASSOCIATION"))
-        ).andExpect(status().isForbidden)
+            get("/api/admin/onchain/jobs/$jobId").with(user("curator").roles("CURATOR"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.jobId").value(jobId.toString()))
+            .andExpect(jsonPath("$.action").value("RECORD_DONATION"))
+            .andExpect(jsonPath("$.txHash").value("0xabc"))
     }
 
-    // ── Campaign — happy path and REVERT_TO_DRAFT ───────────────────────────
-
     @Test
-    fun `campaign pause - 404 when not found`() {
-        every { campaignService.existsById(campaignId) } returns false
+    fun `job - 404 when unknown`() {
+        every { outbox.find(jobId) } returns null
 
         mockMvc.perform(
-            post("/api/admin/onchain/campaigns/$campaignId/pause")
-                .with(user("curator").roles("CURATOR"))
+            get("/api/admin/onchain/jobs/$jobId").with(user("curator").roles("CURATOR"))
         ).andExpect(status().isNotFound)
     }
 
+    /** Registry v2: campaign statuses are never recorded on-chain, so the moderation endpoint is gone. */
     @Test
-    fun `campaign pause - 202 happy path`() {
-        every { campaignService.existsById(campaignId) } returns true
-        justRun { campaignService.adminTransition(campaignId, any()) }
-        every { outbox.enqueue(any(), any(), null) } returns pendingJob(OnchainJobAction.PAUSE_CAMPAIGN)
-
+    fun `campaign moderation endpoint no longer exists`() {
         mockMvc.perform(
-            post("/api/admin/onchain/campaigns/$campaignId/pause")
-                .with(user("curator").roles("CURATOR"))
-        )
-            .andExpect(status().isAccepted)
-            .andExpect(jsonPath("$.jobId").value(jobId.toString()))
+            post("/api/admin/onchain/campaigns/${UUID.randomUUID()}/pause").with(user("curator").roles("CURATOR"))
+        ).andExpect { result -> check(result.response.status in setOf(403, 404, 405)) { "unexpected ${result.response.status}" } }
     }
 
+    /** No data recovery tooling: neither the history backfill nor the address re-derivation is exposed. */
     @Test
-    fun `campaign revert_to_draft - 422 when not in REVERT_REQUESTED state`() {
-        every { campaignService.existsById(campaignId) } returns true
-        every { campaignService.adminTransition(campaignId, any()) } throws
-            org.commonlink.exception.UnprocessableEntityException("Campaign must be in REVERT_REQUESTED state")
-
-        mockMvc.perform(
-            post("/api/admin/onchain/campaigns/$campaignId/revert_to_draft")
-                .with(user("curator").roles("CURATOR"))
-        ).andExpect(status().`is`(422))
-    }
-
-    @Test
-    fun `campaign revert_to_draft - 422 when raised gt 0`() {
-        every { campaignService.existsById(campaignId) } returns true
-        every { campaignService.adminTransition(campaignId, any()) } throws
-            org.commonlink.exception.UnprocessableEntityException("Cannot revert: raised > 0")
-
-        mockMvc.perform(
-            post("/api/admin/onchain/campaigns/$campaignId/revert_to_draft")
-                .with(user("curator").roles("CURATOR"))
-        ).andExpect(status().`is`(422))
-    }
-
-    @Test
-    fun `campaign revert_to_draft - 202 uses idempotent correlation key`() {
-        every { campaignService.existsById(campaignId) } returns true
-        justRun { campaignService.adminTransition(campaignId, any()) }
-        every { outbox.enqueue(any(), any(), "REVERT_CAMPAIGN_TO_DRAFT:$campaignId") } returns
-            pendingJob(OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT)
-
-        mockMvc.perform(
-            post("/api/admin/onchain/campaigns/$campaignId/revert_to_draft")
-                .with(user("curator").roles("CURATOR"))
-        )
-            .andExpect(status().isAccepted)
-            .andExpect(jsonPath("$.jobId").value(jobId.toString()))
+    fun `backfill and rederive endpoints no longer exist`() {
+        listOf("/api/admin/onchain/backfill", "/api/admin/onchain/rederive-addresses").forEach { path ->
+            mockMvc.perform(post(path).with(user("admin").roles("ADMIN")))
+                .andExpect { result -> check(result.response.status in setOf(403, 404, 405)) { "$path: unexpected ${result.response.status}" } }
+        }
     }
 }

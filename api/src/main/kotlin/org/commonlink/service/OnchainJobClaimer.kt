@@ -1,8 +1,10 @@
 package org.commonlink.service
 
+import org.commonlink.config.OnchainConfig
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.repository.OnchainJobRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -17,16 +19,26 @@ import java.time.Instant
  * than silently re-PENDING where two workers could double-dispatch the same job.
  */
 @Component
-class OnchainJobClaimer(private val repo: OnchainJobRepository) {
+class OnchainJobClaimer(
+    private val repo: OnchainJobRepository,
+    private val cfg: OnchainConfig,
+) {
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     /**
-     * Locks up to [batchSize] PENDING jobs via FOR UPDATE SKIP LOCKED, transitions them to
-     * RUNNING, increments the attempt counter, and commits before returning.
-     * Concurrent callers transparently skip locked rows.
+     * Locks up to [batchSize] claimable PENDING jobs of the current chain via FOR UPDATE SKIP LOCKED,
+     * transitions them to RUNNING, increments the attempt counter, and commits before returning.
+     * A job whose dependency is not DONE is not claimed and consumes no attempt; when that dependency is
+     * FAILED it would wait forever, so the count of such blocked jobs is logged at WARN.
      */
     @Transactional
     fun claimBatch(batchSize: Int): List<OnchainJob> {
-        val locked = repo.lockBatch(batchSize)
+        val chainId = cfg.currentChainId()
+        val blocked = repo.countBlockedByFailedDependency(chainId)
+        if (blocked > 0) {
+            logger.warn("{} on-chain job(s) on chain {} are blocked by a FAILED dependency", blocked, chainId)
+        }
+        val locked = repo.lockBatch(chainId, batchSize)
         val now = Instant.now()
         locked.forEach {
             it.status = OnchainJobStatus.RUNNING

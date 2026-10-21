@@ -20,56 +20,22 @@ class MockOnchainRegistryTest {
     }
 
     @Test
-    fun `verifyAssociation returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.verifyAssociation("0xabc", ByteArray(32)))
+    fun `registerAssociation returns synthetic receipt`() =
+        assertSyntheticReceipt(mock.registerAssociation("0xabc", ByteArray(32)))
 
     @Test
-    fun `revokeAssociation returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.revokeAssociation("0xabc"))
-
-    @Test
-    fun `restoreAssociation returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.restoreAssociation("0xabc"))
-
-    @Test
-    fun `createCampaign returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.createCampaign(ByteArray(32), "0xabc", BigInteger.TEN, BigInteger.valueOf(3), ByteArray(32)))
-
-    @Test
-    fun `publishCampaign returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.publishCampaign(ByteArray(32)))
+    fun `registerCampaign returns synthetic receipt`() =
+        assertSyntheticReceipt(mock.registerCampaign(ByteArray(32), "0xabc", ByteArray(32)))
 
     @Test
     fun `updateCampaignBudget returns synthetic receipt`() =
         assertSyntheticReceipt(mock.updateCampaignBudget(ByteArray(32), ByteArray(32)))
 
     @Test
-    fun `pauseCampaign returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.pauseCampaign(ByteArray(32)))
-
-    @Test
-    fun `unpauseCampaign returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.unpauseCampaign(ByteArray(32)))
-
-    @Test
-    fun `cancelCampaign returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.cancelCampaign(ByteArray(32)))
-
-    @Test
-    fun `completeCampaign returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.completeCampaign(ByteArray(32)))
-
-    @Test
-    fun `revertCampaignToDraft returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.revertCampaignToDraft(ByteArray(32)))
-
-    @Test
     fun `recordDonation returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.recordDonation(ByteArray(32), "0xdonor", ByteArray(32), BigInteger.valueOf(5000), ByteArray(32), ByteArray(32)))
-
-    @Test
-    fun `markMilestoneReached returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.markMilestoneReached(ByteArray(32), BigInteger.ONE, ByteArray(32)))
+        assertSyntheticReceipt(
+            mock.recordDonation(ByteArray(32), "0xdonor", ByteArray(32), BigInteger.valueOf(5000), ByteArray(32), ByteArray(32))
+        )
 
     @Test
     fun `recordPayout returns synthetic receipt`() =
@@ -78,9 +44,9 @@ class MockOnchainRegistryTest {
     @Test
     fun `block numbers are strictly increasing`() {
         val fresh = MockOnchainRegistry()
-        val r1 = fresh.verifyAssociation("0x1", ByteArray(32))
-        val r2 = fresh.revokeAssociation("0x1")
-        val r3 = fresh.publishCampaign(ByteArray(32))
+        val r1 = fresh.registerAssociation("0x1", ByteArray(32))
+        val r2 = fresh.registerCampaign(ByteArray(32), "0x1", ByteArray(32))
+        val r3 = fresh.updateCampaignBudget(ByteArray(32), ByteArray(32))
         assertTrue(r2.blockNumber > r1.blockNumber)
         assertTrue(r3.blockNumber > r2.blockNumber)
     }
@@ -88,7 +54,7 @@ class MockOnchainRegistryTest {
     @Test
     fun `tx hashes are unique across calls`() {
         val fresh = MockOnchainRegistry()
-        val hashes = (1..10).map { fresh.publishCampaign(ByteArray(32)).transactionHash }.toSet()
+        val hashes = (1..10).map { fresh.updateCampaignBudget(ByteArray(32), ByteArray(32)).transactionHash }.toSet()
         assertEquals(10, hashes.size, "all tx hashes must be unique")
     }
 }

@@ -211,9 +211,9 @@ class AssociationService(
     /**
      * Marks the association as curator-verified.
      *
-     * Used to enqueue an on-chain VERIFY_ASSOCIATION job gated on the association's Monerium
-     * wallet address. Monerium was removed (V67) with no replacement wallet-provisioning
-     * mechanism, so this is now a pure status update with no on-chain side effect.
+     * Pure status update with no on-chain side effect: the on-chain registration of an association
+     * (registry v2, once and forever) is triggered when it becomes able to collect donations — see
+     * [OnchainAssociationRegistrationListener] and [OnchainRegistrationService].
      *
      * @param associationId UUID of the [org.commonlink.entity.AssociationProfile].
      * @throws IllegalArgumentException if no profile exists for this id.
@@ -231,8 +231,8 @@ class AssociationService(
     /**
      * Revokes curator verification for the association.
      *
-     * Formerly also enqueued an on-chain REVOKE_ASSOCIATION job (removed with Monerium, V67) —
-     * see [markVerified].
+     * No on-chain effect: registry v2 has no association lifecycle (a registration is permanent;
+     * stopping the collection is a backend decision).
      *
      * @param associationId UUID of the [org.commonlink.entity.AssociationProfile].
      * @throws IllegalArgumentException if no profile exists for this id.
@@ -249,8 +249,7 @@ class AssociationService(
     /**
      * Restores curator verification after a prior revocation.
      *
-     * Formerly also enqueued an on-chain RESTORE_ASSOCIATION job (removed with Monerium, V67) —
-     * see [markVerified].
+     * No on-chain effect: registry v2 has no association lifecycle (see [revokeAssociation]).
      *
      * @param associationId UUID of the [org.commonlink.entity.AssociationProfile].
      * @throws IllegalArgumentException if no profile exists for this id.

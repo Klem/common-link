@@ -241,17 +241,18 @@ springdoc:
 onchain:
   mock: true
   rpc-url: ${ONCHAIN_RPC_URL}
-  chain-id: ${ONCHAIN_CHAIN_ID:31337}
-  # Empty defaults — safe because both OnchainRegistryClient and Web3jConfig (which builds the
-  # signing credentials from recorder-pk / curator-pk) are inactive when mock=true.
-  # Prod supply real values via environment variables.
-  registry-address: ${ONCHAIN_REGISTRY_ADDRESS:}
-  recorder-pk: ${ONCHAIN_RECORDER_PK:}
-  curator-pk: ${ONCHAIN_CURATOR_PK:}
+  chain-id: ${ONCHAIN_CHAIN_ID}
+  # Staging: NO default for the on-chain identity and secrets (sprint B3.1). Every variable below must be
+  # set on Clever Cloud (see blockchain/RUNBOOK.md) or startup fails on the unresolved placeholder. With
+  # mock=false, OnchainRealModeValidator also refuses placeholders, non-https RPC and a zero registry.
+  registry-address: ${ONCHAIN_REGISTRY_ADDRESS}
+  recorder-pk: ${ONCHAIN_RECORDER_PK}
   polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
   receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
-  donor-address-secret: ${DONOR_ADDRESS_SECRET:dev-placeholder-change-in-staging}
-  association-address-secret: ${ASSOCIATION_ADDRESS_SECRET:dev-placeholder-change-in-staging}
+  donor-address-secret: ${DONOR_ADDRESS_SECRET}
+  association-address-secret: ${ASSOCIATION_ADDRESS_SECRET}
+  explorer:
+    base-url: ${ONCHAIN_EXPLORER_BASE_URL:https://gnosis-chiado.blockscout.com}
 
   worker:
     enabled: true

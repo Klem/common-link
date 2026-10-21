@@ -2,13 +2,11 @@ package org.commonlink.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.config.OnchainConfig
-import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.onchain.OnchainCodec
 import org.commonlink.onchain.OnchainRegistry
-import org.commonlink.repository.CampaignRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
@@ -32,13 +30,19 @@ import java.util.UUID
  * [process] dispatches any on-chain transaction. A crash mid-dispatch leaves jobs in RUNNING
  * (recoverable by a future operator action) rather than silently re-PENDING, which would
  * allow two concurrent workers to double-dispatch the same job.
+ *
+ * Notary principle: the registry only RECORDS facts the backend already decided. The worker therefore
+ * never changes a campaign, payout or donation status when a job succeeds or fails (a FAILED job leaves
+ * them exactly as the backend left them). The single remaining coupling to the chain is the donation
+ * receipt email: it is sent (and `DonationReceipt.emailedAt` stamped) only after RECORD_DONATION succeeds,
+ * so a failed donation job means the donor gets no receipt email — see the open point in
+ * `.tasks/blockchain-integration-sprint.md`.
  */
 @Service
 @ConditionalOnProperty(prefix = "onchain.worker", name = ["enabled"], havingValue = "true")
 class OnchainJobWorker(
     private val claimer: OnchainJobClaimer,
     private val repo: org.commonlink.repository.OnchainJobRepository,
-    private val campaignRepository: CampaignRepository,
     private val donationReceiptService: DonationReceiptService,
     private val client: OnchainRegistry,
     private val objectMapper: ObjectMapper,
@@ -72,14 +76,6 @@ class OnchainJobWorker(
 
     private fun onSuccess(job: OnchainJob) {
         when (job.action) {
-            OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT -> {
-                val campaignId = objectMapper.readValue(job.payloadJson, CampaignIdPayload::class.java).campaignId
-                campaignRepository.findById(campaignId).ifPresent { campaign ->
-                    campaign.status = CampaignStatus.DRAFT
-                    campaignRepository.save(campaign)
-                    logger.info("Campaign reverted to DRAFT after on-chain confirmation: campaignId={}", campaignId)
-                }
-            }
             OnchainJobAction.RECORD_DONATION -> {
                 val donationId = objectMapper.readValue(job.payloadJson, RecordDonationPayload::class.java).donationId
                 runCatching { donationReceiptService.sendReceiptEmailIfNeeded(donationId) }
@@ -89,29 +85,21 @@ class OnchainJobWorker(
         }
     }
 
+    /**
+     * Sends the job to the registry v2 function matching its action: association and campaign registration,
+     * budget update, donation, payout.
+     */
     private fun dispatch(job: OnchainJob): TransactionReceipt {
         return when (job.action) {
-            OnchainJobAction.VERIFY_ASSOCIATION -> {
-                val p = objectMapper.readValue(job.payloadJson, VerifyAssociationPayload::class.java)
-                client.verifyAssociation(p.address, Numeric.hexStringToByteArray(p.sirenHashHex))
+            OnchainJobAction.REGISTER_ASSOCIATION -> {
+                val p = objectMapper.readValue(job.payloadJson, RegisterAssociationPayload::class.java)
+                client.registerAssociation(p.address, Numeric.hexStringToByteArray(p.sirenHashHex))
             }
-            OnchainJobAction.REVOKE_ASSOCIATION -> {
-                val p = objectMapper.readValue(job.payloadJson, AddressOnlyPayload::class.java)
-                client.revokeAssociation(p.address)
-            }
-            OnchainJobAction.RESTORE_ASSOCIATION -> {
-                val p = objectMapper.readValue(job.payloadJson, AddressOnlyPayload::class.java)
-                client.restoreAssociation(p.address)
-            }
-            OnchainJobAction.CREATE_CAMPAIGN -> {
-                val p = objectMapper.readValue(job.payloadJson, CreateCampaignPayload::class.java)
-                // v1.3: no startDate/endDate — the chain stamps startDate itself; endDate is set
-                // at terminal transition. The campaign lands in Draft and needs PUBLISH_CAMPAIGN.
-                client.createCampaign(
+            OnchainJobAction.REGISTER_CAMPAIGN -> {
+                val p = objectMapper.readValue(job.payloadJson, RegisterCampaignPayload::class.java)
+                client.registerCampaign(
                     OnchainCodec.uuidToBytes32(p.campaignId),
                     p.association,
-                    p.goalCents,
-                    BigInteger.valueOf(p.milestoneCount.toLong()),
                     Numeric.hexStringToByteArray(p.budgetHashHex),
                 )
             }
@@ -141,38 +129,17 @@ class OnchainJobWorker(
                     p.amountCents,
                 )
             }
-            OnchainJobAction.MARK_MILESTONE_REACHED -> {
-                val p = objectMapper.readValue(job.payloadJson, MilestonePayload::class.java)
-                client.markMilestoneReached(
-                    OnchainCodec.uuidToBytes32(p.campaignId),
-                    BigInteger.valueOf(p.index.toLong()),
-                    Numeric.hexStringToByteArray(p.proofHashHex),
-                )
-            }
-            OnchainJobAction.PUBLISH_CAMPAIGN         -> client.publishCampaign(byPayloadCampaignId(job))
-            OnchainJobAction.REVERT_CAMPAIGN_TO_DRAFT -> client.revertCampaignToDraft(byPayloadCampaignId(job))
-            OnchainJobAction.PAUSE_CAMPAIGN           -> client.pauseCampaign(byPayloadCampaignId(job))
-            OnchainJobAction.UNPAUSE_CAMPAIGN         -> client.unpauseCampaign(byPayloadCampaignId(job))
-            OnchainJobAction.CANCEL_CAMPAIGN          -> client.cancelCampaign(byPayloadCampaignId(job))
-            OnchainJobAction.COMPLETE_CAMPAIGN        -> client.completeCampaign(byPayloadCampaignId(job))
         }
-    }
-
-    private fun byPayloadCampaignId(job: OnchainJob): ByteArray {
-        val p = objectMapper.readValue(job.payloadJson, CampaignIdPayload::class.java)
-        return OnchainCodec.uuidToBytes32(p.campaignId)
     }
 }
 
 // ────── Payload DTOs ──────
-data class VerifyAssociationPayload(val address: String, val sirenHashHex: String)
-data class AddressOnlyPayload(val address: String)
-data class CampaignIdPayload(val campaignId: UUID)
-data class CreateCampaignPayload(
+/** Payload of `REGISTER_ASSOCIATION` (`registerAssociation`); `sirenHashHex` hashes the legal identifier. */
+data class RegisterAssociationPayload(val address: String, val sirenHashHex: String)
+/** Payload of `REGISTER_CAMPAIGN` (`registerCampaign`) with the budget hash current at enqueue time. */
+data class RegisterCampaignPayload(
     val campaignId: UUID,
     val association: String,
-    val goalCents: BigInteger,
-    val milestoneCount: Int,
     val budgetHashHex: String,
 )
 data class UpdateCampaignBudgetPayload(val campaignId: UUID, val newBudgetHashHex: String)
@@ -185,4 +152,3 @@ data class RecordDonationPayload(
     val txRef: String,
 )
 data class RecordPayoutPayload(val payoutId: UUID, val campaignId: UUID, val amountCents: BigInteger)
-data class MilestonePayload(val campaignId: UUID, val index: Int, val proofHashHex: String)
