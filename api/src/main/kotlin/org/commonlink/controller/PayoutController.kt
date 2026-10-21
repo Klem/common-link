@@ -69,6 +69,26 @@ class PayoutController(private val payoutService: PayoutService) {
     ): ResponseEntity<PayoutDto> =
         ResponseEntity.ok(payoutService.confirm(campaignId, payoutId, UUID.fromString(principal.username)))
 
+    @PostMapping("/{payoutId}/cancel")
+    @Operation(
+        summary = "Cancel a payout",
+        description = "Cancels a PENDING payout with no Bridge transfer in progress; its amount is no longer reserved.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Payout cancelled",
+            content = [Content(schema = Schema(implementation = PayoutDto::class))]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Payout not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Payout is not PENDING or has a transfer in progress", content = [Content()]),
+        ApiResponse(responseCode = "502", description = "Its Bridge payment link could not be revoked", content = [Content()]),
+    )
+    fun cancel(
+        @PathVariable campaignId: UUID,
+        @PathVariable payoutId: UUID,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<PayoutDto> =
+        ResponseEntity.ok(payoutService.cancel(campaignId, payoutId, UUID.fromString(principal.username)))
+
     @GetMapping
     @Operation(summary = "List payouts", description = "Returns a paginated list of payouts for a campaign, newest first.")
     @ApiResponses(

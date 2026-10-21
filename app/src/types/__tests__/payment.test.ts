@@ -4,10 +4,13 @@ import {
   PayoutKind,
   PayoutStatus,
   PayoutErrorCode,
+  PayoutUiState,
+  canCancelPayout,
   isPayoutInFlight,
   lastAttemptFailed,
   needsBankAuthorisation,
   payoutErrorMessageKey,
+  payoutUiState,
   type PayoutDto,
 } from '../payment';
 
@@ -133,5 +136,40 @@ describe('payoutErrorMessageKey', () => {
 
   it('falls back when nothing has failed', () => {
     expect(payoutErrorMessageKey(null)).toBe('errorCode.fallback');
+  });
+});
+
+describe('canCancelPayout', () => {
+  it('offers to cancel a payout never sent to a bank', () => {
+    expect(canCancelPayout(payout({ bridgeStatus: null, bridgeCheckoutUrl: null }))).toBe(true);
+  });
+
+  it('offers to cancel a payout released after a failed attempt', () => {
+    expect(canCancelPayout(payout({
+      bridgeStatus: null,
+      bridgeCheckoutUrl: null,
+      bridgeLastErrorCode: PayoutErrorCode.LINK_EXPIRED,
+    }))).toBe(true);
+  });
+
+  it('never offers to cancel a transfer the association may be authorising right now', () => {
+    expect(canCancelPayout(payout({ bridgeStatus: BridgePaymentStatus.CREA }))).toBe(false);
+    expect(canCancelPayout(payout({ bridgeStatus: BridgePaymentStatus.PDNG }))).toBe(false);
+  });
+
+  it('never offers to cancel a payout that left PENDING', () => {
+    expect(canCancelPayout(payout({ status: PayoutStatus.CONFIRMED, bridgeStatus: null }))).toBe(false);
+    expect(canCancelPayout(payout({ status: PayoutStatus.FAILED, bridgeStatus: null }))).toBe(false);
+    expect(canCancelPayout(payout({ status: PayoutStatus.CANCELLED, bridgeStatus: null }))).toBe(false);
+  });
+});
+
+describe('payoutUiState', () => {
+  it('shows a cancelled payout as cancelled, whatever its last attempt said', () => {
+    expect(payoutUiState(payout({
+      status: PayoutStatus.CANCELLED,
+      bridgeStatus: null,
+      bridgeLastErrorCode: PayoutErrorCode.LINK_EXPIRED,
+    }))).toBe(PayoutUiState.CANCELLED);
   });
 });

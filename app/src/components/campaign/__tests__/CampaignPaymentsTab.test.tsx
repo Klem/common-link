@@ -185,6 +185,7 @@ function setupPayments(overrides: Partial<UsePaymentsReturn> = {}): UsePaymentsR
     error: null,
     submit: defaultSubmit,
     retry: vi.fn(),
+    cancel: vi.fn(),
     refetch: vi.fn(),
     awaitingReturnPayoutId: null,
     ...overrides,
@@ -680,6 +681,23 @@ describe('CampaignPaymentsTab', () => {
     expect(screen.getByText('state.FAILED')).toBeDefined();
   });
 
+  it('gives cancelled payouts a pill of their own', () => {
+    setupMocks();
+    const cancelled: PayoutDto = { ...releasedPayout, id: 'c', status: 'CANCELLED' };
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [samplePayout, cancelled] })} />,
+    );
+
+    const pill = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}`) });
+    expect(pill('journal.pills.CANCELLED').textContent).toContain('1');
+    // A cancellation asks for nothing: it is never counted as something to handle.
+    expect(pill('journal.pills.TODO').textContent).toContain('0');
+
+    fireEvent.click(pill('journal.pills.CANCELLED'));
+    expect(journalRows()).toHaveLength(1);
+    expect(within(journalRows()[0] as HTMLElement).getByText('state.CANCELLED')).toBeDefined();
+  });
+
   it('reaches refused payouts in one click whatever the page shows', () => {
     setupMocks();
     // Forty rows: a refusal in fortieth position is invisible in a chronological feed.
@@ -992,6 +1010,75 @@ describe('CampaignPaymentsTab', () => {
 
     const footer = document.querySelector('.side-panel-f') as HTMLElement;
     expect(within(footer).getByRole('button', { name: 'history.retry' })).toBeDefined();
+  });
+
+  it('offers to cancel a released payout from the panel, after confirmation', async () => {
+    setupMocks();
+    const cancel = vi.fn().mockResolvedValue({ ...releasedPayout, status: 'CANCELLED' });
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedPayout], cancel })} />,
+    );
+
+    fireEvent.keyDown(journalRows()[0], { key: 'Enter', target: journalRows()[0] });
+    const footer = document.querySelector('.side-panel-f') as HTMLElement;
+    fireEvent.click(within(footer).getByRole('button', { name: 'history.cancel' }));
+
+    // Nothing is sent before the association confirms.
+    expect(cancel).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'history.cancelConfirm.submit' }));
+
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith(releasedPayout.id));
+  });
+
+  it('keeps the payout when the association backs out of the confirmation', () => {
+    setupMocks();
+    const cancel = vi.fn();
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedPayout], cancel })} />,
+    );
+
+    fireEvent.keyDown(journalRows()[0], { key: 'Enter', target: journalRows()[0] });
+    fireEvent.click(screen.getByRole('button', { name: 'history.cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'history.cancelConfirm.keep' }));
+
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('never offers to cancel a transfer in flight', () => {
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [inFlightPayout] })} />);
+
+    expect(screen.queryByRole('button', { name: 'history.cancelShort' })).toBeNull();
+    fireEvent.click(journalRows()[0]);
+
+    expect(screen.queryByRole('button', { name: 'history.cancel' })).toBeNull();
+  });
+
+  it('offers to cancel inline, beside the retry, without opening the panel', async () => {
+    setupMocks();
+    const cancel = vi.fn().mockResolvedValue({ ...releasedPayout, status: 'CANCELLED' });
+    render(
+      <CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedPayout], cancel })} />,
+    );
+
+    const row = within(journalRows()[0] as HTMLElement);
+    expect(row.getByRole('button', { name: 'history.retry' })).toBeDefined();
+    fireEvent.click(row.getByRole('button', { name: 'history.cancelShort' }));
+
+    expect(document.querySelector('.side-panel')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'history.cancelConfirm.submit' }));
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith(releasedPayout.id));
+  });
+
+  it('stacks the cancel confirmation above the detail panel', () => {
+    // The panel lives in an overlay of its own; a confirmation rendered under it cannot be clicked.
+    setupMocks();
+    render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ payouts: [releasedPayout] })} />);
+
+    fireEvent.keyDown(journalRows()[0], { key: 'Enter', target: journalRows()[0] });
+    fireEvent.click(screen.getByRole('button', { name: 'history.cancel' }));
+
+    expect(document.querySelector('.modal-backdrop')?.classList.contains('confirm-backdrop')).toBe(true);
   });
 
   it('carries no footer on a payout that asks nothing', () => {
