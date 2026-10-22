@@ -355,6 +355,12 @@ class PayoutConfirmer(
             log.warn("Refusing to fail payout {} — it is already confirmed as settled", payoutId)
             return
         }
+        // A rejection on a payout the association already withdrew moved no money either way:
+        // the association's own decision stays the recorded outcome.
+        if (payout.status == PayoutStatus.CANCELLED) {
+            log.warn("Refusing to fail payout {} — it was cancelled by the association", payoutId)
+            return
+        }
         payout.status = PayoutStatus.FAILED
         payout.bridgeStatus = bridgeStatus
         payout.bridgeCheckoutUrl = null
@@ -403,6 +409,70 @@ class PayoutConfirmer(
         payout.bridgeSyncedAt = Instant.now()
         payoutRepository.save(payout)
         log.info("Payout {} now {} at Bridge", payoutId, bridgeStatus)
+    }
+
+    /**
+     * Validates that [payoutId] may be cancelled and returns the payment link to revoke first.
+     *
+     * Phase 1 of [PayoutService.cancel]. A payout may be cancelled only while PENDING with no
+     * transfer in progress ([Payout.bridgeStatus] null): never initiated, or released after a
+     * failed initiation or a dead link. A non-null [Payout.bridgeStatus] means the amount may be
+     * authorised at the association's bank right now — only Bridge can end that.
+     *
+     * @param campaignId Campaign owning the payout.
+     * @param payoutId Payout to cancel.
+     * @param associationId Association making the request.
+     * @return the payout's Bridge payment-link id, or null when no link was ever recorded.
+     * @throws NotFoundException if the payout cannot be found for [associationId].
+     * @throws ConflictException if the payout is not cancellable.
+     */
+    @Transactional(readOnly = true)
+    fun loadForCancel(campaignId: UUID, payoutId: UUID, associationId: UUID): String? {
+        val payout = payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(
+            campaignId, payoutId, associationId,
+        ) ?: throw NotFoundException("Payout not found: $payoutId")
+        assertCancellable(payout)
+        return payout.bridgePaymentLinkId
+    }
+
+    /**
+     * Marks [payoutId] CANCELLED; its amount stops being reserved on the campaign.
+     *
+     * Phase 2 of [PayoutService.cancel], after any known link was revoked. Takes the campaign lock
+     * first, like [reserve]: the two serialize, so a confirmation that stamped [Payout.bridgeStatus]
+     * in between is seen here and the cancellation refused, and a confirmation arriving after reads
+     * CANCELLED and is refused by [reserve].
+     *
+     * @param campaignId Campaign owning the payout.
+     * @param payoutId Payout to cancel.
+     * @return the cancelled payout.
+     * @throws NotFoundException if the campaign or payout disappeared.
+     * @throws ConflictException if the payout is no longer cancellable.
+     */
+    @Transactional
+    fun cancel(campaignId: UUID, payoutId: UUID): Payout {
+        campaignRepository.findByIdForUpdate(campaignId)
+            ?: throw NotFoundException("Campaign not found: $campaignId")
+
+        val payout = payoutRepository.findById(payoutId)
+            .orElseThrow { NotFoundException("Payout not found: $payoutId") }
+        assertCancellable(payout)
+
+        payout.status = PayoutStatus.CANCELLED
+        payout.bridgeCheckoutUrl = null
+        val saved = payoutRepository.save(payout)
+        log.info("Payout {} cancelled by the association", payoutId)
+        return saved
+    }
+
+    /** @throws ConflictException unless [payout] is PENDING with no transfer in progress. */
+    private fun assertCancellable(payout: Payout) {
+        if (payout.status != PayoutStatus.PENDING) {
+            throw ConflictException("Payout ${payout.id} is already ${payout.status}")
+        }
+        if (payout.bridgeStatus != null) {
+            throw ConflictException("Payout ${payout.id} has a transfer in progress")
+        }
     }
 
     /**

@@ -595,9 +595,10 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
 
     /**
      * All confirmed donations of a campaign, oldest first — FIFO input for
-     * [org.commonlink.service.DonationAllocationService], all donors combined.
+     * [org.commonlink.service.DonationAllocationService], all donors combined. Ties on
+     * `confirmedAt` are broken by id so the allocation is identical on every read.
      */
-    fun findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId: UUID): List<Donation>
+    fun findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId: UUID): List<Donation>
 
     /**
      * This donor's total confirmed amount on one campaign — for the campaign report's "votre

@@ -379,7 +379,9 @@
       "SPORT": "Sport",
       "DROITS_CITOYENNETE": "Rights & citizenship",
       "AUTRE": "Other"
-    }
+    },
+    "paymentCancelled": "Payout cancelled: its amount is available again.",
+    "paymentCancelError": "This payout could not be cancelled. Please try again."
   },
   "compliance": {
     "alerts": {
@@ -1527,7 +1529,16 @@
           "inTransit": "Transfer being executed by the bank",
           "lastAttemptFailed": "Last attempt failed: {error}",
           "retry": "Retry",
-          "retryHint": "Issue this payout again with a fresh bank authorisation link"
+          "retryHint": "Issue this payout again with a fresh bank authorisation link",
+          "cancel": "Cancel payout",
+          "cancelShort": "Cancel",
+          "cancelHint": "Withdraw this payout: its amount becomes available again",
+          "cancelConfirm": {
+            "title": "Cancel this payout?",
+            "message": "The payout of {amount} to {payee} will be cancelled and its amount will be available again. This cannot be undone.",
+            "submit": "Cancel payout",
+            "keep": "Keep payout"
+          }
         },
         "ibanSelect": "IBAN",
         "journal": {
@@ -1569,6 +1580,7 @@
           },
           "pills": {
             "ALL": "All",
+            "CANCELLED": "Cancelled",
             "DONE": "Executed",
             "FAILED": "Refused",
             "PENDING": "Pending",
@@ -1588,7 +1600,8 @@
           "FAILED": "Refused",
           "IN_TRANSIT": "Transfer in progress",
           "PENDING": "Recorded",
-          "RETRYABLE": "Failed — to reissue"
+          "RETRYABLE": "Failed — to reissue",
+          "CANCELLED": "Cancelled"
         },
         "stats": {
           "availableBalance": "Available balance",

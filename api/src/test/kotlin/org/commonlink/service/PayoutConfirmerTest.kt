@@ -480,4 +480,108 @@ class PayoutConfirmerTest {
         assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.RJCT)
         verify(exactly = 0) { payoutRepository.save(any()) }
     }
+
+    @Test
+    fun `finaliseFailed - keeps the association's cancellation as the recorded outcome`() {
+        val payout = newPayout(status = PayoutStatus.CANCELLED)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+
+        confirmer.finaliseFailed(payout.id, "late rejection", BridgePaymentStatus.RJCT, PayoutErrorCode.AM04)
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.CANCELLED)
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    // ── cancel ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `loadForCancel - a never-initiated payout has no link to revoke`() {
+        val payout = newPayout()
+        every {
+            payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payout.id, assocId)
+        } returns payout
+
+        assertThat(confirmer.loadForCancel(campaignId, payout.id, assocId)).isNull()
+    }
+
+    @Test
+    fun `loadForCancel - a payout released after its link died returns that link`() {
+        val payout = newPayout().also { it.bridgePaymentLinkId = "link_dead" }
+        every {
+            payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payout.id, assocId)
+        } returns payout
+
+        assertThat(confirmer.loadForCancel(campaignId, payout.id, assocId)).isEqualTo("link_dead")
+    }
+
+    @Test
+    fun `loadForCancel - unknown payout throws NotFoundException`() {
+        val payoutId = UUID.randomUUID()
+        every {
+            payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payoutId, assocId)
+        } returns null
+
+        assertThrows<NotFoundException> { confirmer.loadForCancel(campaignId, payoutId, assocId) }
+    }
+
+    @Test
+    fun `loadForCancel - a transfer in progress throws ConflictException`() {
+        // CREA: the association may be authorising at its bank right now — only Bridge ends that.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        every {
+            payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payout.id, assocId)
+        } returns payout
+
+        assertThrows<ConflictException> { confirmer.loadForCancel(campaignId, payout.id, assocId) }
+    }
+
+    @Test
+    fun `loadForCancel - a payout that left PENDING throws ConflictException`() {
+        listOf(PayoutStatus.CONFIRMED, PayoutStatus.FAILED, PayoutStatus.CANCELLED).forEach { status ->
+            val payout = newPayout(status = status)
+            every {
+                payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(campaignId, payout.id, assocId)
+            } returns payout
+
+            assertThrows<ConflictException> { confirmer.loadForCancel(campaignId, payout.id, assocId) }
+        }
+    }
+
+    @Test
+    fun `cancel - marks the payout CANCELLED under the campaign lock and drops its checkout url`() {
+        val payout = newPayout().also { it.bridgeCheckoutUrl = "https://pay.bridgeapi.io/link/dead" }
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.cancel(campaignId, payout.id)
+
+        assertThat(payout.status).isEqualTo(PayoutStatus.CANCELLED)
+        assertThat(payout.bridgeCheckoutUrl).isNull()
+        verify { campaignRepository.findByIdForUpdate(campaignId) }
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancel - a confirmation that engaged the payout in between wins`() {
+        // reserve() stamped CREA after loadForCancel read the payout: the re-check under the lock
+        // sees it and refuses, so a transfer being authorised is never cancelled.
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+
+        assertThrows<ConflictException> { confirmer.cancel(campaignId, payout.id) }
+        assertThat(payout.status).isEqualTo(PayoutStatus.PENDING)
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `reserve - a cancelled payout can no longer be confirmed`() {
+        val payout = newPayout(status = PayoutStatus.CANCELLED)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+
+        assertThrows<ConflictException> { confirmer.reserve(campaignId, payout.id) }
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
 }

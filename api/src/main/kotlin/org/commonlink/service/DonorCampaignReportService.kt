@@ -53,7 +53,7 @@ class DonorCampaignReportService(
             .orElseThrow { NotFoundException("Campaign not found: $campaignId") }
 
         val confirmedPayouts = payoutRepository
-            .findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED)
+            .findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED)
             .map {
                 CampaignPayoutLineDto(
                     payoutId = it.id,

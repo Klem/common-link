@@ -9,6 +9,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.UpdateTimestamp
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -18,7 +19,8 @@ import java.util.UUID
  *
  * Created as [PayoutStatus.PENDING], then confirmed by the association which transitions it to
  * [PayoutStatus.CONFIRMED] and enqueues a [OnchainJobAction.RECORD_PAYOUT] on-chain job.
- * On terminal failure the status becomes [PayoutStatus.FAILED].
+ * On terminal failure the status becomes [PayoutStatus.FAILED]. A PENDING payout with no transfer in
+ * progress can be withdrawn by the association: [PayoutStatus.CANCELLED].
  *
  * The [typeCode] stores the French plan comptable category code (e.g. "60-mat", "64-rem")
  * selected by the user; [kind] is the derived high-level group used for budget reporting.
@@ -114,7 +116,7 @@ class Payout(
     /**
      * Last known Bridge initiation state — a *separate* lifecycle from [status].
      *
-     * [status] stays the three-state CommonLink lifecycle that balance computation, KPIs and the
+     * [status] stays the CommonLink lifecycle that balance computation, KPIs and the
      * breakdown donut all rely on; Bridge's states are tracked here so that widening one does not
      * silently change the meaning of the other. A non-null value on a PENDING payout means the
      * amount is already engaged and must stay reserved.
@@ -141,4 +143,13 @@ class Payout(
     /** When [bridgeStatus] was last reconciled with Bridge (see BridgePayoutPoller). */
     @Column(name = "bridge_synced_at")
     var bridgeSyncedAt: Instant? = null,
+
+    /**
+     * Last write on the row, stamped by Hibernate on insert and on every update — for a
+     * [PayoutStatus.CANCELLED] payout, when it was cancelled. Null on rows not written since the
+     * column was added (V87).
+     */
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    var updatedAt: Instant? = null,
 )

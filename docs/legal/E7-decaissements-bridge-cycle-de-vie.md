@@ -7,7 +7,7 @@
 | **Entité** | CommonLink |
 | **Nature du document** | Fiche descriptive du fonctionnement d'un mécanisme livré, destinée à la direction et à la commission juridique |
 | **Rattachement** | Aucun — ce mécanisme porte sur les virements sortants d'une campagne. Il ne relève d'aucune des six responsabilités du dispositif LCB-FT et n'est pas une mesure de vigilance client. Il détaille la ligne « Autorisation bancaire du décaissement par l'association » de `LCB-FT-compliance-overview.md`, section 5.3. |
-| **Date de rédaction** | 28 septembre 2026 |
+| **Date de rédaction** | 28 septembre 2026 — mise à jour le 21 octobre 2026 (annulation d'un paiement, correction de la restitution après abandon, points 3 et 4) |
 | **État** | Livré et exercé en pré-production. **Non activé en production** — voir point 7. Trois points restent ouverts, recensés au point 8. |
 | **Rédacteur** | Équipe technique CommonLink |
 
@@ -53,15 +53,16 @@ comptabilité du solde restant allouable.
 
 ## 3. Le cycle de vie d'un virement, en termes d'argent
 
-Cinq étapes. La colonne qui compte est la troisième.
+Cinq étapes, et une issue hors virement (l'annulation). La colonne qui compte est la troisième.
 
 | Étape | Ce que voit l'association | Où est l'argent | Réversible ? |
 |---|---|---|---|
-| **1. Enregistré** | Le paiement est saisi, pas encore émis | Sur le compte de l'association. **Déjà retiré du solde disponible de la campagne.** | Oui — sans conséquence |
+| **1. Enregistré** | Le paiement est saisi, pas encore émis | Sur le compte de l'association. **Déjà retiré du solde disponible de la campagne.** | Oui — l'association peut l'annuler (4.5) |
 | **2. En attente de validation** | « Autoriser » : un lien mène à sa banque | Sur le compte de l'association. Toujours retiré du solde. | Oui — l'abandon est sans conséquence |
 | **3. Virement autorisé** | L'ordre est parti | La banque exécute. **Point de non-retour côté CommonLink.** | Non |
 | **4. Virement exécuté** | Le bénéficiaire est crédité | Sur le compte du bénéficiaire | Non |
 | **5. Refusé** | Le motif traduit est affiché | Sur le compte de l'association. **Rendu au solde disponible.** | Sans objet — rien n'est parti |
+| **Annulé** | L'association a retiré un paiement qu'aucun virement n'engageait | Sur le compte de l'association. **Rendu au solde disponible.** | Non — définitif, rien n'est parti |
 
 **L'attestation au registre public n'est publiée qu'à l'étape 4**, après règlement effectivement
 constaté par la banque. Jamais avant. C'est la contrainte qui explique la prudence de tout ce qui
@@ -100,8 +101,9 @@ ce qui reste allouable, la carte **« En attente »** donne exactement la somme 
 paiements ouverts. Les deux s'additionnent pour redonner le total non encore décaissé.
 
 **Effet de bord assumé :** une association qui enregistre des paiements sans les émettre immobilise
-la capacité de sa campagne. Les montants lui reviennent dès que le paiement est abandonné ou
-refusé, mais tant qu'il reste ouvert, ils sont indisponibles.
+la capacité de sa campagne. Les montants lui reviennent quand la banque refuse le paiement ou quand
+l'association l'annule (4.5) ; tant qu'il reste ouvert — y compris après un abandon (4.4) — ils sont
+indisponibles.
 
 ### 4.2 Le contrôle au moment de l'émission porte sur un solde différent
 
@@ -114,8 +116,14 @@ S'il était compté, il se bloquerait lui-même.
 
 ### 4.3 La restitution, et les deux garde-fous qui l'encadrent
 
-Un montant réservé retourne au solde disponible dans deux cas seulement : **abandon** ou **refus**.
-Dans les deux cas, rien n'a été débité.
+Un montant réservé retourne au solde disponible dans deux cas seulement : **refus** de la banque ou
+**annulation** par l'association (4.5). Dans les deux cas, rien n'a été débité.
+
+Un **abandon** (4.4) ne rend le montant qu'au solde contrôlé à l'émission (4.2) : le paiement reste
+ouvert, donc toujours déduit du solde disponible affiché, jusqu'à ce que l'association le réémette
+ou l'annule. Jusqu'au 21 octobre 2026, cette fiche indiquait à tort qu'un abandon rendait le montant
+au solde disponible ; aucune action ne permettait alors de lever cette réservation, et des montants
+restaient immobilisés sans issue.
 
 Deux protections encadrent cette restitution, chacune écrite après un incident réel.
 
@@ -147,14 +155,39 @@ C'est la distinction structurante du dispositif, et elle n'est pas intuitive :
 
 - **Un abandon n'est pas un échec.** Délai d'autorisation expiré, lien annulé, association qui ferme
   son onglet, ou qui clique sur « Annuler » chez sa banque : personne n'a jamais demandé à la
-  banque d'exécuter quoi que ce soit. Le paiement redevient **réémettable**, avec un nouveau lien,
-  et son montant retourne au solde.
+  banque d'exécuter quoi que ce soit. Le paiement redevient **réémettable**, avec un nouveau lien ;
+  son montant redevient émettable (4.2) mais reste réservé sur le solde disponible tant que
+  l'association ne l'a ni réémis ni annulé (4.5).
 - **Un refus bancaire est terminal.** La banque a été interrogée et a dit non. Le paiement est
   définitivement retiré, son montant rendu au solde, et l'association doit en créer un nouveau.
 
 Sans cette distinction, une association qui laissait expirer un écran voyait son paiement retiré
 définitivement. Elle en recréait alors un autre — ce qui a produit, le 23 septembre 2026, **quatre
 lignes identiques issues d'un seul paiement**.
+
+### 4.5 L'annulation par l'association
+
+Depuis le 21 octobre 2026, l'association peut **annuler** un paiement enregistré, depuis sa ligne
+dans le journal des paiements ou depuis son panneau de détail, après une confirmation explicite.
+Les paiements annulés restent visibles dans le journal, sous un filtre « Annulés ». L'annulation est définitive et rend le
+montant au solde disponible.
+
+Elle n'est possible que lorsqu'**aucun virement n'est engagé** : paiement jamais émis, ou abandonné
+(4.4). Elle est refusée dès qu'un lien d'autorisation est en cours d'utilisation ou qu'un virement
+est autorisé ou en exécution : seule la réponse de la banque peut alors clore le paiement. La même
+règle est vérifiée par le serveur, sous le même verrou que l'émission : une émission et une
+annulation simultanées ne peuvent pas aboutir toutes les deux.
+
+Les deux garde-fous de 4.3 s'appliquent :
+
+- si un lien d'autorisation a existé, il est **révoqué avant** l'annulation ; si la révocation ne
+  peut être confirmée, l'annulation est refusée et le paiement reste ouvert ;
+- si la banque rapporte malgré tout un virement exécuté sur un paiement annulé, le règlement est
+  enregistré tel quel — la banque a exécuté — et une alerte technique est émise, comme pour un
+  règlement sur un montant déjà rendu au solde.
+
+Un paiement annulé ne finance aucun don dans la traçabilité côté donateur, qui ne compte que les
+virements exécutés.
 
 ---
 
@@ -346,8 +379,8 @@ Pour le lecteur technique, la logique décrite ici se trouve dans :
 
 - `PayoutService` — calcul des soldes disponible et confirmable, fermeture de la fonctionnalité par
   environnement ;
-- `PayoutConfirmer` — réservation, restitution, refus terminal, règlement et mise en file de
-  l'attestation ;
+- `PayoutConfirmer` — réservation, restitution, refus terminal, annulation, règlement et mise en
+  file de l'attestation ;
 - `BridgeWebhookService` — traitement des comptes rendus de Bridge, distinction abandon / refus,
   sursis avant restitution ;
 - `BridgePayoutReconciler` — balayage de rattrapage et signalement ;

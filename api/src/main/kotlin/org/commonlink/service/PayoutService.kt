@@ -256,6 +256,41 @@ class PayoutService(
         }
     }
 
+    /**
+     * Cancels a PENDING payout that has no transfer in progress, so its amount stops being reserved
+     * on the campaign's available balance.
+     *
+     * Covers every PENDING payout nothing will ever resolve on its own: created but never
+     * confirmed, or released after a failed initiation or a dead link. A payout with a Bridge
+     * status may be authorised at the bank right now and is refused.
+     *
+     * Not gated by [assertPaymentsEnabled]: withdrawing a payout moves no money, and an
+     * environment closed to payouts must still let an association clear what was created before.
+     *
+     * Deliberately **not** `@Transactional`, like [confirm]: a known payment link is revoked before
+     * the payout is cancelled, never after — the reasoning of a bank rejection
+     * ([BridgeWebhookService]): Bridge does not burn a link on its own, and the amount must not go
+     * back to the balance while an authorisation URL for it may still be live.
+     *
+     * @param campaignId Campaign owning the payout.
+     * @param payoutId Payout to cancel.
+     * @param userId Authenticated association user.
+     * @return the cancelled payout.
+     * @throws NotFoundException if payout or campaign cannot be found for the user's association.
+     * @throws ConflictException if the payout is not PENDING or has a transfer in progress.
+     * @throws org.commonlink.exception.BadGatewayException if a known link could not be revoked —
+     *         the payout is left PENDING and the cancellation can be retried.
+     */
+    fun cancel(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
+        val associationId = resolveAssociationId(userId)
+        assertCampaignOwnership(campaignId, associationId)
+
+        confirmer.loadForCancel(campaignId, payoutId, associationId)
+            ?.let { bridgeInitiation.revokePaymentLink(it) }
+
+        return confirmer.cancel(campaignId, payoutId).toDto()
+    }
+
     /** Where Bridge returns the association once the bank flow is over. */
     /**
      * Where Bridge returns the association once it is done at its bank.
@@ -372,7 +407,8 @@ class PayoutService(
     /**
      * Available funds still allocatable = confirmed donations − CONFIRMED payouts − **PENDING** payouts.
      * PENDING payouts are reserved (H2): without this, N pending payouts each ≤ balance could be created
-     * and later confirmed to collectively exceed the funds raised.
+     * and later confirmed to collectively exceed the funds raised. A PENDING payout nothing will
+     * resolve stops being reserved only once [cancel]led; FAILED and CANCELLED reserve nothing.
      */
     private fun computeAvailableBalance(campaignId: UUID): BigDecimal {
         val pending = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING)

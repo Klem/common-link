@@ -1,4 +1,4 @@
--- Rollback of V87.
+-- Rollback of V88.
 
 ALTER TABLE onchain_jobs DROP CONSTRAINT IF EXISTS onchain_jobs_action_check;
 ALTER TABLE onchain_jobs ADD CONSTRAINT onchain_jobs_action_check CHECK (action IN (

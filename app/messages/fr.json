@@ -379,7 +379,9 @@
       "SPORT": "Sport",
       "DROITS_CITOYENNETE": "Droits & citoyenneté",
       "AUTRE": "Autre"
-    }
+    },
+    "paymentCancelled": "Paiement annulé : son montant est de nouveau disponible.",
+    "paymentCancelError": "Impossible d'annuler ce paiement. Veuillez réessayer."
   },
   "compliance": {
     "alerts": {
@@ -1527,7 +1529,16 @@
           "inTransit": "Virement en cours d'exécution par la banque",
           "lastAttemptFailed": "Échec de la dernière tentative : {error}",
           "retry": "Réessayer",
-          "retryHint": "Réémettre ce virement avec un nouveau lien d'autorisation bancaire"
+          "retryHint": "Réémettre ce virement avec un nouveau lien d'autorisation bancaire",
+          "cancel": "Annuler le paiement",
+          "cancelShort": "Annuler",
+          "cancelHint": "Retirer ce paiement : son montant redevient disponible",
+          "cancelConfirm": {
+            "title": "Annuler ce paiement ?",
+            "message": "Le paiement de {amount} à {payee} sera annulé et son montant redeviendra disponible. Cette action est définitive.",
+            "submit": "Annuler le paiement",
+            "keep": "Garder le paiement"
+          }
         },
         "ibanSelect": "IBAN",
         "journal": {
@@ -1569,6 +1580,7 @@
           },
           "pills": {
             "ALL": "Tous",
+            "CANCELLED": "Annulés",
             "DONE": "Exécutés",
             "FAILED": "Refusés",
             "PENDING": "En attente",
@@ -1588,7 +1600,8 @@
           "FAILED": "Refusé",
           "IN_TRANSIT": "Virement en cours",
           "PENDING": "Enregistré",
-          "RETRYABLE": "Échec — à relancer"
+          "RETRYABLE": "Échec — à relancer",
+          "CANCELLED": "Annulé"
         },
         "stats": {
           "availableBalance": "Solde disponible",
