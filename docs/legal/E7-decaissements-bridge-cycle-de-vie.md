@@ -170,7 +170,8 @@ lignes identiques issues d'un seul paiement**.
 Depuis le 21 octobre 2026, l'association peut **annuler** un paiement enregistré, depuis sa ligne
 dans le journal des paiements ou depuis son panneau de détail, après une confirmation explicite.
 Les paiements annulés restent visibles dans le journal, sous un filtre « Annulés ». L'annulation est définitive et rend le
-montant au solde disponible.
+montant au solde disponible. Un paiement annulé n'est jamais inscrit au registre public : seul un
+virement exécuté (étape 4) donne lieu à une inscription.
 
 Elle n'est possible que lorsqu'**aucun virement n'est engagé** : paiement jamais émis, ou abandonné
 (4.4). Elle est refusée dès qu'un lien d'autorisation est en cours d'utilisation ou qu'un virement

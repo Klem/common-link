@@ -462,7 +462,7 @@ The on-chain proof that a payout (a disbursement of campaign funds to a benefici
 `blockchain` `technical`
 
 ### Job Dependency (On-Chain Outbox)
-The ordering mechanism of the `onchain_jobs` outbox: a job may name a prerequisite job (`depends_on_job_id`) and is only claimed by the worker once that prerequisite is `DONE`. Campaign registration depends on the association registration; donations, payouts and budget updates depend on the campaign registration. A prerequisite that `FAILED` leaves its dependents `PENDING` (logged at WARN) — no attempt is consumed.
+The ordering mechanism of the `onchain_jobs` outbox: a job may name a prerequisite job (`depends_on_job_id`) and is only claimed by the worker once that prerequisite is `DONE`. Campaign registration depends on the association registration; donations and payouts depend on the campaign registration; each budget update depends on the previous budget job of its campaign (registration or latest update), so budget hashes land on-chain in order — its correlation key names that predecessor (`UPDATE_CAMPAIGN_BUDGET:<campaignId>:<previousJobId>`), and an update is only enqueued when the hash differs from the last declared one. A prerequisite that `FAILED` leaves its dependents `PENDING` (logged at WARN) — no attempt is consumed.
 `technical` `blockchain`
 
 ### Explorer Deep Link

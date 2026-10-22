@@ -19,13 +19,15 @@ import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.support.TransactionTemplate
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 
 /**
  * Exercises [OnchainJobClaimer.claimBatch] against a real PostgreSQL container: FOR UPDATE SKIP LOCKED
- * under concurrency, current-chain scoping, and job dependencies.
+ * under concurrency, current-chain scoping, and job dependencies — plus the budget-job lookup
+ * ([OnchainOutboxService.findLatestBudgetJob]: correlation-key equality / escaped LIKE prefix).
  */
 @Tag("testcontainers")
 @SpringBootTest
@@ -50,13 +52,17 @@ class OnchainJobClaimerConcurrentTest {
         chainId: Long = cfg.currentChainId(),
         status: OnchainJobStatus = OnchainJobStatus.PENDING,
         dependsOn: UUID? = null,
-        key: String = "CLAIMER-TEST-${UUID.randomUUID()}",
+        key: String? = "CLAIMER-TEST-${UUID.randomUUID()}",
+        action: OnchainJobAction = OnchainJobAction.REGISTER_ASSOCIATION,
+        payloadJson: String = """{"address":"0x1","sirenHashHex":"0x01"}""",
+        createdAt: Instant = Instant.now(),
     ): OnchainJob = txTemplate.execute {
         repo.save(
             OnchainJob(
-                action = OnchainJobAction.REGISTER_ASSOCIATION,
-                payloadJson = """{"address":"0x1","sirenHashHex":"0x01"}""",
+                action = action,
+                payloadJson = payloadJson,
                 correlationKey = key,
+                createdAt = createdAt,
                 status = status,
                 chainId = chainId,
                 dependsOnJobId = dependsOn,
@@ -152,5 +158,36 @@ class OnchainJobClaimerConcurrentTest {
         assertNotEquals(onOtherChain.id, onCurrentChain.id, "a key known on another chain must not block the current one")
         assertEquals(onCurrentChain.id, replay.id, "idempotent on the current chain")
         assertEquals(cfg.currentChainId(), onCurrentChain.chainId)
+    }
+
+    @Test
+    fun `findLatestBudgetJob returns the latest budget job of the campaign on the current chain`() {
+        val campaignId = UUID.randomUUID()
+        val t0 = Instant.now().minusSeconds(60)
+        fun budgetJob(action: OnchainJobAction, campaign: UUID, at: Instant, chainId: Long = cfg.currentChainId()) = insert(
+            chainId = chainId,
+            key = if (action == OnchainJobAction.REGISTER_CAMPAIGN) "REGISTER_CAMPAIGN:$campaign"
+                  else "UPDATE_CAMPAIGN_BUDGET:$campaign:${UUID.randomUUID()}",
+            action = action,
+            payloadJson = """{"campaignId":"$campaign","newBudgetHashHex":"0x02"}""",
+            createdAt = at,
+        )
+        fun latest() = outbox.findLatestBudgetJob("REGISTER_CAMPAIGN:$campaignId", "UPDATE_CAMPAIGN_BUDGET:$campaignId:")
+        assertEquals(null, latest())
+
+        val registration = budgetJob(OnchainJobAction.REGISTER_CAMPAIGN, campaignId, t0)
+        assertEquals(registration.id, latest()?.id)
+
+        val update = budgetJob(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, campaignId, t0.plusSeconds(10))
+        budgetJob(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, campaignId, t0.plusSeconds(20), cfg.currentChainId() + 10_200)
+        budgetJob(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, UUID.randomUUID(), t0.plusSeconds(30))
+        insert(
+            key = "DONATION:${UUID.randomUUID()}",
+            action = OnchainJobAction.RECORD_DONATION,
+            payloadJson = """{"campaignId":"$campaignId"}""",
+            createdAt = t0.plusSeconds(40),
+        )
+
+        assertEquals(update.id, latest()?.id, "other chain, other campaign and non-budget jobs are ignored")
     }
 }

@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -30,7 +31,7 @@ import java.util.UUID
 class OnchainRegistrationServiceTest {
 
     private val outbox = mockk<OnchainOutboxService>()
-    private val service = OnchainRegistrationService(outbox)
+    private val service = OnchainRegistrationService(outbox, jacksonObjectMapper())
 
     private val assocUser = User(email = "a@test.com", role = UserRole.ASSOCIATION, provider = AuthProvider.MAGIC_LINK)
     private fun association(siren: String? = "775672594", wallet: String? = "0xasso") =
@@ -46,7 +47,9 @@ class OnchainRegistrationServiceTest {
             this.budgetHash = budgetHash
         }
 
-    private fun job(action: OnchainJobAction) = OnchainJob(action = action, payloadJson = "{}")
+    private fun job(action: OnchainJobAction, payloadJson: String = "{}") = OnchainJob(action = action, payloadJson = payloadJson)
+
+    private val otherHash = "0x" + "cd".repeat(32)
 
     private fun setId(entity: Any, id: UUID) {
         val field = generateSequence<Class<*>>(entity.javaClass) { it.superclass }
@@ -115,7 +118,7 @@ class OnchainRegistrationServiceTest {
     @Test
     fun `first publication registers the campaign`() {
         val camp = campaign(association())
-        every { outbox.findCurrent("REGISTER_CAMPAIGN:${camp.id}") } returns null
+        every { outbox.findLatestBudgetJob("REGISTER_CAMPAIGN:${camp.id}", "UPDATE_CAMPAIGN_BUDGET:${camp.id}:") } returns null
         every { outbox.enqueue(any(), any(), any(), any()) } answers { job(firstArg()) }
 
         service.recordCurrentBudget(camp)
@@ -127,15 +130,51 @@ class OnchainRegistrationServiceTest {
     @Test
     fun `a budget change on a registered campaign enqueues an update after the registration`() {
         val camp = campaign(association())
-        val registration = job(OnchainJobAction.REGISTER_CAMPAIGN)
-        every { outbox.findCurrent("REGISTER_CAMPAIGN:${camp.id}") } returns registration
-        every { outbox.enqueue(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, any(), null, registration) } returns
+        val registration = job(OnchainJobAction.REGISTER_CAMPAIGN, """{"budgetHashHex":"$otherHash"}""")
+        every { outbox.findLatestBudgetJob("REGISTER_CAMPAIGN:${camp.id}", "UPDATE_CAMPAIGN_BUDGET:${camp.id}:") } returns registration
+        val payload = slot<Any>()
+        every { outbox.enqueue(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, capture(payload), "UPDATE_CAMPAIGN_BUDGET:${camp.id}:${registration.id}", registration) } returns
             job(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET)
 
         service.recordCurrentBudget(camp)
 
-        verify { outbox.enqueue(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, any(), null, registration) }
+        assertThat(payload.captured).isEqualTo(UpdateCampaignBudgetPayload(camp.id!!, camp.budgetHash!!))
         verify(exactly = 0) { outbox.enqueue(OnchainJobAction.REGISTER_CAMPAIGN, any(), any(), any()) }
+    }
+
+    @Test
+    fun `a republication with an unchanged budget enqueues nothing`() {
+        val camp = campaign(association())
+        val registration = job(OnchainJobAction.REGISTER_CAMPAIGN, """{"budgetHashHex":"${camp.budgetHash}"}""")
+        every { outbox.findLatestBudgetJob("REGISTER_CAMPAIGN:${camp.id}", "UPDATE_CAMPAIGN_BUDGET:${camp.id}:") } returns registration
+
+        assertThat(service.recordCurrentBudget(camp)).isSameAs(registration)
+
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a budget equal to the latest update enqueues nothing even if the registration declared another`() {
+        val camp = campaign(association())
+        val update = job(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, """{"newBudgetHashHex":"${camp.budgetHash}"}""")
+        every { outbox.findLatestBudgetJob("REGISTER_CAMPAIGN:${camp.id}", "UPDATE_CAMPAIGN_BUDGET:${camp.id}:") } returns update
+
+        assertThat(service.recordCurrentBudget(camp)).isSameAs(update)
+
+        verify(exactly = 0) { outbox.enqueue(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a new budget update depends on the previous update, not on the registration`() {
+        val camp = campaign(association())
+        val previousUpdate = job(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, """{"newBudgetHashHex":"$otherHash"}""")
+        every { outbox.findLatestBudgetJob("REGISTER_CAMPAIGN:${camp.id}", "UPDATE_CAMPAIGN_BUDGET:${camp.id}:") } returns previousUpdate
+        every { outbox.enqueue(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, any(), "UPDATE_CAMPAIGN_BUDGET:${camp.id}:${previousUpdate.id}", previousUpdate) } returns
+            job(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET)
+
+        service.recordCurrentBudget(camp)
+
+        verify { outbox.enqueue(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, any(), "UPDATE_CAMPAIGN_BUDGET:${camp.id}:${previousUpdate.id}", previousUpdate) }
     }
 
     // ── Listener ────────────────────────────────────────────────────────

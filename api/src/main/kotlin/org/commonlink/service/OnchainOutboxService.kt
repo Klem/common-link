@@ -36,6 +36,18 @@ class OnchainOutboxService(
         repo.findByChainIdAndCorrelationKey(cfg.currentChainId(), correlationKey)
 
     /**
+     * @param registrationKey correlation key of the campaign registration (`REGISTER_CAMPAIGN:<campaignId>`).
+     * @param updateKeyPrefix correlation key prefix of the campaign's budget updates (`UPDATE_CAMPAIGN_BUDGET:<campaignId>:`).
+     * @return the latest of these jobs on the **current** chain, or null when the campaign is not registered there.
+     */
+    fun findLatestBudgetJob(registrationKey: String, updateKeyPrefix: String): OnchainJob? =
+        repo.findLatestBudgetJob(cfg.currentChainId(), registrationKey, likeEscape(updateKeyPrefix))
+
+    /** Escapes the LIKE wildcards (`%`, `_`) and the escape character itself with `!`. */
+    private fun likeEscape(value: String): String =
+        value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
+    /**
      * Enqueue a job idempotently on the current chain. Returns the existing job if [correlationKey] is
      * already known on that chain (the [dependsOn] of the existing job is left untouched).
      *
