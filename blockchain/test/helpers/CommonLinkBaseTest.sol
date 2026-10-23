@@ -29,6 +29,9 @@ abstract contract CommonLinkBaseTest is Test {
     bytes32 internal constant RECEIPT_HASH_1 = keccak256("receipt-pdf-1");
     // forge-lint: disable-next-line(unsafe-typecast)
     bytes32 internal constant TX_REF_1 = bytes32("tr_WDqYK6vllg");
+    /// @dev A Bridge transaction id: 32 hex characters, exactly one bytes32 of text.
+    // forge-lint: disable-next-line(unsafe-typecast)
+    bytes32 internal constant PAYOUT_TX_REF_1 = bytes32("01a1680fecd57eb7a3aea61d4f074b6d");
 
     /// @dev Role ids as constants: calling registry.X_ROLE() after vm.prank would consume the prank.
     bytes32 internal constant RECORDER_ROLE = keccak256("RECORDER_ROLE");

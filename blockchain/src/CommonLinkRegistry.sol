@@ -14,7 +14,9 @@ import {IDonorBadge} from "./interfaces/IDonorBadge.sol";
  *           - the budget hash of each campaign;
  *           - attributed donations (donor -> campaign -> amount with fiscal proof) and the
  *             resulting cumulative donor statistics;
- *           - settled payouts (disbursements of campaign funds to beneficiaries);
+ *           - settled payouts (disbursements of campaign funds to beneficiaries) with their bank
+ *             transfer reference;
+ *           - cumulative campaign statistics (donations, unique donors, payouts);
  *           - badge mints, relayed to the soulbound badge contract.
  *
  *         The contract MOVES NO FUNDS. All monetary values are denominated in EUR cents.
@@ -38,7 +40,7 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     // ─────────────────────────────────────────────────────────────────────
 
     /// @notice Semantic version of the registry.
-    string public constant VERSION = "2.0.0-mvp";
+    string public constant VERSION = "2.1.0-mvp";
 
     /// @notice Role allowed to write every record. Held by the backend hot wallet.
     bytes32 public constant RECORDER_ROLE = keccak256("RECORDER_ROLE");
@@ -73,6 +75,26 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
         bytes32 txRef; // payment provider reference encoded as bytes32
     }
 
+    /// @notice A settled payout. The `payoutId` (UUID encoded as bytes32) is the mapping key.
+    /// @dev    `campaignId == bytes32(0)` means "never recorded".
+    struct Payout {
+        bytes32 campaignId;
+        uint96 amount; // EUR cents
+        uint32 timestamp;
+        bytes32 txRef; // bank transfer reference (payment provider transaction id) encoded as bytes32
+    }
+
+    /// @notice Cumulative campaign statistics, packed into a single storage slot. The total raised stays in
+    ///         `Campaign.raised`.
+    struct CampaignStats {
+        uint96 totalPaidOut; // EUR cents, sum of the recorded payouts
+        uint32 payoutCount;
+        uint32 donationCount;
+        uint32 uniqueDonors; // distinct donor addresses with at least one recorded donation
+        uint32 lastDonationAt;
+        uint32 lastPayoutAt;
+    }
+
     /// @notice Cumulative donor statistics, packed into a single storage slot.
     struct DonorStats {
         uint128 totalDonated; // EUR cents
@@ -103,8 +125,11 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     /// @notice Total donated by (donor, campaign) pair.
     mapping(address => mapping(bytes32 => uint128)) public donorCampaignTotal;
 
-    /// @notice Whether a payout (UUID encoded as bytes32) has been recorded. Write-once.
-    mapping(bytes32 => bool) public payoutRecorded;
+    /// @notice Settled payouts keyed by UUID encoded as bytes32. Write-once.
+    mapping(bytes32 => Payout) public payouts;
+
+    /// @notice Cumulative statistics per campaign (UUID encoded as bytes32).
+    mapping(bytes32 => CampaignStats) public campaignStats;
 
     /// @notice Soulbound badge contract this registry mints through. Set once by the admin.
     IDonorBadge public badgeContract;
@@ -140,6 +165,7 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     // Payouts
     error EmptyPayoutId();
     error PayoutAlreadyRecorded(bytes32 payoutId);
+    error PaidOutOverflow(bytes32 campaignId, uint96 totalPaidOut, uint96 amount);
 
     // Badges
     error InvalidBadgeContract();
@@ -169,8 +195,9 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     /// @notice Emitted the first time a donor contributes to a given campaign.
     event DonorJoinedCampaign(address indexed donor, bytes32 indexed campaignId);
 
-    /// @notice Emitted when a settled payout is recorded. `amount` is in EUR cents.
-    event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint96 amount, uint32 timestamp);
+    /// @notice Emitted when a settled payout is recorded. `amount` is in EUR cents; `txRef` is the bank transfer
+    ///         reference (payment provider transaction id encoded as bytes32).
+    event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint96 amount, bytes32 txRef, uint32 timestamp);
 
     /// @notice Emitted once, when the badge contract address is set.
     event BadgeContractSet(address indexed badgeContract);
@@ -328,6 +355,8 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
         }
         donorCampaignTotal[donor][campaignId] += amount;
 
+        _countDonation(campaignId, isFirstOnCampaign);
+
         emit DonationRecorded(donor, campaignId, c.association, donationId, amount, receiptHash, txRef);
         if (isFirstDonationEver) {
             emit DonorFirstDonation(donor, uint32(block.timestamp));
@@ -335,6 +364,21 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
         if (isFirstOnCampaign) {
             emit DonorJoinedCampaign(donor, campaignId);
         }
+    }
+
+    /**
+     * @dev   Campaign statistics of a recorded donation. Separate function: recordDonation is at the stack limit.
+     * @param campaignId        Campaign of the donation.
+     * @param isFirstOnCampaign Whether it is the donor's first donation to this campaign (a new unique donor).
+     */
+    function _countDonation(bytes32 campaignId, bool isFirstOnCampaign) internal {
+        CampaignStats storage cs = campaignStats[campaignId];
+        cs.donationCount += 1;
+        if (isFirstOnCampaign) {
+            cs.uniqueDonors += 1;
+        }
+        // forge-lint: disable-next-line(block-timestamp)
+        cs.lastDonationAt = uint32(block.timestamp);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -347,16 +391,35 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
      * @param  payoutId    UUID of the payout encoded as bytes32. Must be non-zero and unused.
      * @param  campaignId  Registered campaign the funds were disbursed from.
      * @param  amountCents Disbursed amount in EUR cents. Must be non-zero.
+     * @param  txRef       Bank transfer reference (payment provider transaction id) encoded as bytes32. Must be
+     *                     non-zero.
      */
-    function recordPayout(bytes32 payoutId, bytes32 campaignId, uint96 amountCents) external whenNotPaused onlyRole(RECORDER_ROLE) requireCampaignRegistered(campaignId) {
+    function recordPayout(bytes32 payoutId, bytes32 campaignId, uint96 amountCents, bytes32 txRef) external whenNotPaused onlyRole(RECORDER_ROLE) requireCampaignRegistered(campaignId) {
         require(payoutId != bytes32(0), EmptyPayoutId());
-        require(!payoutRecorded[payoutId], PayoutAlreadyRecorded(payoutId));
+        require(payouts[payoutId].campaignId == bytes32(0), PayoutAlreadyRecorded(payoutId));
         require(amountCents != 0, InvalidAmount());
-
-        payoutRecorded[payoutId] = true;
+        require(txRef != bytes32(0), EmptyTxRef());
 
         // forge-lint: disable-next-line(block-timestamp)
-        emit PayoutRecorded(payoutId, campaignId, amountCents, uint32(block.timestamp));
+        uint32 timestamp = uint32(block.timestamp);
+        payouts[payoutId] = Payout({campaignId: campaignId, amount: amountCents, timestamp: timestamp, txRef: txRef});
+
+        // Campaign statistics. No "paid out <= raised" guard: a business rule (notary principle), and `raised` only
+        // counts the donations recorded on this chain.
+        CampaignStats storage cs = campaignStats[campaignId];
+        {
+            uint96 currentPaidOut = cs.totalPaidOut;
+            uint96 newPaidOut;
+            unchecked {
+                newPaidOut = currentPaidOut + amountCents;
+            }
+            require(newPaidOut >= currentPaidOut, PaidOutOverflow(campaignId, currentPaidOut, amountCents));
+            cs.totalPaidOut = newPaidOut;
+        }
+        cs.payoutCount += 1;
+        cs.lastPayoutAt = timestamp;
+
+        emit PayoutRecorded(payoutId, campaignId, amountCents, txRef, timestamp);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -429,5 +492,13 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
 
     function getDonorCampaignTotal(address donor, bytes32 campaignId) external view returns (uint128) {
         return donorCampaignTotal[donor][campaignId];
+    }
+
+    function getPayout(bytes32 payoutId) external view returns (Payout memory) {
+        return payouts[payoutId];
+    }
+
+    function getCampaignStats(bytes32 campaignId) external view returns (CampaignStats memory) {
+        return campaignStats[campaignId];
     }
 }

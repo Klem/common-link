@@ -27,7 +27,7 @@ services:
     profiles: ["chain"]
     user: "0:0"
     entrypoint: ["anvil"]
-    command: ["--host", "0.0.0.0", "--chain-id", "31337", "--state", "/anvil/state.json", "--state-interval", "10", "--print-traces"]
+    command: ["--host", "0.0.0.0", "--chain-id", "31337", "--state", "/anvil/state.json", "--state-interval", "10", "--print-traces", "--preserve-historical-states"]
     ports:
       - "0.0.0.0:8545:8545"
     volumes:

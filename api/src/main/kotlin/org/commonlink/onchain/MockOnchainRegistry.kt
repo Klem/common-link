@@ -61,7 +61,7 @@ class MockOnchainRegistry : OnchainRegistry {
     ) = syntheticReceipt("recordDonation donor=$donor amountCents=$amountCents")
 
     /** Returns a synthetic receipt; nothing is sent on-chain (mock mode). */
-    override fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger) =
+    override fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger, txRef: ByteArray) =
         syntheticReceipt("recordPayout amountCents=$amountCents")
 
     /** Nothing is ever registered on the mock chain: every registration job is sent. */

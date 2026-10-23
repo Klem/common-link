@@ -39,7 +39,7 @@ class MockOnchainRegistryTest {
 
     @Test
     fun `recordPayout returns synthetic receipt`() =
-        assertSyntheticReceipt(mock.recordPayout(ByteArray(32), ByteArray(32), BigInteger.valueOf(10000)))
+        assertSyntheticReceipt(mock.recordPayout(ByteArray(32), ByteArray(32), BigInteger.valueOf(10000), ByteArray(32)))
 
     @Test
     fun `block numbers are strictly increasing`() {

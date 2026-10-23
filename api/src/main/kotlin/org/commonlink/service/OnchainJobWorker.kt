@@ -171,6 +171,7 @@ class OnchainJobWorker(
                     OnchainCodec.uuidToBytes32(p.payoutId),
                     OnchainCodec.uuidToBytes32(p.campaignId),
                     p.amountCents,
+                    OnchainCodec.stringToBytes32(p.txRef),
                 )
             }
         }
@@ -195,4 +196,8 @@ data class RecordDonationPayload(
     val receiptHashHex: String,
     val txRef: String,
 )
-data class RecordPayoutPayload(val payoutId: UUID, val campaignId: UUID, val amountCents: BigInteger)
+/**
+ * Payload of `RECORD_PAYOUT` (`recordPayout`). `txRef` is the bank transfer reference written on-chain as text
+ * (32 bytes max): see `PayoutConfirmer.payoutTxRef`.
+ */
+data class RecordPayoutPayload(val payoutId: UUID, val campaignId: UUID, val amountCents: BigInteger, val txRef: String)

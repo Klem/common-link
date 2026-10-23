@@ -303,7 +303,7 @@ class BridgePaymentInitiationService(
     fun getPaymentLink(paymentLinkId: String, paymentRequestId: String? = null): BridgePaymentLinkState {
         if (props.demoMode) {
             log.debug("Bridge demo mode — simulated link {} reported as settled", paymentLinkId)
-            return BridgePaymentLinkState(BridgePaymentStatus.ACSC, "$DEMO_ID_PREFIX$paymentLinkId", null)
+            return BridgePaymentLinkState(BridgePaymentStatus.ACSC, demoTransactionId(paymentLinkId), null)
         }
 
         val link = fetchLink(paymentLinkId)
@@ -656,6 +656,16 @@ class BridgePaymentInitiationService(
 
         /** Prefix marking simulated Bridge data, so it can never pass for a real transfer. */
         const val DEMO_ID_PREFIX = "demo_"
+
+        /**
+         * Simulated transaction id of a demo payment link: [DEMO_ID_PREFIX] + the first 27 characters of the link
+         * id without its prefix and dashes — 32 characters, like a real Bridge transaction id, so it fits the
+         * on-chain transfer reference (bytes32).
+         *
+         * @param paymentLinkId a demo link id (`demo_<payoutId>`).
+         */
+        fun demoTransactionId(paymentLinkId: String): String =
+            DEMO_ID_PREFIX + paymentLinkId.removePrefix(DEMO_ID_PREFIX).replace("-", "").take(27)
 
         /**
          * Character Bridge substitutes for the digits it hides when it reads an IBAN back, e.g.

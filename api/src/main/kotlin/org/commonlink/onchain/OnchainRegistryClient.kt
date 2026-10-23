@@ -67,20 +67,22 @@ class OnchainRegistryClient(
         recorderContract.recordDonation(donationId, donor, campaignId, amountCents, receiptHash, txRef).send()
 
     /**
-     * Records a settled payout on-chain (`recordPayout(bytes32,bytes32,uint96)`).
+     * Records a settled payout on-chain (`recordPayout(bytes32,bytes32,uint96,bytes32)`): the registry stores the
+     * payout record and updates the campaign statistics.
      *
      * The registry checks only that the campaign is registered (`CampaignNotRegistered`), that the `payoutId`
-     * is unused (`PayoutAlreadyRecorded`) and that the amount is non-zero; the available balance and payout
-     * eligibility are backend rules already enforced before the job was enqueued.
+     * is unused (`PayoutAlreadyRecorded`), that the amount and the transfer reference are non-zero; the available
+     * balance and payout eligibility are backend rules already enforced before the job was enqueued.
      *
      * @param amountCents amount in EUR cents, validated against the `uint96` range before sending
+     * @param txRef bank transfer reference (Bridge transaction id) encoded as bytes32
      * @throws IllegalArgumentException when [amountCents] is out of `uint96` range. This failure is permanent, but
      *   the worker does not yet distinguish permanent from transient errors (sprint B7.1), so the job is retried
      *   until its attempts are exhausted. The guard lives here and never in the payout confirmation path: a payout
      *   already settled by the bank must stay confirmed.
      */
-    override fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger): TransactionReceipt =
-        recorderContract.recordPayout(payoutId, campaignId, OnchainCodec.requireUint96(amountCents)).send()
+    override fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger, txRef: ByteArray): TransactionReceipt =
+        recorderContract.recordPayout(payoutId, campaignId, OnchainCodec.requireUint96(amountCents), txRef).send()
 
     // ───── Reads (no signer needed) ─────────────────────────────────
 

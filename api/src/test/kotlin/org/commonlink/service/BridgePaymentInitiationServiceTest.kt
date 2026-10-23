@@ -109,7 +109,8 @@ class BridgePaymentInitiationServiceTest {
         val state = demoService().getPaymentLink("demo_$payoutId")
 
         assertThat(state.status).isEqualTo(BridgePaymentStatus.ACSC)
-        assertThat(state.transactionId).isNotNull()
+        // 32 characters, like a real Bridge transaction id: it must fit the on-chain transfer reference (bytes32).
+        assertThat(state.transactionId).startsWith("demo_").hasSize(32)
     }
 
     @Test

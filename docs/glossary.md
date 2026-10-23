@@ -458,7 +458,11 @@ The line on the fiscal receipt stating how the donor actually paid. The provider
 `functional` `business`
 
 ### Payout Record (On-Chain)
-The on-chain proof that a payout (a disbursement of campaign funds to a beneficiary) was settled by the bank. It is written by `recordPayout(payoutId, campaignId, amountCents)` once the bank settlement is confirmed, emitting a `PayoutRecorded` event. The registry moves no funds and only checks that the campaign is registered; the available balance and payout eligibility are backend rules.
+The on-chain proof that a payout (a disbursement of campaign funds to a beneficiary) was settled by the bank. It is written by `recordPayout(payoutId, campaignId, amountCents, txRef)` once the bank settlement is confirmed, emitting a `PayoutRecorded` event, and kept as a record readable with `getPayout` (registry v2.1): campaign, amount in EUR cents, timestamp and `txRef`, the bank transfer reference written as text — the Bridge transaction id (32 characters), else the Bridge payment link id without dashes, else the payout id without dashes (`PayoutConfirmer.payoutTxRef`; in Bridge demo mode a 32-character `demo_…` id). The registry moves no funds and only checks that the campaign is registered, the id unused and the amount and reference non-zero; the available balance and payout eligibility are backend rules.
+`blockchain` `technical`
+
+### Campaign Stats (On-Chain)
+Cumulative per-campaign statistics kept by the registry (v2.1) in a single storage slot, readable with `getCampaignStats`: total paid out and payout count (updated by `recordPayout`), donation count, unique donors — distinct donor addresses with at least one donation to the campaign — and the timestamps of the last donation and last payout (updated by `recordDonation`). The total raised stays in the campaign record (`Campaign.raised`). No "paid out ≤ raised" rule on-chain: the backend decides, and `raised` only counts the donations recorded on that chain. Counterpart of the donor statistics (`donorStats`).
 `blockchain` `technical`
 
 ### Job Dependency (On-Chain Outbox)

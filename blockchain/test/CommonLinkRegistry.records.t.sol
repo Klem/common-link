@@ -56,6 +56,22 @@ contract RecordDonationTest is CommonLinkBaseTest {
         assertEq(registry.getCampaign(CAMP_2).raised, 300);
     }
 
+    function test_donation_updatesCampaignStats() public {
+        uint32 first = uint32(block.timestamp);
+        _donate(_donationId(1), donor1, CAMP_1, 100);
+        vm.warp(block.timestamp + 1 days);
+        _donate(_donationId(2), donor1, CAMP_1, 200); // same donor: not a new unique donor
+        _donate(_donationId(3), donor2, CAMP_1, 300);
+
+        CommonLinkRegistry.CampaignStats memory cs = registry.getCampaignStats(CAMP_1);
+        assertEq(cs.donationCount, 3);
+        assertEq(cs.uniqueDonors, 2);
+        assertEq(cs.lastDonationAt, first + 1 days);
+        assertEq(cs.totalPaidOut, 0, "donations never touch payout stats");
+        assertEq(cs.payoutCount, 0);
+        assertEq(registry.getCampaign(CAMP_1).raised, 600, "raised stays in Campaign");
+    }
+
     function test_donation_revertsOnUnregisteredCampaign() public {
         vm.prank(recorder);
         vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.CampaignNotRegistered.selector, CAMP_2));
@@ -125,7 +141,7 @@ contract RecordDonationTest is CommonLinkBaseTest {
 
 /// @notice Payout recording: proof only, integrity guards only.
 contract RecordPayoutTest is CommonLinkBaseTest {
-    event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint96 amount, uint32 timestamp);
+    event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint96 amount, bytes32 txRef, uint32 timestamp);
 
     function setUp() public override {
         super.setUp();
@@ -134,15 +150,33 @@ contract RecordPayoutTest is CommonLinkBaseTest {
 
     function _payout(bytes32 payoutId, uint96 amount) internal {
         vm.prank(recorder);
-        registry.recordPayout(payoutId, CAMP_1, amount);
+        registry.recordPayout(payoutId, CAMP_1, amount, PAYOUT_TX_REF_1);
     }
 
     function test_payout_recordsAndEmits() public {
         vm.expectEmit(true, true, false, true, address(registry));
-        emit PayoutRecorded(_payoutId(1), CAMP_1, 12_345, uint32(block.timestamp));
+        emit PayoutRecorded(_payoutId(1), CAMP_1, 12_345, PAYOUT_TX_REF_1, uint32(block.timestamp));
         _payout(_payoutId(1), 12_345);
-        assertTrue(registry.payoutRecorded(_payoutId(1)));
-        assertFalse(registry.payoutRecorded(_payoutId(2)));
+
+        CommonLinkRegistry.Payout memory p = registry.getPayout(_payoutId(1));
+        assertEq(p.campaignId, CAMP_1);
+        assertEq(p.amount, 12_345);
+        assertEq(p.timestamp, uint32(block.timestamp));
+        assertEq(p.txRef, PAYOUT_TX_REF_1);
+        assertEq(registry.getPayout(_payoutId(2)).campaignId, bytes32(0), "unknown payout reads as empty");
+    }
+
+    function test_payout_updatesCampaignStats() public {
+        uint32 first = uint32(block.timestamp);
+        _payout(_payoutId(1), 1_000);
+        vm.warp(block.timestamp + 1 days);
+        _payout(_payoutId(2), 2_500);
+
+        CommonLinkRegistry.CampaignStats memory cs = registry.getCampaignStats(CAMP_1);
+        assertEq(cs.totalPaidOut, 3_500);
+        assertEq(cs.payoutCount, 2);
+        assertEq(cs.lastPayoutAt, first + 1 days);
+        assertEq(cs.donationCount, 0, "payouts never touch donation stats");
     }
 
     function test_payout_movesNothing() public {
@@ -156,29 +190,46 @@ contract RecordPayoutTest is CommonLinkBaseTest {
     /// @dev No balance rule on-chain: the backend enforces the available balance.
     function test_payout_exceedingRaisedIsRecorded() public {
         _payout(_payoutId(1), 10_000);
-        assertTrue(registry.payoutRecorded(_payoutId(1)));
+        assertEq(registry.getPayout(_payoutId(1)).amount, 10_000);
+        assertEq(registry.getCampaignStats(CAMP_1).totalPaidOut, 10_000);
     }
 
     function test_payout_maxUint96() public {
         _payout(_payoutId(1), type(uint96).max);
-        assertTrue(registry.payoutRecorded(_payoutId(1)));
+        assertEq(registry.getPayout(_payoutId(1)).amount, type(uint96).max);
+    }
+
+    function test_payout_revertsOnPaidOutOverflow() public {
+        uint96 nearMax = type(uint96).max - 1;
+        _payout(_payoutId(1), nearMax);
+
+        vm.prank(recorder);
+        vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.PaidOutOverflow.selector, CAMP_1, nearMax, uint96(2)));
+        registry.recordPayout(_payoutId(2), CAMP_1, 2, PAYOUT_TX_REF_1);
+        assertEq(registry.getCampaignStats(CAMP_1).totalPaidOut, nearMax);
+        assertEq(registry.getCampaignStats(CAMP_1).payoutCount, 1);
     }
 
     function test_payout_revertsOnDuplicate() public {
         _payout(_payoutId(1), 100);
         vm.prank(recorder);
         vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.PayoutAlreadyRecorded.selector, _payoutId(1)));
-        registry.recordPayout(_payoutId(1), CAMP_1, 999);
+        registry.recordPayout(_payoutId(1), CAMP_1, 999, PAYOUT_TX_REF_1);
+
+        assertEq(registry.getCampaignStats(CAMP_1).totalPaidOut, 100, "no double count");
+        assertEq(registry.getCampaignStats(CAMP_1).payoutCount, 1);
     }
 
     function test_payout_sanityAndReferentialGuards() public {
         vm.startPrank(recorder);
         vm.expectRevert(CommonLinkRegistry.EmptyPayoutId.selector);
-        registry.recordPayout(bytes32(0), CAMP_1, 100);
+        registry.recordPayout(bytes32(0), CAMP_1, 100, PAYOUT_TX_REF_1);
         vm.expectRevert(CommonLinkRegistry.InvalidAmount.selector);
-        registry.recordPayout(_payoutId(1), CAMP_1, 0);
+        registry.recordPayout(_payoutId(1), CAMP_1, 0, PAYOUT_TX_REF_1);
+        vm.expectRevert(CommonLinkRegistry.EmptyTxRef.selector);
+        registry.recordPayout(_payoutId(1), CAMP_1, 100, bytes32(0));
         vm.expectRevert(abi.encodeWithSelector(CommonLinkRegistry.CampaignNotRegistered.selector, CAMP_2));
-        registry.recordPayout(_payoutId(1), CAMP_2, 100);
+        registry.recordPayout(_payoutId(1), CAMP_2, 100, PAYOUT_TX_REF_1);
         vm.stopPrank();
     }
 
@@ -189,6 +240,6 @@ contract RecordPayoutTest is CommonLinkBaseTest {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, RECORDER_ROLE
             )
         );
-        registry.recordPayout(_payoutId(1), CAMP_1, 100);
+        registry.recordPayout(_payoutId(1), CAMP_1, 100, PAYOUT_TX_REF_1);
     }
 }

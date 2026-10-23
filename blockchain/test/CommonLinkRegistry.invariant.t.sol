@@ -80,7 +80,7 @@ contract CommonLinkRegistryInvariantTest is Test {
         for (uint256 i = 0; i < np; i++) {
             bytes32 id = handler.payoutIds(i);
             assertEq(handler.ghost_payoutRecordCount(id), 1, "INV-2: payout recorded more than once");
-            assertTrue(registry.payoutRecorded(id), "INV-2: recorded payout vanished");
+            assertTrue(registry.getPayout(id).campaignId != bytes32(0), "INV-2: recorded payout vanished");
         }
         assertEq(badge.mintCount(), handler.ghost_badgesMinted(), "INV-2: badge mint count diverges");
     }
@@ -100,6 +100,18 @@ contract CommonLinkRegistryInvariantTest is Test {
             CommonLinkRegistry.DonorStats memory s = registry.getDonorStats(d);
             assertEq(s.totalDonated, handler.ghost_donorTotal(d), "INV-4: totalDonated diverges");
             assertEq(s.donationCount, handler.ghost_donorCount(d), "INV-4: donationCount diverges");
+        }
+    }
+
+    function invariant_campaignStatsMatchRecords() public view {
+        uint256 nc = handler.registeredCampaignCount();
+        for (uint256 i = 0; i < nc; i++) {
+            bytes32 id = handler.registeredCampaigns(i);
+            CommonLinkRegistry.CampaignStats memory cs = registry.getCampaignStats(id);
+            assertEq(cs.donationCount, handler.ghost_campaignDonationCount(id), "INV-6: donationCount diverges");
+            assertEq(cs.uniqueDonors, handler.ghost_campaignUniqueDonors(id), "INV-6: uniqueDonors diverges");
+            assertEq(cs.totalPaidOut, handler.ghost_paidOut(id), "INV-6: totalPaidOut diverges");
+            assertEq(cs.payoutCount, handler.ghost_campaignPayoutCount(id), "INV-6: payoutCount diverges");
         }
     }
 

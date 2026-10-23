@@ -70,10 +70,14 @@ suit : une attestation publiée est irrétractable, alors qu'attendre ne coûte 
 
 *État au 20 octobre 2026 : c'est le **job d'enregistrement** qui n'est enfilé qu'à cette étape (code
 câblé vers la fonction `recordPayout` du contrat). Tant que le contrat n'est pas déployé et que
-`onchain.mock` vaut `true` (local, staging et production), aucune attestation n'est réellement publiée
-sur une chaîne publique — voir `registre-onchain-des-depenses.md`. Le contrat se contente
+`onchain.mock` vaut `true` en staging et en production, aucune attestation n'est réellement publiée
+sur une chaîne publique ; le poste de développement local écrit, lui, sur un nœud Anvil privé et
+jetable, jamais public — voir `registre-onchain-des-depenses.md`. Le contrat se contente
 d'enregistrer ce que CommonLink a décidé ; il ne revérifie ni le statut de la campagne, ni le solde, et
-n'exige que l'inscription préalable de la campagne (registre v2, sans cycle de vie).*
+n'exige que l'inscription préalable de la campagne (registre v2, sans cycle de vie). Depuis le registre
+v2.1 (23 octobre 2026), l'attestation porte aussi la **référence du virement** (identifiant de
+transaction Bridge, publique sur la chaîne) et alimente les statistiques de la campagne (total et nombre
+des décaissements).*
 
 ---
 

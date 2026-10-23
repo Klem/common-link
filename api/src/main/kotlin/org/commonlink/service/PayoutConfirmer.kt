@@ -206,11 +206,31 @@ class PayoutConfirmer(
                 campaignId = payout.campaign.id!!,
                 // movePointRight, not toLong() * 100: truncating first turned 10.50 € into 1000 cents.
                 amountCents = payout.amount.movePointRight(2).toBigIntegerExact(),
+                txRef = payoutTxRef(payout),
             ),
             correlationKey = "PAYOUT:${payout.id}",
             dependsOn = campaignRegistration,
         )
     }
+
+    /**
+     * The bank transfer reference recorded on-chain with the payout, as text that must fit a bytes32 (32 bytes):
+     * the Bridge transaction id (32 characters) when Bridge reported one that fits; otherwise the payment link id
+     * without its dashes, which identifies the same transfer at Bridge; as a last resort the payout id without its
+     * dashes. Never throws: the payout is already settled by the bank and must stay confirmed.
+     *
+     * @param payout a payout being settled.
+     * @return a non-blank reference of at most 32 bytes.
+     */
+    private fun payoutTxRef(payout: Payout): String {
+        payout.bridgePaymentTransactionId?.takeIf { it.isNotBlank() && fitsBytes32(it) }?.let { return it }
+        val fallback = payout.bridgePaymentLinkId?.replace("-", "")?.takeIf { it.isNotBlank() && fitsBytes32(it) }
+            ?: payout.id.toString().replace("-", "")
+        log.warn("Payout {}: no Bridge transaction id fitting 32 bytes — on-chain transfer reference {}", payout.id, fallback)
+        return fallback
+    }
+
+    private fun fitsBytes32(value: String) = value.toByteArray(Charsets.UTF_8).size <= 32
 
     /**
      * Promotes the payout to CONFIRMED and enqueues the on-chain attestation, the transfer having

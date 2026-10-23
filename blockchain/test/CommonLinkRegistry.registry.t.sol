@@ -9,7 +9,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 /// @notice Constructor, roles and pause.
 contract DeploymentTest is CommonLinkBaseTest {
     function test_version() public view {
-        assertEq(registry.VERSION(), "2.0.0-mvp");
+        assertEq(registry.VERSION(), "2.1.0-mvp");
     }
 
     function test_constructor_grantsRoles() public view {
@@ -53,7 +53,7 @@ contract DeploymentTest is CommonLinkBaseTest {
         vm.expectRevert(Pausable.EnforcedPause.selector);
         registry.recordDonation(_donationId(1), donor1, CAMP_1, 100, RECEIPT_HASH_1, TX_REF_1);
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        registry.recordPayout(_payoutId(1), CAMP_1, 100);
+        registry.recordPayout(_payoutId(1), CAMP_1, 100, PAYOUT_TX_REF_1);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         registry.mintBadge(donor1, 1);
         vm.stopPrank();

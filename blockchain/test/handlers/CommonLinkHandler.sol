@@ -47,6 +47,13 @@ contract CommonLinkHandler is Test {
     bytes32[] public payoutIds;
     uint256 public ghost_badgesMinted;
 
+    // ─ Ghost state: campaign statistics ─
+    mapping(bytes32 => uint256) public ghost_campaignDonationCount;
+    mapping(bytes32 => uint256) public ghost_campaignUniqueDonors;
+    mapping(address => mapping(bytes32 => bool)) internal ghost_donatedTo;
+    mapping(bytes32 => uint256) public ghost_paidOut;
+    mapping(bytes32 => uint256) public ghost_campaignPayoutCount;
+
     // ─ Flags ─
     bool public ghost_unexpectedRevert;
     bool public ghost_duplicateAccepted;
@@ -144,6 +151,11 @@ contract CommonLinkHandler is Test {
                 ghost_raised[id] += amount;
                 ghost_donorTotal[donor] += amount;
                 ghost_donorCount[donor] += 1;
+                ghost_campaignDonationCount[id] += 1;
+                if (!ghost_donatedTo[donor][id]) {
+                    ghost_donatedTo[donor][id] = true;
+                    ghost_campaignUniqueDonors[id] += 1;
+                }
             }
         } catch {
             if (already) ghost_duplicateRejected += 1;
@@ -157,13 +169,18 @@ contract CommonLinkHandler is Test {
         bytes32 payoutId = bytes32(((payoutSeed % 8 + 1) | (uint256(1) << 126)) << 128);
         bool already = ghost_payoutRecordCount[payoutId] != 0;
 
+        // Skip inputs that would legitimately overflow `totalPaidOut` (PaidOutOverflow is a kept guard).
+        if (!already && uint256(registry.getCampaignStats(id).totalPaidOut) + amount > type(uint96).max) return;
+
         vm.prank(recorder);
-        try registry.recordPayout(payoutId, id, amount) {
+        try registry.recordPayout(payoutId, id, amount, bytes32("bridge-tx")) {
             if (already) {
                 ghost_duplicateAccepted = true;
             } else {
                 payoutIds.push(payoutId);
                 ghost_payoutRecordCount[payoutId] = 1;
+                ghost_paidOut[id] += amount;
+                ghost_campaignPayoutCount[id] += 1;
             }
         } catch {
             if (already) ghost_duplicateRejected += 1;

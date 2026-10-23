@@ -3,7 +3,7 @@
 > Source de vérité pour le smart contract `CommonLinkRegistry`. **Le code (`src/CommonLinkRegistry.sol`) et les tests Foundry font foi** ;
 > toute déviation de ce document est un bug de documentation.
 >
-> **Version**: 2.0.0-mvp
+> **Version**: 2.1.0-mvp
 > **Solidity**: 0.8.30 (EVM `cancun`)
 > **Stack**: Foundry + OpenZeppelin 5.x
 > **Cibles**: Gnosis Chiado (10200, testnet) → Gnosis (100, mainnet) — gas en xDAI
@@ -11,6 +11,7 @@
 
 ### Changelog
 
+- **2.1.0-mvp** : décaissement enregistré comme une **fiche** (`payouts[id]` = campagne, montant, date, `txRef` = référence du virement Bridge, lisible par `getPayout`), qui remplace le booléen `payoutRecorded` ; `recordPayout(payoutId, campaignId, amountCents, txRef)` (`txRef` ≠ 0, `EmptyTxRef`) ; event `PayoutRecorded` avec `txRef` ; **statistiques de campagne** `campaignStats` (`getCampaignStats`) : total et nombre des décaissements (garde `PaidOutOverflow`), nombre de dons, donateurs uniques, dates du dernier don / décaissement. Aucune garde « décaissé ≤ collecté ». Rupture assumée : aucune version antérieure n'a été déployée sur une chaîne publique.
 - **2.0.0-mvp** : **registre « inscrit une fois, inscrit pour toujours »**. Le contrat ne gère plus **aucun cycle de vie** : plus de statuts ni de transitions de campagne, plus de vérification / révocation / restauration d'association, plus de milestones, plus de goal, plus de `CURATOR_ROLE`. Il garde : inscription unique d'association (`registerAssociation`) et de campagne (`registerCampaign`, avec hash de budget), mise à jour du hash de budget, dons (+ agrégats donateur et `raised`), décaissements (`recordPayout`), relais de mint de badge (`mintBadge`, adresse du contrat de badge fixée une fois par l'admin). Constructeur `(admin, recorder)`. Rupture assumée : aucune version antérieure n'a été déployée.
 - **1.4.0-mvp** *(jamais déployée)* : « notaire » — retrait des gardes métier (statut, transitions, `verified`, `raised == 0`, budget gelé) ; ajout de `recordPayout`.
 - **1.3.0-mvp** *(jamais déployée, reconstituée depuis le code)* : statut `Draft`, `publishCampaign`, `revertCampaignToDraft`, `updateCampaignBudget`, `startDate`/`endDate` posés par le contrat.
@@ -70,7 +71,7 @@ Le contrat ne déplace **aucun fonds**. Les montants sont en cents EUR (`uint96`
 
 ```solidity
 bytes32 public constant RECORDER_ROLE = keccak256("RECORDER_ROLE");
-string  public constant VERSION       = "2.0.0-mvp";
+string  public constant VERSION       = "2.1.0-mvp";
 // DEFAULT_ADMIN_ROLE hérité d'AccessControl OZ
 ```
 
@@ -206,6 +207,8 @@ struct Association { bytes32 sirenHash; uint32 registeredAt; }                  
 struct Campaign    { address association; uint96 raised; uint32 registeredAt; bytes32 budgetHash; } // association == 0 : jamais inscrite
 struct Donation    { address donor; uint96 amount; bytes32 campaignId; uint32 timestamp; bytes32 receiptHash; bytes32 txRef; }
 struct DonorStats  { uint128 totalDonated; uint32 donationCount; uint32 uniqueCampaigns; uint32 firstDonationAt; }
+struct Payout      { bytes32 campaignId; uint96 amount; uint32 timestamp; bytes32 txRef; }   // campaignId == 0 : jamais enregistré
+struct CampaignStats { uint96 totalPaidOut; uint32 payoutCount; uint32 donationCount; uint32 uniqueDonors; uint32 lastDonationAt; uint32 lastPayoutAt; } // 1 slot
 
 mapping(address => Association)                 public associations;
 mapping(bytes32 => address)                     public sirenHashToAssociation; // un SIREN n'est inscrit qu'une fois
@@ -213,7 +216,8 @@ mapping(bytes32 => Campaign)                    public campaigns;
 mapping(bytes32 => Donation)                    public donations;               // write-once
 mapping(address => DonorStats)                  public donorStats;
 mapping(address => mapping(bytes32 => uint128)) public donorCampaignTotal;
-mapping(bytes32 => bool)                        public payoutRecorded;          // write-once
+mapping(bytes32 => Payout)                      public payouts;                 // write-once
+mapping(bytes32 => CampaignStats)               public campaignStats;
 IDonorBadge                                     public badgeContract;           // fixé une fois par l'admin
 ```
 
@@ -237,11 +241,11 @@ Aucune fonction ne retire, suspend, réactive ni ne modifie une inscription.
 
 RECORDER, pause, `nonReentrant`. Gardes : campagne inscrite (`CampaignNotRegistered`) ; `donationId` ≠ 0 et jamais utilisé (`EmptyDonationId`, `DonationAlreadyExists`) ; `donor` ≠ 0 (`InvalidDonor`) ; `amount` ≠ 0 (`InvalidAmount`) ; `receiptHash`, `txRef` ≠ 0 ; `raised + amount` tient en `uint96` (`RaisedOverflow`). **Aucun contrôle** de statut de campagne, d'éligibilité de l'association ni de confirmation de paiement : c'est le backend qui n'enfile que des dons confirmés sur des campagnes qu'il juge ouvertes.
 
-Effets : don écrit, `raised` incrémenté, `donorStats` (premier don, total, nombre, campagnes uniques) et `donorCampaignTotal` mis à jour. Events : `DonationRecorded(donor, campaignId, association, …)` (3 champs indexés), `DonorFirstDonation`, `DonorJoinedCampaign`.
+Effets : don écrit, `raised` incrémenté, `donorStats` (premier don, total, nombre, campagnes uniques), `donorCampaignTotal` et `campaignStats` (nombre de dons, donateurs uniques, date du dernier don) mis à jour. Events : `DonationRecorded(donor, campaignId, association, …)` (3 champs indexés), `DonorFirstDonation`, `DonorJoinedCampaign`.
 
-### 4.3 Décaissements — `recordPayout(payoutId, campaignId, amountCents)`
+### 4.3 Décaissements — `recordPayout(payoutId, campaignId, amountCents, txRef)`
 
-RECORDER, pause. Gardes : campagne inscrite ; `payoutId` ≠ 0 et jamais utilisé (`EmptyPayoutId`, `PayoutAlreadyRecorded`) ; montant ≠ 0. **Aucun contrôle** de solde, de statut ni d'éligibilité. Effet : `payoutRecorded[payoutId] = true` ; event `PayoutRecorded(payoutId, campaignId, amount, timestamp)`. Aucun fonds n'est déplacé.
+RECORDER, pause. Gardes : campagne inscrite ; `payoutId` ≠ 0 et jamais utilisé (`EmptyPayoutId`, `PayoutAlreadyRecorded`) ; montant ≠ 0 ; `txRef` ≠ 0 (`EmptyTxRef`) ; `totalPaidOut + amount` tient en `uint96` (`PaidOutOverflow`). **Aucun contrôle** de solde (pas de « décaissé ≤ collecté »), de statut ni d'éligibilité. Effets : fiche `payouts[payoutId] = {campaignId, amount, timestamp, txRef}` ; `campaignStats` (total et nombre des décaissements, date du dernier) ; event `PayoutRecorded(payoutId, campaignId, amount, txRef, timestamp)`. `txRef` = référence du virement Bridge en texte (32 octets max). Aucun fonds n'est déplacé.
 
 ### 4.4 Badges
 
@@ -251,7 +255,7 @@ RECORDER, pause. Gardes : campagne inscrite ; `payoutId` ≠ 0 et jamais utilis�
 
 ### 4.5 Pause et lectures
 
-`pause()` / `unpause()` — `DEFAULT_ADMIN_ROLE`. Lectures : `getAssociation`, `getCampaign`, `getDonation`, `getDonorStats`, `getDonorCampaignTotal`, `payoutRecorded`, `badgeContract`, `sirenHashToAssociation`. **Aucun getter de liste** : les listes se reconstituent depuis les events indexés (ou depuis Postgres).
+`pause()` / `unpause()` — `DEFAULT_ADMIN_ROLE`. Lectures : `getAssociation`, `getCampaign`, `getDonation`, `getDonorStats`, `getDonorCampaignTotal`, `getPayout`, `getCampaignStats`, `badgeContract`, `sirenHashToAssociation`. **Aucun getter de liste** : les listes se reconstituent depuis les events indexés (ou depuis Postgres).
 
 ---
 

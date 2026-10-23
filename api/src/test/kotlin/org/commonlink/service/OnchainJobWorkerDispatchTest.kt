@@ -61,7 +61,7 @@ class OnchainJobWorkerDispatchTest {
 
     private fun payoutJob(attempts: Int = 1, amountCents: BigInteger = BigInteger.valueOf(1050)) = OnchainJob(
         action = OnchainJobAction.RECORD_PAYOUT,
-        payloadJson = objectMapper.writeValueAsString(RecordPayoutPayload(payoutId, campaignId, amountCents)),
+        payloadJson = objectMapper.writeValueAsString(RecordPayoutPayload(payoutId, campaignId, amountCents, "01a1680fecd57eb7a3aea61d4f074b6d")),
         status = OnchainJobStatus.RUNNING,
         attempts = attempts,
         correlationKey = "PAYOUT:$payoutId",
@@ -73,19 +73,21 @@ class OnchainJobWorkerDispatchTest {
     }
 
     @Test
-    fun `RECORD_PAYOUT is dispatched with bytes32-encoded ids and the exact cents`() {
+    fun `RECORD_PAYOUT is dispatched with bytes32-encoded ids, the exact cents and the transfer reference`() {
         val job = payoutJob()
         every { claimer.claimBatch(10) } returns listOf(job)
         val payout = slot<ByteArray>()
         val campaign = slot<ByteArray>()
         val cents = slot<BigInteger>()
-        every { client.recordPayout(capture(payout), capture(campaign), capture(cents)) } returns receipt()
+        val txRef = slot<ByteArray>()
+        every { client.recordPayout(capture(payout), capture(campaign), capture(cents), capture(txRef)) } returns receipt()
 
         worker.tick()
 
         assertThat(payout.captured).isEqualTo(OnchainCodec.uuidToBytes32(payoutId))
         assertThat(campaign.captured).isEqualTo(OnchainCodec.uuidToBytes32(campaignId))
         assertThat(cents.captured).isEqualTo(BigInteger.valueOf(1050))
+        assertThat(txRef.captured).isEqualTo(OnchainCodec.stringToBytes32("01a1680fecd57eb7a3aea61d4f074b6d"))
         assertThat(job.status).isEqualTo(OnchainJobStatus.DONE)
         assertThat(job.txHash).isEqualTo("0x" + "ab".repeat(32))
         assertThat(job.blockNumber).isEqualTo(16L)
@@ -96,7 +98,7 @@ class OnchainJobWorkerDispatchTest {
     fun `a client failure re-queues the job while attempts remain`() {
         val job = payoutJob(attempts = 2)
         every { claimer.claimBatch(10) } returns listOf(job)
-        every { client.recordPayout(any(), any(), any()) } throws IllegalStateException("CampaignDoesNotExist")
+        every { client.recordPayout(any(), any(), any(), any()) } throws IllegalStateException("CampaignDoesNotExist")
 
         worker.tick()
 
@@ -109,7 +111,7 @@ class OnchainJobWorkerDispatchTest {
     fun `a client failure on the fifth attempt marks the job FAILED`() {
         val job = payoutJob(attempts = 5)
         every { claimer.claimBatch(10) } returns listOf(job)
-        every { client.recordPayout(any(), any(), any()) } throws IllegalStateException("revert")
+        every { client.recordPayout(any(), any(), any(), any()) } throws IllegalStateException("revert")
 
         worker.tick()
 

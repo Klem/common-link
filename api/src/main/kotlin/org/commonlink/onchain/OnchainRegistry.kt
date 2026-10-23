@@ -70,8 +70,9 @@ interface OnchainRegistry {
      * @param payoutId payout UUID encoded as bytes32 (see [OnchainCodec.uuidToBytes32])
      * @param campaignId campaign UUID encoded as bytes32; the campaign must be registered on-chain
      * @param amountCents amount in EUR cents (Solidity `uint96`)
+     * @param txRef bank transfer reference (Bridge transaction id) encoded as bytes32 (see [OnchainCodec.stringToBytes32])
      */
-    fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger): TransactionReceipt
+    fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger, txRef: ByteArray): TransactionReceipt
 
     /**
      * Reads the on-chain registration of an association (no transaction).

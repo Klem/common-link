@@ -263,6 +263,38 @@ class PayoutConfirmerTest {
         assertThat(result.onchainJobId).isEqualTo(jobId)
         assertThat((payloadSlot.captured as RecordPayoutPayload).amountCents)
             .isEqualTo(BigInteger.valueOf(1050))
+        assertThat((payloadSlot.captured as RecordPayoutPayload).txRef).isEqualTo("tx_1")
+    }
+
+    @Test
+    fun `finaliseSettled - without a Bridge transaction id the payment link id is the on-chain transfer reference`() {
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.PDNG)
+        payout.bridgePaymentLinkId = "01a1680f-dfbd-7515-990c-4941df7134b8"
+        val payloadSlot = slot<Any>()
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+        every { outbox.enqueue(OnchainJobAction.RECORD_PAYOUT, capture(payloadSlot), any(), any()) } returns
+            mockk<OnchainJob> { every { id } returns UUID.randomUUID() }
+
+        confirmer.finaliseSettled(payout.id, null)
+
+        assertThat((payloadSlot.captured as RecordPayoutPayload).txRef).isEqualTo("01a1680fdfbd7515990c4941df7134b8")
+    }
+
+    @Test
+    fun `finaliseSettled - a reference too long for bytes32 falls back to the payout id, never failing the settlement`() {
+        val payout = newPayout(bridgeStatus = BridgePaymentStatus.PDNG)
+        payout.bridgePaymentLinkId = "demo_" + payout.id
+        val payloadSlot = slot<Any>()
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+        every { outbox.enqueue(OnchainJobAction.RECORD_PAYOUT, capture(payloadSlot), any(), any()) } returns
+            mockk<OnchainJob> { every { id } returns UUID.randomUUID() }
+
+        val result = confirmer.finaliseSettled(payout.id, "x".repeat(46))
+
+        assertThat(result.status).isEqualTo(PayoutStatus.CONFIRMED)
+        assertThat((payloadSlot.captured as RecordPayoutPayload).txRef).isEqualTo(payout.id.toString().replace("-", ""))
     }
 
     @Test
