@@ -74,6 +74,8 @@ class OnchainJobWorker(
             } else {
                 job.txHash = receipt.transactionHash
                 job.blockNumber = receipt.blockNumber.toLong()
+                logger.info("Onchain job {} ({}) DONE: tx {} in block {} on chain {}",
+                    job.id, job.action, job.txHash, job.blockNumber, cfg.chainId)
             }
             job.status = OnchainJobStatus.DONE
             onSuccess(job)

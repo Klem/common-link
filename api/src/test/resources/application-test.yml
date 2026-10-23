@@ -24,8 +24,14 @@ app:
     base-url: http://localhost:1
 
 onchain:
-  registry-address: "0x0000000000000000000000000000000000000001"
-  recorder-pk: "0x0000000000000000000000000000000000000000000000000000000000000001"
+  # Simulated by default: the regular build (Clever Cloud runs `test -PnoDocker`) never needs a chain.
+  # Blockchain sprints run the suite against the local Anvil node with ONCHAIN_TEST_MOCK=false (or false here):
+  # the node must be up with the registry deployed (blockchain/RUNBOOK.md §6), or every Spring context
+  # refuses to start (OnchainRealModeValidator probes the RPC). RPC, chain, registry and recorder key are
+  # then the Anvil defaults of application.yml.
+  # A test-only variable on purpose: ONCHAIN_MOCK is an app variable that Clever Cloud also exposes to the
+  # build, and must never switch the build's tests onto the staging chain and recorder key.
+  mock: ${ONCHAIN_TEST_MOCK:true}
   donor-address-secret: "test-donor-address-secret-placeholder-32ch"
   association-address-secret: "test-association-address-secret-placehold"
   worker:

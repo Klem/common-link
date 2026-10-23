@@ -19,13 +19,15 @@ services:
   # Started only with: docker compose --profile chain up -d
   # Chain state is persisted in the anvildata volume (dumped every 10 s and on stop): it must live and die
   # together with pgdata — resetting one without the other leaves jobs pointing at a chain that no longer exists.
+  # --print-traces: every transaction (and eth_call) is printed decoded — called function, emitted events — in
+  # `docker compose --profile chain logs -f anvil`; filter out the RPC polling noise with `| grep -v eth_blockNumber`.
   anvil:
     # Pinned (anvil 1.8.6): a newer anvil may fail to load the saved --state file, i.e. a silent chain reset.
     image: ghcr.io/foundry-rs/foundry@sha256:4a16a86f41d30418fbdca47ce2868121bbb0aeaa0a34bde2dd1e2911c4be2464
     profiles: ["chain"]
     user: "0:0"
     entrypoint: ["anvil"]
-    command: ["--host", "0.0.0.0", "--chain-id", "31337", "--state", "/anvil/state.json", "--state-interval", "10"]
+    command: ["--host", "0.0.0.0", "--chain-id", "31337", "--state", "/anvil/state.json", "--state-interval", "10", "--print-traces"]
     ports:
       - "0.0.0.0:8545:8545"
     volumes:

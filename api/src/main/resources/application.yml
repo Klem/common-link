@@ -89,7 +89,7 @@ app:
     # environment variable (IDE run config / shell) to hit the real sandbox locally — never flip
     # this file's default, or every context-loading test that doesn't override it starts failing
     # (see BridgePaymentInitiationService's required-credentials check).
-    demo-mode: ${BRIDGE_DEMO_MODE:true}
+    demo-mode: ${BRIDGE_DEMO_MODE:false}
     base-url: ${BRIDGE_BASE_URL:https://api.bridgeapi.io}
     api-version: ${BRIDGE_API_VERSION:2025-01-15}
     client-id: ${BRIDGE_CLIENT_ID:}
@@ -159,7 +159,7 @@ app:
       # donation arrives — so a revoked authorisation is discovered by the donor and that donation
       # is lost. This sweep surfaces a dead grant hours earlier and emails the association.
       token-refresh:
-        enabled: true
+        enabled: false
         # Gap between the end of one sweep and the start of the next (fixedDelay semantics).
         fixed-delay-ms: 900000
         initial-delay-ms: 120000
@@ -238,9 +238,11 @@ springdoc:
     path: /api/docs/swagger-ui.html
 
 onchain:
-  # Simulated by default. ONCHAIN_MOCK=false + the local Anvil node (docker compose --profile chain up -d,
-  # then blockchain/script/deploy-registry.sh anvil) runs the real client locally — blockchain/RUNBOOK.md.
-  mock: ${ONCHAIN_MOCK:true}
+  # Real client by default locally: the local Anvil node must be up with the registry deployed
+  # (docker compose --profile chain up -d, then blockchain/script/deploy-registry.sh anvil), or startup is refused
+  # (OnchainRealModeValidator probes the RPC). ONCHAIN_MOCK=true simulates the chain — blockchain/RUNBOOK.md §6.
+  # The test profile stays simulated by default (application-test.yml, switch ONCHAIN_TEST_MOCK).
+  mock: ${ONCHAIN_MOCK:false}
   rpc-url: ${ONCHAIN_RPC_URL:http://localhost:8545}
   chain-id: ${ONCHAIN_CHAIN_ID:31337}
   # Local Anvil defaults. The registry address is the deterministic address of the first contract deployed by

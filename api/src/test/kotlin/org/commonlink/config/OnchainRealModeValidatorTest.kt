@@ -30,20 +30,21 @@ class OnchainRealModeValidatorTest {
 
     @Test
     fun `a valid real configuration passes`() {
-        assertDoesNotThrow { OnchainRealModeValidator(cfg()).validate() }
+        assertDoesNotThrow { OnchainRealModeValidator(cfg(), providerOf(stubWeb3j(chainIdHex = "0x27d8"))).validate() }
     }
 
     @Test
     fun `mock mode is never checked`() {
         assertDoesNotThrow {
-            OnchainRealModeValidator(cfg(mock = true, rpcUrl = "", registry = "", donorSecret = "")).validate()
+            OnchainRealModeValidator(cfg(mock = true, rpcUrl = "", registry = "", donorSecret = ""), providerOf(null)).validate()
         }
     }
 
     @Test
     fun `placeholder or blank secrets are refused without printing their value`() {
         assertThatThrownBy {
-            OnchainRealModeValidator(cfg(donorSecret = "dev-placeholder-change-in-staging", assoSecret = "")).validate()
+            OnchainRealModeValidator(cfg(donorSecret = "dev-placeholder-change-in-staging", assoSecret = ""), providerOf(null))
+                .validate()
         }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("onchain.donor-address-secret")

@@ -1,10 +1,19 @@
 ﻿package org.commonlink.config
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 import org.springframework.boot.env.YamlPropertySourceLoader
 import org.springframework.core.env.EnumerablePropertySource
+import org.springframework.core.env.Environment
 import org.springframework.core.io.ClassPathResource
 import java.time.Duration
 
@@ -242,5 +251,112 @@ class ProdConfigSecurityTest {
         // unset would fall back to the base-profile value of 0, i.e. every request behind the Clever
         // Cloud proxy sharing one bucket (security audit 2026-08-20, M2).
         assertEquals("\${APP_TRUSTED_PROXY_COUNT:1}", prop("app.security.trusted-proxy-count"))
+    }
+
+    // ───── Startup on-chain checks: RPC probe in real mode, WARN in mock mode ─────
+
+    private fun onchainCfg(mock: Boolean = false) = OnchainConfig(
+        rpcUrl = "http://localhost:8545",
+        chainId = OnchainRealModeValidator.ANVIL_CHAIN_ID,
+        registryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        recorderPk = "0xabc",
+        pollingIntervalMs = 1,
+        receiptTimeoutMs = 1,
+        donorAddressSecret = "dev-placeholder-change-in-staging",
+        associationAddressSecret = "dev-placeholder-change-in-staging",
+        mock = mock,
+        worker = OnchainConfig.WorkerConfig(enabled = false, batchSize = 10, fixedDelayMs = 1),
+    )
+
+    private val noSleep: (Long) -> Unit = {}
+
+    @Test
+    fun `real mode starts when the RPC answers on the configured chain with the registry deployed`() {
+        assertDoesNotThrow { OnchainRealModeValidator.probeRpc(stubWeb3j(), onchainCfg(), 3, 2_000, noSleep) }
+    }
+
+    @Test
+    fun `real mode refuses to start when the RPC stays unreachable, after 3 attempts 2 s apart`() {
+        val pauses = mutableListOf<Long>()
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(unreachableCalls = 99), onchainCfg(), 3, 2_000) { pauses += it }
+        }
+        assertTrue(ex.message!!.contains("after 3 attempts"))
+        assertTrue(ex.message!!.contains("onchain.rpc-url is unreachable"))
+        // The connection error may carry the RPC URL and its token: never echoed.
+        assertFalse(ex.message!!.contains("secret-token"))
+        assertEquals(listOf(2_000L, 2_000L), pauses)
+    }
+
+    @Test
+    fun `a brief RPC outage does not abort startup`() {
+        assertDoesNotThrow {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(unreachableCalls = 2), onchainCfg(), 3, 2_000, noSleep)
+        }
+    }
+
+    @Test
+    fun `real mode refuses an RPC on another chain`() {
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(chainIdHex = "0x27d8"), onchainCfg(), 3, 2_000, noSleep)
+        }
+        assertTrue(ex.message!!.contains("onchain.rpc-url is on chain 10200, onchain.chain-id is 31337"))
+    }
+
+    @Test
+    fun `real mode refuses a chain without the registry contract`() {
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(code = "0x"), onchainCfg(), 3, 2_000, noSleep)
+        }
+        assertTrue(ex.message!!.contains("no contract at onchain.registry-address"))
+    }
+
+    @Test
+    fun `real mode startup runs the RPC probe`() {
+        val web3j = stubWeb3j()
+        OnchainRealModeValidator(onchainCfg(), providerOf(web3j)).validate()
+        verify(exactly = 1) { web3j.ethChainId() }
+        verify(exactly = 1) { web3j.ethGetCode("0x5FbDB2315678afecb367f032d93F642f64180aa3", any()) }
+    }
+
+    @Test
+    fun `real mode without a Web3j client refuses to start`() {
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator(onchainCfg(), providerOf(null)).validate()
+        }
+        assertTrue(ex.message!!.contains("no Web3j client"))
+    }
+
+    private fun mockGuardWarnings(mock: Boolean, vararg profiles: String): List<ILoggingEvent> {
+        val logger = LoggerFactory.getLogger(OnchainMockGuard::class.java) as Logger
+        val appender = ListAppender<ILoggingEvent>().apply { start() }
+        logger.addAppender(appender)
+        try {
+            val env = mockk<Environment> { every { activeProfiles } returns arrayOf(*profiles) }
+            OnchainMockGuard(env, onchainCfg(mock = mock)).validate()
+        } finally {
+            logger.detachAppender(appender)
+        }
+        return appender.list.filter { it.level == Level.WARN }
+    }
+
+    @Test
+    fun `mock mode logs a WARN at startup outside prod`() {
+        val warnings = mockGuardWarnings(mock = true)
+        assertEquals(1, warnings.size)
+        assertTrue(warnings.single().formattedMessage.contains("on-chain writes are simulated"))
+        assertTrue(warnings.single().formattedMessage.contains("profiles: default"))
+    }
+
+    @Test
+    fun `mock mode logs its prod WARN under prod`() {
+        val warnings = mockGuardWarnings(mock = true, "prod")
+        assertEquals(1, warnings.size)
+        assertTrue(warnings.single().formattedMessage.contains("active profile 'prod'"))
+    }
+
+    @Test
+    fun `real mode logs no mock WARN`() {
+        assertTrue(mockGuardWarnings(mock = false, "staging").isEmpty())
     }
 }
