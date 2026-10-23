@@ -89,7 +89,7 @@ class OnchainRegistrationService(
      *
      * An update's correlation key names its predecessor (`UPDATE_CAMPAIGN_BUDGET:<campaignId>:<previousJobId>`):
      * a replay is idempotent, and two concurrent budget saves chaining onto the same predecessor cannot both
-     * commit (unique `(chain_id, correlation_key)`) — the loser's transaction fails instead of reordering budgets.
+     * commit (unique `(chain_id, correlation_key)`) — the loser gets a 409 (its transaction rolls back) instead of reordering budgets.
      *
      * @param campaign campaign whose `budgetHash` is up to date.
      * @return the enqueued update, or the latest budget job when nothing changed (or the hash is missing),

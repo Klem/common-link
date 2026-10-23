@@ -5,6 +5,7 @@ import org.commonlink.config.OnchainConfig
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
+import org.commonlink.exception.OnchainRegistrationMismatchException
 import org.commonlink.onchain.OnchainCodec
 import org.commonlink.onchain.OnchainRegistry
 import org.slf4j.LoggerFactory
@@ -23,7 +24,9 @@ import java.util.UUID
  * Disabled by default; enabled per-profile via `onchain.worker.enabled=true`.
  * Each tick locks up to `onchain.worker.batch-size` `PENDING` jobs (`FOR UPDATE SKIP LOCKED`),
  * dispatches them to [org.commonlink.onchain.OnchainRegistry], and persists the resulting tx hash/status.
- * On failure, jobs are re-queued until the 5th attempt, after which they become `FAILED`.
+ * On failure, jobs are re-queued until the 5th attempt, after which they become `FAILED`. A registration already
+ * present on-chain with the same data ends `DONE` without a transaction; one that contradicts the chain is `FAILED`
+ * at once (see [dispatch]).
  *
  * Transaction boundary: [OnchainJobClaimer.claimBatch] runs in its own committed transaction
  * (external bean call, AOP proxy applies). The RUNNING state is flushed to the DB *before*
@@ -57,13 +60,27 @@ class OnchainJobWorker(
         batch.forEach(::process)
     }
 
+    /**
+     * Dispatches one claimed job and records the outcome: `DONE` (with the receipt, or without any transaction
+     * when the chain already holds the registration), `FAILED` at once on a registration that contradicts the
+     * chain, otherwise `PENDING` again until the 5th attempt.
+     */
     private fun process(job: OnchainJob) {
         try {
             val receipt = dispatch(job)
-            job.txHash = receipt.transactionHash
-            job.blockNumber = receipt.blockNumber.toLong()
+            if (receipt == null) {
+                logger.info("Onchain job {} ({}) already registered on-chain with the same data: DONE without transaction",
+                    job.id, job.action)
+            } else {
+                job.txHash = receipt.transactionHash
+                job.blockNumber = receipt.blockNumber.toLong()
+            }
             job.status = OnchainJobStatus.DONE
             onSuccess(job)
+        } catch (ex: OnchainRegistrationMismatchException) {
+            logger.error("Onchain job {} ({}) contradicts the chain: FAILED without retry — {}", job.id, job.action, ex.message)
+            job.lastError = ex.message?.take(2000)
+            job.status = OnchainJobStatus.FAILED
         } catch (ex: Exception) {
             logger.error("Onchain job {} ({}) failed on attempt {}", job.id, job.action, job.attempts, ex)
             job.lastError = ex.message?.take(2000)
@@ -88,20 +105,45 @@ class OnchainJobWorker(
     /**
      * Sends the job to the registry v2 function matching its action: association and campaign registration,
      * budget update, donation, payout.
+     *
+     * A registration first reads the chain, because the entity may already be registered there (local seed of
+     * `blockchain/script/deploy-registry.sh`, or a registration sent before a crash left the job RUNNING):
+     * - same data → nothing is sent;
+     * - campaign registered under the same association with another budget hash → the job's hash is declared
+     *   through `updateCampaignBudget`, so the chain ends on the hash the backend expects;
+     * - other SIREN hash or other association → [OnchainRegistrationMismatchException].
+     *
+     * @return the receipt, or null when nothing had to be sent.
+     * @throws OnchainRegistrationMismatchException when a registration contradicts the chain (permanent).
      */
-    private fun dispatch(job: OnchainJob): TransactionReceipt {
+    private fun dispatch(job: OnchainJob): TransactionReceipt? {
         return when (job.action) {
             OnchainJobAction.REGISTER_ASSOCIATION -> {
                 val p = objectMapper.readValue(job.payloadJson, RegisterAssociationPayload::class.java)
-                client.registerAssociation(p.address, Numeric.hexStringToByteArray(p.sirenHashHex))
+                val registered = client.registeredAssociationSirenHash(p.address)
+                when {
+                    registered == null -> client.registerAssociation(p.address, Numeric.hexStringToByteArray(p.sirenHashHex))
+                    registered.equals(p.sirenHashHex, ignoreCase = true) -> null
+                    else -> throw OnchainRegistrationMismatchException(
+                        "Association ${p.address} is already registered with SIREN hash $registered, not ${p.sirenHashHex}")
+                }
             }
             OnchainJobAction.REGISTER_CAMPAIGN -> {
                 val p = objectMapper.readValue(job.payloadJson, RegisterCampaignPayload::class.java)
-                client.registerCampaign(
-                    OnchainCodec.uuidToBytes32(p.campaignId),
-                    p.association,
-                    Numeric.hexStringToByteArray(p.budgetHashHex),
-                )
+                val id = OnchainCodec.uuidToBytes32(p.campaignId)
+                val budgetHash = Numeric.hexStringToByteArray(p.budgetHashHex)
+                val registered = client.registeredCampaign(id)
+                when {
+                    registered == null -> client.registerCampaign(id, p.association, budgetHash)
+                    !registered.association.equals(p.association, ignoreCase = true) -> throw OnchainRegistrationMismatchException(
+                        "Campaign ${p.campaignId} is already registered under association ${registered.association}, not ${p.association}")
+                    registered.budgetHashHex.equals(p.budgetHashHex, ignoreCase = true) -> null
+                    else -> {
+                        logger.info("Campaign {} already registered with budget hash {}: declaring {} instead",
+                            p.campaignId, registered.budgetHashHex, p.budgetHashHex)
+                        client.updateCampaignBudget(id, budgetHash)
+                    }
+                }
             }
             OnchainJobAction.UPDATE_CAMPAIGN_BUDGET -> {
                 val p = objectMapper.readValue(job.payloadJson, UpdateCampaignBudgetPayload::class.java)

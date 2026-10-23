@@ -238,13 +238,16 @@ springdoc:
     path: /api/docs/swagger-ui.html
 
 onchain:
-  mock: true
+  # Simulated by default. ONCHAIN_MOCK=false + the local Anvil node (docker compose --profile chain up -d,
+  # then blockchain/script/deploy-registry.sh anvil) runs the real client locally — blockchain/RUNBOOK.md.
+  mock: ${ONCHAIN_MOCK:true}
   rpc-url: ${ONCHAIN_RPC_URL:http://localhost:8545}
   chain-id: ${ONCHAIN_CHAIN_ID:31337}
-  # Dev-only defaults — safe because OnchainRegistryClient is inactive when mock=true.
-  # Prod supply real values via environment variables.
-  registry-address: ${ONCHAIN_REGISTRY_ADDRESS:0x0000000000000000000000000000000000000000}
-  recorder-pk: ${ONCHAIN_RECORDER_PK:0x0000000000000000000000000000000000000000000000000000000000000001}
+  # Local Anvil defaults. The registry address is the deterministic address of the first contract deployed by
+  # Anvil account 0 (nonce 0) through deploy-registry.sh anvil. The recorder key is Anvil account 1's — a
+  # PUBLIC test key printed by every Anvil node, worthless anywhere else. Staging/prod have no such defaults.
+  registry-address: ${ONCHAIN_REGISTRY_ADDRESS:0x5FbDB2315678afecb367f032d93F642f64180aa3}
+  recorder-pk: ${ONCHAIN_RECORDER_PK:0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}
   polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
   receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
   donor-address-secret: ${DONOR_ADDRESS_SECRET:dev-placeholder-change-in-staging}

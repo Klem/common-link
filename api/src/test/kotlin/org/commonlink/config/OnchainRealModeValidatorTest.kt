@@ -14,9 +14,10 @@ class OnchainRealModeValidatorTest {
         recorderPk: String = "0xabc",
         donorSecret: String = "a-real-donor-secret",
         assoSecret: String = "a-real-association-secret",
+        chainId: Long = 10200,
     ) = OnchainConfig(
         rpcUrl = rpcUrl,
-        chainId = 10200,
+        chainId = chainId,
         registryAddress = registry,
         recorderPk = recorderPk,
         pollingIntervalMs = 1,
@@ -63,5 +64,34 @@ class OnchainRealModeValidatorTest {
             .anyMatch { it.contains("registry-address") }
         assertThat(OnchainRealModeValidator.problems(cfg(registry = ""))).anyMatch { it.contains("registry-address") }
         assertThat(OnchainRealModeValidator.problems(cfg(recorderPk = ""))).anyMatch { it.contains("recorder-pk") }
+    }
+
+    @Test
+    fun `the local Anvil node accepts the committed dev placeholders`() {
+        val local = cfg(
+            chainId = OnchainRealModeValidator.ANVIL_CHAIN_ID,
+            rpcUrl = "http://localhost:8545",
+            donorSecret = "dev-placeholder-change-in-staging",
+            assoSecret = "dev-placeholder-change-in-staging",
+        )
+        assertThat(OnchainRealModeValidator.problems(local)).isEmpty()
+    }
+
+    @Test
+    fun `placeholders stay refused on a public chain even over loopback`() {
+        val tunnel = cfg(rpcUrl = "http://localhost:8545", donorSecret = "dev-placeholder-change-in-staging")
+        assertThat(OnchainRealModeValidator.problems(tunnel)).anyMatch { it.contains("donor-address-secret") }
+    }
+
+    @Test
+    fun `the Anvil chain id over a remote RPC is refused`() {
+        val remote = cfg(
+            chainId = OnchainRealModeValidator.ANVIL_CHAIN_ID,
+            rpcUrl = "https://rpc.example.org",
+            donorSecret = "dev-placeholder-change-in-staging",
+        )
+        assertThat(OnchainRealModeValidator.problems(remote))
+            .anyMatch { it.contains("onchain.chain-id") }
+            .anyMatch { it.contains("donor-address-secret") }
     }
 }

@@ -10,6 +10,7 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt
 import org.web3j.tx.ReadonlyTransactionManager
 import org.web3j.tx.TransactionManager
 import org.web3j.tx.gas.ContractGasProvider
+import org.web3j.utils.Numeric
 import java.math.BigInteger
 
 /**
@@ -32,9 +33,12 @@ class OnchainRegistryClient(
         CommonLinkRegistry.load(cfg.registryAddress, web3j, recorderTxMgr, gas)
     }
 
-    /** Read-only contract bound to no signer; never sends transactions. */
+    /**
+     * Read-only contract bound to no signer; never sends transactions. Its `eth_call`s carry the zero address as
+     * `from`: it must be a full 20-byte address — nodes reject a short `0x0` ("odd number of digits").
+     */
     private val viewContract: CommonLinkRegistry by lazy {
-        CommonLinkRegistry.load(cfg.registryAddress, web3j, ReadonlyTransactionManager(web3j, "0x0"), gas)
+        CommonLinkRegistry.load(cfg.registryAddress, web3j, ReadonlyTransactionManager(web3j, ZERO_ADDRESS), gas)
     }
 
     // ───── Writes (recorder) ─────────────────────────────────────────
@@ -80,11 +84,25 @@ class OnchainRegistryClient(
 
     // ───── Reads (no signer needed) ─────────────────────────────────
 
+    /** Reads `getAssociation`: the SIREN hash, or null when `registeredAt == 0` (never registered). */
+    override fun registeredAssociationSirenHash(address: String): String? =
+        getAssociation(address).takeIf { it.registeredAt.signum() != 0 }
+            ?.let { Numeric.toHexString(it.sirenHash).lowercase() }
+
+    /** Reads `getCampaign`: the registration, or null when its association is the zero address (never registered). */
+    override fun registeredCampaign(id: ByteArray): RegisteredCampaign? =
+        getCampaign(id).takeIf { Numeric.toBigInt(it.association).signum() != 0 }
+            ?.let { RegisteredCampaign(it.association, Numeric.toHexString(it.budgetHash).lowercase()) }
+
     /** Registration record of an association (`registeredAt == 0` when never registered). */
     fun getAssociation(address: String): CommonLinkRegistry.Association = viewContract.getAssociation(address).send()
 
     /** Registration record of a campaign (`association` is the zero address when never registered). */
     fun getCampaign(id: ByteArray): CommonLinkRegistry.Campaign = viewContract.getCampaign(id).send()
+
+    private companion object {
+        const val ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+    }
 
     /** A recorded donation (`donor` is the zero address when unknown). */
     fun getDonation(id: ByteArray): CommonLinkRegistry.Donation = viewContract.getDonation(id).send()

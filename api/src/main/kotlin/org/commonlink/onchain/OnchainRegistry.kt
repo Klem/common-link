@@ -72,4 +72,28 @@ interface OnchainRegistry {
      * @param amountCents amount in EUR cents (Solidity `uint96`)
      */
     fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger): TransactionReceipt
+
+    /**
+     * Reads the on-chain registration of an association (no transaction).
+     *
+     * @param address pseudonymous association address
+     * @return the registered SIREN hash as lowercase `0x` hex, or null when the association was never registered
+     */
+    fun registeredAssociationSirenHash(address: String): String?
+
+    /**
+     * Reads the on-chain registration of a campaign (no transaction).
+     *
+     * @param id campaign UUID encoded as bytes32
+     * @return the registration, or null when the campaign was never registered
+     */
+    fun registeredCampaign(id: ByteArray): RegisteredCampaign?
 }
+
+/**
+ * A campaign registration as read from the chain.
+ *
+ * @property association owning association address (checksummed or not: compare case-insensitively)
+ * @property budgetHashHex last declared budget hash as lowercase `0x` hex
+ */
+data class RegisteredCampaign(val association: String, val budgetHashHex: String)

@@ -12,6 +12,7 @@ import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.OnchainJobStatus
 import org.commonlink.onchain.OnchainCodec
 import org.commonlink.onchain.OnchainRegistry
+import org.commonlink.onchain.RegisteredCampaign
 import org.commonlink.repository.OnchainJobRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,7 +22,7 @@ import java.util.UUID
 
 /**
  * Covers how [OnchainJobWorker] dispatches jobs to the registry v2 client: correct bytes32 encoding,
- * success bookkeeping, retry / terminal-failure bookkeeping.
+ * success bookkeeping, retry / terminal-failure bookkeeping, and registrations already present on-chain.
  */
 class OnchainJobWorkerDispatchTest {
 
@@ -52,6 +53,9 @@ class OnchainJobWorkerDispatchTest {
     fun setUp() {
         // A relaxed mock would return a bare Object for the generic save(); echo the entity instead.
         every { repo.save(any<OnchainJob>()) } answers { firstArg() }
+        // Default: nothing is registered on-chain yet, so registrations are sent.
+        every { client.registeredAssociationSirenHash(any()) } returns null
+        every { client.registeredCampaign(any()) } returns null
         worker = OnchainJobWorker(claimer, repo, mockk<DonationReceiptService>(), client, objectMapper, cfg)
     }
 
@@ -150,5 +154,92 @@ class OnchainJobWorkerDispatchTest {
         assertThat(id.captured).isEqualTo(OnchainCodec.uuidToBytes32(campaignId))
         assertThat(budget.captured).isEqualTo(ByteArray(32) { 0x22 })
         assertThat(job.status).isEqualTo(OnchainJobStatus.DONE)
+    }
+
+    private val sirenHex = "0x" + "11".repeat(32)
+    private val budgetHex = "0x" + "22".repeat(32)
+
+    private fun associationJob() = OnchainJob(
+        action = OnchainJobAction.REGISTER_ASSOCIATION,
+        payloadJson = objectMapper.writeValueAsString(RegisterAssociationPayload("0xAsso", sirenHex)),
+        status = OnchainJobStatus.RUNNING,
+        attempts = 1,
+    )
+
+    private fun campaignJob() = OnchainJob(
+        action = OnchainJobAction.REGISTER_CAMPAIGN,
+        payloadJson = objectMapper.writeValueAsString(RegisterCampaignPayload(campaignId, "0xAsso", budgetHex)),
+        status = OnchainJobStatus.RUNNING,
+        attempts = 1,
+    )
+
+    @Test
+    fun `an association already registered with the same SIREN hash is DONE without transaction`() {
+        val job = associationJob()
+        every { claimer.claimBatch(10) } returns listOf(job)
+        every { client.registeredAssociationSirenHash("0xAsso") } returns sirenHex.uppercase().replace("0X", "0x")
+
+        worker.tick()
+
+        assertThat(job.status).isEqualTo(OnchainJobStatus.DONE)
+        assertThat(job.txHash).isNull()
+        verify(exactly = 0) { client.registerAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `an association already registered with another SIREN hash is FAILED at once`() {
+        val job = associationJob()
+        every { claimer.claimBatch(10) } returns listOf(job)
+        every { client.registeredAssociationSirenHash("0xAsso") } returns "0x" + "99".repeat(32)
+
+        worker.tick()
+
+        assertThat(job.status).isEqualTo(OnchainJobStatus.FAILED)
+        assertThat(job.lastError).contains("already registered with SIREN hash")
+        verify(exactly = 0) { client.registerAssociation(any(), any()) }
+    }
+
+    @Test
+    fun `a campaign already registered with the same data is DONE without transaction`() {
+        val job = campaignJob()
+        every { claimer.claimBatch(10) } returns listOf(job)
+        every { client.registeredCampaign(OnchainCodec.uuidToBytes32(campaignId)) } returns RegisteredCampaign("0xasso", budgetHex)
+
+        worker.tick()
+
+        assertThat(job.status).isEqualTo(OnchainJobStatus.DONE)
+        assertThat(job.txHash).isNull()
+        verify(exactly = 0) { client.registerCampaign(any(), any(), any()) }
+        verify(exactly = 0) { client.updateCampaignBudget(any(), any()) }
+    }
+
+    @Test
+    fun `a campaign already registered with another budget hash gets the job's hash through a budget update`() {
+        val job = campaignJob()
+        every { claimer.claimBatch(10) } returns listOf(job)
+        every { client.registeredCampaign(any()) } returns RegisteredCampaign("0xAsso", "0x" + "33".repeat(32))
+        val budget = slot<ByteArray>()
+        every { client.updateCampaignBudget(OnchainCodec.uuidToBytes32(campaignId), capture(budget)) } returns receipt()
+
+        worker.tick()
+
+        assertThat(budget.captured).isEqualTo(ByteArray(32) { 0x22 })
+        assertThat(job.status).isEqualTo(OnchainJobStatus.DONE)
+        assertThat(job.txHash).isEqualTo("0x" + "ab".repeat(32))
+        verify(exactly = 0) { client.registerCampaign(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a campaign already registered under another association is FAILED at once`() {
+        val job = campaignJob()
+        every { claimer.claimBatch(10) } returns listOf(job)
+        every { client.registeredCampaign(any()) } returns RegisteredCampaign("0xOther", budgetHex)
+
+        worker.tick()
+
+        assertThat(job.status).isEqualTo(OnchainJobStatus.FAILED)
+        assertThat(job.lastError).contains("already registered under association 0xOther")
+        verify(exactly = 0) { client.registerCampaign(any(), any(), any()) }
+        verify(exactly = 0) { client.updateCampaignBudget(any(), any()) }
     }
 }

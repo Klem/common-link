@@ -63,4 +63,10 @@ class MockOnchainRegistry : OnchainRegistry {
     /** Returns a synthetic receipt; nothing is sent on-chain (mock mode). */
     override fun recordPayout(payoutId: ByteArray, campaignId: ByteArray, amountCents: BigInteger) =
         syntheticReceipt("recordPayout amountCents=$amountCents")
+
+    /** Nothing is ever registered on the mock chain: every registration job is sent. */
+    override fun registeredAssociationSirenHash(address: String): String? = null
+
+    /** Nothing is ever registered on the mock chain: every registration job is sent. */
+    override fun registeredCampaign(id: ByteArray): RegisteredCampaign? = null
 }

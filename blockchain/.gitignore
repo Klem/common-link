@@ -5,9 +5,10 @@ broadcast/
 artifacts/
 
 coverage/
-
+*/*.sh
 # Anvil
 anvil-state.json
+deployments/anvil.json
 
 
 node_modules/

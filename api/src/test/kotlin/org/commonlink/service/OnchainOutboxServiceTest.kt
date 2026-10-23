@@ -9,8 +9,10 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.commonlink.config.OnchainConfig
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.exception.ConflictException
 import org.commonlink.repository.OnchainJobRepository
 import org.junit.jupiter.api.Test
+import org.springframework.dao.DataIntegrityViolationException
 
 class OnchainOutboxServiceTest {
 
@@ -33,6 +35,25 @@ class OnchainOutboxServiceTest {
 
     init {
         every { repo.save(any<OnchainJob>()) } answers { firstArg() }
+        every { repo.saveAndFlush(any<OnchainJob>()) } answers { firstArg() }
+    }
+
+    @Test
+    fun `a key inserted concurrently since the lookup is refused with a 409`() {
+        every { repo.findByChainIdAndCorrelationKey(10200, "K") } returns null
+        every { repo.saveAndFlush(any<OnchainJob>()) } throws DataIntegrityViolationException("uq_onchain_jobs_chain_correlation")
+
+        assertThatThrownBy {
+            service(mock = false).enqueue(OnchainJobAction.UPDATE_CAMPAIGN_BUDGET, mapOf("a" to 1), "K")
+        }.isInstanceOf(ConflictException::class.java)
+    }
+
+    @Test
+    fun `a job without correlation key is saved without flush`() {
+        service(mock = false).enqueue(OnchainJobAction.RECORD_DONATION, mapOf("a" to 1))
+
+        verify { repo.save(any<OnchainJob>()) }
+        verify(exactly = 0) { repo.saveAndFlush(any<OnchainJob>()) }
     }
 
     @Test

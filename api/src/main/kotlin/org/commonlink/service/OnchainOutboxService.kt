@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.commonlink.config.OnchainConfig
 import org.commonlink.entity.OnchainJob
 import org.commonlink.entity.OnchainJobAction
+import org.commonlink.exception.ConflictException
 import org.commonlink.repository.OnchainJobRepository
+import org.slf4j.LoggerFactory
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -22,6 +25,8 @@ class OnchainOutboxService(
     private val objectMapper: ObjectMapper,
     private val cfg: OnchainConfig,
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     /**
      * @param id UUID of a job.
      * @return the job, whatever its chain, or null when unknown.
@@ -56,6 +61,9 @@ class OnchainOutboxService(
      * @param correlationKey opaque key uniquely identifying the source business event; `null` disables idempotency
      * @param dependsOn prerequisite job that must be `DONE` before this one is claimed; it must target the same chain
      * @throws IllegalArgumentException if [dependsOn] targets another chain
+     * @throws ConflictException (HTTP 409) if another transaction inserted the same [correlationKey] on this chain
+     *   between the lookup and the insert (e.g. two simultaneous budget saves chaining onto the same previous job);
+     *   the caller's transaction is rolled back
      */
     @Transactional
     fun enqueue(
@@ -71,14 +79,21 @@ class OnchainOutboxService(
         correlationKey?.let { key ->
             repo.findByChainIdAndCorrelationKey(chainId, key)?.let { return it }
         }
-        return repo.save(
-            OnchainJob(
-                action = action,
-                payloadJson = objectMapper.writeValueAsString(payload),
-                correlationKey = correlationKey,
-                chainId = chainId,
-                dependsOnJobId = dependsOn?.id,
-            ),
+        val job = OnchainJob(
+            action = action,
+            payloadJson = objectMapper.writeValueAsString(payload),
+            correlationKey = correlationKey,
+            chainId = chainId,
+            dependsOnJobId = dependsOn?.id,
         )
+        if (correlationKey == null) return repo.save(job)
+        // Flushed now so that a concurrent transaction that inserted the same key since the lookup above
+        // surfaces here as a 409, not as a raw constraint violation (HTTP 500) at commit time.
+        return try {
+            repo.saveAndFlush(job)
+        } catch (e: DataIntegrityViolationException) {
+            logger.warn("On-chain job {} on chain {} was enqueued concurrently: request refused", correlationKey, chainId)
+            throw ConflictException("A concurrent change was recorded at the same time; reload and retry")
+        }
     }
 }
