@@ -6,8 +6,8 @@ import {CommonLinkRegistry} from "../../src/CommonLinkRegistry.sol";
 
 /**
  * @title  CommonLinkBaseTest
- * @notice Shared fixtures for the CommonLinkRegistry v2 test suite: a freshly deployed registry
- *         (admin + recorder), test actors, identifier helpers mimicking the Postgres UUID-as-bytes32
+ * @notice Shared fixtures for the CommonLinkRegistry hub test suite: a freshly deployed registry
+ *         (admin with a zero transfer delay, recorder, pauser), test actors, identifier helpers mimicking the Postgres UUID-as-bytes32
  *         convention (16 value bytes, 16 zero bytes; donations and payouts in separate namespaces),
  *         and registration / donation helpers.
  */
@@ -16,6 +16,7 @@ abstract contract CommonLinkBaseTest is Test {
 
     address public admin    = makeAddr("admin");
     address public recorder = makeAddr("recorder");
+    address public pauser   = makeAddr("pauser");
     address public asso1    = makeAddr("asso1");
     address public asso2    = makeAddr("asso2");
     address public donor1   = makeAddr("donor1");
@@ -35,6 +36,7 @@ abstract contract CommonLinkBaseTest is Test {
 
     /// @dev Role ids as constants: calling registry.X_ROLE() after vm.prank would consume the prank.
     bytes32 internal constant RECORDER_ROLE = keccak256("RECORDER_ROLE");
+    bytes32 internal constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 internal constant ADMIN_ROLE = 0x00;
 
     bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);
@@ -43,7 +45,7 @@ abstract contract CommonLinkBaseTest is Test {
     function setUp() public virtual {
         // Stable, non-zero timestamp so `registeredAt == 0` never collides with "unregistered".
         vm.warp(1_800_000_000);
-        registry = new CommonLinkRegistry(admin, recorder);
+        registry = new CommonLinkRegistry(0, admin, recorder, pauser);
     }
 
     // ── Identifiers ─────────────────────────────────────────────────────

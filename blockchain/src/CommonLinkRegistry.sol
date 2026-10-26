@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {AccessControlDefaultAdminRules} from "@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {IDonorBadge} from "./interfaces/IDonorBadge.sol";
+import {ICommonLinkRegistryReader} from "./interfaces/ICommonLinkRegistryReader.sol";
 
 /**
  * @title  CommonLinkRegistry
@@ -16,10 +15,12 @@ import {IDonorBadge} from "./interfaces/IDonorBadge.sol";
  *             resulting cumulative donor statistics;
  *           - settled payouts (disbursements of campaign funds to beneficiaries) with their bank
  *             transfer reference;
- *           - cumulative campaign statistics (donations, unique donors, payouts);
- *           - badge mints, relayed to the soulbound badge contract.
+ *           - cumulative campaign statistics (donations, unique donors, payouts).
  *
- *         The contract MOVES NO FUNDS. All monetary values are denominated in EUR cents.
+ *         The contract MOVES NO FUNDS AND CANNOT RECEIVE ANY: no receive / fallback / payable function, no token
+ *         receiver hook (ERC-721, ERC-1155, ERC-777, ERC-677), no balance read, no recovery function. A balance can
+ *         still be forced (SELFDESTRUCT of another contract, fee recipient, pre-deployment transfer, plain ERC-20
+ *         transfer): it stays locked forever and affects no record. All monetary values are denominated in EUR cents.
  *
  *         NOTARY PRINCIPLE: the registry only records facts the backend has ALREADY decided and
  *         confirmed. It re-implements NO business rule (campaign status, association eligibility,
@@ -29,116 +30,74 @@ import {IDonorBadge} from "./interfaces/IDonorBadge.sol";
  *         registered when it becomes able to collect, a campaign when it first goes live. Neither is
  *         ever removed, paused or re-activated here; making an entity read-only is a backend
  *         decision. The registry only guards its own integrity: access control, pause, duplicate
- *         identifiers, referential existence and input sanity.
+ *         identifiers, referential existence and input sanity. It does NOT check campaign status,
+ *         KYC eligibility, fees, payment confirmation, payout eligibility or balances, budget validity,
+ *         refunds (none exist on-chain), donation-to-payout allocation or badge criteria.
  *
- * @dev    All calls are signed by the CommonLink backend hot wallet (RECORDER_ROLE); neither
- *         associations nor donors ever sign transactions. See blockchain/README.md.
+ *         HUB OF A HUB-AND-SATELLITES DESIGN: this contract is immutable and holds the canonical state.
+ *         It never calls another contract. Satellites (e.g. the soulbound badge) read it through
+ *         ICommonLinkRegistryReader, advertised via ERC-165 and versioned by READER_VERSION.
+ *
+ * @dev    Records are signed by the CommonLink backend hot wallet (RECORDER_ROLE); the emergency pause by a
+ *         dedicated backend key (PAUSER_ROLE, triggered by a compliance officer); resuming, role management and
+ *         admin hand-over by the admin (a Safe multisig in production, two-step transfer with a delay, never
+ *         renounceable). Neither associations nor donors ever sign transactions. See blockchain/README.md.
  */
-contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
+contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommonLinkRegistryReader {
     // ─────────────────────────────────────────────────────────────────────
     // Version & roles
     // ─────────────────────────────────────────────────────────────────────
 
     /// @notice Semantic version of the registry.
-    string public constant VERSION = "2.1.0-mvp";
+    string public constant VERSION = "3.0.0-mvp";
+
+    /// @inheritdoc ICommonLinkRegistryReader
+    uint16 public constant READER_VERSION = 1;
 
     /// @notice Role allowed to write every record. Held by the backend hot wallet.
     bytes32 public constant RECORDER_ROLE = keccak256("RECORDER_ROLE");
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Types
-    // ─────────────────────────────────────────────────────────────────────
+    /// @notice Role allowed to pause every write (not to resume). Held by a dedicated backend key.
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    /// @notice A registered association. Keyed by its pseudonymous address.
-    /// @dev    `registeredAt == 0` means "never registered".
-    struct Association {
-        bytes32 sirenHash; // keccak256 of the canonical SIREN
-        uint32 registeredAt;
-    }
-
-    /// @notice A registered campaign. The `campaignId` (UUID encoded as bytes32) is the mapping key.
-    /// @dev    `association == address(0)` means "never registered".
-    struct Campaign {
-        address association;
-        uint96 raised; // EUR cents, sum of the recorded donations
-        uint32 registeredAt;
-        bytes32 budgetHash; // last declared budget hash (history in CampaignBudgetUpdated events)
-    }
-
-    /// @notice A recorded donation. The `donationId` (UUID encoded as bytes32) is the mapping key.
-    struct Donation {
-        address donor;
-        uint96 amount; // EUR cents
-        bytes32 campaignId;
-        uint32 timestamp;
-        bytes32 receiptHash; // hash of the fiscal receipt
-        bytes32 txRef; // payment provider reference encoded as bytes32
-    }
-
-    /// @notice A settled payout. The `payoutId` (UUID encoded as bytes32) is the mapping key.
-    /// @dev    `campaignId == bytes32(0)` means "never recorded".
-    struct Payout {
-        bytes32 campaignId;
-        uint96 amount; // EUR cents
-        uint32 timestamp;
-        bytes32 txRef; // bank transfer reference (payment provider transaction id) encoded as bytes32
-    }
-
-    /// @notice Cumulative campaign statistics, packed into a single storage slot. The total raised stays in
-    ///         `Campaign.raised`.
-    struct CampaignStats {
-        uint96 totalPaidOut; // EUR cents, sum of the recorded payouts
-        uint32 payoutCount;
-        uint32 donationCount;
-        uint32 uniqueDonors; // distinct donor addresses with at least one recorded donation
-        uint32 lastDonationAt;
-        uint32 lastPayoutAt;
-    }
-
-    /// @notice Cumulative donor statistics, packed into a single storage slot.
-    struct DonorStats {
-        uint128 totalDonated; // EUR cents
-        uint32 donationCount;
-        uint32 uniqueCampaigns;
-        uint32 firstDonationAt;
-    }
+    // Types (Association, Campaign, Donation, Payout, CampaignStats, DonorStats) are declared in
+    // ICommonLinkRegistryReader so that satellites compile without importing the hub.
 
     // ─────────────────────────────────────────────────────────────────────
-    // Storage
+    // Storage — internal: the only read surface is the get* functions of ICommonLinkRegistryReader.
     // ─────────────────────────────────────────────────────────────────────
 
     /// @notice Registered associations keyed by pseudonymous address.
-    mapping(address => Association) public associations;
+    mapping(address => Association) internal associations;
 
     /// @notice Reverse index sirenHash -> address. A SIREN is registered at most once.
-    mapping(bytes32 => address) public sirenHashToAssociation;
+    mapping(bytes32 => address) internal sirenHashToAssociation;
 
     /// @notice Registered campaigns keyed by UUID encoded as bytes32.
-    mapping(bytes32 => Campaign) public campaigns;
+    mapping(bytes32 => Campaign) internal campaigns;
 
     /// @notice Donations keyed by UUID encoded as bytes32. Write-once.
-    mapping(bytes32 => Donation) public donations;
+    mapping(bytes32 => Donation) internal donations;
 
     /// @notice Cumulative statistics per donor address.
-    mapping(address => DonorStats) public donorStats;
+    mapping(address => DonorStats) internal donorStats;
 
     /// @notice Total donated by (donor, campaign) pair.
-    mapping(address => mapping(bytes32 => uint128)) public donorCampaignTotal;
+    mapping(address => mapping(bytes32 => uint128)) internal donorCampaignTotal;
 
     /// @notice Settled payouts keyed by UUID encoded as bytes32. Write-once.
-    mapping(bytes32 => Payout) public payouts;
+    mapping(bytes32 => Payout) internal payouts;
 
     /// @notice Cumulative statistics per campaign (UUID encoded as bytes32).
-    mapping(bytes32 => CampaignStats) public campaignStats;
-
-    /// @notice Soulbound badge contract this registry mints through. Set once by the admin.
-    IDonorBadge public badgeContract;
+    mapping(bytes32 => CampaignStats) internal campaignStats;
 
     // ─────────────────────────────────────────────────────────────────────
     // Custom errors
     // ─────────────────────────────────────────────────────────────────────
 
-    error InvalidAdmin();
+    error InvalidRecorder();
+    error InvalidPauser();
+    error AdminRenounceForbidden();
 
     // Associations
     error InvalidAssociation();
@@ -167,12 +126,6 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     error PayoutAlreadyRecorded(bytes32 payoutId);
     error PaidOutOverflow(bytes32 campaignId, uint96 totalPaidOut, uint96 amount);
 
-    // Badges
-    error InvalidBadgeContract();
-    error BadgeContractAlreadySet(address badgeContract);
-    error BadgeContractNotSet();
-    error DonorUnknown(address donor);
-
     // ─────────────────────────────────────────────────────────────────────
     // Events
     // ─────────────────────────────────────────────────────────────────────
@@ -199,12 +152,6 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     ///         reference (payment provider transaction id encoded as bytes32).
     event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint96 amount, bytes32 txRef, uint32 timestamp);
 
-    /// @notice Emitted once, when the badge contract address is set.
-    event BadgeContractSet(address indexed badgeContract);
-
-    /// @notice Emitted when a badge mint is relayed to the badge contract.
-    event BadgeMinted(address indexed donor, uint16 indexed badgeType, uint256 tokenId);
-
     // ─────────────────────────────────────────────────────────────────────
     // Modifiers
     // ─────────────────────────────────────────────────────────────────────
@@ -220,16 +167,20 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * @notice Deploys the registry.
-     * @param  admin    Receives DEFAULT_ADMIN_ROLE (a Safe multisig in production). Cannot be zero.
-     * @param  recorder Receives RECORDER_ROLE. Pass address(0) to skip and grant later.
+     * @notice Deploys the registry. Non-payable: deploying with value reverts.
+     * @param  adminDelay Delay (seconds) of the two-step DEFAULT_ADMIN_ROLE transfer.
+     * @param  admin      Receives DEFAULT_ADMIN_ROLE (a Safe multisig in production). Cannot be zero.
+     * @param  recorder   Receives RECORDER_ROLE. Cannot be zero.
+     * @param  pauser     Receives PAUSER_ROLE. Cannot be zero.
+     * @dev    Distinct admin / recorder / pauser keys are enforced by the deployment script, not here.
      */
-    constructor(address admin, address recorder) {
-        require(admin != address(0), InvalidAdmin());
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
-        if (recorder != address(0)) {
-            _grantRole(RECORDER_ROLE, recorder);
-        }
+    constructor(uint48 adminDelay, address admin, address recorder, address pauser)
+        AccessControlDefaultAdminRules(adminDelay, admin)
+    {
+        require(recorder != address(0), InvalidRecorder());
+        require(pauser != address(0), InvalidPauser());
+        _grantRole(RECORDER_ROLE, recorder);
+        _grantRole(PAUSER_ROLE, pauser);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -310,7 +261,7 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
      * @param  receiptHash Hash of the fiscal receipt.
      * @param  txRef       Payment provider reference encoded as bytes32.
      */
-    function recordDonation(bytes32 donationId, address donor, bytes32 campaignId, uint96 amount, bytes32 receiptHash, bytes32 txRef) external whenNotPaused nonReentrant onlyRole(RECORDER_ROLE) requireCampaignRegistered(campaignId) {
+    function recordDonation(bytes32 donationId, address donor, bytes32 campaignId, uint96 amount, bytes32 receiptHash, bytes32 txRef) external whenNotPaused onlyRole(RECORDER_ROLE) requireCampaignRegistered(campaignId) {
         require(donationId != bytes32(0), EmptyDonationId());
         require(donations[donationId].donor == address(0), DonationAlreadyExists(donationId));
         require(donor != address(0), InvalidDonor());
@@ -423,55 +374,46 @@ contract CommonLinkRegistry is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Badges
+    // Emergency pause (PAUSER_ROLE) and resume (DEFAULT_ADMIN_ROLE)
     // ─────────────────────────────────────────────────────────────────────
 
-    /**
-     * @notice Sets the soulbound badge contract this registry mints through. WRITE-ONCE: a faulty
-     *         badge contract requires redeploying the registry.
-     * @param  badge Deployed badge contract whose single minter is this registry.
-     */
-    function setBadgeContract(address badge) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(badge != address(0) && badge.code.length != 0, InvalidBadgeContract());
-        require(address(badgeContract) == address(0), BadgeContractAlreadySet(address(badgeContract)));
-
-        badgeContract = IDonorBadge(badge);
-        emit BadgeContractSet(badge);
-    }
-
-    /**
-     * @notice Relays a badge mint decided by the backend (award rules are off-chain). The donor
-     *         must already have a recorded donation (referential integrity). Duplicate mints are
-     *         rejected by the badge contract.
-     * @param  donor     Donor pseudonymous address.
-     * @param  badgeType Badge type defined on the badge contract.
-     * @return tokenId   Id of the minted token.
-     */
-    function mintBadge(address donor, uint16 badgeType) external whenNotPaused nonReentrant onlyRole(RECORDER_ROLE) returns (uint256 tokenId) {
-        IDonorBadge badge = badgeContract;
-        require(address(badge) != address(0), BadgeContractNotSet());
-        require(donorStats[donor].firstDonationAt != 0, DonorUnknown(donor));
-
-        tokenId = badge.mint(donor, badgeType);
-        emit BadgeMinted(donor, badgeType, tokenId);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Global emergency pause (DEFAULT_ADMIN_ROLE)
-    // ─────────────────────────────────────────────────────────────────────
-
-    /// @notice Freezes every write: registrations, budget updates, donations, payouts, badge mints.
-    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    /// @notice Freezes every write: registrations, budget updates, donations, payouts. Reads stay available.
+    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    /// @notice Lifts the global pause.
+    /// @notice Lifts the pause. Reserved to the admin: the pauser can freeze, never resume.
     function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Views — return entire structs in a single call
+    // Governance
+    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Renouncing a role. DEFAULT_ADMIN_ROLE can never be renounced: without an admin, no operational key
+     *         (recorder, pauser) could be rotated after a compromise and the pause could never be lifted. The admin
+     *         changes hands only through the two-step transfer (beginDefaultAdminTransfer / acceptDefaultAdminTransfer).
+     * @param  role    Role to renounce.
+     * @param  account Must be the caller (checked by OpenZeppelin).
+     */
+    function renounceRole(bytes32 role, address account) public override {
+        require(role != DEFAULT_ADMIN_ROLE, AdminRenounceForbidden());
+        super.renounceRole(role, account);
+    }
+
+    /**
+     * @notice ERC-165: advertises ICommonLinkRegistryReader in addition to the OpenZeppelin access-control interfaces.
+     * @param  interfaceId Interface identifier to test.
+     * @return Whether this contract implements `interfaceId`.
+     */
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+        return interfaceId == type(ICommonLinkRegistryReader).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Views (ICommonLinkRegistryReader) — return entire structs in a single call
     // ─────────────────────────────────────────────────────────────────────
 
     function getAssociation(address association) external view returns (Association memory) {

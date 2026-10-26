@@ -4,48 +4,47 @@ pragma solidity 0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {CommonLinkRegistry} from "../src/CommonLinkRegistry.sol";
 import {CommonLinkHandler} from "./handlers/CommonLinkHandler.sol";
-import {MockDonorBadge} from "./mocks/MockDonorBadge.sol";
 
 /**
  * @title  CommonLinkRegistryInvariantTest
- * @notice Structural invariants of the CommonLinkRegistry v2 (notary, registered once):
+ * @notice Structural invariants of the CommonLinkRegistry hub (notary, registered once):
  *           - INV-1  a registration is permanent: association and campaign records never change
  *                    (sirenHash, registeredAt, association owner), budgetHash is never empty;
- *           - INV-2  every identifier (association, SIREN, campaign, donation, payout, badge pair)
- *                    is written at most once;
+ *           - INV-2  every identifier (association, campaign, donation, payout) is written at most once;
  *           - INV-3  `raised` equals the sum of the donations recorded on the campaign;
  *           - INV-4  donor statistics equal the sum of the donations recorded for the donor;
  *           - INV-5  the registry never refuses a write for any reason other than its integrity
  *                    guards (no business rule crept in);
- *           - INV-6  the registry never holds funds.
+ *           - INV-6  campaign statistics equal the recorded donations and payouts;
+ *           - INV-7  the registry never holds funds;
+ *           - INV-8  roles: no write is accepted while paused, only the pauser pauses, only the admin
+ *                    resumes, and the admin never changes outside the two-step transfer (not driven here).
  *
  *         Requires `fail_on_revert = false` under [invariant] in foundry.toml.
  */
 contract CommonLinkRegistryInvariantTest is Test {
     CommonLinkRegistry public registry;
     CommonLinkHandler public handler;
-    MockDonorBadge public badge;
 
     address public admin    = makeAddr("admin-inv");
     address public recorder = makeAddr("recorder-inv");
+    address public pauser   = makeAddr("pauser-inv");
 
     function setUp() public {
         vm.warp(1_800_000_000);
-        registry = new CommonLinkRegistry(admin, recorder);
-        badge = new MockDonorBadge(address(registry));
-        vm.prank(admin);
-        registry.setBadgeContract(address(badge));
-        handler = new CommonLinkHandler(registry, badge, recorder);
+        registry = new CommonLinkRegistry(0, admin, recorder, pauser);
+        handler = new CommonLinkHandler(registry, admin, recorder, pauser);
 
         targetContract(address(handler));
-        bytes4[] memory selectors = new bytes4[](7);
+        bytes4[] memory selectors = new bytes4[](8);
         selectors[0] = handler.registerAssociation.selector;
         selectors[1] = handler.registerCampaign.selector;
         selectors[2] = handler.updateCampaignBudget.selector;
         selectors[3] = handler.recordDonation.selector;
         selectors[4] = handler.recordPayout.selector;
-        selectors[5] = handler.mintBadge.selector;
-        selectors[6] = handler.warpForward.selector;
+        selectors[5] = handler.pause.selector;
+        selectors[6] = handler.unpause.selector;
+        selectors[7] = handler.warpForward.selector;
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
@@ -56,7 +55,6 @@ contract CommonLinkRegistryInvariantTest is Test {
             CommonLinkRegistry.Association memory rec = registry.getAssociation(a);
             assertEq(rec.registeredAt, handler.ghost_assoRegisteredAt(a), "INV-1: association registeredAt changed");
             assertEq(rec.sirenHash, handler.ghost_assoSiren(a), "INV-1: association sirenHash changed");
-            assertEq(registry.sirenHashToAssociation(rec.sirenHash), a, "INV-1: SIREN index changed");
         }
         uint256 nc = handler.registeredCampaignCount();
         for (uint256 i = 0; i < nc; i++) {
@@ -82,7 +80,6 @@ contract CommonLinkRegistryInvariantTest is Test {
             assertEq(handler.ghost_payoutRecordCount(id), 1, "INV-2: payout recorded more than once");
             assertTrue(registry.getPayout(id).campaignId != bytes32(0), "INV-2: recorded payout vanished");
         }
-        assertEq(badge.mintCount(), handler.ghost_badgesMinted(), "INV-2: badge mint count diverges");
     }
 
     function invariant_raisedEqualsSumOfDonations() public view {
@@ -120,6 +117,14 @@ contract CommonLinkRegistryInvariantTest is Test {
     }
 
     function invariant_registryHoldsNoFunds() public view {
-        assertEq(address(registry).balance, 0, "INV-6: registry holds funds");
+        assertEq(address(registry).balance, 0, "INV-7: registry holds funds");
+    }
+
+    function invariant_rolesAndPause() public view {
+        assertFalse(handler.ghost_pauseBreach(), "INV-8: a write was accepted while paused");
+        assertFalse(handler.ghost_roleBreach(), "INV-8: pause or resume accepted from the wrong role");
+        assertEq(registry.defaultAdmin(), admin, "INV-8: admin changed");
+        assertTrue(registry.hasRole(registry.PAUSER_ROLE(), pauser), "INV-8: pauser lost its role");
+        assertTrue(registry.hasRole(registry.RECORDER_ROLE(), recorder), "INV-8: recorder lost its role");
     }
 }

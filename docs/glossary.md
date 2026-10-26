@@ -457,6 +457,10 @@ The means by which a donor completes a donation. Supported methods: **Card** (Vi
 The line on the fiscal receipt stating how the donor actually paid. The provider's method code is captured when the payment is confirmed (`donations.payment_method`) and mapped to a French label — _Carte bancaire_, _Virement bancaire_, _Prélèvement SEPA_, _Virement bancaire en ligne_. An unrecognised provider code is printed verbatim rather than forced into a category, and a donation confirmed without a provider payload prints _Non précisé_. Previously the receipt printed the list of accepted methods, which was false for every individual donation. See `docs/legal/E5-recu-fiscal-mentions.md`.
 `functional` `business`
 
+### Pauser Role
+`PAUSER_ROLE` of the on-chain registry: may call `pause()` — freezing every registry write, reads stay available — and nothing else; it can never resume (`unpause()` is reserved to the admin). Held by a **dedicated** backend key, distinct from the recorder key (own nonce stream, so a stuck recorder never blocks a freeze), and triggered by a compliance officer (`COMPLIANCE_OFFICER`). The key needs a little xDAI: an unfunded pauser cannot freeze.
+`blockchain` `technical`
+
 ### Payout Record (On-Chain)
 The on-chain proof that a payout (a disbursement of campaign funds to a beneficiary) was settled by the bank. It is written by `recordPayout(payoutId, campaignId, amountCents, txRef)` once the bank settlement is confirmed, emitting a `PayoutRecorded` event, and kept as a record readable with `getPayout` (registry v2.1): campaign, amount in EUR cents, timestamp and `txRef`, the bank transfer reference written as text — the Bridge transaction id (32 characters), else the Bridge payment link id without dashes, else the payout id without dashes (`PayoutConfirmer.payoutTxRef`; in Bridge demo mode a 32-character `demo_…` id). The registry moves no funds and only checks that the campaign is registered, the id unused and the amount and reference non-zero; the available balance and payout eligibility are backend rules.
 `blockchain` `technical`
@@ -482,7 +486,11 @@ One of the two server secrets (`DONOR_ADDRESS_SECRET`, `ASSOCIATION_ADDRESS_SECR
 `technical` `security` `blockchain`
 
 ### Proof Registry (Notary Principle)
-The design rule of the `CommonLinkRegistry` contract (v2): it only records facts the backend has **already decided and confirmed**, and re-implements **no business rule** (campaign status, KYC eligibility, goals, balances, fees, badge criteria). It has **no lifecycle**: an association is registered once (when it becomes able to collect) and a campaign once (at its first LIVE, with its budget hash); neither is ever removed, paused or re-activated on-chain — making them read-only is a backend decision. On-chain records: registrations, budget hash updates, donations (with donor totals), settled payouts, badge mints relayed to the soulbound badge contract. The registry only guards its own integrity: access control, pause, duplicate identifiers, referential existence and input sanity. It proves that CommonLink *declared* a fact at a given date and cannot rewrite it — never that a business rule was satisfied.
+The design rule of the `CommonLinkRegistry` contract (v3, the **hub**): it only records facts the backend has **already decided and confirmed**, and re-implements **no business rule** (campaign status, KYC eligibility, goals, balances, fees, badge criteria). It has **no lifecycle**: an association is registered once (when it becomes able to collect) and a campaign once (at its first LIVE, with its budget hash); neither is ever removed, paused or re-activated on-chain — making them read-only is a backend decision. On-chain records: registrations, budget hash updates, donations (with donor totals), settled payouts and campaign statistics. Since v3 it calls no other contract (badges are a separate **satellite contract**), cannot receive funds, and has no refund and no donation-to-payout allocation (both stay in the backend). The registry only guards its own integrity: access control, pause, duplicate identifiers, referential existence and input sanity. It proves that CommonLink *declared* a fact at a given date and cannot rewrite it — never that a business rule was satisfied.
+`blockchain` `technical`
+
+### Hub and Satellites (On-Chain Architecture)
+How the on-chain layer evolves without proxies or upgradeability. The **hub** (`CommonLinkRegistry`) is immutable, holds the canonical state and never calls another contract. **Satellite contracts** (e.g. the soulbound donor badge) are deployed separately, keep the hub address as an immutable value checked at deployment (ERC-165 + **Reader Interface Version**), and only read the hub's getters. A new kind of fact lives in a satellite's own storage. Redeploying the hub detaches every stateful satellite, so the hub surface is frozen before any satellite goes to mainnet.
 `blockchain` `technical`
 
 ### Post-Publish Locking
@@ -533,6 +541,10 @@ The European General Data Protection Regulation. CommonLink processes personal d
 The AML/CFT (LCB-FT) risk classification assigned to an association or a donation. Three levels: **LOW** (simplified due diligence may apply), **STANDARD** (baseline due diligence, default for all new records), **HIGH** (enhanced due diligence required). The mapping from a level to the corresponding due-diligence measures is defined in a separate, versioned classification document — not in code. The level is stored alongside the version of that document in force at assessment time (`riskClassificationVersion`), so that a past assessment remains interpretable after the document is revised. On donations, the level is an immutable snapshot of the risk at the time of the donation, independent of any later reassessments of the association.
 `security` `business`
 
+### Reader Interface Version
+`READER_VERSION` of `ICommonLinkRegistryReader`, the read surface satellites use to read the hub. ERC-165 interface ids only cover function selectors, not the shape of the returned structs, so this number is bumped on **any** change to that interface (struct field, getter, meaning). A satellite refuses at deployment a registry whose version differs from the one it was compiled against.
+`blockchain` `technical`
+
 ### RNA (Répertoire National des Associations)
 The official French registry of associations. Used in conjunction with the SIREN to verify the legal identity and legitimacy of an association during KYC.
 `business`
@@ -544,9 +556,11 @@ A user's type on the platform. Set at registration and determines the dashboard 
 |---|---|---|---|
 | `DONOR` | `ROLE_DONOR` | — | Browses campaigns, makes donations |
 | `ASSOCIATION` | `ROLE_ASSOCIATION` | — | Creates and manages campaigns |
-| `CURATOR` | `ROLE_CURATOR` | verify/revoke/restore association; pause/unpause/cancel/complete/revert campaign | Platform moderator; accesses `/api/admin/onchain/**` |
+| `CURATOR` | `ROLE_CURATOR` | — (no on-chain moderation since registry v2) | Platform moderator; accesses `/api/admin/onchain/**` (job inspection) |
 | `ADMIN` | `ROLE_ADMIN` | same as CURATOR | Super-admin; `ADMIN` is not a `UserRole` enum value — granted by external identity provider |
-| SYSTEM | — | createCampaign, publishCampaign, recordDonation, markMilestoneReached, updateCampaignBudget | Backend service itself; never exposed over HTTP |
+| SYSTEM | — | registerAssociation, registerCampaign, updateCampaignBudget, recordDonation, recordPayout (recorder key) | Backend service itself; never exposed over HTTP |
+
+On-chain roles (`RECORDER_ROLE`, `PAUSER_ROLE`, `DEFAULT_ADMIN_ROLE`) are keys, not platform users — see **Pauser Role** and **Two-Step Admin Transfer**.
 
 `functional` `technical`
 
@@ -621,6 +635,10 @@ A recorded donation event. Each transaction has: a unique ID, a blockchain hash 
 ### Transparency Badge
 A badge category specifically tied to financial accountability. Examples: "Budget Équilibré" (published a balanced budget), "Transparence Totale" (all outgoing payments documented), "Rapport Certifié" (end-of-campaign report anchored on IPFS).
 `functional` `blockchain`
+
+### Two-Step Admin Transfer
+The only way the on-chain admin (`DEFAULT_ADMIN_ROLE`, a Safe multisig in production) changes hands, from OpenZeppelin `AccessControlDefaultAdminRules`: the current admin calls `beginDefaultAdminTransfer(newAdmin)`, a public delay elapses (0 on Anvil, 1 hour on Chiado, 3 days on Gnosis), then the new admin calls `acceptDefaultAdminTransfer()`; the transfer can be cancelled meanwhile. The delay protects against a compromised admin handing itself over instantly; it slows nothing else (pause, role rotation). Renouncing the admin is refused by the registry: without an admin, no compromised key could ever be rotated.
+`blockchain` `technical`
 
 ### Two-Step Delete
 A UX safety pattern used throughout the campaign editor (budget lines, milestones, beneficiaries) where a first click replaces the delete button with a confirmation prompt ("Confirmer ?"), and only a second click within a short window triggers the actual deletion. Prevents accidental data loss. After the timeout the button reverts to its default state without deleting.

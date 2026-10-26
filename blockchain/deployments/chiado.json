@@ -4,13 +4,22 @@
   "explorer": "https://gnosis-chiado.blockscout.com",
   "registry": {
     "contract": "CommonLinkRegistry",
-    "version": "2.0.0-mvp",
+    "version": "3.0.0-mvp",
     "address": null,
     "deployTxHash": null,
     "blockNumber": null,
     "deployedAt": null,
-    "constructorArgs": { "admin": null, "recorder": null },
-    "verified": { "blockscout": false, "sourcify": false, "gnosisscan": "not-supported-on-chiado-unconfirmed" }
+    "constructorArgs": {
+      "adminDelay": 3600,
+      "admin": null,
+      "recorder": null,
+      "pauser": null
+    },
+    "verified": {
+      "blockscout": false,
+      "sourcify": false,
+      "gnosisscan": "not-supported-on-chiado-unconfirmed"
+    }
   },
   "badge": null,
   "notes": "Public addresses only. Filled in by the operator after the deployment (blockchain/RUNBOOK.md §3). Never put a private key or a secret here."

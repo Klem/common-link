@@ -4,64 +4,48 @@ pragma solidity 0.8.30;
 import {CommonLinkBaseTest} from "./helpers/CommonLinkBaseTest.sol";
 import {CommonLinkRegistry} from "../src/CommonLinkRegistry.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {IAccessControlDefaultAdminRules} from
+    "@openzeppelin/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
 
-/// @notice Constructor, roles and pause.
+/// @notice Constructor and initial roles. Pause, governance, ERC-165 and funds: CommonLinkRegistry.governance.t.sol.
 contract DeploymentTest is CommonLinkBaseTest {
     function test_version() public view {
-        assertEq(registry.VERSION(), "2.1.0-mvp");
+        assertEq(registry.VERSION(), "3.0.0-mvp");
+        assertEq(registry.READER_VERSION(), 1);
     }
 
     function test_constructor_grantsRoles() public view {
-        assertTrue(registry.hasRole(registry.DEFAULT_ADMIN_ROLE(), admin));
-        assertTrue(registry.hasRole(registry.RECORDER_ROLE(), recorder));
-        assertFalse(registry.hasRole(registry.DEFAULT_ADMIN_ROLE(), recorder));
+        assertEq(registry.defaultAdmin(), admin);
+        assertEq(registry.defaultAdminDelay(), 0);
+        assertTrue(registry.hasRole(ADMIN_ROLE, admin));
+        assertTrue(registry.hasRole(RECORDER_ROLE, recorder));
+        assertTrue(registry.hasRole(PAUSER_ROLE, pauser));
+        assertFalse(registry.hasRole(ADMIN_ROLE, recorder));
+        assertFalse(registry.hasRole(ADMIN_ROLE, pauser));
+        assertFalse(registry.hasRole(PAUSER_ROLE, recorder));
+        assertFalse(registry.hasRole(RECORDER_ROLE, pauser));
+    }
+
+    function test_constructor_storesAdminDelay() public {
+        CommonLinkRegistry r = new CommonLinkRegistry(3 days, admin, recorder, pauser);
+        assertEq(r.defaultAdminDelay(), 3 days);
     }
 
     function test_constructor_revertsOnZeroAdmin() public {
-        vm.expectRevert(CommonLinkRegistry.InvalidAdmin.selector);
-        new CommonLinkRegistry(address(0), recorder);
-    }
-
-    function test_constructor_zeroRecorderSkipsGrant() public {
-        CommonLinkRegistry r = new CommonLinkRegistry(admin, address(0));
-        assertFalse(r.hasRole(r.RECORDER_ROLE(), address(0)));
-    }
-
-    function test_pause_onlyAdmin() public {
-        vm.prank(attacker);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, ADMIN_ROLE
-            )
+            abi.encodeWithSelector(IAccessControlDefaultAdminRules.AccessControlInvalidDefaultAdmin.selector, address(0))
         );
-        registry.pause();
+        new CommonLinkRegistry(0, address(0), recorder, pauser);
     }
 
-    function test_pause_freezesEveryWrite() public {
-        _registerAsso1AndCamp1();
-        vm.prank(admin);
-        registry.pause();
+    function test_constructor_revertsOnZeroRecorder() public {
+        vm.expectRevert(CommonLinkRegistry.InvalidRecorder.selector);
+        new CommonLinkRegistry(0, admin, address(0), pauser);
+    }
 
-        vm.startPrank(recorder);
-        vm.expectRevert(Pausable.EnforcedPause.selector);
-        registry.registerAssociation(asso2, SIREN_HASH_2);
-        vm.expectRevert(Pausable.EnforcedPause.selector);
-        registry.registerCampaign(CAMP_2, asso1, BUDGET_V1);
-        vm.expectRevert(Pausable.EnforcedPause.selector);
-        registry.updateCampaignBudget(CAMP_1, BUDGET_V2);
-        vm.expectRevert(Pausable.EnforcedPause.selector);
-        registry.recordDonation(_donationId(1), donor1, CAMP_1, 100, RECEIPT_HASH_1, TX_REF_1);
-        vm.expectRevert(Pausable.EnforcedPause.selector);
-        registry.recordPayout(_payoutId(1), CAMP_1, 100, PAYOUT_TX_REF_1);
-        vm.expectRevert(Pausable.EnforcedPause.selector);
-        registry.mintBadge(donor1, 1);
-        vm.stopPrank();
-
-        vm.prank(admin);
-        registry.unpause();
-        _donate(_donationId(1), donor1, CAMP_1, 100);
-        assertEq(registry.getCampaign(CAMP_1).raised, 100);
+    function test_constructor_revertsOnZeroPauser() public {
+        vm.expectRevert(CommonLinkRegistry.InvalidPauser.selector);
+        new CommonLinkRegistry(0, admin, recorder, address(0));
     }
 }
 
@@ -77,7 +61,6 @@ contract RegisterAssociationTest is CommonLinkBaseTest {
         CommonLinkRegistry.Association memory a = registry.getAssociation(asso1);
         assertEq(a.sirenHash, SIREN_HASH_1);
         assertEq(a.registeredAt, uint32(block.timestamp));
-        assertEq(registry.sirenHashToAssociation(SIREN_HASH_1), asso1);
     }
 
     function test_register_revertsIfAlreadyRegistered() public {

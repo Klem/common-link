@@ -3,7 +3,7 @@
 > Source de vérité pour le smart contract `CommonLinkRegistry`. **Le code (`src/CommonLinkRegistry.sol`) et les tests Foundry font foi** ;
 > toute déviation de ce document est un bug de documentation.
 >
-> **Version**: 2.1.0-mvp
+> **Version**: 3.0.0-mvp (`READER_VERSION` = 1)
 > **Solidity**: 0.8.30 (EVM `cancun`)
 > **Stack**: Foundry + OpenZeppelin 5.x
 > **Cibles**: Gnosis Chiado (10200, testnet) → Gnosis (100, mainnet) — gas en xDAI
@@ -11,6 +11,16 @@
 
 ### Changelog
 
+- **3.0.0-mvp** : **hub d'une architecture hub + satellites** (décisions 27–41 de `.tasks/blockchain-integration-sprint.md`).
+  Retrait complet du relais de badge (`setBadgeContract`, `mintBadge`, `badgeContract`, `IDonorBadge`, events et erreurs associés) :
+  le hub n'appelle plus aucun contrat, donc `ReentrancyGuard` retiré. Admin via `AccessControlDefaultAdminRules` (transfert en deux
+  étapes avec délai, `grantRole` / `revokeRole` de l'admin interdits) et **renonciation à l'admin interdite** (`AdminRenounceForbidden`).
+  Nouveau `PAUSER_ROLE` : pause par le pauser, reprise par l'admin seul. Interface de lecture `ICommonLinkRegistryReader` (structs
+  + getters `get*` + `READER_VERSION`), annoncée via ERC-165 ; mappings passés `internal` (surface de lecture unique : les `get*` ;
+  l'index SIREN n'a plus de getter). **Aucun fonds** : ni `receive`, ni `fallback`, ni fonction `payable`, ni hook de réception de
+  jeton (contrôle `script/check-no-funds.sh`). Constructeur `(adminDelay, admin, recorder, pauser)`, recorder et pauser obligatoires
+  (`InvalidRecorder`, `InvalidPauser` ; `InvalidAdmin` remplacée par l'erreur OpenZeppelin `AccessControlInvalidDefaultAdmin`).
+  Rupture assumée : seul Anvil local était déployé.
 - **2.1.0-mvp** : décaissement enregistré comme une **fiche** (`payouts[id]` = campagne, montant, date, `txRef` = référence du virement Bridge, lisible par `getPayout`), qui remplace le booléen `payoutRecorded` ; `recordPayout(payoutId, campaignId, amountCents, txRef)` (`txRef` ≠ 0, `EmptyTxRef`) ; event `PayoutRecorded` avec `txRef` ; **statistiques de campagne** `campaignStats` (`getCampaignStats`) : total et nombre des décaissements (garde `PaidOutOverflow`), nombre de dons, donateurs uniques, dates du dernier don / décaissement. Aucune garde « décaissé ≤ collecté ». Rupture assumée : aucune version antérieure n'a été déployée sur une chaîne publique.
 - **2.0.0-mvp** : **registre « inscrit une fois, inscrit pour toujours »**. Le contrat ne gère plus **aucun cycle de vie** : plus de statuts ni de transitions de campagne, plus de vérification / révocation / restauration d'association, plus de milestones, plus de goal, plus de `CURATOR_ROLE`. Il garde : inscription unique d'association (`registerAssociation`) et de campagne (`registerCampaign`, avec hash de budget), mise à jour du hash de budget, dons (+ agrégats donateur et `raised`), décaissements (`recordPayout`), relais de mint de badge (`mintBadge`, adresse du contrat de badge fixée une fois par l'admin). Constructeur `(admin, recorder)`. Rupture assumée : aucune version antérieure n'a été déployée.
 - **1.4.0-mvp** *(jamais déployée)* : « notaire » — retrait des gardes métier (statut, transitions, `verified`, `raised == 0`, budget gelé) ; ajout de `recordPayout`.
@@ -28,10 +38,16 @@
 1. un **référentiel d'intégrité** : les associations et les campagnes, chacune inscrite **une seule fois et pour toujours** ;
 2. le **hash du budget** de chaque campagne (et ses mises à jour) ;
 3. les **dons** reçus, attribués donateur → campagne, avec leur preuve fiscale, et les **statistiques cumulées par donateur** ;
-4. les **décaissements réglés** (preuve qu'un virement des fonds d'une campagne a été réglé) ;
-5. les **mints de badges** soulbound, relayés vers le contrat de badges.
+4. les **décaissements réglés** (preuve qu'un virement des fonds d'une campagne a été réglé) et les **statistiques par campagne**.
 
-Le contrat ne déplace **aucun fonds**. Les montants sont en cents EUR (`uint96`). Un don enregistré est définitif : un remboursement fiat est tracé en Postgres et n'altère jamais le registre.
+Le contrat ne déplace **aucun fonds** et **ne peut en recevoir aucun** (§1.3). Les montants sont en cents EUR (`uint96`). Un don enregistré
+est définitif. Aucun remboursement n'existe on-chain (un don n'est jamais remboursé) ; si le cas apparaissait un jour, il vivrait dans un
+satellite dédié, jamais dans le hub.
+
+**Hub + satellites.** Ce contrat est le **hub** : immuable, il détient l'état canonique et **n'appelle jamais un autre contrat**. Les
+fonctionnalités futures (badge soulbound, etc.) sont des **satellites** déployés à part, qui lisent le hub via
+`ICommonLinkRegistryReader` (adresse du registre immuable chez eux, vérifiée par ERC-165 et `READER_VERSION`). Le hub ne connaît aucun
+satellite.
 
 ### 1.1 Principe : un notaire, sans cycle de vie
 
@@ -45,14 +61,15 @@ Le contrat ne déplace **aucun fonds**. Les montants sont en cents EUR (`uint96`
 | Éligibilité de l'association (KYC, révocation, gel) | l'inscription est définitive |
 | Goals, objectifs, critères d'attribution des badges | calculés par le backend |
 | Confirmation de paiement, solde disponible, éligibilité d'un décaissement | règles off-chain |
+| Allocation don → dépense (FIFO), remboursements | 100 % backend, rien on-chain |
 
 | Gardes conservées (intégrité du registre) | |
 |---|---|
-| Access control | `RECORDER_ROLE` (écritures) / `DEFAULT_ADMIN_ROLE` (pause, adresse du badge) |
+| Access control | `RECORDER_ROLE` (écritures) / `PAUSER_ROLE` (pause) / `DEFAULT_ADMIN_ROLE` (reprise, rôles) |
 | Pause | arrêt d'urgence de toutes les écritures |
-| Anti-doublon | association, SIREN, campagne, don, décaissement ; doublon de badge refusé par le contrat de badges |
-| Intégrité référentielle | campagne ⇒ association inscrite ; don / décaissement / budget ⇒ campagne inscrite ; badge ⇒ donateur ayant au moins un don |
-| Sanity d'entrée | ids, montants, hashes ≠ 0 ; `RaisedOverflow` |
+| Anti-doublon | association, SIREN, campagne, don, décaissement |
+| Intégrité référentielle | campagne ⇒ association inscrite ; don / décaissement / budget ⇒ campagne inscrite |
+| Sanity d'entrée | ids, montants, hashes ≠ 0 ; `RaisedOverflow`, `PaidOutOverflow` |
 
 ### 1.2 Sémantique des appels
 
@@ -60,25 +77,61 @@ Le contrat ne déplace **aucun fonds**. Les montants sont en cents EUR (`uint96`
 |---|---|---|
 | Inscrire une association / une campagne, mettre à jour un budget | Hot wallet CommonLink | `RECORDER_ROLE` |
 | Enregistrer un don / un décaissement | Hot wallet CommonLink | `RECORDER_ROLE` |
-| Minter un badge (relais) | Hot wallet CommonLink | `RECORDER_ROLE` |
-| Fixer l'adresse du contrat de badges (une fois), pause d'urgence | Multisig CommonLink (Safe) | `DEFAULT_ADMIN_ROLE` |
+| Pause d'urgence | Clé backend dédiée, déclenchée par un responsable conformité | `PAUSER_ROLE` |
+| Reprise après pause, octroi / révocation des rôles, transfert d'admin | Multisig CommonLink (Safe) en mainnet | `DEFAULT_ADMIN_ROLE` |
 
 **Aucun appel n'est jamais signé par une association ni par un donateur.** Leurs adresses sont pseudonymes, dérivées côté serveur (HMAC-SHA256), sans clé privée.
+
+### 1.3 Aucun fonds, même par accident
+
+| Bloqué par le code (testé : `NoFundsTest`, contrôle statique `script/check-no-funds.sh`) | |
+|---|---|
+| xDAI envoyé directement, avec ou sans données | pas de `receive`, pas de `fallback` → revert |
+| Valeur jointe à un appel ou au déploiement | aucune fonction `payable`, constructeur compris → revert |
+| NFT / jetons « safe » (ERC-721, ERC-1155), ERC-777, `transferAndCall` (ERC-677, jetons pontés Gnosis) | aucun hook de réception, aucun enregistrement ERC-1820 → revert |
+| Logique dépendant d'un solde | le code ne lit jamais `address(this).balance` ni un solde de jeton |
+
+| Non bloquable par du code (documenté pour l'audit) | |
+|---|---|
+| `SELFDESTRUCT` d'un autre contrat vers le hub (transfert de solde toujours effectif après Cancun / EIP-6780) | solde forcé |
+| Désignation comme destinataire de frais de bloc ou de retraits de validateur ; envoi à l'adresse avant déploiement | solde forcé |
+| `transfer` ERC-20 simple, `transferFrom` ERC-721 non « safe » (ERC-1155 n'a que des transferts « safe », refusés) (le destinataire n'est jamais consulté) | jetons reçus |
+
+Ces fonds restent **bloqués à jamais** : il n'existe **aucune fonction de récupération** (ce serait un chemin de déplacement de fonds).
+Ils n'affectent aucune preuve, aucune lecture et aucune écriture (`test_forcedBalance_isInert`).
 
 ---
 
 ## 2. Constantes et rôles
 
 ```solidity
-bytes32 public constant RECORDER_ROLE = keccak256("RECORDER_ROLE");
-string  public constant VERSION       = "2.1.0-mvp";
-// DEFAULT_ADMIN_ROLE hérité d'AccessControl OZ
+string  public constant VERSION        = "3.0.0-mvp";
+uint16  public constant READER_VERSION = 1;                         // ICommonLinkRegistryReader
+bytes32 public constant RECORDER_ROLE  = keccak256("RECORDER_ROLE");
+bytes32 public constant PAUSER_ROLE    = keccak256("PAUSER_ROLE");
+// DEFAULT_ADMIN_ROLE : AccessControlDefaultAdminRules (OZ 5)
+constructor(uint48 adminDelay, address admin, address recorder, address pauser);
 ```
 
-- `DEFAULT_ADMIN_ROLE` → multisig Safe CommonLink (gouvernance, 2/3 minimum) en mainnet ; jamais détenu par le backend.
+- `DEFAULT_ADMIN_ROLE` → multisig Safe CommonLink (gouvernance, 2/3 minimum) en mainnet ; jamais détenu par le backend. Un seul
+  admin (`defaultAdmin()`). Il ne change que par **transfert en deux étapes** : `beginDefaultAdminTransfer(nouveau)` puis, après
+  `defaultAdminDelay()`, `acceptDefaultAdminTransfer()` signé par le nouvel admin (annulable entre-temps). `grantRole` / `revokeRole`
+  sur ce rôle revertent ; **`renounceRole` aussi** (`AdminRenounceForbidden`) : sans admin, aucune clé ne pourrait plus être changée
+  après une compromission et une pause ne pourrait plus être levée. Délai (décision 40) : 0 sur Anvil, 1 h sur Chiado, 3 jours sur
+  Gnosis. Le délai ne ralentit que le transfert d'admin (pas la pause, pas la gestion des rôles).
 - `RECORDER_ROLE` → hot wallet backend (`OnchainJobWorker`), seul rôle d'écriture.
+- `PAUSER_ROLE` → clé backend **dédiée** (distincte du recorder : flux de nonce propre, gel possible même si le recorder est bloqué),
+  déclenchée par un responsable conformité. Ne peut que geler.
 
-Le contrat hérite de `Pausable` : la pause globale gèle toutes les écritures (inscriptions, budget, dons, décaissements, badges).
+Le contrat hérite de `Pausable` : `pause()` (PAUSER) gèle toutes les écritures (inscriptions, budget, dons, décaissements) ;
+`unpause()` est réservé à l'admin. Les lectures restent disponibles.
+
+| Point de mutabilité du hub | Contrôlé par | Gelable ? |
+|---|---|---|
+| Octroi / révocation RECORDER, PAUSER | admin (Safe) | Non (rotation des clés) |
+| Pause | PAUSER (geler) / admin (reprendre) | Non ; bloque les écritures, n'altère aucune preuve |
+| Transfert d'admin, délai | admin, en deux étapes avec délai | — ; renonciation interdite |
+| Données enregistrées | personne | Écrites une fois, jamais modifiées (sauf `budgetHash`, re-déclaré) |
 
 ---
 
@@ -202,6 +255,11 @@ C'est acceptable car le SIREN est une donnée publique. **Ne jamais appliquer ce
 
 ## 3. Types et stockage
 
+Les structs sont déclarées dans `src/interfaces/ICommonLinkRegistryReader.sol` (les satellites compilent sans importer le hub). Elles ne
+contiennent que des champs statiques : leur encodage ABI est la suite plate de leurs champs. **Toute modification d'une struct ou d'un
+getter impose d'incrémenter `READER_VERSION`** : l'interfaceId ERC-165 ne voit que les sélecteurs, pas la forme des structs
+(`test_structShapes_pinned` fige cette forme).
+
 ```solidity
 struct Association { bytes32 sirenHash; uint32 registeredAt; }                       // registeredAt == 0 : jamais inscrite
 struct Campaign    { address association; uint96 raised; uint32 registeredAt; bytes32 budgetHash; } // association == 0 : jamais inscrite
@@ -210,15 +268,15 @@ struct DonorStats  { uint128 totalDonated; uint32 donationCount; uint32 uniqueCa
 struct Payout      { bytes32 campaignId; uint96 amount; uint32 timestamp; bytes32 txRef; }   // campaignId == 0 : jamais enregistré
 struct CampaignStats { uint96 totalPaidOut; uint32 payoutCount; uint32 donationCount; uint32 uniqueDonors; uint32 lastDonationAt; uint32 lastPayoutAt; } // 1 slot
 
-mapping(address => Association)                 public associations;
-mapping(bytes32 => address)                     public sirenHashToAssociation; // un SIREN n'est inscrit qu'une fois
-mapping(bytes32 => Campaign)                    public campaigns;
-mapping(bytes32 => Donation)                    public donations;               // write-once
-mapping(address => DonorStats)                  public donorStats;
-mapping(address => mapping(bytes32 => uint128)) public donorCampaignTotal;
-mapping(bytes32 => Payout)                      public payouts;                 // write-once
-mapping(bytes32 => CampaignStats)               public campaignStats;
-IDonorBadge                                     public badgeContract;           // fixé une fois par l'admin
+// Stockage internal : la seule surface de lecture est l'ensemble des getters get* (§4.5).
+mapping(address => Association)                 internal associations;
+mapping(bytes32 => address)                     internal sirenHashToAssociation; // un SIREN n'est inscrit qu'une fois
+mapping(bytes32 => Campaign)                    internal campaigns;
+mapping(bytes32 => Donation)                    internal donations;               // write-once
+mapping(address => DonorStats)                  internal donorStats;
+mapping(address => mapping(bytes32 => uint128)) internal donorCampaignTotal;
+mapping(bytes32 => Payout)                      internal payouts;                 // write-once
+mapping(bytes32 => CampaignStats)               internal campaignStats;
 ```
 
 `Campaign` tient en deux slots (association + raised ; registeredAt + budgetHash). `raised` est la somme des dons enregistrés. Il n'y a ni goal, ni statut, ni date de fin, ni nombre de jalons.
@@ -239,7 +297,7 @@ Aucune fonction ne retire, suspend, réactive ni ne modifie une inscription.
 
 ### 4.2 Dons — `recordDonation(donationId, donor, campaignId, amount, receiptHash, txRef)`
 
-RECORDER, pause, `nonReentrant`. Gardes : campagne inscrite (`CampaignNotRegistered`) ; `donationId` ≠ 0 et jamais utilisé (`EmptyDonationId`, `DonationAlreadyExists`) ; `donor` ≠ 0 (`InvalidDonor`) ; `amount` ≠ 0 (`InvalidAmount`) ; `receiptHash`, `txRef` ≠ 0 ; `raised + amount` tient en `uint96` (`RaisedOverflow`). **Aucun contrôle** de statut de campagne, d'éligibilité de l'association ni de confirmation de paiement : c'est le backend qui n'enfile que des dons confirmés sur des campagnes qu'il juge ouvertes.
+RECORDER, pause. Gardes : campagne inscrite (`CampaignNotRegistered`) ; `donationId` ≠ 0 et jamais utilisé (`EmptyDonationId`, `DonationAlreadyExists`) ; `donor` ≠ 0 (`InvalidDonor`) ; `amount` ≠ 0 (`InvalidAmount`) ; `receiptHash`, `txRef` ≠ 0 ; `raised + amount` tient en `uint96` (`RaisedOverflow`). **Aucun contrôle** de statut de campagne, d'éligibilité de l'association ni de confirmation de paiement : c'est le backend qui n'enfile que des dons confirmés sur des campagnes qu'il juge ouvertes.
 
 Effets : don écrit, `raised` incrémenté, `donorStats` (premier don, total, nombre, campagnes uniques), `donorCampaignTotal` et `campaignStats` (nombre de dons, donateurs uniques, date du dernier don) mis à jour. Events : `DonationRecorded(donor, campaignId, association, …)` (3 champs indexés), `DonorFirstDonation`, `DonorJoinedCampaign`.
 
@@ -249,27 +307,34 @@ RECORDER, pause. Gardes : campagne inscrite ; `payoutId` ≠ 0 et jamais utilis�
 
 ### 4.4 Badges
 
-- `setBadgeContract(address badge)` — `DEFAULT_ADMIN_ROLE`. **Write-once** : `badge` doit être un contrat (`InvalidBadgeContract`) et l'adresse n'est fixable qu'une fois (`BadgeContractAlreadySet`). Conséquence assumée : un défaut du contrat de badges impose de redéployer le registre.
-- `mintBadge(address donor, uint16 badgeType) returns (uint256 tokenId)` — RECORDER, pause, `nonReentrant`. Gardes : badge configuré (`BadgeContractNotSet`) ; donateur ayant au moins un don enregistré (`DonorUnknown`). Appelle `IDonorBadge.mint(donor, badgeType)` et émet `BadgeMinted(donor, badgeType, tokenId)`. Les règles d'attribution sont **off-chain** ; le doublon (même donateur, même type) est refusé par le contrat de badges.
-- `src/interfaces/IDonorBadge.sol` est **figée** : le contrat de badges (sprint B5) doit l'implémenter telle quelle et n'accepter de mint que du registre.
+Plus rien dans le hub (3.0). Le badge soulbound est un **satellite** (`DonorBadge`, sprint C2) qui détient son propre `MINTER_ROLE`
+et lit le hub (« donateur connu » = `getDonorStats(to).firstDonationAt != 0`). Le hub ne connaît pas son adresse.
 
-### 4.5 Pause et lectures
+### 4.5 Pause, gouvernance et lectures
 
-`pause()` / `unpause()` — `DEFAULT_ADMIN_ROLE`. Lectures : `getAssociation`, `getCampaign`, `getDonation`, `getDonorStats`, `getDonorCampaignTotal`, `getPayout`, `getCampaignStats`, `badgeContract`, `sirenHashToAssociation`. **Aucun getter de liste** : les listes se reconstituent depuis les events indexés (ou depuis Postgres).
+- `pause()` — `PAUSER_ROLE` ; `unpause()` — `DEFAULT_ADMIN_ROLE`.
+- Gouvernance (OpenZeppelin `AccessControlDefaultAdminRules`) : `defaultAdmin`, `defaultAdminDelay`, `pendingDefaultAdmin`,
+  `beginDefaultAdminTransfer`, `acceptDefaultAdminTransfer`, `cancelDefaultAdminTransfer`, `changeDefaultAdminDelay`,
+  `rollbackDefaultAdminDelay`, `grantRole` / `revokeRole` (hors admin), `renounceRole` (hors admin).
+- Lectures (`ICommonLinkRegistryReader`) : `READER_VERSION`, `getAssociation`, `getCampaign`, `getDonation`, `getDonorStats`,
+  `getDonorCampaignTotal`, `getPayout`, `getCampaignStats` ; `supportsInterface` (reader, AccessControl, DefaultAdminRules, ERC-165).
+  **Aucun getter de liste** : les listes se reconstituent depuis les events indexés (ou depuis Postgres). L'index SIREN → adresse n'a
+  pas de getter : la correspondance est dans l'event `AssociationRegistered` (indexé sur les deux).
 
 ---
 
 ## 5. Erreurs et events
 
 ```solidity
-error InvalidAdmin();
+error InvalidRecorder(); error InvalidPauser(); error AdminRenounceForbidden();
 error InvalidAssociation(); error EmptySirenHash();
 error AssociationAlreadyRegistered(address); error SirenAlreadyRegistered(bytes32, address); error AssociationNotRegistered(address);
 error EmptyCampaignId(); error CampaignAlreadyRegistered(bytes32); error CampaignNotRegistered(bytes32); error EmptyBudgetHash();
 error EmptyDonationId(); error DonationAlreadyExists(bytes32); error InvalidDonor(); error InvalidAmount();
 error EmptyReceiptHash(); error EmptyTxRef(); error RaisedOverflow(bytes32, uint96, uint96);
-error EmptyPayoutId(); error PayoutAlreadyRecorded(bytes32);
-error InvalidBadgeContract(); error BadgeContractAlreadySet(address); error BadgeContractNotSet(); error DonorUnknown(address);
+error EmptyPayoutId(); error PayoutAlreadyRecorded(bytes32); error PaidOutOverflow(bytes32, uint96, uint96);
+// + erreurs OpenZeppelin : AccessControlUnauthorizedAccount, AccessControlInvalidDefaultAdmin,
+//   AccessControlEnforcedDefaultAdminRules, AccessControlEnforcedDefaultAdminDelay, EnforcedPause, ExpectedPause
 
 event AssociationRegistered(address indexed association, bytes32 indexed sirenHash, uint32 registeredAt);
 event CampaignRegistered(bytes32 indexed campaignId, address indexed association, bytes32 budgetHash, uint32 registeredAt);
@@ -277,9 +342,9 @@ event CampaignBudgetUpdated(bytes32 indexed campaignId, bytes32 oldBudgetHash, b
 event DonationRecorded(address indexed donor, bytes32 indexed campaignId, address indexed association, bytes32 donationId, uint96 amount, bytes32 receiptHash, bytes32 txRef);
 event DonorFirstDonation(address indexed donor, uint32 timestamp);
 event DonorJoinedCampaign(address indexed donor, bytes32 indexed campaignId);
-event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint96 amount, uint32 timestamp);
-event BadgeContractSet(address indexed badgeContract);
-event BadgeMinted(address indexed donor, uint16 indexed badgeType, uint256 tokenId);
+event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint96 amount, bytes32 txRef, uint32 timestamp);
+// + events OpenZeppelin : RoleGranted, RoleRevoked, Paused, Unpaused, DefaultAdminTransferScheduled,
+//   DefaultAdminTransferCanceled, DefaultAdminDelayChangeScheduled, DefaultAdminDelayChangeCanceled
 ```
 
 ---
@@ -287,13 +352,18 @@ event BadgeMinted(address indexed donor, uint16 indexed badgeType, uint256 token
 ## 6. Invariants (Foundry, `test/CommonLinkRegistry.invariant.t.sol`)
 
 - **INV-1** une inscription est définitive : `sirenHash`, `registeredAt`, association propriétaire d'une campagne ne changent jamais ; `budgetHash` jamais vide.
-- **INV-2** chaque identifiant (association, SIREN, campagne, don, décaissement, couple badge) n'est écrit qu'une fois.
+- **INV-2** chaque identifiant (association, campagne, don, décaissement) n'est écrit qu'une fois.
 - **INV-3** `raised` = somme des dons enregistrés sur la campagne.
 - **INV-4** statistiques donateur = somme des dons enregistrés pour le donateur.
 - **INV-5** le registre ne refuse jamais une écriture pour une autre raison que ses gardes d'intégrité (aucune règle métier).
-- **INV-6** le registre ne détient jamais de fonds.
+- **INV-6** statistiques de campagne = dons et décaissements enregistrés.
+- **INV-7** le registre ne détient jamais de fonds.
+- **INV-8** aucune écriture acceptée pendant une pause ; seul le PAUSER met en pause ; seul l'admin reprend ; l'admin ne change pas
+  hors du transfert en deux étapes ; recorder et pauser gardent leur rôle.
 
-Le handler travaille sur de petits domaines d'identifiants pour rejouer réellement des doublons ; des mutations manuelles (retrait d'un anti-doublon, réintroduction d'une garde métier, `raised` non mis à jour) font échouer les invariants.
+Le handler travaille sur de petits domaines d'identifiants pour rejouer réellement des doublons, et pilote `pause` / `unpause` par le
+pauser, l'admin, le recorder et un tiers ; des mutations manuelles (retrait d'un anti-doublon, réintroduction d'une garde métier,
+`raised` non mis à jour, `unpause` ouvert au PAUSER, ajout d'un `receive()`) font échouer les tests.
 
 ---
 
@@ -302,26 +372,30 @@ Le handler travaille sur de petits domaines d'identifiants pour rejouer réellem
 - ❌ Toute règle métier (statut, transitions, KYC, solde, frais, barèmes, critères de badge).
 - ❌ Tout cycle de vie on-chain : retrait, suspension, réactivation, révocation d'association ou de campagne ; réattribution d'un SIREN.
 - ❌ Goals, milestones, objectifs.
-- ❌ Refund / annulation de don ; transfert de fonds ; upgradeabilité ; listes on-chain.
+- ❌ Refund / annulation de don ; allocation don → dépense ; réception ou transfert de fonds, fonction de récupération ;
+  upgradeabilité ; listes on-chain ; appel vers un satellite ; renonciation à l'admin.
 
 ---
 
 ## 8. Hors-contrat — engagements côté backend
 
-- **Décider avant d'enregistrer** : inscription d'association quand Mollie passe COMPLETED ; inscription de campagne à son premier LIVE ; don seulement confirmé et sur une campagne ouverte ; décaissement seulement réglé par la banque ; badge selon des règles off-chain. Le contrat ne revérifie rien de tout cela.
+- **Décider avant d'enregistrer** : inscription d'association quand Mollie passe COMPLETED ; inscription de campagne à son premier LIVE ; don seulement confirmé et sur une campagne ouverte ; décaissement seulement réglé par la banque. Le contrat ne revérifie rien de tout cela.
 - **Ordonner l'outbox** : association → campagne → dons / décaissements / budget (dépendances de jobs) ; un enregistrement sur une campagne non inscrite reverte (`CampaignNotRegistered`).
 - **Idempotence** : `correlationKey` unique par fait ; ne jamais réutiliser un UUID ; mono-worker (un seul flux de nonce pour la clé recorder).
 - **Conventions** : UUID → bytes32 (§2.5), SIREN canonique (§2.6), budget canonicalisé JCS avant `keccak256`.
-- **Remboursements fiat** : tracés en Postgres comme événements compensatoires ; le registre n'est jamais modifié.
+- **Remboursements** : n'existent pas (un don n'est jamais remboursé) ; rien on-chain. Satellite dédié seulement si le cas survient.
+- **Pause** : déclenchée par un responsable conformité via la clé PAUSER du backend ; la reprise passe par l'admin (Safe).
 
 ---
 
 ## 9. Déploiement
 
-Ordre : (1) `script/DeployRegistry.s.sol` (`ADMIN_ADDR`, `RECORDER_ADDR`, `ADMIN_PK`), (2) contrat de badges avec le registre comme seul minter (sprint B5), (3) l'admin appelle `setBadgeContract(badge)` (une seule fois).
+`script/deploy-registry.sh <anvil|chiado|gnosis>` → `script/DeployRegistry.s.sol` (`ADMIN_ADDR`, `RECORDER_ADDR`, `PAUSER_ADDR`,
+`ADMIN_DELAY`, `ADMIN_PK`). Admin, recorder et pauser distincts ; délai nul refusé hors Anvil ; contrôles après déploiement : admin,
+délai, rôles, interface de lecture, solde nul. Les satellites se déploient ensuite avec l'adresse du hub ; rien à câbler sur le hub.
 
 - **Gnosis Chiado (10200)** : testnet, recette staging.
-- **Gnosis (100)** : après audit externe ; `DEFAULT_ADMIN_ROLE` transféré à un Safe 2/3 ; aucune reprise de l'historique : seuls les faits postérieurs au passage en réel sont enregistrés.
+- **Gnosis (100)** : après audit externe ; `DEFAULT_ADMIN_ROLE` transféré à un Safe 2/3 par le transfert en deux étapes ; aucune reprise de l'historique : seuls les faits postérieurs au passage en réel sont enregistrés.
 
 ---
 
@@ -331,13 +405,15 @@ Ordre : (1) `script/DeployRegistry.s.sol` (`ADMIN_ADDR`, `RECORDER_ADDR`, `ADMIN
 |---|---|---|
 | `registerAssociation` | ~95 900 | ~95 900 |
 | `registerCampaign` | ~98 200 | ~98 200 |
-| `updateCampaignBudget` | ~36 000 | ~36 000 |
-| `recordDonation` (1er don du donateur / donateur connu) | ~200 800 | ~201 000 |
-| `recordPayout` | ~53 300 | ~53 400 |
-| `mintBadge` (avec un contrat de badges factice ; le coût réel dépendra de `DonorBadge`) | ~88 100 | ~98 800 |
-| `setBadgeContract` (une fois) | ~50 300 | ~50 300 |
+| `updateCampaignBudget` | ~28 600 | ~35 900 |
+| `recordDonation` | ~221 800 | ~221 900 |
+| `recordPayout` | ~101 500 | ~121 700 |
+| `pause` | ~35 500 | ~47 100 |
+| `unpause` | ~23 700 | ~25 100 |
+| Déploiement | ~2 180 200 | — |
 
-Taille du contrat : 7 539 octets de runtime (limite 24 576).
+Taille du contrat : 9 320 octets de runtime (limite 24 576). Mesures 3.0.0-mvp (`forge test --gas-report`, médianes sur la suite de
+tests, cas de revert inclus).
 
 Mesures `forge test --gas-report` (médiane). Le gas est payé en xDAI sur Gnosis ; aucun coût en € n'est avancé ici : il dépend du prix du gas observé et sera mesuré sur Chiado.
 
@@ -347,10 +423,12 @@ Mesures `forge test --gas-report` (médiane). Le gas est payé en xDAI sur Gnosi
 
 | Terme | Définition |
 |---|---|
-| **EOA** | Externally Owned Account — compte contrôlé par une clé privée (seulement admin et recorder côté CommonLink). |
+| **EOA** | Externally Owned Account — compte contrôlé par une clé privée (admin, recorder et pauser côté CommonLink). |
 | **Safe** | Multisig Safe, contrat de portefeuille à plusieurs signataires (gouvernance de `DEFAULT_ADMIN_ROLE`). |
 | **SIREN** | 9 chiffres identifiant une entité juridique. Seul son hash est on-chain. |
 | **JCS** | JSON Canonicalization Scheme — RFC 8785. |
 | **UUID** | Identifiant Postgres de 128 bits, encodé en `bytes32` (16 octets + 16 octets nuls). |
 | **Soulbound** | Jeton non transférable, attaché définitivement à une adresse (badges). |
-| **Pausable / AccessControl** | Patterns OpenZeppelin (arrêt d'urgence, rôles). |
+| **Pausable / AccessControlDefaultAdminRules** | Patterns OpenZeppelin (arrêt d'urgence ; rôles avec admin unique transféré en deux étapes). |
+| **Hub / satellite** | Le hub (ce registre) détient l'état et n'appelle personne ; un satellite est un contrat séparé qui le lit. |
+| **ERC-165** | Standard de détection d'interface (`supportsInterface`). |
