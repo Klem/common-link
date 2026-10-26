@@ -22,6 +22,12 @@ app:
   # Unroutable on purpose: tests never call geo.api.gouv.fr (geocoding is best-effort or mocked).
   geo:
     base-url: http://localhost:1
+  bridge:
+    # Simulated by default: the regular build has no Bridge credentials, and with demo-mode false
+    # BridgePaymentInitiationService refuses to start without them (every Spring context would fail).
+    # A test-only variable on purpose: BRIDGE_DEMO_MODE is an app variable that Clever Cloud also
+    # exposes to the build.
+    demo-mode: ${BRIDGE_TEST_DEMO_MODE:true}
 
 onchain:
   # Simulated by default: the regular build (Clever Cloud runs `test -PnoDocker`) never needs a chain.

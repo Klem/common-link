@@ -42,6 +42,13 @@ class LocalOnchainConfigTest {
     }
 
     @Test
+    fun `test profile simulates Bridge unless BRIDGE_TEST_DEMO_MODE is set`() {
+        // Without credentials the regular build cannot start a context with demo-mode false; never BRIDGE_DEMO_MODE,
+        // which Clever Cloud also exposes to the build.
+        assertThat(load("application-test.yml")["app.bridge.demo-mode"]).isEqualTo("\${BRIDGE_TEST_DEMO_MODE:true}")
+    }
+
+    @Test
     fun `local defaults target the Anvil deployment of deploy-registry sh`() {
         assertThat(default("onchain.chain-id")).isEqualTo(OnchainRealModeValidator.ANVIL_CHAIN_ID.toString())
         assertThat(default("onchain.rpc-url")).isEqualTo("http://localhost:8545")
