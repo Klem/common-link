@@ -240,6 +240,8 @@ contract ReaderInterfaceTest is CommonLinkBaseTest {
             ^ bytes4(keccak256("getDonorStats(address)")) ^ bytes4(keccak256("getDonorCampaignTotal(address,bytes32)"))
             ^ bytes4(keccak256("getPayout(bytes32)")) ^ bytes4(keccak256("getCampaignStats(bytes32)"));
         assertEq(type(ICommonLinkRegistryReader).interfaceId, expected);
+        // Same value pinned on the backend (ProdConfigSecurityTest): the startup probe checks this exact id.
+        assertEq(type(ICommonLinkRegistryReader).interfaceId, bytes4(0x08708a80));
     }
 
     function test_readerVersion_pinned() public view {

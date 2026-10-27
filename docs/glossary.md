@@ -457,6 +457,10 @@ The means by which a donor completes a donation. Supported methods: **Card** (Vi
 The line on the fiscal receipt stating how the donor actually paid. The provider's method code is captured when the payment is confirmed (`donations.payment_method`) and mapped to a French label — _Carte bancaire_, _Virement bancaire_, _Prélèvement SEPA_, _Virement bancaire en ligne_. An unrecognised provider code is printed verbatim rather than forced into a category, and a donation confirmed without a provider payload prints _Non précisé_. Previously the receipt printed the list of accepted methods, which was false for every individual donation. See `docs/legal/E5-recu-fiscal-mentions.md`.
 `functional` `business`
 
+### Compliance Pause (On-Chain Registry Freeze)
+Emergency freeze of the on-chain registry triggered by a compliance officer through `POST /api/compliance/onchain/pause` (mandatory rationale). The backend sends `pause()` directly — never through the outbox — signed by the dedicated **Pauser Role** key; every request is written to the compliance audit log (`ONCHAIN_REGISTRY_PAUSED`, or `ONCHAIN_REGISTRY_PAUSE_FAILED`), an already paused registry gets no transaction. While paused, the outbox worker holds every job without consuming attempts. Only the registry admin (Safe) can resume; the backend exposes no resume. Refused in simulated mode (nothing to freeze).
+`blockchain` `compliance` `technical`
+
 ### Pauser Role
 `PAUSER_ROLE` of the on-chain registry: may call `pause()` — freezing every registry write, reads stay available — and nothing else; it can never resume (`unpause()` is reserved to the admin). Held by a **dedicated** backend key, distinct from the recorder key (own nonce stream, so a stuck recorder never blocks a freeze), and triggered by a compliance officer (`COMPLIANCE_OFFICER`). The key needs a little xDAI: an unfunded pauser cannot freeze.
 `blockchain` `technical`

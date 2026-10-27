@@ -264,6 +264,7 @@ onchain:
   # Prod supply real values via environment variables.
   registry-address: ${ONCHAIN_REGISTRY_ADDRESS:}
   recorder-pk: ${ONCHAIN_RECORDER_PK:}
+  pauser-pk: ${ONCHAIN_PAUSER_PK:}
   polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
   receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
   donor-address-secret: ${DONOR_ADDRESS_SECRET:dev-placeholder-change-in-staging}

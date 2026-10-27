@@ -14,10 +14,10 @@ import org.web3j.utils.Numeric
 import java.math.BigInteger
 
 /**
- * Real web3j-backed [OnchainRegistry] for `CommonLinkRegistry` v2.
+ * Real web3j-backed [OnchainRegistry] for the `CommonLinkRegistry` hub (v3).
  *
- * Every write is signed by the single recorder hot wallet (`RECORDER_ROLE`); registry v2 has no curator
- * role. The registry only checks its own integrity (role, pause, duplicate ids, referential existence,
+ * Every record is signed by the recorder hot wallet (`RECORDER_ROLE`); the emergency pause is signed by another
+ * key, see [OnchainPauserClient]. The registry only checks its own integrity (role, pause, duplicate ids, referential existence,
  * input sanity) — every business rule has already been applied by the backend before the job was enqueued.
  */
 @Service
@@ -95,6 +95,9 @@ class OnchainRegistryClient(
     override fun registeredCampaign(id: ByteArray): RegisteredCampaign? =
         getCampaign(id).takeIf { Numeric.toBigInt(it.association).signum() != 0 }
             ?.let { RegisteredCampaign(it.association, Numeric.toHexString(it.budgetHash).lowercase()) }
+
+    /** Reads `paused()` on the registry. */
+    override fun isPaused(): Boolean = viewContract.paused().send()
 
     /** Registration record of an association (`registeredAt == 0` when never registered). */
     fun getAssociation(address: String): CommonLinkRegistry.Association = viewContract.getAssociation(address).send()

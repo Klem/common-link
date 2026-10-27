@@ -4,7 +4,8 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt
 import java.math.BigInteger
 
 /**
- * Abstraction over all write operations sent to the on-chain registry (`CommonLinkRegistry` v2).
+ * Abstraction over all write operations the recorder sends to the on-chain registry (`CommonLinkRegistry` hub, v3).
+ * The emergency pause is NOT here: it is signed by another key, through [OnchainPauser].
  *
  * The registry is a notary that records facts the backend already decided, and it has no lifecycle:
  * an association and a campaign are each registered once and forever. Making an entity read-only is
@@ -89,6 +90,14 @@ interface OnchainRegistry {
      * @return the registration, or null when the campaign was never registered
      */
     fun registeredCampaign(id: ByteArray): RegisteredCampaign?
+
+    /**
+     * Reads whether the registry is paused (no transaction). While paused, every write reverts (`EnforcedPause`):
+     * the worker then claims nothing, so no attempt is consumed.
+     *
+     * @return true when the registry is paused; always false in mock mode (there is no registry to freeze).
+     */
+    fun isPaused(): Boolean
 }
 
 /**

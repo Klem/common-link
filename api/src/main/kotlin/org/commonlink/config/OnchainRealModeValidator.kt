@@ -1,11 +1,18 @@
 package org.commonlink.config
 
 import jakarta.annotation.PostConstruct
+import org.commonlink.onchain.generated.CommonLinkRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
+import org.web3j.crypto.Credentials
+import org.web3j.crypto.Hash
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
+import org.web3j.tx.ReadonlyTransactionManager
+import org.web3j.tx.gas.DefaultGasProvider
+import org.web3j.utils.Numeric
+import java.math.BigInteger
 import java.net.URI
 
 /**
@@ -17,12 +24,14 @@ import java.net.URI
  *   derived from a public secret and could never be changed once something is recorded on-chain) — except on the
  *   local Anvil node (chain [ANVIL_CHAIN_ID] reached over a loopback RPC), whose chain is private and disposable;
  * - chain [ANVIL_CHAIN_ID] reached over a non-loopback RPC → refused (that exemption must never leave the workstation);
- * - recorder private key blank → refused;
+ * - recorder or pauser private key blank, or both keys the same → refused (the pauser is a dedicated key, decision 31);
  * - RPC URL not `https://` → refused, except a loopback `http://` (local Anvil node);
  * - registry address blank or the zero address → refused.
  * Then, once the configuration is valid, the RPC itself is probed ([probeRpc]): it must answer, be on
- * `onchain.chain-id` and hold the registry contract — otherwise startup is aborted (a dead RPC, the wrong network or
- * a local Anvil node reset without redeploying would otherwise only surface as failing jobs).
+ * `onchain.chain-id` and hold the registry contract; that contract must advertise the reader interface at
+ * [EXPECTED_READER_VERSION] (ERC-165 + `READER_VERSION`), and the recorder and pauser keys must hold their roles —
+ * otherwise startup is aborted (a dead RPC, the wrong network, an older registry version or a local Anvil node reset
+ * without redeploying would otherwise only surface as failing jobs or a pause that cannot be sent).
  * Error messages name the property, never its value (the RPC URL may embed a token). In mock mode nothing is checked
  * (see [OnchainMockGuard]).
  */
@@ -54,6 +63,23 @@ class OnchainRealModeValidator(
 
         /** Chain id of a local Anvil node (`docker compose --profile chain`, `deploy-registry.sh anvil`). */
         const val ANVIL_CHAIN_ID = 31337L
+
+        /** `READER_VERSION` of the registry this backend was built against (`ICommonLinkRegistryReader`). */
+        const val EXPECTED_READER_VERSION = 1L
+
+        /**
+         * ERC-165 id of `ICommonLinkRegistryReader`: XOR of its function selectors (same formula as the Solidity test
+         * `test_readerInterfaceId_pinned`).
+         */
+        val READER_INTERFACE_ID: ByteArray = listOf(
+            "READER_VERSION()", "getAssociation(address)", "getCampaign(bytes32)", "getDonation(bytes32)",
+            "getDonorStats(address)", "getDonorCampaignTotal(address,bytes32)", "getPayout(bytes32)",
+            "getCampaignStats(bytes32)",
+        ).map { Numeric.hexStringToByteArray(Hash.sha3String(it)).copyOf(4) }
+            .reduce { acc, sel -> ByteArray(4) { i -> (acc[i].toInt() xor sel[i].toInt()).toByte() } }
+
+        private val RECORDER_ROLE: ByteArray = Hash.sha3("RECORDER_ROLE".toByteArray())
+        private val PAUSER_ROLE: ByteArray = Hash.sha3("PAUSER_ROLE".toByteArray())
 
         /**
          * Probes the RPC up to [attempts] times, [delayMs] apart (a brief outage of a public RPC must not abort a
@@ -99,6 +125,28 @@ class OnchainRealModeValidator(
             if (code.code.isNullOrBlank() || code.code.equals("0x", ignoreCase = true)) {
                 return "no contract at onchain.registry-address on chain ${cfg.chainId}"
             }
+            return registryProblem(web3j, cfg)
+        }
+
+        /**
+         * @return the problem found on the registry contract itself (wrong version, missing role), or null.
+         *   Addresses are public: they may appear in the message; keys never do.
+         */
+        private fun registryProblem(web3j: Web3j, cfg: OnchainConfig): String? {
+            val view = CommonLinkRegistry.load(
+                cfg.registryAddress, web3j, ReadonlyTransactionManager(web3j, ZERO_ADDRESS), DefaultGasProvider(),
+            )
+            if (!view.supportsInterface(READER_INTERFACE_ID).send()) {
+                return "the contract at onchain.registry-address does not advertise the registry reader interface (older registry?)"
+            }
+            val version = view.READER_VERSION().send()
+            if (version != BigInteger.valueOf(EXPECTED_READER_VERSION)) {
+                return "registry READER_VERSION is $version, this backend expects $EXPECTED_READER_VERSION"
+            }
+            val recorder = Credentials.create(cfg.recorderPk).address
+            if (!view.hasRole(RECORDER_ROLE, recorder).send()) return "onchain.recorder-pk ($recorder) lacks RECORDER_ROLE"
+            val pauser = Credentials.create(cfg.pauserPk).address
+            if (!view.hasRole(PAUSER_ROLE, pauser).send()) return "onchain.pauser-pk ($pauser) lacks PAUSER_ROLE"
             return null
         }
 
@@ -118,6 +166,12 @@ class OnchainRealModeValidator(
             secret("onchain.donor-address-secret", cfg.donorAddressSecret)
             secret("onchain.association-address-secret", cfg.associationAddressSecret)
             if (cfg.recorderPk.isBlank()) add("onchain.recorder-pk is blank")
+            if (cfg.pauserPk.isBlank()) add("onchain.pauser-pk is blank")
+            if (cfg.recorderPk.isNotBlank() && cfg.pauserPk.isNotBlank() &&
+                Numeric.cleanHexPrefix(cfg.recorderPk).equals(Numeric.cleanHexPrefix(cfg.pauserPk), ignoreCase = true)
+            ) {
+                add("onchain.pauser-pk must be a dedicated key, distinct from onchain.recorder-pk")
+            }
 
             val secure = uri?.scheme == "https" || (uri?.scheme == "http" && loopback)
             if (!secure) add("onchain.rpc-url must be https:// (http:// only allowed on localhost)")

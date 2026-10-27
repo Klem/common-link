@@ -12,6 +12,7 @@ class OnchainRealModeValidatorTest {
         rpcUrl: String = "https://rpc.chiadochain.net",
         registry: String = "0x00000000000000000000000000000000000000aa",
         recorderPk: String = "0xabc",
+        pauserPk: String = "0xdef",
         donorSecret: String = "a-real-donor-secret",
         assoSecret: String = "a-real-association-secret",
         chainId: Long = 10200,
@@ -20,6 +21,7 @@ class OnchainRealModeValidatorTest {
         chainId = chainId,
         registryAddress = registry,
         recorderPk = recorderPk,
+        pauserPk = pauserPk,
         pollingIntervalMs = 1,
         receiptTimeoutMs = 1,
         donorAddressSecret = donorSecret,
@@ -65,6 +67,7 @@ class OnchainRealModeValidatorTest {
             .anyMatch { it.contains("registry-address") }
         assertThat(OnchainRealModeValidator.problems(cfg(registry = ""))).anyMatch { it.contains("registry-address") }
         assertThat(OnchainRealModeValidator.problems(cfg(recorderPk = ""))).anyMatch { it.contains("recorder-pk") }
+        assertThat(OnchainRealModeValidator.problems(cfg(pauserPk = ""))).anyMatch { it.contains("onchain.pauser-pk is blank") }
     }
 
     @Test
@@ -94,5 +97,19 @@ class OnchainRealModeValidatorTest {
         assertThat(OnchainRealModeValidator.problems(remote))
             .anyMatch { it.contains("onchain.chain-id") }
             .anyMatch { it.contains("donor-address-secret") }
+    }
+
+    @Test
+    fun `the pauser must be a dedicated key distinct from the recorder`() {
+        assertThat(OnchainRealModeValidator.problems(cfg(recorderPk = "0xabc", pauserPk = "0xABC")))
+            .anyMatch { it.contains("onchain.pauser-pk must be a dedicated key") }
+        assertThat(OnchainRealModeValidator.problems(cfg(recorderPk = "0xabc", pauserPk = "abc")))
+            .anyMatch { it.contains("onchain.pauser-pk must be a dedicated key") }
+    }
+
+    @Test
+    fun `problems never echo a key`() {
+        val problems = OnchainRealModeValidator.problems(cfg(recorderPk = "0xabc", pauserPk = "0xabc"))
+        assertThat(problems).noneMatch { it.contains("abc") }
     }
 }

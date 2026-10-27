@@ -40,6 +40,10 @@ import java.util.UUID
  * receipt email: it is sent (and `DonationReceipt.emailedAt` stamped) only after RECORD_DONATION succeeds,
  * so a failed donation job means the donor gets no receipt email — see the open point in
  * `.tasks/blockchain-integration-sprint.md`.
+ *
+ * Emergency pause (decision 31): while the registry is paused every write reverts, so a tick claims nothing — no job
+ * is touched and no attempt is consumed. A job that fails because the pause landed between that check and its
+ * transaction gets its attempt back and returns to PENDING. Resuming (admin only) lets the next tick drain the queue.
  */
 @Service
 @ConditionalOnProperty(prefix = "onchain.worker", name = ["enabled"], havingValue = "true")
@@ -53,8 +57,16 @@ class OnchainJobWorker(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    /** Last pause state seen, to log only the transitions (paused → resumed and back), not every tick. */
+    @Volatile private var pausedSeen = false
+
+    /**
+     * Drains one batch, unless the registry is paused. When the pause state cannot be read (RPC down), the tick
+     * proceeds as before: jobs then fail and are retried with the usual attempt budget.
+     */
     @Scheduled(fixedDelayString = "\${onchain.worker.fixed-delay-ms}")
     fun tick() {
+        if (registryPaused()) return
         val batch = claimer.claimBatch(cfg.worker.batchSize)
         if (batch.isEmpty()) return
         batch.forEach(::process)
@@ -84,6 +96,15 @@ class OnchainJobWorker(
             job.lastError = ex.message?.take(2000)
             job.status = OnchainJobStatus.FAILED
         } catch (ex: Exception) {
+            if (pausedNow()) {
+                // The registry was paused after this tick checked it: the revert says nothing about the job itself.
+                logger.warn("Onchain job {} ({}) not sent: the registry was paused meanwhile; back to PENDING, attempt not counted",
+                    job.id, job.action)
+                job.attempts -= 1
+                job.lastError = "Registry paused: not sent"
+                job.status = OnchainJobStatus.PENDING
+                return
+            }
             logger.error("Onchain job {} ({}) failed on attempt {}", job.id, job.action, job.attempts, ex)
             job.lastError = ex.message?.take(2000)
             job.status = if (job.attempts >= 5) OnchainJobStatus.FAILED else OnchainJobStatus.PENDING
@@ -92,6 +113,23 @@ class OnchainJobWorker(
             repo.save(job)
         }
     }
+
+    /** @return true when the registry is paused (logged once per transition); false when it is not or cannot be read. */
+    private fun registryPaused(): Boolean {
+        val paused = pausedNow()
+        if (paused != pausedSeen) {
+            if (paused) logger.warn("On-chain registry is PAUSED: the outbox worker holds every job (no attempt consumed)")
+            else logger.info("On-chain registry is no longer paused: the outbox worker resumes")
+            pausedSeen = paused
+        }
+        return paused
+    }
+
+    /** Reads the pause state; an unreadable state counts as not paused (the usual retry budget then applies). */
+    private fun pausedNow(): Boolean =
+        runCatching { client.isPaused() }
+            .onFailure { logger.debug("Cannot read the registry pause state ({})", it.javaClass.simpleName) }
+            .getOrDefault(false)
 
     private fun onSuccess(job: OnchainJob) {
         when (job.action) {

@@ -69,4 +69,7 @@ class MockOnchainRegistry : OnchainRegistry {
 
     /** Nothing is ever registered on the mock chain: every registration job is sent. */
     override fun registeredCampaign(id: ByteArray): RegisteredCampaign? = null
+
+    /** Mock mode has no registry to freeze: never paused. */
+    override fun isPaused(): Boolean = false
 }

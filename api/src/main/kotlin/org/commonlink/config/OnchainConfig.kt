@@ -3,8 +3,12 @@ package org.commonlink.config
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * `onchain.*` configuration. Secrets (recorder private key, HMAC address secrets) come from environment
+ * `onchain.*` configuration. Secrets (recorder and pauser private keys, HMAC address secrets) come from environment
  * variables and are never printed: [toString] masks them.
+ *
+ * @property pauserPk private key of the dedicated `PAUSER_ROLE` key (decision 31): it only ever signs the emergency
+ *   `pause()` triggered by a compliance officer, never a record, and is distinct from [recorderPk] (own nonce stream).
+ *   Blank is tolerated in mock mode only (see [OnchainRealModeValidator]).
  */
 @ConfigurationProperties(prefix = "onchain")
 data class OnchainConfig(
@@ -12,6 +16,7 @@ data class OnchainConfig(
     val chainId: Long,
     val registryAddress: String,
     val recorderPk: String,
+    val pauserPk: String = "",
     val pollingIntervalMs: Long,
     val receiptTimeoutMs: Long,
     val donorAddressSecret: String,
@@ -41,7 +46,7 @@ data class OnchainConfig(
 
     override fun toString(): String =
         "OnchainConfig(mock=$mock, rpcUrl=$rpcUrl, chainId=$chainId, registryAddress=$registryAddress, " +
-        "recorderPk=***, pollingIntervalMs=$pollingIntervalMs, " +
+        "recorderPk=***, pauserPk=***, pollingIntervalMs=$pollingIntervalMs, " +
         "receiptTimeoutMs=$receiptTimeoutMs, donorAddressSecret=***, associationAddressSecret=***, " +
         "worker=$worker, explorer=$explorer)"
 }

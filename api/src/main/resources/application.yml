@@ -250,6 +250,9 @@ onchain:
   # PUBLIC test key printed by every Anvil node, worthless anywhere else. Staging/prod have no such defaults.
   registry-address: ${ONCHAIN_REGISTRY_ADDRESS:0x5FbDB2315678afecb367f032d93F642f64180aa3}
   recorder-pk: ${ONCHAIN_RECORDER_PK:0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}
+  # Dedicated PAUSER_ROLE key (emergency pause by the compliance officer, decision 31): Anvil account 2 — public
+  # test key as well, the PAUSER_ADDR default of deploy-registry.sh anvil.
+  pauser-pk: ${ONCHAIN_PAUSER_PK:0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}
   polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
   receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
   donor-address-secret: ${DONOR_ADDRESS_SECRET:dev-placeholder-change-in-staging}

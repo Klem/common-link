@@ -247,6 +247,9 @@ onchain:
   # mock=false, OnchainRealModeValidator also refuses placeholders, non-https RPC and a zero registry.
   registry-address: ${ONCHAIN_REGISTRY_ADDRESS}
   recorder-pk: ${ONCHAIN_RECORDER_PK}
+  # Empty default on purpose: staging still runs in mock mode, where the pauser key is unused, and a missing
+  # variable must not break that deployment. With mock=false a blank key is refused by OnchainRealModeValidator.
+  pauser-pk: ${ONCHAIN_PAUSER_PK:}
   polling-interval-ms: ${ONCHAIN_POLLING_INTERVAL_MS:1500}
   receipt-timeout-ms: ${ONCHAIN_RECEIPT_TIMEOUT_MS:60000}
   donor-address-secret: ${DONOR_ADDRESS_SECRET}

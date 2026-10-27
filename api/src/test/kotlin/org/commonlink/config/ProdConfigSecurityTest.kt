@@ -260,6 +260,7 @@ class ProdConfigSecurityTest {
         chainId = OnchainRealModeValidator.ANVIL_CHAIN_ID,
         registryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         recorderPk = "0xabc",
+        pauserPk = "0xdef",
         pollingIntervalMs = 1,
         receiptTimeoutMs = 1,
         donorAddressSecret = "dev-placeholder-change-in-staging",
@@ -309,6 +310,46 @@ class ProdConfigSecurityTest {
             OnchainRealModeValidator.probeRpc(stubWeb3j(code = "0x"), onchainCfg(), 3, 2_000, noSleep)
         }
         assertTrue(ex.message!!.contains("no contract at onchain.registry-address"))
+    }
+
+    @Test
+    fun `real mode refuses a registry that does not advertise the reader interface`() {
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(supportsReader = false), onchainCfg(), 3, 2_000, noSleep)
+        }
+        assertTrue(ex.message!!.contains("does not advertise the registry reader interface"))
+    }
+
+    @Test
+    fun `real mode refuses a registry with another reader version`() {
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(readerVersion = 2), onchainCfg(), 3, 2_000, noSleep)
+        }
+        assertTrue(ex.message!!.contains("READER_VERSION is 2, this backend expects 1"))
+    }
+
+    @Test
+    fun `real mode refuses a recorder key without RECORDER_ROLE`() {
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(recorderHasRole = false), onchainCfg(), 3, 2_000, noSleep)
+        }
+        assertTrue(ex.message!!.contains("lacks RECORDER_ROLE"))
+        assertFalse(ex.message!!.contains("0xabc"), "never echo a key")
+    }
+
+    @Test
+    fun `real mode refuses a pauser key without PAUSER_ROLE`() {
+        val ex = assertThrows(IllegalStateException::class.java) {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(pauserHasRole = false), onchainCfg(), 3, 2_000, noSleep)
+        }
+        assertTrue(ex.message!!.contains("lacks PAUSER_ROLE"))
+        assertFalse(ex.message!!.contains("0xdef"), "never echo a key")
+    }
+
+    @Test
+    fun `the reader interface id matches the Solidity test pin`() {
+        // Same XOR of selectors as test_readerInterfaceId_pinned (blockchain/test/CommonLinkRegistry.governance.t.sol).
+        assertEquals("0x08708a80", org.web3j.utils.Numeric.toHexString(OnchainRealModeValidator.READER_INTERFACE_ID))
     }
 
     @Test

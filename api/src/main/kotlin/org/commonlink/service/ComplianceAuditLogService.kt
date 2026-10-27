@@ -99,6 +99,21 @@ class ComplianceAuditLogService(
         const val ASSOCIATION_REACTIVATED = "ASSOCIATION_REACTIVATED"
 
         /**
+         * A compliance officer froze the on-chain registry (`pause()` signed by the dedicated pauser key, decision 31),
+         * or asked to while it was already paused (`alreadyPaused = true`, no transaction). Payload: rationale,
+         * chain id, registry address, tx hash. Written by [org.commonlink.service.OnchainPauseService.pause].
+         * Resuming is not a compliance action: it is reserved to the registry admin (Safe) and never journaled here.
+         */
+        const val ONCHAIN_REGISTRY_PAUSED = "ONCHAIN_REGISTRY_PAUSED"
+
+        /**
+         * A compliance officer's attempt to freeze the on-chain registry failed (RPC down, transaction reverted or not
+         * mined in time). Journaled because an attempted freeze is a compliance act whatever its outcome. Payload:
+         * rationale, chain id, registry address, error type (exception class only, never its message).
+         */
+        const val ONCHAIN_REGISTRY_PAUSE_FAILED = "ONCHAIN_REGISTRY_PAUSE_FAILED"
+
+        /**
          * A campaign's DRAFT→LIVE publish attempt passed every guard in
          * [org.commonlink.service.CampaignService.preparePublish] — a "projet retenu" for the
          * annual ACPR activity report (art. R.548-4 II CMF). Written by

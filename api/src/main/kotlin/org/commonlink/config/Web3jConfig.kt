@@ -18,7 +18,8 @@ import org.web3j.tx.gas.DefaultGasProvider
  * Inactive when `onchain.mock=true` — the same condition (inverted) that gates
  * [org.commonlink.onchain.OnchainRegistryClient], its only consumer. Without this gate the
  * credential bean would be built from the empty `onchain.recorder-pk` default and abort startup with
- * `Zero length BigInteger`. Registry v2 has a single write role, hence a single signer.
+ * `Zero length BigInteger`. Two signers, each with its own transaction manager and therefore its own nonce stream:
+ * the recorder (every record) and the dedicated pauser (emergency `pause()` only, decision 31).
  *
  * `@EnableScheduling` used to live here; it now sits in [SchedulingConfig] so scheduling survives
  * mock mode.
@@ -30,7 +31,7 @@ class Web3jConfig(private val cfg: OnchainConfig) {
     @Bean fun web3j(): Web3j =
         Web3j.build(HttpService(cfg.rpcUrl))
 
-    /** Signer for RECORDER_ROLE — the single write role of registry v2 (registrations, budget, donations, payouts, badge mints). */
+    /** Signer for RECORDER_ROLE — the single write role of the registry (registrations, budget, donations, payouts). */
     @Bean("recorderCredentials")
     fun recorderCredentials(): Credentials = Credentials.create(cfg.recorderPk)
 
@@ -39,5 +40,17 @@ class Web3jConfig(private val cfg: OnchainConfig) {
 
     @Bean("recorderTxManager")
     fun recorderTxManager(web3j: Web3j, @Qualifier("recorderCredentials") c: Credentials): TransactionManager =
+        RawTransactionManager(web3j, c, cfg.chainId, /*attempts*/ 40, cfg.pollingIntervalMs)
+
+    /** Signer for PAUSER_ROLE — a dedicated key that can only freeze the registry (decision 31). */
+    @Bean("pauserCredentials")
+    fun pauserCredentials(): Credentials = Credentials.create(cfg.pauserPk)
+
+    /**
+     * Transaction manager of the pauser: separate from [recorderTxManager] so an emergency pause never waits behind,
+     * nor collides with, the recorder's nonce stream.
+     */
+    @Bean("pauserTxManager")
+    fun pauserTxManager(web3j: Web3j, @Qualifier("pauserCredentials") c: Credentials): TransactionManager =
         RawTransactionManager(web3j, c, cfg.chainId, /*attempts*/ 40, cfg.pollingIntervalMs)
 }

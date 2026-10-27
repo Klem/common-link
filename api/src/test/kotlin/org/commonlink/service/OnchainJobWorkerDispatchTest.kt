@@ -56,6 +56,8 @@ class OnchainJobWorkerDispatchTest {
         // Default: nothing is registered on-chain yet, so registrations are sent.
         every { client.registeredAssociationSirenHash(any()) } returns null
         every { client.registeredCampaign(any()) } returns null
+        // Default: the registry is not paused (decision 31).
+        every { client.isPaused() } returns false
         worker = OnchainJobWorker(claimer, repo, mockk<DonationReceiptService>(), client, objectMapper, cfg)
     }
 
@@ -243,5 +245,57 @@ class OnchainJobWorkerDispatchTest {
         assertThat(job.lastError).contains("already registered under association 0xOther")
         verify(exactly = 0) { client.registerCampaign(any(), any(), any()) }
         verify(exactly = 0) { client.updateCampaignBudget(any(), any()) }
+    }
+
+    // ───── Emergency pause (decision 31) ─────
+
+    @Test
+    fun `a paused registry makes the tick claim nothing, so no attempt is consumed`() {
+        every { client.isPaused() } returns true
+
+        worker.tick()
+
+        verify(exactly = 0) { claimer.claimBatch(any()) }
+    }
+
+    @Test
+    fun `a pause landing between the check and the transaction gives the attempt back`() {
+        val job = payoutJob(attempts = 3)
+        every { claimer.claimBatch(10) } returns listOf(job)
+        // Not paused when the tick starts, paused when the failure is examined.
+        every { client.isPaused() } returnsMany listOf(false, true)
+        every { client.recordPayout(any(), any(), any(), any()) } throws RuntimeException("execution reverted: EnforcedPause()")
+
+        worker.tick()
+
+        assertThat(job.status).isEqualTo(OnchainJobStatus.PENDING)
+        assertThat(job.attempts).isEqualTo(2)
+        assertThat(job.lastError).isEqualTo("Registry paused: not sent")
+        verify(exactly = 1) { repo.save(job) }
+    }
+
+    @Test
+    fun `an unreadable pause state does not stop the worker`() {
+        val job = payoutJob()
+        every { claimer.claimBatch(10) } returns listOf(job)
+        every { client.isPaused() } throws java.io.IOException("rpc down")
+        every { client.recordPayout(any(), any(), any(), any()) } returns receipt()
+
+        worker.tick()
+
+        assertThat(job.status).isEqualTo(OnchainJobStatus.DONE)
+    }
+
+    @Test
+    fun `a failure while the registry is not paused still consumes the attempt`() {
+        val job = payoutJob(attempts = 2)
+        every { claimer.claimBatch(10) } returns listOf(job)
+        every { client.recordPayout(any(), any(), any(), any()) } throws RuntimeException("rpc timeout")
+
+        worker.tick()
+
+        assertThat(job.status).isEqualTo(OnchainJobStatus.PENDING)
+        assertThat(job.attempts).isEqualTo(2)
+        assertThat(job.lastError).isEqualTo("rpc timeout")
     }
 }

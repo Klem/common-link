@@ -223,5 +223,19 @@ aux donateurs ne donnent accès aux informations de conformité.
 
 ---
 
-*Document établi le 6 août 2026, complété le 21 août 2026 (point 3.1 — faille de cloisonnement constatée et corrigée le 20 août 2026). Une fiche de même nature sera produite pour chaque contrôle du
+### Complément du 26 octobre 2026 — arrêt d'urgence du registre public on-chain
+
+Le responsable de la conformité dispose d'une action supplémentaire : **geler le registre public
+on-chain** (registre de certification des dons et des dépenses, hors dispositif LCB-FT — voir
+`registre-onchain-des-depenses.md`). Elle est réservée à ce rôle, exige un motif, et **chaque demande
+est inscrite au journal d'audit immuable** avec son auteur et son motif — qu'elle aboutisse, qu'elle
+trouve le registre déjà gelé ou qu'elle échoue. Le responsable peut geler, **jamais dégeler** : la
+reprise est réservée à l'administrateur du registre. L'action n'est disponible que par l'interface de
+programmation (aucun écran à ce jour) et elle est refusée tant que la plateforme fonctionne en mode
+simulé, ce qui est le cas en production. Vérifiée par contrôles automatisés ; pas encore exercée sur
+un nœud réel.
+
+---
+
+*Document établi le 6 août 2026, complété le 21 août 2026 (point 3.1 — faille de cloisonnement constatée et corrigée le 20 août 2026), puis le 26 octobre 2026 (arrêt d'urgence du registre on-chain). Une fiche de même nature sera produite pour chaque contrôle du
 dispositif LCB-FT au fur et à mesure de sa réalisation.*

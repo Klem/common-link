@@ -54,6 +54,9 @@ class LocalOnchainConfigTest {
         assertThat(default("onchain.rpc-url")).isEqualTo("http://localhost:8545")
         // First contract created by Anvil account 0 (nonce 0) — the address deploy-registry.sh anvil checks.
         assertThat(default("onchain.registry-address")).isEqualTo("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+        // Anvil account 2 — the PAUSER_ADDR default of deploy-registry.sh anvil (dedicated key, decision 31).
+        assertThat(org.web3j.crypto.Credentials.create(default("onchain.pauser-pk")).address)
+            .isEqualToIgnoringCase("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
     }
 
     @Test
@@ -63,6 +66,7 @@ class LocalOnchainConfigTest {
             chainId = default("onchain.chain-id").toLong(),
             registryAddress = default("onchain.registry-address"),
             recorderPk = default("onchain.recorder-pk"),
+            pauserPk = default("onchain.pauser-pk"),
             pollingIntervalMs = 1,
             receiptTimeoutMs = 1,
             donorAddressSecret = default("onchain.donor-address-secret"),

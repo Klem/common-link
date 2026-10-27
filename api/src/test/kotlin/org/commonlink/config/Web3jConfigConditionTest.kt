@@ -23,6 +23,7 @@ class Web3jConfigConditionTest {
                     chainId = 31337L,
                     registryAddress = "0x0000000000000000000000000000000000000000",
                     recorderPk = "0x0000000000000000000000000000000000000000000000000000000000000001",
+                    pauserPk = "0x0000000000000000000000000000000000000000000000000000000000000002",
                     pollingIntervalMs = 1500L,
                     receiptTimeoutMs = 60000L,
                     donorAddressSecret = "test-secret",
@@ -40,6 +41,7 @@ class Web3jConfigConditionTest {
             assertThat(ctx).doesNotHaveBean(Web3jConfig::class.java)
             assertThat(ctx).doesNotHaveBean(Web3j::class.java)
             assertThat(ctx).doesNotHaveBean("recorderCredentials")
+            assertThat(ctx).doesNotHaveBean("pauserCredentials")
         }
     }
 
@@ -49,7 +51,12 @@ class Web3jConfigConditionTest {
             assertThat(ctx).hasNotFailed()
             assertThat(ctx).hasSingleBean(Web3jConfig::class.java)
             assertThat(ctx).hasBean("recorderCredentials")
-            assertThat(ctx).doesNotHaveBean("curatorCredentials") // registry v2: single recorder role
+            assertThat(ctx).hasBean("recorderTxManager")
+            assertThat(ctx).hasBean("pauserCredentials")
+            assertThat(ctx).hasBean("pauserTxManager")
+            assertThat(ctx).doesNotHaveBean("curatorCredentials") // no curator role on-chain since registry v2
+            // Two signers, two transaction managers: the pause never shares the recorder's nonce stream.
+            assertThat(ctx.getBean("pauserTxManager")).isNotSameAs(ctx.getBean("recorderTxManager"))
         }
     }
 
