@@ -247,11 +247,16 @@ n'est donc plus exact.
 Cette possibilité est **provisoire et révocable** : l'administrateur du registre peut la retirer à tout
 moment sans redéployer le contrat ; l'écran grise alors le bouton de réactivation, et seul
 l'administrateur peut lever un gel. **Risque assumé tant qu'elle est ouverte** : la même clé du serveur
-gèle et dégèle ; si cette clé était compromise, un tiers pourrait lever un gel. Le retrait est prévu
-lorsque l'administrateur sera un portefeuille multisignature.
+gèle et dégèle ; si cette clé était compromise, un tiers pourrait lever un gel. Ce risque est jugé non
+critique (décision du 27 octobre 2026) : le registre ne détient ni ne déplace aucun fonds, et lever un gel
+ne fait que rouvrir les inscriptions. La gouvernance (retrait de ce droit) sera traitée avec le passage de
+l'administrateur à un portefeuille multisignature.
 
-L'écran montre aussi, en lecture seule, l'état du registre et l'historique des gels et réactivations
-(date, responsable, motif, transaction ou erreur). Lorsque la plateforme écrit réellement sur une chaîne,
+L'écran montre aussi, en lecture seule, l'état du registre, l'historique des gels et réactivations
+(date, responsable, motif, transaction ou erreur) et, actualisées toutes les 5 secondes, les 50 dernières
+écritures envoyées par la plateforme au registre (statut, transaction, bloc). En mode simulé — production
+comprise aujourd'hui — ces écritures sont affichées comme **simulées** : leurs références de transaction
+sont fictives et n'existent sur aucune chaîne. Lorsque la plateforme écrit réellement sur une chaîne,
 il montre en outre le nombre d'écritures on-chain en attente ou en échec (sans possibilité de les
 rejouer) ; en mode simulé ces compteurs sont masqués, et le gel comme la réactivation sont refusés — ce qui
 est le cas en production. Vérifié par contrôles automatisés (contrat, serveur, compilation de l'écran) et,

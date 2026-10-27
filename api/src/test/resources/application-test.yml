@@ -28,6 +28,9 @@ app:
     # A test-only variable on purpose: BRIDGE_DEMO_MODE is an app variable that Clever Cloud also
     # exposes to the build.
     demo-mode: ${BRIDGE_TEST_DEMO_MODE:true}
+    curator:
+      email: curator@test.local
+      password: TestPassword123!
 
 onchain:
   # Simulated by default: the regular build (Clever Cloud runs `test -PnoDocker`) never needs a chain.

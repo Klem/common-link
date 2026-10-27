@@ -864,6 +864,28 @@
       "table": {
         "sortAscendingAria": "Trier par {column}, ordre croissant",
         "sortDescendingAria": "Trier par {column}, ordre décroissant"
+      },
+      "feed": {
+        "title": "Écritures on-chain en direct",
+        "description": "Les 50 dernières écritures envoyées par la plateforme au registre, actualisées automatiquement.",
+        "descriptionSimulated": "Mode simulé : la plateforme enregistre ces écritures mais n'envoie rien à une blockchain ; leurs hashes sont fictifs.",
+        "refreshed": "Actualisé le {date}, toutes les {seconds} s",
+        "empty": "Aucune écriture pour le moment.",
+        "col": {
+          "queuedAt": "Mise en file",
+          "action": "Action",
+          "status": "Statut",
+          "transaction": "Transaction"
+        },
+        "status": {
+          "PENDING": "En attente",
+          "RUNNING": "En cours",
+          "DONE": "Inscrite",
+          "FAILED": "En échec"
+        },
+        "attempts": "({count} tentatives)",
+        "block": "bloc {block}",
+        "simulatedBadge": "simulé"
       }
     }
   },

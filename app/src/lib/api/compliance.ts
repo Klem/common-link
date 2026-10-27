@@ -13,6 +13,7 @@ import type {
   DonorLegalAcceptanceGroupDto,
   OnchainControlEntryDto,
   OnchainFailedJobDto,
+  OnchainJobFeedDto,
   OnchainOutboxHealthDto,
   OnchainPauseResultDto,
   OnchainRationaleRequest,
@@ -173,11 +174,19 @@ export const listLegalAcceptances = (
     .then((r) => r.data);
 
 /**
- * State of the on-chain registry: simulated mode, chain, address, pause state, resume right.
+ * State of the on-chain registry: simulated mode, chain, address, pause state, resume right. Silent like every read of
+ * the « Gestion du contrat » screen: it is polled every few seconds, the page shows its own error instead of a toast.
  * `GET /api/compliance/onchain/status`
  */
 export const getOnchainStatus = (): Promise<OnchainRegistryStatusDto> =>
-  api.get<OnchainRegistryStatusDto>('/api/compliance/onchain/status').then((r) => r.data);
+  api.get<OnchainRegistryStatusDto>('/api/compliance/onchain/status', { silentErrors: true }).then((r) => r.data);
+
+/**
+ * Live feed: the fifty most recently queued registry writes of the current chain, every status (silent, polled).
+ * `GET /api/compliance/onchain/jobs`
+ */
+export const getOnchainJobFeed = (): Promise<OnchainJobFeedDto> =>
+  api.get<OnchainJobFeedDto>('/api/compliance/onchain/jobs', { silentErrors: true }).then((r) => r.data);
 
 /**
  * Freezes every write of the on-chain registry. Silent: the page shows the backend reason (409 simulated mode,
@@ -208,18 +217,18 @@ export const unpauseOnchainRegistry = (rationale: string): Promise<OnchainUnpaus
  * `GET /api/compliance/onchain/history`
  */
 export const listOnchainControlHistory = (): Promise<OnchainControlEntryDto[]> =>
-  api.get<OnchainControlEntryDto[]>('/api/compliance/onchain/history').then((r) => r.data);
+  api.get<OnchainControlEntryDto[]>('/api/compliance/onchain/history', { silentErrors: true }).then((r) => r.data);
 
 /**
- * Outbox counts (pending, running, failed, blocked) for the current chain.
+ * Outbox counts (pending, running, failed, blocked) for the current chain (silent, polled).
  * `GET /api/compliance/onchain/outbox`
  */
 export const getOnchainOutboxHealth = (): Promise<OnchainOutboxHealthDto> =>
-  api.get<OnchainOutboxHealthDto>('/api/compliance/onchain/outbox').then((r) => r.data);
+  api.get<OnchainOutboxHealthDto>('/api/compliance/onchain/outbox', { silentErrors: true }).then((r) => r.data);
 
 /**
  * The hundred most recent failed registry writes of the current chain, read-only.
  * `GET /api/compliance/onchain/failed-jobs`
  */
 export const listOnchainFailedJobs = (): Promise<OnchainFailedJobDto[]> =>
-  api.get<OnchainFailedJobDto[]>('/api/compliance/onchain/failed-jobs').then((r) => r.data);
+  api.get<OnchainFailedJobDto[]>('/api/compliance/onchain/failed-jobs', { silentErrors: true }).then((r) => r.data);

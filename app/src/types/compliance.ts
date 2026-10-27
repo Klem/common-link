@@ -311,6 +311,36 @@ export interface OnchainOutboxHealthDto {
   oldestPendingSince: string | null;
 }
 
+/** Status of an on-chain write of the outbox. */
+export const OnchainJobStatus = {
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  DONE: 'DONE',
+  FAILED: 'FAILED',
+} as const;
+export type OnchainJobStatus = typeof OnchainJobStatus[keyof typeof OnchainJobStatus];
+
+/** One write of `GET /api/compliance/onchain/jobs`. `txHash` is random in simulated mode. */
+export interface OnchainJobFeedItemDto {
+  id: string;
+  action: string;
+  status: OnchainJobStatus;
+  attempts: number;
+  txHash: string | null;
+  blockNumber: number | null;
+  explorerTxUrl: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** `GET /api/compliance/onchain/jobs` — live feed of the current chain. */
+export interface OnchainJobFeedDto {
+  chainId: number;
+  simulated: boolean;
+  items: OnchainJobFeedItemDto[];
+}
+
 /** `GET /api/compliance/onchain/failed-jobs` — read-only; `error` has its URLs masked by the backend. */
 export interface OnchainFailedJobDto {
   id: string;

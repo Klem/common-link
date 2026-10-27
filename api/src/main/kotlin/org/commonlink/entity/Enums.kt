@@ -15,7 +15,11 @@ enum class UserRole {
     DONOR,
     /** A non-profit organisation that creates and manages fundraising campaigns. */
     ASSOCIATION,
-    /** A platform curator who can perform on-chain moderation actions (verify, pause, etc.). */
+    /**
+     * A platform curator: reviews association verifications (`/api/admin/verifications`) and reads on-chain job status
+     * (`/api/admin/onchain`). No on-chain action since registry v2 (no verify / pause any more; the emergency pause
+     * belongs to [COMPLIANCE_OFFICER]).
+     */
     CURATOR,
     /**
      * The AML/CFT compliance officer responsible for reviewing alerts and suspicious-activity

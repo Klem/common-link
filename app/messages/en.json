@@ -864,6 +864,28 @@
       "table": {
         "sortAscendingAria": "Sort by {column}, ascending",
         "sortDescendingAria": "Sort by {column}, descending"
+      },
+      "feed": {
+        "title": "Live on-chain writes",
+        "description": "The last 50 writes sent by the platform to the registry, refreshed automatically.",
+        "descriptionSimulated": "Simulated mode: the platform records these writes but sends nothing to a blockchain; their hashes are fictitious.",
+        "refreshed": "Updated {date}, every {seconds} s",
+        "empty": "No write yet.",
+        "col": {
+          "queuedAt": "Queued on",
+          "action": "Action",
+          "status": "Status",
+          "transaction": "Transaction"
+        },
+        "status": {
+          "PENDING": "Pending",
+          "RUNNING": "Sending",
+          "DONE": "Recorded",
+          "FAILED": "Failed"
+        },
+        "attempts": "({count} attempts)",
+        "block": "block {block}",
+        "simulatedBadge": "simulated"
       }
     }
   },

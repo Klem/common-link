@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
+  getOnchainJobFeed,
   getOnchainOutboxHealth,
   getOnchainStatus,
   listOnchainControlHistory,
@@ -13,14 +14,19 @@ import {
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { OnchainControlHistoryTable } from '@/components/compliance/onchain/OnchainControlHistoryTable';
 import { OnchainFailedJobsTable } from '@/components/compliance/onchain/OnchainFailedJobsTable';
+import { OnchainJobFeedTable } from '@/components/compliance/onchain/OnchainJobFeedTable';
 import { formatOnchainDateTime, problemDetail } from '@/components/compliance/onchain/format';
 import type {
   OnchainControlEntryDto,
   OnchainFailedJobDto,
+  OnchainJobFeedDto,
   OnchainOutboxHealthDto,
   OnchainRegistryStatusDto,
 } from '@/types/compliance';
 import { ONCHAIN_RATIONALE_MAX_LENGTH } from '@/types/compliance';
+
+/** Refresh period of the live panels (state, counters, feed). */
+const POLL_INTERVAL_MS = 5_000;
 
 /** Which registry action the officer is about to confirm. */
 const RegistryAction = {
@@ -53,7 +59,13 @@ export default function ComplianceOnchainPage() {
   const [outbox, setOutbox] = useState<OnchainOutboxHealthDto | null>(null);
   const [failedJobs, setFailedJobs] = useState<OnchainFailedJobDto[] | null>(null);
   const [history, setHistory] = useState<OnchainControlEntryDto[] | null>(null);
+  const [feed, setFeed] = useState<OnchainJobFeedDto | null>(null);
   const [sectionError, setSectionError] = useState(false);
+  const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
+  /** True while a refresh runs: a slow API never gets two overlapping polls. */
+  const inFlight = useRef(false);
+  /** A history reload asked while a refresh was running: done by the next refresh. */
+  const historyDue = useRef(false);
 
   const [rationale, setRationale] = useState('');
   const [pendingAction, setPendingAction] = useState<RegistryAction | null>(null);
@@ -62,10 +74,17 @@ export default function ComplianceOnchainPage() {
   const [result, setResult] = useState<ActionResult | null>(null);
 
   /**
-   * Loads every panel, one request at a time (the Axios rule of this app: never parallel). The outbox panels are only
-   * loaded in real mode: in simulated mode its jobs are not on-chain writes and must not be shown as such.
+   * Loads the live panels, one request at a time (the Axios rule of this app: never parallel): state, then — in real
+   * mode only — the counters and failed writes (in simulated mode they are not on-chain writes), then the feed (shown
+   * in both modes, flagged simulated). The history is reloaded only with [withHistory] (it changes with an action).
    */
-  const load = useCallback(async () => {
+  const load = useCallback(async (withHistory: boolean) => {
+    if (inFlight.current) {
+      if (withHistory) historyDue.current = true;
+      return;
+    }
+    inFlight.current = true;
+    const wantHistory = withHistory || historyDue.current;
     let real = false;
     try {
       const s = await getOnchainStatus();
@@ -83,15 +102,34 @@ export default function ComplianceOnchainPage() {
         setOutbox(null);
         setFailedJobs(null);
       }
-      setHistory(await listOnchainControlHistory());
+      setFeed(await getOnchainJobFeed());
+      if (wantHistory) {
+        setHistory(await listOnchainControlHistory());
+        historyDue.current = false;
+      }
       setSectionError(false);
+      setRefreshedAt(new Date().toISOString());
     } catch {
       setSectionError(true);
+    } finally {
+      inFlight.current = false;
     }
   }, []);
 
   useEffect(() => {
-    void load();
+    void load(true);
+    // Live refresh, suspended while the tab is hidden.
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void load(false);
+    }, POLL_INTERVAL_MS);
+    const onVisible = () => {
+      if (!document.hidden) void load(false);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [load]);
 
   const paused = status?.paused ?? null;
@@ -130,7 +168,7 @@ export default function ComplianceOnchainPage() {
       setActionError(problemDetail(err) ?? t('action.error'));
     } finally {
       setIsSubmitting(false);
-      await load();
+      await load(true);
     }
   };
 
@@ -258,6 +296,18 @@ export default function ComplianceOnchainPage() {
       )}
 
       {sectionError && <p className="alert-warning">{t('loadError')}</p>}
+
+      {/* Live feed of the writes (every mode) */}
+      {feed && (
+        <div className="cm-card">
+          <div className="cm-card-title">{t('feed.title')}</div>
+          <p className="text-text-2 mb-3">{feed.simulated ? t('feed.descriptionSimulated') : t('feed.description')}</p>
+          <p className="text-xs text-text-2 mb-3" aria-live="polite">
+            {t('feed.refreshed', { date: formatOnchainDateTime(refreshedAt, locale), seconds: POLL_INTERVAL_MS / 1000 })}
+          </p>
+          <OnchainJobFeedTable items={feed.items} simulated={feed.simulated} />
+        </div>
+      )}
 
       {/* Outbox health */}
       {outbox && (
