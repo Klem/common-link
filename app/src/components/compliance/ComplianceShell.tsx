@@ -84,6 +84,21 @@ export function ComplianceShell({ children }: ComplianceShellProps) {
           </ul>
         </div>
 
+        <div className="sidebar-nav">
+          <p className="snav-label">{t('shell.blockchainLabel')}</p>
+          <ul>
+            <li>
+              <Link
+                href={`/${locale}${ROUTES.compliance.onchain}`}
+                className={pathname.startsWith(ROUTES.compliance.onchain) ? 'active' : ''}
+              >
+                <span className="icon">⛓</span>
+                {t('nav.onchainManagement')}
+              </Link>
+            </li>
+          </ul>
+        </div>
+
         <div className="sidebar-nav" style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '12px' }}>
           <ul>
             <li>

@@ -241,3 +241,82 @@ export interface DonorLegalAcceptanceGroupDto {
   donorEmail: string | null;
   acceptances: LegalAcceptanceDto[];
 }
+
+// ─── On-chain registry (compliance « Blockchain » section) ───
+
+/** Maximum length of a freeze / resume rationale — mirrors `@Size(max = 1000)` on the backend requests. */
+export const ONCHAIN_RATIONALE_MAX_LENGTH = 1000;
+
+/** Journal event types of the on-chain registry freeze / resume history. */
+export const OnchainRegistryControlEvent = {
+  PAUSED: 'ONCHAIN_REGISTRY_PAUSED',
+  PAUSE_FAILED: 'ONCHAIN_REGISTRY_PAUSE_FAILED',
+  UNPAUSED: 'ONCHAIN_REGISTRY_UNPAUSED',
+  UNPAUSE_FAILED: 'ONCHAIN_REGISTRY_UNPAUSE_FAILED',
+} as const;
+export type OnchainRegistryControlEvent = typeof OnchainRegistryControlEvent[keyof typeof OnchainRegistryControlEvent];
+
+/** `GET /api/compliance/onchain/status`. `paused` is null when the chain cannot be read. */
+export interface OnchainRegistryStatusDto {
+  mock: boolean;
+  chainId: number;
+  registryAddress: string | null;
+  paused: boolean | null;
+  /** Whether the platform key may still resume the registry (the registry admin can revoke this right). */
+  canUnpause: boolean;
+  explorerAddressUrl: string | null;
+}
+
+/** Body of `POST /api/compliance/onchain/pause` and `/unpause`. */
+export interface OnchainRationaleRequest {
+  rationale: string;
+}
+
+/** `POST /api/compliance/onchain/pause`. */
+export interface OnchainPauseResultDto {
+  paused: boolean;
+  alreadyPaused: boolean;
+  txHash: string | null;
+  blockNumber: number | null;
+  explorerTxUrl: string | null;
+}
+
+/** `POST /api/compliance/onchain/unpause`. */
+export interface OnchainUnpauseResultDto {
+  paused: boolean;
+  alreadyActive: boolean;
+  txHash: string | null;
+  blockNumber: number | null;
+  explorerTxUrl: string | null;
+}
+
+/** `GET /api/compliance/onchain/history` — one freeze or resume request, with the officer who asked. */
+export interface OnchainControlEntryDto {
+  sequenceNo: number;
+  eventType: string;
+  actorUserId: string | null;
+  /** Null when the officer's account no longer exists. */
+  actorEmail: string | null;
+  payload: Record<string, unknown>;
+  occurredAt: string;
+}
+
+/** `GET /api/compliance/onchain/outbox` — counts for the chain the backend currently targets. */
+export interface OnchainOutboxHealthDto {
+  chainId: number;
+  pending: number;
+  running: number;
+  failed: number;
+  blockedByFailedDependency: number;
+  oldestPendingSince: string | null;
+}
+
+/** `GET /api/compliance/onchain/failed-jobs` — read-only; `error` has its URLs masked by the backend. */
+export interface OnchainFailedJobDto {
+  id: string;
+  action: string;
+  attempts: number;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

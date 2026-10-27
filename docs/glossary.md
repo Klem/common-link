@@ -458,11 +458,15 @@ The line on the fiscal receipt stating how the donor actually paid. The provider
 `functional` `business`
 
 ### Compliance Pause (On-Chain Registry Freeze)
-Emergency freeze of the on-chain registry triggered by a compliance officer through `POST /api/compliance/onchain/pause` (mandatory rationale). The backend sends `pause()` directly — never through the outbox — signed by the dedicated **Pauser Role** key; every request is written to the compliance audit log (`ONCHAIN_REGISTRY_PAUSED`, or `ONCHAIN_REGISTRY_PAUSE_FAILED`), an already paused registry gets no transaction. While paused, the outbox worker holds every job without consuming attempts. Only the registry admin (Safe) can resume; the backend exposes no resume. Refused in simulated mode (nothing to freeze).
+Emergency freeze of the on-chain registry triggered by a compliance officer from the « Blockchain » section of the compliance space (`POST /api/compliance/onchain/pause`, mandatory rationale, at most 1000 characters). The backend sends `pause()` directly — never through the outbox — signed by the dedicated **Pauser Role** key; every request is written to the compliance audit log (`ONCHAIN_REGISTRY_PAUSED`, or `ONCHAIN_REGISTRY_PAUSE_FAILED`), an already paused registry gets no transaction. While paused, the outbox worker holds every job without consuming attempts. The officer resumes the same way (`POST /api/compliance/onchain/unpause`, journaled `ONCHAIN_REGISTRY_UNPAUSED` / `ONCHAIN_REGISTRY_UNPAUSE_FAILED`) as long as the platform key holds the **Unpauser Role**; the registry admin can always resume. Refused in simulated mode (nothing to freeze).
+`blockchain` `compliance` `technical`
+
+### Unpauser Role
+`UNPAUSER_ROLE` of the on-chain registry (version 3.1): may call `unpause()` besides the admin. Granted at deployment to the same backend key as the **Pauser Role**, so that a compliance officer can resume from the platform until the Safe exists. Kept as a separate role so the admin can revoke it (`revokeRole(UNPAUSER_ROLE, pauser)`) without redeploying: resuming then becomes admin-only, pausing is untouched, the API only warns at startup and the compliance screen greys out its resume button. Residual risk while it is held: a compromised backend key can lift a freeze.
 `blockchain` `compliance` `technical`
 
 ### Pauser Role
-`PAUSER_ROLE` of the on-chain registry: may call `pause()` — freezing every registry write, reads stay available — and nothing else; it can never resume (`unpause()` is reserved to the admin). Held by a **dedicated** backend key, distinct from the recorder key (own nonce stream, so a stuck recorder never blocks a freeze), and triggered by a compliance officer (`COMPLIANCE_OFFICER`). The key needs a little xDAI: an unfunded pauser cannot freeze.
+`PAUSER_ROLE` of the on-chain registry: may call `pause()` — freezing every registry write, reads stay available — and nothing else. Resuming needs the **Unpauser Role** (or the admin). Held by a **dedicated** backend key, distinct from the recorder key (own nonce stream, so a stuck recorder never blocks a freeze), and triggered by a compliance officer (`COMPLIANCE_OFFICER`). The key needs a little xDAI: an unfunded pauser cannot freeze.
 `blockchain` `technical`
 
 ### Payout Record (On-Chain)

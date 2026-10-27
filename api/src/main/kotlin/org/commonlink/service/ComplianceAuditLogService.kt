@@ -102,7 +102,6 @@ class ComplianceAuditLogService(
          * A compliance officer froze the on-chain registry (`pause()` signed by the dedicated pauser key, decision 31),
          * or asked to while it was already paused (`alreadyPaused = true`, no transaction). Payload: rationale,
          * chain id, registry address, tx hash. Written by [org.commonlink.service.OnchainPauseService.pause].
-         * Resuming is not a compliance action: it is reserved to the registry admin (Safe) and never journaled here.
          */
         const val ONCHAIN_REGISTRY_PAUSED = "ONCHAIN_REGISTRY_PAUSED"
 
@@ -112,6 +111,28 @@ class ComplianceAuditLogService(
          * rationale, chain id, registry address, error type (exception class only, never its message).
          */
         const val ONCHAIN_REGISTRY_PAUSE_FAILED = "ONCHAIN_REGISTRY_PAUSE_FAILED"
+
+        /**
+         * A compliance officer resumed the on-chain registry (`unpause()` signed by the pauser key, which holds
+         * `UNPAUSER_ROLE` until the admin revokes it — decision 31 revised on 2026-10-27), or asked to while it was not
+         * paused (`alreadyActive = true`, no transaction). Payload: rationale, chain id, registry address, tx hash.
+         * Written by [org.commonlink.service.OnchainPauseService.unpause]. A resume by the admin directly on the chain
+         * is not journaled here.
+         */
+        const val ONCHAIN_REGISTRY_UNPAUSED = "ONCHAIN_REGISTRY_UNPAUSED"
+
+        /**
+         * A compliance officer's attempt to resume the on-chain registry failed (platform key no longer holds
+         * `UNPAUSER_ROLE`, RPC down, transaction reverted or not mined in time). Payload: rationale, chain id, registry
+         * address, error type (exception class or `UNPAUSER_ROLE_MISSING`, never a message).
+         */
+        const val ONCHAIN_REGISTRY_UNPAUSE_FAILED = "ONCHAIN_REGISTRY_UNPAUSE_FAILED"
+
+        /** Every event of the on-chain registry freeze / resume history, in the order shown to the officer. */
+        val ONCHAIN_REGISTRY_CONTROL_EVENTS = listOf(
+            ONCHAIN_REGISTRY_PAUSED, ONCHAIN_REGISTRY_PAUSE_FAILED,
+            ONCHAIN_REGISTRY_UNPAUSED, ONCHAIN_REGISTRY_UNPAUSE_FAILED,
+        )
 
         /**
          * A campaign's DRAFT→LIVE publish attempt passed every guard in
@@ -480,6 +501,14 @@ class ComplianceAuditLogService(
     @Transactional(readOnly = true)
     fun findRecentEntries(): List<ComplianceAuditLog> =
         repo.findTop20ByOrderBySequenceNoDesc()
+
+    /**
+     * Returns the fifty most recent freezes and resumes of the on-chain registry (successful, idempotent or failed),
+     * newest first. Read-only.
+     */
+    @Transactional(readOnly = true)
+    fun findOnchainRegistryControlHistory(): List<ComplianceAuditLog> =
+        repo.findTop50ByEventTypeInOrderBySequenceNoDesc(ONCHAIN_REGISTRY_CONTROL_EVENTS)
 
     // -----------------------------------------------------------------------------------------
     // Scheduled sync journal helper

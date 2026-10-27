@@ -35,6 +35,7 @@ export const ROUTES = {
     associationDetail: (id: string) => `/compliance/associations/${id}`,
     campaignDetail: (associationId: string, campaignId: string) =>
       `/compliance/associations/${associationId}/campaigns/${campaignId}`,
+    onchain: '/compliance/onchain',
   },
 } as const;
 

@@ -37,6 +37,7 @@ abstract contract CommonLinkBaseTest is Test {
     /// @dev Role ids as constants: calling registry.X_ROLE() after vm.prank would consume the prank.
     bytes32 internal constant RECORDER_ROLE = keccak256("RECORDER_ROLE");
     bytes32 internal constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 internal constant UNPAUSER_ROLE = keccak256("UNPAUSER_ROLE");
     bytes32 internal constant ADMIN_ROLE = 0x00;
 
     bytes32 internal constant CAMP_1 = bytes32(uint256(1) << 128);

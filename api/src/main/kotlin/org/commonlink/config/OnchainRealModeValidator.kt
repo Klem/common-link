@@ -80,6 +80,7 @@ class OnchainRealModeValidator(
 
         private val RECORDER_ROLE: ByteArray = Hash.sha3("RECORDER_ROLE".toByteArray())
         private val PAUSER_ROLE: ByteArray = Hash.sha3("PAUSER_ROLE".toByteArray())
+        private val UNPAUSER_ROLE: ByteArray = Hash.sha3("UNPAUSER_ROLE".toByteArray())
 
         /**
          * Probes the RPC up to [attempts] times, [delayMs] apart (a brief outage of a public RPC must not abort a
@@ -130,7 +131,9 @@ class OnchainRealModeValidator(
 
         /**
          * @return the problem found on the registry contract itself (wrong version, missing role), or null.
-         *   Addresses are public: they may appear in the message; keys never do.
+         *   Addresses are public: they may appear in the message; keys never do. A pauser key without
+         *   `UNPAUSER_ROLE` is not a problem, only a WARN: the admin revokes it on purpose once the Safe resumes alone
+         *   (the compliance screen then greys out its resume button).
          */
         private fun registryProblem(web3j: Web3j, cfg: OnchainConfig): String? {
             val view = CommonLinkRegistry.load(
@@ -147,6 +150,10 @@ class OnchainRealModeValidator(
             if (!view.hasRole(RECORDER_ROLE, recorder).send()) return "onchain.recorder-pk ($recorder) lacks RECORDER_ROLE"
             val pauser = Credentials.create(cfg.pauserPk).address
             if (!view.hasRole(PAUSER_ROLE, pauser).send()) return "onchain.pauser-pk ($pauser) lacks PAUSER_ROLE"
+            if (!view.hasRole(UNPAUSER_ROLE, pauser).send()) {
+                logger.warn("onchain.pauser-pk ({}) lacks UNPAUSER_ROLE: compliance officers cannot resume the registry, " +
+                    "only its admin can", pauser)
+            }
             return null
         }
 

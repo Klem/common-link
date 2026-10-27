@@ -10,7 +10,7 @@ import {IAccessControlDefaultAdminRules} from
 /// @notice Constructor and initial roles. Pause, governance, ERC-165 and funds: CommonLinkRegistry.governance.t.sol.
 contract DeploymentTest is CommonLinkBaseTest {
     function test_version() public view {
-        assertEq(registry.VERSION(), "3.0.0-mvp");
+        assertEq(registry.VERSION(), "3.1.0-mvp");
         assertEq(registry.READER_VERSION(), 1);
     }
 
@@ -20,6 +20,9 @@ contract DeploymentTest is CommonLinkBaseTest {
         assertTrue(registry.hasRole(ADMIN_ROLE, admin));
         assertTrue(registry.hasRole(RECORDER_ROLE, recorder));
         assertTrue(registry.hasRole(PAUSER_ROLE, pauser));
+        assertTrue(registry.hasRole(UNPAUSER_ROLE, pauser));
+        assertFalse(registry.hasRole(UNPAUSER_ROLE, recorder));
+        assertEq(registry.getRoleAdmin(UNPAUSER_ROLE), ADMIN_ROLE);
         assertFalse(registry.hasRole(ADMIN_ROLE, recorder));
         assertFalse(registry.hasRole(ADMIN_ROLE, pauser));
         assertFalse(registry.hasRole(PAUSER_ROLE, recorder));

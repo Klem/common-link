@@ -17,6 +17,7 @@ private val SUPPORTS_INTERFACE = Hash.sha3String("supportsInterface(bytes4)").su
 private val READER_VERSION = Hash.sha3String("READER_VERSION()").substring(2, 10)
 private val HAS_ROLE = Hash.sha3String("hasRole(bytes32,address)").substring(2, 10)
 private val RECORDER_ROLE_HEX = Hash.sha3String("RECORDER_ROLE").substring(2)
+private val UNPAUSER_ROLE_HEX = Hash.sha3String("UNPAUSER_ROLE").substring(2)
 
 /** A 32-byte ABI word holding [value]. */
 private fun word(value: Long) = "0x" + value.toString(16).padStart(64, '0')
@@ -31,6 +32,7 @@ private fun word(value: Long) = "0x" + value.toString(16).padStart(64, '0')
  * @param readerVersion what `READER_VERSION()` answers.
  * @param recorderHasRole what `hasRole(RECORDER_ROLE, …)` answers.
  * @param pauserHasRole what `hasRole(<any other role>, …)` answers — i.e. `PAUSER_ROLE`.
+ * @param unpauserHasRole what `hasRole(UNPAUSER_ROLE, …)` answers (registry 3.1, revocable by the admin).
  */
 internal fun stubWeb3j(
     chainIdHex: String = "0x7a69",
@@ -40,6 +42,7 @@ internal fun stubWeb3j(
     readerVersion: Long = 1,
     recorderHasRole: Boolean = true,
     pauserHasRole: Boolean = true,
+    unpauserHasRole: Boolean = true,
 ): Web3j {
     var calls = 0
     val chainRequest = mockk<Request<*, EthChainId>>()
@@ -57,7 +60,11 @@ internal fun stubWeb3j(
             READER_VERSION -> word(readerVersion)
             HAS_ROLE -> {
                 val role = data.removePrefix("0x").substring(8, 72)
-                val granted = if (role.equals(RECORDER_ROLE_HEX, ignoreCase = true)) recorderHasRole else pauserHasRole
+                val granted = when {
+                    role.equals(RECORDER_ROLE_HEX, ignoreCase = true) -> recorderHasRole
+                    role.equals(UNPAUSER_ROLE_HEX, ignoreCase = true) -> unpauserHasRole
+                    else -> pauserHasRole
+                }
                 word(if (granted) 1 else 0)
             }
             else -> error("unexpected eth_call selector $selector")

@@ -3,7 +3,7 @@
 > Source de vérité pour le smart contract `CommonLinkRegistry`. **Le code (`src/CommonLinkRegistry.sol`) et les tests Foundry font foi** ;
 > toute déviation de ce document est un bug de documentation.
 >
-> **Version**: 3.0.0-mvp (`READER_VERSION` = 1)
+> **Version**: 3.1.0-mvp (`READER_VERSION` = 1)
 > **Solidity**: 0.8.30 (EVM `cancun`)
 > **Stack**: Foundry + OpenZeppelin 5.x
 > **Cibles**: Gnosis Chiado (10200, testnet) → Gnosis (100, mainnet) — gas en xDAI
@@ -11,6 +11,12 @@
 
 ### Changelog
 
+- **3.1.0-mvp** : reprise après pause ouverte, en plus de l'admin, au nouveau rôle **`UNPAUSER_ROLE`**, accordé au constructeur à
+  l'adresse pauser (décision 31 révisée le 2026-10-27 : le Safe n'existe pas encore, un responsable conformité doit pouvoir
+  reprendre depuis la plateforme). Rôle séparé pour que l'admin puisse le **révoquer sans redéploiement** (`revokeRole(UNPAUSER_ROLE,
+  pauser)`) : la reprise redevient réservée à l'admin, la pause reste intacte. Un tiers refusé reçoit
+  `AccessControlUnauthorizedAccount(sender, UNPAUSER_ROLE)`. Interface de lecture inchangée (`READER_VERSION` = 1, même interfaceId).
+  Constructeur inchangé.
 - **3.0.0-mvp** : **hub d'une architecture hub + satellites** (décisions 27–41 de `.tasks/blockchain-integration-sprint.md`).
   Retrait complet du relais de badge (`setBadgeContract`, `mintBadge`, `badgeContract`, `IDonorBadge`, events et erreurs associés) :
   le hub n'appelle plus aucun contrat, donc `ReentrancyGuard` retiré. Admin via `AccessControlDefaultAdminRules` (transfert en deux
@@ -65,7 +71,7 @@ satellite.
 
 | Gardes conservées (intégrité du registre) | |
 |---|---|
-| Access control | `RECORDER_ROLE` (écritures) / `PAUSER_ROLE` (pause) / `DEFAULT_ADMIN_ROLE` (reprise, rôles) |
+| Access control | `RECORDER_ROLE` (écritures) / `PAUSER_ROLE` (pause) / `UNPAUSER_ROLE` (reprise) / `DEFAULT_ADMIN_ROLE` (reprise, rôles) |
 | Pause | arrêt d'urgence de toutes les écritures |
 | Anti-doublon | association, SIREN, campagne, don, décaissement |
 | Intégrité référentielle | campagne ⇒ association inscrite ; don / décaissement / budget ⇒ campagne inscrite |
@@ -78,7 +84,8 @@ satellite.
 | Inscrire une association / une campagne, mettre à jour un budget | Hot wallet CommonLink | `RECORDER_ROLE` |
 | Enregistrer un don / un décaissement | Hot wallet CommonLink | `RECORDER_ROLE` |
 | Pause d'urgence | Clé backend dédiée, déclenchée par un responsable conformité | `PAUSER_ROLE` |
-| Reprise après pause, octroi / révocation des rôles, transfert d'admin | Multisig CommonLink (Safe) en mainnet | `DEFAULT_ADMIN_ROLE` |
+| Reprise après pause | Même clé backend, déclenchée par un responsable conformité ; ou l'admin | `UNPAUSER_ROLE` ou `DEFAULT_ADMIN_ROLE` |
+| Octroi / révocation des rôles, transfert d'admin | Multisig CommonLink (Safe) en mainnet | `DEFAULT_ADMIN_ROLE` |
 
 **Aucun appel n'est jamais signé par une association ni par un donateur.** Leurs adresses sont pseudonymes, dérivées côté serveur (HMAC-SHA256), sans clé privée.
 
@@ -105,10 +112,11 @@ Ils n'affectent aucune preuve, aucune lecture et aucune écriture (`test_forcedB
 ## 2. Constantes et rôles
 
 ```solidity
-string  public constant VERSION        = "3.0.0-mvp";
+string  public constant VERSION        = "3.1.0-mvp";
 uint16  public constant READER_VERSION = 1;                         // ICommonLinkRegistryReader
 bytes32 public constant RECORDER_ROLE  = keccak256("RECORDER_ROLE");
 bytes32 public constant PAUSER_ROLE    = keccak256("PAUSER_ROLE");
+bytes32 public constant UNPAUSER_ROLE  = keccak256("UNPAUSER_ROLE");  // accordé au pauser par le constructeur
 // DEFAULT_ADMIN_ROLE : AccessControlDefaultAdminRules (OZ 5)
 constructor(uint48 adminDelay, address admin, address recorder, address pauser);
 ```
@@ -121,15 +129,18 @@ constructor(uint48 adminDelay, address admin, address recorder, address pauser);
   Gnosis. Le délai ne ralentit que le transfert d'admin (pas la pause, pas la gestion des rôles).
 - `RECORDER_ROLE` → hot wallet backend (`OnchainJobWorker`), seul rôle d'écriture.
 - `PAUSER_ROLE` → clé backend **dédiée** (distincte du recorder : flux de nonce propre, gel possible même si le recorder est bloqué),
-  déclenchée par un responsable conformité. Ne peut que geler.
+  déclenchée par un responsable conformité. Gèle.
+- `UNPAUSER_ROLE` → la même clé backend (accordé par le constructeur), déclenchée par un responsable conformité. Lève la pause.
+  **Risque résiduel assumé** : une clé backend compromise peut lever un gel. Le jour du Safe, l'admin révoque ce rôle
+  (`revokeRole(UNPAUSER_ROLE, pauser)`) et la reprise redevient réservée à l'admin, sans redéploiement.
 
 Le contrat hérite de `Pausable` : `pause()` (PAUSER) gèle toutes les écritures (inscriptions, budget, dons, décaissements) ;
-`unpause()` est réservé à l'admin. Les lectures restent disponibles.
+`unpause()` est ouvert à l'admin et à l'`UNPAUSER_ROLE`. Les lectures restent disponibles.
 
 | Point de mutabilité du hub | Contrôlé par | Gelable ? |
 |---|---|---|
-| Octroi / révocation RECORDER, PAUSER | admin (Safe) | Non (rotation des clés) |
-| Pause | PAUSER (geler) / admin (reprendre) | Non ; bloque les écritures, n'altère aucune preuve |
+| Octroi / révocation RECORDER, PAUSER, UNPAUSER | admin (Safe) | Non (rotation des clés) |
+| Pause | PAUSER (geler) / UNPAUSER ou admin (reprendre) | Non ; bloque les écritures, n'altère aucune preuve |
 | Transfert d'admin, délai | admin, en deux étapes avec délai | — ; renonciation interdite |
 | Données enregistrées | personne | Écrites une fois, jamais modifiées (sauf `budgetHash`, re-déclaré) |
 
@@ -312,7 +323,7 @@ et lit le hub (« donateur connu » = `getDonorStats(to).firstDonationAt != 0`).
 
 ### 4.5 Pause, gouvernance et lectures
 
-- `pause()` — `PAUSER_ROLE` ; `unpause()` — `DEFAULT_ADMIN_ROLE`.
+- `pause()` — `PAUSER_ROLE` ; `unpause()` — `UNPAUSER_ROLE` ou `DEFAULT_ADMIN_ROLE`.
 - Gouvernance (OpenZeppelin `AccessControlDefaultAdminRules`) : `defaultAdmin`, `defaultAdminDelay`, `pendingDefaultAdmin`,
   `beginDefaultAdminTransfer`, `acceptDefaultAdminTransfer`, `cancelDefaultAdminTransfer`, `changeDefaultAdminDelay`,
   `rollbackDefaultAdminDelay`, `grantRole` / `revokeRole` (hors admin), `renounceRole` (hors admin).
@@ -358,12 +369,12 @@ event PayoutRecorded(bytes32 indexed payoutId, bytes32 indexed campaignId, uint9
 - **INV-5** le registre ne refuse jamais une écriture pour une autre raison que ses gardes d'intégrité (aucune règle métier).
 - **INV-6** statistiques de campagne = dons et décaissements enregistrés.
 - **INV-7** le registre ne détient jamais de fonds.
-- **INV-8** aucune écriture acceptée pendant une pause ; seul le PAUSER met en pause ; seul l'admin reprend ; l'admin ne change pas
-  hors du transfert en deux étapes ; recorder et pauser gardent leur rôle.
+- **INV-8** aucune écriture acceptée pendant une pause ; seul le PAUSER met en pause ; seuls l'admin et l'UNPAUSER reprennent ;
+  l'admin ne change pas hors du transfert en deux étapes ; recorder et pauser gardent leurs rôles.
 
 Le handler travaille sur de petits domaines d'identifiants pour rejouer réellement des doublons, et pilote `pause` / `unpause` par le
 pauser, l'admin, le recorder et un tiers ; des mutations manuelles (retrait d'un anti-doublon, réintroduction d'une garde métier,
-`raised` non mis à jour, `unpause` ouvert au PAUSER, ajout d'un `receive()`) font échouer les tests.
+`raised` non mis à jour, `unpause` ouvert au recorder, ajout d'un `receive()`) font échouer les tests.
 
 ---
 
@@ -384,7 +395,8 @@ pauser, l'admin, le recorder et un tiers ; des mutations manuelles (retrait d'un
 - **Idempotence** : `correlationKey` unique par fait ; ne jamais réutiliser un UUID ; mono-worker (un seul flux de nonce pour la clé recorder).
 - **Conventions** : UUID → bytes32 (§2.5), SIREN canonique (§2.6), budget canonicalisé JCS avant `keccak256`.
 - **Remboursements** : n'existent pas (un don n'est jamais remboursé) ; rien on-chain. Satellite dédié seulement si le cas survient.
-- **Pause** : déclenchée par un responsable conformité via la clé PAUSER du backend ; la reprise passe par l'admin (Safe).
+- **Pause / reprise** : déclenchées par un responsable conformité via la clé PAUSER du backend (qui détient aussi l'UNPAUSER) ;
+  l'admin peut toujours reprendre, et retirer la reprise au backend.
 
 ---
 
@@ -409,10 +421,10 @@ délai, rôles, interface de lecture, solde nul. Les satellites se déploient en
 | `recordDonation` | ~221 800 | ~221 900 |
 | `recordPayout` | ~101 500 | ~121 700 |
 | `pause` | ~35 500 | ~47 100 |
-| `unpause` | ~23 700 | ~25 100 |
-| Déploiement | ~2 180 200 | — |
+| `unpause` | ~25 500 | ~28 100 |
+| Déploiement | ~2 242 800 | — |
 
-Taille du contrat : 9 320 octets de runtime (limite 24 576). Mesures 3.0.0-mvp (`forge test --gas-report`, médianes sur la suite de
+Taille du contrat : 9 492 octets de runtime (limite 24 576). Mesures 3.0.0-mvp, `unpause` et déploiement re-mesurés en 3.1.0-mvp (`forge test --gas-report`, médianes sur la suite de
 tests, cas de revert inclus).
 
 Mesures `forge test --gas-report` (médiane). Le gas est payé en xDAI sur Gnosis ; aucun coût en € n'est avancé ici : il dépend du prix du gas observé et sera mesuré sur Chiado.

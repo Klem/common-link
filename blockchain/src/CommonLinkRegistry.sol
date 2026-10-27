@@ -39,8 +39,9 @@ import {ICommonLinkRegistryReader} from "./interfaces/ICommonLinkRegistryReader.
  *         ICommonLinkRegistryReader, advertised via ERC-165 and versioned by READER_VERSION.
  *
  * @dev    Records are signed by the CommonLink backend hot wallet (RECORDER_ROLE); the emergency pause by a
- *         dedicated backend key (PAUSER_ROLE, triggered by a compliance officer); resuming, role management and
- *         admin hand-over by the admin (a Safe multisig in production, two-step transfer with a delay, never
+ *         dedicated backend key (PAUSER_ROLE, triggered by a compliance officer); resuming by the admin or by the
+ *         UNPAUSER_ROLE (granted to the same backend key until the Safe exists, revocable by the admin without a
+ *         redeployment); role management and admin hand-over by the admin (a Safe multisig in production, two-step transfer with a delay, never
  *         renounceable). Neither associations nor donors ever sign transactions. See blockchain/README.md.
  */
 contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommonLinkRegistryReader {
@@ -49,7 +50,7 @@ contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommon
     // ─────────────────────────────────────────────────────────────────────
 
     /// @notice Semantic version of the registry.
-    string public constant VERSION = "3.0.0-mvp";
+    string public constant VERSION = "3.1.0-mvp";
 
     /// @inheritdoc ICommonLinkRegistryReader
     uint16 public constant READER_VERSION = 1;
@@ -57,8 +58,12 @@ contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommon
     /// @notice Role allowed to write every record. Held by the backend hot wallet.
     bytes32 public constant RECORDER_ROLE = keccak256("RECORDER_ROLE");
 
-    /// @notice Role allowed to pause every write (not to resume). Held by a dedicated backend key.
+    /// @notice Role allowed to pause every write. Held by a dedicated backend key.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    /// @notice Role allowed to lift the pause besides the admin. Granted to the pauser key at deployment so that a
+    ///         compliance officer can resume from the platform; the admin revokes it to make resuming admin-only.
+    bytes32 public constant UNPAUSER_ROLE = keccak256("UNPAUSER_ROLE");
 
     // Types (Association, Campaign, Donation, Payout, CampaignStats, DonorStats) are declared in
     // ICommonLinkRegistryReader so that satellites compile without importing the hub.
@@ -171,7 +176,7 @@ contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommon
      * @param  adminDelay Delay (seconds) of the two-step DEFAULT_ADMIN_ROLE transfer.
      * @param  admin      Receives DEFAULT_ADMIN_ROLE (a Safe multisig in production). Cannot be zero.
      * @param  recorder   Receives RECORDER_ROLE. Cannot be zero.
-     * @param  pauser     Receives PAUSER_ROLE. Cannot be zero.
+     * @param  pauser     Receives PAUSER_ROLE and UNPAUSER_ROLE. Cannot be zero.
      * @dev    Distinct admin / recorder / pauser keys are enforced by the deployment script, not here.
      */
     constructor(uint48 adminDelay, address admin, address recorder, address pauser)
@@ -181,6 +186,7 @@ contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommon
         require(pauser != address(0), InvalidPauser());
         _grantRole(RECORDER_ROLE, recorder);
         _grantRole(PAUSER_ROLE, pauser);
+        _grantRole(UNPAUSER_ROLE, pauser);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -374,7 +380,7 @@ contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommon
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Emergency pause (PAUSER_ROLE) and resume (DEFAULT_ADMIN_ROLE)
+    // Emergency pause (PAUSER_ROLE) and resume (DEFAULT_ADMIN_ROLE or UNPAUSER_ROLE)
     // ─────────────────────────────────────────────────────────────────────
 
     /// @notice Freezes every write: registrations, budget updates, donations, payouts. Reads stay available.
@@ -382,8 +388,14 @@ contract CommonLinkRegistry is AccessControlDefaultAdminRules, Pausable, ICommon
         _pause();
     }
 
-    /// @notice Lifts the pause. Reserved to the admin: the pauser can freeze, never resume.
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    /**
+     * @notice Lifts the pause. Allowed to the admin and to UNPAUSER_ROLE holders.
+     * @dev    Reverts with the standard AccessControlUnauthorizedAccount(sender, UNPAUSER_ROLE) otherwise.
+     */
+    function unpause() external {
+        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender) && !hasRole(UNPAUSER_ROLE, msg.sender)) {
+            revert AccessControlUnauthorizedAccount(msg.sender, UNPAUSER_ROLE);
+        }
         _unpause();
     }
 

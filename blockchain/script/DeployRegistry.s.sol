@@ -21,7 +21,8 @@ import {ICommonLinkRegistryReader} from "../src/interfaces/ICommonLinkRegistryRe
  *           ADMIN_DELAY   — delay (seconds) of that transfer: 0 on Anvil only; 3600 on Chiado, 259200 on Gnosis
  *                           (decision 40, set by deploy-registry.sh).
  *           RECORDER_ADDR — receives RECORDER_ROLE (the backend hot wallet, single write role).
- *           PAUSER_ADDR   — receives PAUSER_ROLE (dedicated backend key, pause only).
+ *           PAUSER_ADDR   — receives PAUSER_ROLE and UNPAUSER_ROLE (dedicated backend key: pause and resume;
+ *                           the admin revokes UNPAUSER_ROLE once the Safe resumes alone).
  *           ADMIN_PK      — private key of ADMIN_ADDR; signs the deployment. Never printed.
  *
  *         Optional, Anvil only: SEED_CAMPAIGN_ID (+ SEED_ASSOCIATION_ADDR, SEED_SIREN_HASH, SEED_BUDGET_HASH,
@@ -73,12 +74,15 @@ contract DeployRegistry is Script {
         // Post-deploy verification (read-only, outside the broadcast).
         bytes32 recorderRole = registry.RECORDER_ROLE();
         bytes32 pauserRole   = registry.PAUSER_ROLE();
+        bytes32 unpauserRole = registry.UNPAUSER_ROLE();
         bytes32 adminRole    = registry.DEFAULT_ADMIN_ROLE();
         require(registry.defaultAdmin() == admin,         "FAIL: default admin");
         require(registry.defaultAdminDelay() == adminDelay, "FAIL: admin delay");
         require(registry.hasRole(recorderRole, recorder), "FAIL: recorder role");
         require(registry.hasRole(pauserRole, pauser),     "FAIL: pauser role");
-        // Separation of powers: hot keys are never admin, and each holds a single role.
+        require(registry.hasRole(unpauserRole, pauser),   "FAIL: unpauser role");
+        require(!registry.hasRole(unpauserRole, recorder), "FAIL: recorder is unpauser");
+        // Separation of powers: hot keys are never admin; the recorder only records, the pauser only pauses / resumes.
         require(!registry.hasRole(adminRole, recorder),   "FAIL: recorder is admin");
         require(!registry.hasRole(adminRole, pauser),     "FAIL: pauser is admin");
         require(!registry.hasRole(pauserRole, recorder),  "FAIL: recorder is pauser");

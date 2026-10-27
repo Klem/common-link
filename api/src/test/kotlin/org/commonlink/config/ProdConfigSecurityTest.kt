@@ -347,6 +347,14 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `real mode still starts when the admin revoked UNPAUSER_ROLE from the pauser key`() {
+        // Decision 31 revised (R3): revoking the platform's resume right on Safe day must never stop the API.
+        assertDoesNotThrow {
+            OnchainRealModeValidator.probeRpc(stubWeb3j(unpauserHasRole = false), onchainCfg(), 3, 2_000, noSleep)
+        }
+    }
+
+    @Test
     fun `the reader interface id matches the Solidity test pin`() {
         // Same XOR of selectors as test_readerInterfaceId_pinned (blockchain/test/CommonLinkRegistry.governance.t.sol).
         assertEquals("0x08708a80", org.web3j.utils.Numeric.toHexString(OnchainRealModeValidator.READER_INTERFACE_ID))

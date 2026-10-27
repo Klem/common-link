@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.commonlink.entity.OnchainJob
+import org.commonlink.entity.OnchainJobStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -47,6 +48,26 @@ interface OnchainJobRepository : JpaRepository<OnchainJob, UUID> {
         nativeQuery = true,
     )
     fun countBlockedByFailedDependency(@Param("chainId") chainId: Long): Long
+
+    /** Number of jobs of chain [chainId] in [status]. Served by `idx_onchain_jobs_chain_status_created`. */
+    fun countByChainIdAndStatus(chainId: Long, status: OnchainJobStatus): Long
+
+    /**
+     * The oldest job of chain [chainId] in [status], or null. Served by `idx_onchain_jobs_chain_status_created`.
+     */
+    fun findFirstByChainIdAndStatusOrderByCreatedAtAsc(chainId: Long, status: OnchainJobStatus): OnchainJob?
+
+    /**
+     * The hundred most recently queued jobs of chain [chainId] in [status], newest first. Served by
+     * `idx_onchain_jobs_chain_status_created`.
+     */
+    fun findTop100ByChainIdAndStatusOrderByCreatedAtDesc(chainId: Long, status: OnchainJobStatus): List<OnchainJob>
+
+    /**
+     * The fifty most recently queued jobs of chain [chainId], every status, newest first. Served by
+     * `idx_onchain_jobs_chain_created` (V91).
+     */
+    fun findTop50ByChainIdOrderByCreatedAtDesc(chainId: Long): List<OnchainJob>
 
     /**
      * The most recent job declaring a budget hash for a campaign on chain [chainId]: its `REGISTER_CAMPAIGN`

@@ -722,7 +722,8 @@
     "nav": {
       "alerts": "Alertes",
       "associations": "Associations",
-      "dashboard": "Tableau de bord"
+      "dashboard": "Tableau de bord",
+      "onchainManagement": "Gestion du contrat"
     },
     "priorDecisions": {
       "date": "Date",
@@ -766,7 +767,104 @@
     "shell": {
       "logout": "Déconnexion",
       "navLabel": "Navigation",
-      "title": "Conformité LCB-FT"
+      "title": "Conformité LCB-FT",
+      "blockchainLabel": "Blockchain"
+    },
+    "onchain": {
+      "title": "Registre on-chain",
+      "intro": "Le registre public certifie les dons et les décaissements sur la blockchain. Vous pouvez geler toutes ses écritures en urgence et les réactiver une fois l'incident clos ; chaque demande est inscrite au journal de conformité.",
+      "loading": "Chargement…",
+      "loadError": "Les informations du registre on-chain n'ont pas pu être chargées.",
+      "state": {
+        "title": "État du registre",
+        "label": "État",
+        "active": "Actif",
+        "paused": "En pause",
+        "unreadable": "Illisible",
+        "mock": "Mode simulé",
+        "chain": "Réseau",
+        "address": "Adresse du registre",
+        "resumeRight": "Réactivation depuis la plateforme",
+        "resumeRightYes": "Autorisée",
+        "resumeRightNo": "Non accordée : seul l'administrateur du registre peut réactiver"
+      },
+      "action": {
+        "pauseTitle": "Mettre le contrat en pause",
+        "unpauseTitle": "Réactiver le contrat",
+        "pauseDescription": "Gèle toutes les écritures on-chain : inscriptions, budgets, dons et décaissements. Les preuves déjà inscrites restent lisibles. Les écritures en attente sont conservées et envoyées après la réactivation.",
+        "unpauseDescription": "Accepte de nouveau les écritures on-chain : celles retenues pendant la pause partent aussitôt.",
+        "rationaleLabel": "Motif (obligatoire, inscrit au journal)",
+        "rationalePlaceholder": "Raison de cette décision",
+        "counter": "{count} / {max}",
+        "pauseButton": "Mettre le contrat en pause",
+        "unpauseButton": "Réactiver le contrat",
+        "submitting": "Envoi de la transaction…",
+        "error": "La demande a échoué. Réessayez ou contactez l'administrateur."
+      },
+      "disabled": {
+        "mock": "Mode simulé : aucun registre n'est déployé, il n'y a rien à mettre en pause ni à réactiver.",
+        "unreadable": "L'état du registre est illisible pour le moment : l'action est indisponible.",
+        "unpauseRevoked": "La plateforme n'a pas le droit de réactiver le registre : seul son administrateur peut lever la pause."
+      },
+      "confirm": {
+        "pauseTitle": "Mettre le registre on-chain en pause ?",
+        "pauseMessage": "Toutes les écritures on-chain seront suspendues jusqu'à la réactivation du registre. Une transaction blockchain est envoyée, et la demande est inscrite au journal de conformité avec votre motif.",
+        "unpauseTitle": "Réactiver le registre on-chain ?",
+        "unpauseMessage": "Les écritures on-chain reprendront immédiatement, y compris celles retenues pendant la pause. Une transaction blockchain est envoyée, et la demande est inscrite au journal de conformité avec votre motif."
+      },
+      "result": {
+        "paused": "Le registre est en pause.",
+        "alreadyPaused": "Le registre était déjà en pause : aucune transaction envoyée, demande inscrite au journal.",
+        "unpaused": "Le registre est de nouveau actif.",
+        "alreadyActive": "Le registre n'était pas en pause : aucune transaction envoyée, demande inscrite au journal.",
+        "tx": "Transaction",
+        "block": "bloc {block}"
+      },
+      "outbox": {
+        "title": "Écritures on-chain en attente",
+        "description": "Écritures mises en file par la plateforme pour le réseau courant. Pendant une pause, elles sont retenues sans consommer de tentative.",
+        "pending": "En attente",
+        "running": "En cours d'envoi",
+        "failed": "En échec",
+        "blocked": "Bloquées par un échec",
+        "oldestPending": "Plus ancienne écriture en attente : {date}"
+      },
+      "failed": {
+        "title": "Écritures en échec",
+        "description": "Lecture seule : rejouer une écriture relève de l'opérateur.",
+        "empty": "Aucune écriture en échec.",
+        "col": {
+          "action": "Action",
+          "attempts": "Tentatives",
+          "error": "Dernière erreur",
+          "failedAt": "En échec depuis"
+        }
+      },
+      "history": {
+        "title": "Historique des pauses et réactivations",
+        "empty": "Aucune demande pour le moment.",
+        "col": {
+          "date": "Date",
+          "event": "Événement",
+          "rationale": "Motif",
+          "detail": "Détail",
+          "officer": "Responsable"
+        },
+        "event": {
+          "ONCHAIN_REGISTRY_PAUSED": "Pause",
+          "ONCHAIN_REGISTRY_PAUSE_FAILED": "Pause en échec",
+          "ONCHAIN_REGISTRY_UNPAUSED": "Réactivation",
+          "ONCHAIN_REGISTRY_UNPAUSE_FAILED": "Réactivation en échec"
+        },
+        "alreadyPaused": "Déjà en pause, aucune transaction",
+        "alreadyActive": "Pas en pause, aucune transaction",
+        "error": "Erreur : {type}",
+        "unknownOfficer": "Compte supprimé"
+      },
+      "table": {
+        "sortAscendingAria": "Trier par {column}, ordre croissant",
+        "sortDescendingAria": "Trier par {column}, ordre décroissant"
+      }
     }
   },
   "curator": {

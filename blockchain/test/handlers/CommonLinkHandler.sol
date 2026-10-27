@@ -218,15 +218,16 @@ contract CommonLinkHandler is Test {
         }
     }
 
-    /// @dev Only the admin may resume; the pauser can freeze, never resume.
+    /// @dev Only the admin and the pauser key (which holds UNPAUSER_ROLE) may resume.
     function unpause(uint256 actorSeed) external {
         address actor = _actor(actorSeed);
         if (!registry.paused()) return;
+        bool allowed = actor == admin || actor == pauser;
         vm.prank(actor);
         try registry.unpause() {
-            if (actor != admin) ghost_roleBreach = true;
+            if (!allowed) ghost_roleBreach = true;
         } catch {
-            if (actor == admin) ghost_unexpectedRevert = true;
+            if (allowed) ghost_unexpectedRevert = true;
         }
     }
 

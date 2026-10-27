@@ -38,7 +38,7 @@ contract ForceSender {
     }
 }
 
-/// @notice Pause (PAUSER_ROLE) and resume (admin only).
+/// @notice Pause (PAUSER_ROLE) and resume (admin or UNPAUSER_ROLE, revocable by the admin).
 contract PauseTest is CommonLinkBaseTest {
     function test_pause_byPauser() public {
         vm.prank(pauser);
@@ -59,24 +59,71 @@ contract PauseTest is CommonLinkBaseTest {
         }
     }
 
-    function test_unpause_onlyAdmin() public {
+    function test_unpause_byAdmin() public {
+        vm.prank(pauser);
+        registry.pause();
+        vm.prank(admin);
+        registry.unpause();
+        assertFalse(registry.paused());
+    }
+
+    function test_unpause_byUnpauser() public {
+        vm.prank(pauser);
+        registry.pause();
+        vm.prank(pauser);
+        registry.unpause();
+        assertFalse(registry.paused());
+    }
+
+    function test_unpause_refusedForOtherRoles() public {
         vm.prank(pauser);
         registry.pause();
 
-        address[3] memory others = [pauser, recorder, attacker];
+        address[2] memory others = [recorder, attacker];
         for (uint256 i = 0; i < others.length; i++) {
             vm.prank(others[i]);
             vm.expectRevert(
                 abi.encodeWithSelector(
-                    IAccessControl.AccessControlUnauthorizedAccount.selector, others[i], ADMIN_ROLE
+                    IAccessControl.AccessControlUnauthorizedAccount.selector, others[i], UNPAUSER_ROLE
                 )
             );
             registry.unpause();
         }
+        assertTrue(registry.paused());
+    }
+
+    /// @dev Safe day: the admin revokes UNPAUSER_ROLE — resuming becomes admin-only, pausing is untouched.
+    function test_revokeUnpauser_makesResumeAdminOnly_pauseStillWorks() public {
+        vm.prank(admin);
+        registry.revokeRole(UNPAUSER_ROLE, pauser);
+        assertFalse(registry.hasRole(UNPAUSER_ROLE, pauser));
+
+        vm.prank(pauser);
+        registry.pause();
+
+        vm.prank(pauser);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, pauser, UNPAUSER_ROLE)
+        );
+        registry.unpause();
 
         vm.prank(admin);
         registry.unpause();
         assertFalse(registry.paused());
+    }
+
+    function test_unpauserRole_grantableOnlyByAdmin() public {
+        vm.prank(pauser);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, pauser, ADMIN_ROLE)
+        );
+        registry.grantRole(UNPAUSER_ROLE, attacker);
+    }
+
+    function test_unpause_whenNotPaused_reverts() public {
+        vm.prank(pauser);
+        vm.expectRevert(Pausable.ExpectedPause.selector);
+        registry.unpause();
     }
 
     function test_pause_freezesEveryWrite() public {

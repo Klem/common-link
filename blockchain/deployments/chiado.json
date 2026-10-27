@@ -4,7 +4,7 @@
   "explorer": "https://gnosis-chiado.blockscout.com",
   "registry": {
     "contract": "CommonLinkRegistry",
-    "version": "3.0.0-mvp",
+    "version": "3.1.0-mvp",
     "address": null,
     "deployTxHash": null,
     "blockNumber": null,

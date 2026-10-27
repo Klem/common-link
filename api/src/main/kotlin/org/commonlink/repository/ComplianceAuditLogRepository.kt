@@ -52,6 +52,12 @@ interface ComplianceAuditLogRepository : JpaRepository<ComplianceAuditLog, UUID>
     fun findTop20ByOrderBySequenceNoDesc(): List<ComplianceAuditLog>
 
     /**
+     * The fifty most recent rows of the given event types, newest first. Used for the history of on-chain registry
+     * freezes and resumes. Served by `idx_compliance_audit_log_event_type_seq` (V90).
+     */
+    fun findTop50ByEventTypeInOrderBySequenceNoDesc(eventTypes: Collection<String>): List<ComplianceAuditLog>
+
+    /**
      * Most recent entry of one event type for one subject.
      *
      * Used by [org.commonlink.service.FreezeClearanceService] to date an `ALERT_CLOSED` decision

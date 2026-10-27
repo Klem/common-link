@@ -11,6 +11,13 @@ import type {
   ComplianceRegistryScanSummaryDto,
   CloseAlertRequest,
   DonorLegalAcceptanceGroupDto,
+  OnchainControlEntryDto,
+  OnchainFailedJobDto,
+  OnchainOutboxHealthDto,
+  OnchainPauseResultDto,
+  OnchainRationaleRequest,
+  OnchainRegistryStatusDto,
+  OnchainUnpauseResultDto,
 } from '@/types/compliance';
 
 /**
@@ -164,3 +171,55 @@ export const listLegalAcceptances = (
   api
     .get<LegalAcceptanceDto[]>('/api/compliance/legal-acceptances', { params: { subjectType, subjectId } })
     .then((r) => r.data);
+
+/**
+ * State of the on-chain registry: simulated mode, chain, address, pause state, resume right.
+ * `GET /api/compliance/onchain/status`
+ */
+export const getOnchainStatus = (): Promise<OnchainRegistryStatusDto> =>
+  api.get<OnchainRegistryStatusDto>('/api/compliance/onchain/status').then((r) => r.data);
+
+/**
+ * Freezes every write of the on-chain registry. Silent: the page shows the backend reason (409 simulated mode,
+ * 422 rationale, 502 chain failure) instead of the generic toast.
+ * `POST /api/compliance/onchain/pause`
+ */
+export const pauseOnchainRegistry = (rationale: string): Promise<OnchainPauseResultDto> =>
+  api
+    .post<OnchainPauseResultDto>('/api/compliance/onchain/pause', { rationale } satisfies OnchainRationaleRequest, {
+      silentErrors: true,
+    })
+    .then((r) => r.data);
+
+/**
+ * Resumes the on-chain registry. Silent, like {@link pauseOnchainRegistry} (409 also when the platform lost the
+ * resume right).
+ * `POST /api/compliance/onchain/unpause`
+ */
+export const unpauseOnchainRegistry = (rationale: string): Promise<OnchainUnpauseResultDto> =>
+  api
+    .post<OnchainUnpauseResultDto>('/api/compliance/onchain/unpause', { rationale } satisfies OnchainRationaleRequest, {
+      silentErrors: true,
+    })
+    .then((r) => r.data);
+
+/**
+ * The fifty most recent freezes and resumes requested from the platform, newest first, with the officer's email.
+ * `GET /api/compliance/onchain/history`
+ */
+export const listOnchainControlHistory = (): Promise<OnchainControlEntryDto[]> =>
+  api.get<OnchainControlEntryDto[]>('/api/compliance/onchain/history').then((r) => r.data);
+
+/**
+ * Outbox counts (pending, running, failed, blocked) for the current chain.
+ * `GET /api/compliance/onchain/outbox`
+ */
+export const getOnchainOutboxHealth = (): Promise<OnchainOutboxHealthDto> =>
+  api.get<OnchainOutboxHealthDto>('/api/compliance/onchain/outbox').then((r) => r.data);
+
+/**
+ * The hundred most recent failed registry writes of the current chain, read-only.
+ * `GET /api/compliance/onchain/failed-jobs`
+ */
+export const listOnchainFailedJobs = (): Promise<OnchainFailedJobDto[]> =>
+  api.get<OnchainFailedJobDto[]>('/api/compliance/onchain/failed-jobs').then((r) => r.data);

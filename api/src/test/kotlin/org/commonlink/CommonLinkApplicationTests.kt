@@ -127,6 +127,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var freezeScreeningMatchRepository: FreezeScreeningMatchRepository
     @MockkBean private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
     @MockkBean private lateinit var onchainPauseService: org.commonlink.service.OnchainPauseService
+    @MockkBean private lateinit var onchainOutboxReportService: org.commonlink.service.OnchainOutboxReportService
     @MockkBean private lateinit var campaignReportService: CampaignReportService
     @MockkBean private lateinit var legalAcceptanceService: LegalAcceptanceService
     @MockkBean private lateinit var objectMapper: ObjectMapper

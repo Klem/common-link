@@ -722,7 +722,8 @@
     "nav": {
       "alerts": "Alerts",
       "associations": "Associations",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "onchainManagement": "Contract management"
     },
     "priorDecisions": {
       "date": "Date",
@@ -766,7 +767,104 @@
     "shell": {
       "logout": "Log out",
       "navLabel": "Navigation",
-      "title": "LCB-FT Compliance"
+      "title": "LCB-FT Compliance",
+      "blockchainLabel": "Blockchain"
+    },
+    "onchain": {
+      "title": "On-chain registry",
+      "intro": "The public registry certifies donations and payouts on the blockchain. You can freeze every write in an emergency and resume them once the incident is closed; every request is recorded in the compliance audit log.",
+      "loading": "Loading…",
+      "loadError": "The on-chain registry information could not be loaded.",
+      "state": {
+        "title": "Registry state",
+        "label": "State",
+        "active": "Active",
+        "paused": "Paused",
+        "unreadable": "Unreadable",
+        "mock": "Simulated mode",
+        "chain": "Network",
+        "address": "Registry address",
+        "resumeRight": "Resume from the platform",
+        "resumeRightYes": "Allowed",
+        "resumeRightNo": "Not granted: only the registry administrator can resume"
+      },
+      "action": {
+        "pauseTitle": "Pause the contract",
+        "unpauseTitle": "Reactivate the contract",
+        "pauseDescription": "Freezes every on-chain write: registrations, budgets, donations and payouts. Records already written stay readable. Pending writes are held and sent after reactivation.",
+        "unpauseDescription": "Accepts on-chain writes again: the writes held during the pause are sent at once.",
+        "rationaleLabel": "Rationale (mandatory, recorded in the audit log)",
+        "rationalePlaceholder": "Reason for this decision",
+        "counter": "{count} / {max}",
+        "pauseButton": "Pause the contract",
+        "unpauseButton": "Reactivate the contract",
+        "submitting": "Sending the transaction…",
+        "error": "The request failed. Try again or contact the administrator."
+      },
+      "disabled": {
+        "mock": "Simulated mode: no registry is deployed, there is nothing to pause or reactivate.",
+        "unreadable": "The registry state cannot be read right now: the action is unavailable.",
+        "unpauseRevoked": "The platform does not have the right to reactivate the registry: only its administrator can lift the pause."
+      },
+      "confirm": {
+        "pauseTitle": "Pause the on-chain registry?",
+        "pauseMessage": "Every on-chain write will be suspended until the registry is reactivated. This sends a blockchain transaction and is recorded in the compliance audit log with your rationale.",
+        "unpauseTitle": "Reactivate the on-chain registry?",
+        "unpauseMessage": "On-chain writes will resume immediately, including those held during the pause. This sends a blockchain transaction and is recorded in the compliance audit log with your rationale."
+      },
+      "result": {
+        "paused": "The registry is paused.",
+        "alreadyPaused": "The registry was already paused: no transaction sent, request recorded.",
+        "unpaused": "The registry is active again.",
+        "alreadyActive": "The registry was not paused: no transaction sent, request recorded.",
+        "tx": "Transaction",
+        "block": "block {block}"
+      },
+      "outbox": {
+        "title": "Pending on-chain writes",
+        "description": "Writes queued by the platform for the current network. While the registry is paused they are held, without consuming any attempt.",
+        "pending": "Pending",
+        "running": "Being sent",
+        "failed": "Failed",
+        "blocked": "Blocked by a failure",
+        "oldestPending": "Oldest pending write: {date}"
+      },
+      "failed": {
+        "title": "Failed writes",
+        "description": "Read only: replaying a write is an operator decision.",
+        "empty": "No failed write.",
+        "col": {
+          "action": "Action",
+          "attempts": "Attempts",
+          "error": "Last error",
+          "failedAt": "Failed on"
+        }
+      },
+      "history": {
+        "title": "Pause and reactivation history",
+        "empty": "No request yet.",
+        "col": {
+          "date": "Date",
+          "event": "Event",
+          "rationale": "Rationale",
+          "detail": "Detail",
+          "officer": "Officer"
+        },
+        "event": {
+          "ONCHAIN_REGISTRY_PAUSED": "Paused",
+          "ONCHAIN_REGISTRY_PAUSE_FAILED": "Pause failed",
+          "ONCHAIN_REGISTRY_UNPAUSED": "Reactivated",
+          "ONCHAIN_REGISTRY_UNPAUSE_FAILED": "Reactivation failed"
+        },
+        "alreadyPaused": "Already paused, no transaction",
+        "alreadyActive": "Not paused, no transaction",
+        "error": "Error: {type}",
+        "unknownOfficer": "Deleted account"
+      },
+      "table": {
+        "sortAscendingAria": "Sort by {column}, ascending",
+        "sortDescendingAria": "Sort by {column}, descending"
+      }
     }
   },
   "curator": {

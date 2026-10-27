@@ -125,6 +125,7 @@ contract CommonLinkRegistryInvariantTest is Test {
         assertFalse(handler.ghost_roleBreach(), "INV-8: pause or resume accepted from the wrong role");
         assertEq(registry.defaultAdmin(), admin, "INV-8: admin changed");
         assertTrue(registry.hasRole(registry.PAUSER_ROLE(), pauser), "INV-8: pauser lost its role");
+        assertTrue(registry.hasRole(registry.UNPAUSER_ROLE(), pauser), "INV-8: pauser lost the unpauser role");
         assertTrue(registry.hasRole(registry.RECORDER_ROLE(), recorder), "INV-8: recorder lost its role");
     }
 }

@@ -235,7 +235,31 @@ programmation (aucun écran à ce jour) et elle est refusée tant que la platefo
 simulé, ce qui est le cas en production. Vérifiée par contrôles automatisés ; pas encore exercée sur
 un nœud réel.
 
+### Complément du 27 octobre 2026 — réactivation du registre et écran « Blockchain »
+
+L'arrêt d'urgence du registre on-chain dispose désormais d'un **écran** dans l'espace du responsable de
+la conformité (section « Blockchain », entrée « Gestion du contrat »). Le responsable peut aussi
+**réactiver** le registre depuis cet écran, avec la même exigence : motif obligatoire (1 000 caractères
+au plus), confirmation, et inscription de chaque demande au journal d'audit immuable — qu'elle aboutisse,
+qu'elle trouve le registre déjà actif ou qu'elle échoue. Le paragraphe précédent (« jamais dégeler »)
+n'est donc plus exact.
+
+Cette possibilité est **provisoire et révocable** : l'administrateur du registre peut la retirer à tout
+moment sans redéployer le contrat ; l'écran grise alors le bouton de réactivation, et seul
+l'administrateur peut lever un gel. **Risque assumé tant qu'elle est ouverte** : la même clé du serveur
+gèle et dégèle ; si cette clé était compromise, un tiers pourrait lever un gel. Le retrait est prévu
+lorsque l'administrateur sera un portefeuille multisignature.
+
+L'écran montre aussi, en lecture seule, l'état du registre et l'historique des gels et réactivations
+(date, responsable, motif, transaction ou erreur). Lorsque la plateforme écrit réellement sur une chaîne,
+il montre en outre le nombre d'écritures on-chain en attente ou en échec (sans possibilité de les
+rejouer) ; en mode simulé ces compteurs sont masqués, et le gel comme la réactivation sont refusés — ce qui
+est le cas en production. Vérifié par contrôles automatisés (contrat, serveur, compilation de l'écran) et,
+le 27 octobre 2026, par l'interface de programmation sur un nœud local jetable : gel, réactivation, demande
+sans effet, motif trop long refusé, droit retiré par l'administrateur puis réactivation refusée. L'écran
+lui-même n'a pas été vérifié dans un navigateur.
+
 ---
 
-*Document établi le 6 août 2026, complété le 21 août 2026 (point 3.1 — faille de cloisonnement constatée et corrigée le 20 août 2026), puis le 26 octobre 2026 (arrêt d'urgence du registre on-chain). Une fiche de même nature sera produite pour chaque contrôle du
+*Document établi le 6 août 2026, complété le 21 août 2026 (point 3.1 — faille de cloisonnement constatée et corrigée le 20 août 2026), puis le 26 octobre 2026 (arrêt d'urgence du registre on-chain) et le 27 octobre 2026 (réactivation et écran « Blockchain »). Une fiche de même nature sera produite pour chaque contrôle du
 dispositif LCB-FT au fur et à mesure de sa réalisation.*
