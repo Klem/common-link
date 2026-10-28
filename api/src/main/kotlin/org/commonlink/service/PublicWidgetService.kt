@@ -1,6 +1,5 @@
 package org.commonlink.service
 
-import org.commonlink.config.MollieProperties
 import org.commonlink.dto.CreateGuestDonationRequest
 import org.commonlink.dto.CreateGuestDonationResponse
 import org.commonlink.dto.DonationPublicStatus
@@ -15,18 +14,16 @@ import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Donation
 import org.commonlink.exception.ConflictException
-import org.commonlink.exception.MolliePaymentException
 import org.commonlink.exception.NotFoundException
+import org.commonlink.payment.CheckoutRequest
+import org.commonlink.payment.PaymentProviderRegistry
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
-import org.commonlink.repository.MollieConnectionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 /**
@@ -38,17 +35,13 @@ class PublicWidgetService(
     private val donationRepository: DonationRepository,
     private val donorProfileRepository: DonorProfileRepository,
     private val guestDonorService: GuestDonorService,
-    private val mollieClient: MollieClient,
-    private val mollieProperties: MollieProperties,
     private val donationService: DonationService,
-    private val mollieConnectionRepository: MollieConnectionRepository,
-    private val mollieConnectTokenManager: MollieConnectTokenManager,
     private val taxRateService: TaxRateService,
     private val landingPreviewTokenService: LandingPreviewTokenService,
     private val freezeScreeningDonationService: FreezeScreeningDonationService,
     private val donationCapService: DonationCapService,
-    private val mollieWebhookService: MollieWebhookService,
     private val legalAcceptanceService: LegalAcceptanceService,
+    private val paymentProviderRegistry: PaymentProviderRegistry,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -73,11 +66,13 @@ class PublicWidgetService(
      * Orchestrates a guest donation:
      * 1. Resolves widget token to a LIVE campaign
      * 2. Provisions (or retrieves) the guest donor
-     * 3. Creates a Mollie hosted-checkout payment
+     * 3. Creates a hosted-checkout payment through the association's [org.commonlink.payment.PaymentProvider]
      * 4. Persists a pending [org.commonlink.entity.Donation] with identity snapshot
      *
-     * The donation remains pending until confirmed by the Mollie webhook (B6).
-     * The Mollie paymentId is returned to the frontend for sessionStorage before redirect.
+     * The donation remains pending until the provider confirms the payment (notification or live re-read).
+     * The provider's payment id is returned to the frontend for sessionStorage before redirect.
+     *
+     * @throws ConflictException when the association's provider cannot collect right now.
      */
     fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
         val (association, campaign) = resolveWidget(widgetToken)
@@ -126,59 +121,33 @@ class PublicWidgetService(
             throw ConflictException(FREEZE_BLOCK_MESSAGE)
         }
 
-        val assocToken = resolveMollieToken(association)
-        val assocProfileId = mollieClient.getFirstProfileId(assocToken)
-
         val cleanSourceSite = sanitizeSourceSite(request.sourceSite)
         val safeLocale = request.locale?.takeIf { it.matches(Regex("[a-z]{2}")) } ?: "fr"
-        val encodedSource = cleanSourceSite?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
 
-        // Minted here, not read off molliePayment.id below: Mollie's own payment id does not exist
-        // yet at this point (it is only known once createPayment returns), so it cannot be embedded
-        // in the URL passed *into* that call. This id is what the /return page polls status by —
+        // Minted here, not read off the provider's payment id: that id does not exist yet at this
+        // point (it is only known once the checkout is created), so it cannot be embedded in the
+        // return URL passed *into* that call. This id is what the /return page polls status by —
         // never providerRef, never an internal donor/campaign id.
         val publicRef = UUID.randomUUID()
 
-        // Must be derived from something already unique per call and reused verbatim in every
-        // Mollie-bound field (redirectUrl embeds publicRef below) — Mollie rejects a reused
-        // Idempotency-Key whose request body differs from the first call with that key. A key
-        // derived only from widget+donor+amount (independent of publicRef) let two genuinely
-        // separate donations of the same amount within the same hour collide and 400.
-        val idempotencyKey = publicRef.toString()
-
-        val base = "${mollieProperties.redirectBaseUrl}/$safeLocale/embed/donate/$widgetToken/return"
-        // Only the opaque ref rides on the success redirect: /return polls the status by it, and the
-        // `purchase` values are read from the server later (getDonationStatus), never from a URL a
-        // donor could edit. The cancelled path needs no ref at all.
-        val trackingQuery = "ref=$publicRef"
-        val redirectUrl = if (encodedSource != null) "$base?$trackingQuery&source=$encodedSource" else "$base?$trackingQuery"
-        val cancelUrl = if (encodedSource != null) "$base?cancelled=true&source=$encodedSource" else "$base?cancelled=true"
-        val description = "Don - ${campaign.name}".take(255)
-
-        logger.info(
-            "Creating Mollie payment for widget={} campaign={} amount={}",
-            widgetToken, campaign.id, request.amount
-        )
-
-        val molliePayment = mollieClient.createPayment(
-            amount = request.amount,
-            currency = "EUR",
-            description = description,
-            redirectUrl = redirectUrl,
-            cancelUrl = cancelUrl,
-            webhookUrl = mollieProperties.webhookUrl,
-            metadata = mapOf(
-                "campaignId" to campaign.id!!.toString(),
-                "donorProfileId" to donorProfile.id.toString(),
-                "widgetToken" to widgetToken,
-            ),
-            idempotencyKey = idempotencyKey,
-            bearerToken = assocToken,
-            profileId = assocProfileId,
+        // Refuses with a 409 when the association cannot collect, and fails before anything below is
+        // written when the provider returns no payment page — no orphan pending donation or proof.
+        val session = paymentProviderRegistry.forAssociation(association).createCheckout(
+            CheckoutRequest(
+                associationId = association.id!!,
+                campaignId = campaign.id!!,
+                campaignName = campaign.name,
+                donorProfileId = donorProfile.id!!,
+                amount = request.amount,
+                publicRef = publicRef,
+                widgetToken = widgetToken,
+                locale = safeLocale,
+                sourceSite = cleanSourceSite,
+            )
         )
 
         val donation = donationService.initiatePendingDonation(
-            providerRef = "mollie:${molliePayment.id}",
+            providerRef = session.providerRef,
             donorProfileId = donorProfile.id,
             campaignId = campaign.id,
             amount = request.amount,
@@ -198,11 +167,12 @@ class PublicWidgetService(
             signerEmail = request.donorEmail,
         )
 
-        val checkoutUrl = molliePayment.checkoutUrl
-            ?: throw MolliePaymentException("Mollie returned no checkout URL for payment ${molliePayment.id}")
-
-        logger.info("Pending donation created — mollieId={} campaign={}", molliePayment.id, campaign.id)
-        return CreateGuestDonationResponse(checkoutUrl = checkoutUrl, paymentId = molliePayment.id, publicRef = publicRef)
+        logger.info("Pending donation created — paymentId={} campaign={}", session.providerPaymentId, campaign.id)
+        return CreateGuestDonationResponse(
+            checkoutUrl = session.redirectUrl,
+            paymentId = session.providerPaymentId,
+            publicRef = publicRef,
+        )
     }
 
     companion object {
@@ -281,9 +251,10 @@ class PublicWidgetService(
      * donation values (amount, campaign, association, anonymity choice, payment method) — never the
      * donor's identity, never providerRef.
      *
-     * While still pending, makes a best-effort live Mollie status check ([tryLiveConfirm]) instead of
-     * waiting on the webhook: Mollie confirms a card payment in seconds, but webhook *delivery* can lag
-     * 1-30s, and the `/return` page only polls for a few seconds before giving up and redirecting.
+     * While still pending, makes a best-effort live status check at the payment provider
+     * ([tryLiveConfirm]) instead of waiting on its notification: a card payment is confirmed in seconds,
+     * but notification *delivery* can lag 1-30s, and the `/return` page only polls for a few seconds
+     * before giving up and redirecting.
      *
      * @throws [NotFoundException] if no donation exists for this ref.
      */
@@ -310,40 +281,29 @@ class PublicWidgetService(
     }
 
     /**
-     * Re-fetches [providerRef]'s payment status from Mollie right now and, if paid, confirms it —
-     * reusing [MollieWebhookService.handleWebhook] so campaign credit / receipt / on-chain enqueue
-     * always go through the exact same path regardless of whether this call or the later webhook
-     * confirms first (the latter becomes a no-op via [DonationService.recordPayment]'s confirmedAt guard).
+     * Re-reads [providerRef]'s payment at the provider that created it right now and, if paid, confirms
+     * it — through [org.commonlink.payment.PaymentProvider.refreshPayment], which reuses the provider's
+     * notification path so campaign credit / receipt / on-chain enqueue always go through the exact same
+     * code regardless of whether this call or the later notification confirms first (the latter becomes
+     * a no-op via [DonationService.recordPayment]'s confirmedAt guard).
      *
-     * Never propagates a failure: a Mollie outage, a broken Connect token, or a non-Mollie
-     * [providerRef] must not break donor-facing status polling. Falls back to the caller's own
-     * (unconfirmed) copy of the donation on any error.
+     * The provider is resolved from the [providerRef] prefix, never from the association's current
+     * provider. Never propagates a failure: a provider outage, a broken link, or an unknown prefix must
+     * not break donor-facing status polling. Falls back to the caller's own (unconfirmed) copy of the
+     * donation on any error.
      */
     private fun tryLiveConfirm(publicRef: UUID, providerRef: String): Donation? {
-        if (!providerRef.startsWith("mollie:")) return null
+        val provider = paymentProviderRegistry.forProviderRef(providerRef) ?: return null
         return try {
-            mollieWebhookService.handleWebhook(providerRef.removePrefix("mollie:"))
+            provider.refreshPayment(providerRef)
             donationRepository.findByPublicRef(publicRef)
         } catch (e: Exception) {
-            logger.debug("Live Mollie status check failed for publicRef={}", publicRef, e)
+            logger.debug("Live payment status check failed for publicRef={}", publicRef, e)
             null
         }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
-
-    private fun resolveMollieToken(association: AssociationProfile): String {
-        val connection = mollieConnectionRepository.findByAssociationId(association.id!!)
-            ?: throw ConflictException("L'association n'a pas de connexion Mollie")
-        // Same predicate as the publish and widget-enable gates — see MollieConnection.canCollectDonations.
-        if (!connection.canCollectDonations())
-            throw ConflictException("L'association ne peut pas encore recevoir de paiements")
-        return try {
-            mollieConnectTokenManager.getValidAccessToken(association.id!!)
-        } catch (e: IllegalStateException) {
-            throw ConflictException("Connexion Mollie de l'association interrompue")
-        }
-    }
 
     /**
      * Same resolution as [resolveWidget], except that a valid preview token belonging to the owning

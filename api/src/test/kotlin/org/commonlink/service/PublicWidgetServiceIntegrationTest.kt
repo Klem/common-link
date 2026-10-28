@@ -15,6 +15,7 @@ import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MollieConnection
 import org.commonlink.exception.CollectionCapExceededException
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.MolliePaymentException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetItemRepository
@@ -414,6 +415,27 @@ class PublicWidgetServiceIntegrationTest {
         }
 
         assertEquals(hitEx.message, unavailableEx.message, "Freeze HIT and UNAVAILABLE must produce identical messages")
+    }
+
+    @Test
+    fun `createDonation - a Mollie payment without checkout URL leaves no pending donation and no acceptance proof`() {
+        every { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            MolliePayment(
+                id = "tr_no_checkout",
+                status = MolliePaymentStatus.OPEN,
+                amount = BigDecimal("25.00"),
+                checkoutUrl = null,
+                metadata = emptyMap(),
+            )
+        val donationsBefore = donationRepository.count()
+        val acceptancesBefore = legalAcceptanceRepository.count()
+
+        val ex = assertThrows<MolliePaymentException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        assertEquals("Mollie returned no checkout URL for payment tr_no_checkout", ex.message)
+        assertNull(donationRepository.findByProviderRef("mollie:tr_no_checkout"))
+        assertEquals(donationsBefore, donationRepository.count(), "No pending donation may be left behind")
+        assertEquals(acceptancesBefore, legalAcceptanceRepository.count(), "No acceptance proof may be left behind")
     }
 
     // ── Collection cap ────────────────────────────────────────────────────────

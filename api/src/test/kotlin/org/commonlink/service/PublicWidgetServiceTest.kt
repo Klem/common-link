@@ -12,6 +12,8 @@ import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.ConflictException
+import org.commonlink.payment.MollieProviderAdapter
+import org.commonlink.payment.PaymentProviderRegistry
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
@@ -33,22 +35,27 @@ class PublicWidgetServiceTest {
     private val associationProfileRepository: AssociationProfileRepository = mockk()
     private val donationCapService: DonationCapService = mockk(relaxed = true)
 
+    private val mollieProviderAdapter = MollieProviderAdapter(
+        mollieConnectionRepository = mockk<MollieConnectionRepository>(relaxed = true),
+        mollieOAuthStateRepository = mockk(relaxed = true),
+        mollieConnectTokenManager = mockk(relaxed = true),
+        mollieClient = mockk(relaxed = true),
+        mollieProperties = mockk<MollieProperties>(relaxed = true),
+        mollieWebhookService = mockk(relaxed = true),
+    )
+
     private val service = PublicWidgetService(
         associationProfileRepository = associationProfileRepository,
         donationRepository = mockk(relaxed = true),
         donorProfileRepository = mockk(relaxed = true),
         guestDonorService = mockk(relaxed = true),
-        mollieClient = mockk(relaxed = true),
-        mollieProperties = mockk(relaxed = true),
         donationService = mockk(relaxed = true),
-        mollieConnectionRepository = mockk(relaxed = true),
-        mollieConnectTokenManager = mockk(relaxed = true),
         taxRateService = mockk(relaxed = true),
         landingPreviewTokenService = mockk(relaxed = true),
         freezeScreeningDonationService = mockk(relaxed = true),
         donationCapService = donationCapService,
-        mollieWebhookService = mockk(relaxed = true),
         legalAcceptanceService = mockk(relaxed = true),
+        paymentProviderRegistry = PaymentProviderRegistry(listOf(mollieProviderAdapter)),
     )
 
     private fun campaign(status: CampaignStatus = CampaignStatus.LIVE) = Campaign(
