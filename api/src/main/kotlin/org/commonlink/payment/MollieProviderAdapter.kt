@@ -61,8 +61,8 @@ class MollieProviderAdapter(
     /**
      * True once the Mollie KYC flow has been initiated: a [org.commonlink.entity.MollieConnection] exists (the
      * OAuth callback ran), or a non-expired [org.commonlink.entity.MollieOAuthState] does (the client-link was
-     * created, which already submitted the contact identity to Mollie). Same rule as
-     * `OnboardingGateService.isMollieKycStarted`.
+     * created, which already submitted the contact identity to Mollie). Backs
+     * `OnboardingGateService.isPaymentLinkStarted`.
      */
     override fun isLinkStarted(associationId: UUID): Boolean {
         if (mollieConnectionRepository.findByAssociationId(associationId) != null) return true

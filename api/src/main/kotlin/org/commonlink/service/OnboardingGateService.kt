@@ -1,20 +1,19 @@
 package org.commonlink.service
 
+import org.commonlink.entity.AssociationProfile
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.UserNotFoundException
+import org.commonlink.payment.PaymentProviderRegistry
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.FiscalMandateRepository
-import org.commonlink.repository.MollieConnectionRepository
-import org.commonlink.repository.MollieOAuthStateRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Instant
 import java.util.UUID
 
 /**
  * Server-side enforcement of the association onboarding chain, mirroring the frontend tab lock
  * (`tabUnlocked` in the association profile page): information → verification → fiscal mandate →
- * bank account (Mollie) → donation widget.
+ * bank account (payment provider) → donation widget.
  *
  * Every step behind a locked tab is replayable, so each prerequisite must be re-checked on the API
  * regardless of what the UI allows. This service is the single source of truth for the *direct*
@@ -27,8 +26,7 @@ import java.util.UUID
 class OnboardingGateService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val fiscalMandateRepository: FiscalMandateRepository,
-    private val mollieConnectionRepository: MollieConnectionRepository,
-    private val mollieOAuthStateRepository: MollieOAuthStateRepository,
+    private val paymentProviderRegistry: PaymentProviderRegistry,
 ) {
 
     /**
@@ -42,7 +40,7 @@ class OnboardingGateService(
      */
     @Transactional(readOnly = true)
     fun requireMandateSigned(userId: UUID) {
-        val associationId = resolveAssociationId(userId)
+        val associationId = resolveAssociation(userId).id!!
         val activeMandate = fiscalMandateRepository.findByAssociationIdAndRevokedAtIsNull(associationId)
         if (activeMandate == null) {
             throw ConflictException("A signed fiscal mandate is required before connecting a bank account")
@@ -50,65 +48,57 @@ class OnboardingGateService(
     }
 
     /**
-     * Returns true if the association's Mollie Connect account can collect donations.
-     * Mirrors the predicate used by [requireBankReady] without throwing — for use in
-     * read-path guards where a boolean check is more appropriate than a thrown exception.
+     * Returns true if the association can collect donations through its payment provider
+     * ([org.commonlink.payment.ProviderReadinessStatus.READY]). Mirrors the predicate used by
+     * [requireBankReady] without throwing — for use in read-path guards where a boolean check is more
+     * appropriate than a thrown exception.
      */
     @Transactional(readOnly = true)
-    fun isBankReady(userId: UUID): Boolean {
-        val associationId = resolveAssociationId(userId)
-        return mollieConnectionRepository.findByAssociationId(associationId)?.canCollectDonations() == true
-    }
+    fun isBankReady(userId: UUID): Boolean = isReady(resolveAssociation(userId))
 
     /**
-     * Returns true once the Mollie KYC flow has been *initiated* for this association — not merely
-     * once it is completed.
+     * Returns true once the association has *initiated* linking an account with its payment provider —
+     * not merely once the link is completed (see [org.commonlink.payment.PaymentProvider.isLinkStarted]).
      *
      * Used to lock contact-identity fields ([org.commonlink.entity.AssociationProfile.contactName]
-     * and [org.commonlink.entity.AssociationProfile.contactEmail]): they are submitted to Mollie
-     * when the client-link is created, which happens in `MollieConnectService.buildAuthorizationUrl`
-     * — *before* the OAuth callback persists the [org.commonlink.entity.MollieConnection] row.
-     * Editing them mid-flow would desynchronise CommonLink from Mollie's records.
+     * and [org.commonlink.entity.AssociationProfile.contactEmail]): the provider may have captured them
+     * as soon as the link was started (for Mollie, when the client-link is created in
+     * `MollieConnectService.buildAuthorizationUrl`, before the OAuth callback). Editing them mid-flow
+     * would desynchronise CommonLink from the provider's records.
      *
-     * Two signals, because the flow spans two persistence steps:
-     *  - a non-expired [org.commonlink.entity.MollieOAuthState] → the client-link was just created
-     *    and the hosted wizard is open (or was abandoned less than the state TTL ago);
-     *  - an existing [org.commonlink.entity.MollieConnection] → the callback has run.
-     *
-     * When a flow is abandoned and its OAuth state expires, the lock lifts on purpose: the next
-     * attempt creates a fresh client-link carrying whatever contact data is current, so no
-     * inconsistency can arise.
+     * When a flow is abandoned (for Mollie, once its OAuth state expires), the lock lifts on purpose:
+     * the next attempt carries whatever contact data is current, so no inconsistency can arise.
      */
     @Transactional(readOnly = true)
-    fun isMollieKycStarted(userId: UUID): Boolean {
-        val associationId = resolveAssociationId(userId)
-        if (mollieConnectionRepository.findByAssociationId(associationId) != null) return true
-        return mollieOAuthStateRepository.existsByAssociationIdAndExpiresAtAfter(associationId, Instant.now())
+    fun isPaymentLinkStarted(userId: UUID): Boolean {
+        val association = resolveAssociation(userId)
+        return paymentProviderRegistry.forAssociation(association).isLinkStarted(association.id!!)
     }
 
     /**
-     * Requires the association's Mollie Connect account to be able to collect donations.
+     * Requires the association to be able to collect donations through its payment provider.
      *
      * Direct prerequisite for enabling the donation widget (token generation, widget config, and
      * setting a destination campaign).
      *
-     * Uses [org.commonlink.entity.MollieConnection.canCollectDonations] — the same predicate that
-     * gates campaign publication. A widget cannot work on an unpublished campaign, so this gate must
-     * never be laxer than the publish gate: completed Mollie KYC **and** `canReceivePayments`.
+     * Uses the provider's [org.commonlink.payment.PaymentProvider.readiness] — the same predicate that
+     * gates campaign publication (for Mollie, [org.commonlink.entity.MollieConnection.canCollectDonations]).
+     * A widget cannot work on an unpublished campaign, so this gate must never be laxer than the publish
+     * gate.
      *
-     * @throws ConflictException if there is no Mollie connection, or Mollie KYC does not yet authorise payments.
+     * @throws ConflictException if the association's payment provider is not ready to collect.
      */
     @Transactional(readOnly = true)
     fun requireBankReady(userId: UUID) {
-        val associationId = resolveAssociationId(userId)
-        val connection = mollieConnectionRepository.findByAssociationId(associationId)
-        if (connection?.canCollectDonations() != true) {
+        if (!isReady(resolveAssociation(userId))) {
             throw ConflictException("A bank account (Mollie) authorised to receive payments is required before enabling the donation widget")
         }
     }
 
-    private fun resolveAssociationId(userId: UUID): UUID =
+    private fun isReady(association: AssociationProfile): Boolean =
+        paymentProviderRegistry.forAssociation(association).readiness(association.id!!).isReady
+
+    private fun resolveAssociation(userId: UUID): AssociationProfile =
         associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
-            .id!!
 }

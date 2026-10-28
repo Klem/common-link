@@ -150,11 +150,11 @@ class OnboardingGateServiceTest {
         assertDoesNotThrow { onboardingGate.requireBankReady(userId) }
     }
 
-    // ── isMollieKycStarted ────────────────────────────────────────────────────
+    // ── isPaymentLinkStarted ────────────────────────────────────────────────────
 
     @Test
-    fun `isMollieKycStarted - false when the association never launched the flow`() {
-        assertFalse(onboardingGate.isMollieKycStarted(userId))
+    fun `isPaymentLinkStarted - false when the association never launched the flow`() {
+        assertFalse(onboardingGate.isPaymentLinkStarted(userId))
     }
 
     /**
@@ -163,7 +163,7 @@ class OnboardingGateServiceTest {
      * the fields — waiting for a MollieConnection row would leave an editable window.
      */
     @Test
-    fun `isMollieKycStarted - true while an OAuth state is still alive and no connection exists`() {
+    fun `isPaymentLinkStarted - true while an OAuth state is still alive and no connection exists`() {
         mollieOAuthStateRepository.save(
             MollieOAuthState(
                 state = UUID.randomUUID().toString(),
@@ -171,12 +171,12 @@ class OnboardingGateServiceTest {
                 expiresAt = Instant.now().plusSeconds(600),
             )
         )
-        assertTrue(onboardingGate.isMollieKycStarted(userId))
+        assertTrue(onboardingGate.isPaymentLinkStarted(userId))
     }
 
     /** An abandoned flow releases the lock: the next attempt re-sends whatever contact data is current. */
     @Test
-    fun `isMollieKycStarted - false when the OAuth state has expired`() {
+    fun `isPaymentLinkStarted - false when the OAuth state has expired`() {
         mollieOAuthStateRepository.save(
             MollieOAuthState(
                 state = UUID.randomUUID().toString(),
@@ -184,16 +184,16 @@ class OnboardingGateServiceTest {
                 expiresAt = Instant.now().minusSeconds(60),
             )
         )
-        assertFalse(onboardingGate.isMollieKycStarted(userId))
+        assertFalse(onboardingGate.isPaymentLinkStarted(userId))
     }
 
     /** The lock must not wait for COMPLETED — NEEDS_DATA is already "started". */
     @Test
-    fun `isMollieKycStarted - true when the connection exists but KYC is not completed`() {
+    fun `isPaymentLinkStarted - true when the connection exists but KYC is not completed`() {
         mollieConnectionRepository.save(
             completedConnection(canReceivePayments = false)
                 .apply { onboardingStatus = MollieOnboardingStatus.NEEDS_DATA }
         )
-        assertTrue(onboardingGate.isMollieKycStarted(userId))
+        assertTrue(onboardingGate.isPaymentLinkStarted(userId))
     }
 }
