@@ -26,6 +26,16 @@ interface PaymentProvider {
     fun readiness(associationId: UUID): ProviderReadiness
 
     /**
+     * Returns the association's payment-setup status for display.
+     *
+     * Same contract as [readiness]: side-effect free, database reads only, **no network call** — it reflects the
+     * last status stored for the association.
+     *
+     * @param associationId the association to check.
+     */
+    fun paymentStatus(associationId: UUID): PaymentStatus
+
+    /**
      * Returns whether the association has started linking an account with this provider. While it has, the
      * association's contact name and email are locked, since the provider may have captured them.
      *

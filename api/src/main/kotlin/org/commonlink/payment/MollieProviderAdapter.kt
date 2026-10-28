@@ -2,6 +2,7 @@ package org.commonlink.payment
 
 import org.commonlink.config.MollieProperties
 import org.commonlink.entity.MollieConnectionState
+import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.MolliePaymentException
 import org.commonlink.repository.MollieConnectionRepository
@@ -56,6 +57,30 @@ class MollieProviderAdapter(
             )
         }
         return ProviderReadiness(ProviderReadinessStatus.READY)
+    }
+
+    /**
+     * Exact server-side translation of `deriveBankSetupStatus` (`app/src/lib/bankSetupStatus.ts`), fed with the
+     * same stored data as `GET /api/mollie/connect/status`: a broken link wins over everything (even a stale
+     * COMPLETED), then absence of a connection, then Mollie's own onboarding status. COMPLETED does not look at
+     * `canReceivePayments`, exactly like the frontend. `actionUrl` is Mollie's onboarding wizard link, exposed
+     * whenever a connection exists, like the status DTO's `dashboardUrl`.
+     *
+     * Unlike that endpoint, never re-fetches a stale status from Mollie: database only.
+     */
+    override fun paymentStatus(associationId: UUID): PaymentStatus {
+        val connection = mollieConnectionRepository.findByAssociationId(associationId)
+            ?: return PaymentStatus(BankSetupStatus.NOT_CONNECTED)
+        val status = if (connection.state == MollieConnectionState.BROKEN) {
+            BankSetupStatus.BROKEN
+        } else {
+            when (connection.onboardingStatus) {
+                MollieOnboardingStatus.NEEDS_DATA -> BankSetupStatus.NEEDS_DATA
+                MollieOnboardingStatus.IN_REVIEW -> BankSetupStatus.IN_REVIEW
+                MollieOnboardingStatus.COMPLETED -> BankSetupStatus.COMPLETED
+            }
+        }
+        return PaymentStatus(status, actionUrl = connection.onboardingDashboardUrl)
     }
 
     /**

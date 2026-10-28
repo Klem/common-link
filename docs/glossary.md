@@ -75,6 +75,10 @@ A non-transferable digital attestation awarded to donors and associations for re
 Badges are categorized by scope: **org** (tied to the association overall, e.g. "100K Club"), **campaign** (tied to a specific campaign, e.g. "Objectif Atteint"), or **transparency** (tied to financial accountability, e.g. "Budget Équilibré").
 `functional`
 
+### Bank Setup Status / Payment Status (BankSetupStatus, PaymentStatus)
+The status of an association's bank-account (payment provider) setup, as shown on its dashboard: `NOT_CONNECTED`, `NEEDS_DATA`, `IN_REVIEW`, `COMPLETED` or `BROKEN`. Computed by the association's **Payment Provider** from stored data only, with an optional provider-side link to complete onboarding and optional warnings. A display status, not a gate: `COMPLETED` means the provider finished its verification, while collecting also requires the **Provider Readiness** to be `READY`.
+`technical` `functional`
+
 ### BCrypt
 The password hashing algorithm used by the backend (strength 12). Passwords are never stored in plain text — only their BCrypt hash is persisted.
 `security` `technical`

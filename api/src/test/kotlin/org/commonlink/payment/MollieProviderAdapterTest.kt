@@ -123,6 +123,74 @@ class MollieProviderAdapterTest {
         }
     }
 
+    /** One case per branch of `deriveBankSetupStatus` (`app/src/lib/__tests__/bankSetupStatus.test.ts`). */
+    @Nested
+    inner class PaymentStatusDerivation {
+
+        @Test
+        fun `never connected is NOT_CONNECTED without action URL`() {
+            every { connectionRepository.findByAssociationId(associationId) } returns null
+
+            assertEquals(PaymentStatus(BankSetupStatus.NOT_CONNECTED), adapter.paymentStatus(associationId))
+        }
+
+        @Test
+        fun `maps each Mollie onboarding status when connected`() {
+            val cases = listOf(
+                MollieOnboardingStatus.NEEDS_DATA to BankSetupStatus.NEEDS_DATA,
+                MollieOnboardingStatus.IN_REVIEW to BankSetupStatus.IN_REVIEW,
+                MollieOnboardingStatus.COMPLETED to BankSetupStatus.COMPLETED,
+            )
+            for ((onboardingStatus, expected) in cases) {
+                every { connectionRepository.findByAssociationId(associationId) } returns
+                    connection(onboardingStatus = onboardingStatus)
+
+                assertEquals(expected, adapter.paymentStatus(associationId).status, "for $onboardingStatus")
+            }
+        }
+
+        @Test
+        fun `broken link wins even when a stale onboarding status says COMPLETED`() {
+            every { connectionRepository.findByAssociationId(associationId) } returns
+                connection(state = MollieConnectionState.BROKEN, onboardingStatus = MollieOnboardingStatus.COMPLETED)
+
+            assertEquals(BankSetupStatus.BROKEN, adapter.paymentStatus(associationId).status)
+        }
+
+        @Test
+        fun `COMPLETED ignores canReceivePayments, like the frontend`() {
+            every { connectionRepository.findByAssociationId(associationId) } returns
+                connection(onboardingStatus = MollieOnboardingStatus.COMPLETED, canReceivePayments = false)
+
+            assertEquals(BankSetupStatus.COMPLETED, adapter.paymentStatus(associationId).status)
+        }
+
+        @Test
+        fun `exposes the onboarding wizard link and no warnings`() {
+            every { connectionRepository.findByAssociationId(associationId) } returns connection(
+                onboardingStatus = MollieOnboardingStatus.NEEDS_DATA,
+                canReceivePayments = false,
+                dashboardUrl = "https://my.mollie.com/dashboard/onboarding",
+            )
+
+            assertEquals(
+                PaymentStatus(BankSetupStatus.NEEDS_DATA, actionUrl = "https://my.mollie.com/dashboard/onboarding"),
+                adapter.paymentStatus(associationId),
+            )
+        }
+
+        @Test
+        fun `reads the database only - never calls Mollie`() {
+            every { connectionRepository.findByAssociationId(associationId) } returns
+                connection(onboardingStatus = MollieOnboardingStatus.IN_REVIEW, canReceivePayments = false)
+
+            adapter.paymentStatus(associationId)
+
+            verify(exactly = 0) { tokenManager.getValidAccessToken(any()) }
+            verify(exactly = 0) { mollieClient.getFirstProfileId(any()) }
+        }
+    }
+
     @Nested
     inner class IsLinkStarted {
 
