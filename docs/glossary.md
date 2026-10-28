@@ -162,6 +162,10 @@ Bank account tab state meaning Mollie sent the dossier back for more information
 A security mechanism that restricts which domains can communicate with the backend API. Only the authorized frontend URL is allowed — no other website can make requests to the API.
 `technical` `security`
 
+### Checkout Request / Checkout Session
+The provider-neutral input and output of a donation payment. The **Checkout Request** carries what the public donation flow knows once the cap, the guest donor and the asset-freeze screening have passed (association, campaign, amount, public reference, widget, locale, source site); each **Payment Provider** turns it into its own payment (return URLs, description, metadata). The **Checkout Session** returns the prefixed provider reference stored on the pending donation and the provider-hosted page the donor is redirected to — never empty: a provider that returns no payment page fails before any donation is recorded.
+`technical`
+
 ---
 
 ## D
@@ -443,6 +447,18 @@ The means by which a donor completes a donation. Supported methods: **Card** (Vi
 ### Mode de versement (Payment Method on the Receipt)
 The line on the fiscal receipt stating how the donor actually paid. The provider's method code is captured when the payment is confirmed (`donations.payment_method`) and mapped to a French label — _Carte bancaire_, _Virement bancaire_, _Prélèvement SEPA_, _Virement bancaire en ligne_. An unrecognised provider code is printed verbatim rather than forced into a category, and a donation confirmed without a provider payload prints _Non précisé_. Previously the receipt printed the list of accepted methods, which was false for every individual donation. See `docs/legal/E5-recu-fiscal-mentions.md`.
 `functional` `business`
+
+### Payment Provider (PaymentProvider)
+The payment service provider (PSP) that collects donations on an association's behalf — **Mollie** today, **HelloAsso** planned. CommonLink never holds funds and takes no fee, whichever the provider. In the code, `PaymentProvider` is the port between the donation domain and a provider: readiness check, link status, checkout creation, payment re-read. Every donation's provider reference starts with the provider's prefix (`mollie:`, `helloasso:`).
+`technical` `business`
+
+### Payment Provider Registry (PaymentProviderRegistry)
+The component that picks the **Payment Provider** to use: by association for new payments and collection gates, by reference prefix for payments already in flight. In-flight payments always follow their prefix, never the association's current provider, so a donation started before a provider change is still settled by the provider that took it.
+`technical`
+
+### Provider Readiness (ProviderReadiness)
+Whether an association can collect donations through its **Payment Provider**: `NOT_CONNECTED` (no account linked), `BROKEN` (link revoked, must re-link), `PENDING` (provider verification under way) or `READY`. Every collection gate (campaign publication, widget, landing page, checkout) reads it. Computed from stored data only — never by calling the provider — because public pages read it on every view.
+`technical` `functional`
 
 ### Polygon
 A Layer 2 blockchain network used by CommonLink for on-chain certifications and wallet-based donations. Polygon offers low gas fees (~€0.08 per transaction) and fast confirmation times, making it suitable for micro-certifications.
