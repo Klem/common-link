@@ -243,4 +243,13 @@ class ProdConfigSecurityTest {
         // Cloud proxy sharing one bucket (security audit 2026-08-20, M2).
         assertEquals("\${APP_TRUSTED_PROXY_COUNT:1}", prop("app.security.trusted-proxy-count"))
     }
+
+    @Test
+    fun `forwarded headers are processed by the framework filter in prod`() {
+        // HSTS is only emitted on requests seen as secure, which behind the Clever Cloud proxy needs
+        // X-Forwarded-Proto handling (security audit 2026-08-20, M9). ClientIpResolver relies on this
+        // being a wrapping filter: `native` would rewrite the container request it reads the raw
+        // X-Forwarded-For from.
+        assertEquals("framework", prop("server.forward-headers-strategy"))
+    }
 }

@@ -1,5 +1,7 @@
 package org.commonlink.security
 
+import jakarta.servlet.ServletRequest
+import jakarta.servlet.ServletRequestWrapper
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -21,6 +23,10 @@ import org.springframework.stereotype.Component
  * entirely and always use the socket address — correct when the application is reached directly.
  *
  * Any malformed chain falls back to [HttpServletRequest.getRemoteAddr], which cannot be forged.
+ *
+ * Header and socket address are always read on the request as the container received it, beneath any
+ * filter wrapper — see [containerRequest] for why `ForwardedHeaderFilter` would otherwise defeat all of
+ * the above.
  */
 @Component
 class ClientIpResolver(
@@ -35,20 +41,40 @@ class ClientIpResolver(
      *   is absent, too short, or not an IP literal.
      */
     fun resolve(request: HttpServletRequest): String {
-        if (trustedProxyCount <= 0) return request.remoteAddr
+        val original = containerRequest(request)
+        if (trustedProxyCount <= 0) return original.remoteAddr
 
-        val chain = request.getHeader(FORWARDED_FOR)
+        val chain = original.getHeader(FORWARDED_FOR)
             ?.split(',')
             ?.map { it.trim() }
             ?.filter { it.isNotEmpty() }
-            ?: return request.remoteAddr
+            ?: return original.remoteAddr
 
         // Index of the entry written by the outermost proxy we trust. Negative when the client sent
         // fewer entries than expected — i.e. the header cannot be trusted to hold the client address.
         val index = chain.size - trustedProxyCount
-        val candidate = chain.getOrNull(index) ?: return request.remoteAddr
+        val candidate = chain.getOrNull(index) ?: return original.remoteAddr
 
-        return if (isIpLiteral(candidate)) candidate else request.remoteAddr
+        return if (isIpLiteral(candidate)) candidate else original.remoteAddr
+    }
+
+    /**
+     * Returns the request as the servlet container received it, beneath every filter wrapper.
+     *
+     * On the deployed profiles `server.forward-headers-strategy: framework` installs Spring's
+     * `ForwardedHeaderFilter` first in the chain. It wraps the request so that `X-Forwarded-For` is no
+     * longer visible and `getRemoteAddr()` returns the header's *first* entry — the client-controlled
+     * one. Reading the wrapper would therefore hand the rate limiter a forgeable identity. The container's
+     * own request still carries the raw header and the TCP peer address, which is what this resolver's
+     * rightmost-trusted rule needs. `X-Forwarded-Proto` handling (and thus HSTS) is left to the filter.
+     *
+     * Only holds while forwarded headers are processed by a wrapping filter: a container-level rewrite
+     * (`forward-headers-strategy: native`) would alter the original request itself.
+     */
+    private fun containerRequest(request: HttpServletRequest): HttpServletRequest {
+        var current: ServletRequest = request
+        while (current is ServletRequestWrapper) current = current.request
+        return current as? HttpServletRequest ?: request
     }
 
     /**
