@@ -17,6 +17,7 @@ import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationComplianceStatusService
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationLandingService
+import org.commonlink.service.AssociationPaymentService
 import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.CampaignReportService
 import org.commonlink.service.DonorCampaignReportService
@@ -128,6 +129,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
     @MockkBean private lateinit var campaignReportService: CampaignReportService
     @MockkBean private lateinit var legalAcceptanceService: LegalAcceptanceService
+    @MockkBean private lateinit var associationPaymentService: AssociationPaymentService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test
