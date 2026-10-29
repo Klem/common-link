@@ -14,7 +14,7 @@ import { deriveBankSetupStatus } from '@/lib/bankSetupStatus';
  * The profile alone hydrates the store — an association that never connected Mollie must still see
  * its own verification state. But the bank state needs one more bit: while the
  * Mollie request is in flight `deriveBankSetupStatus` yields `NOT_CONNECTED`, which is
- * indistinguishable from "never connected". `mollieResolved` carries that distinction to the store
+ * indistinguishable from "never connected". `bankResolved` carries that distinction to the store
  * so consumers can wait instead of acting on a loading value. A failed Mollie request counts as
  * resolved — the status is then genuinely unknown and the association must not stay blocked.
  */
@@ -29,8 +29,8 @@ export function AssociationStatusSync() {
       verificationStatus: profile.verificationStatus,
       bankStatus: deriveBankSetupStatus({ connected, broken, onboardingStatus }),
       rejectionReason: profile.verificationRejectionReason,
-      mollieDashboardUrl: dashboardUrl,
-      mollieResolved: !isLoading,
+      bankActionUrl: dashboardUrl,
+      bankResolved: !isLoading,
     });
   }, [profile, connected, broken, onboardingStatus, dashboardUrl, isLoading, setAccStatus]);
 

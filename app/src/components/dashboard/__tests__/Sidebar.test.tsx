@@ -90,8 +90,8 @@ describe('Sidebar', () => {
       verificationStatus: VerificationStatus.UNVERIFIED,
       bankStatus: BankSetupStatus.NOT_CONNECTED,
       rejectionReason: null,
-      mollieDashboardUrl: null,
-      mollieResolved: true,
+      bankActionUrl: null,
+      bankResolved: true,
     });
     render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
     expect(document.querySelector('.acc-mini')).toBeInTheDocument();

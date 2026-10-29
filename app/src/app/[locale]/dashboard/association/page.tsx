@@ -22,7 +22,7 @@ export default function AssociationDashboardPage() {
 
   const { profile } = useAssociationProfile();
   const { stats, isLoading, error } = useAssociationDashboard();
-  const { hydrated, verificationStatus, bankStatus, rejectionReason, mollieDashboardUrl } = useAccStatusStore();
+  const { hydrated, verificationStatus, bankStatus, rejectionReason, bankActionUrl } = useAccStatusStore();
 
   const greeting = profile ? t('greeting', { name: profile.name }) : t('greeting', { name: '…' });
 
@@ -49,7 +49,7 @@ export default function AssociationDashboardPage() {
         verificationStatus={verificationStatus}
         bankStatus={bankStatus}
         rejectionReason={rejectionReason}
-        mollieDashboardUrl={mollieDashboardUrl}
+        bankActionUrl={bankActionUrl}
       />
       )}
 

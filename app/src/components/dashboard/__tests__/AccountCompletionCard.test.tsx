@@ -70,7 +70,7 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof AccountComple
       verificationStatus={VerificationStatus.UNVERIFIED}
       bankStatus={BankSetupStatus.NOT_CONNECTED}
       rejectionReason={null}
-      mollieDashboardUrl={null}
+      bankActionUrl={null}
       {...overrides}
     />,
   );
@@ -205,7 +205,7 @@ describe('AccountCompletionCard — bank row per BankSetupStatus', () => {
     vi.stubGlobal('open', open);
     renderCard({
       bankStatus: BankSetupStatus.NEEDS_DATA,
-      mollieDashboardUrl: 'https://my.mollie.com/dashboard/onboarding',
+      bankActionUrl: 'https://my.mollie.com/dashboard/onboarding',
     });
     expect(variantOf(1)).toBe('pending');
     fireEvent.click(screen.getByText('checks.bank.NEEDS_DATA.cta'));
@@ -219,7 +219,7 @@ describe('AccountCompletionCard — bank row per BankSetupStatus', () => {
   });
 
   it('NEEDS_DATA without a dashboard URL: falls back to the bank tab', () => {
-    renderCard({ bankStatus: BankSetupStatus.NEEDS_DATA, mollieDashboardUrl: null });
+    renderCard({ bankStatus: BankSetupStatus.NEEDS_DATA, bankActionUrl: null });
     fireEvent.click(screen.getByText('checks.bank.NEEDS_DATA.cta'));
     expect(push).toHaveBeenCalledWith(expect.stringContaining('tab=bank'));
   });

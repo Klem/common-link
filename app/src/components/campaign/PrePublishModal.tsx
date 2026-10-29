@@ -49,13 +49,13 @@ interface PrePublishModalProps {
   /** Bank-setup state derived from the Mollie KYC DTO. */
   bankStatus: BankSetupStatus;
   /**
-   * False while the Mollie request is still in flight. `bankStatus` then defaults to
+   * False while the payment-status request is still in flight. `bankStatus` then defaults to
    * `NOT_CONNECTED`, so the modal shows a neutral loading row instead of claiming a fully
    * onboarded association has no bank account.
    */
-  mollieResolved: boolean;
-  /** Mollie hosted-onboarding deep link, used by the `NEEDS_DATA` call-to-action. */
-  mollieDashboardUrl: string | null;
+  bankResolved: boolean;
+  /** Payment-provider action link (today the Mollie hosted onboarding), used by the `NEEDS_DATA` call-to-action. */
+  bankActionUrl: string | null;
   onClose: () => void;
   /** @param cguAccepted Whether to send `cguAccepted: true` on the publish request. */
   onConfirm: (cguAccepted: boolean) => Promise<void>;
@@ -72,8 +72,8 @@ export function PrePublishModal({
   campaign,
   verificationStatus,
   bankStatus,
-  mollieResolved,
-  mollieDashboardUrl,
+  bankResolved,
+  bankActionUrl,
   onClose,
   onConfirm,
 }: PrePublishModalProps) {
@@ -137,7 +137,7 @@ export function PrePublishModal({
     },
   ];
 
-  const bankReady = mollieResolved && bankStatus === BankSetupStatus.COMPLETED;
+  const bankReady = bankResolved && bankStatus === BankSetupStatus.COMPLETED;
   const kybReady = verificationStatus === VerificationStatus.VERIFIED;
   const accountComplete = bankReady && kybReady;
 
@@ -233,7 +233,7 @@ export function PrePublishModal({
               </div>
             ) : (
               <>
-                {!mollieResolved ? (
+                {!bankResolved ? (
                   <div className="pp-row boost">
                     <div className="pp-row-ic">⏳</div>
                     <div className="pp-row-lbl">{t('account.loading')}</div>
@@ -242,10 +242,10 @@ export function PrePublishModal({
                   <div className={`pp-row ${BANK_ROWS[bankStatus].cls}`}>
                     <div className="pp-row-ic">{BANK_ROWS[bankStatus].icon}</div>
                     <div className="pp-row-lbl">{t(`account.bank.${bankStatus}`)}</div>
-                    {bankStatus === BankSetupStatus.NEEDS_DATA && mollieDashboardUrl !== null && (
+                    {bankStatus === BankSetupStatus.NEEDS_DATA && bankActionUrl !== null && (
                       <a
                         className="pp-row-link"
-                        href={mollieDashboardUrl}
+                        href={bankActionUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

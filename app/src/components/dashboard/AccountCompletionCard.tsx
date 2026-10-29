@@ -58,8 +58,8 @@ interface AccountCompletionCardProps {
   bankStatus: BankSetupStatus;
   /** Back-office reason shown on the KYC row when the dossier was rejected. */
   rejectionReason: string | null;
-  /** Mollie hosted-onboarding deep link, used by the NEEDS_DATA call-to-action. */
-  mollieDashboardUrl: string | null;
+  /** Payment-provider action link (today the Mollie hosted onboarding), used by the NEEDS_DATA call-to-action. */
+  bankActionUrl: string | null;
 }
 
 /**
@@ -74,7 +74,7 @@ export function AccountCompletionCard({
   verificationStatus,
   bankStatus,
   rejectionReason,
-  mollieDashboardUrl,
+  bankActionUrl,
 }: AccountCompletionCardProps) {
   const t = useTranslations('dashboard.association.home.accCard');
   const router = useRouter();
@@ -105,8 +105,8 @@ export function AccountCompletionCard({
 
   function handleCta(action: CheckAction) {
     if (action === null) return;
-    if (action === 'mollie' && mollieDashboardUrl !== null) {
-      window.open(mollieDashboardUrl, '_blank', 'noopener,noreferrer');
+    if (action === 'mollie' && bankActionUrl !== null) {
+      window.open(bankActionUrl, '_blank', 'noopener,noreferrer');
       return;
     }
     const tab = action === 'verif' ? 'verif' : 'bank';

@@ -10,15 +10,18 @@ export interface AccStatusPayload {
   bankStatus: BankSetupStatus;
   /** Reason given by the back-office when `verificationStatus` is REJECTED. */
   rejectionReason: string | null;
-  /** Deep link to the Mollie hosted onboarding wizard, null once onboarding is complete. */
-  mollieDashboardUrl: string | null;
   /**
-   * False while the Mollie KYC request is still in flight. `bankStatus` is meaningless until it
+   * Link to the action the payment provider expects from the association (today the Mollie hosted
+   * onboarding wizard), null when no action is pending.
+   */
+  bankActionUrl: string | null;
+  /**
+   * False while the payment-status request is still in flight. `bankStatus` is meaningless until it
    * flips: `deriveBankSetupStatus` returns `NOT_CONNECTED` both for "never connected" and for
    * "not loaded yet", so consumers must not claim the bank account is missing before the request
    * settles. A failed request counts as resolved — the status is then genuinely unknown.
    */
-  mollieResolved: boolean;
+  bankResolved: boolean;
 }
 
 interface AccStatusState extends AccStatusPayload {
@@ -51,8 +54,8 @@ export const useAccStatusStore = create<AccStatusState>((set) => ({
   verificationStatus: VerificationStatus.UNVERIFIED,
   bankStatus: BankSetupStatus.NOT_CONNECTED,
   rejectionReason: null,
-  mollieDashboardUrl: null,
-  mollieResolved: false,
+  bankActionUrl: null,
+  bankResolved: false,
   hydrated: false,
   done: 0,
   total: 2,
@@ -66,7 +69,7 @@ export const useAccStatusStore = create<AccStatusState>((set) => ({
       hydrated: true,
       // Sticky: a manual `refresh()` puts the Mollie hook back into loading, and the bank state
       // must not fall back to "unknown" once it has been resolved at least once.
-      mollieResolved: state.mollieResolved || payload.mollieResolved,
+      bankResolved: state.bankResolved || payload.bankResolved,
       verified,
       bank,
       done: (verified ? 1 : 0) + (bank ? 1 : 0),

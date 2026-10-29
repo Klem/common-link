@@ -50,8 +50,8 @@ function renderWith(overrides: Partial<React.ComponentProps<typeof PrePublishMod
     campaign: campaign(),
     verificationStatus: VerificationStatus.VERIFIED,
     bankStatus: BankSetupStatus.COMPLETED,
-    mollieResolved: true,
-    mollieDashboardUrl: null,
+    bankResolved: true,
+    bankActionUrl: null,
     onClose: vi.fn(),
     onConfirm: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -72,14 +72,14 @@ beforeEach(() => {
 describe('PrePublishModal — account status', () => {
   /** Regression guard: a loading Mollie status used to render as "no bank account connected". */
   it('shows a neutral loading row while the Mollie status is unresolved', () => {
-    renderWith({ mollieResolved: false, bankStatus: BankSetupStatus.NOT_CONNECTED });
+    renderWith({ bankResolved: false, bankStatus: BankSetupStatus.NOT_CONNECTED });
 
     expect(screen.getByText('account.loading')).toBeInTheDocument();
     expect(screen.queryByText('account.bank.NOT_CONNECTED')).not.toBeInTheDocument();
   });
 
   it('still shows the verification status while the Mollie status is unresolved', () => {
-    renderWith({ mollieResolved: false, verificationStatus: VerificationStatus.PENDING });
+    renderWith({ bankResolved: false, verificationStatus: VerificationStatus.PENDING });
 
     expect(screen.getByText('account.verif.PENDING')).toBeInTheDocument();
   });
@@ -116,7 +116,7 @@ describe('PrePublishModal — account status', () => {
   it('offers the Mollie wizard link only when onboarding data is missing', () => {
     renderWith({
       bankStatus: BankSetupStatus.NEEDS_DATA,
-      mollieDashboardUrl: 'https://my.mollie.com/dashboard/onboarding',
+      bankActionUrl: 'https://my.mollie.com/dashboard/onboarding',
     });
 
     expect(screen.getByText('account.completeBank')).toHaveAttribute(
@@ -126,7 +126,7 @@ describe('PrePublishModal — account status', () => {
   });
 
   it('the publish button is always initially enabled — backend enforces KYB, Mollie and account gates', () => {
-    renderWith({ mollieResolved: false });
+    renderWith({ bankResolved: false });
 
     expect(screen.getByText('confirm').closest('button')).toBeEnabled();
   });

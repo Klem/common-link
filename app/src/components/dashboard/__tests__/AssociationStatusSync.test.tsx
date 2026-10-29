@@ -39,8 +39,8 @@ beforeEach(() => {
     verificationStatus: VerificationStatus.UNVERIFIED,
     bankStatus: BankSetupStatus.NOT_CONNECTED,
     rejectionReason: null,
-    mollieDashboardUrl: null,
-    mollieResolved: false,
+    bankActionUrl: null,
+    bankResolved: false,
     hydrated: false,
     done: 0,
     total: 2,
@@ -73,7 +73,7 @@ describe('AssociationStatusSync', () => {
   /**
    * Regression guard for the "compte bancaire non connecté" bug: while the Mollie request is in
    * flight, `deriveBankSetupStatus` yields NOT_CONNECTED, which is indistinguishable from a real
-   * absence of connection. `mollieResolved` carries that distinction so consumers can wait instead
+   * absence of connection. `bankResolved` carries that distinction so consumers can wait instead
    * of claiming a fully onboarded association has no bank account.
    */
   it('reports the Mollie status as unresolved while it is still loading', () => {
@@ -83,7 +83,7 @@ describe('AssociationStatusSync', () => {
     render(<AssociationStatusSync />);
 
     const state = useAccStatusStore.getState();
-    expect(state.mollieResolved).toBe(false);
+    expect(state.bankResolved).toBe(false);
     // The verification state comes from the profile alone and is published immediately.
     expect(state.hydrated).toBe(true);
     expect(state.verificationStatus).toBe(VerificationStatus.VERIFIED);
@@ -115,7 +115,7 @@ describe('AssociationStatusSync', () => {
 
     const state = useAccStatusStore.getState();
     expect(state.bankStatus).toBe(BankSetupStatus.NEEDS_DATA);
-    expect(state.mollieDashboardUrl).toBe('https://my.mollie.com/dashboard/onboarding');
+    expect(state.bankActionUrl).toBe('https://my.mollie.com/dashboard/onboarding');
     expect(state.done).toBe(0);
   });
 
@@ -124,7 +124,7 @@ describe('AssociationStatusSync', () => {
     mollieMock.mockReturnValue(mollie({ connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED }));
 
     const { rerender } = render(<AssociationStatusSync />);
-    expect(useAccStatusStore.getState().mollieResolved).toBe(true);
+    expect(useAccStatusStore.getState().bankResolved).toBe(true);
 
     mollieMock.mockReturnValue(mollie({
       connected: true,
@@ -133,7 +133,7 @@ describe('AssociationStatusSync', () => {
     }));
     rerender(<AssociationStatusSync />);
 
-    expect(useAccStatusStore.getState().mollieResolved).toBe(true);
+    expect(useAccStatusStore.getState().bankResolved).toBe(true);
   });
 
   it('propagates the rejection reason and marks both steps done when everything is complete', () => {
