@@ -350,4 +350,41 @@ class MollieOnboardingStatusRefreshTest {
         val slotSave = slot<MollieConnection>()
         verify(exactly = 0) { connectionRepo.save(capture(slotSave)) }
     }
+
+    // ── Refresh by association id (provider-neutral status read, S2-04) ──────
+
+    @Test
+    fun `refresh by association id polls a stale connection and stores the new status`() {
+        val (_, connection) = givenConnection(MollieOnboardingStatus.NEEDS_DATA)
+        expectMollie("in-review")
+
+        service().refreshOnboardingStatusIfStale(connection.association.id!!)
+
+        assertEquals(MollieOnboardingStatus.IN_REVIEW, connection.onboardingStatus)
+    }
+
+    @Test
+    fun `refresh by association id keeps the 5-minute throttle`() {
+        val (_, connection) = givenConnection(MollieOnboardingStatus.NEEDS_DATA, syncedAgo = Duration.ofMinutes(4))
+
+        service().refreshOnboardingStatusIfStale(connection.association.id!!)
+
+        verify(exactly = 0) { tokenManager.getValidAccessToken(any()) }
+    }
+
+    @Test
+    fun `refresh by association id does nothing when the sync is disabled`() {
+        val (_, connection) = givenConnection(MollieOnboardingStatus.NEEDS_DATA)
+
+        service(config(disabled = true)).refreshOnboardingStatusIfStale(connection.association.id!!)
+
+        verify(exactly = 0) { tokenManager.getValidAccessToken(any()) }
+    }
+
+    @Test
+    fun `refresh by association id does nothing without a connection`() {
+        service().refreshOnboardingStatusIfStale(UUID.randomUUID())
+
+        verify(exactly = 0) { tokenManager.getValidAccessToken(any()) }
+    }
 }

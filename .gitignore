@@ -8,3 +8,5 @@
 *.svg
 .http
 .mcp.json
+docs/ui-ux
+docs/security

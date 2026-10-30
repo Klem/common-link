@@ -42,6 +42,7 @@ class PublicWidgetServiceTest {
         mollieClient = mockk(relaxed = true),
         mollieProperties = mockk<MollieProperties>(relaxed = true),
         mollieWebhookService = mockk(relaxed = true),
+        mollieConnectService = mockk(relaxed = true),
     )
 
     private val service = PublicWidgetService(

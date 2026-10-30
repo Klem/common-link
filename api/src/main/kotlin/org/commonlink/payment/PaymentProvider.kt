@@ -36,6 +36,18 @@ interface PaymentProvider {
     fun paymentStatus(associationId: UUID): PaymentStatus
 
     /**
+     * Re-reads the association's setup status at the provider when the stored one is stale, so that a following
+     * [paymentStatus] reflects it. Throttled by the provider's own staleness rule; a skipped or failed refresh is
+     * not an error — the caller then reads the last stored status. Never throws.
+     *
+     * May call the provider over the network: reserved to the association's own authenticated status read, never
+     * called from [readiness], [paymentStatus] or any public (unauthenticated) read.
+     *
+     * @param associationId the association whose status to refresh.
+     */
+    fun refreshStatusIfStale(associationId: UUID)
+
+    /**
      * Returns whether the association has started linking an account with this provider. While it has, the
      * association's contact name and email are locked, since the provider may have captured them.
      *

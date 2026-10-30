@@ -8,9 +8,11 @@ import org.commonlink.exception.MolliePaymentException
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.MollieOAuthStateRepository
 import org.commonlink.service.MollieClient
+import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieConnectTokenManager
 import org.commonlink.service.MollieWebhookService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -20,6 +22,9 @@ import java.util.UUID
 /**
  * [PaymentProvider] backed by Mollie Connect. Pure delegation to the existing Mollie services: it adds no Mollie
  * logic of its own, it only moves behind the port what the donation flow and the collection gates did inline.
+ *
+ * [MollieConnectService] is resolved lazily through an [ObjectProvider]: it depends on `OnboardingGateService`,
+ * which depends on [PaymentProviderRegistry], which collects this adapter — a direct injection would be a bean cycle.
  */
 @Component
 class MollieProviderAdapter(
@@ -29,6 +34,7 @@ class MollieProviderAdapter(
     private val mollieClient: MollieClient,
     private val mollieProperties: MollieProperties,
     private val mollieWebhookService: MollieWebhookService,
+    private val mollieConnectService: ObjectProvider<MollieConnectService>,
 ) : PaymentProvider {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -66,7 +72,7 @@ class MollieProviderAdapter(
      * `canReceivePayments`, exactly like the frontend. `actionUrl` is Mollie's onboarding wizard link, exposed
      * whenever a connection exists, like the status DTO's `dashboardUrl`.
      *
-     * Unlike that endpoint, never re-fetches a stale status from Mollie: database only.
+     * Unlike that endpoint, never re-fetches a stale status from Mollie: database only (see [refreshStatusIfStale]).
      */
     override fun paymentStatus(associationId: UUID): PaymentStatus {
         val connection = mollieConnectionRepository.findByAssociationId(associationId)
@@ -81,6 +87,19 @@ class MollieProviderAdapter(
             }
         }
         return PaymentStatus(status, actionUrl = connection.onboardingDashboardUrl)
+    }
+
+    /**
+     * Delegates to [MollieConnectService.refreshOnboardingStatusIfStale], the refresh `GET /api/mollie/connect/status`
+     * performs on read (skipped when the sync is disabled, the connection is broken or already collecting, or was
+     * synced less than 5 minutes ago). Any failure is logged and swallowed, as the port requires.
+     */
+    override fun refreshStatusIfStale(associationId: UUID) {
+        try {
+            mollieConnectService.getObject().refreshOnboardingStatusIfStale(associationId)
+        } catch (ex: Exception) {
+            logger.warn("Mollie status refresh failed for association {}: {}", associationId, ex.message)
+        }
     }
 
     /**

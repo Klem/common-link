@@ -945,6 +945,21 @@ class MollieConnectService(
     }
 
     /**
+     * Same refresh as the one [getConnectionStatus] performs on read, for callers that only know the association:
+     * re-fetches the onboarding status from Mollie when the connection does not collect yet and its last sync is
+     * older than 5 minutes (see the private overload for the exact guards). No connection → nothing to do. Never
+     * throws: failures are logged as WARN and the stored status stays authoritative.
+     *
+     * Used by the provider-neutral status read ([org.commonlink.payment.MollieProviderAdapter.refreshStatusIfStale]).
+     *
+     * @param associationId the association whose Mollie onboarding status to refresh.
+     */
+    fun refreshOnboardingStatusIfStale(associationId: UUID) {
+        val connection = connectionRepo.findByAssociationId(associationId) ?: return
+        refreshOnboardingStatusIfStale(connection)
+    }
+
+    /**
      * Forced-refresh counterpart of [refreshOnboardingStatusIfStale]: same guards, but the
      * 5-minute throttle is replaced by the per-association forced-refresh limit.
      *

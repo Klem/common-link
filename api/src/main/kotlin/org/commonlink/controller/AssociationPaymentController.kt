@@ -31,7 +31,8 @@ class AssociationPaymentController(
     @Operation(
         summary = "Get payment setup status",
         description = "Returns the association's payment provider and its bank-setup status (NOT_CONNECTED, " +
-            "NEEDS_DATA, IN_REVIEW, COMPLETED, BROKEN), computed from stored data only — no call to the provider.",
+            "NEEDS_DATA, IN_REVIEW, COMPLETED, BROKEN). A stale stored status is first refreshed from the provider " +
+            "(at most once every 5 minutes per association); a failed refresh falls back to the stored status.",
     )
     @ApiResponses(
         ApiResponse(

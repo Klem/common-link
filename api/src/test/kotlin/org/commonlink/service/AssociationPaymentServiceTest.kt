@@ -1,6 +1,9 @@
 package org.commonlink.service
 
 import io.mockk.every
+import io.mockk.just
+import io.mockk.runs
+import io.mockk.verifyOrder
 import io.mockk.mockk
 import org.commonlink.dto.PaymentStatusDto
 import org.commonlink.entity.AssociationProfile
@@ -32,6 +35,7 @@ class AssociationPaymentServiceTest {
         val association = mockk<AssociationProfile> { every { id } returns associationId }
         val provider = mockk<PaymentProvider> {
             every { id } returns PaymentProviderId.MOLLIE
+            every { refreshStatusIfStale(associationId) } just runs
             every { paymentStatus(associationId) } returns
                 PaymentStatus(BankSetupStatus.IN_REVIEW, actionUrl = "https://provider.example/onboarding", warnings = listOf("w"))
         }
@@ -54,5 +58,24 @@ class AssociationPaymentServiceTest {
         every { associationProfileRepository.findByUserId(userId) } returns Optional.empty()
 
         assertThrows<UserNotFoundException> { service.getPaymentStatus(userId) }
+    }
+
+    @Test
+    fun `refreshes a stale status at the provider before reading it`() {
+        val association = mockk<AssociationProfile> { every { id } returns associationId }
+        val provider = mockk<PaymentProvider> {
+            every { id } returns PaymentProviderId.MOLLIE
+            every { refreshStatusIfStale(associationId) } just runs
+            every { paymentStatus(associationId) } returns PaymentStatus(BankSetupStatus.COMPLETED)
+        }
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(association)
+        every { registry.forAssociation(association) } returns provider
+
+        service.getPaymentStatus(userId)
+
+        verifyOrder {
+            provider.refreshStatusIfStale(associationId)
+            provider.paymentStatus(associationId)
+        }
     }
 }

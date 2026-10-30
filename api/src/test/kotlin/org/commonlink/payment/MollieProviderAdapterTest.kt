@@ -15,6 +15,7 @@ import org.commonlink.exception.MolliePaymentException
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.MollieOAuthStateRepository
 import org.commonlink.service.MollieClient
+import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieConnectTokenManager
 import org.commonlink.service.MolliePayment
 import org.commonlink.service.MolliePaymentStatus
@@ -25,7 +26,9 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.springframework.beans.factory.ObjectProvider
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -38,6 +41,10 @@ class MollieProviderAdapterTest {
     private val tokenManager = mockk<MollieConnectTokenManager>()
     private val mollieClient = mockk<MollieClient>()
     private val webhookService = mockk<MollieWebhookService>()
+    private val connectService = mockk<MollieConnectService>()
+    private val connectServiceProvider = mockk<ObjectProvider<MollieConnectService>> {
+        every { getObject() } returns connectService
+    }
     private val properties = MollieProperties(
         redirectBaseUrl = "https://app.example",
         webhookUrl = "https://api.example/api/webhooks/mollie",
@@ -45,6 +52,7 @@ class MollieProviderAdapterTest {
 
     private val adapter = MollieProviderAdapter(
         connectionRepository, oauthStateRepository, tokenManager, mollieClient, properties, webhookService,
+        connectServiceProvider,
     )
 
     private val associationId = UUID.randomUUID()
@@ -429,6 +437,26 @@ class MollieProviderAdapterTest {
             assertThrows<IllegalArgumentException> { adapter.refreshPayment("helloasso:42") }
 
             verify(exactly = 0) { webhookService.handleWebhook(any()) }
+        }
+    }
+
+    @Nested
+    inner class RefreshStatusIfStale {
+
+        @Test
+        fun `delegates to the Mollie read-path refresh`() {
+            every { connectService.refreshOnboardingStatusIfStale(associationId) } just runs
+
+            adapter.refreshStatusIfStale(associationId)
+
+            verify(exactly = 1) { connectService.refreshOnboardingStatusIfStale(associationId) }
+        }
+
+        @Test
+        fun `swallows a failure so the caller still reads the stored status`() {
+            every { connectService.refreshOnboardingStatusIfStale(associationId) } throws RuntimeException("db down")
+
+            assertDoesNotThrow { adapter.refreshStatusIfStale(associationId) }
         }
     }
 }
