@@ -68,11 +68,14 @@ class OnboardingGateService(
      *
      * When a flow is abandoned (for Mollie, once its OAuth state expires), the lock lifts on purpose:
      * the next attempt carries whatever contact data is current, so no inconsistency can arise.
+     *
+     * False when the association's provider has no implementation yet (HelloAsso before its adapter ships):
+     * no link can have been started.
      */
     @Transactional(readOnly = true)
     fun isPaymentLinkStarted(userId: UUID): Boolean {
         val association = resolveAssociation(userId)
-        return paymentProviderRegistry.forAssociation(association).isLinkStarted(association.id!!)
+        return paymentProviderRegistry.findForAssociation(association)?.isLinkStarted(association.id!!) ?: false
     }
 
     /**
@@ -95,8 +98,9 @@ class OnboardingGateService(
         }
     }
 
+    /** Not ready when the association's provider has no implementation yet (HelloAsso before its adapter ships). */
     private fun isReady(association: AssociationProfile): Boolean =
-        paymentProviderRegistry.forAssociation(association).readiness(association.id!!).isReady
+        paymentProviderRegistry.findForAssociation(association)?.readiness(association.id!!)?.isReady ?: false
 
     private fun resolveAssociation(userId: UUID): AssociationProfile =
         associationProfileRepository.findByUserId(userId)

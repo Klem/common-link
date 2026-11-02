@@ -717,6 +717,7 @@ class CampaignService(
      * `BankSetupStatus.COMPLETED` condition the frontend uses to enable the publish button (see
      * `app/src/lib/bankSetupStatus.ts`). Each non-ready status maps one-to-one onto a refusal reason
      * because "not connected", "broken link" and "KYC incomplete" call for different user actions.
+     * A provider with no implementation yet (HelloAsso before its adapter ships) is refused as "not connected".
      */
     private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean) {
         if (campaign.goal <= BigDecimal.ZERO) {
@@ -747,7 +748,10 @@ class CampaignService(
             logRefusal(campaign, associationId, CampaignReviewRefusalReason.KYB_NOT_VERIFIED)
             throw UnprocessableEntityException("Association KYB must be verified before going live")
         }
-        when (paymentProviderRegistry.forAssociation(profile).readiness(associationId).status) {
+        // A provider with no implementation yet (HelloAsso before its adapter ships) is refused as not connected.
+        val readiness = paymentProviderRegistry.findForAssociation(profile)?.readiness(associationId)?.status
+            ?: ProviderReadinessStatus.NOT_CONNECTED
+        when (readiness) {
             ProviderReadinessStatus.NOT_CONNECTED -> {
                 logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_NOT_CONNECTED)
                 throw UnprocessableEntityException("Association must connect a Mollie account before going live")

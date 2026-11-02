@@ -3,6 +3,7 @@ package org.commonlink.service
 import io.mockk.every
 import io.mockk.just
 import io.mockk.runs
+import io.mockk.verify
 import io.mockk.verifyOrder
 import io.mockk.mockk
 import org.commonlink.dto.PaymentStatusDto
@@ -40,7 +41,7 @@ class AssociationPaymentServiceTest {
                 PaymentStatus(BankSetupStatus.IN_REVIEW, actionUrl = "https://provider.example/onboarding", warnings = listOf("w"))
         }
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(association)
-        every { registry.forAssociation(association) } returns provider
+        every { registry.findForAssociation(association) } returns provider
 
         assertEquals(
             PaymentStatusDto(
@@ -69,7 +70,7 @@ class AssociationPaymentServiceTest {
             every { paymentStatus(associationId) } returns PaymentStatus(BankSetupStatus.COMPLETED)
         }
         every { associationProfileRepository.findByUserId(userId) } returns Optional.of(association)
-        every { registry.forAssociation(association) } returns provider
+        every { registry.findForAssociation(association) } returns provider
 
         service.getPaymentStatus(userId)
 
@@ -77,5 +78,26 @@ class AssociationPaymentServiceTest {
             provider.refreshStatusIfStale(associationId)
             provider.paymentStatus(associationId)
         }
+    }
+
+    @Test
+    fun `reports NOT_CONNECTED for a provider with no implementation yet, never another provider's status`() {
+        val association = mockk<AssociationProfile> {
+            every { id } returns associationId
+            every { paymentProvider } returns PaymentProviderId.HELLOASSO
+        }
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(association)
+        every { registry.findForAssociation(association) } returns null
+
+        assertEquals(
+            PaymentStatusDto(
+                provider = PaymentProviderId.HELLOASSO,
+                status = BankSetupStatus.NOT_CONNECTED,
+                actionUrl = null,
+                warnings = emptyList(),
+            ),
+            service.getPaymentStatus(userId),
+        )
+        verify(exactly = 0) { registry.forAssociation(any()) }
     }
 }

@@ -1,6 +1,8 @@
 package org.commonlink.payment
 
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.exception.ConflictException
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 /**
@@ -13,6 +15,8 @@ import org.springframework.stereotype.Service
 @Service
 class PaymentProviderRegistry(providers: List<PaymentProvider>) {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     private val byId: Map<PaymentProviderId, PaymentProvider> = providers.associateBy { it.id }
 
     init {
@@ -22,17 +26,29 @@ class PaymentProviderRegistry(providers: List<PaymentProvider>) {
     }
 
     /**
-     * Returns the provider that handles new payments and collection gates for [association].
+     * Returns the provider of [association] ([AssociationProfile.paymentProvider]), or `null` when that provider has
+     * no implementation yet (HelloAsso before its adapter ships). Never falls back to another provider.
      *
-     * Always [PaymentProviderId.MOLLIE] for now: the per-association provider (`association_profiles.payment_provider`)
-     * is read from lot C onwards.
+     * For read paths and collection gates: a `null` result means "not ready to collect" (status `NOT_CONNECTED`,
+     * no link started, every gate closed).
      *
      * @param association the association collecting donations.
-     * @throws IllegalStateException when no Mollie provider is registered (wiring error).
+     */
+    fun findForAssociation(association: AssociationProfile): PaymentProvider? = byId[association.paymentProvider]
+
+    /**
+     * Returns the provider that takes new payments for [association] ([AssociationProfile.paymentProvider]).
+     * Never falls back to another provider.
+     *
+     * @param association the association collecting donations.
+     * @throws ConflictException when the association's provider has no implementation yet (HelloAsso before its
+     *   adapter ships).
      */
     fun forAssociation(association: AssociationProfile): PaymentProvider =
-        byId[PaymentProviderId.MOLLIE]
-            ?: throw IllegalStateException("No payment provider registered for ${PaymentProviderId.MOLLIE}")
+        findForAssociation(association) ?: run {
+            logger.warn("Payment provider {} unavailable for association {}", association.paymentProvider, association.id)
+            throw ConflictException("Payment provider ${association.paymentProvider} is not available yet")
+        }
 
     /**
      * Returns the provider that created [providerRef], read from its prefix — never from the association's current

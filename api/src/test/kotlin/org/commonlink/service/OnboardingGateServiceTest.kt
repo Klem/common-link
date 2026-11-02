@@ -7,6 +7,7 @@ import org.commonlink.entity.MollieOAuthState
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.UserNotFoundException
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.MollieConnectionRepository
@@ -195,5 +196,37 @@ class OnboardingGateServiceTest {
                 .apply { onboardingStatus = MollieOnboardingStatus.NEEDS_DATA }
         )
         assertTrue(onboardingGate.isPaymentLinkStarted(userId))
+    }
+
+    // ── Provider with no implementation yet (HELLOASSO before its adapter) ───────
+
+    /**
+     * The association carries a ready Mollie connection and a live OAuth state, then is moved to HELLOASSO:
+     * the gates must read HELLOASSO as "not ready / not started", never fall back to the Mollie data.
+     */
+    private fun moveToHelloAssoWithMollieData() {
+        mollieConnectionRepository.save(completedConnection(canReceivePayments = true))
+        mollieOAuthStateRepository.save(
+            MollieOAuthState(
+                state = UUID.randomUUID().toString(),
+                association = association,
+                expiresAt = Instant.now().plusSeconds(600),
+            )
+        )
+        association.paymentProvider = PaymentProviderId.HELLOASSO
+        associationProfileRepository.save(association)
+    }
+
+    @Test
+    fun `requireBankReady - throws for a HELLOASSO association even with a ready Mollie connection`() {
+        moveToHelloAssoWithMollieData()
+        assertThrows<ConflictException> { onboardingGate.requireBankReady(userId) }
+        assertFalse(onboardingGate.isBankReady(userId))
+    }
+
+    @Test
+    fun `isPaymentLinkStarted - false for a HELLOASSO association even with Mollie link data`() {
+        moveToHelloAssoWithMollieData()
+        assertFalse(onboardingGate.isPaymentLinkStarted(userId))
     }
 }

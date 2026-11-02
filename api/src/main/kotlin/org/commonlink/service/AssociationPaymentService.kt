@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import org.commonlink.dto.PaymentStatusDto
 import org.commonlink.exception.UserNotFoundException
+import org.commonlink.payment.BankSetupStatus
 import org.commonlink.payment.PaymentProviderRegistry
 import org.commonlink.repository.AssociationProfileRepository
 import org.springframework.stereotype.Service
@@ -23,6 +24,9 @@ class AssociationPaymentService(
      * then the status is read from the database ([org.commonlink.payment.PaymentProvider.paymentStatus]) — the same
      * freshness as `GET /api/mollie/connect/status` for a Mollie association.
      *
+     * When the association's provider has no implementation yet (HelloAsso before its adapter ships), returns
+     * that provider with [BankSetupStatus.NOT_CONNECTED] and no refresh — never another provider's status.
+     *
      * Deliberately not wrapped in one transaction: the refresh commits in its own transactions, and the following
      * read must see them.
      *
@@ -32,7 +36,13 @@ class AssociationPaymentService(
     fun getPaymentStatus(userId: UUID): PaymentStatusDto {
         val association = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
-        val provider = paymentProviderRegistry.forAssociation(association)
+        val provider = paymentProviderRegistry.findForAssociation(association)
+            ?: return PaymentStatusDto(
+                provider = association.paymentProvider,
+                status = BankSetupStatus.NOT_CONNECTED,
+                actionUrl = null,
+                warnings = emptyList(),
+            )
         val associationId = association.id!!
         provider.refreshStatusIfStale(associationId)
         val status = provider.paymentStatus(associationId)

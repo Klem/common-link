@@ -21,6 +21,7 @@ import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.LegalDocumentRepository
 import org.commonlink.repository.MollieConnectionRepository
@@ -1340,6 +1341,27 @@ class CampaignServiceTest {
         associationProfileRepository.save(assoc)
         val campaign = campaignService.createCampaign(
             userId, CreateCampaignRequest(name = "No Mollie journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
+        }
+
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("BANK_NOT_CONNECTED"))
+    }
+
+    /** A HELLOASSO association has no provider before lot F: refused as not connected, its Mollie data ignored. */
+    @Test
+    fun `publish - HELLOASSO association without provider is journaled with BANK_NOT_CONNECTED`() {
+        linkMollie(userId)
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        assoc.paymentProvider = PaymentProviderId.HELLOASSO
+        associationProfileRepository.save(assoc)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "HelloAsso journal", goal = BigDecimal("10000"))
         )
         makePublishable(userId, campaign.id)
 
