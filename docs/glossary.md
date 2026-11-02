@@ -285,6 +285,10 @@ One of the three login methods. Users click "Continue with Google" → a popup o
 
 ## I
 
+### HelloAsso Connection (HelloAssoConnection)
+The link between an association and its HelloAsso account in API keys mode: one row per association, created before the link so the association can be shown its notification URL (opaque token) while linking, then holding the organization slug, the `client_id` and the encrypted tokens. States: `NOT_LINKED`, `ACTIVE`, `BROKEN` (refresh token rejected, keys must be re-entered), `DISCONNECTED` (tokens erased, row and token kept). The `client_secret` is never stored. Kept when the association moves to another **Payment Provider**.
+`technical`
+
 ### IBAN (International Bank Account Number)
 Standardized unique identifier for a bank account at the international level (ISO 13616 standard). Composed of 2 country code letters, 2 check digits and the BBAN (Basic Bank Account Number), on a maximum of 34 characters. On CommonLink, beneficiary IBANs are validated via the mod-97 algorithm and can be verified via the VOP service.
 `technical` `functional`

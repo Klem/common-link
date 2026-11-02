@@ -2,6 +2,7 @@ package org.commonlink
 
 import org.commonlink.config.BridgeProperties
 import org.commonlink.config.DonationCapProperties
+import org.commonlink.config.HelloAssoProperties
 import org.commonlink.config.MollieConnectConfig
 import org.commonlink.config.MollieProperties
 import org.commonlink.config.OnchainConfig
@@ -26,6 +27,7 @@ import org.springframework.boot.runApplication
     TechnicalAlertProperties::class,
     BridgeProperties::class,
     PaymentsProperties::class,
+    HelloAssoProperties::class,
 )
 class CommonLinkApplication
 

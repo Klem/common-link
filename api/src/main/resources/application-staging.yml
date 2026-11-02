@@ -220,6 +220,10 @@ app:
     # afterwards. Existing associations stay MOLLIE; the curator sets MOLLIE by hand on request.
     default-provider: ${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}
 
+  helloasso:
+    # Staging runs against the HelloAsso sandbox (base defaults); only the notification URL prefix differs.
+    notification-base-url: ${HELLOASSO_NOTIFICATION_BASE_URL:}
+
 
 commonlink:
   compliance:

@@ -204,14 +204,31 @@ app:
       # the last donation of a campaign over a few euros of overshoot.
       margin-percent: ${APP_DONATION_CAP_MARGIN_PERCENT:10}
       # Open payment sessions are counted against the cap for this long, so simultaneous checkouts
-      # cannot collectively overshoot. Must stay above Mollie's ~15 min expiry of an untouched
-      # payment, otherwise capacity is released while it is still payable.
-      reservation-ttl: ${APP_DONATION_CAP_RESERVATION_TTL:PT30M}
+      # cannot collectively overshoot. Must stay above every provider's payable window (Mollie ~15 min,
+      # HelloAsso 45 min before abandonment), otherwise capacity is released while it is still payable.
+      reservation-ttl: ${APP_DONATION_CAP_RESERVATION_TTL:PT50M}
 
   payments:
     # Payment provider given to a newly created association (PaymentsProperties); never re-read
     # afterwards. Existing associations stay MOLLIE; the curator sets MOLLIE by hand on request.
     default-provider: ${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}
+
+  helloasso:
+    # HelloAsso API keys mode (HelloAssoProperties). Sandbox by default: never the production API by accident.
+    api-base-url: ${HELLOASSO_API_BASE_URL:https://api.helloasso-sandbox.com/v5}
+    oauth-token-url: ${HELLOASSO_OAUTH_TOKEN_URL:https://api.helloasso-sandbox.com/oauth2/token}
+    # Notification source IPs (sandbox 4.233.135.234, prod 51.138.206.200), comma-separated.
+    allowed-notification-ips: ${HELLOASSO_ALLOWED_NOTIFICATION_IPS:4.233.135.234}
+    # Local / E2E mode without HelloAsso network calls — never in prod.
+    mock: ${HELLOASSO_MOCK:false}
+    # Public base URL of this API, prefix of each association's notification URL. Blank = not configured.
+    notification-base-url: ${HELLOASSO_NOTIFICATION_BASE_URL:}
+    token-refresh-interval: ${HELLOASSO_TOKEN_REFRESH_INTERVAL:P7D}
+    eligibility-pending-interval: ${HELLOASSO_ELIGIBILITY_PENDING_INTERVAL:PT2H}
+    eligibility-ready-interval: ${HELLOASSO_ELIGIBILITY_READY_INTERVAL:P1D}
+    reconciler-stale-after: ${HELLOASSO_RECONCILER_STALE_AFTER:PT15M}
+    checkout-abandon-after: ${HELLOASSO_CHECKOUT_ABANDON_AFTER:PT45M}
+    eligibility-refresh-rate-limit: ${HELLOASSO_ELIGIBILITY_REFRESH_RATE_LIMIT:PT1M}
 
 commonlink:
   compliance:

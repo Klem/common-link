@@ -582,3 +582,19 @@ enum class ActionPlaceType(val scope: CampaignScope) {
     /** A foreign country; code = ISO 3166-1 alpha-2 (never `FR`). */
     PAYS(CampaignScope.INTERNATIONALE),
 }
+
+/**
+ * Lifecycle of a [HelloAssoConnection].
+ *
+ * Stored as a string column with a CHECK constraint (V88) whose values must stay identical to these entries.
+ */
+enum class HelloAssoConnectionState {
+    /** Row created (notification token issued) but no API keys linked yet. */
+    NOT_LINKED,
+    /** Keys linked and the refresh token works. */
+    ACTIVE,
+    /** HelloAsso rejected the refresh token; the association must re-enter its keys. */
+    BROKEN,
+    /** Disconnected by the association: tokens erased, row and notification token kept for history. */
+    DISCONNECTED,
+}
