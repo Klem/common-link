@@ -456,6 +456,10 @@ The line on the fiscal receipt stating how the donor actually paid. The provider
 The payment service provider (PSP) that collects donations on an association's behalf — **Mollie** today, **HelloAsso** planned. CommonLink never holds funds and takes no fee, whichever the provider. In the code, `PaymentProvider` is the port between the donation domain and a provider: readiness check, link status, checkout creation, payment re-read. Every donation's provider reference starts with the provider's prefix (`mollie:`, `helloasso:`).
 `technical` `business`
 
+### Payment Provider Change
+A curator (or admin) moving an association to another **Payment Provider** from its back-office dossier, with a mandatory reason (at most 500 characters). Only new payments are affected: the previous provider's connection is kept and payments already in flight stay with the provider that took them. Each effective change is written to the compliance journal (`PAYMENT_PROVIDER_CHANGED`: from, to, reason, curator) and emailed to the association without the reason; choosing the current provider changes nothing. New associations get HelloAsso by default; Mollie is set this way on an association's specific request.
+`functional` `compliance`
+
 ### Payment Provider Registry (PaymentProviderRegistry)
 The component that picks the **Payment Provider** to use: by association for new payments and collection gates, by reference prefix for payments already in flight. In-flight payments always follow their prefix, never the association's current provider, so a donation started before a provider change is still settled by the provider that took it.
 `technical`

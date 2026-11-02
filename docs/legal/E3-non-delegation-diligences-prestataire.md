@@ -227,6 +227,14 @@ ne leur a été attribué : l'écran du responsable de la conformité, qui prés
 inscriptions les plus récentes du journal toutes catégories confondues, les affiche sous leur
 intitulé technique.
 
+### 4.6 Complément du 2 novembre 2026 — un prestataire attribué à chaque association
+
+Chaque association porte désormais un prestataire de paiement : Mollie ou HelloAsso. Les associations existantes sont rattachées à Mollie ; depuis le 2 novembre 2026, une nouvelle association est rattachée par défaut à HelloAsso, et Mollie ne lui est attribué par le curateur qu'à sa demande.
+
+**HelloAsso n'est pas intégré à la plateforme** : aucun appel, aucune connexion, aucun flux de données dans un sens ou dans l'autre. Une association rattachée à HelloAsso est tenue pour dépourvue de compte prestataire : la seconde condition du point 4.1 n'est jamais remplie pour elle, et l'ouverture d'une collecte lui est refusée. La conclusion du point 4.3 est inchangée pour Mollie et **ne s'étend pas à HelloAsso**, qui devra faire l'objet de la même analyse lors de son intégration.
+
+Le changement de prestataire est réservé au curateur (ou à l'administrateur), sur motif obligatoire. Il est inscrit au journal de conformité (`PAYMENT_PROVIDER_CHANGED` : ancien et nouveau prestataire, motif, compte du curateur). La connexion Mollie existante n'est pas supprimée ; le changement ne transmet aucune donnée au prestataire et n'en reçoit aucune.
+
 ## 5. Les éléments de preuve
 
 La démonstration du point 4.1 — indépendance et cumul des deux procédures — est établie par
@@ -341,6 +349,8 @@ Cette fiche ne couvre pas non plus :
   E3 — Identification des bénéficiaires effectifs d'une association* ;
 - le **contrôle des mesures de gel des avoirs**, ni sur l'association, ni sur ses représentants,
   ni sur les donateurs — *traité depuis par les fiches de l'épique E4* ;
+- les **diligences propres à HelloAsso** : ce prestataire n'est pas intégré ; aucune association ne peut collecter
+  par son intermédiaire, et la question de la tierce introduction n'a pas été instruite pour lui (point 4.6) ;
 - la **surveillance des opérations atypiques** et la déclaration de soupçon ;
 - la **conservation** des pièces justificatives et le **rapport annuel** d'activité.
 
@@ -401,5 +411,5 @@ complétée le 12 octobre 2026 par la lecture du point d'écriture unique décri
 
 ---
 
-*Document établi le 10 août 2026, complété le 21 août 2026 (point 4.4 — retrait intégral du prestataire antérieur), le 21 septembre 2026 (point 4.2 — aide au remplissage et modale d'information affichées à l'association) puis le 12 octobre 2026 (point 4.5 — suivi de l'état du dossier, parcours guidé, re-téléchargement des pièces et attestation de saisie personnelle). Une fiche de même nature sera produite pour chaque contrôle
+*Document établi le 10 août 2026, complété le 21 août 2026 (point 4.4 — retrait intégral du prestataire antérieur), le 21 septembre 2026 (point 4.2 — aide au remplissage et modale d'information affichées à l'association) le 12 octobre 2026 (point 4.5 — suivi de l'état du dossier, parcours guidé, re-téléchargement des pièces et attestation de saisie personnelle) puis le 2 novembre 2026 (point 4.6 — prestataire attribué par association, HelloAsso non intégré). Une fiche de même nature sera produite pour chaque contrôle
 du dispositif LCB-FT au fur et à mesure de sa réalisation.*

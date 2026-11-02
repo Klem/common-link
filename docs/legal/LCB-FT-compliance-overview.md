@@ -135,7 +135,7 @@ Cinq contrôles couvrant le processus de vérification d'une association avant l
 
 3. **Identification des bénéficiaires effectifs** — recueil et documentation des personnes physiques exerçant le contrôle effectif de l'association au sens de l'article R. 561-1 CMF. Ces personnes sont également soumises au filtrage de gel des avoirs.
 
-4. **Non-délégation des diligences à un prestataire** — confirmation documentée que les vérifications LCB-FT de la plateforme sont menées indépendamment des vérifications réalisées par les prestataires de paiement (Mollie). Les données transmises par ces prestataires ne se substituent pas aux diligences propres de la plateforme.
+4. **Non-délégation des diligences à un prestataire** — confirmation documentée que les vérifications LCB-FT de la plateforme sont menées indépendamment des vérifications réalisées par les prestataires de paiement (Mollie). Les données transmises par ces prestataires ne se substituent pas aux diligences propres de la plateforme. *Depuis le 2 novembre 2026, chaque association porte un prestataire de paiement (Mollie ou HelloAsso), HelloAsso étant attribué par défaut à toute nouvelle association ; HelloAsso n'est pas intégré : aucune association ne peut collecter par son intermédiaire, et l'analyse de non-délégation ne porte que sur Mollie.*
 
 5. **Verrou de vérification avant ouverture de collecte** — la publication d'une campagne est conditionnée à l'achèvement de la vérification KYB de l'association. Ce verrou est automatique et ne peut pas être contourné.
 
@@ -265,6 +265,12 @@ rien et n'établit pas qui a rempli le dossier. Le paiement test de 0,01 € que
 pour achever sa validation est une consigne donnée à l'association : la plateforme ne le détecte
 pas et ne l'enregistre pas.
 
+**Complément du 2 novembre 2026 — prestataire de paiement attribué par association**
+
+Chaque association porte désormais un prestataire de paiement : Mollie ou HelloAsso. Les associations existantes restent sur Mollie ; depuis le 2 novembre 2026, une nouvelle association reçoit HelloAsso par défaut, et Mollie ne lui est attribué que par le curateur, à sa demande. **HelloAsso n'est pas intégré** : aucun échange n'a lieu avec ce prestataire. Une association qui lui est rattachée est tenue pour non connectée : sa publication est refusée (motif `BANK_NOT_CONNECTED`), son widget et sa page publique affichent la collecte comme indisponible, et elle ne peut recevoir aucun don. Seul Mollie encaisse aujourd'hui.
+
+Le changement de prestataire est réservé au curateur (ou à l'administrateur), sur motif obligatoire. Il est inscrit au journal de conformité (`PAYMENT_PROVIDER_CHANGED` : ancien et nouveau prestataire, motif, compte du curateur) et notifié à l'association par courriel, sans le motif. La connexion Mollie existante est conservée, mais n'est plus consultée ni renouvelée tant que l'association n'est plus rattachée à Mollie. Les paiements déjà engagés restent suivis auprès de Mollie quel que soit le prestataire courant. Le suivi du dossier chez le prestataire décrit ci-dessus ne concerne que les associations rattachées à Mollie.
+
 **Exigence couverte** : Responsabilité n° 3 — Entrée en relation et vérification de l'association. *(Partiellement — vérifications à l'entrée livrées ; surveillance périodique et révision des dossiers existants restent à compléter.)*
 
 ---
@@ -360,7 +366,7 @@ Les tableaux suivants couvrent l'intégralité du parcours, des contrôles pré-
 | Modération du dossier d'identification | Opérateur (curateur) | Geste humain | Bloquant — aucune campagne possible sans dossier validé | Curateur (validation ou rejet motivé) |
 | Objectif de campagne strictement positif | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée | Association (corriger l'objectif) |
 | Vérification KYB avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée si statut KYB non vérifié | Curateur (compléter la procédure de vérification) |
-| Compte Mollie connecté avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée sans compte de paiement connecté | Association (se connecter à Mollie) |
+| Compte Mollie connecté avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée sans compte de paiement connecté, ou lorsque le prestataire de l'association est HelloAsso, non intégré (motif journalisé `BANK_NOT_CONNECTED`) | Association (se connecter à Mollie) — *pour une association rattachée à HelloAsso (défaut depuis le 2 novembre 2026), seul le curateur peut lui attribuer Mollie, à sa demande* |
 | KYC Mollie complète avant publication | Association lors de la demande de publication | Automatique sur événement | Bloquant — publication refusée si KYC Mollie incomplète. *Apprécié sur l'état enregistré par la plateforme, qui n'est plus réactualisé une fois le compte validé et autorisé à encaisser : une perte de validation ultérieure chez Mollie n'est pas détectée (section 7.2, responsabilité n° 3)* | Association (finaliser l'onboarding Mollie) |
 
 ### 5.2 Contrôles ajoutés dans ce sprint (LCB-FT)
@@ -506,6 +512,7 @@ L'infrastructure est livrée. Le seul travail restant est le prérequis non tech
 | Statut d'activité des associations identifiées par leur seul numéro SIREN sans numéro RNA connu — la consultation du Journal officiel, qui s'effectue sur le numéro RNA, n'a pas lieu pour elles | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Voie d'entrée pour les associations dépourvues de numéro SIREN dont les annonces au Journal officiel sont antérieures à 2010 — leur numéro RNA n'est retrouvable par aucune source consultée ; conditionné à l'arbitrage de la section 7.3 | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Détection de la perte de validation chez le prestataire de paiement d'un compte qui encaisse déjà, alerte de la conformité et journal des changements d'état — **limite antérieure, déclarée comme écart ouvert le 12 octobre 2026**, la conduite à tenir (alerte sans coupure automatique, ou coupure automatique) restant à trancher. Mécanisme hors dispositif LCB-FT ; il conditionne l'actualité de la seconde condition du verrou cumulatif *(fiche Suivi de l'état du dossier chez le prestataire, point 6)* | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Intégration de HelloAsso, attribué par défaut aux nouvelles associations depuis le 2 novembre 2026 mais non intégré — aucune collecte possible par son intermédiaire ; l'analyse de non-délégation devra être conduite pour ce prestataire à son intégration | *Sprint « Coexistence Mollie + HelloAsso », lots E à H* |
 
 **Responsabilité n° 4 — Gel des avoirs**
 
@@ -575,5 +582,7 @@ Deux travaux sont exigibles avant l'ouverture de l'encaissement, indépendamment
 *La mise à jour du 21 août porte sur les développements survenus depuis le 18 août 2026 et sur ce qu'ils modifient dans les affirmations du présent document. Six points en constituent la substance : la voie de contournement du cloisonnement de la fonction conformité, constatée et corrigée le 20 août 2026 (épique E1) ; l'état réel de la responsabilité n° 2 — absence de tout point d'entrée d'attribution d'un niveau de risque, révision du document de classification rédigée sans être mise en vigueur, divergence sur sa date d'adoption ; l'ouverture de l'entrée en relation aux associations dont le numéro RNA n'est pas connu, et les deux écarts de conception qu'elle rend significatifs (épique E3) ; l'indépendance désormais requise du déclencheur de mise à jour du registre de gel vis-à-vis du composant blockchain (épique E4) ; la portée exacte de la couverture automatisée des mécanismes de niveau base de données, qui établit l'application des migrations sans établir l'effet du garde-fou d'immuabilité ; et la tenue d'une revue de sécurité du dispositif, avec trois risques explicitement acceptés en l'état.*
 
 *Complément du 12 octobre 2026 : suivi du dossier de l'association chez le prestataire de paiement (épique E3, section 6 et section 7.2) — sans modification de l'état des livrables du dispositif arrêté au 21 août 2026.*
+
+*Complément du 2 novembre 2026 : prestataire de paiement attribué par association, changement par le curateur journalisé (épique E3, sections 5.1, 6 et 7.2) — sans modification de l'état des livrables du dispositif arrêté au 21 août 2026.*
 
 *Ce document est une synthèse de travaux en cours. Il sera mis à jour à chaque sprint livrant des éléments du dispositif LCB-FT.*

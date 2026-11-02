@@ -109,7 +109,7 @@ vocation réglementaire — l'énumération a été alignée sur le code réel :
 | `BUDGET_UNBALANCED` | Budget prévisionnel absent ou déséquilibré (tolérance d'un euro) |
 | `IMPACT_GOALS_MISSING` | Résultat attendu absent ou inférieur à vingt caractères |
 | `KYB_NOT_VERIFIED` | Dossier d'identification de l'association non vérifié |
-| `BANK_NOT_CONNECTED` | Aucun compte Mollie connecté |
+| `BANK_NOT_CONNECTED` | Aucun compte Mollie connecté, ou association rattachée à HelloAsso, non intégré *(depuis le 2 novembre 2026)* |
 | `BANK_CONNECTION_BROKEN` | Connexion Mollie rompue |
 | `BANK_KYC_INCOMPLETE` | Vérification d'identité Mollie non aboutie |
 | `CGU_NOT_ACCEPTED` | Conditions générales d'utilisation non acceptées (art. 1740 A CGI) |

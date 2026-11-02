@@ -54,7 +54,10 @@ de son contenu.
 **Ce contrôle est :**
 
 - **automatique** — il est déclenché par le système lui-même dès qu'un donateur soumet le formulaire
-  de don, sans intervention ni décision d'un opérateur ;
+  de don, sans intervention ni décision d'un opérateur. Une tentative de don vers une collecte qui ne
+  peut pas encaisser (prestataire de l'association non prêt) ou au-delà du plafond est refusée avant le
+  contrôle, sans création de profil de donateur ni inscription au journal : aucun paiement ne pouvant
+  en résulter, le contrôle n'a pas d'objet ;
 - **bloquant** — aucun paiement n'est initié si le contrôle révèle une correspondance avec le
   registre, ou s'il ne peut pas être mené à son terme. Le donateur ne dispose d'aucun moyen de
   contourner ce refus ;
