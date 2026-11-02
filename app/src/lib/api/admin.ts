@@ -2,6 +2,8 @@ import api from '@/lib/api';
 import type { VerificationStatus } from '@/types/association';
 import type {
   AdminVerificationSummaryDto,
+  ChangePaymentProviderRequest,
+  PaymentProviderPreview,
   AdminVerificationDetailDto,
   BeneficialOwnerDto,
   AddBeneficialOwnerRequest,
@@ -140,3 +142,24 @@ export const downloadVerificationDocument = async (
   const fileName = match ? match[1].replace(/['"]/g, '') : `document-${docId}`;
   return { blob: response.data as Blob, fileName };
 };
+
+/**
+ * Fetches the association's payment provider and the impact of changing it (no network call to any provider).
+ * `GET /api/admin/associations/{associationId}/payment-provider`
+ */
+export const getPaymentProviderPreview = (associationId: string): Promise<PaymentProviderPreview> =>
+  api
+    .get<PaymentProviderPreview>(`/api/admin/associations/${associationId}/payment-provider`)
+    .then((r) => r.data);
+
+/**
+ * Moves the association's new payments to another provider (journaled, emailed to the association without the reason).
+ * `PUT /api/admin/associations/{associationId}/payment-provider` — returns the updated preview; 422 on an invalid reason.
+ */
+export const changePaymentProvider = (
+  associationId: string,
+  request: ChangePaymentProviderRequest,
+): Promise<PaymentProviderPreview> =>
+  api
+    .put<PaymentProviderPreview>(`/api/admin/associations/${associationId}/payment-provider`, request)
+    .then((r) => r.data);

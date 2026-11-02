@@ -27,6 +27,7 @@ const sampleWidget = {
   campaignCoverImage: null,
   currency: 'EUR',
   widgetAllowedOrigin: null,
+  collectAvailable: true,
 };
 
 function fillValidForm() {
@@ -79,6 +80,27 @@ describe('EmbedDonateClient', () => {
       expect(screen.getByText(/Collecte de livres/)).toBeInTheDocument();
     });
     expect(screen.getByText('Une belle campagne.')).toBeInTheDocument();
+  });
+
+  it('shows collectUnavailable above an inert form when the association cannot collect', async () => {
+    mockGetWidget.mockResolvedValue({ ...sampleWidget, collectAvailable: false });
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.collectUnavailable')).toBeInTheDocument();
+    });
+    expect(screen.getByText('25 €')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
+  it('keeps the form live when the association can collect', async () => {
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Les Petits Écoliers')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('errors.collectUnavailable')).not.toBeInTheDocument();
+    expect(screen.getByText('25 €')).not.toBeDisabled();
   });
 
   it('shows error when widget token is 404', async () => {

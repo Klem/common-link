@@ -64,6 +64,12 @@ interface DonationFormProps {
    * Undefined leaves the cap entirely to the backend — which checks it in every case (rule 8).
    */
   remainingCapacity?: number;
+  /**
+   * The association's payment provider cannot collect right now (`PublicWidgetDto.collectAvailable` false, or a
+   * landing page with donations disabled outside preview). Shows "temporarily unavailable" above an inert form
+   * instead of letting the donor fill everything in only to be refused on submit.
+   */
+  collectUnavailable?: boolean;
   onAmountChange?: (amount: number | undefined) => void;
 }
 
@@ -77,6 +83,7 @@ export function DonationForm({
   submitLabel,
   disabled = false,
   remainingCapacity,
+  collectUnavailable = false,
   onAmountChange,
 }: DonationFormProps) {
   const t = useTranslations('widget');
@@ -91,11 +98,11 @@ export function DonationForm({
   // (`disabled`): an unpublished campaign has no meaningful capacity — its goal may still be zero —
   // and telling an association its own draft page is "already full" is the very confusion the
   // `disabled` state exists to avoid.
-  const campaignFull = !disabled && remainingCapacity === 0;
+  const campaignFull = !disabled && !collectUnavailable && remainingCapacity === 0;
 
   // `blocked` comes from the submission lifecycle; `disabled` is the caller's decision. Both make
   // every control inert, so the rest of the form reads a single flag.
-  const inert = blocked || disabled || campaignFull;
+  const inert = blocked || disabled || campaignFull || collectUnavailable;
 
   // At least one preset is disabled by the cap — explains the greyed-out buttons below without
   // disclosing the exact remaining amount.
@@ -130,6 +137,7 @@ export function DonationForm({
       {/* Amount selector */}
       <div style={styles.section}>
         <p style={styles.sectionLabel}>{t('amounts.title')}</p>
+        {collectUnavailable && <p className={s.error}>{t('errors.collectUnavailable')}</p>}
         {campaignFull && <p className={s.error}>{t('errors.capFull')}</p>}
         {nearingCap && <p style={styles.hint}>{t('amounts.nearingCap')}</p>}
         <div style={styles.amountGrid}>

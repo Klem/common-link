@@ -23,3 +23,12 @@ export interface PaymentStatusResponse {
   /** HelloAsso-specific link details; null or absent for other providers. Typed with the HelloAsso journey. */
   helloasso?: null;
 }
+
+/** Whether an association can collect through a provider (mirror of the backend `ProviderReadinessStatus`). */
+export const ProviderReadinessStatus = {
+  NOT_CONNECTED: 'NOT_CONNECTED',
+  BROKEN: 'BROKEN',
+  PENDING: 'PENDING',
+  READY: 'READY',
+} as const;
+export type ProviderReadinessStatus = typeof ProviderReadinessStatus[keyof typeof ProviderReadinessStatus];

@@ -856,6 +856,37 @@
         "reviewFrequency": "Fréquence de contrôle :",
         "title": "Mesures de vigilance applicables",
         "version": "Référentiel"
+      },
+      "paymentProvider": {
+        "title": "Prestataire de paiement",
+        "loading": "Chargement du prestataire…",
+        "error": "Impossible de charger le prestataire de paiement.",
+        "current": "Prestataire actuel",
+        "providers": {
+          "MOLLIE": "Mollie",
+          "HELLOASSO": "HelloAsso"
+        },
+        "readiness": {
+          "READY": "Prêt à encaisser",
+          "PENDING": "Vérification en cours",
+          "BROKEN": "Liaison rompue",
+          "NOT_CONNECTED": "Non relié",
+          "UNAVAILABLE": "Non disponible (pas encore intégré)"
+        },
+        "target": "Nouveau prestataire",
+        "reason": "Motif du changement (obligatoire, interne)",
+        "reasonHint": "{count} / {max} caractères. Le motif reste au journal de conformité ; il n'est jamais envoyé à l'association.",
+        "reasonRequired": "Le motif est obligatoire.",
+        "reasonTooLong": "Le motif ne doit pas dépasser {max} caractères.",
+        "submit": "Changer de prestataire",
+        "confirmTitle": "Confirmer le changement de prestataire",
+        "confirmMessage": "Les nouveaux dons passeront de {from} à {to}. Impact : {liveCampaigns} campagne(s) en ligne, widget {widget}, {pendingDonations} don(s) en cours chez {from} (ils restent encaissés par {from}). État chez {to} : {targetReadiness}. Tant que l'association n'est pas prête chez {to}, elle ne peut plus recevoir de dons. L'association sera prévenue par e-mail.",
+        "widgetOn": "actif",
+        "widgetOff": "inactif",
+        "confirm": "Confirmer le changement",
+        "success": "Prestataire changé. L'association a été prévenue par e-mail.",
+        "invalidReason": "Motif refusé : obligatoire, {max} caractères maximum.",
+        "failed": "Le changement a échoué. Réessayez."
       }
     },
     "freezeScreen": {
@@ -3093,7 +3124,8 @@
       "fieldTooLong": "Ce champ est trop long",
       "fullNameIncomplete": "Veuillez saisir votre prénom et votre nom",
       "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
-      "submitFailed": "Une erreur est survenue. Veuillez réessayer."
+      "submitFailed": "Une erreur est survenue. Veuillez réessayer.",
+      "collectUnavailable": "La collecte de dons en ligne est momentanément indisponible pour cette campagne. Merci de réessayer un peu plus tard."
     },
     "identity": {
       "addressLine1": "Adresse",

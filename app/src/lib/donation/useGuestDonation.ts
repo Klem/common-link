@@ -94,6 +94,11 @@ export function useGuestDonation({
         // Refused on the collection cap, not on the association's ability to collect. The donor can
         // succeed with a lower amount, so the form stays live — `blocked` would make it inert.
         setSubmitError(t('errors.capExceeded'));
+      } else if (response?.status === 409 && response.data?.code === 'COLLECTION_UNAVAILABLE') {
+        // The association's payment provider stopped collecting after the page was loaded (race with the
+        // `collectAvailable` flag): come back later, the form is inert.
+        setBlocked(true);
+        setSubmitError(t('errors.collectUnavailable'));
       } else if (response?.status === 409) {
         setBlocked(true);
         setSubmitError(t('errors.notCollecting'));

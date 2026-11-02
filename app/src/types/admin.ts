@@ -1,3 +1,4 @@
+import type { PaymentProviderId, ProviderReadinessStatus } from '@/types/paymentProvider';
 import type { VerificationStatus } from '@/types/association';
 import type { DocumentSlotDto, OptionalDocumentDto } from '@/types/verification';
 
@@ -138,4 +139,32 @@ export interface AddBeneficialOwnerRequest {
   dateOfBirth?: string | null;
   origin: BeneficialOwnerOrigin;
   type: BeneficialOwnerType;
+}
+
+/** Maximum curator reason length for a payment-provider change (mirror of `PaymentProviderChangeService.REASON_MAX_LENGTH`). */
+export const PAYMENT_PROVIDER_REASON_MAX_LENGTH = 500;
+
+/** One provider in a {@link PaymentProviderPreview}; `readiness` null = provider not available yet (cannot collect). */
+export interface PaymentProviderOption {
+  provider: PaymentProviderId;
+  readiness: ProviderReadinessStatus | null;
+}
+
+/** Curator preview of an association's payment provider (`GET /api/admin/associations/{id}/payment-provider`). */
+export interface PaymentProviderPreview {
+  associationId: string;
+  currentProvider: PaymentProviderId;
+  providers: PaymentProviderOption[];
+  /** Campaigns currently LIVE. */
+  liveCampaigns: number;
+  widgetEnabled: boolean;
+  /** Donations still payable at the current provider; they stay with it after a change. */
+  pendingDonations: number;
+}
+
+/** Body of `PUT /api/admin/associations/{id}/payment-provider`. */
+export interface ChangePaymentProviderRequest {
+  provider: PaymentProviderId;
+  /** Mandatory, non-blank after trim, at most {@link PAYMENT_PROVIDER_REASON_MAX_LENGTH} characters. */
+  reason: string;
 }

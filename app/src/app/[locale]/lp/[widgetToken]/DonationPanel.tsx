@@ -13,6 +13,8 @@ interface Props {
   disabled?: boolean;
   /** Amount the campaign may still accept; forwarded to the form's collection-cap guard. */
   remainingCapacity?: number;
+  /** The association's payment provider cannot collect right now; forwarded to the form. */
+  collectUnavailable?: boolean;
   onAmountChange?: (amount: number | undefined) => void;
   /** Validated host origin when the landing runs inside `landing.js`/an iframe — see `DonationEventExtras.parentOrigin`. */
   parentOrigin?: string | null;
@@ -25,6 +27,7 @@ export function DonationPanel({
   tracking,
   disabled,
   remainingCapacity,
+  collectUnavailable,
   onAmountChange,
   parentOrigin,
 }: Props) {
@@ -43,6 +46,7 @@ export function DonationPanel({
         submitLabel={(amount) => (amount ? t('donate.submitWithAmount', { amount }) : undefined)}
         disabled={disabled}
         remainingCapacity={remainingCapacity}
+        collectUnavailable={collectUnavailable}
         onAmountChange={onAmountChange}
         parentOrigin={parentOrigin}
       />

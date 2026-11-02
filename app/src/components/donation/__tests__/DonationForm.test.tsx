@@ -140,6 +140,35 @@ describe('DonationForm — 409 blocked state', () => {
     Object.defineProperty(window, 'top', { value: window, writable: true });
   });
 
+  it('shows errors.collectUnavailable and disables form on a 409 COLLECTION_UNAVAILABLE', async () => {
+    mockCreateGuestDonation.mockRejectedValue({ response: { status: 409, data: { code: 'COLLECTION_UNAVAILABLE' } } });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.collectUnavailable')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('errors.notCollecting')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
+  it('collectUnavailable renders the message and an inert form, never the cap-full message', () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" collectUnavailable remainingCapacity={0} />,
+    );
+
+    expect(screen.getByText('errors.collectUnavailable')).toBeInTheDocument();
+    expect(screen.queryByText('errors.capFull')).not.toBeInTheDocument();
+    expect(screen.getByText('25 €')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
   it('shows errors.notCollecting and disables form on 409 response', async () => {
     mockCreateGuestDonation.mockRejectedValue({ response: { status: 409 } });
     render(

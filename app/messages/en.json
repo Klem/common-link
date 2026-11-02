@@ -856,6 +856,37 @@
         "reviewFrequency": "Review frequency:",
         "title": "Applicable vigilance measures",
         "version": "Classification"
+      },
+      "paymentProvider": {
+        "title": "Payment provider",
+        "loading": "Loading payment provider…",
+        "error": "Could not load the payment provider.",
+        "current": "Current provider",
+        "providers": {
+          "MOLLIE": "Mollie",
+          "HELLOASSO": "HelloAsso"
+        },
+        "readiness": {
+          "READY": "Ready to collect",
+          "PENDING": "Verification in progress",
+          "BROKEN": "Link broken",
+          "NOT_CONNECTED": "Not linked",
+          "UNAVAILABLE": "Not available (not integrated yet)"
+        },
+        "target": "New provider",
+        "reason": "Reason for the change (mandatory, internal)",
+        "reasonHint": "{count} / {max} characters. The reason stays in the compliance journal; it is never sent to the association.",
+        "reasonRequired": "A reason is required.",
+        "reasonTooLong": "The reason must not exceed {max} characters.",
+        "submit": "Change provider",
+        "confirmTitle": "Confirm the payment provider change",
+        "confirmMessage": "New donations will move from {from} to {to}. Impact: {liveCampaigns} live campaign(s), widget {widget}, {pendingDonations} donation(s) in progress at {from} (still collected by {from}). Status at {to}: {targetReadiness}. Until the association is ready at {to}, it can no longer receive donations. The association will be notified by email.",
+        "widgetOn": "active",
+        "widgetOff": "inactive",
+        "confirm": "Confirm the change",
+        "success": "Provider changed. The association has been notified by email.",
+        "invalidReason": "Reason refused: mandatory, {max} characters maximum.",
+        "failed": "The change failed. Please try again."
       }
     },
     "freezeScreen": {
@@ -3093,7 +3124,8 @@
       "fieldTooLong": "This field is too long",
       "fullNameIncomplete": "Please enter your first and last name",
       "notCollecting": "This organisation cannot receive online donations yet. Please try again later.",
-      "submitFailed": "An error occurred. Please try again."
+      "submitFailed": "An error occurred. Please try again.",
+      "collectUnavailable": "Online donations are temporarily unavailable for this campaign. Please try again a little later."
     },
     "identity": {
       "addressLine1": "Address",

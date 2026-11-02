@@ -13,6 +13,7 @@ import { STATUS_BADGE_CLASS } from '@/components/admin/adminShared';
 import { VerificationDocumentRow } from '@/components/admin/VerificationDocumentRow';
 import { VerificationDecisionPanel } from '@/components/admin/VerificationDecisionPanel';
 import { RegistryPreCheckBanner } from '@/components/admin/RegistryPreCheckBanner';
+import { PaymentProviderPanel } from '@/components/admin/PaymentProviderPanel';
 import { FreezeScreenStatusBanner } from '@/components/admin/FreezeScreenStatusBanner';
 import { RiskLevelBadge } from '@/components/admin/RiskLevelBadge';
 import { VigilanceMeasuresPanel } from '@/components/admin/VigilanceMeasuresPanel';
@@ -205,6 +206,9 @@ export default function VerificationDetailPage({ params }: Props) {
 
       {/* Registry pre-check — informational, loads independently */}
       <RegistryPreCheckBanner associationId={associationId} />
+
+      {/* Payment provider — current provider and curator change, loads independently */}
+      <PaymentProviderPanel associationId={associationId} />
 
       {/* Required documents */}
       <section style={{ marginBottom: 32 }}>

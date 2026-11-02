@@ -27,4 +27,13 @@ describe('DonationPanel', () => {
       expect.objectContaining({ parentOrigin: 'https://host.example' }),
     );
   });
+
+  it('forwards collectUnavailable to the donation form so it shows "temporarily unavailable"', () => {
+    render(
+      <DonationPanel widgetToken="clk_abc" sourceSite={null} locale="fr" tracking={tracking} disabled collectUnavailable />,
+    );
+    expect(donationFormMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ disabled: true, collectUnavailable: true }),
+    );
+  });
 });

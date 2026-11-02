@@ -181,6 +181,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
           embedType,
         }}
         donationsEnabled={data.donationsEnabled}
+        collectUnavailable={!data.donationsEnabled && !previewToken}
         remainingCapacity={data.remainingCapacity}
         parentOrigin={parentOrigin}
       >

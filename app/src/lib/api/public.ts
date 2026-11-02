@@ -26,6 +26,11 @@ export interface PublicWidgetDto {
   remainingCapacity: number;
   /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
   gtmContainerId: string | null;
+  /**
+   * Whether the association's payment provider can collect right now. False → the form shows "temporarily
+   * unavailable" instead of failing on submit; the backend refuses the donation anyway (code COLLECTION_UNAVAILABLE).
+   */
+  collectAvailable: boolean;
 }
 
 export interface CreateGuestDonationRequest {
