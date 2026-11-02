@@ -1113,7 +1113,7 @@
         },
         "success": "Profile updated.",
         "tabs": {
-          "bank": "Bank account",
+          "bank": "Donation collection",
           "bankBadge": {
             "notConnected": "Not connected",
             "active": "Active",
@@ -1146,7 +1146,11 @@
           "title": "Verification",
           "verified": "Your association is verified."
         },
-        "verified": "Verified"
+        "verified": "Verified",
+        "providerUnavailable": {
+          "title": "HelloAsso donation collection coming soon",
+          "body": "The journey to link your HelloAsso account is coming soon. We will let you know as soon as it is ready."
+        }
       },
       "profileCompletion": {
         "fields": {

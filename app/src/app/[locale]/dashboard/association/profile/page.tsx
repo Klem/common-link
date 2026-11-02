@@ -11,6 +11,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
 import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
+import { useAccStatusStore } from '@/stores/accStatusStore';
+import { PaymentProviderId } from '@/types/paymentProvider';
+import { PaymentProviderUnavailable } from '@/components/dashboard/PaymentProviderUnavailable';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
@@ -158,6 +161,8 @@ export default function AssociationProfilePage() {
   const [showMollieInfoModal, setShowMollieInfoModal] = useState(false);
   const [mollieInterrupted, setMollieInterrupted] = useState(false);
   const mollieKyc = useMollieKycStatus();
+  // Provider-neutral status written dashboard-wide by AssociationStatusSync; null while it loads.
+  const paymentProvider = useAccStatusStore((s) => s.paymentProvider);
   const {
     connected: mollieConnected,
     pending: molliePending,
@@ -445,7 +450,7 @@ export default function AssociationProfilePage() {
             disabled={!tabUnlocked.bank}
             title={tabUnlocked.bank ? undefined : t('association.profile.tabs.locked')}
           >
-            {tabUnlocked.bank ? '🏦' : '🔒'} {t('association.profile.tabs.bank')}{' '}
+            {tabUnlocked.bank ? '💳' : '🔒'} {t('association.profile.tabs.bank')}{' '}
             {/* Only the label follows the onboarding state (Q7); the `ok` class stays strictly `bankDone`. */}
             <span className={`set-tab-badge${bankDone ? ' ok' : ''}`}>
               {t(`association.profile.tabs.bankBadge.${bankTabBadge({
@@ -722,8 +727,15 @@ export default function AssociationProfilePage() {
           </div>
         )}
 
-        {/* ══ Onglet : Compte bancaire ══════════════════════════════════════ */}
-        {activeTab === 'bank' && (
+        {/* ══ Onglet : Encaissement des dons ══════════════════════════════════ */}
+        {/* HelloAsso has no journey yet (placeholder until S7-08); Mollie — or a provider still loading — keeps
+            the Mollie flow unchanged. */}
+        {activeTab === 'bank' && paymentProvider === PaymentProviderId.HELLOASSO && (
+          <div className="set-tab-content active">
+            <PaymentProviderUnavailable />
+          </div>
+        )}
+        {activeTab === 'bank' && paymentProvider !== PaymentProviderId.HELLOASSO && (
           <div className="set-tab-content active">
             <MollieOnboardingFlow
               kyc={mollieKyc}

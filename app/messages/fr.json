@@ -1113,7 +1113,7 @@
         },
         "success": "Profil mis à jour.",
         "tabs": {
-          "bank": "Compte bancaire",
+          "bank": "Encaissement des dons",
           "bankBadge": {
             "notConnected": "Non connecté",
             "active": "Actif",
@@ -1146,7 +1146,11 @@
           "title": "Vérification",
           "verified": "Votre association est vérifiée."
         },
-        "verified": "Vérifiée"
+        "verified": "Vérifiée",
+        "providerUnavailable": {
+          "title": "Encaissement HelloAsso bientôt disponible",
+          "body": "Le parcours pour relier votre compte HelloAsso arrive bientôt. Nous vous préviendrons dès qu'il sera prêt."
+        }
       },
       "profileCompletion": {
         "fields": {
