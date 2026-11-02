@@ -1,6 +1,7 @@
 package org.commonlink.entity
 
 import jakarta.persistence.*
+import org.commonlink.payment.PaymentProviderId
 import java.time.Instant
 import java.util.UUID
 
@@ -196,6 +197,15 @@ class AssociationProfile(
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
     var status: AssociationStatus = AssociationStatus.ACTIVE,
+
+    /**
+     * Payment service provider that collects this association's new donations. `MOLLIE` for every association
+     * created before HelloAsso support. In-flight payments are never routed by this field but by the prefix of
+     * [Donation.providerRef] (see [org.commonlink.payment.PaymentProviderRegistry.forProviderRef]).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_provider", nullable = false, length = 16)
+    var paymentProvider: PaymentProviderId = PaymentProviderId.MOLLIE,
 ) {
     /**
      * True when this association's public widget can currently accept a donation -- the exact
