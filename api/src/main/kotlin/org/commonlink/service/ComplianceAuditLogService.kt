@@ -144,6 +144,13 @@ class ComplianceAuditLogService(
          * [appendMollieSelfCompletionAttestedOnce]. A journal fact only: it never unlocks anything.
          */
         const val MOLLIE_SELF_COMPLETION_ATTESTED = "MOLLIE_SELF_COMPLETION_ATTESTED"
+
+        /**
+         * A curator moved an association to another payment provider
+         * ([org.commonlink.service.PaymentProviderChangeService.change]). Payload `{from, to, reason}`; actor =
+         * the curator. Never written for a no-op (same provider).
+         */
+        const val PAYMENT_PROVIDER_CHANGED = "PAYMENT_PROVIDER_CHANGED"
     }
 
     /**

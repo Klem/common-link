@@ -153,6 +153,24 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         @Param("since") since: Instant,
     ): Long
 
+    /**
+     * Unconfirmed donations of an association created since [since] whose `providerRef` starts with [prefix] — the
+     * payments still in flight at one provider, shown in the curator's provider-change preview.
+     */
+    @Query("""
+        SELECT COUNT(d)
+        FROM Donation d
+        WHERE d.campaign.association.id = :associationId
+          AND d.confirmedAt IS NULL
+          AND d.createdAt >= :since
+          AND d.providerRef LIKE CONCAT(:prefix, '%')
+    """)
+    fun countPendingByAssociationIdAndProviderRefPrefixSince(
+        @Param("associationId") associationId: UUID,
+        @Param("prefix") prefix: String,
+        @Param("since") since: Instant,
+    ): Long
+
     @Query("""
         SELECT COALESCE(SUM(d.amount), 0)
         FROM Donation d

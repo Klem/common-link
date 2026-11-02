@@ -1,5 +1,6 @@
 package org.commonlink.controller
 
+import org.commonlink.exception.CollectionUnavailableException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -92,6 +93,7 @@ class PublicWidgetControllerTest {
         currency = "EUR",
         widgetAllowedOrigin = "https://www.msf.fr",
         remainingCapacity = BigDecimal("7500.00"),
+        collectAvailable = true,
     )
 
     private val validRequest = CreateGuestDonationRequest(
@@ -357,6 +359,19 @@ class PublicWidgetControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRequest))
         ).andExpect(status().isConflict)
+    }
+
+    @Test
+    fun `createDonation - 409 with code COLLECTION_UNAVAILABLE when the provider cannot collect`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } throws CollectionUnavailableException()
+
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest))
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("COLLECTION_UNAVAILABLE"))
     }
 
     @Test

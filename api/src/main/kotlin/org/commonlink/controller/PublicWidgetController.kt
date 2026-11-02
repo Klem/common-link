@@ -55,7 +55,9 @@ class PublicWidgetController(
     @GetMapping("/widget/{widgetToken}")
     @Operation(
         summary = "Get widget campaign info",
-        description = "Resolves a widget token to the campaign details needed for the donation iframe. No authentication required."
+        description = "Resolves a widget token to the campaign details needed for the donation iframe. No authentication required. " +
+            "`collectAvailable` is false when the association's payment provider cannot collect right now: the form must then " +
+            "show \"temporarily unavailable\" instead of failing on submit."
     )
     @ApiResponses(
         ApiResponse(
@@ -90,7 +92,14 @@ class PublicWidgetController(
             content = [Content(schema = Schema(implementation = CreateGuestDonationResponse::class))]
         ),
         ApiResponse(responseCode = "404", description = "Unknown token or no LIVE destination campaign", content = [Content()]),
-        ApiResponse(responseCode = "409", description = "Destination campaign is not accepting donations", content = [Content()]),
+        ApiResponse(
+            responseCode = "409",
+            description = "Donation refused before anything is created. `code: COLLECTION_UNAVAILABLE` = the association's " +
+                "payment provider cannot collect right now (checked first, no guest donor created); " +
+                "`code: COLLECTION_CAP_EXCEEDED` = amount above the campaign cap; no code = campaign not accepting " +
+                "donations or donor screening refusal",
+            content = [Content()],
+        ),
         ApiResponse(responseCode = "422", description = "Validation failed (amount, email, identity or consent)", content = [Content()]),
         ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = [Content()])
     )
@@ -158,7 +167,8 @@ class PublicWidgetController(
     @Operation(
         summary = "Get landing page data",
         description = "Returns full association and campaign data for the landing page. Includes budget projection and milestones. " +
-            "No authentication required. A `preview` token issued to the owning association allows rendering a non-LIVE campaign."
+            "No authentication required. A `preview` token issued to the owning association allows rendering a non-LIVE campaign. " +
+            "`donationsEnabled` is false on a non-LIVE preview or when the association's payment provider cannot collect right now."
     )
     @ApiResponses(
         ApiResponse(

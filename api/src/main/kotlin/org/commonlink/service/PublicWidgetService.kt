@@ -13,6 +13,7 @@ import org.commonlink.entity.AssociationStatus
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Donation
+import org.commonlink.exception.CollectionUnavailableException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.payment.CheckoutRequest
@@ -59,8 +60,17 @@ class PublicWidgetService(
             widgetAllowedOrigin = association.widgetAllowedOrigin,
             remainingCapacity = donationCapService.remainingCapacity(campaign),
             gtmContainerId = association.gtmContainerId,
+            collectAvailable = isCollectAvailable(association),
         )
     }
+
+    /**
+     * Whether [association]'s payment provider can collect right now. Database reads only, no network call (contract
+     * of [org.commonlink.payment.PaymentProvider.readiness]) — safe on these unauthenticated public GETs. A provider
+     * with no implementation yet is not available.
+     */
+    private fun isCollectAvailable(association: AssociationProfile): Boolean =
+        paymentProviderRegistry.findForAssociation(association)?.readiness(association.id!!)?.isReady ?: false
 
     /**
      * Orchestrates a guest donation:
@@ -72,10 +82,14 @@ class PublicWidgetService(
      * The donation remains pending until the provider confirms the payment (notification or live re-read).
      * The provider's payment id is returned to the frontend for sessionStorage before redirect.
      *
-     * @throws ConflictException when the association's provider cannot collect right now.
+     * @throws CollectionUnavailableException when the association's provider cannot collect right now — checked
+     *   first, before anything is created.
      */
     fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
         val (association, campaign) = resolveWidget(widgetToken)
+
+        // Provider readiness first: a refused attempt must leave no guest donor and no screening journal entry.
+        if (!isCollectAvailable(association)) throw CollectionUnavailableException()
 
         // Collection cap — refuse before anything is created. A donation above the cap could only be
         // refunded, and a refund after collection is precisely what must not happen: the receipt is
@@ -235,8 +249,8 @@ class PublicWidgetService(
             widgetAllowedOrigin = association.widgetAllowedOrigin,
             landingTheme = association.landingTheme,
             landingLogo = association.landingLogo,
-            // Only ever false behind a valid preview token: resolveLanding would have thrown otherwise.
-            donationsEnabled = campaign.status == CampaignStatus.LIVE,
+            // Not LIVE only behind a valid preview token: resolveLanding would have thrown otherwise.
+            donationsEnabled = campaign.status == CampaignStatus.LIVE && isCollectAvailable(association),
             remainingCapacity = donationCapService.remainingCapacity(campaign),
             gtmContainerId = association.gtmContainerId,
         )

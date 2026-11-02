@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import org.commonlink.entity.MollieConnectionState
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.*
 import jakarta.persistence.EntityManager
@@ -109,7 +110,10 @@ class PublicWidgetServiceIntegrationTest {
         associationProfileRepository.save(assoc)
 
         // Fully onboarded connection: KYC completed, payments authorised, link not broken.
-        val mockConnection = mockk<MollieConnection> { every { canCollectDonations() } returns true }
+        val mockConnection = mockk<MollieConnection> {
+            every { state } returns MollieConnectionState.ACTIVE
+            every { canCollectDonations() } returns true
+        }
         every { mollieConnectionRepository.findByAssociationId(any()) } returns mockConnection
         every { mollieConnectTokenManager.getValidAccessToken(any()) } returns "test_assoc_token"
 
@@ -354,6 +358,14 @@ class PublicWidgetServiceIntegrationTest {
 
         // A preview relaxes the LIVE check only — it never conjures a widget into existence.
         assertThrows<NotFoundException> { publicWidgetService.getLanding("clk_does_not_exist", preview) }
+    }
+
+    @Test
+    fun `getLanding - donations disabled when the payment provider cannot collect`() {
+        every { mollieConnectionRepository.findByAssociationId(any()) } returns null
+
+        assertFalse(publicWidgetService.getLanding(widgetToken).donationsEnabled)
+        assertFalse(publicWidgetService.getWidget(widgetToken).collectAvailable)
     }
 
     @Test

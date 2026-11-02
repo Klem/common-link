@@ -92,6 +92,18 @@ interface EmailService {
     fun sendMollieConnectionBroken(associationName: String, recipientEmail: String, reconnectUrl: String)
 
     /**
+     * Informs the association that a curator moved its donation collection to another payment provider.
+     *
+     * Never carries the curator's reason: it is internal and stays in the compliance journal.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     * @param providerName    Display name of the new provider (e.g. "HelloAsso").
+     * @param dashboardUrl    Full URL of the dashboard tab where the association sets the new provider up.
+     */
+    fun sendPaymentProviderChanged(associationName: String, recipientEmail: String, providerName: String, dashboardUrl: String)
+
+    /**
      * Sends the Cerfa 2041-RD fiscal receipt PDF to the donor after on-chain confirmation.
      *
      * @param donorEmail      Donor's email address.

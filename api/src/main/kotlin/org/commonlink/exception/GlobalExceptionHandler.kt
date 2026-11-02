@@ -189,6 +189,17 @@ class GlobalExceptionHandler(
     }
 
     /**
+     * Handles [CollectionUnavailableException] with a `code: COLLECTION_UNAVAILABLE` property (HTTP 409), so the
+     * widget shows "temporarily unavailable" rather than a generic failure.
+     */
+    @ExceptionHandler(CollectionUnavailableException::class)
+    fun handleCollectionUnavailable(ex: CollectionUnavailableException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Collection unavailable")
+        problem.setProperty("code", "COLLECTION_UNAVAILABLE")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [RateLimitException] (HTTP 429).
      *
      * Includes a `Retry-After` header — [RateLimitException.retryAfterSeconds], matching whatever

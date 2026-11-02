@@ -34,7 +34,13 @@ class PaymentProviderRegistry(providers: List<PaymentProvider>) {
      *
      * @param association the association collecting donations.
      */
-    fun findForAssociation(association: AssociationProfile): PaymentProvider? = byId[association.paymentProvider]
+    fun findForAssociation(association: AssociationProfile): PaymentProvider? = find(association.paymentProvider)
+
+    /**
+     * Returns the implementation of provider [id], or `null` when it has none yet (HelloAsso before its adapter
+     * ships). For displays that list every provider, e.g. the curator's provider-change preview.
+     */
+    fun find(id: PaymentProviderId): PaymentProvider? = byId[id]
 
     /**
      * Returns the provider that takes new payments for [association] ([AssociationProfile.paymentProvider]).

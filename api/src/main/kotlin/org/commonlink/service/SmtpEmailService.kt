@@ -201,6 +201,33 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendPaymentProviderChanged(
+        associationName: String,
+        recipientEmail: String,
+        providerName: String,
+        dashboardUrl: String,
+    ) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Changement de votre solution d'encaissement des dons — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>L'équipe CommonLink a changé la solution d'encaissement des dons en ligne de l'association
+            <strong>$associationName</strong> : vos nouveaux dons seront désormais encaissés via <strong>$providerName</strong>.</p>
+            <p>Les dons déjà reçus ou en cours ne sont pas affectés.</p>
+            <p>Pour finaliser la configuration, rendez-vous dans l'onglet « Encaissement des dons » de votre tableau de bord :
+            <a href="$dashboardUrl">$dashboardUrl</a></p>
+            <p>Pour toute question, répondez simplement à cet e-mail.</p>
+            <p>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
