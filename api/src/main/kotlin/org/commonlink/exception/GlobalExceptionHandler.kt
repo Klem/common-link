@@ -189,6 +189,17 @@ class GlobalExceptionHandler(
     }
 
     /**
+     * Handles [HelloAssoLinkException] with its `code` property, so the dashboard tells invalid keys, an unresolved
+     * organization and a missing server configuration apart. Its message never carries a secret.
+     */
+    @ExceptionHandler(HelloAssoLinkException::class)
+    fun handleHelloAssoLink(ex: HelloAssoLinkException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(ex.status, ex.message ?: ex.code)
+        problem.setProperty("code", ex.code)
+        return ResponseEntity.status(ex.status).body(problem)
+    }
+
+    /**
      * Handles [CollectionUnavailableException] with a `code: COLLECTION_UNAVAILABLE` property (HTTP 409), so the
      * widget shows "temporarily unavailable" rather than a generic failure.
      */

@@ -3,12 +3,23 @@ package org.commonlink.repository
 import org.commonlink.entity.HelloAssoConnection
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.util.UUID
 
 /** Persistence of [HelloAssoConnection] — one row per association, never deleted on disconnection. */
 interface HelloAssoConnectionRepository : JpaRepository<HelloAssoConnection, UUID> {
 
     fun findByAssociationId(associationId: UUID): HelloAssoConnection?
+
+    /**
+     * Same as [findByAssociationId] with a row lock (`SELECT … FOR UPDATE`) held until the transaction ends — the
+     * single-renewal guarantee of [org.commonlink.service.HelloAssoTokenManager].
+     */
+    @Query(
+        value = "SELECT * FROM helloasso_connections WHERE association_id = :associationId FOR UPDATE",
+        nativeQuery = true,
+    )
+    fun findByAssociationIdForUpdate(@Param("associationId") associationId: UUID): HelloAssoConnection?
 
     /** Resolves the association of a notification URL; null for an unknown token. */
     fun findByWebhookToken(webhookToken: String): HelloAssoConnection?
