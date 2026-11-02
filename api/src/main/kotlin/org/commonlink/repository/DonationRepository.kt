@@ -576,18 +576,27 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     fun findByPublicRef(publicRef: UUID): Donation?
 
     /**
-     * Donations still unconfirmed [threshold] after creation — candidates for
-     * [org.commonlink.service.MolliePaymentReconciler]: either the Mollie webhook was never
-     * delivered, or it was delivered and failed processing. `providerRef` is always set by this
-     * point ([org.commonlink.service.DonationService.initiatePendingDonation] only runs after
-     * the Mollie payment itself was created), so no null-check is needed here.
+     * Donations still unconfirmed [threshold] after creation whose `providerRef` starts with [prefix] — candidates
+     * for a provider's reconciler (e.g. [org.commonlink.service.MolliePaymentReconciler] with `mollie:`): either the
+     * provider's notification was never delivered, or it was delivered and failed processing.
+     *
+     * Filters by **prefix only**, never by the association's current payment provider: a payment started before a
+     * provider change must still be settled by the provider that took it. `providerRef` is always set by this point
+     * ([org.commonlink.service.DonationService.initiatePendingDonation] only runs after the payment itself was
+     * created), so no null-check is needed here.
+     *
+     * @param prefix provider reference prefix, colon included ([org.commonlink.payment.PaymentProviderId.refPrefix]).
      */
     @Query("""
         SELECT d FROM Donation d
         WHERE d.confirmedAt IS NULL
           AND d.createdAt < :threshold
+          AND d.providerRef LIKE CONCAT(:prefix, '%')
     """)
-    fun findStalePending(@Param("threshold") threshold: Instant): List<Donation>
+    fun findStalePendingByProviderRefPrefix(
+        @Param("prefix") prefix: String,
+        @Param("threshold") threshold: Instant,
+    ): List<Donation>
 
     // ── Donor dashboard (Sprint 2 — allocation & campaign report) ─────────
 

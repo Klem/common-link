@@ -5,6 +5,7 @@ import io.mockk.every
 import io.mockk.slot
 import io.mockk.verify
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -138,6 +139,23 @@ class MolliePaymentReconcilerTest {
         assertEquals(providerRef, pathSlot.captured)
     }
 
+    /** In-flight payments follow their prefix, never the association's current provider (lot C). */
+    @Test
+    fun `stale Mollie donation of an association moved to HELLOASSO is still reconciled`() {
+        val association = campaignRepository.findById(campaignId).orElseThrow().association
+        association.paymentProvider = PaymentProviderId.HELLOASSO
+        associationProfileRepository.save(association)
+        val mollieId = "tr_moved_${UUID.randomUUID()}"
+        val providerRef = "mollie:$mollieId"
+        stalePendingDonation(providerRef)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId)
+
+        reconciler.reconcile()
+
+        verify(exactly = 1) { mollieClient.getPayment(mollieId, any()) }
+        assertNotNull(donationRepository.findByProviderRef(providerRef)?.confirmedAt)
+    }
+
     @Test
     fun `stale donation still pending at Mollie - no confirmation, no alert`() {
         val mollieId = "tr_stillpending_${UUID.randomUUID()}"
@@ -173,7 +191,7 @@ class MolliePaymentReconcilerTest {
     }
 
     /**
-     * Not a race test: `findStalePending` filters on `confirmedAt IS NULL`, so an already-confirmed
+     * Not a race test: `findStalePendingByProviderRefPrefix` filters on `confirmedAt IS NULL`, so an already-confirmed
      * donation is excluded from the candidate set outright — this asserts that exclusion, not the
      * concurrent-confirmation race itself. The actual race (reconciler picks up a stale row, the
      * real webhook confirms it between the query and [MollieWebhookService.handleWebhook] running)

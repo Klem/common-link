@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.DonationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -23,6 +24,9 @@ import java.time.Instant
  * Safe to run concurrently with a real webhook delivery: [MollieWebhookService.handleWebhook] and
  * [DonationService.recordPayment] are both idempotent on `providerRef`, so whichever path reaches
  * a donation first wins and the other is a no-op.
+ *
+ * Only `mollie:` donations are candidates, selected by prefix in SQL — never by the association's current payment
+ * provider, so a Mollie payment of an association since moved to another provider is still settled here.
  *
  * Disabled by `app.mollie.reconciler.enabled=false`, same convention as
  * [MollieTokenRefreshScheduler].
@@ -48,17 +52,16 @@ class MolliePaymentReconciler(
     )
     fun reconcile() {
         val threshold = Instant.now().minus(Duration.ofMinutes(staleAfterMinutes))
-        val stale = donationRepository.findStalePending(threshold)
-        if (stale.isEmpty()) return
+        val prefix = PaymentProviderId.MOLLIE.refPrefix
+        val stale = donationRepository.findStalePendingByProviderRefPrefix(prefix, threshold)
+        if (stale.isEmpty()) {
+            logger.debug("Reconciler: no Mollie donation pending more than {} min", staleAfterMinutes)
+            return
+        }
 
         logger.info("Reconciler: {} donation(s) pending more than {} min", stale.size, staleAfterMinutes)
         stale.forEach { donation ->
-            val paymentId = donation.providerRef.removePrefix("mollie:")
-            if (paymentId == donation.providerRef) {
-                // Not a Mollie payment (e.g. a future "stripe:" providerRef) — nothing this
-                // reconciler knows how to check.
-                return@forEach
-            }
+            val paymentId = donation.providerRef.removePrefix(prefix)
             runCatching { mollieWebhookService.handleWebhook(paymentId) }
                 .onFailure {
                     logger.warn("Reconciler could not process {}: {}", donation.providerRef, it.javaClass.simpleName)
