@@ -208,6 +208,11 @@ app:
       # payment, otherwise capacity is released while it is still payable.
       reservation-ttl: ${APP_DONATION_CAP_RESERVATION_TTL:PT30M}
 
+  payments:
+    # Payment provider given to a newly created association (PaymentsProperties); never re-read
+    # afterwards. Existing associations stay MOLLIE; the curator sets MOLLIE by hand on request.
+    default-provider: ${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}
+
 commonlink:
   compliance:
     # AES-256-GCM key for LCB-FT sensitive fields (ComplianceCryptoConverter), Base64/32 bytes.

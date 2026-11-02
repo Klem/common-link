@@ -106,6 +106,11 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `new associations default to HELLOASSO in prod`() {
+        assertEquals("\${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}", prop("app.payments.default-provider"))
+    }
+
+    @Test
     fun `curator email is required with no empty default in prod`() {
         assertEquals("\${APP_CURATOR_EMAIL}", prop("app.curator.email"))
     }

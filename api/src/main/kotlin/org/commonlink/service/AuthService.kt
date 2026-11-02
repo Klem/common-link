@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
+import org.commonlink.config.PaymentsProperties
 import org.commonlink.dto.AssociationProfileRequestDto
 import org.commonlink.dto.AssociationProfileUpsertDto
 import org.commonlink.dto.AuthResponseDto
@@ -75,6 +76,7 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val emailService: EmailService,
     private val googleIdTokenVerifier: GoogleIdTokenVerifier,
+    private val paymentsProperties: PaymentsProperties,
     @Value("\${app.frontend-url}") private val frontendUrl: String
 ) {
 
@@ -731,6 +733,7 @@ class AuthService(
      *
      * If a profile already exists, all mutable fields are updated. If no profile exists,
      * a new one is created using [dto.nom] and [dto.identifier] as the immutable identity fields,
+     * with the configured [PaymentsProperties.defaultProvider] as its payment provider,
      * and a deterministic on-chain wallet address is derived and persisted for it.
      *
      * Only users with [UserRole.ASSOCIATION] may call this method.
@@ -769,7 +772,8 @@ class AuthService(
                     contactName = dto.contact,
                     contactEmail = user.email,
                     description = dto.description,
-                    siren = derivedSiren(dto.identifier)
+                    siren = derivedSiren(dto.identifier),
+                    paymentProvider = paymentsProperties.defaultProvider,
                 )
             )
             saved.walletAddress = associationAddressGenerator.generate(saved.id!!)
@@ -909,7 +913,8 @@ class AuthService(
      *
      * For [UserRole.DONOR], a blank [DonorProfile] is created.
      * For [UserRole.ASSOCIATION], an [AssociationProfile] is created only when [assocReq] is
-     * provided (magic-link and email/password sign-up), with a deterministic on-chain wallet
+     * provided (magic-link and email/password sign-up), with the configured
+     * [PaymentsProperties.defaultProvider] as its payment provider and a deterministic on-chain wallet
      * address derived and persisted for it. Google sign-ups for associations create the profile
      * in a separate step via [upsertAssociationProfile].
      *
@@ -940,7 +945,8 @@ class AuthService(
                             postalCode = assocReq.postalCode,
                             contactEmail = user.email,
                             description = assocReq.description,
-                            siren = derivedSiren(assocReq.identifier)
+                            siren = derivedSiren(assocReq.identifier),
+                            paymentProvider = paymentsProperties.defaultProvider,
                         )
                     )
                     saved.walletAddress = associationAddressGenerator.generate(saved.id!!)

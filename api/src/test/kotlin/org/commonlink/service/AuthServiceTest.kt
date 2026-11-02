@@ -1,5 +1,7 @@
 package org.commonlink.service
 
+import org.commonlink.config.PaymentsProperties
+import org.commonlink.payment.PaymentProviderId
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
 import io.mockk.every
@@ -41,10 +43,13 @@ class AuthServiceTest {
 
     private val frontendUrl = "http://localhost:3000"
 
-    private val authService = AuthService(
+    private val authService = authServiceWith(PaymentsProperties())
+
+    /** Builds the service under test with the given payments configuration; every other collaborator is the shared mock. */
+    private fun authServiceWith(paymentsProperties: PaymentsProperties) = AuthService(
         userRepository, donorProfileRepository, associationProfileRepository, associationAddressGenerator,
         magicLinkTokenRepository, refreshTokenRepository, emailVerificationTokenRepository, jwtService, tokenHashService,
-        passwordEncoder, emailService, googleIdTokenVerifier, frontendUrl
+        passwordEncoder, emailService, googleIdTokenVerifier, paymentsProperties, frontendUrl
     )
 
     private val donorUser = User(
@@ -1365,6 +1370,64 @@ class AuthServiceTest {
         )
 
         assertEquals("123456789", saved.captured.siren)
+    }
+
+    // -------------------------------------------------------------------------
+    // Payment provider given at creation (app.payments.default-provider)
+    // -------------------------------------------------------------------------
+
+    private fun registerAssociationWith(service: AuthService): AssociationProfile {
+        every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
+
+        service.register(
+            RegisterRequestDto(
+                email = "asso@example.com",
+                password = "password123",
+                role = UserRole.ASSOCIATION,
+                associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+            )
+        )
+        return saved.captured
+    }
+
+    private fun createAssociationProfileWith(service: AuthService): AssociationProfile {
+        every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
+        every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.empty()
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
+
+        service.upsertAssociationProfile(
+            assocUser.id!!,
+            AssociationProfileUpsertDto(nom = "MyAsso", identifier = "W123456789", ville = "Paris", codePostal = "75001")
+        )
+        return saved.captured
+    }
+
+    @Test
+    fun `register ASSOCIATION - new association gets HELLOASSO by default`() {
+        assertEquals(PaymentProviderId.HELLOASSO, registerAssociationWith(authService).paymentProvider)
+    }
+
+    @Test
+    fun `register ASSOCIATION - new association gets the configured default provider`() {
+        val service = authServiceWith(PaymentsProperties(defaultProvider = PaymentProviderId.MOLLIE))
+
+        assertEquals(PaymentProviderId.MOLLIE, registerAssociationWith(service).paymentProvider)
+    }
+
+    @Test
+    fun `upsertAssociationProfile - created profile gets HELLOASSO by default`() {
+        assertEquals(PaymentProviderId.HELLOASSO, createAssociationProfileWith(authService).paymentProvider)
+    }
+
+    @Test
+    fun `upsertAssociationProfile - created profile gets the configured default provider`() {
+        val service = authServiceWith(PaymentsProperties(defaultProvider = PaymentProviderId.MOLLIE))
+
+        assertEquals(PaymentProviderId.MOLLIE, createAssociationProfileWith(service).paymentProvider)
     }
 
     // -------------------------------------------------------------------------
