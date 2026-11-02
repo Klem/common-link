@@ -125,6 +125,9 @@ tasks.withType<Test> {
             excludeTags("testcontainers")
         }
     }
+    // Repository tests run on H2, which stores a bound Instant shifted by the JVM zone offset: on a
+    // non-UTC machine every Instant read back was off by that offset. UTC makes runs machine-independent.
+    systemProperty("user.timezone", "UTC")
     // clevercloud/gradle.json builds with -quiet, which swallows Gradle's LIFECYCLE
     // task logs — println is raw stdout and shows up regardless, so this is the only
     // way to see in the Clever Cloud deploy logs that tests actually ran.

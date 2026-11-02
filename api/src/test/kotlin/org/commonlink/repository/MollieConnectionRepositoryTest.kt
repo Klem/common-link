@@ -4,6 +4,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.commonlink.entity.MollieConnection
 import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
+import org.commonlink.payment.PaymentProviderId
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -15,7 +16,8 @@ import java.util.UUID
  * Pins the candidate set of the scheduled onboarding sweep
  * ([MollieConnectionRepository.findActiveNotCollecting]) against real PostgreSQL: a connection
  * that collects (COMPLETED with payments) and a BROKEN one are never candidates (sprint 20, Q1),
- * and the V84 columns are mapped and projected.
+ * and the V84 columns are mapped and projected. Both scheduled candidate sets
+ * ([MollieConnectionRepository.findActiveExpiringBefore] too) ignore associations moved to another provider.
  */
 class MollieConnectionRepositoryTest(
     @Autowired private val userRepository: UserRepository,
@@ -33,9 +35,12 @@ class MollieConnectionRepositoryTest(
         status: MollieOnboardingStatus,
         canReceivePayments: Boolean,
         state: MollieConnectionState = MollieConnectionState.ACTIVE,
+        paymentProvider: PaymentProviderId = PaymentProviderId.MOLLIE,
     ) {
         val user = userRepository.save(TestFixtures.associationUser(email = "$key-${System.nanoTime()}@example.com"))
-        val association = associationProfileRepository.save(TestFixtures.associationProfile(user))
+        val association = associationProfileRepository.save(
+            TestFixtures.associationProfile(user).apply { this.paymentProvider = paymentProvider }
+        )
         connectionRepository.save(
             MollieConnection(
                 association = association,
@@ -60,6 +65,10 @@ class MollieConnectionRepositoryTest(
         connection("completedNoPayments", MollieOnboardingStatus.COMPLETED, canReceivePayments = false)
         connection("collecting", MollieOnboardingStatus.COMPLETED, canReceivePayments = true)
         connection("broken", MollieOnboardingStatus.NEEDS_DATA, canReceivePayments = false, state = MollieConnectionState.BROKEN)
+        connection(
+            "helloAsso", MollieOnboardingStatus.NEEDS_DATA, canReceivePayments = false,
+            paymentProvider = PaymentProviderId.HELLOASSO,
+        )
         em.flush()
         em.clear()
     }
@@ -71,6 +80,21 @@ class MollieConnectionRepositoryTest(
         assertThat(candidates.keys)
             .contains(ids["needsData"], ids["inReview"], ids["completedNoPayments"])
             .doesNotContain(ids["collecting"], ids["broken"])
+    }
+
+    @Test
+    fun `findActiveNotCollecting ignores an association moved to HELLOASSO`() {
+        val candidates = connectionRepository.findActiveNotCollecting().map { it.associationId }
+
+        assertThat(candidates).contains(ids["needsData"]).doesNotContain(ids["helloAsso"])
+    }
+
+    @Test
+    fun `findActiveExpiringBefore ignores an association moved to HELLOASSO`() {
+        val candidates = connectionRepository.findActiveExpiringBefore(Instant.now().plusSeconds(7200))
+            .map { it.associationId }
+
+        assertThat(candidates).contains(ids["needsData"]).doesNotContain(ids["helloAsso"], ids["broken"])
     }
 
     @Test
