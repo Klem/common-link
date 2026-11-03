@@ -325,6 +325,10 @@ A digitally signed token that the backend issues upon successful authentication.
 
 ## K
 
+### Key check (HelloAsso)
+The live check of the two HelloAsso API codes (client id, client secret) an association pastes on the "Relier" screen: once both are filled, the dashboard asks the server (`POST /api/association/helloasso/credentials/verify`, debounced, the previous request cancelled) whether HelloAsso accepts them and whether the organization they reach is the association verified on CommonLink. Outcomes: valid (the user still confirms "C'est bien nous"), invalid, another association (refused, nothing kept) or HelloAsso unavailable. The secret stays in the page's memory only and is erased after linking; the server re-checks everything when linking.
+`technical` `compliance`
+
 ### KYC (Know Your Customer)
 The identity verification process for associations. Involves validating the SIREN number through the Annuaire des Entreprises and confirming the RNA (Répertoire National des Associations) registration. Earning the "Organisation Vérifiée" badge proves KYC completion.
 `business` `security`
@@ -449,6 +453,10 @@ A cryptographically random string (32 bytes, 64 hex characters) used for Magic L
 ### Place of Action (Lieu de l'action)
 Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation. Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
 `functional`
+
+### Provided KYB documents
+The KYB documents an association already gave CommonLink (statutes, RNA receipt, legal representative's ID), listed by id and type only (`GET /api/association/documents/kyb`) so it can re-download them and upload them itself to its payment provider (Mollie onboarding kit, HelloAsso "Retrouver mes fichiers"). Each download is journaled; CommonLink never sends a document to the provider.
+`technical` `compliance`
 
 ### Proximity Filter — see **Place of Action**
 
