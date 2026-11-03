@@ -4,6 +4,8 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import org.commonlink.config.HelloAssoProperties
+import org.commonlink.dto.HelloAssoInitCheckoutJson
+import org.commonlink.dto.HelloAssoPayerJson
 import org.commonlink.exception.HelloAssoException
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoRateLimitedException
@@ -23,6 +25,7 @@ import org.springframework.test.web.client.ExpectedCount
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.content
 import org.springframework.test.web.client.match.MockRestRequestMatchers.header
+import org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
 import org.springframework.test.web.client.match.MockRestRequestMatchers.method
 import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
@@ -221,5 +224,92 @@ class HelloAssoClientTest {
 
         val ex: HelloAssoException = assertThrows<HelloAssoUnavailableException> { client.get("/x", accessToken, Map::class.java) }
         assertNothingLeaked(ex)
+    }
+
+    // ── Wire format of the gateway methods (shapes of the sandbox probe of 2026-11-02 and dev.helloasso.com) ─────
+
+    @Test
+    fun `listOrganizations parses organizationSlug`() {
+        server.expect(requestTo("$api/users/me/organizations")).andRespond(
+            withSuccess(
+                """[{"organizationSlug":"techno-plus-techno-t","name":"TECHNO PLUS","role":"OrganizationAdmin","city":"Paris"}]""",
+                MediaType.APPLICATION_JSON,
+            )
+        )
+
+        assertEquals("techno-plus-techno-t", client.listOrganizations(accessToken).single().organizationSlug)
+    }
+
+    @Test
+    fun `getOrganization binds isCashInCompliant and rnaNumber`() {
+        server.expect(requestTo("$api/organizations/techno-plus-techno-t")).andRespond(
+            withSuccess(
+                """{"organizationSlug":"techno-plus-techno-t","name":"TECHNO PLUS","isCashInCompliant":true,""" +
+                    """"isAuthenticated":false,"rnaNumber":"W751121684","type":"Association1901"}""",
+                MediaType.APPLICATION_JSON,
+            )
+        )
+
+        val organization = client.getOrganization(accessToken, "techno-plus-techno-t")
+
+        assertEquals(true, organization.cashInCompliant)
+        assertEquals("W751121684", organization.rnaNumber)
+    }
+
+    @Test
+    fun `createCheckoutIntent sends only documented fields and parses id and redirectUrl`() {
+        server.expect(requestTo("$api/organizations/techno-plus/checkout-intents"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(jsonPath("$.totalAmount").value(2550))
+            .andExpect(jsonPath("$.initialAmount").value(2550))
+            .andExpect(jsonPath("$.containsDonation").value(true))
+            .andExpect(jsonPath("$.payer.country").value("FRA"))
+            .andExpect(jsonPath("$.payer.firstName").doesNotExist())
+            .andExpect(jsonPath("$.metadata.publicRef").value("abc"))
+            .andRespond(withSuccess("""{"id":4242,"redirectUrl":"https://checkout.helloasso.com/x"}""", MediaType.APPLICATION_JSON))
+
+        val created = client.createCheckoutIntent(
+            accessToken, "techno-plus",
+            HelloAssoInitCheckoutJson(
+                2550, 2550, "Don - X", "https://app/b", "https://app/e", "https://app/r", true,
+                payer = HelloAssoPayerJson(country = "FRA"), metadata = mapOf("publicRef" to "abc"),
+            ),
+        )
+
+        assertEquals(4242L, created.id)
+        assertEquals("https://checkout.helloasso.com/x", created.redirectUrl)
+    }
+
+    @Test
+    fun `createCheckoutIntent omits a null payer entirely`() {
+        server.expect(requestTo("$api/organizations/techno-plus/checkout-intents"))
+            .andExpect(jsonPath("$.payer").doesNotExist())
+            .andExpect(jsonPath("$.metadata").doesNotExist())
+            .andRespond(withSuccess("""{"id":1,"redirectUrl":"https://x"}""", MediaType.APPLICATION_JSON))
+
+        client.createCheckoutIntent(
+            accessToken, "techno-plus",
+            HelloAssoInitCheckoutJson(100, 100, "Don - X", "https://app/b", "https://app/e", "https://app/r", true),
+        )
+        server.verify()
+    }
+
+    @Test
+    fun `getCheckoutIntent parses the order payments`() {
+        server.expect(requestTo("$api/organizations/techno-plus/checkout-intents/4242")).andRespond(
+            withSuccess(
+                """{"id":4242,"metadata":{"publicRef":"abc"},"order":{"id":9,"checkoutIntentId":4242,""" +
+                    """"payments":[{"id":77,"amount":2550,"state":"Authorized","paymentMeans":"Card","cashOutState":"MoneyIn"}]}}""",
+                MediaType.APPLICATION_JSON,
+            )
+        )
+
+        val intent = client.getCheckoutIntent(accessToken, "techno-plus", 4242)
+        val payment = intent.order!!.payments!!.single()
+
+        assertEquals("Authorized", payment.state)
+        assertEquals("Card", payment.paymentMeans)
+        assertEquals(2550, payment.amount)
+        assertEquals("abc", intent.metadata!!["publicRef"])
     }
 }

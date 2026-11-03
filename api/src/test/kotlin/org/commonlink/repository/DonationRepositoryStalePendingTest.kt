@@ -14,7 +14,7 @@ import java.time.temporal.ChronoUnit
 
 /**
  * Pins the candidate set of the payment reconcilers ([DonationRepository.findStalePendingByProviderRefPrefix])
- * against real PostgreSQL: selection is by `providerRef` prefix only, never by the association's current provider.
+ * on the test database: selection is by `providerRef` prefix only, never by the association's current provider.
  */
 @ImportTestcontainers(TestcontainersConfig::class)
 class DonationRepositoryStalePendingTest(
@@ -64,6 +64,17 @@ class DonationRepositoryStalePendingTest(
         val ref = donation("helloasso:123")
 
         assertThat(staleMollieRefs()).doesNotContain(ref)
+    }
+
+    @Test
+    fun `the helloasso prefix selects the helloasso donation and not the mollie one`() {
+        val helloAsso = donation("helloasso:4242")
+        val mollie = donation("mollie:tr_other")
+
+        val refs = donationRepository.findStalePendingByProviderRefPrefix(PaymentProviderId.HELLOASSO.refPrefix, threshold)
+            .map { it.providerRef }
+
+        assertThat(refs).contains(helloAsso).doesNotContain(mollie)
     }
 
     @Test

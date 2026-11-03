@@ -17,13 +17,13 @@ import java.util.UUID
  * held: HelloAsso rotates the refresh token on every renewal, so two concurrent renewals would leave one of them with
  * a dead token and break the chain. Same design as [MollieConnectTokenManager].
  *
- * Marking a link BROKEN, warning the association and the scheduled renewal belong to the renewal step (sprint step
- * S6-04); here a rejected refresh token surfaces as [HelloAssoUnauthorizedException] and nothing is written.
+ * A rejected refresh token surfaces as [HelloAssoUnauthorizedException] and nothing is written here: callers mark the
+ * link BROKEN through [HelloAssoConnectionBreaker] once this transaction is over (scheduled renewal, checkout, re-read).
  */
 @Service
 class HelloAssoTokenManager(
     private val connectionRepo: HelloAssoConnectionRepository,
-    private val client: HelloAssoClient,
+    private val client: HelloAssoGateway,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -54,6 +54,32 @@ class HelloAssoTokenManager(
             return cached
         }
 
+        return renew(connection, now)
+    }
+
+    /**
+     * Renews the token pair of [associationId] if its last renewal is still older than [threshold] once the row lock is
+     * held — the scheduled weekly renewal; a second instance arriving after the first does nothing.
+     *
+     * @return true when a renewal happened.
+     * @throws IllegalStateException when the association has no ACTIVE HelloAsso link.
+     * @throws HelloAssoUnauthorizedException when HelloAsso rejects the refresh token (nothing is written).
+     */
+    @Transactional
+    fun refreshIfOlderThan(associationId: UUID, threshold: Instant): Boolean {
+        val connection = connectionRepo.findByAssociationIdForUpdate(associationId)
+            ?: throw IllegalStateException("No HelloAsso link for association $associationId")
+        check(connection.state == HelloAssoConnectionState.ACTIVE) {
+            "HelloAsso link of association $associationId is ${connection.state}"
+        }
+        val last = connection.lastRefreshAt
+        if (last != null && !last.isBefore(threshold)) return false
+        renew(connection, Instant.now())
+        return true
+    }
+
+    private fun renew(connection: org.commonlink.entity.HelloAssoConnection, now: Instant): String {
+        val associationId = connection.association.id
         val refreshToken = checkNotNull(connection.refreshToken) {
             "HelloAsso link of association $associationId has no refresh token"
         }

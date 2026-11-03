@@ -7,13 +7,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.commonlink.dto.HelloAssoConnectRequest
 import org.commonlink.dto.HelloAssoNotificationUrlResponse
 import org.commonlink.dto.HelloAssoVerifyRequest
 import org.commonlink.dto.HelloAssoVerifyResponse
 import org.commonlink.service.HelloAssoCredentialsService
+import org.commonlink.service.HelloAssoEligibilityService
+import org.commonlink.service.HelloAssoLinkService
+import org.commonlink.service.HelloAssoOnboardingReminderService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -29,6 +34,9 @@ import java.util.UUID
 @Tag(name = "Association · HelloAsso", description = "Linking the association's HelloAsso account (API keys mode)")
 class HelloAssoConnectionController(
     private val credentialsService: HelloAssoCredentialsService,
+    private val linkService: HelloAssoLinkService,
+    private val eligibilityService: HelloAssoEligibilityService,
+    private val reminderService: HelloAssoOnboardingReminderService,
 ) {
 
     @PostMapping("/notification-url")
@@ -45,6 +53,10 @@ class HelloAssoConnectionController(
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(
+            responseCode = "409", description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER)",
+            content = [Content()],
+        ),
         ApiResponse(
             responseCode = "503",
             description = "Notification URL not configured on this server (code HELLOASSO_NOTIFICATION_URL_NOT_CONFIGURED)",
@@ -71,6 +83,10 @@ class HelloAssoConnectionController(
         ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
         ApiResponse(
+            responseCode = "409", description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER)",
+            content = [Content()],
+        ),
+        ApiResponse(
             responseCode = "422",
             description = "Missing field, keys refused by HelloAsso (code HELLOASSO_INVALID_KEYS), or keys reaching no " +
                 "or several organizations (code HELLOASSO_ORGANIZATION_UNRESOLVED)",
@@ -84,4 +100,98 @@ class HelloAssoConnectionController(
         @AuthenticationPrincipal principal: UserDetails,
     ): ResponseEntity<HelloAssoVerifyResponse> =
         ResponseEntity.ok(credentialsService.verify(UUID.fromString(principal.username), request))
+
+    @PostMapping("/connection")
+    @Operation(
+        summary = "Link the verified HelloAsso account",
+        description = "Confirms the key verification (verifyId) with the association's mandate in its current wording " +
+            "version, and persists the link without the client secret (client id, slug, encrypted tokens). The mandate " +
+            "(who, when, version) is written to the compliance journal. Also re-links a broken or disconnected account.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Account linked", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(
+            responseCode = "409", description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER)",
+            content = [Content()],
+        ),
+        ApiResponse(
+            responseCode = "422",
+            description = "Mandate not accepted in the current version (code HELLOASSO_MANDATE_REQUIRED), or " +
+                "verification unknown / expired / already used (code HELLOASSO_VERIFICATION_EXPIRED)",
+            content = [Content()],
+        ),
+    )
+    fun connect(
+        @Valid @RequestBody request: HelloAssoConnectRequest,
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<Void> {
+        linkService.connect(UUID.fromString(principal.username), request)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/onboarding-started")
+    @Operation(
+        summary = "Record that the HelloAsso journey started",
+        description = "The association started the \"no HelloAsso account yet\" journey (« Commencer »). Idempotent: the " +
+            "first time is kept. Drives one reminder email at D+1 and one at D+7, never after the account is linked.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Recorded", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(
+            responseCode = "409", description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER)",
+            content = [Content()],
+        ),
+    )
+    fun onboardingStarted(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<Void> {
+        reminderService.markStarted(UUID.fromString(principal.username))
+        return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/eligibility/refresh")
+    @Operation(
+        summary = "Re-read HelloAsso eligibility now",
+        description = "« Vérifier mon dossier » : re-reads the organization's isCashInCompliant at HelloAsso (never a " +
+            "checkout-intent). At most once a minute; the result is read through GET /api/association/payment/status.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Eligibility re-read (or HelloAsso unavailable: status unchanged)", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+        ApiResponse(
+            responseCode = "409",
+            description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER) or not linked " +
+                "(code HELLOASSO_NOT_LINKED)",
+            content = [Content()],
+        ),
+        ApiResponse(responseCode = "429", description = "Asked again within a minute", content = [Content()]),
+    )
+    fun refreshEligibility(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<Void> {
+        eligibilityService.requestRefresh(UUID.fromString(principal.username))
+        return ResponseEntity.noContent().build()
+    }
+
+    @DeleteMapping("/connection")
+    @Operation(
+        summary = "Disconnect the HelloAsso account",
+        description = "Withdraws CommonLink's HelloAsso access: tokens erased, link disconnected, row and notification " +
+            "token kept, compliance journal entry. Idempotent, allowed whatever the association's provider. Campaigns are " +
+            "untouched; donations pause through the readiness gate.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Disconnected (or nothing to disconnect)", content = [Content()]),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+    )
+    fun disconnect(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<Void> {
+        linkService.disconnect(UUID.fromString(principal.username))
+        return ResponseEntity.noContent().build()
+    }
 }

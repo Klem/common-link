@@ -44,6 +44,34 @@ class HelloAssoOrganizationUnresolvedException :
         "HELLOASSO_ORGANIZATION_UNRESOLVED",
     )
 
+/** The association's payment provider is not HELLOASSO: HelloAsso linking steps are refused (HTTP 409). */
+class HelloAssoNotAssociationProviderException :
+    HelloAssoLinkException(
+        "This association does not collect donations through HelloAsso",
+        HttpStatus.CONFLICT,
+        "HELLOASSO_NOT_ASSOCIATION_PROVIDER",
+    )
+
+/** The mandate was not accepted, or not in the current wording version (HTTP 422). */
+class HelloAssoMandateRequiredException :
+    HelloAssoLinkException(
+        "The current HelloAsso mandate must be accepted to link the account",
+        HttpStatus.UNPROCESSABLE_CONTENT,
+        "HELLOASSO_MANDATE_REQUIRED",
+    )
+
+/** The key verification is unknown, expired, already used or another association's (HTTP 422). */
+class HelloAssoVerificationExpiredException :
+    HelloAssoLinkException(
+        "The HelloAsso key verification is expired or unknown; verify the keys again",
+        HttpStatus.UNPROCESSABLE_CONTENT,
+        "HELLOASSO_VERIFICATION_EXPIRED",
+    )
+
+/** The association has no ACTIVE HelloAsso link (HTTP 409). */
+class HelloAssoNotLinkedException :
+    HelloAssoLinkException("No active HelloAsso link for this association", HttpStatus.CONFLICT, "HELLOASSO_NOT_LINKED")
+
 /** `app.helloasso.notification-base-url` is blank: no notification URL can be shown (HTTP 503). */
 class HelloAssoNotificationUrlNotConfiguredException :
     HelloAssoLinkException(

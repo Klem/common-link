@@ -19,7 +19,7 @@ import java.util.UUID
 class HelloAssoTokenManagerTest {
 
     private val repo = mockk<HelloAssoConnectionRepository>()
-    private val client = mockk<HelloAssoClient>()
+    private val client = mockk<HelloAssoGateway>()
     private val manager = HelloAssoTokenManager(repo, client)
     private val associationId = UUID.randomUUID()
 

@@ -2,12 +2,9 @@ package org.commonlink.service
 
 import org.commonlink.config.HelloAssoProperties
 import org.commonlink.dto.HelloAssoNotificationUrlResponse
-import org.commonlink.dto.HelloAssoOrganizationJson
-import org.commonlink.dto.HelloAssoOrganizationLightJson
 import org.commonlink.dto.HelloAssoVerifyRequest
 import org.commonlink.dto.HelloAssoVerifyResponse
 import org.commonlink.entity.AssociationProfile
-import org.commonlink.entity.HelloAssoConnection
 import org.commonlink.exception.BadGatewayException
 import org.commonlink.exception.HelloAssoInvalidKeysException
 import org.commonlink.exception.HelloAssoNotificationUrlNotConfiguredException
@@ -19,14 +16,10 @@ import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.RateLimitException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
-import org.commonlink.repository.HelloAssoConnectionRepository
 import org.commonlink.security.AuthRateLimiter
 import org.slf4j.LoggerFactory
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
-import java.security.SecureRandom
 import java.time.Instant
-import java.util.Base64
 import java.util.UUID
 
 /**
@@ -39,14 +32,13 @@ import java.util.UUID
 @Service
 class HelloAssoCredentialsService(
     private val associationProfileRepository: AssociationProfileRepository,
-    private val connectionRepository: HelloAssoConnectionRepository,
-    private val client: HelloAssoClient,
+    private val client: HelloAssoGateway,
     private val pendingLinks: HelloAssoPendingLinkStore,
     private val rateLimiter: AuthRateLimiter,
     private val properties: HelloAssoProperties,
+    private val rows: HelloAssoConnectionRows,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val random = SecureRandom()
 
     companion object {
         /** Key checks allowed per association within [VERIFY_WINDOW_MINUTES]. */
@@ -60,6 +52,7 @@ class HelloAssoCredentialsService(
      * whether it is the association verified on CommonLink ([HelloAssoKybMatcher]).
      *
      * @return the verification; `verifyId` null and nothing kept when the organization does not match.
+     * @throws org.commonlink.exception.HelloAssoNotAssociationProviderException when the association is not on HELLOASSO.
      * @throws RateLimitException after [VERIFY_MAX_ATTEMPTS] checks within [VERIFY_WINDOW_MINUTES] minutes.
      * @throws HelloAssoInvalidKeysException when HelloAsso refuses the keys.
      * @throws HelloAssoOrganizationUnresolvedException when the keys reach no or several organizations.
@@ -67,6 +60,7 @@ class HelloAssoCredentialsService(
      */
     fun verify(userId: UUID, request: HelloAssoVerifyRequest): HelloAssoVerifyResponse {
         val association = resolveAssociation(userId)
+        rows.requireHelloAssoProvider(association)
         val associationId = association.id!!
         rateLimiter.check("helloasso-verify:association:$associationId", VERIFY_MAX_ATTEMPTS, VERIFY_WINDOW_MINUTES)
 
@@ -77,12 +71,12 @@ class HelloAssoCredentialsService(
                 log.info("HelloAsso refused the API keys of association {}", associationId)
                 throw HelloAssoInvalidKeysException()
             }
-            val organizations = client.get("/users/me/organizations", tokens.accessToken, Array<HelloAssoOrganizationLightJson>::class.java)
+            val organizations = client.listOrganizations(tokens.accessToken)
             val slug = organizations.singleOrNull()?.organizationSlug?.takeIf { it.isNotBlank() } ?: run {
                 log.info("HelloAsso keys of association {} reach {} organizations", associationId, organizations.size)
                 throw HelloAssoOrganizationUnresolvedException()
             }
-            tokens to client.get("/organizations/$slug", tokens.accessToken, HelloAssoOrganizationJson::class.java)
+            tokens to client.getOrganization(tokens.accessToken, slug)
         }
 
         val slug = organization.organizationSlug ?: throw HelloAssoOrganizationUnresolvedException()
@@ -107,11 +101,13 @@ class HelloAssoCredentialsService(
      * Not transactional on purpose: the row is saved (and committed) before the configuration check, so the token
      * exists even when no URL can be shown yet.
      *
+     * @throws org.commonlink.exception.HelloAssoNotAssociationProviderException when the association is not on HELLOASSO.
      * @throws HelloAssoNotificationUrlNotConfiguredException when `app.helloasso.notification-base-url` is blank.
      */
     fun ensureNotificationUrl(userId: UUID): HelloAssoNotificationUrlResponse {
         val association = resolveAssociation(userId)
-        val connection = connectionRepository.findByAssociationId(association.id!!) ?: create(association)
+        rows.requireHelloAssoProvider(association)
+        val connection = rows.findOrCreate(association)
         val base = properties.notificationBaseUrl.trim().trimEnd('/')
         if (base.isEmpty()) {
             log.warn("app.helloasso.notification-base-url is blank: cannot show the HelloAsso notification URL")
@@ -119,18 +115,6 @@ class HelloAssoCredentialsService(
         }
         return HelloAssoNotificationUrlResponse(base + NOTIFICATION_PATH + connection.webhookToken)
     }
-
-    private fun create(association: AssociationProfile): HelloAssoConnection =
-        try {
-            connectionRepository.saveAndFlush(HelloAssoConnection(association = association, webhookToken = newToken()))
-        } catch (ex: DataIntegrityViolationException) {
-            // A concurrent call created the row first: keep that one, its token is the stable one.
-            connectionRepository.findByAssociationId(association.id!!) ?: throw ex
-        }
-
-    /** 256-bit random, URL-safe, unpadded (43 characters). */
-    private fun newToken(): String =
-        Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32).also { random.nextBytes(it) })
 
     /** Maps HelloAsso infrastructure failures to API errors; refusals already mapped inside [call] pass through. */
     private fun <T> helloAsso(call: () -> T): T =

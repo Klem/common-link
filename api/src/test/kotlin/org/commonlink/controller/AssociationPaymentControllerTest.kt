@@ -58,6 +58,8 @@ class AssociationPaymentControllerTest {
             .andExpect(jsonPath("$.status").value("NEEDS_DATA"))
             .andExpect(jsonPath("$.actionUrl").value("https://my.mollie.com/dashboard/onboarding"))
             .andExpect(jsonPath("$.warnings").isEmpty)
+            // A Mollie response is unchanged by the HelloAsso extension: no `helloasso` key at all.
+            .andExpect(jsonPath("$.helloasso").doesNotExist())
     }
 
     @Test

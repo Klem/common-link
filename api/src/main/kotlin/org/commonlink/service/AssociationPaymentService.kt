@@ -3,6 +3,7 @@ package org.commonlink.service
 import org.commonlink.dto.PaymentStatusDto
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.payment.BankSetupStatus
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.payment.PaymentProviderRegistry
 import org.commonlink.repository.AssociationProfileRepository
 import org.springframework.stereotype.Service
@@ -16,6 +17,7 @@ import java.util.UUID
 class AssociationPaymentService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val paymentProviderRegistry: PaymentProviderRegistry,
+    private val helloAssoStatusReader: HelloAssoStatusReader,
 ) {
 
     /**
@@ -51,6 +53,7 @@ class AssociationPaymentService(
             status = status.status,
             actionUrl = status.actionUrl,
             warnings = status.warnings,
+            helloasso = if (provider.id == PaymentProviderId.HELLOASSO) helloAssoStatusReader.read(associationId) else null,
         )
     }
 }

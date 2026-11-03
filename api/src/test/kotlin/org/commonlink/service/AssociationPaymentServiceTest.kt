@@ -6,10 +6,13 @@ import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
 import io.mockk.mockk
+import org.commonlink.dto.HelloAssoLinkState
+import org.commonlink.dto.HelloAssoStatusDto
 import org.commonlink.dto.PaymentStatusDto
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.payment.BankSetupStatus
+import org.commonlink.payment.HelloAssoWebhookState
 import org.commonlink.payment.PaymentProvider
 import org.commonlink.payment.PaymentProviderId
 import org.commonlink.payment.PaymentProviderRegistry
@@ -26,7 +29,8 @@ class AssociationPaymentServiceTest {
 
     private val associationProfileRepository = mockk<AssociationProfileRepository>()
     private val registry = mockk<PaymentProviderRegistry>()
-    private val service = AssociationPaymentService(associationProfileRepository, registry)
+    private val helloAssoStatusReader = mockk<HelloAssoStatusReader>()
+    private val service = AssociationPaymentService(associationProfileRepository, registry, helloAssoStatusReader)
 
     private val userId = UUID.randomUUID()
     private val associationId = UUID.randomUUID()
@@ -52,6 +56,22 @@ class AssociationPaymentServiceTest {
             ),
             service.getPaymentStatus(userId),
         )
+    }
+
+    @Test
+    fun `a HELLOASSO provider adds the helloasso block, read from the database`() {
+        val association = mockk<AssociationProfile> { every { id } returns associationId }
+        val provider = mockk<PaymentProvider> {
+            every { id } returns PaymentProviderId.HELLOASSO
+            every { refreshStatusIfStale(associationId) } just runs
+            every { paymentStatus(associationId) } returns PaymentStatus(BankSetupStatus.IN_REVIEW)
+        }
+        val block = HelloAssoStatusDto(link = HelloAssoLinkState.OK, webhook = HelloAssoWebhookState.UNKNOWN, organizationSlug = "techno-plus")
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(association)
+        every { registry.findForAssociation(association) } returns provider
+        every { helloAssoStatusReader.read(associationId) } returns block
+
+        assertEquals(block, service.getPaymentStatus(userId).helloasso)
     }
 
     @Test

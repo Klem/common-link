@@ -140,6 +140,16 @@ class ReceiptServiceTest {
         assertTrue(receiptText(paymentMethod = "banktransfer").contains("Virement bancaire"))
     }
 
+    /** HelloAsso PaymentMeans codes (Card, Sepa, BankTransfer, Check, Cash) share the Mollie wording. */
+    @Test
+    fun `maps HelloAsso payment means to their French labels`() {
+        assertTrue(receiptText(paymentMethod = "Card").contains("Mode de versement Carte bancaire"))
+        assertTrue(receiptText(paymentMethod = "Sepa").contains("Mode de versement Prélèvement SEPA"))
+        assertTrue(receiptText(paymentMethod = "BankTransfer").contains("Mode de versement Virement bancaire"))
+        assertTrue(receiptText(paymentMethod = "Check").contains("Mode de versement Chèque"))
+        assertTrue(receiptText(paymentMethod = "Cash").contains("Mode de versement Espèces"))
+    }
+
     /** An unknown provider code is printed verbatim rather than mislabelled. */
     @Test
     fun `prints an unknown provider code as-is`() {

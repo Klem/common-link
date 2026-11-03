@@ -151,6 +151,25 @@ class ComplianceAuditLogService(
          * the curator. Never written for a no-op (same provider).
          */
         const val PAYMENT_PROVIDER_CHANGED = "PAYMENT_PROVIDER_CHANGED"
+
+        /**
+         * An association accepted the HelloAsso mandate and linked its account
+         * ([org.commonlink.service.HelloAssoLinkService.connect]). Payload `{version, organizationSlug,
+         * clientIdMasked}`; actor = the association user; neither IP nor user agent.
+         */
+        const val HELLOASSO_MANDATE_ACCEPTED = "HELLOASSO_MANDATE_ACCEPTED"
+
+        /**
+         * An association withdrew CommonLink's HelloAsso access
+         * ([org.commonlink.service.HelloAssoLinkService.disconnect]). Payload `{organizationSlug}`.
+         */
+        const val HELLOASSO_DISCONNECTED = "HELLOASSO_DISCONNECTED"
+
+        /**
+         * HelloAsso reports a confirmed donation as refunded, being refunded or contested
+         * ([org.commonlink.service.HelloAssoCheckoutService]). Payload `{providerRef, state}`; no actor.
+         */
+        const val HELLOASSO_PAYMENT_REVERSED = "HELLOASSO_PAYMENT_REVERSED"
     }
 
     /**

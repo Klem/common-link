@@ -15,11 +15,13 @@ import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.HelloAssoConnection
 import org.commonlink.exception.BadGatewayException
 import org.commonlink.exception.HelloAssoInvalidKeysException
+import org.commonlink.exception.HelloAssoNotAssociationProviderException
 import org.commonlink.exception.HelloAssoNotificationUrlNotConfiguredException
 import org.commonlink.exception.HelloAssoOrganizationUnresolvedException
 import org.commonlink.exception.HelloAssoUnauthorizedException
 import org.commonlink.exception.HelloAssoUnavailableException
 import org.commonlink.exception.RateLimitException
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
 import org.commonlink.repository.TestFixtures
@@ -43,7 +45,7 @@ class HelloAssoCredentialsServiceTest {
 
     private val associationRepo = mockk<AssociationProfileRepository>()
     private val connectionRepo = mockk<HelloAssoConnectionRepository>()
-    private val client = mockk<HelloAssoClient>()
+    private val client = mockk<HelloAssoGateway>()
     private val store = HelloAssoPendingLinkStore()
     private val rateLimiter = AuthRateLimiter()
 
@@ -56,7 +58,8 @@ class HelloAssoCredentialsServiceTest {
     private val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
 
     private fun service(baseUrl: String = "https://api.common-link.test/") = HelloAssoCredentialsService(
-        associationRepo, connectionRepo, client, store, rateLimiter, HelloAssoProperties(notificationBaseUrl = baseUrl),
+        associationRepo, client, store, rateLimiter, HelloAssoProperties(notificationBaseUrl = baseUrl),
+        HelloAssoConnectionRows(connectionRepo),
     )
 
     private val request = HelloAssoVerifyRequest("client_123", secret)
@@ -65,6 +68,7 @@ class HelloAssoCredentialsServiceTest {
     fun setUp() {
         association = AssociationProfile(
             id = associationId, user = TestFixtures.associationUser(), name = "Techno Plus", identifier = "W751121684",
+            paymentProvider = PaymentProviderId.HELLOASSO,
         )
         every { associationRepo.findByUserId(userId) } returns Optional.of(association)
         appender = ListAppender<ILoggingEvent>().apply { start() }
@@ -78,10 +82,8 @@ class HelloAssoCredentialsServiceTest {
 
     private fun helloAssoReturns(rna: String?, name: String = "TECHNO PLUS", cashIn: Boolean? = true) {
         every { client.obtainTokens("client_123", secret) } returns tokens
-        every { client.get("/users/me/organizations", "access", Array<HelloAssoOrganizationLightJson>::class.java) } returns
-            arrayOf(HelloAssoOrganizationLightJson("techno-plus", name))
-        every { client.get("/organizations/techno-plus", "access", HelloAssoOrganizationJson::class.java) } returns
-            HelloAssoOrganizationJson("techno-plus", name, rna, cashIn)
+        every { client.listOrganizations("access") } returns listOf(HelloAssoOrganizationLightJson("techno-plus", name))
+        every { client.getOrganization("access", "techno-plus") } returns HelloAssoOrganizationJson("techno-plus", name, rna, cashIn)
     }
 
     /** No log line and no message of [ex] contains the secret, and no HelloAsso row was written. */
@@ -139,8 +141,8 @@ class HelloAssoCredentialsServiceTest {
     @Test
     fun `keys reaching several organizations are unresolved`() {
         every { client.obtainTokens(any(), any()) } returns tokens
-        every { client.get("/users/me/organizations", "access", Array<HelloAssoOrganizationLightJson>::class.java) } returns
-            arrayOf(HelloAssoOrganizationLightJson("a", "A"), HelloAssoOrganizationLightJson("b", "B"))
+        every { client.listOrganizations("access") } returns
+            listOf(HelloAssoOrganizationLightJson("a", "A"), HelloAssoOrganizationLightJson("b", "B"))
 
         val ex = assertThrows<HelloAssoOrganizationUnresolvedException> { service().verify(userId, request) }
         assertSecretNeverWritten(ex)
@@ -162,6 +164,16 @@ class HelloAssoCredentialsServiceTest {
 
         assertThrows<RateLimitException> { service.verify(userId, request) }
         verify(exactly = HelloAssoCredentialsService.VERIFY_MAX_ATTEMPTS) { client.obtainTokens(any(), any()) }
+    }
+
+    @Test
+    fun `an association not on HelloAsso is refused before any HelloAsso call or row`() {
+        association.paymentProvider = PaymentProviderId.MOLLIE
+
+        assertThrows<HelloAssoNotAssociationProviderException> { service().verify(userId, request) }
+        assertThrows<HelloAssoNotAssociationProviderException> { service().ensureNotificationUrl(userId) }
+        verify(exactly = 0) { client.obtainTokens(any(), any()) }
+        assertSecretNeverWritten()
     }
 
     // ── notification URL ───────────────────────────────────────────────────

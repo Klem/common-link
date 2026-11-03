@@ -3,6 +3,11 @@ package org.commonlink.service
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.HelloAssoProperties
+import org.commonlink.dto.HelloAssoCheckoutIntentJson
+import org.commonlink.dto.HelloAssoCheckoutIntentResponseJson
+import org.commonlink.dto.HelloAssoInitCheckoutJson
+import org.commonlink.dto.HelloAssoOrganizationJson
+import org.commonlink.dto.HelloAssoOrganizationLightJson
 import org.commonlink.exception.HelloAssoException
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoRateLimitedException
@@ -38,8 +43,8 @@ private data class HelloAssoTokenResponse(
 )
 
 /**
- * Single HTTP layer towards HelloAsso (API keys mode): token issuance and renewal, then authenticated calls.
- * No database access — token caching lives in [HelloAssoTokenManager].
+ * Single HTTP layer towards HelloAsso (API keys mode), the real [HelloAssoGateway]: token issuance and renewal, then
+ * authenticated calls. No database access — token caching lives in [HelloAssoTokenManager].
  *
  * **Secrets** — the `client_secret`, the tokens and HelloAsso's response bodies (which may echo them) are never
  * logged nor put in an exception message: logs and [HelloAssoException]s carry only the operation and the status.
@@ -55,7 +60,7 @@ class HelloAssoClient(
     private val properties: HelloAssoProperties,
     restClientBuilder: RestClient.Builder,
     private val authRateLimiter: HelloAssoAuthRateLimiter,
-) {
+) : HelloAssoGateway {
     private val log = LoggerFactory.getLogger(HelloAssoClient::class.java)
 
     private val restClient: RestClient = restClientBuilder
@@ -82,7 +87,7 @@ class HelloAssoClient(
      *
      * @throws HelloAssoUnauthorizedException when HelloAsso rejects the keys.
      */
-    fun obtainTokens(clientId: String, clientSecret: String): HelloAssoTokens =
+    override fun obtainTokens(clientId: String, clientSecret: String): HelloAssoTokens =
         tokenCall(
             "client_credentials",
             LinkedMultiValueMap<String, String>().apply {
@@ -98,7 +103,7 @@ class HelloAssoClient(
      *
      * @throws HelloAssoUnauthorizedException when the refresh token is rejected — the chain is broken.
      */
-    fun refreshTokens(refreshToken: String): HelloAssoTokens =
+    override fun refreshTokens(refreshToken: String): HelloAssoTokens =
         tokenCall(
             "refresh_token",
             LinkedMultiValueMap<String, String>().apply {
@@ -106,6 +111,26 @@ class HelloAssoClient(
                 add("refresh_token", refreshToken)
             },
         )
+
+    override fun listOrganizations(accessToken: String): List<HelloAssoOrganizationLightJson> =
+        get("/users/me/organizations", accessToken, Array<HelloAssoOrganizationLightJson>::class.java).toList()
+
+    override fun getOrganization(accessToken: String, slug: String): HelloAssoOrganizationJson =
+        get("/organizations/${encode(slug)}", accessToken, HelloAssoOrganizationJson::class.java)
+
+    override fun createCheckoutIntent(
+        accessToken: String,
+        slug: String,
+        body: HelloAssoInitCheckoutJson,
+    ): HelloAssoCheckoutIntentResponseJson =
+        post("/organizations/${encode(slug)}/checkout-intents", accessToken, body, HelloAssoCheckoutIntentResponseJson::class.java)
+
+    override fun getCheckoutIntent(accessToken: String, slug: String, checkoutIntentId: Long): HelloAssoCheckoutIntentJson =
+        get("/organizations/${encode(slug)}/checkout-intents/$checkoutIntentId", accessToken, HelloAssoCheckoutIntentJson::class.java)
+
+    /** Slugs come from HelloAsso, but are still encoded as a path segment. */
+    private fun encode(segment: String): String =
+        org.springframework.web.util.UriUtils.encodePathSegment(segment, Charsets.UTF_8)
 
     /**
      * Authenticated `GET {api-base-url}{path}`.

@@ -16,6 +16,7 @@ import org.commonlink.entity.Donation
 import org.commonlink.exception.CollectionUnavailableException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
+import org.commonlink.payment.CheckoutPayer
 import org.commonlink.payment.CheckoutRequest
 import org.commonlink.payment.PaymentProviderRegistry
 import org.commonlink.repository.AssociationProfileRepository
@@ -157,6 +158,14 @@ class PublicWidgetService(
                 widgetToken = widgetToken,
                 locale = safeLocale,
                 sourceSite = cleanSourceSite,
+                payer = CheckoutPayer(
+                    email = request.donorEmail,
+                    fullName = request.donorFullName,
+                    addressLine1 = request.donorAddressLine1,
+                    postalCode = request.donorPostalCode,
+                    city = request.donorCity,
+                    country = request.donorCountry,
+                ),
             )
         )
 

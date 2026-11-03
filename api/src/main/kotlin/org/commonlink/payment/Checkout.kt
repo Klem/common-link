@@ -21,6 +21,7 @@ import java.util.UUID
  * @property widgetToken token of the widget the donation comes from, part of the return URL path.
  * @property locale two-letter UI locale, already validated by the caller.
  * @property sourceSite page that embedded the widget, already sanitized but not URL-encoded; `null` when unknown.
+ * @property payer donor identity a provider may use to pre-fill its payment page (HelloAsso); ignored by Mollie.
  */
 data class CheckoutRequest(
     val associationId: UUID,
@@ -32,6 +33,22 @@ data class CheckoutRequest(
     val widgetToken: String,
     val locale: String,
     val sourceSite: String?,
+    val payer: CheckoutPayer? = null,
+)
+
+/**
+ * Donor identity as entered in the donation form, for providers that pre-fill their payment page. Raw values: each
+ * provider keeps only what its own rules accept. Never a birth date.
+ *
+ * @property country ISO 3166-1 alpha-2 code.
+ */
+data class CheckoutPayer(
+    val email: String?,
+    val fullName: String?,
+    val addressLine1: String?,
+    val postalCode: String?,
+    val city: String?,
+    val country: String?,
 )
 
 /**

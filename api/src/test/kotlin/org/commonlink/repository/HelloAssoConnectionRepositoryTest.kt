@@ -17,7 +17,7 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Pins [HelloAssoConnection] against real PostgreSQL: mapping of a linked row, unique notification token, tokens
+ * Pins [HelloAssoConnection] on the test database: mapping of a linked row, unique notification token, tokens
  * encrypted at rest, and the "active link of a HELLOASSO association" probe used by the scheduled tasks.
  */
 @ImportTestcontainers(TestcontainersConfig::class)
@@ -128,5 +128,50 @@ class HelloAssoConnectionRepositoryTest(
         flushAndClear()
 
         assertThat(repository.existsActiveForHelloAssoAssociations()).isFalse
+    }
+
+    @Test
+    fun `pending reminders - started, never linked, HELLOASSO, D+7 not sent yet`() {
+        val pending = association()
+        repository.save(HelloAssoConnection(association = pending, webhookToken = "wh_p", onboardingStartedAt = Instant.now()))
+        val linked = association()
+        repository.save(
+            HelloAssoConnection(
+                association = linked, webhookToken = "wh_l", state = HelloAssoConnectionState.ACTIVE,
+                onboardingStartedAt = Instant.now(), linkedAt = Instant.now(),
+            )
+        )
+        val mollie = association(PaymentProviderId.MOLLIE)
+        repository.save(HelloAssoConnection(association = mollie, webhookToken = "wh_m", onboardingStartedAt = Instant.now()))
+        val done = association()
+        repository.save(
+            HelloAssoConnection(association = done, webhookToken = "wh_d", onboardingStartedAt = Instant.now(), reminderJ7SentAt = Instant.now())
+        )
+        flushAndClear()
+
+        assertThat(repository.existsPendingHelloAssoReminder()).isTrue
+        val found = repository.findPendingHelloAssoReminders()
+        assertThat(found.map { it.association.id }).containsExactly(pending.id)
+        // Fetched with its association: usable outside a transaction (scheduled task).
+        assertThat(found.single().association.name).isNotBlank
+    }
+
+    @Test
+    fun `refresh and eligibility candidates follow their cadence`() {
+        val now = Instant.now()
+        val stale = association()
+        connection(stale)
+        val fresh = association()
+        repository.save(
+            HelloAssoConnection(
+                association = fresh, webhookToken = "wh_f", state = HelloAssoConnectionState.ACTIVE, organizationSlug = "f",
+                lastRefreshAt = now, lastEligibilityCheckAt = now, canCollect = true,
+            )
+        )
+        flushAndClear()
+
+        assertThat(repository.findActiveHelloAssoRefreshCandidates(now.minusSeconds(3600))).contains(stale.id).doesNotContain(fresh.id)
+        assertThat(repository.findActiveHelloAssoEligibilityCandidates(now.minusSeconds(7200), now.minusSeconds(86400)))
+            .contains(stale.id).doesNotContain(fresh.id)
     }
 }

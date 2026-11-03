@@ -24,8 +24,8 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
     /** Catch-all 500: a bug reached the client. Always worth a developer's attention. */
     UNHANDLED_EXCEPTION("Erreur non gérée (HTTP 500)", "ERROR"),
 
-    /** Mollie refused or was unreachable — the donation path is down, money is not moving. */
-    PAYMENT_GATEWAY_FAILURE("Passerelle de paiement Mollie en échec (HTTP 502)", "ERROR"),
+    /** The payment provider (Mollie, HelloAsso) refused or was unreachable — the donation path is down. */
+    PAYMENT_GATEWAY_FAILURE("Passerelle de paiement en échec (HTTP 502)", "ERROR"),
 
     /** An upstream dependency (INSEE, VOP…) is unreachable — onboarding and IBAN checks stall. */
     UPSTREAM_UNAVAILABLE("Dépendance amont indisponible (HTTP 502)", "ERROR"),
@@ -57,7 +57,13 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
      * the real webhook simply not having landed yet. The cooldown keeps that noise to at most one
      * e-mail per window rather than one per donation.
      */
-    MISSED_WEBHOOK("Callback Mollie manqué — confirmé par le réconciliateur", "ERROR"),
+    MISSED_WEBHOOK("Notification de paiement manquée — confirmée par le réconciliateur", "ERROR"),
+
+    /**
+     * The payment provider reports a confirmed donation as refunded, being refunded or contested (HelloAsso). There is
+     * no refund model in CommonLink: the receipt and the on-chain proof already exist, so a human must handle it.
+     */
+    PAYMENT_REVERSED("Don remboursé ou contesté chez le prestataire de paiement", "ERROR"),
 
     /**
      * Bridge reported a transfer settled on a payout whose amount had already gone back to the

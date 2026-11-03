@@ -40,6 +40,28 @@ data class HelloAssoVerifyResponse(
 )
 
 /**
+ * Body of `POST /api/association/helloasso/connection`.
+ *
+ * @property verifyId handle returned by the key verification (valid 10 minutes, single use).
+ * @property mandate the association's acceptance of the current mandate wording.
+ */
+data class HelloAssoConnectRequest(
+    val verifyId: UUID,
+    @field:jakarta.validation.Valid val mandate: HelloAssoMandateDto,
+)
+
+/**
+ * The association's mandate to CommonLink over its HelloAsso access.
+ *
+ * @property accepted the checkbox was ticked.
+ * @property version wording version shown to the user; must equal the current one.
+ */
+data class HelloAssoMandateDto(
+    val accepted: Boolean,
+    @field:NotBlank @field:Size(max = 64) val version: String,
+)
+
+/**
  * The association's HelloAsso notification URL, to paste in its HelloAsso back office.
  *
  * @property notificationUrl `{base}/api/public/webhooks/helloasso/{token}` — the token never changes.

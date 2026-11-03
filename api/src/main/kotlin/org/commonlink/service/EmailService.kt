@@ -104,6 +104,27 @@ interface EmailService {
     fun sendPaymentProviderChanged(associationName: String, recipientEmail: String, providerName: String, dashboardUrl: String)
 
     /**
+     * Warns the association that HelloAsso rejected CommonLink's access (key regenerated or deleted, for instance) and
+     * that donations are suspended until it pastes an API key again.
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     * @param relinkUrl       Full URL of the dashboard tab where the key is pasted again.
+     */
+    fun sendHelloAssoConnectionBroken(associationName: String, recipientEmail: String, relinkUrl: String)
+
+    /**
+     * Reminds an association that started the "no HelloAsso account yet" journey to paste its API key: at D+1, then a
+     * last time at D+7 ([final]).
+     *
+     * @param associationName Official name of the association.
+     * @param recipientEmail  Association's contact email.
+     * @param collectionUrl   Full URL of the dashboard tab where the key is pasted.
+     * @param final           true for the D+7 reminder.
+     */
+    fun sendHelloAssoOnboardingReminder(associationName: String, recipientEmail: String, collectionUrl: String, final: Boolean)
+
+    /**
      * Sends the Cerfa 2041-RD fiscal receipt PDF to the donor after on-chain confirmation.
      *
      * @param donorEmail      Donor's email address.

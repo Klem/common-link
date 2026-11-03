@@ -94,6 +94,22 @@ class HelloAssoConnection(
     @Column(name = "linked_by")
     var linkedBy: UUID? = null,
 
+    /** Last time the reconciler confirmed a payment whose notification never arrived (V89). */
+    @Column(name = "webhook_missing_at")
+    var webhookMissingAt: Instant? = null,
+
+    /** When the association started the "no HelloAsso account yet" journey (V89); drives the D+1 / D+7 reminders. */
+    @Column(name = "onboarding_started_at")
+    var onboardingStartedAt: Instant? = null,
+
+    /** D+1 reminder sent (V89). */
+    @Column(name = "reminder_j1_sent_at")
+    var reminderJ1SentAt: Instant? = null,
+
+    /** D+7 reminder sent (V89). */
+    @Column(name = "reminder_j7_sent_at")
+    var reminderJ7SentAt: Instant? = null,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 

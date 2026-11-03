@@ -14,6 +14,6 @@ enum class PaymentProviderId(val refPrefix: String) {
     /** Mollie Connect (OAuth-linked merchant account). */
     MOLLIE("mollie:"),
 
-    /** HelloAsso Checkout with association API keys. No adapter exists yet. */
+    /** HelloAsso Checkout with association API keys ([HelloAssoProviderAdapter]). */
     HELLOASSO("helloasso:"),
 }

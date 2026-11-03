@@ -228,6 +228,52 @@ class SmtpEmailService(
         mailSender.send(message)
     }
 
+    override fun sendHelloAssoOnboardingReminder(associationName: String, recipientEmail: String, collectionUrl: String, final: Boolean) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject(
+            if (final) "Rappel : reliez votre compte HelloAsso — $associationName"
+            else "Votre compte HelloAsso : où en êtes-vous ? — $associationName"
+        )
+        val help = if (final) "<p>Besoin d'aide ? Répondez simplement à cet e-mail.</p>" else ""
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>Vous avez commencé à relier un compte HelloAsso pour encaisser les dons de vos campagnes.
+            Une fois le compte créé sur helloasso.com, il ne reste qu'à coller votre clé API dans l'onglet
+            « Encaissement des dons » : <a href="$collectionUrl">$collectionUrl</a></p>
+            $help
+            <p>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
+    override fun sendHelloAssoConnectionBroken(associationName: String, recipientEmail: String, relinkUrl: String) {
+        val message = mailSender.createMimeMessage()
+        val helper = MimeMessageHelper(message, false, "UTF-8")
+        helper.setFrom(from)
+        helper.setTo(recipientEmail)
+        helper.setSubject("Action requise : votre accès HelloAsso est à renouveler — $associationName")
+        helper.setText(
+            """
+            <p>Bonjour,</p>
+            <p>HelloAsso a refusé l'accès que l'association <strong>$associationName</strong> avait ouvert à CommonLink
+            (clé régénérée ou supprimée, par exemple). <strong>Vos campagnes ne peuvent plus recevoir de dons en ligne</strong>
+            pour le moment.</p>
+            <p>Pour rétablir la collecte, recollez une clé API HelloAsso dans l'onglet « Encaissement des dons » :
+            <a href="$relinkUrl">$relinkUrl</a></p>
+            <p>Les dons déjà reçus ne sont pas affectés.</p>
+            <p>L'équipe CommonLink</p>
+            """.trimIndent(),
+            true
+        )
+        mailSender.send(message)
+    }
+
     override fun sendMollieOnboardingCompleted(associationName: String, recipientEmail: String) {
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, false, "UTF-8")
