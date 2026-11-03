@@ -2,12 +2,15 @@ package org.commonlink.controller
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.commonlink.dto.OnboardingProvidedDocumentDto
 import org.commonlink.dto.OptionalDocumentDto
+import org.commonlink.service.KybDocumentService
 import org.commonlink.service.VerificationService
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
@@ -31,6 +34,7 @@ import java.util.UUID
 @Tag(name = "AssociationDocuments", description = "Supplementary (optional) document management for associations")
 class AssociationDocumentController(
     private val verificationService: VerificationService,
+    private val kybDocumentService: KybDocumentService,
 ) {
 
     @GetMapping
@@ -49,6 +53,33 @@ class AssociationDocumentController(
         @AuthenticationPrincipal principal: UserDetails,
     ): ResponseEntity<List<OptionalDocumentDto>> =
         ResponseEntity.ok(verificationService.listOptionalDocuments(UUID.fromString(principal.username)))
+
+    /**
+     * Lists the KYB documents the association already provided (statutes, RNA receipt, representative's ID), so it can
+     * re-download them for its payment provider's verification. Type and id only.
+     *
+     * @param principal authenticated user (UUID of the `User`).
+     * @return the provided KYB slots, in display order; empty when none.
+     */
+    @GetMapping("/kyb")
+    @Operation(
+        summary = "List provided KYB documents",
+        description = "Returns the id and type of each KYB document (statutes, RNA receipt, representative's ID) the " +
+            "association already provided, for re-download via /{id}/content. No file name nor content."
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Provided KYB documents returned",
+            content = [Content(array = ArraySchema(schema = Schema(implementation = OnboardingProvidedDocumentDto::class)))]
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+    )
+    fun listKybDocuments(
+        @AuthenticationPrincipal principal: UserDetails,
+    ): ResponseEntity<List<OnboardingProvidedDocumentDto>> =
+        ResponseEntity.ok(kybDocumentService.listProvidedForUser(UUID.fromString(principal.username)))
 
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @Operation(

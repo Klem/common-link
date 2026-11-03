@@ -3,13 +3,10 @@ package org.commonlink.service
 import org.commonlink.dto.MollieOnboardingContextDto
 import org.commonlink.dto.MollieSelfCompletionAttestationDto
 import org.commonlink.dto.OnboardingBeneficialOwnerDto
-import org.commonlink.dto.OnboardingProvidedDocumentDto
 import org.commonlink.dto.structureVariantOf
-import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AssociationRegistryCheck
 import org.commonlink.exception.NotFoundException
-import org.commonlink.repository.AssociationDocumentRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.repository.BeneficialOwnerRepository
@@ -33,7 +30,7 @@ class MollieOnboardingContextService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val registryCheckRepository: AssociationRegistryCheckRepository,
     private val beneficialOwnerRepository: BeneficialOwnerRepository,
-    private val documentRepository: AssociationDocumentRepository,
+    private val kybDocumentService: KybDocumentService,
     private val complianceAuditLogService: ComplianceAuditLogService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -45,13 +42,6 @@ class MollieOnboardingContextService(
          * so each journal entry stays tied to the exact text that was attested.
          */
         const val SELF_COMPLETION_ATTESTATION_TEXT_VERSION = "mollie-self-completion-v1-2026-10-12"
-
-        /** KYB document slots surfaced in the onboarding kit, in display order. */
-        val KIT_DOCUMENT_TYPES = listOf(
-            AssociationDocumentType.VERIF_STATUTS,
-            AssociationDocumentType.VERIF_RNA_RECEIPT,
-            AssociationDocumentType.VERIF_REPRESENTATIVE_ID,
-        )
     }
 
     /**
@@ -62,7 +52,7 @@ class MollieOnboardingContextService(
      *   decision snapshot exists.
      * - `beneficialOwners` lists non-discarded rows only (every row is curator-confirmed by
      *   construction), with name and role — never the date of birth.
-     * - `providedDocuments` lists the KYB slots in [KIT_DOCUMENT_TYPES] that hold a file.
+     * - `providedDocuments` lists the KYB slots that hold a file ([KybDocumentService.listProvided]).
      * - `siren` is the profile's SIREN, falling back to the registry scan's.
      *
      * @param userId authenticated user's id (`principal.username`).
@@ -78,12 +68,7 @@ class MollieOnboardingContextService(
             .filterNot { it.discarded }
             .map { OnboardingBeneficialOwnerDto(name = it.name, role = it.role, type = it.type) }
 
-        val documentsByType = documentRepository.findMetadataByAssociationId(associationId)
-            .filter { it.docType in KIT_DOCUMENT_TYPES && it.id != null }
-            .associateBy { it.docType }
-        val providedDocuments = KIT_DOCUMENT_TYPES.mapNotNull { type ->
-            documentsByType[type]?.let { OnboardingProvidedDocumentDto(id = it.id!!, type = type) }
-        }
+        val providedDocuments = kybDocumentService.listProvided(associationId)
 
         return MollieOnboardingContextDto(
             structureVariant = structureVariantOf(registryCheck?.legalCategory),
