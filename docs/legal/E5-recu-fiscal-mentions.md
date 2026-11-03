@@ -94,6 +94,10 @@ peut ainsi jamais devenir silencieusement une mention fausse. Et lorsque le moye
 communiqué — cas d'un don confirmé par le mécanisme de rattrapage interne plutôt que par la
 notification du prestataire — le reçu porte « Non précisé », ce qui est exact, au lieu de deviner.
 
+*Complément du 2 novembre 2026.* Pour un don encaissé par HelloAsso, le reçu imprime le moyen de
+paiement rapporté par HelloAsso sous l'un des libellés suivants : Carte bancaire, Prélèvement SEPA,
+Virement bancaire, Chèque, Espèces. Un code inconnu de la plateforme est, là aussi, imprimé tel quel.
+
 ### 4.3 Portée dans le temps
 
 **Les reçus déjà émis conservent leur rédaction d'origine.** Cela n'est pas un choix de mise en
@@ -178,5 +182,5 @@ reste en usage.
 
 ---
 
-*Document établi le 17 août 2026, complété le 1er septembre 2026. Il décrit l'état des corrections
+*Document établi le 17 août 2026, complété le 1er septembre 2026 et le 2 novembre 2026 (moyens de paiement HelloAsso). Il décrit l'état des corrections
 arrêté à cette date et sera mis à jour si la rédaction du reçu évolue.*

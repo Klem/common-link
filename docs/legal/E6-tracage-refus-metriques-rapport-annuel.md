@@ -109,9 +109,9 @@ vocation réglementaire — l'énumération a été alignée sur le code réel :
 | `BUDGET_UNBALANCED` | Budget prévisionnel absent ou déséquilibré (tolérance d'un euro) |
 | `IMPACT_GOALS_MISSING` | Résultat attendu absent ou inférieur à vingt caractères |
 | `KYB_NOT_VERIFIED` | Dossier d'identification de l'association non vérifié |
-| `BANK_NOT_CONNECTED` | Aucun compte Mollie connecté, ou association rattachée à HelloAsso, non intégré *(depuis le 2 novembre 2026)* |
-| `BANK_CONNECTION_BROKEN` | Connexion Mollie rompue |
-| `BANK_KYC_INCOMPLETE` | Vérification d'identité Mollie non aboutie |
+| `BANK_NOT_CONNECTED` | Aucun compte Mollie connecté, ou, pour une association rattachée à HelloAsso, aucune liaison active (clé jamais liée ou liaison retirée) *(depuis le 2 novembre 2026)* |
+| `BANK_CONNECTION_BROKEN` | Connexion Mollie rompue, ou liaison HelloAsso rompue *(depuis le 2 novembre 2026)* |
+| `BANK_KYC_INCOMPLETE` | Vérification d'identité Mollie non aboutie, ou organisation HelloAsso non éligible à l'encaissement — éligibilité en attente ou suspendue *(depuis le 2 novembre 2026)* |
 | `CGU_NOT_ACCEPTED` | Conditions générales d'utilisation non acceptées (art. 1740 A CGI) |
 
 **`FREEZE_HIT`, `OUT_OF_SCOPE_9220` et `MANUAL_CURATOR` ne figurent pas dans cette liste.**

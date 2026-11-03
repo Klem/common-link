@@ -18,9 +18,13 @@
 
 Ce document décrit la manière dont la plateforme se tient informée de l'avancement du dossier
 qu'une association constitue auprès du prestataire de paiement (Mollie), et ce qu'elle en fait.
-Depuis le 2 novembre 2026, ce mécanisme ne concerne que les associations rattachées à Mollie ;
-HelloAsso, attribué par défaut aux nouvelles associations, n'est pas intégré et ne fait l'objet
-d'aucun suivi.
+Depuis le 2 novembre 2026, ce mécanisme ne concerne que les associations rattachées à Mollie.
+HelloAsso, attribué par défaut aux nouvelles associations, est intégré selon un suivi distinct,
+hors du champ de la présente fiche : l'éligibilité de l'organisation à l'encaissement, telle que
+HelloAsso la déclare, est relue à la liaison, à la demande de l'association (au plus une fois par
+minute), à son retour sur sa page, toutes les deux heures tant que l'organisation n'est pas
+éligible, une fois par jour lorsqu'elle l'est, et après toute notification d'organisation reçue de
+HelloAsso *(fiche E3 — Non-délégation des diligences au prestataire de paiement, point 4.6)*.
 
 **Ce mécanisme ne relève pas du dispositif LCB-FT de CommonLink et n'en satisfait aucune
 obligation.** La vérification conduite par le prestataire l'est pour son propre compte. La fiche
@@ -196,7 +200,10 @@ Seule la **rupture du lien technique** entre la plateforme et le compte de l'ass
 prestataire — notamment lorsque l'association retire l'autorisation qu'elle avait donnée à
 CommonLink — est détectée, lors du renouvellement périodique de l'accès — effectué depuis le
 2 novembre 2026 pour les seules associations rattachées à Mollie : la collecte est alors
-suspendue automatiquement. Ce comportement est antérieur au présent mécanisme et n'en dépend pas ;
+suspendue automatiquement. *(Les liaisons HelloAsso font l'objet d'un renouvellement distinct,
+hebdomadaire et non concurrent par association : un jeton de renouvellement refusé par HelloAsso
+marque la liaison comme rompue, l'association en est avertie une fois par courriel, et la collecte
+cesse jusqu'à ce qu'une nouvelle clé soit collée.)* Ce comportement est antérieur au présent mécanisme et n'en dépend pas ;
 il ne renseigne pas sur l'état de la validation chez le prestataire.
 
 Ce mécanisme ne couvre pas non plus :
@@ -237,4 +244,4 @@ fichiers de configuration au 12 octobre 2026.
 
 ---
 
-*Document établi le 12 octobre 2026, complété le 2 novembre 2026 (restriction aux associations rattachées à Mollie).*
+*Document établi le 12 octobre 2026, complété le 2 novembre 2026 (restriction aux associations rattachées à Mollie ; renvoi au suivi distinct des associations rattachées à HelloAsso).*

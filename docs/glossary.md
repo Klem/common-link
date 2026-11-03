@@ -166,6 +166,10 @@ Bank account tab state meaning Mollie sent the dossier back for more information
 A security mechanism that restricts which domains can communicate with the backend API. Only the authorized frontend URL is allowed — no other website can make requests to the API.
 `technical` `security`
 
+### Cash-in eligibility (isCashInCompliant)
+Whether HelloAsso lets an organization receive payments right now, read from HelloAsso's API (`isCashInCompliant` of `GET /v5/organizations/{slug}`, returned to an organization admin, which an association API key is). CommonLink reads it at linking, on the association's request (at most once a minute), on its return to the page, every 2 h while not eligible, daily once eligible, and after any HelloAsso organization notification — never by creating a test payment. A linked HelloAsso association collects only while eligible; one that was eligible and is not any more is shown as suspended.
+`technical` `compliance`
+
 ### Checkout Request / Checkout Session
 The provider-neutral input and output of a donation payment. The **Checkout Request** carries what the public donation flow knows once the cap, the guest donor and the asset-freeze screening have passed (association, campaign, amount, public reference, widget, locale, source site); each **Payment Provider** turns it into its own payment (return URLs, description, metadata). The **Checkout Session** returns the prefixed provider reference stored on the pending donation and the provider-hosted page the donor is redirected to — never empty: a provider that returns no payment page fails before any donation is recorded.
 `technical`
