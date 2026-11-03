@@ -53,7 +53,7 @@ export default function CampaignEditorPage() {
     useCampaign(campaignId);
   const payments = usePayments(campaignId, returningPayoutId);
   const { donorsPage } = useCampaignDonors(campaignId);
-  const { verificationStatus, bankStatus, bankResolved, bankActionUrl } = useAccStatusStore();
+  const { verificationStatus, bankStatus, bankResolved, bankActionUrl, paymentProvider } = useAccStatusStore();
   const { addToast } = useToastStore();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') ?? 'info');
@@ -210,6 +210,7 @@ export default function CampaignEditorPage() {
           bankStatus={bankStatus}
           bankResolved={bankResolved}
           bankActionUrl={bankActionUrl}
+          paymentProvider={paymentProvider}
           onClose={() => setShowPublishModal(false)}
           onConfirm={handleConfirmPublish}
         />

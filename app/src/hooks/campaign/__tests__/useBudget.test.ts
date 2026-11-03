@@ -47,8 +47,8 @@ describe('useBudget', () => {
 
       act(() => {
         result.current.init([
-          { side: BudgetSide.EXPENSE, code: '60', name: 'Achats', items: [{ label: 'Fournitures', amount: 200 }] },
-          { side: BudgetSide.REVENUE, code: 'PRODUIT', name: 'Produit', items: [{ label: 'Dons', amount: 1 }] },
+          { id: 's1', sortOrder: 0, side: BudgetSide.EXPENSE, code: '60', name: 'Achats', items: [{ id: 'i1', sortOrder: 0, label: 'Fournitures', amount: 200 }] },
+          { id: 's2', sortOrder: 1, side: BudgetSide.REVENUE, code: 'PRODUIT', name: 'Produit', items: [{ id: 'i2', sortOrder: 0, label: 'Dons', amount: 1 }] },
         ]);
       });
 
@@ -65,11 +65,13 @@ describe('useBudget', () => {
       rerender({ goal: 2500 });
       act(() => {
         result.current.init(
-          result.current.sections.map((s) => ({
+          result.current.sections.map((s, index) => ({
+            id: `s${index}`,
+            sortOrder: index,
             side: s.side,
             code: s.code,
             name: s.name,
-            items: s.items,
+            items: s.items.map((it, i) => ({ ...it, id: `i${index}-${i}`, sortOrder: i })),
           })),
         );
       });

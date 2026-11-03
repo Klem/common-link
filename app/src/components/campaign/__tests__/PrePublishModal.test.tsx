@@ -4,6 +4,7 @@ import { PrePublishModal } from '../PrePublishModal';
 import type { CampaignDto } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
+import { PaymentProviderId } from '@/types/paymentProvider';
 import { getLegalAcceptanceState } from '@/lib/api/legal';
 import { getLegalDocument } from '@/lib/api/public';
 
@@ -100,6 +101,30 @@ describe('PrePublishModal — account status', () => {
     renderWith({ bankStatus });
 
     expect(screen.getByText(`account.bank.${bankStatus}`)).toBeInTheDocument();
+  });
+
+  it.each([
+    BankSetupStatus.COMPLETED,
+    BankSetupStatus.NOT_CONNECTED,
+    BankSetupStatus.NEEDS_DATA,
+    BankSetupStatus.IN_REVIEW,
+    BankSetupStatus.BROKEN,
+  ])('renders the HelloAsso status %s with HelloAsso wording, never Mollie', (bankStatus) => {
+    // An unverified profile keeps the per-row details visible even when the bank row is complete.
+    renderWith({ bankStatus, paymentProvider: PaymentProviderId.HELLOASSO, verificationStatus: VerificationStatus.PENDING });
+
+    expect(screen.getByText(`account.helloAssoBank.${bankStatus}`)).toBeInTheDocument();
+    expect(screen.queryByText(`account.bank.${bankStatus}`)).not.toBeInTheDocument();
+  });
+
+  it('keeps the Mollie wording for a Mollie association', () => {
+    renderWith({
+      bankStatus: BankSetupStatus.COMPLETED,
+      paymentProvider: PaymentProviderId.MOLLIE,
+      verificationStatus: VerificationStatus.PENDING,
+    });
+
+    expect(screen.getByText('account.bank.COMPLETED')).toBeInTheDocument();
   });
 
   /** Regression guard: PENDING and REJECTED used to render as "not yet verified". */

@@ -1,4 +1,5 @@
 import type { BankSetupStatus } from '@/lib/bankSetupStatus';
+import type { HelloAssoStatus } from '@/types/helloasso';
 
 /** Payment service provider an association collects donations through (mirror of the backend `PaymentProviderId`). */
 export const PaymentProviderId = {
@@ -20,8 +21,8 @@ export interface PaymentStatusResponse {
   actionUrl: string | null;
   /** Non-blocking provider warnings (codes), empty when none. */
   warnings: string[];
-  /** HelloAsso-specific link details; null or absent for other providers. Typed with the HelloAsso journey. */
-  helloasso?: null;
+  /** HelloAsso link details; absent for other providers. */
+  helloasso?: HelloAssoStatus | null;
 }
 
 /** Whether an association can collect through a provider (mirror of the backend `ProviderReadinessStatus`). */

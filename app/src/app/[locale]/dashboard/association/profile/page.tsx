@@ -13,7 +13,8 @@ import { useAssociationProfile } from '@/hooks/dashboard/useAssociationProfile';
 import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { useAccStatusStore } from '@/stores/accStatusStore';
 import { PaymentProviderId } from '@/types/paymentProvider';
-import { PaymentProviderUnavailable } from '@/components/dashboard/PaymentProviderUnavailable';
+import HelloAssoOnboardingFlow from '@/components/dashboard/helloasso-onboarding/HelloAssoOnboardingFlow';
+import { helloAssoTabBadge } from '@/components/dashboard/helloasso-onboarding/helloAssoFlow';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
@@ -163,6 +164,7 @@ export default function AssociationProfilePage() {
   const mollieKyc = useMollieKycStatus();
   // Provider-neutral status written dashboard-wide by AssociationStatusSync; null while it loads.
   const paymentProvider = useAccStatusStore((s) => s.paymentProvider);
+  const helloAssoBadge = helloAssoTabBadge(useAccStatusStore((s) => s.helloasso));
   const {
     connected: mollieConnected,
     pending: molliePending,
@@ -451,16 +453,23 @@ export default function AssociationProfilePage() {
             title={tabUnlocked.bank ? undefined : t('association.profile.tabs.locked')}
           >
             {tabUnlocked.bank ? '💳' : '🔒'} {t('association.profile.tabs.bank')}{' '}
-            {/* Only the label follows the onboarding state (Q7); the `ok` class stays strictly `bankDone`. */}
-            <span className={`set-tab-badge${bankDone ? ' ok' : ''}`}>
-              {t(`association.profile.tabs.bankBadge.${bankTabBadge({
-                connected: mollieConnected,
-                broken: mollieBroken,
-                onboardingStatus,
-                canReceivePayments,
-                bankDone,
-              })}`)}
-            </span>
+            {paymentProvider === PaymentProviderId.HELLOASSO ? (
+              // HelloAsso: label and colour both follow the link state (brief §2.1).
+              <span className={`set-tab-badge${helloAssoBadge.tone ? ` ${helloAssoBadge.tone}` : ''}`}>
+                {t(`association.profile.tabs.helloAssoBadge.${helloAssoBadge.label}`)}
+              </span>
+            ) : (
+              /* Only the label follows the onboarding state (Q7); the `ok` class stays strictly `bankDone`. */
+              <span className={`set-tab-badge${bankDone ? ' ok' : ''}`}>
+                {t(`association.profile.tabs.bankBadge.${bankTabBadge({
+                  connected: mollieConnected,
+                  broken: mollieBroken,
+                  onboardingStatus,
+                  canReceivePayments,
+                  bankDone,
+                })}`)}
+              </span>
+            )}
           </button>
           <button
             className={`set-tab${activeTab === 'diffusion' ? ' active' : ''}${tabUnlocked.diffusion ? '' : ' locked'}`}
@@ -728,11 +737,10 @@ export default function AssociationProfilePage() {
         )}
 
         {/* ══ Onglet : Encaissement des dons ══════════════════════════════════ */}
-        {/* HelloAsso has no journey yet (placeholder until S7-08); Mollie — or a provider still loading — keeps
-            the Mollie flow unchanged. */}
+        {/* HelloAsso journey (lot G); Mollie — or a provider still loading — keeps the Mollie flow unchanged. */}
         {activeTab === 'bank' && paymentProvider === PaymentProviderId.HELLOASSO && (
           <div className="set-tab-content active">
-            <PaymentProviderUnavailable />
+            <HelloAssoOnboardingFlow profile={profile} />
           </div>
         )}
         {activeTab === 'bank' && paymentProvider !== PaymentProviderId.HELLOASSO && (

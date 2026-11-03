@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import AssociationProfilePage from '../page';
 import { useAccStatusStore } from '@/stores/accStatusStore';
 import { PaymentProviderId } from '@/types/paymentProvider';
+import { HelloAssoLink, HelloAssoWebhookState } from '@/types/helloasso';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,9 @@ vi.mock('@/hooks/mollie/useMollieKycStatus', () => ({
 vi.mock('@/components/dashboard/mollie-onboarding/MollieOnboardingFlow', () => ({
   default: () => <p>test.mollieFlow</p>,
 }));
+vi.mock('@/components/dashboard/helloasso-onboarding/HelloAssoOnboardingFlow', () => ({
+  default: () => <p>test.helloAssoFlow</p>,
+}));
 vi.mock('@/components/dashboard/MollieOnboardModal', () => ({ default: () => null }));
 vi.mock('@/components/dashboard/MollieInfoModal', () => ({ default: () => null }));
 vi.mock('@/components/settings/diffusion/DiffusionTab', () => ({ DiffusionTab: () => null }));
@@ -89,6 +93,7 @@ function openBankTab(provider: PaymentProviderId | null) {
 describe('Bank tab — journey chosen by payment provider (S2-05)', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    useAccStatusStore.setState({ helloasso: null });
   });
 
   it('renders the Mollie flow for a Mollie association', () => {
@@ -104,13 +109,41 @@ describe('Bank tab — journey chosen by payment provider (S2-05)', () => {
     expect(screen.getByText('test.mollieFlow')).toBeInTheDocument();
   });
 
-  it('renders the coming-soon placeholder for a HelloAsso association', () => {
+  it('renders the HelloAsso journey for a HelloAsso association', () => {
     openBankTab(PaymentProviderId.HELLOASSO);
 
     expect(screen.queryByText('test.mollieFlow')).not.toBeInTheDocument();
-    // next-intl is mocked to echo keys; the placeholder's namespace is resolved by its own useTranslations.
-    expect(screen.getByRole('status')).toHaveTextContent('title');
-    expect(screen.getByRole('status')).toHaveTextContent('body');
+    expect(screen.getByText('test.helloAssoFlow')).toBeInTheDocument();
+  });
+
+  it('shows the HelloAsso badge, coloured by the link state', () => {
+    useAccStatusStore.setState({
+      helloasso: {
+        link: HelloAssoLink.OK,
+        notificationUrl: null,
+        organizationSlug: 'les-amis',
+        canCollect: false,
+        everCompliant: true,
+        lastEligibilityCheckAt: null,
+        webhook: HelloAssoWebhookState.UNKNOWN,
+        clientIdMasked: null,
+        linkedAt: null,
+        linkedBy: null,
+        secretWipedAt: null,
+        lastRefreshAt: null,
+      },
+    });
+    openBankTab(PaymentProviderId.HELLOASSO);
+
+    const badge = bankTabButton().querySelector('.set-tab-badge');
+    expect(badge).toHaveTextContent('association.profile.tabs.helloAssoBadge.SUSPENDED');
+    expect(badge).toHaveClass('err');
+  });
+
+  it('keeps the Mollie badge for a Mollie association', () => {
+    openBankTab(PaymentProviderId.MOLLIE);
+
+    expect(bankTabButton().querySelector('.set-tab-badge')?.textContent).toContain('association.profile.tabs.bankBadge.');
   });
 
   it('shows the renamed tab with the card icon once unlocked', () => {

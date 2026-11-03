@@ -3209,3 +3209,209 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .copy-row-label { width: auto; }
   .help-card { flex-wrap: wrap; }
 }
+/* ── Bank tab — HelloAsso onboarding flow (lot G, S7-02) ──────────────────────────────────
+   Ported from minisite/onboarding-helloasso-v2.html (validated mockup, notes v3 of 28/10/2026), same rules as the
+   Mollie blocks above: classes absent from this file are ported as-is (font stacks via the next/font variables);
+   classes that already exist with different values are left untouched globally and overridden inside `.hao-flow`
+   (the flow's root) only. Shared with the Mollie port, not redefined: stepper*, acc-list/item/trigger/chev/panel,
+   copy-row*, copy-btn*, skel, row, row-between, muted, small, lead, screen-foot, help-card, ol-steps, tr-num, mw-*.
+   `.spinner` and `.mono` differ globally (15px spinner, 11.5px indigo mono): the mockup values apply inside
+   `.hao-flow` only, like the other collisions. The demo-bar is not implemented. */
+
+/* Tab badge: error tone (mockup `.set-tab-badge.err`) */
+.set-tab-badge.err{background:rgba(232,69,60,.12);color:var(--error-red)}
+
+/* Stepper: "Déjà fait" step of the "existing account" path */
+.stepper-item.skipped .stepper-num{background:var(--mist-lavender);border-color:var(--mist-lavender);color:var(--teal-dark)}
+.stepper-sub{display:block;font-size:11px;font-weight:500;color:var(--slate-lavender)}
+
+/* NEW COMPONENT: imposed-text (verbatim partner text) */
+.imposed{background:var(--soft-cream);border:1px solid var(--mist-lavender);border-left:4px solid var(--deep-indigo);border-radius:var(--radius-md);padding:16px 20px}
+.imposed-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate-lavender);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.imposed blockquote{font-size:14px;color:var(--ink-navy);line-height:1.7}
+
+/* NEW COMPONENT: role-split ("qui fait quoi") */
+.role-split{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-top:24px}
+.role-col{border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);padding:18px 20px;background:var(--white)}
+.role-col.main{border-color:rgba(78,205,196,.5);background:linear-gradient(180deg,rgba(78,205,196,.06),var(--white) 70%)}
+.role-col h4{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.role-col ul{list-style:none}
+.role-col li{font-size:13.5px;padding:5px 0 5px 22px;position:relative;color:var(--ink-navy)}
+.role-col li::before{content:'•';position:absolute;left:6px;color:var(--teal-dark);font-weight:800}
+
+/* NEW COMPONENT: cert-rule (✓ / ✗ entry points) */
+.cert-rule{border:1px solid var(--mist-lavender);border-left:4px solid var(--bright-teal);border-radius:var(--radius-lg);padding:18px 22px;background:var(--white)}
+.cert-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cert-col{border-radius:var(--radius-md);padding:12px 14px;font-size:13.5px}
+.cert-col.yes{background:rgba(52,199,89,.08)}
+.cert-col.no{background:rgba(232,69,60,.06)}
+.cert-col strong{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.cert-col.yes strong{color:#1f8a3b}
+.cert-col.no strong{color:var(--error-red)}
+.cert-col div+div{margin-top:4px}
+
+/* EXTERNAL COMPONENT: official "Payer avec HelloAsso" button (light variant), CSS verbatim from dev.helloasso.com
+   "Bouton: Payer avec HelloAsso" (updatedAt 2026-03-04). HelloAsso's asset, not a DS component: do not restyle. */
+.HaPay{width:fit-content;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.HaPay *{font-family:"Open Sans","Trebuchet MS","Lucida Sans Unicode","Lucida Grande","Lucida Sans",Arial,sans-serif;transition:all .3s ease-out}
+.HaPayButton{align-items:stretch;background:none;border:none;display:flex;padding:0;border-radius:8px}
+.HaPayButton:hover{cursor:pointer}
+.HaPayButton:not(:disabled):focus{box-shadow:0 0 0 .25rem rgba(73,211,138,.25)}
+.HaPayButton:not(:disabled):hover .HaPayButtonLabel,.HaPayButton:not(:disabled):focus .HaPayButtonLabel{background-color:#483dbe}
+.HaPayButton:not(:disabled):hover .HaPayButtonLogo,.HaPayButton:not(:disabled):focus .HaPayButtonLogo,.HaPayButton:not(:disabled):hover .HaPayButtonLabel,.HaPayButton:not(:disabled):focus .HaPayButtonLabel{border:1px solid #483dbe}
+.HaPayButtonLogo{background-color:#ffffff;border:1px solid #4c40cf;border-top-left-radius:8px;border-bottom-left-radius:8px;padding:10px 16px;width:30px}
+.HaPayButtonLabel{align-items:center;justify-content:space-between;column-gap:5px;background-color:#4c40cf;border:1px solid #4c40cf;border-top-right-radius:8px;border-bottom-right-radius:8px;color:#ffffff;font-size:16px;font-weight:800;display:flex;padding:0 16px}
+.HaPaySecured{align-items:center;justify-content:space-between;display:flex;column-gap:5px;padding:8px 16px;font-size:12px;font-weight:600;color:#2e2f5e}
+.HaPay svg{fill:currentColor}
+
+/* FAQ v3.2: groups, icon chips, rich panels */
+.faq-group+.faq-group{margin-top:22px}
+.faq-group-label{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--slate-lavender);margin:0 0 8px 4px}
+.acc-trigger .acc-q{flex:1}
+.acc-ico{width:32px;height:32px;border-radius:var(--radius-md);background:var(--soft-cream);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:background .2s}
+.acc-trigger:hover .acc-ico,.acc-trigger[aria-expanded="true"] .acc-ico{background:rgba(78,205,196,.14)}
+.acc-item:has(.acc-trigger[aria-expanded="true"]){background:linear-gradient(180deg,rgba(78,205,196,.04),var(--white) 60%)}
+.cert-rule.faq-compact{border:none;padding:0;background:none;margin-top:4px}
+.mini-figs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.mini-fig{display:flex;gap:12px;align-items:flex-start;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);padding:14px}
+.mini-fig-ico{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.mini-fig-ico.teal{background:rgba(78,205,196,.12)}
+.mini-fig-ico.indigo{background:rgba(50,50,125,.08)}
+.mini-fig-ico.amber{background:rgba(255,179,71,.14)}
+.mini-fig-val{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:20px;color:var(--ink-navy);line-height:1.2}
+.mini-fig-lbl{font-size:12.5px;color:var(--slate-lavender);line-height:1.5}
+.mini-figs.two{grid-template-columns:repeat(2,1fr);margin-top:8px}
+.access-live{margin-top:14px;border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);padding:16px 18px;background:var(--white)}
+.access-live-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:14px}
+
+/* NEW COMPONENT: path-choice (two entry cards) */
+.path-choice{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
+.path-card{background:var(--white);border:2px solid var(--mist-lavender);border-radius:var(--radius-xl);padding:24px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm);transition:border-color .2s,box-shadow .2s}
+.path-card:hover{border-color:var(--bright-teal);box-shadow:var(--shadow-md)}
+.path-card h3{font-size:19px}
+.path-card p{font-size:14px;color:var(--slate-lavender);flex:1}
+.path-card .btn{align-self:flex-start;margin-top:6px}
+.path-card.featured{border-color:rgba(78,205,196,.5);background:linear-gradient(180deg,rgba(78,205,196,.06),var(--white) 60%)}
+
+/* NEW COMPONENT: provider window (screen 3, single centred card) */
+.solo-wrap{display:flex;justify-content:center;margin:8px 0 4px}
+.provider-window{position:sticky;top:84px;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-md)}
+.provider-window-solo{position:static;width:100%;max-width:420px}
+
+/* NEW COMPONENT: link-step (one card per gesture) */
+.link-step{background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);margin-top:28px}
+.link-step-head{display:flex;align-items:center;gap:14px;padding:24px 32px 0}
+.link-step-head h3{font-size:18px;flex:1}
+.link-step-body{padding:16px 32px 28px 74px}
+.link-step-body>*+*{margin-top:18px}
+.link-step-body>p{font-size:14px;color:var(--slate-lavender);line-height:1.8}
+.link-step.done .tr-num{background:var(--bright-teal);color:#fff}
+.link-submit{margin-top:36px;padding-top:28px;border-top:1px solid var(--mist-lavender)}
+.path-crumbs{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink-navy);background:var(--soft-cream);border:1px solid var(--mist-lavender);border-radius:var(--radius-full);padding:4px 12px;vertical-align:middle}
+.path-crumbs .sep{color:var(--slate-lavender)}
+.secret-hint{margin-top:10px;color:var(--teal-dark)}
+.secret-hint strong{color:var(--teal-dark)}
+
+/* NEW COMPONENT: disclose (folded edge case) */
+.disclose summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--deep-indigo);list-style:none;display:inline-flex;align-items:center;gap:6px}
+.disclose summary::-webkit-details-marker{display:none}
+.disclose summary::before{content:'+';font-weight:800;color:var(--slate-lavender);width:12px}
+.disclose[open] summary::before{content:'−'}
+.disclose p{font-size:13px;color:var(--slate-lavender);line-height:1.7;margin-top:8px;padding-left:18px}
+.disclose+.disclose{margin-top:8px}
+
+/* NEW COMPONENT: key-field (input + paste + reveal) */
+.key-field{display:flex;gap:8px;align-items:stretch}
+.key-field .form-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em}
+.key-field .btn{flex-shrink:0}
+.key-result{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius-lg);border:1px solid var(--mist-lavender);background:var(--soft-cream);margin-top:4px}
+.key-result.ok{border-color:rgba(52,199,89,.35);background:rgba(52,199,89,.06)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;font-size:13px}
+.kv dt{color:var(--slate-lavender);font-weight:600}
+.kv dd{font-weight:600}
+
+/* Collisions: mockup values applied inside the flow only (same list as `.mob-flow`, plus the FAQ panel indent, the
+   success input border and the modal backdrop — global backdrop: black .5, blur, z-index 50). */
+.hao-flow .card-body{padding:24px}
+.hao-flow .card-header-bar{padding:16px 24px;gap:12px}
+.hao-flow .card-header-bar h3{font-size:16px}
+.hao-flow .badge{white-space:nowrap}
+.hao-flow .badge-success{background:rgba(52,199,89,.12)}
+.hao-flow .btn-ghost{border:2px solid transparent;padding:12px 24px;font-size:14px}
+.hao-flow .btn-ghost.btn-sm{padding:8px 18px;font-size:13px}
+.hao-flow .empty-state{display:block;padding:40px 24px;text-align:center;animation:none}
+.hao-flow .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:.6}
+.hao-flow .empty-state h4{font-size:20px;margin-bottom:8px}
+.hao-flow .empty-state p{font-size:14px;color:var(--slate-lavender);margin:0 auto 20px;max-width:460px;line-height:1.6}
+.hao-flow .mw-body .empty-state-icon{font-size:40px;margin-bottom:10px}
+.hao-flow .acc-panel{padding-left:64px}
+.hao-flow .acc-panel .role-split{margin-top:14px;grid-template-columns:1fr 1fr}
+.hao-flow .acc-panel .HaPay{margin:0}
+.hao-flow .form-input.success{border-color:var(--success-green)}
+.hao-flow .spinner{width:18px;height:18px;border:3px solid var(--mist-lavender);border-top-color:var(--bright-teal);animation:spin .8s linear infinite}
+@media (prefers-reduced-motion:reduce){.hao-flow .spinner{animation:none}}
+.hao-flow .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:inherit;letter-spacing:normal}
+.hao-flow .modal-backdrop{background:rgba(23,23,68,.45);backdrop-filter:none;z-index:1000;padding:24px}
+.hao-flow .modal{background:var(--white);animation:mobFadeUp .2s ease}
+.hao-flow .modal-header h3{font-size:18px;color:var(--ink-navy)}
+@media (prefers-reduced-motion:reduce){.hao-flow .modal{animation:none}}
+
+/* Static inline styles of the mockup, as classes */
+.hao-refresh-info{text-align:right;margin:-16px 0 8px}
+.hao-linked-banner{margin-bottom:24px}
+.hao-grow{flex:1}
+.hao-self-start{align-self:flex-start}
+.hao-screen-title{font-size:24px}
+.hao-title-row{margin-bottom:6px}
+.hao-title-row-lg{margin-bottom:8px}
+.hao-lead-spaced{margin-bottom:20px}
+.hao-mw-title{font-size:17px;margin-bottom:6px}
+.hao-mw-text{margin-bottom:14px}
+.hao-mw-alert{text-align:left;margin-top:14px}
+.hao-alert-top{margin-top:24px}
+.hao-form-group-flat{margin-bottom:0}
+.hao-label-hint{font-weight:500}
+.hao-org-name{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:17px}
+.hao-org-match{color:var(--teal-dark);font-weight:600;margin-top:2px}
+.hao-org-label{font-weight:600}
+.hao-tips{margin-top:6px}
+.hao-mismatch-hint{margin-top:6px}
+.hao-mandate{align-items:flex-start}
+.hao-mandate input{margin-top:2px}
+.hao-submit-row{margin-top:24px}
+.hao-copy-row-spaced{margin-top:10px}
+.hao-row-spaced{margin-top:12px}
+.hao-row-spaced-lg{margin-top:14px}
+.hao-row-center{justify-content:center}
+.hao-broken-hint{margin-top:16px}
+.hao-flow .empty-state p.hao-broken-hint{margin-top:16px}
+.hao-flow .empty-state.hao-active-state{padding:24px}
+.hao-card-spaced{margin-top:20px}
+.hao-faq-card{margin-top:24px}
+.hao-help-card{margin-top:28px}
+.hao-flow .card-body.hao-help-body{padding:18px 24px}
+.hao-imposed-spaced{margin-top:10px}
+.hao-p-spaced{margin-top:12px}
+.hao-p-spaced-lg{margin-top:14px}
+.hao-note-spaced{margin-top:8px}
+.hao-alert-bottom{margin-bottom:14px}
+.hao-files{margin-top:14px}
+.hao-files li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;font-size:13px}
+.hao-files li+li{border-top:1px solid var(--mist-lavender)}
+.hao-skel-stepper{height:72px;border-radius:var(--radius-xl);margin-bottom:24px}
+.hao-skel-title{height:26px;width:40%;margin-bottom:14px}
+.hao-skel-line{height:14px;width:75%;margin-bottom:8px}
+.hao-skel-line-short{height:14px;width:60%;margin-bottom:28px}
+.hao-skel-block{height:120px}
+
+/* Responsive (the mockup is desktop-only; same breakpoints as the rest of this file) */
+@media (max-width: 900px) {
+  .path-choice, .role-split, .hao-flow .acc-panel .role-split, .cert-cols, .mini-figs, .mini-figs.two { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .link-step-head { padding: 20px 20px 0; }
+  .link-step-body { padding: 14px 20px 24px; }
+  .hao-flow .acc-panel { padding-left: 20px; }
+  .key-field { flex-wrap: wrap; }
+  .kv { grid-template-columns: 1fr; }
+}

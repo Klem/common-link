@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getPaymentStatus } from '@/lib/api/paymentProvider';
 import type { PaymentProviderId } from '@/types/paymentProvider';
 import type { BankSetupStatus } from '@/lib/bankSetupStatus';
+import type { HelloAssoStatus } from '@/types/helloasso';
 
 /** Options of [UsePaymentStatusReturn.refresh]. */
 export interface PaymentStatusRefreshOptions {
@@ -20,6 +21,8 @@ export interface UsePaymentStatusReturn {
   actionUrl: string | null;
   /** Non-blocking provider warnings. */
   warnings: string[];
+  /** HelloAsso link details, null for another provider or until loaded. */
+  helloasso: HelloAssoStatus | null;
   isLoading: boolean;
   /** i18n key of the last error, null when the last read succeeded. */
   error: string | null;
@@ -40,6 +43,7 @@ export function usePaymentStatus(): UsePaymentStatusReturn {
   const [status, setStatus] = useState<BankSetupStatus | null>(null);
   const [actionUrl, setActionUrl] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [helloasso, setHelloasso] = useState<HelloAssoStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +59,7 @@ export function usePaymentStatus(): UsePaymentStatusReturn {
       setStatus(data.status);
       setActionUrl(data.actionUrl);
       setWarnings(data.warnings ?? []);
+      setHelloasso(data.helloasso ?? null);
       if (silent) setError(null);
     } catch (e) {
       if (silent) console.debug('Background payment status re-read failed; keeping the previous state.', e);
@@ -68,5 +73,5 @@ export function usePaymentStatus(): UsePaymentStatusReturn {
     fetchStatus();
   }, [fetchStatus]);
 
-  return { provider, status, actionUrl, warnings, isLoading, error, refresh: fetchStatus };
+  return { provider, status, actionUrl, warnings, helloasso, isLoading, error, refresh: fetchStatus };
 }

@@ -7,6 +7,7 @@ import { BudgetSide } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
 import { LegalDocumentType } from '@/types/legal';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
+import { PaymentProviderId } from '@/types/paymentProvider';
 import { getLegalAcceptanceState } from '@/lib/api/legal';
 import { LegalDocumentModal } from '@/components/legal/LegalDocumentModal';
 import { LegalLinkButton } from '@/components/legal/LegalLinkButton';
@@ -54,8 +55,13 @@ interface PrePublishModalProps {
    * onboarded association has no bank account.
    */
   bankResolved: boolean;
-  /** Payment-provider action link (today the Mollie hosted onboarding), used by the `NEEDS_DATA` call-to-action. */
+  /**
+   * Payment-provider action link (Mollie hosted onboarding, HelloAsso verification page), used by the `NEEDS_DATA`
+   * call-to-action.
+   */
   bankActionUrl: string | null;
+  /** Association's payment provider: picks the provider's own account labels. Absent or null = Mollie labels. */
+  paymentProvider?: PaymentProviderId | null;
   onClose: () => void;
   /** @param cguAccepted Whether to send `cguAccepted: true` on the publish request. */
   onConfirm: (cguAccepted: boolean) => Promise<void>;
@@ -74,10 +80,12 @@ export function PrePublishModal({
   bankStatus,
   bankResolved,
   bankActionUrl,
+  paymentProvider,
   onClose,
   onConfirm,
 }: PrePublishModalProps) {
   const t = useTranslations('dashboard.campaigns.publish');
+  const bankLabels = paymentProvider === PaymentProviderId.HELLOASSO ? 'account.helloAssoBank' : 'account.bank';
   const tNav = useTranslations('dashboard.campaigns.editor.tabs');
 
   // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
@@ -241,7 +249,7 @@ export function PrePublishModal({
                 ) : (
                   <div className={`pp-row ${BANK_ROWS[bankStatus].cls}`}>
                     <div className="pp-row-ic">{BANK_ROWS[bankStatus].icon}</div>
-                    <div className="pp-row-lbl">{t(`account.bank.${bankStatus}`)}</div>
+                    <div className="pp-row-lbl">{t(`${bankLabels}.${bankStatus}`)}</div>
                     {bankStatus === BankSetupStatus.NEEDS_DATA && bankActionUrl !== null && (
                       <a
                         className="pp-row-link"

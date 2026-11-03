@@ -4,6 +4,7 @@ import { usePaymentStatus } from '../usePaymentStatus';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { PaymentProviderId } from '@/types/paymentProvider';
 import type { PaymentStatusResponse } from '@/types/paymentProvider';
+import { HelloAssoLink, HelloAssoWebhookState } from '@/types/helloasso';
 
 const { mockGet } = vi.hoisted(() => ({ mockGet: vi.fn() }));
 vi.mock('@/lib/api/paymentProvider', () => ({ getPaymentStatus: mockGet }));
@@ -32,6 +33,31 @@ describe('usePaymentStatus', () => {
     expect(result.current.status).toBe(BankSetupStatus.NEEDS_DATA);
     expect(result.current.actionUrl).toBe('https://my.mollie.com/dashboard/onboarding');
     expect(result.current.error).toBeNull();
+    // A Mollie response carries no `helloasso` key.
+    expect(result.current.helloasso).toBeNull();
+  });
+
+  it('exposes the HelloAsso link details of a HelloAsso association', async () => {
+    const helloasso = {
+      link: HelloAssoLink.OK,
+      notificationUrl: 'https://api.example/api/public/webhooks/helloasso/tok',
+      organizationSlug: 'les-amis',
+      canCollect: false,
+      everCompliant: false,
+      lastEligibilityCheckAt: '2026-11-03T09:41:00Z',
+      webhook: HelloAssoWebhookState.UNKNOWN,
+      clientIdMasked: 'abcd…wxyz',
+      linkedAt: '2026-11-03T09:38:00Z',
+      linkedBy: 'asso@example.org',
+      secretWipedAt: '2026-11-03T09:38:00Z',
+      lastRefreshAt: null,
+    };
+    mockGet.mockResolvedValue(dto({ provider: PaymentProviderId.HELLOASSO, status: BankSetupStatus.IN_REVIEW, helloasso }));
+
+    const { result } = renderHook(() => usePaymentStatus());
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.helloasso).toEqual(helloasso);
   });
 
   it('settles with an error key when the read fails', async () => {

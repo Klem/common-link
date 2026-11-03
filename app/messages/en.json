@@ -379,6 +379,9 @@
       "SPORT": "Sport",
       "DROITS_CITOYENNETE": "Rights & citizenship",
       "AUTRE": "Other"
+    },
+    "helloasso": {
+      "disconnected": "HelloAsso disconnected. We no longer keep any access."
     }
   },
   "compliance": {
@@ -1168,6 +1171,14 @@
             "pending": "In progress",
             "rejected": "Rejected",
             "todo": "To do"
+          },
+          "helloAssoBadge": {
+            "BROKEN": "Access to renew",
+            "SUSPENDED": "Collection suspended",
+            "WEBHOOK_MISSING": "Notification to check",
+            "ACTIVE": "Active",
+            "PENDING": "Waiting for HelloAsso",
+            "NOT_LINKED": "Not linked"
           }
         },
         "title": "Settings",
@@ -1177,11 +1188,7 @@
           "title": "Verification",
           "verified": "Your association is verified."
         },
-        "verified": "Verified",
-        "providerUnavailable": {
-          "title": "HelloAsso donation collection coming soon",
-          "body": "The journey to link your HelloAsso account is coming soon. We will let you know as soon as it is ready."
-        }
+        "verified": "Verified"
       },
       "profileCompletion": {
         "fields": {
@@ -1673,6 +1680,13 @@
             "REJECTED": "Your verification dossier was rejected (you can still publish)",
             "UNVERIFIED": "Your dossier is not yet verified (you can still publish)",
             "VERIFIED": "Your association is verified"
+          },
+          "helloAssoBank": {
+            "COMPLETED": "HelloAsso account linked, donations open",
+            "NOT_CONNECTED": "HelloAsso account not linked — required to publish",
+            "IN_REVIEW": "HelloAsso verification in progress — required to publish",
+            "NEEDS_DATA": "Collection suspended by HelloAsso — resolve to publish",
+            "BROKEN": "HelloAsso access to renew — paste your key again to publish"
           }
         },
         "add": "Add",
@@ -3076,6 +3090,369 @@
           "where": "A tag to place where the form must appear.",
           "codeLabel": "Tag to paste where the form must appear",
           "codeHint": "The height adjusts by itself."
+        }
+      }
+    },
+    "helloasso": {
+      "imposed": {
+        "presentation": "HelloAsso aide les associations à collecter des paiements en ligne et propose ses services gratuitement. Elle prend à sa charge tous les frais de transaction pour que vous puissiez bénéficier de la totalité des sommes versées par vos publics, sans frais. Les contributions volontaires laissées par ces derniers sont leur unique source de revenus.",
+        "cartText": "Le modèle solidaire de HelloAsso garantit que 100% de votre paiement sera versé à l'association choisie. Vous pouvez soutenir l'aide qu'ils apportent aux associations en laissant une contribution volontaire à HelloAsso au moment de votre paiement.",
+        "approval": "HelloAsso est un établissement de paiement agréé par l'ACPR en France le 08/06/2023 sous le numéro 17678Q."
+      },
+      "onboarding": {
+        "stepper": {
+          "label": "Steps to receive your donations",
+          "steps": {
+            "account": "HelloAsso payment account",
+            "link": "Link to CommonLink",
+            "review": "Verification",
+            "active": "Active"
+          },
+          "skippedSub": "Already done",
+          "state": {
+            "done": "{label} — done",
+            "skipped": "{label} — already done",
+            "current": "{label} — in progress",
+            "upcoming": "{label} — upcoming"
+          }
+        },
+        "checkedAt": "Status checked at {time}",
+        "loading": {
+          "aria": "Loading your donation collection status",
+          "text": "Loading your HelloAsso link status…"
+        },
+        "broken": {
+          "title": "Your HelloAsso access needs renewing",
+          "text": "HelloAsso no longer accepts the access you gave us. This happens when the key was regenerated or deleted in your HelloAsso space, or when our access could not be renewed in time. Your HelloAsso account and the money already received are not affected. In the meantime, your donation buttons are paused.",
+          "keep": "<strong>Since we do not keep your secret key, we cannot restore access on our own:</strong> you need to paste it again, once.",
+          "replace": "Paste my key again",
+          "help": "Need help?",
+          "hint": "Nobody on your board touched the key? Let us know: we will look into it together."
+        },
+        "linkedBanner": "<strong>Account linked. Your secret key has been erased from our servers.</strong> We used it only once to open access, at {time}. If you wrote it down somewhere to send it to us, you can delete that note.",
+        "welcome": {
+          "title": "Receive your donations",
+          "groupLabel": "Your situation",
+          "existing": {
+            "badge": "Fastest",
+            "title": "Our association already has a HelloAsso account",
+            "text": "You link your account to CommonLink by pasting two codes and an address. If HelloAsso has already verified your association, you can receive donations right after.",
+            "cta": "Link our account"
+          },
+          "new": {
+            "badge": "Guided",
+            "title": "We don't have a HelloAsso account yet",
+            "text": "You open the association's payment account with HelloAsso, with your association's details ready to copy. Then you link it to CommonLink.",
+            "cta": "Get started"
+          }
+        },
+        "open": {
+          "title": "Open the association's payment account",
+          "badge": "On helloasso.com",
+          "lead": "This step happens at HelloAsso, our payment provider: your association opens its own account, in its own name. Open HelloAsso in a new tab and keep this page alongside.",
+          "windowLabel": "HelloAsso, in a new tab",
+          "domain": "www.<b>helloasso.com</b>",
+          "cardTitle": "Open HelloAsso",
+          "cardText": "Opens in a new tab. Come back here as soon as the account is open.",
+          "cta": "Open HelloAsso ↗",
+          "safety": "Check that the address is <strong>helloasso.com</strong>. CommonLink never sees your password.",
+          "back": "← Back",
+          "continue": "Our account is open, continue"
+        },
+        "link": {
+          "title": "Link your HelloAsso account",
+          "badge": "Not linked",
+          "lead": "Three actions in your HelloAsso space. Keep this tab alongside, we guide you.",
+          "replaceBanner": "<strong>Renewing access.</strong> Paste your association's key at step 2 (the new one, if it was regenerated). If the notification address is still in place at HelloAsso, nothing else to redo.",
+          "toConfirm": "To be confirmed with HelloAsso",
+          "crumbs": {
+            "label": "Path in your HelloAsso space",
+            "account": "Mon compte",
+            "api": "Intégrations et API"
+          },
+          "step1": {
+            "title": "Open the keys page",
+            "where": "In your HelloAsso space:",
+            "openAdmin": "Open my HelloAsso space ↗",
+            "existingKeyQ": "A key already exists and another tool uses it?",
+            "existingKeyA": "Do not regenerate it: the other tool (your website, management software…) would stop working. Just copy the values shown. If the secret key is no longer visible, write to us before touching anything.",
+            "severalQ": "You manage several associations?",
+            "severalA": "First select <strong>{name}</strong> in HelloAsso: each association has its own key.",
+            "severalAnoName": "First select your association in HelloAsso: each association has its own key."
+          },
+          "step2": {
+            "title": "Paste your two codes",
+            "validBadge": "Valid codes",
+            "clientIdLabel": "Client ID",
+            "clientIdHint": "(client ID)",
+            "clientIdPlaceholder": "e.g. 9fdc22226bf24ff99b875f4a7c503715",
+            "secretLabel": "Secret key",
+            "secretHint": "(client secret)",
+            "secretPlaceholder": "Paste the secret key",
+            "paste": "Paste",
+            "pasteClientIdAria": "Paste the client ID",
+            "pasteSecretAria": "Paste the secret key",
+            "pasteFailed": "Your browser does not allow automatic pasting: paste the code directly into the field.",
+            "show": "Show",
+            "hide": "Hide",
+            "secretNote": "<strong>Used only once to open access, then erased.</strong> We do not store it.",
+            "checking": "We are asking HelloAsso whether these codes work…",
+            "okLabel": "HelloAsso recognises the association",
+            "okMatch": "Matches the association verified on CommonLink",
+            "confirm": "Yes, that's us",
+            "invalidTitle": "HelloAsso does not recognise these codes.",
+            "nothingSaved": "Nothing was saved.",
+            "invalidTips": {
+              "whole": "Check that each code is copied in full.",
+              "regenerated": "Just regenerated the key? Paste the new one.",
+              "sandbox": "Codes from a test (sandbox) account? They do not work here."
+            },
+            "mismatchTitle": "These codes belong to “{orgName}”.",
+            "mismatchText": "This is not the association verified on CommonLink. Nothing was saved.",
+            "mismatchHint": "Select the right association in HelloAsso, then copy its codes.",
+            "mismatchHelp": "It is you, under another name?",
+            "mismatchHelpLink": "Write to us",
+            "unavailable": "HelloAsso is not answering right now. Nothing was saved: try again in a few minutes."
+          },
+          "step3": {
+            "title": "Paste our notification address",
+            "text": "On the same HelloAsso page, in the notifications field. This is how HelloAsso tells us a donation has been paid. HelloAsso also sends the events of your other forms there: we ignore them, without keeping them.",
+            "addressLabel": "Address",
+            "copy": "Copy",
+            "copied": "Copied",
+            "copyAria": "Copy the notification address",
+            "urlLoading": "Preparing your address…",
+            "urlUnavailable": "Your notification address is not available right now. Try again in a few minutes.",
+            "existingQ": "An address is already filled in?",
+            "existingA": "Another tool of your association probably uses it. Do not replace it: HelloAsso seems to accept only one. Write to us, we will find a solution.",
+            "ack": "It is pasted and saved at HelloAsso"
+          },
+          "mandate": "On behalf of the association, I authorise CommonLink to use the access opened by this key only to create the payments of our CommonLink campaigns, track these payments and check that HelloAsso accepts payments for our association. I can withdraw this access at any time.",
+          "hint": {
+            "remaining": "Still to do: {items}.",
+            "ready": "All set.",
+            "separator": ", ",
+            "KEYS": "paste your codes",
+            "ORG_CONFIRM": "confirm that it is your association",
+            "WEBHOOK_ACK": "paste the notification address",
+            "MANDATE": "tick the authorisation"
+          },
+          "submit": "Link my account",
+          "submitReplace": "Save the new key",
+          "submitting": "Linking…",
+          "back": "← Back",
+          "blocked": "Stuck? Book a video call, we will do it with you.",
+          "errors": {
+            "expired": "The check of your codes has expired. Paste them again to link your account.",
+            "mandate": "Tick the authorisation to link your account.",
+            "generic": "The link did not go through. Nothing was saved: try again in a few minutes."
+          }
+        },
+        "review": {
+          "title": "HelloAsso is verifying your association",
+          "badge": "Waiting for HelloAsso",
+          "lead": "Your account is linked to CommonLink. HelloAsso still has to verify your association: regulations require it before any payment. As soon as it is done, your donations open automatically.",
+          "cardTitle": "My file",
+          "cardSub": "on admin.helloasso.com",
+          "text": "Already submitted when opening the account? Nothing to do, HelloAsso is reviewing it. Otherwise, upload your documents on your verification page: HelloAsso tells you what it needs.",
+          "pageLabel": "Your page",
+          "openVerification": "Open my verification page ↗",
+          "files": "Find my files",
+          "lastCheck": "Last check: {time}",
+          "refresh": "Check my file",
+          "refreshing": "Checking…",
+          "tooSoon": "You just checked: try again in a minute.",
+          "refreshError": "HelloAsso is not answering right now. Try again in a few minutes.",
+          "foot": "You can close this page: we will email you as soon as donations are open."
+        },
+        "files": {
+          "title": "Documents provided to CommonLink",
+          "loading": "Loading your documents…",
+          "error": "Your documents cannot be loaded right now.",
+          "empty": "No document was provided to CommonLink.",
+          "download": "Download",
+          "downloading": "Downloading…",
+          "downloadError": "The download failed. Try again.",
+          "types": {
+            "VERIF_STATUTS": "Statutes",
+            "VERIF_RNA_RECEIPT": "Declaration receipt",
+            "VERIF_REPRESENTATIVE_ID": "Legal representative's ID"
+          }
+        },
+        "active": {
+          "title": "Your association can receive donations",
+          "text": "HelloAsso accepts payments for your association. Your donation widget and your fundraising page are open.",
+          "badge": "Active",
+          "disconnect": "Disconnect from HelloAsso",
+          "suspended": {
+            "text": "<strong>Collection suspended by HelloAsso.</strong> HelloAsso says your association can no longer receive payments for now. Your donation buttons are paused.",
+            "hint": "HelloAsso may ask you to update your details, for example after a change of board or statutes. Check the emails received from HelloAsso and your verification page.",
+            "contact": "Contact us"
+          },
+          "test": {
+            "title": "Final check: a test donation",
+            "badge": {
+              "UNKNOWN": "Recommended",
+              "RECEIVED": "Verified",
+              "MISSING": "To fix"
+            },
+            "unknownText": "Make a <strong>€1</strong> donation to your association from your fundraising page. It is a real payment: the euro lands on your HelloAsso account. It lets us check, end to end, that the notification address is in place and that your donation is certified.",
+            "contribution": "On the payment page, HelloAsso will suggest a voluntary contribution: it funds its free service for associations. It remains optional.",
+            "cta": "Make my €1 test donation",
+            "ctaAlt": "You can also wait for your first real donation: we will run the same check.",
+            "noPage": "Your fundraising page is not ready yet: set it up in the Distribution tab.",
+            "received": "<strong>Everything is connected.</strong> HelloAsso notified us of your donation. It appears in your reporting, certified.",
+            "missing": "<strong>The donation is paid, but HelloAsso did not notify us.</strong> The notification address is probably not saved at HelloAsso.",
+            "missingImpact": "Your donations are collected by HelloAsso. But we see them late, because we have to fetch them ourselves, and we will not be notified of a refund or a dispute.",
+            "missingFixBefore": "In your HelloAsso space,",
+            "missingFixAfter": ", paste this address into the notifications field, then save:",
+            "retry": "Fixed, make another test donation",
+            "visio": "Do it with you on a video call"
+          }
+        },
+        "disconnect": {
+          "title": "Disconnect from HelloAsso?",
+          "close": "Close",
+          "pause": "<strong>Your donation buttons are paused</strong>: no donation can be received through CommonLink until you link a HelloAsso account.",
+          "erase": "We erase the temporary access we kept. Donations already received stay on your HelloAsso account and in your reporting.",
+          "secret": "Your secret key has already been erased from our side since {date}. To be sure it is no longer used anywhere, regenerate it in your HelloAsso space.",
+          "secretNoDate": "Your secret key has already been erased from our side. To be sure it is no longer used anywhere, regenerate it in your HelloAsso space.",
+          "cancel": "Cancel",
+          "confirm": "Yes, disconnect me",
+          "confirming": "Disconnecting…"
+        },
+        "faq": {
+          "titleStart": "Your questions before you start",
+          "subStart": "Read at your own pace, nothing is committed.",
+          "title": "Your questions",
+          "groups": {
+            "how": "How it works",
+            "key": "Your key and your file"
+          },
+          "imposedBadge": "Text provided by HelloAsso",
+          "roles": {
+            "q": "Who does what between CommonLink and HelloAsso?",
+            "intro": "Everything happens on CommonLink, except the payment itself: that is the role of HelloAsso, our payment provider.",
+            "splitLabel": "Who does what",
+            "commonlink": "CommonLink",
+            "commonlinkItems": {
+              "campaigns": "Your campaigns and your fundraising page",
+              "widget": "Your donation widget, on your website",
+              "certification": "The certification of every donation",
+              "receipts": "Your donors' tax receipts",
+              "reporting": "Your reporting and the transparency of your spending"
+            },
+            "helloasso": "HelloAsso, payment provider",
+            "helloassoItems": {
+              "page": "The secure payment page",
+              "collection": "Collecting the donation and paying it out to the association's bank account",
+              "verification": "Verifying your association, as required by law"
+            }
+          },
+          "cert": {
+            "q": "Which donations are certified? And our HelloAsso donation form?",
+            "yes": "Certified",
+            "yesItems": {
+              "widget": "Your CommonLink widget, on your website",
+              "page": "Your CommonLink fundraising page"
+            },
+            "no": "Not seen by CommonLink",
+            "noItems": {
+              "form": "A donation form created on HelloAsso",
+              "link": "A HelloAsso link shared directly"
+            },
+            "text": "A HelloAsso donation form keeps working, but its donations do not go through CommonLink: neither certified nor covered by our tax receipts (HelloAsso handles them). For a campaign tracked on CommonLink, replace its button, on your website or in your emails, with your widget or your fundraising page. Your HelloAsso memberships and ticketing do not change."
+          },
+          "why": {
+            "q": "Why HelloAsso, and how can it be free?",
+            "intro": "An online donation payment must go through an authorised institution. For French associations, we chose HelloAsso, which presents itself as follows:",
+            "imposedLabel": "HelloAsso's presentation",
+            "contribution": "<strong>The voluntary contribution</strong> is offered by HelloAsso to your donor at payment time, on top of the donation. It goes to HelloAsso, neither to your association nor to CommonLink, and remains optional.",
+            "approval": "Its approval:",
+            "verifyOn": "You can check it on",
+            "howItWorks": "How HelloAsso works ↗"
+          },
+          "donors": {
+            "q": "What will our donors see when paying?",
+            "intro": "In your widget, just before payment, this HelloAsso text and its payment button. The voluntary contribution is then offered to them on HelloAsso's page.",
+            "imposedLabel": "Text shown before payment",
+            "payWith": "Payer avec",
+            "secured": "Paiement sécurisé"
+          },
+          "money": {
+            "q": "Where does the money go, and when does it arrive?",
+            "intro": "The donation goes to the association's HelloAsso account, then to its bank account. <strong>We never touch the money.</strong>",
+            "feesValue": "€0",
+            "feesLabel": "payment fees, thanks to HelloAsso's solidarity model",
+            "shareValue": "100%",
+            "shareLabel": "of donations paid to the association, under HelloAsso's terms",
+            "heldValue": "€0",
+            "heldLabel": "held by CommonLink, at any time",
+            "rhythm": "You choose the payout schedule in your HelloAsso space:",
+            "onDemandValue": "On demand",
+            "onDemandLabel": "funds available 7 business days after each payment",
+            "monthlyValue": "Monthly",
+            "monthlyLabel": "payout around the 10th of the following month",
+            "note": "Schedule given for information by HelloAsso. Changing bank details suspends payouts while they are verified."
+          },
+          "receipts": {
+            "q": "Who issues our donors' tax receipts?",
+            "text": "<strong>CommonLink</strong>, for every donation made through CommonLink, under your tax mandate. HelloAsso does not issue any for these payments: no duplicates for your donors."
+          },
+          "fees": {
+            "q": "How much does it cost?",
+            "payment": "<strong>On the payment side, nothing</strong>: HelloAsso charges your association no fees.",
+            "platform": "<strong>CommonLink fees</strong> for associations collecting through HelloAsso:",
+            "pending": "Decision pending"
+          },
+          "whyKey": {
+            "q": "Why a key, and not a “Log in” button?",
+            "text": "HelloAsso reserves that button for partner platforms that already link many associations, which is not yet our case. To get started, HelloAsso told us to use this method: each association generates its own key in its HelloAsso space and sends it to us. When we switch to the button, we will let you know: nothing complicated to redo."
+          },
+          "keyUse": {
+            "q": "What can you do with this key?",
+            "use": "<strong>We use it to</strong> create the payment pages of your CommonLink campaigns, track these payments (including your donors' name and email) and know whether HelloAsso accepts payments for your association.",
+            "transparency": "<strong>In full transparency:</strong> HelloAsso gives this key access to every payment of your account, including your memberships or ticketing. We do not use them: the authorisation you sign limits our use to your CommonLink campaigns, and notifications about your other forms are ignored, without being kept.",
+            "cannot": "<strong>It does not allow</strong> refunding a payment, changing your bank details or your information, moving money, or logging in to your HelloAsso account. Neither you nor we can extend these rights."
+          },
+          "keepKey": {
+            "q": "Do you keep our key? How do we withdraw your access?",
+            "keep": "<strong>We do not keep your secret key.</strong> We use it only once, when linking your account, to get a temporary, encrypted access from HelloAsso, which we renew. Then we erase it. If this access is ever interrupted, we will ask you to paste your key again: we cannot recreate it without you.",
+            "revoke": "<strong>To withdraw our access</strong>, at any time: “Disconnect from HelloAsso” in CommonLink, or regenerate your key in your HelloAsso space. Note that regenerating the key also cuts off any other tool of your association that uses it.",
+            "live": {
+              "title": "Your access today",
+              "works": "Working",
+              "secret": "Secret key",
+              "wiped": "Erased",
+              "wipedAt": "on {date} at {time}, right after use",
+              "kept": "What we keep",
+              "keptText": "A temporary, encrypted access, renewed automatically",
+              "lastRefresh": "(last renewal: {date}, {time})",
+              "clientId": "Client ID",
+              "linked": "Linked on",
+              "linkedValue": "{date} by {by}",
+              "replace": "Paste a key again",
+              "replaceHint": "If you regenerated your key at HelloAsso."
+            }
+          },
+          "docs": {
+            "q": "Why does HelloAsso ask for documents, and who sees them?",
+            "law": "The law requires HelloAsso to check who is behind each association before it receives any payment. You upload your documents directly at HelloAsso: <strong>they are not sent to us.</strong> HelloAsso only tells us whether your association can receive payments: yes or no.",
+            "files": "The documents provided for your CommonLink verification stay in your space: “Find my files” lets you upload them yourself at HelloAsso."
+          },
+          "refused": {
+            "q": "What if HelloAsso rejects our file?",
+            "text": "HelloAsso tells you by email, at your account's administrator address. Its terms allow it to refuse without giving reasons. In that case, write to us: we will look at the situation with you."
+          },
+          "real": {
+            "q": "Is this the real HelloAsso website?",
+            "text": "Before typing anything, look at the address bar: it must show <strong>helloasso.com</strong> (your administration space is on <strong>admin.helloasso.com</strong>). Otherwise, close the tab and contact us. <strong>CommonLink will never ask for your HelloAsso password</strong>: the key is not your password."
+          }
+        },
+        "help": {
+          "title": "In doubt? Do it together.",
+          "text": "A member of the CommonLink team guides you on a video call. You keep control of your screen and keyboard. We will never ask for your HelloAsso password.",
+          "book": "Book a video call"
         }
       }
     }

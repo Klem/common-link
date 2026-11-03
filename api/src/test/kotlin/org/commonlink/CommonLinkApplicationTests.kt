@@ -23,6 +23,7 @@ import org.commonlink.service.HelloAssoLinkService
 import org.commonlink.service.HelloAssoEligibilityService
 import org.commonlink.service.HelloAssoNotificationService
 import org.commonlink.service.HelloAssoOnboardingReminderService
+import org.commonlink.service.KybDocumentService
 import org.commonlink.service.PaymentProviderChangeService
 import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.CampaignReportService
@@ -142,6 +143,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var helloAssoEligibilityService: HelloAssoEligibilityService
     @MockkBean private lateinit var helloAssoNotificationService: HelloAssoNotificationService
     @MockkBean private lateinit var helloAssoOnboardingReminderService: HelloAssoOnboardingReminderService
+    @MockkBean private lateinit var kybDocumentService: KybDocumentService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test

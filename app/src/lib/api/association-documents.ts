@@ -1,4 +1,12 @@
 import api from '@/lib/api';
+import type { OnboardingProvidedDocument } from '@/types/mollie-connect';
+
+/**
+ * Lists the KYB documents the association already provided (statutes, RNA receipt, representative's ID), id and type
+ * only (`GET /api/association/documents/kyb`), for re-download with [downloadOwnAssociationDocument].
+ */
+export const listKybDocuments = (): Promise<OnboardingProvidedDocument[]> =>
+  api.get<OnboardingProvidedDocument[]>('/api/association/documents/kyb').then((r) => r.data);
 
 /** File extension per content type, used when the server-provided file name cannot be read. */
 const EXTENSION_BY_CONTENT_TYPE: Record<string, string> = {

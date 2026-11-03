@@ -18,11 +18,15 @@ import { BankSetupStatus } from '@/lib/bankSetupStatus';
  * connected". `bankResolved` carries that distinction to the store so consumers can wait instead of
  * acting on a loading value. A failed request counts as resolved — the status is then genuinely
  * unknown and the association must not stay blocked.
+ *
+ * It also pushes the HelloAsso link details (`helloasso`) and exposes the hook's `refresh` as
+ * `refreshPaymentStatus`, so the HelloAsso journey re-reads through this single status hook.
  */
 export function AssociationStatusSync() {
   const { profile } = useAssociationProfile();
-  const { provider, status, actionUrl, isLoading } = usePaymentStatus();
+  const { provider, status, actionUrl, helloasso, isLoading, refresh } = usePaymentStatus();
   const setAccStatus = useAccStatusStore((s) => s.setAccStatus);
+  const setPaymentStatusRefresh = useAccStatusStore((s) => s.setPaymentStatusRefresh);
 
   useEffect(() => {
     if (profile === null) return;
@@ -33,8 +37,14 @@ export function AssociationStatusSync() {
       bankActionUrl: actionUrl,
       bankResolved: !isLoading,
       paymentProvider: provider,
+      helloasso: helloasso ?? null,
     });
-  }, [profile, provider, status, actionUrl, isLoading, setAccStatus]);
+  }, [profile, provider, status, actionUrl, helloasso, isLoading, setAccStatus]);
+
+  // The HelloAsso journey re-reads the status after linking, disconnecting or checking eligibility.
+  useEffect(() => {
+    if (refresh) setPaymentStatusRefresh(refresh);
+  }, [refresh, setPaymentStatusRefresh]);
 
   return null;
 }
