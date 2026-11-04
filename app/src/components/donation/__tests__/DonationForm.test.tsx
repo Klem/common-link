@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DonationForm } from '../DonationForm';
+import { PaymentProviderId } from '@/types/paymentProvider';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -565,5 +566,66 @@ describe('DonationForm — amount choice on begin_checkout', () => {
       first_amount: 10,
       amount_changes: 3,
     });
+  });
+});
+
+describe('DonationForm — HelloAsso association (flow §5bis)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'top', { value: window, writable: true });
+  });
+
+  const renderHelloAsso = (props: Partial<React.ComponentProps<typeof DonationForm>> = {}) =>
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="landing" paymentProvider={PaymentProviderId.HELLOASSO}
+            submitLabel={() => 'Donner 25 €'} {...props} />,
+    );
+
+  it('replaces the submit button by HelloAsso\'s official button, labelled, with the cart text and the link', () => {
+    renderHelloAsso();
+
+    const pay = screen.getByRole('button', { name: 'helloasso.payAria' });
+    expect(pay).toHaveAttribute('type', 'submit');
+    expect(pay).toHaveClass('HaPayButton');
+    expect(screen.queryByRole('button', { name: 'Donner 25 €' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'submit' })).not.toBeInTheDocument();
+
+    // Cart text right above the button, verbatim from the imposed messages.
+    const cart = screen.getByTestId('ha-cart-text');
+    expect(cart).toHaveTextContent('cartText');
+    expect(cart.compareDocumentPosition(pay) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const link = screen.getByRole('link', { name: 'helloasso.howItWorks' });
+    expect(link).toHaveAttribute('href', 'https://www.helloasso.com/comment-ca-marche');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  it('submits the donation like the regular button', async () => {
+    mockCreateGuestDonation.mockRejectedValue({ response: { status: 409 } });
+    renderHelloAsso();
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'helloasso.payAria' }));
+
+    await waitFor(() => expect(mockCreateGuestDonation).toHaveBeenCalledTimes(1));
+  });
+
+  it('keeps the same blocking rules: inert when collection is unavailable', () => {
+    renderHelloAsso({ collectUnavailable: true });
+
+    expect(screen.getByRole('button', { name: 'helloasso.payAria' })).toBeDisabled();
+  });
+
+  it('shows none of HelloAsso\'s elements for a Mollie association', () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" paymentProvider={PaymentProviderId.MOLLIE} />,
+    );
+
+    expect(screen.getByRole('button', { name: 'submit' })).toBeInTheDocument();
+    expect(screen.queryByTestId('ha-cart-text')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'helloasso.howItWorks' })).not.toBeInTheDocument();
   });
 });

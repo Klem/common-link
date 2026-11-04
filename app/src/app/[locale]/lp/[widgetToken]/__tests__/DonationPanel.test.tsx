@@ -9,6 +9,7 @@ vi.mock('@/components/donation/DonationForm', () => ({
 }));
 
 import { DonationPanel } from '../DonationPanel';
+import { PaymentProviderId } from '@/types/paymentProvider';
 
 const tracking = { campaignId: 'c1', campaignName: 'Camp', associationName: 'Assoc', currency: 'EUR' };
 
@@ -35,5 +36,22 @@ describe('DonationPanel', () => {
     expect(donationFormMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ disabled: true, collectUnavailable: true }),
     );
+  });
+
+  it('keeps the card pills and "secured" line for a Mollie association', () => {
+    const { container } = render(
+      <DonationPanel widgetToken="clk_abc" sourceSite={null} locale="fr" tracking={tracking} paymentProvider={PaymentProviderId.MOLLIE} />,
+    );
+    expect(container.querySelector('.lp-payment-methods')).not.toBeNull();
+    expect(container.querySelector('.lp-donation-secured')).not.toBeNull();
+  });
+
+  it('forwards HelloAsso and drops the pills its official button already shows', () => {
+    const { container } = render(
+      <DonationPanel widgetToken="clk_abc" sourceSite={null} locale="fr" tracking={tracking} paymentProvider={PaymentProviderId.HELLOASSO} />,
+    );
+    expect(donationFormMock).toHaveBeenLastCalledWith(expect.objectContaining({ paymentProvider: PaymentProviderId.HELLOASSO }));
+    expect(container.querySelector('.lp-payment-methods')).toBeNull();
+    expect(container.querySelector('.lp-donation-secured')).toBeNull();
   });
 });

@@ -12,7 +12,7 @@ import {
   formatClock,
   formatDay,
 } from './helloAssoFlow';
-import HelloAssoPayButtonPreview from './HelloAssoPayButtonPreview';
+import HelloAssoPayButton, { HelloAssoPayButtonVariant } from '@/components/helloasso/HelloAssoPayButton';
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>;
 
@@ -137,7 +137,11 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
           <p>{t('donors.intro')}</p>
           {imposed(t('donors.imposedLabel'), tImposed('cartText'))}
           <div className="hao-p-spaced-lg">
-            <HelloAssoPayButtonPreview payWith={t('donors.payWith')} secured={t('donors.secured')} />
+            <HelloAssoPayButton
+              variant={HelloAssoPayButtonVariant.PREVIEW}
+              payWith={t('donors.payWith')}
+              secured={t('donors.secured')}
+            />
           </div>
         </>
       ),

@@ -31,6 +31,7 @@ import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
+import org.commonlink.payment.PaymentProviderId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -516,6 +517,22 @@ class PublicWidgetServiceIntegrationTest {
             )
         }
         assertEquals(0, BigDecimal("25.00").compareTo(ex.remainingCapacity))
+    }
+
+    @Test
+    fun `widget and landing expose the association's payment provider`() {
+        val mollieWidget = publicWidgetService.getWidget(widgetToken)
+        assertEquals(PaymentProviderId.MOLLIE, mollieWidget.paymentProvider)
+        assertEquals(PaymentProviderId.MOLLIE, publicWidgetService.getLanding(widgetToken).paymentProvider)
+
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        assoc.paymentProvider = PaymentProviderId.HELLOASSO
+        associationProfileRepository.save(assoc)
+        entityManager.flush()
+        entityManager.clear()
+
+        assertEquals(PaymentProviderId.HELLOASSO, publicWidgetService.getWidget(widgetToken).paymentProvider)
+        assertEquals(PaymentProviderId.HELLOASSO, publicWidgetService.getLanding(widgetToken).paymentProvider)
     }
 
     @Test

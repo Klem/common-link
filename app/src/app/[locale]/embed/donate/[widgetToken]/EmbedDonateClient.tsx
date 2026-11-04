@@ -98,6 +98,7 @@ export function EmbedDonateClient({ widgetToken, sourceSite, locale, parentOrigi
         skin="default"
         remainingCapacity={widget.remainingCapacity}
         collectUnavailable={!widget.collectAvailable}
+        paymentProvider={widget.paymentProvider}
       />
     </div>
   );

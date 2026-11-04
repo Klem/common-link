@@ -4,6 +4,7 @@ import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.LandingTheme
+import org.commonlink.payment.PaymentProviderId
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -69,6 +70,8 @@ data class PublicLandingDto(
     val remainingCapacity: BigDecimal,
     /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
     val gtmContainerId: String? = null,
+    /** The association's payment provider — same purpose and same absence of a default as [PublicWidgetDto.paymentProvider]. */
+    val paymentProvider: PaymentProviderId,
 )
 
 /**

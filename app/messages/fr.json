@@ -3547,6 +3547,12 @@
     },
     "submit": "Faire un don",
     "submitting": "Traitement en cours...",
-    "unavailable": "Ce widget n'est pas disponible."
+    "unavailable": "Ce widget n'est pas disponible.",
+    "helloasso": {
+      "payWith": "Payer avec",
+      "secured": "Paiement sécurisé",
+      "payAria": "Payer avec HelloAsso",
+      "howItWorks": "Comment fonctionne HelloAsso ↗"
+    }
   }
 }

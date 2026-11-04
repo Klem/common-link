@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { DonationPanel } from './DonationPanel';
 import { StickyBar } from './StickyBar';
 import type { DonationTrackingContext } from '@/lib/donation/useGuestDonation';
+import type { PaymentProviderId } from '@/types/paymentProvider';
 
 interface Props {
   widgetToken: string;
@@ -23,6 +24,8 @@ interface Props {
   collectUnavailable?: boolean;
   /** Validated host origin (see `resolveParentOrigin` in `page.tsx`) — forwarded to the `begin_checkout` bridge. */
   parentOrigin?: string | null;
+  /** The association's payment provider; forwarded to the donation panel. */
+  paymentProvider?: PaymentProviderId | null;
   children: ReactNode;
 }
 
@@ -36,6 +39,7 @@ export function LandingClient({
   remainingCapacity,
   collectUnavailable = false,
   parentOrigin,
+  paymentProvider,
   children,
 }: Props) {
   const [selectedAmount, setSelectedAmount] = useState<number | undefined>(undefined);
@@ -69,6 +73,7 @@ export function LandingClient({
               collectUnavailable={collectUnavailable}
               onAmountChange={setSelectedAmount}
               parentOrigin={parentOrigin}
+              paymentProvider={paymentProvider}
             />
           </div>
         </aside>

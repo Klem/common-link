@@ -1,5 +1,6 @@
 package org.commonlink.dto
 
+import org.commonlink.payment.PaymentProviderId
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -40,4 +41,10 @@ data class PublicWidgetDto(
      * unavailable" instead of failing on submit. Deliberately without a default, like [remainingCapacity].
      */
     val collectAvailable: Boolean,
+    /**
+     * The association's payment provider — the only link detail exposed publicly: it picks the provider's own payment
+     * button and mandatory texts (HelloAsso: cart text, official button, "Comment fonctionne HelloAsso" link). Without a
+     * default, like [collectAvailable].
+     */
+    val paymentProvider: PaymentProviderId,
 )

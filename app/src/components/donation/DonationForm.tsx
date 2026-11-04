@@ -8,6 +8,9 @@ import { LegalDocumentType } from '@/types/legal';
 import { SUGGESTED_AMOUNTS } from '@/lib/donation/donationSchema';
 import { useGuestDonation, type DonationTrackingContext } from '@/lib/donation/useGuestDonation';
 import { AmountSource } from '@/lib/gtm';
+import { PaymentProviderId } from '@/types/paymentProvider';
+import HelloAssoPayButton, { HelloAssoPayButtonVariant } from '@/components/helloasso/HelloAssoPayButton';
+import { HELLOASSO_HOW_IT_WORKS_URL } from '@/lib/helloasso';
 
 type Skin = 'default' | 'landing';
 
@@ -71,6 +74,12 @@ interface DonationFormProps {
    */
   collectUnavailable?: boolean;
   onAmountChange?: (amount: number | undefined) => void;
+  /**
+   * The association's payment provider. HELLOASSO (flow §5bis): HelloAsso's cart text, verbatim, right above its
+   * official "Payer avec HelloAsso" button, which replaces the submit button, then the "Comment fonctionne HelloAsso"
+   * link. Anything else keeps the regular submit button.
+   */
+  paymentProvider?: PaymentProviderId | null;
 }
 
 export function DonationForm({
@@ -85,8 +94,11 @@ export function DonationForm({
   remainingCapacity,
   collectUnavailable = false,
   onAmountChange,
+  paymentProvider,
 }: DonationFormProps) {
   const t = useTranslations('widget');
+  const tImposed = useTranslations('settings.helloasso.imposed');
+  const helloAsso = paymentProvider === PaymentProviderId.HELLOASSO;
   const s = SKINS[skin];
 
   const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked, recordAmountChoice } =
@@ -425,15 +437,34 @@ export function DonationForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting || inert || capExceeded}
-        className={s.submit}
-      >
-        {isSubmitting
-          ? t('submitting')
-          : (resolvedSubmitLabel ?? t('submit'))}
-      </button>
+      {helloAsso ? (
+        <div className="ha-checkout">
+          {/* HelloAsso's cart text: mandatory before the redirection, never reworded nor translated by us. */}
+          <p className="ha-cart-text" data-testid="ha-cart-text">{tImposed('cartText')}</p>
+          <HelloAssoPayButton
+            variant={HelloAssoPayButtonVariant.SUBMIT}
+            payWith={t('helloasso.payWith')}
+            secured={t('helloasso.secured')}
+            ariaLabel={t('helloasso.payAria')}
+            disabled={isSubmitting || inert || capExceeded}
+            busy={isSubmitting}
+          />
+          {isSubmitting && <p className="ha-submitting" role="status">{t('submitting')}</p>}
+          <a className="ha-how-it-works" href={HELLOASSO_HOW_IT_WORKS_URL} target="_blank" rel="noopener noreferrer">
+            {t('helloasso.howItWorks')}
+          </a>
+        </div>
+      ) : (
+        <button
+          type="submit"
+          disabled={isSubmitting || inert || capExceeded}
+          className={s.submit}
+        >
+          {isSubmitting
+            ? t('submitting')
+            : (resolvedSubmitLabel ?? t('submit'))}
+        </button>
+      )}
 
       {openLegalDoc && (
         <LegalDocumentModal documentType={openLegalDoc} onClose={() => setOpenLegalDoc(null)} />

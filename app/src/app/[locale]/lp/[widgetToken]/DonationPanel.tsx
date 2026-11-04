@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { DonationForm } from '@/components/donation/DonationForm';
 import type { DonationTrackingContext } from '@/lib/donation/useGuestDonation';
+import { PaymentProviderId } from '@/types/paymentProvider';
 
 interface Props {
   widgetToken: string;
@@ -18,6 +19,8 @@ interface Props {
   onAmountChange?: (amount: number | undefined) => void;
   /** Validated host origin when the landing runs inside `landing.js`/an iframe — see `DonationEventExtras.parentOrigin`. */
   parentOrigin?: string | null;
+  /** The association's payment provider; forwarded to the form (HelloAsso's mandatory elements). */
+  paymentProvider?: PaymentProviderId | null;
 }
 
 export function DonationPanel({
@@ -30,6 +33,7 @@ export function DonationPanel({
   collectUnavailable,
   onAmountChange,
   parentOrigin,
+  paymentProvider,
 }: Props) {
   const t = useTranslations('landing');
 
@@ -49,13 +53,19 @@ export function DonationPanel({
         collectUnavailable={collectUnavailable}
         onAmountChange={onAmountChange}
         parentOrigin={parentOrigin}
+        paymentProvider={paymentProvider}
       />
-      <div className="lp-payment-methods">
-        <span className="lp-payment-pill">CB</span>
-        <span className="lp-payment-pill">Visa</span>
-        <span className="lp-payment-pill">Mastercard</span>
-      </div>
-      <p className="lp-donation-secured">{t('donate.secured')}</p>
+      {/* HelloAsso's official button already shows "Paiement sécurisé" and the card logos (decision 03/11/2026). */}
+      {paymentProvider !== PaymentProviderId.HELLOASSO && (
+        <>
+          <div className="lp-payment-methods">
+            <span className="lp-payment-pill">CB</span>
+            <span className="lp-payment-pill">Visa</span>
+            <span className="lp-payment-pill">Mastercard</span>
+          </div>
+          <p className="lp-donation-secured">{t('donate.secured')}</p>
+        </>
+      )}
     </div>
   );
 }

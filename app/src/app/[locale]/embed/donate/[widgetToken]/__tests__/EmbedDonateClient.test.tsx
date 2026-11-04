@@ -28,6 +28,7 @@ const sampleWidget = {
   currency: 'EUR',
   widgetAllowedOrigin: null,
   collectAvailable: true,
+  paymentProvider: 'MOLLIE',
 };
 
 function fillValidForm() {
@@ -80,6 +81,15 @@ describe('EmbedDonateClient', () => {
       expect(screen.getByText(/Collecte de livres/)).toBeInTheDocument();
     });
     expect(screen.getByText('Une belle campagne.')).toBeInTheDocument();
+  });
+
+  it('shows HelloAsso\'s official button and cart text for a HelloAsso association', async () => {
+    mockGetWidget.mockResolvedValue({ ...sampleWidget, paymentProvider: 'HELLOASSO' });
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
+
+    expect(await screen.findByRole('button', { name: 'helloasso.payAria' })).toBeInTheDocument();
+    expect(screen.getByTestId('ha-cart-text')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'submit' })).not.toBeInTheDocument();
   });
 
   it('shows collectUnavailable above an inert form when the association cannot collect', async () => {

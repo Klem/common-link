@@ -11,6 +11,7 @@ import org.commonlink.dto.DonationPublicStatus
 import org.commonlink.dto.DonationStatusDto
 import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.RateLimitException
@@ -94,6 +95,7 @@ class PublicWidgetControllerTest {
         widgetAllowedOrigin = "https://www.msf.fr",
         remainingCapacity = BigDecimal("7500.00"),
         collectAvailable = true,
+        paymentProvider = PaymentProviderId.HELLOASSO,
     )
 
     private val validRequest = CreateGuestDonationRequest(
@@ -145,6 +147,9 @@ class PublicWidgetControllerTest {
             .andExpect(jsonPath("$.identifier").doesNotExist())
             .andExpect(jsonPath("$.verificationStatus").doesNotExist())
             .andExpect(jsonPath("$.widgetToken").doesNotExist())
+            // Only the provider itself is public: it picks the payment button and mandatory texts.
+            .andExpect(jsonPath("$.paymentProvider").value("HELLOASSO"))
+            .andExpect(jsonPath("$.helloasso").doesNotExist())
     }
 
     @Test
@@ -488,6 +493,7 @@ class PublicWidgetControllerTest {
         budgetHash = null,
         milestones = emptyList(),
         remainingCapacity = BigDecimal("850.00"),
+        paymentProvider = PaymentProviderId.MOLLIE,
     )
 
     @Test
@@ -498,6 +504,7 @@ class PublicWidgetControllerTest {
         mockMvc.perform(get("/api/public/landing/clk_abc?preview=prev_jwt"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.campaignName").value("Campagne Test"))
+            .andExpect(jsonPath("$.paymentProvider").value("MOLLIE"))
 
         verify(exactly = 1) { publicWidgetService.getLanding("clk_abc", "prev_jwt") }
     }

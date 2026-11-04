@@ -248,8 +248,7 @@ export const HELLOASSO_ADMIN_URL = 'https://admin.helloasso.com';
  */
 export const HELLOASSO_SIGNUP_URL = 'https://www.helloasso.com/';
 
-/** "Comment fonctionne HelloAsso" page, required by HelloAsso's integration guide. */
-export const HELLOASSO_HOW_IT_WORKS_URL = 'https://www.helloasso.com/comment-ca-marche';
+export { HELLOASSO_HOW_IT_WORKS_URL } from '@/lib/helloasso';
 
 /** Public register of authorised payment institutions, where HelloAsso's ACPR approval can be checked. */
 export const REGAFI_URL = 'https://www.regafi.fr';

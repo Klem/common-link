@@ -1,4 +1,5 @@
 import type { CampaignCause } from '@/types/campaign';
+import type { PaymentProviderId } from '@/types/paymentProvider';
 import axios from 'axios';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -31,6 +32,8 @@ export interface PublicWidgetDto {
    * unavailable" instead of failing on submit; the backend refuses the donation anyway (code COLLECTION_UNAVAILABLE).
    */
   collectAvailable: boolean;
+  /** The association's payment provider: HelloAsso gets its cart text, official button and "how it works" link. */
+  paymentProvider: PaymentProviderId;
 }
 
 export interface CreateGuestDonationRequest {
@@ -167,6 +170,8 @@ export interface PublicLandingDto {
   remainingCapacity: number;
   /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
   gtmContainerId: string | null;
+  /** Same purpose as {@link PublicWidgetDto.paymentProvider}. */
+  paymentProvider: PaymentProviderId;
 }
 
 /**

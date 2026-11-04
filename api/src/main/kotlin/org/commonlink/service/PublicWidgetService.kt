@@ -62,6 +62,7 @@ class PublicWidgetService(
             remainingCapacity = donationCapService.remainingCapacity(campaign),
             gtmContainerId = association.gtmContainerId,
             collectAvailable = isCollectAvailable(association),
+            paymentProvider = association.paymentProvider,
         )
     }
 
@@ -262,6 +263,7 @@ class PublicWidgetService(
             donationsEnabled = campaign.status == CampaignStatus.LIVE && isCollectAvailable(association),
             remainingCapacity = donationCapService.remainingCapacity(campaign),
             gtmContainerId = association.gtmContainerId,
+            paymentProvider = association.paymentProvider,
         )
     }
 
