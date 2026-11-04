@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.Instant
 import java.util.UUID
 
@@ -35,6 +35,7 @@ class HelloAssoEligibilityService(
     private val rows: HelloAssoConnectionRows,
     private val rateLimiter: AuthRateLimiter,
     private val properties: HelloAssoProperties,
+    private val transactionTemplate: TransactionTemplate,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -71,9 +72,15 @@ class HelloAssoEligibilityService(
     /**
      * Records [canCollect] as the latest eligibility read, and the organization's current [slug] when given. Also used
      * when HelloAsso answers 409 to a checkout (organization not eligible any more), before re-reading.
+     *
+     * Runs under the link's row lock in a transaction of its own (or the caller's), through [transactionTemplate]
+     * rather than `@Transactional`: [refresh] calls it on `this`, where the proxy would be bypassed.
      */
-    @Transactional
     fun store(associationId: UUID, canCollect: Boolean, slug: String? = null) {
+        transactionTemplate.executeWithoutResult { storeLocked(associationId, canCollect, slug) }
+    }
+
+    private fun storeLocked(associationId: UUID, canCollect: Boolean, slug: String?) {
         val connection = connectionRepository.findByAssociationIdForUpdate(associationId) ?: return
         val now = Instant.now()
         if (slug != null && slug != connection.organizationSlug) {
@@ -136,6 +143,7 @@ class HelloAssoEligibilityExecutor(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    /** Re-reads the eligibility of every due link (see [HelloAssoEligibilityService.refresh]). */
     fun sweep() {
         if (!connectionRepository.existsActiveForHelloAssoAssociations()) {
             log.debug("HelloAsso eligibility sweep: no active HelloAsso link")
@@ -155,6 +163,7 @@ class HelloAssoEligibilityExecutor(
 @Component
 class HelloAssoEligibilityScheduler(private val executor: HelloAssoEligibilityExecutor) {
 
+    /** Runs one eligibility sweep. */
     @Scheduled(
         initialDelayString = "\${app.helloasso.eligibility-initial-delay-ms:240000}",
         fixedDelayString = "\${app.helloasso.eligibility-check-delay-ms:600000}",

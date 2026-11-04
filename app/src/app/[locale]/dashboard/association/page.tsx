@@ -22,7 +22,8 @@ export default function AssociationDashboardPage() {
 
   const { profile } = useAssociationProfile();
   const { stats, isLoading, error } = useAssociationDashboard();
-  const { hydrated, verificationStatus, bankStatus, rejectionReason, bankActionUrl } = useAccStatusStore();
+  const { hydrated, bankResolved, verificationStatus, bankStatus, rejectionReason, bankActionUrl, paymentProvider } =
+    useAccStatusStore();
 
   const greeting = profile ? t('greeting', { name: profile.name }) : t('greeting', { name: '…' });
 
@@ -43,13 +44,15 @@ export default function AssociationDashboardPage() {
 
   return (
     <div className = "page">
-      {/* Rendered only once the profile is loaded: the store defaults would show a false "0/2". */}
-      {hydrated && (
+      {/* Rendered only once the profile and the payment status are loaded: the store defaults would show a false
+          "0/2", and the bank row wording depends on the payment provider. */}
+      {hydrated && bankResolved && (
       <AccountCompletionCard
         verificationStatus={verificationStatus}
         bankStatus={bankStatus}
         rejectionReason={rejectionReason}
         bankActionUrl={bankActionUrl}
+        paymentProvider={paymentProvider}
       />
       )}
 

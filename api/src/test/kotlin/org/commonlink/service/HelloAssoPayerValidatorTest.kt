@@ -69,5 +69,17 @@ class HelloAssoPayerValidatorTest {
         assertTrue(HelloAssoPayerValidator.validName("O'Neil"))
         assertFalse(HelloAssoPayerValidator.validName("Ab3"))
         assertFalse(HelloAssoPayerValidator.validName("admin"))
+        assertFalse(HelloAssoPayerValidator.validName("Firstname"))
+        assertFalse(HelloAssoPayerValidator.validName("lastname"))
+    }
+
+    @Test
+    fun `only the documented accents are pre-filled - e, a, u and c-cedilla`() {
+        for (name in listOf("François", "Hélène", "Zoé", "Gaëlle", "Raphaël", "Noël", "Agnès", "Mûller", "Ève")) {
+            assertTrue(HelloAssoPayerValidator.validName(name), name)
+        }
+        for (name in listOf("Jérôme", "Benoît", "Anaïs", "Núñez", "Øyvind", "Œdipe", "Chloë-Ÿves")) {
+            assertFalse(HelloAssoPayerValidator.validName(name), name)
+        }
     }
 }

@@ -49,7 +49,7 @@ class DonationRepositoryStalePendingTest(
         ).providerRef
 
     private fun staleMollieRefs() =
-        donationRepository.findStalePendingByProviderRefPrefix(PaymentProviderId.MOLLIE.refPrefix, threshold)
+        donationRepository.findStalePendingByProviderRefPrefix(PaymentProviderId.MOLLIE.refPrefix, threshold, Instant.EPOCH)
             .map { it.providerRef }
 
     @Test
@@ -71,10 +71,30 @@ class DonationRepositoryStalePendingTest(
         val helloAsso = donation("helloasso:4242")
         val mollie = donation("mollie:tr_other")
 
-        val refs = donationRepository.findStalePendingByProviderRefPrefix(PaymentProviderId.HELLOASSO.refPrefix, threshold)
+        val refs = donationRepository.findStalePendingByProviderRefPrefix(PaymentProviderId.HELLOASSO.refPrefix, threshold, Instant.EPOCH)
             .map { it.providerRef }
 
         assertThat(refs).contains(helloAsso).doesNotContain(mollie)
+    }
+
+    @Test
+    fun `the lower bound excludes donations created before it (abandoned HelloAsso checkouts)`() {
+        val inWindow = donation("helloasso:5001")
+        val abandoned = donation("helloasso:5002", createdAt = Instant.now().minus(60, ChronoUnit.MINUTES))
+        val createdAfter = Instant.now().minus(45, ChronoUnit.MINUTES)
+
+        val refs = donationRepository.findStalePendingByProviderRefPrefix(PaymentProviderId.HELLOASSO.refPrefix, threshold, createdAfter)
+            .map { it.providerRef }
+
+        assertThat(refs).contains(inWindow).doesNotContain(abandoned)
+    }
+
+    @Test
+    fun `the locking lookup finds the donation by its provider reference`() {
+        val ref = donation("helloasso:6001")
+
+        assertThat(donationRepository.findByProviderRefForUpdate(ref)?.providerRef).isEqualTo(ref)
+        assertThat(donationRepository.findByProviderRefForUpdate("helloasso:missing")).isNull()
     }
 
     @Test

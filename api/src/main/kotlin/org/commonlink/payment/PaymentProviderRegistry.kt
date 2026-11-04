@@ -27,7 +27,7 @@ class PaymentProviderRegistry(providers: List<PaymentProvider>) {
 
     /**
      * Returns the provider of [association] ([AssociationProfile.paymentProvider]), or `null` when that provider has
-     * no implementation yet (HelloAsso before its adapter ships). Never falls back to another provider.
+     * no registered implementation (defensive; every provider has one today). Never falls back to another provider.
      *
      * For read paths and collection gates: a `null` result means "not ready to collect" (status `NOT_CONNECTED`,
      * no link started, every gate closed).
@@ -37,8 +37,8 @@ class PaymentProviderRegistry(providers: List<PaymentProvider>) {
     fun findForAssociation(association: AssociationProfile): PaymentProvider? = find(association.paymentProvider)
 
     /**
-     * Returns the implementation of provider [id], or `null` when it has none yet (HelloAsso before its adapter
-     * ships). For displays that list every provider, e.g. the curator's provider-change preview.
+     * Returns the implementation of provider [id], or `null` when it has no registered implementation (defensive;
+     * every provider has one today). For displays that list every provider, e.g. the curator's provider-change preview.
      */
     fun find(id: PaymentProviderId): PaymentProvider? = byId[id]
 
@@ -47,8 +47,8 @@ class PaymentProviderRegistry(providers: List<PaymentProvider>) {
      * Never falls back to another provider.
      *
      * @param association the association collecting donations.
-     * @throws ConflictException when the association's provider has no implementation yet (HelloAsso before its
-     *   adapter ships).
+     * @throws ConflictException when the association's provider has no registered implementation (defensive; every
+     *   provider has one today).
      */
     fun forAssociation(association: AssociationProfile): PaymentProvider =
         findForAssociation(association) ?: run {

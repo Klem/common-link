@@ -61,8 +61,9 @@ export function usePaymentStatus(): UsePaymentStatusReturn {
       setWarnings(data.warnings ?? []);
       setHelloasso(data.helloasso ?? null);
       if (silent) setError(null);
-    } catch (e) {
-      if (silent) console.debug('Background payment status re-read failed; keeping the previous state.', e);
+    } catch {
+      // The error itself is not logged: an AxiosError carries the request headers, Authorization included.
+      if (silent) console.debug('Background payment status re-read failed; keeping the previous state.');
       else setError('common.errors.serverError');
     } finally {
       if (!silent) setIsLoading(false);

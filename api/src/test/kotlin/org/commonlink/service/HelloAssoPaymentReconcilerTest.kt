@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.commonlink.config.HelloAssoProperties
 import org.commonlink.entity.AssociationProfile
@@ -10,6 +11,7 @@ import org.commonlink.entity.Donation
 import org.commonlink.entity.HelloAssoConnection
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -37,7 +39,7 @@ class HelloAssoPaymentReconcilerTest {
 
     @Test
     fun `nothing stale - exits without any HelloAsso call`() {
-        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any()) } returns emptyList()
+        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any(), any()) } returns emptyList()
 
         reconciler.reconcile()
 
@@ -46,7 +48,7 @@ class HelloAssoPaymentReconcilerTest {
 
     @Test
     fun `a donation confirmed by the reconciler raises MISSED_WEBHOOK and flags the link`() {
-        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any()) } returns listOf(donation("helloasso:1", 20))
+        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any(), any()) } returns listOf(donation("helloasso:1", 20))
         every { checkoutService.refreshPayment("helloasso:1") } returns HelloAssoPaymentOutcome.CONFIRMED
         every { checkoutService.markWebhookMissing("helloasso:1") } returns Unit
 
@@ -57,21 +59,39 @@ class HelloAssoPaymentReconcilerTest {
     }
 
     @Test
-    fun `a still pending donation raises nothing, an abandoned one (over 45 minutes) is not re-read`() {
-        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any()) } returns
-            listOf(donation("helloasso:2", 20), donation("helloasso:3", 60))
+    fun `a still pending donation raises nothing`() {
+        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any(), any()) } returns
+            listOf(donation("helloasso:2", 20))
         every { checkoutService.refreshPayment("helloasso:2") } returns HelloAssoPaymentOutcome.PENDING
 
         reconciler.reconcile()
 
-        verify(exactly = 0) { checkoutService.refreshPayment("helloasso:3") }
         verify(exactly = 0) { alerts.reportFailure(any(), any(), any(), any()) }
         verify(exactly = 0) { checkoutService.markWebhookMissing(any()) }
     }
 
     @Test
+    fun `the query is bounded by the stale delay (15 minutes) and the abandon delay (45 minutes)`() {
+        val threshold = slot<Instant>()
+        val createdAfter = slot<Instant>()
+        every {
+            donationRepo.findStalePendingByProviderRefPrefix("helloasso:", capture(threshold), capture(createdAfter))
+        } returns emptyList()
+        val before = Instant.now()
+
+        reconciler.reconcile()
+
+        val after = Instant.now()
+        val properties = HelloAssoProperties()
+        assertFalse(threshold.captured.isBefore(before.minus(properties.reconcilerStaleAfter)))
+        assertFalse(threshold.captured.isAfter(after.minus(properties.reconcilerStaleAfter)))
+        assertFalse(createdAfter.captured.isBefore(before.minus(properties.checkoutAbandonAfter)))
+        assertFalse(createdAfter.captured.isAfter(after.minus(properties.checkoutAbandonAfter)))
+    }
+
+    @Test
     fun `a failed re-read is skipped without stopping the others`() {
-        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any()) } returns
+        every { donationRepo.findStalePendingByProviderRefPrefix("helloasso:", any(), any()) } returns
             listOf(donation("helloasso:4", 20), donation("helloasso:5", 20))
         every { checkoutService.refreshPayment("helloasso:4") } throws IllegalStateException("down")
         every { checkoutService.refreshPayment("helloasso:5") } returns HelloAssoPaymentOutcome.PENDING

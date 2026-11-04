@@ -43,7 +43,7 @@ export function AssociationStatusSync() {
 
   // The HelloAsso journey re-reads the status after linking, disconnecting or checking eligibility.
   useEffect(() => {
-    if (refresh) setPaymentStatusRefresh(refresh);
+    setPaymentStatusRefresh(refresh);
   }, [refresh, setPaymentStatusRefresh]);
 
   return null;

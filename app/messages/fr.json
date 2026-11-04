@@ -864,7 +864,7 @@
         "title": "Prestataire de paiement",
         "loading": "Chargement du prestataire…",
         "error": "Impossible de charger le prestataire de paiement.",
-        "current": "Prestataire actuel",
+        "current": "Prestataire actuel : <strong>{provider}</strong>",
         "providers": {
           "MOLLIE": "Mollie",
           "HELLOASSO": "HelloAsso"
@@ -889,7 +889,8 @@
         "confirm": "Confirmer le changement",
         "success": "Prestataire changé. L'association a été prévenue par e-mail.",
         "invalidReason": "Motif refusé : obligatoire, {max} caractères maximum.",
-        "failed": "Le changement a échoué. Réessayez."
+        "failed": "Le changement a échoué. Réessayez.",
+        "targetOption": "{provider} — {readiness}"
       }
     },
     "freezeScreen": {
@@ -952,14 +953,40 @@
               },
               "title": "Vérification de l'association"
             },
-            "validated": "✓ Validée"
+            "validated": "✓ Validée",
+            "helloAssoBank": {
+              "title": "Compte HelloAsso",
+              "NOT_CONNECTED": {
+                "desc": "Compte HelloAsso non relié — requis pour publier",
+                "cta": "Relier mon compte →"
+              },
+              "IN_REVIEW": {
+                "desc": "Vérification HelloAsso en cours — requise pour publier",
+                "cta": "Mon dossier →"
+              },
+              "NEEDS_DATA": {
+                "desc": "Encaissement suspendu par HelloAsso — à régulariser pour publier",
+                "cta": "Ouvrir ma page de vérification →"
+              },
+              "COMPLETED": {
+                "desc": "Compte HelloAsso relié, dons ouverts"
+              },
+              "BROKEN": {
+                "desc": "Accès HelloAsso à renouveler — recollez votre clé pour publier",
+                "cta": "Recoller ma clé →"
+              }
+            }
           },
           "dismiss": "Masquer",
           "sub": {
             "allDone": "Votre compte est complet : votre association est vérifiée et votre compte bancaire est opérationnel.",
             "bankOnly": "Votre association est vérifiée ! Finalisez la connexion de votre compte bancaire pour pouvoir recevoir des dons.",
             "notVerified": "En attendant la validation de votre association, vous pouvez créer et publier vos campagnes en mode privé (lien direct uniquement).",
-            "rejected": "Votre dossier de vérification a été refusé. Corrigez vos documents pour pouvoir publier publiquement."
+            "rejected": "Votre dossier de vérification a été refusé. Corrigez vos documents pour pouvoir publier publiquement.",
+            "helloAsso": {
+              "allDone": "Votre compte est complet : votre association est vérifiée et votre compte HelloAsso est relié, dons ouverts.",
+              "bankOnly": "Votre association est vérifiée ! Reliez votre compte HelloAsso pour pouvoir recevoir des dons."
+            }
           },
           "title": "⚙️ Finalisez votre compte CommonLink"
         },
@@ -3210,8 +3237,7 @@
             "mismatchTitle": "Ces codes appartiennent à « {orgName} ».",
             "mismatchText": "Ce n'est pas l'association vérifiée sur CommonLink. Rien n'a été enregistré.",
             "mismatchHint": "Sélectionnez la bonne association dans HelloAsso, puis copiez ses codes.",
-            "mismatchHelp": "C'est bien vous, sous un autre nom ?",
-            "mismatchHelpLink": "Écrivez-nous",
+            "mismatchHelp": "C'est bien vous, sous un autre nom ? <link>Écrivez-nous</link>.",
             "unavailable": "HelloAsso ne nous répond pas pour le moment. Rien n'a été enregistré : réessayez dans quelques minutes."
           },
           "step3": {
@@ -3368,9 +3394,8 @@
             "intro": "Le paiement d'un don en ligne doit passer par un établissement agréé. Pour les associations françaises, nous avons choisi HelloAsso, qui se présente ainsi :",
             "imposedLabel": "Présentation de HelloAsso",
             "contribution": "<strong>La contribution volontaire</strong> est proposée par HelloAsso à votre donateur au moment de payer, en plus de son don. Elle va à HelloAsso, ni à votre association, ni à CommonLink, et reste facultative.",
-            "approval": "Son agrément :",
-            "verifyOn": "Vous pouvez le vérifier sur",
-            "howItWorks": "Comment fonctionne HelloAsso ↗"
+            "howItWorks": "Comment fonctionne HelloAsso ↗",
+            "approvalLine": "Son agrément : <em>« {approval} »</em> Vous pouvez le vérifier sur <link>regafi.fr</link>."
           },
           "donors": {
             "q": "Que verront nos donateurs au moment de payer ?",

@@ -31,6 +31,11 @@ class HelloAssoPaymentReconciler(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    /**
+     * Re-reads every `helloasso:` donation created between [HelloAssoProperties.checkoutAbandonAfter] and
+     * [HelloAssoProperties.reconcilerStaleAfter] ago and still unconfirmed (both bounds in the query); flags the link
+     * of each one it confirms. A failed re-read is logged and retried at the next run.
+     */
     @Scheduled(
         initialDelayString = "\${app.helloasso.reconciler.initial-delay-ms:150000}",
         fixedDelayString = "\${app.helloasso.reconciler.delay-ms:300000}",
@@ -38,9 +43,11 @@ class HelloAssoPaymentReconciler(
     fun reconcile() {
         val now = Instant.now()
         val prefix = PaymentProviderId.HELLOASSO.refPrefix
-        val abandonedBefore = now.minus(properties.checkoutAbandonAfter)
-        val stale = donationRepository.findStalePendingByProviderRefPrefix(prefix, now.minus(properties.reconcilerStaleAfter))
-            .filter { it.createdAt.isAfter(abandonedBefore) }
+        val stale = donationRepository.findStalePendingByProviderRefPrefix(
+            prefix,
+            threshold = now.minus(properties.reconcilerStaleAfter),
+            createdAfter = now.minus(properties.checkoutAbandonAfter),
+        )
         if (stale.isEmpty()) {
             log.debug("HelloAsso reconciler: no donation to re-read")
             return

@@ -11,17 +11,20 @@ import java.util.MissingResourceException
  * types the rest on HelloAsso's page. **Never a birth date.**
  *
  * Names: the full name is split best-effort (first word = first name, the rest = last name); either both names pass —
- * Latin letters only, at least two characters, a vowel, no digit, no character three times in a row, not a placeholder
- * value, first ≠ last — or neither is sent.
+ * the documented character set only (unaccented Latin letters, accented `e`/`a`/`u`, `ç`, `'`, `-`, space), at least
+ * two characters, a vowel, no digit, no character three times in a row, not a placeholder value, first ≠ last — or
+ * neither is sent. The set is applied strictly: a name such as « Jérôme » or « Núñez » is not pre-filled (the donor
+ * types it on HelloAsso's page) rather than risk a refused checkout.
  */
 object HelloAssoPayerValidator {
 
     private const val MAX_LENGTH = 255
-    private val LATIN_NAME = Regex("^[\\p{IsLatin}][\\p{IsLatin}' -]*[\\p{IsLatin}]$")
+    private const val LETTERS = "A-Za-zÀÁÂÄÈÉÊËÙÚÛÜàáâäèéêëùúûüÇç"
+    private val LATIN_NAME = Regex("^[$LETTERS][$LETTERS' -]*[$LETTERS]$")
     private val VOWEL = Regex("[aeiouyàâäéèêëîïôöùûüÿæœ]", RegexOption.IGNORE_CASE)
     private val TRIPLE = Regex("(.)\\1\\1", RegexOption.IGNORE_CASE)
     private val EMAIL = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
-    private val PLACEHOLDERS = setOf("test", "anonyme", "anonymous", "unknown", "inconnu", "nom", "prenom", "prénom", "admin", "name")
+    private val PLACEHOLDERS = setOf("test", "anonyme", "anonymous", "unknown", "inconnu", "nom", "prenom", "prénom", "admin", "name", "firstname", "lastname")
 
     /** The pre-fill HelloAsso will accept, or null when nothing passes. */
     fun build(payer: CheckoutPayer?): HelloAssoPayerJson? {
@@ -39,6 +42,7 @@ object HelloAssoPayerValidator {
         return result.takeUnless { it == HelloAssoPayerJson() }
     }
 
+    /** Splits [fullName] into (first name, last name), or (null, null) when either would be refused by HelloAsso. */
     internal fun names(fullName: String?): Pair<String?, String?> {
         val words = fullName?.trim()?.split(Regex("\\s+"))?.filter { it.isNotEmpty() }.orEmpty()
         if (words.size < 2) return null to null
@@ -48,6 +52,7 @@ object HelloAssoPayerValidator {
         return first to last
     }
 
+    /** Whether HelloAsso accepts [name] as a payer name (length, documented letters, a vowel, no triple letter, no placeholder). */
     internal fun validName(name: String): Boolean =
         name.length in 2..MAX_LENGTH &&
             LATIN_NAME.matches(name) &&

@@ -3,6 +3,7 @@ package org.commonlink.service
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.HelloAssoConnection
 import org.commonlink.exception.HelloAssoNotAssociationProviderException
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.Duration
 import java.time.Instant
 import java.util.Optional
@@ -26,7 +29,10 @@ class HelloAssoOnboardingReminderServiceTest {
     private val associations = mockk<AssociationProfileRepository>()
     private val repo = mockk<HelloAssoConnectionRepository>()
     private val email = mockk<EmailService>(relaxed = true)
-    private val service = HelloAssoOnboardingReminderService(associations, repo, HelloAssoConnectionRows(repo), email, "https://app.test")
+    private val txManager = mockk<PlatformTransactionManager>(relaxed = true)
+    private val service = HelloAssoOnboardingReminderService(
+        associations, repo, HelloAssoConnectionRows(repo), email, "https://app.test", TransactionTemplate(txManager),
+    )
 
     private val userId = UUID.randomUUID()
     private val associationId = UUID.randomUUID()
@@ -44,6 +50,9 @@ class HelloAssoOnboardingReminderServiceTest {
         every { repo.findByAssociationId(associationId) } returns row
         every { repo.findByAssociationIdForUpdate(associationId) } returns row
         every { repo.save(any()) } answers { firstArg() }
+        every { repo.markOnboardingStarted(associationId, any()) } answers {
+            if (row.onboardingStartedAt != null) 0 else { row.onboardingStartedAt = secondArg(); 1 }
+        }
         every { repo.existsPendingHelloAssoReminder() } returns true
         every { repo.findPendingHelloAssoReminders() } answers { if (row.reminderJ7SentAt == null) listOf(row) else emptyList() }
     }
@@ -60,6 +69,29 @@ class HelloAssoOnboardingReminderServiceTest {
 
         association.paymentProvider = PaymentProviderId.MOLLIE
         assertThrows<HelloAssoNotAssociationProviderException> { service.markStarted(userId) }
+    }
+
+    @Test
+    fun `marking the start writes only its timestamp, never the whole row`() {
+        service.markStarted(userId)
+
+        verify { repo.markOnboardingStarted(associationId, any()) }
+        verify(exactly = 0) { repo.save(any()) }
+    }
+
+    @Test
+    fun `a sent reminder is recorded under the row lock inside a transaction (no self-invocation bypass)`() {
+        startedAgo(Duration.ofHours(25))
+
+        service.sendDueReminders()
+
+        verifyOrder {
+            txManager.getTransaction(any())
+            repo.findByAssociationIdForUpdate(associationId)
+            repo.save(row)
+            txManager.commit(any())
+        }
+        assertNotNull(row.reminderJ1SentAt)
     }
 
     @Test

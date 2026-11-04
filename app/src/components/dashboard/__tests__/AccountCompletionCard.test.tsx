@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AccountCompletionCard } from '../AccountCompletionCard';
 import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
+import { PaymentProviderId } from '@/types/paymentProvider';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole, AuthProvider } from '@/types/auth';
 
@@ -257,5 +258,54 @@ describe('AccountCompletionCard — regression: verified association without Mol
     expect(variantOf(0)).toBe('done');
     expect(variantOf(1)).toBe('todo');
     expect(screen.getByText('sub.bankOnly')).toBeInTheDocument();
+  });
+});
+
+describe('AccountCompletionCard — wording per payment provider', () => {
+  it('HelloAsso: the bank row uses the HelloAsso labels', () => {
+    renderCard({ paymentProvider: PaymentProviderId.HELLOASSO, bankStatus: BankSetupStatus.NOT_CONNECTED });
+    expect(screen.getByText('checks.helloAssoBank.title')).toBeInTheDocument();
+    expect(screen.getByText('checks.helloAssoBank.NOT_CONNECTED.desc')).toBeInTheDocument();
+    expect(screen.queryByText('checks.bank.NOT_CONNECTED.desc')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('checks.helloAssoBank.NOT_CONNECTED.cta'));
+    expect(push).toHaveBeenCalledWith(expect.stringContaining('tab=bank'));
+  });
+
+  it('HelloAsso IN_REVIEW: links to the bank tab instead of showing an ETA', () => {
+    renderCard({ paymentProvider: PaymentProviderId.HELLOASSO, bankStatus: BankSetupStatus.IN_REVIEW });
+    expect(variantOf(1)).toBe('pending');
+    expect(screen.queryByText('checks.helloAssoBank.IN_REVIEW.eta')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('checks.helloAssoBank.IN_REVIEW.cta'));
+    expect(push).toHaveBeenCalledWith(expect.stringContaining('tab=bank'));
+  });
+
+  it('HelloAsso NEEDS_DATA (suspended): opens the HelloAsso verification page', () => {
+    const open = vi.fn();
+    vi.stubGlobal('open', open);
+    renderCard({
+      paymentProvider: PaymentProviderId.HELLOASSO,
+      bankStatus: BankSetupStatus.NEEDS_DATA,
+      bankActionUrl: 'https://admin.helloasso.com/les-amis/verification',
+    });
+    fireEvent.click(screen.getByText('checks.helloAssoBank.NEEDS_DATA.cta'));
+    expect(open).toHaveBeenCalledWith('https://admin.helloasso.com/les-amis/verification', '_blank', 'noopener,noreferrer');
+    vi.unstubAllGlobals();
+  });
+
+  it('HelloAsso: the subtitle names the HelloAsso account', () => {
+    renderCard({
+      paymentProvider: PaymentProviderId.HELLOASSO,
+      verificationStatus: VerificationStatus.VERIFIED,
+      bankStatus: BankSetupStatus.NOT_CONNECTED,
+    });
+    expect(screen.getByText('sub.helloAsso.bankOnly')).toBeInTheDocument();
+  });
+
+  it('Mollie: the bank row keeps the Mollie labels', () => {
+    renderCard({ paymentProvider: PaymentProviderId.MOLLIE, bankStatus: BankSetupStatus.IN_REVIEW });
+    expect(screen.getByText('checks.bank.title')).toBeInTheDocument();
+    expect(screen.getByText('checks.bank.IN_REVIEW.desc')).toBeInTheDocument();
+    expect(screen.getByText('checks.bank.IN_REVIEW.eta')).toBeInTheDocument();
+    expect(screen.queryByText(/helloAssoBank/)).not.toBeInTheDocument();
   });
 });

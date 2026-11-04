@@ -124,7 +124,7 @@ type FilesState = typeof FilesState[keyof typeof FilesState];
  * "Retrouver mes fichiers": the KYB documents the association gave CommonLink (`GET /api/association/documents/kyb`),
  * each re-downloadable (journaled server-side), so it can upload them itself at HelloAsso.
  */
-export function KybFiles({ id }: { id: string }) {
+function KybFiles({ id }: { id: string }) {
   const t = useTranslations('settings.helloasso.onboarding.files');
   const [state, setState] = useState<FilesState>(FilesState.LOADING);
   const [documents, setDocuments] = useState<OnboardingProvidedDocument[]>([]);

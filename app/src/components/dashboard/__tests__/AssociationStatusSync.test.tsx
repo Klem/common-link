@@ -29,8 +29,10 @@ function payment(overrides: Record<string, unknown> = {}) {
     status: BankSetupStatus.NOT_CONNECTED,
     actionUrl: null,
     warnings: [],
+    helloasso: null,
     isLoading: false,
     error: null,
+    refresh: () => Promise.resolve(),
     ...overrides,
   };
 }

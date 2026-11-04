@@ -39,6 +39,7 @@ class HelloAssoConnectionController(
     private val reminderService: HelloAssoOnboardingReminderService,
 ) {
 
+    /** Returns the association's HelloAsso notification URL, creating its row on first need. */
     @PostMapping("/notification-url")
     @Operation(
         summary = "Get the HelloAsso notification URL",
@@ -66,6 +67,7 @@ class HelloAssoConnectionController(
     fun notificationUrl(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<HelloAssoNotificationUrlResponse> =
         ResponseEntity.ok(credentialsService.ensureNotificationUrl(UUID.fromString(principal.username)))
 
+    /** Verifies the association's HelloAsso API keys; the secret is used once and never stored. */
     @PostMapping("/credentials/verify")
     @Operation(
         summary = "Verify the association's HelloAsso API keys",
@@ -101,6 +103,7 @@ class HelloAssoConnectionController(
     ): ResponseEntity<HelloAssoVerifyResponse> =
         ResponseEntity.ok(credentialsService.verify(UUID.fromString(principal.username), request))
 
+    /** Links the verified HelloAsso account once the mandate is accepted. */
     @PostMapping("/connection")
     @Operation(
         summary = "Link the verified HelloAsso account",
@@ -132,6 +135,7 @@ class HelloAssoConnectionController(
         return ResponseEntity.noContent().build()
     }
 
+    /** Records that the "no HelloAsso account yet" journey started (idempotent). */
     @PostMapping("/onboarding-started")
     @Operation(
         summary = "Record that the HelloAsso journey started",
@@ -153,6 +157,7 @@ class HelloAssoConnectionController(
         return ResponseEntity.noContent().build()
     }
 
+    /** Re-reads the organization's HelloAsso eligibility now (rate-limited). */
     @PostMapping("/eligibility/refresh")
     @Operation(
         summary = "Re-read HelloAsso eligibility now",
@@ -177,6 +182,7 @@ class HelloAssoConnectionController(
         return ResponseEntity.noContent().build()
     }
 
+    /** Disconnects the HelloAsso account: tokens erased, row and notification token kept (idempotent). */
     @DeleteMapping("/connection")
     @Operation(
         summary = "Disconnect the HelloAsso account",

@@ -70,7 +70,7 @@ class AssociationService(
      * @throws UserNotFoundException if no profile exists for this user.
      * @throws NotFoundException if the destination campaign does not belong to this association.
      * @throws ConflictException if the destination campaign is not LIVE, or if contact fields change
-     *   once the Mollie KYC flow has started.
+     *   once the payment provider onboarding has started.
      */
     @Transactional
     fun updateProfile(userId: UUID, req: UpdateAssociationProfileRequest): AssociationProfileDto {
@@ -93,7 +93,7 @@ class AssociationService(
         if (onboardingGate.isPaymentLinkStarted(userId) &&
             ((req.contactName != null && req.contactName != profile.contactName) ||
              (req.contactEmail != null && req.contactEmail != profile.contactEmail))) {
-            throw ConflictException("Contact name and email cannot be modified once the Mollie KYC flow has started")
+            throw ConflictException("Contact name and email cannot be modified once the payment provider onboarding has started")
         }
 
         req.contactName?.let { profile.contactName = it }

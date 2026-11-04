@@ -92,6 +92,7 @@ describe('Sidebar', () => {
       bankActionUrl: null,
       bankResolved: true,
       paymentProvider: null,
+      helloasso: null,
     });
     render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
     expect(document.querySelector('.acc-mini')).toBeInTheDocument();

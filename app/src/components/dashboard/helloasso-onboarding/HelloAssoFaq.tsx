@@ -5,22 +5,16 @@ import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { HelloAssoLink } from '@/types/helloasso';
 import type { HelloAssoStatus } from '@/types/helloasso';
-import {
-  HELLOASSO_FEES_DECISION_PENDING,
-  HELLOASSO_HOW_IT_WORKS_URL,
-  REGAFI_URL,
-  formatClock,
-  formatDay,
-} from './helloAssoFlow';
+import { HELLOASSO_HOW_IT_WORKS_URL } from '@/lib/helloasso';
+import { HELLOASSO_FEES_DECISION_PENDING, REGAFI_URL, formatClock, formatDay } from './helloAssoFlow';
 import HelloAssoPayButton, { HelloAssoPayButtonVariant } from '@/components/helloasso/HelloAssoPayButton';
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>;
 
 interface FaqEntry {
+  /** Entry id, also the i18n key prefix under `faq.`. */
   id: string;
   icon: string;
-  /** i18n key prefix under `faq.` */
-  key: string;
   panel: () => ReactNode;
 }
 
@@ -60,7 +54,6 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
     {
       id: 'roles',
       icon: '🧭',
-      key: 'roles',
       panel: () => (
         <>
           <p>{t('roles.intro')}</p>
@@ -88,7 +81,6 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
     {
       id: 'cert',
       icon: '✅',
-      key: 'cert',
       panel: () => (
         <>
           <div className="cert-rule faq-compact">
@@ -105,22 +97,24 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
               </div>
             </div>
           </div>
-          <p className="hao-p-spaced">{t('cert.text')}</p>
+          <p className="hao-row-spaced">{t('cert.text')}</p>
         </>
       ),
     },
     {
       id: 'why',
       icon: '🏦',
-      key: 'why',
       panel: () => (
         <>
           <p>{t('why.intro')}</p>
           {imposed(t('why.imposedLabel'), tImposed('presentation'))}
-          <p className="hao-p-spaced">{t.rich('why.contribution', { strong })}</p>
+          <p className="hao-row-spaced">{t.rich('why.contribution', { strong })}</p>
           <p>
-            {t('why.approval')} <em>« {tImposed('approval')} »</em> {t('why.verifyOn')}{' '}
-            <a href={REGAFI_URL} target="_blank" rel="noopener noreferrer">regafi.fr</a>.
+            {t.rich('why.approvalLine', {
+              approval: tImposed('approval'),
+              em: (chunks) => <em>{chunks}</em>,
+              link: (chunks) => <a href={REGAFI_URL} target="_blank" rel="noopener noreferrer">{chunks}</a>,
+            })}
           </p>
           <p>
             <a href={HELLOASSO_HOW_IT_WORKS_URL} target="_blank" rel="noopener noreferrer">{t('why.howItWorks')}</a>
@@ -131,12 +125,11 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
     {
       id: 'donors',
       icon: '👀',
-      key: 'donors',
       panel: () => (
         <>
           <p>{t('donors.intro')}</p>
           {imposed(t('donors.imposedLabel'), tImposed('cartText'))}
-          <div className="hao-p-spaced-lg">
+          <div className="hao-row-spaced-lg">
             <HelloAssoPayButton
               variant={HelloAssoPayButtonVariant.PREVIEW}
               payWith={t('donors.payWith')}
@@ -149,7 +142,6 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
     {
       id: 'money',
       icon: '💶',
-      key: 'money',
       panel: () => (
         <>
           <p>{t.rich('money.intro', { strong })}</p>
@@ -158,7 +150,7 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
             <MiniFig icon="🎯" tone={FigTone.INDIGO} value={t('money.shareValue')} label={t('money.shareLabel')} />
             <MiniFig icon="🔐" tone={FigTone.AMBER} value={t('money.heldValue')} label={t('money.heldLabel')} />
           </div>
-          <p className="hao-p-spaced-lg">{t('money.rhythm')}</p>
+          <p className="hao-row-spaced-lg">{t('money.rhythm')}</p>
           <div className="mini-figs two">
             <MiniFig icon="👆" tone={FigTone.TEAL} value={t('money.onDemandValue')} label={t('money.onDemandLabel')} />
             <MiniFig icon="📆" tone={FigTone.INDIGO} value={t('money.monthlyValue')} label={t('money.monthlyLabel')} />
@@ -170,13 +162,11 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
     {
       id: 'receipts',
       icon: '📄',
-      key: 'receipts',
       panel: () => <p>{t.rich('receipts.text', { strong })}</p>,
     },
     {
       id: 'fees',
       icon: '🧾',
-      key: 'fees',
       panel: () => (
         <>
           <p>{t.rich('fees.payment', { strong })}</p>
@@ -197,11 +187,10 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
   const linkedDay = formatDay(status?.linkedAt, locale);
 
   const key: FaqEntry[] = [
-    { id: 'whyKey', icon: '🔑', key: 'whyKey', panel: () => <p>{t('whyKey.text')}</p> },
+    { id: 'whyKey', icon: '🔑', panel: () => <p>{t('whyKey.text')}</p> },
     {
       id: 'keyUse',
       icon: '🛡️',
-      key: 'keyUse',
       panel: () => (
         <>
           <p>{t.rich('keyUse.use', { strong })}</p>
@@ -213,7 +202,6 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
     {
       id: 'keepKey',
       icon: '🗑️',
-      key: 'keepKey',
       panel: () => (
         <>
           <p>{t.rich('keepKey.keep', { strong })}</p>
@@ -266,7 +254,6 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
     {
       id: 'docs',
       icon: '📂',
-      key: 'docs',
       panel: () => (
         <>
           <p>{t.rich('docs.law', { strong })}</p>
@@ -274,8 +261,8 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
         </>
       ),
     },
-    { id: 'refused', icon: '🙋', key: 'refused', panel: () => <p>{t('refused.text')}</p> },
-    { id: 'real', icon: '🔒', key: 'real', panel: () => <p>{t.rich('real.text', { strong })}</p> },
+    { id: 'refused', icon: '🙋', panel: () => <p>{t('refused.text')}</p> },
+    { id: 'real', icon: '🔒', panel: () => <p>{t.rich('real.text', { strong })}</p> },
   ];
 
   const renderGroup = (label: string, entries: FaqEntry[]) => (
@@ -296,7 +283,7 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
                 onClick={() => setOpen((o) => ({ ...o, [entry.id]: !isOpen }))}
               >
                 <span className="acc-ico" aria-hidden="true">{entry.icon}</span>
-                <span className="acc-q">{t(`${entry.key}.q`)}</span>
+                <span className="acc-q">{t(`${entry.id}.q`)}</span>
                 <span className="acc-chev" aria-hidden="true">▾</span>
               </button>
               <div className="acc-panel" id={panelId} role="region" aria-labelledby={`${panelId}-t`} hidden={!isOpen}>

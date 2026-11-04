@@ -14,7 +14,7 @@ import { useMollieKycStatus } from '@/hooks/mollie/useMollieKycStatus';
 import { useAccStatusStore } from '@/stores/accStatusStore';
 import { PaymentProviderId } from '@/types/paymentProvider';
 import HelloAssoOnboardingFlow from '@/components/dashboard/helloasso-onboarding/HelloAssoOnboardingFlow';
-import { helloAssoTabBadge } from '@/components/dashboard/helloasso-onboarding/helloAssoFlow';
+import { canCollectDonations, helloAssoTabBadge } from '@/components/dashboard/helloasso-onboarding/helloAssoFlow';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import MollieOnboardModal from '@/components/dashboard/MollieOnboardModal';
@@ -47,8 +47,8 @@ const profileSchema = z.object({
   siren: z
     .string()
     .optional()
-    // 9 caractères alphanumériques — miroir du @Pattern côté back (Mollie refuse
-    // le client-link en 422 si le registrationNumber n'a pas ce format).
+    // 9 alphanumeric characters — mirror of the backend @Pattern (Mollie refuses
+    // the client-link with a 422 if the registrationNumber does not have this format).
     .refine((v) => !v || /^[A-Za-z0-9]{9}$/.test(v), 'dashboard.association.profile.errors.sirenFormat'),
   creationYear: z
     .number()
@@ -73,7 +73,7 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-/** Formulaire vide — baseline avant l'arrivée du profil. */
+/** Empty form — baseline before the profile arrives. */
 const EMPTY_PROFILE_FORM: ProfileFormData = {
   contactName: '',
   siren: '',
@@ -86,7 +86,7 @@ const EMPTY_PROFILE_FORM: ProfileFormData = {
   signerRole: '',
 };
 
-/** Projette le profil serveur sur les champs du formulaire. */
+/** Maps the server profile onto the form fields. */
 function toFormData(profile: AssociationProfileDto): ProfileFormData {
   return {
     contactName: profile.contactName ?? '',
@@ -164,7 +164,11 @@ export default function AssociationProfilePage() {
   const mollieKyc = useMollieKycStatus();
   // Provider-neutral status written dashboard-wide by AssociationStatusSync; null while it loads.
   const paymentProvider = useAccStatusStore((s) => s.paymentProvider);
-  const helloAssoBadge = helloAssoTabBadge(useAccStatusStore((s) => s.helloasso));
+  const helloAssoStatus = useAccStatusStore((s) => s.helloasso);
+  // False until the payment status has been read once: the provider, hence the bank predicate, is unknown until then.
+  const paymentResolved = useAccStatusStore((s) => s.bankResolved);
+  const isHelloAsso = paymentProvider === PaymentProviderId.HELLOASSO;
+  const helloAssoBadge = helloAssoTabBadge(helloAssoStatus);
   const {
     connected: mollieConnected,
     pending: molliePending,
@@ -178,34 +182,38 @@ export default function AssociationProfilePage() {
   const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
     useMandate();
 
-  // ─── Verrouillage séquentiel des onglets ───────────────────────────────────
-  // Chaque onglet se débloque quand son prérequis DIRECT est terminé (= condition
-  // du badge "ok" du prérequis, pour que lock et badge ne divergent jamais).
+  // ─── Sequential tab locking ────────────────────────────────────────────────
+  // Each tab unlocks once its DIRECT prerequisite is done (= the condition of the
+  // prerequisite's "ok" badge, so that lock and badge never diverge).
   const verifDone = (verifStatus ?? profile?.verificationStatus) === VerificationStatus.VERIFIED;
   const mandateDone = mandateState?.signed === true;
-  // Nom et email de contact sont figés dès que le KYC Mollie est *lancé* — ils partent chez Mollie
-  // à la création du client-link, avant le callback OAuth (qui seul crée la MollieConnection). Un état
-  // OAuth encore vivant (`pending`) suffit donc à verrouiller. Miroir de `OnboardingGateService.isMollieKycStarted`.
+  // Contact name and email are frozen as soon as the Mollie KYC is *started* — they are sent to Mollie
+  // when the client-link is created, before the OAuth callback (which alone creates the MollieConnection). A
+  // still-live OAuth state (`pending`) is therefore enough to lock. Mirror of `OnboardingGateService.isMollieKycStarted`.
   const contactLocked = mollieConnected === true || molliePending === true;
-  // Même prédicat que le gate backend (`MollieConnection.canCollectDonations`) et que
-  // `BankSetupStatus.COMPLETED` : un widget ne peut pas fonctionner sur une campagne non publiée,
-  // donc le déverrouillage du widget ne doit jamais être plus permissif que la publication.
-  const bankDone = Boolean(
-    mollieConnected && !mollieBroken && onboardingStatus === MollieOnboardingStatus.COMPLETED && canReceivePayments,
-  );
+  // Same predicate as the backend gate (provider readiness READY = `BankSetupStatus.COMPLETED`): Mollie
+  // `MollieConnection.canCollectDonations`, HelloAsso link ACTIVE and able to collect. A widget cannot work on an
+  // unpublished campaign, so unlocking the widget must never be more permissive than publishing.
+  const bankDone = isHelloAsso
+    ? canCollectDonations(helloAssoStatus)
+    : Boolean(
+      mollieConnected && !mollieBroken && onboardingStatus === MollieOnboardingStatus.COMPLETED && canReceivePayments,
+    );
+  // Bank state not known yet: payment status unread, or (Mollie) its KYC status still loading.
+  const bankLoading = !paymentResolved || (!isHelloAsso && mollieLoading);
   const tabUnlocked: Record<SettingsTab, boolean> = {
     infos: true,
     verif: true,
     mandate: verifDone || (verifStatus ?? profile?.verificationStatus) === VerificationStatus.PENDING,
     bank: mandateDone,
-    // Widget, landing page et page HTML servent le même formulaire de don sur la même campagne
-    // publiée : un gate plus permissif afficherait des codes renvoyant un 409.
+    // Widget, landing page and HTML page serve the same donation form on the same published
+    // campaign: a more permissive gate would show codes answering 409.
     diffusion: bankDone,
   };
 
   // "Not required to draft campaigns" notice: shown until the bank setup is COMPLETED (the last gate
   // before publishing), dismissable for the browser session. Read after mount — sessionStorage is
-  // client-only — and hidden while Mollie loads so a done association never sees it flash.
+  // client-only — and hidden while the bank state loads so a done association never sees it flash.
   const [setupNoticeDismissed, setSetupNoticeDismissed] = useState(true);
   useEffect(() => {
     try {
@@ -222,7 +230,7 @@ export default function AssociationProfilePage() {
       // Storage blocked: the notice stays hidden until the next page load.
     }
   };
-  const showSetupNotice = !setupNoticeDismissed && !mollieLoading && !bankDone;
+  const showSetupNotice = !setupNoticeDismissed && !bankLoading && !bankDone;
 
   // Deep-link ?tab=: activates the requested tab only if it is unlocked, and only once the data has
   // loaded (otherwise an already onboarded user would be sent back to "infos" on the first render,
@@ -237,7 +245,7 @@ export default function AssociationProfilePage() {
     if (tabRestored.current) storeTab(profile?.id, activeTab);
   }, [activeTab, profile?.id]);
   useEffect(() => {
-    if (isLoading || mandateLoading || mollieLoading) return;
+    if (isLoading || mandateLoading || bankLoading) return;
     const query = searchParams.toString();
     if (appliedDeepLink.current === query) return;
     appliedDeepLink.current = query;
@@ -246,7 +254,7 @@ export default function AssociationProfilePage() {
     if (tab) setActiveTab(tabUnlocked[tab] ? tab : 'infos');
     tabRestored.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, isLoading, mandateLoading, mollieLoading, verifDone, mandateDone, bankDone]);
+  }, [searchParams, isLoading, mandateLoading, bankLoading, verifDone, mandateDone, bankDone]);
 
   // The OAuth popup closed (success, error or manual close): ask the server to re-read Mollie now.
   const handleMolliePopupClosed = useCallback(async () => {
@@ -288,9 +296,9 @@ export default function AssociationProfilePage() {
     formState: { isDirty, isSubmitting, errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    // `defaultValues` (et non `values`) : une re-sync réactive sur `profile`
-    // écraserait les caractères tapés pendant un autosave en vol. Le formulaire
-    // est hydraté une seule fois, au premier profil reçu.
+    // `defaultValues` (not `values`): a reactive re-sync on `profile` would
+    // overwrite the characters typed during an in-flight autosave. The form
+    // is hydrated only once, on the first profile received.
     defaultValues: EMPTY_PROFILE_FORM,
   });
 
@@ -302,13 +310,13 @@ export default function AssociationProfilePage() {
   }, [profile, reset]);
 
   /**
-   * Autosave debouncé (800 ms) — même contrat que `CampaignInfoTab` :
-   * patchs fusionnés, toast de confirmation, flush au démontage.
-   * `reset(getValues())` remet la baseline de `isDirty` sur les valeurs courantes sans toucher à
-   * la saisie en cours — mais seulement si le formulaire est entièrement valide. Rebaser alors
-   * qu'un autre champ est invalide effacerait son message d'erreur et installerait sa valeur
-   * invalide comme référence : `isDirty` retomberait à faux, le bouton Enregistrer s'éteindrait
-   * et la saisie fautive ne partirait jamais.
+   * Debounced autosave (800 ms) — same contract as `CampaignInfoTab`:
+   * merged patches, confirmation toast, flush on unmount.
+   * `reset(getValues())` moves the `isDirty` baseline to the current values without touching
+   * the input in progress — but only when the whole form is valid. Rebasing while another
+   * field is invalid would clear its error message and install its invalid value as the
+   * reference: `isDirty` would fall back to false, the Save button would turn off
+   * and the faulty input would never be sent.
    */
   const errorsRef = useRef(errors);
   errorsRef.current = errors;
@@ -322,9 +330,9 @@ export default function AssociationProfilePage() {
   );
 
   /**
-   * Wrappe `register` pour planifier un autosave après chaque frappe.
-   * Le patch n'est planifié que si le champ passe sa validation zod : un SIREN
-   * à moitié tapé ne doit pas partir en PATCH (le back le refuserait en 422).
+   * Wraps `register` to schedule an autosave after each keystroke.
+   * The patch is only scheduled if the field passes its zod validation: a half-typed
+   * SIREN must not be sent as a PATCH (the backend would refuse it with a 422).
    */
   const autosave = <K extends Path<ProfileFormData>>(
     name: K,
@@ -481,7 +489,7 @@ export default function AssociationProfilePage() {
           </button>
         </div>
 
-        {/* ══ Onglet : Informations ═════════════════════════════════════════ */}
+        {/* ══ Tab: Information ═════════════════════════════════════════════ */}
         {activeTab === 'infos' && (
           <div className="set-tab-content active">
             <div className="card no-hover">
@@ -523,7 +531,7 @@ export default function AssociationProfilePage() {
                       </div>
                     </div>
 
-                    {/* Ligne 2 : SIRET (read-only) | Année de création */}
+                    {/* Row 2: SIRET (read-only) | Year of creation */}
                     <div className="frow">
                       <div className="fg">
                         <label className="fl">{t('association.profile.identifier')}</label>
@@ -552,7 +560,7 @@ export default function AssociationProfilePage() {
                       </div>
                     </div>
 
-                    {/* Ligne 3 : Nom du contact * | Email de contact * */}
+                    {/* Row 3: Contact name * | Contact email * */}
                     <div className="frow">
                       <div className="fg">
                         <label htmlFor="contactName" className="fl">
@@ -595,7 +603,7 @@ export default function AssociationProfilePage() {
                       </div>
                     </div>
 
-                    {/* Ligne 4 : Téléphone */}
+                    {/* Row 4: Phone */}
                     <div className="frow">
                       <div className="fg">
                         <label htmlFor="phone" className="fl">
@@ -697,7 +705,7 @@ export default function AssociationProfilePage() {
               </div>
             </div>
 
-            {/* Carte Sécurité */}
+            {/* Security card */}
             <div className="card no-hover">
               <div className="card-h">
                 <h3>{t('association.profile.security.title')}</h3>
@@ -723,7 +731,7 @@ export default function AssociationProfilePage() {
           </div>
         )}
 
-        {/* ══ Onglet : Vérification ════════════════════════════════════════ */}
+        {/* ══ Tab: Verification ════════════════════════════════════════════ */}
         {activeTab === 'verif' && (
           <div className="set-tab-content active">
             <VerificationTab
@@ -736,14 +744,15 @@ export default function AssociationProfilePage() {
           </div>
         )}
 
-        {/* ══ Onglet : Encaissement des dons ══════════════════════════════════ */}
-        {/* HelloAsso journey (lot G); Mollie — or a provider still loading — keeps the Mollie flow unchanged. */}
+        {/* ══ Tab: Donation collection ══════════════════════════════════════════ */}
+        {/* HelloAsso journey (lot G); Mollie keeps its flow unchanged. Nothing renders until the provider is known, so
+            a HelloAsso association never sees the Mollie flow flash; a failed status read falls back to Mollie. */}
         {activeTab === 'bank' && paymentProvider === PaymentProviderId.HELLOASSO && (
           <div className="set-tab-content active">
             <HelloAssoOnboardingFlow profile={profile} />
           </div>
         )}
-        {activeTab === 'bank' && paymentProvider !== PaymentProviderId.HELLOASSO && (
+        {activeTab === 'bank' && paymentResolved && paymentProvider !== PaymentProviderId.HELLOASSO && (
           <div className="set-tab-content active">
             <MollieOnboardingFlow
               kyc={mollieKyc}
@@ -761,7 +770,7 @@ export default function AssociationProfilePage() {
           </div>
         )}
 
-        {/* ══ Onglet : Mandat fiscal ══════════════════════════════════════════ */}
+        {/* ══ Tab: Tax mandate ══════════════════════════════════════════════════ */}
         {activeTab === 'mandate' && (
           <div className="set-tab-content active">
             <MandateTab
@@ -779,7 +788,7 @@ export default function AssociationProfilePage() {
           </div>
         )}
 
-        {/* ══ Onglet : Diffusion (campagne, page de campagne, suivi, landing page, intégration) ══ */}
+        {/* ══ Tab: Diffusion (campaign, campaign page, tracking, landing page, integration) ══ */}
         {activeTab === 'diffusion' && (
           <div className="set-tab-content active">
             <DiffusionTab profile={profile} onProfileChanged={refreshProfile} />

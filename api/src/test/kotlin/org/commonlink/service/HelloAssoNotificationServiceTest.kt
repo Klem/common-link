@@ -18,7 +18,6 @@ import org.commonlink.repository.HelloAssoConnectionRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,7 +34,10 @@ class HelloAssoNotificationServiceTest {
 
     private val associationId = UUID.randomUUID()
     private val association = mockk<AssociationProfile> { every { id } returns associationId }
-    private val connection = HelloAssoConnection(association = association, webhookToken = "tok", state = HelloAssoConnectionState.ACTIVE)
+    private val connectionId = UUID.randomUUID()
+    private val connection = HelloAssoConnection(
+        id = connectionId, association = association, webhookToken = "tok", state = HelloAssoConnectionState.ACTIVE,
+    )
     private val publicRef = UUID.randomUUID()
     private lateinit var appender: ListAppender<ILoggingEvent>
     private val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
@@ -55,7 +57,7 @@ class HelloAssoNotificationServiceTest {
     @BeforeEach
     fun setUp() {
         every { connectionRepo.findByWebhookToken("tok") } returns connection
-        every { connectionRepo.save(any()) } answers { firstArg() }
+        every { connectionRepo.markWebhookReceived(connectionId, any()) } returns 1
         every { donationRepo.findByPublicRef(any()) } returns null
         every { donationRepo.findByProviderRef(any()) } returns null
         appender = ListAppender<ILoggingEvent>().apply { start() }
@@ -68,11 +70,12 @@ class HelloAssoNotificationServiceTest {
     }
 
     @Test
-    fun `a foreign event is ignored without logging its body, only the reception time is kept`() {
+    fun `a foreign event is ignored without logging its body nor recording its reception`() {
         val outcome = service.receive("tok", foreignBody)
 
         assertEquals(HelloAssoNotificationOutcome.IGNORED, outcome)
-        assertNotNull(connection.webhookLastReceivedAt)
+        verify(exactly = 0) { connectionRepo.markWebhookReceived(any(), any()) }
+        verify(exactly = 0) { connectionRepo.save(any()) }
         verify(exactly = 0) { processor.refreshPayment(any()) }
         verify(exactly = 0) { donationRepo.save(any()) }
         val logs = appender.list.joinToString("\n") { it.formattedMessage }
@@ -89,6 +92,8 @@ class HelloAssoNotificationServiceTest {
 
         assertEquals(HelloAssoNotificationOutcome.PAYMENT, outcome)
         verify { processor.refreshPayment("helloasso:4242") }
+        verify(exactly = 1) { connectionRepo.markWebhookReceived(connectionId, any()) }
+        verify(exactly = 0) { connectionRepo.save(any()) }
     }
 
     @Test
@@ -112,16 +117,18 @@ class HelloAssoNotificationServiceTest {
             service.receive("tok", """{"eventType":"Payment","metadata":{"publicRef":"$publicRef"}}"""),
         )
         verify(exactly = 0) { processor.refreshPayment(any()) }
+        verify(exactly = 0) { connectionRepo.markWebhookReceived(any(), any()) }
     }
 
     @Test
-    fun `an organization event schedules an eligibility re-read, never trusting its content`() {
+    fun `an organization event schedules an eligibility re-read, never trusting its content, and is recorded`() {
         val outcome = service.receive(
             "tok", """{"eventType":"Organization.IsCashinCompliant","data":{"organization_slug":"x","is_cashin_compliant":true}}""",
         )
 
         assertEquals(HelloAssoNotificationOutcome.ORGANIZATION, outcome)
         verify { processor.refreshEligibility(associationId) }
+        verify(exactly = 1) { connectionRepo.markWebhookReceived(connectionId, any()) }
     }
 
     @Test
@@ -129,12 +136,20 @@ class HelloAssoNotificationServiceTest {
         every { connectionRepo.findByWebhookToken("nope") } returns null
 
         assertEquals(HelloAssoNotificationOutcome.UNKNOWN_TOKEN, service.receive("nope", foreignBody))
+        verify(exactly = 0) { connectionRepo.markWebhookReceived(any(), any()) }
         verify(exactly = 0) { connectionRepo.save(any()) }
     }
 
     @Test
-    fun `an unreadable body is ignored`() {
+    fun `an unreadable body is ignored and not recorded`() {
         assertEquals(HelloAssoNotificationOutcome.IGNORED, service.receive("tok", "not json"))
+        verify(exactly = 0) { connectionRepo.markWebhookReceived(any(), any()) }
+    }
+
+    @Test
+    fun `an unknown event type is ignored and not recorded`() {
+        assertEquals(HelloAssoNotificationOutcome.IGNORED, service.receive("tok", """{"eventType":"Form","data":{}}"""))
+        verify(exactly = 0) { connectionRepo.markWebhookReceived(any(), any()) }
     }
 
     @Test

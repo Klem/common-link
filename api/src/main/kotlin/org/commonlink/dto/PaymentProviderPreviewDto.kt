@@ -32,8 +32,8 @@ data class PaymentProviderPreviewDto(
  * One payment provider in a [PaymentProviderPreviewDto].
  *
  * @property provider the provider.
- * @property readiness the association's readiness with that provider; null when the provider has no implementation
- *   yet (HelloAsso before its adapter ships), i.e. it cannot collect.
+ * @property readiness the association's readiness with that provider; null when the provider has no registered
+ *   implementation (defensive; every provider has one today), i.e. it cannot collect.
  */
 data class PaymentProviderOptionDto(
     val provider: PaymentProviderId,

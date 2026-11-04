@@ -31,6 +31,7 @@ class AdminAssociationPaymentProviderController(
     private val paymentProviderChangeService: PaymentProviderChangeService,
 ) {
 
+    /** Returns the association's current provider and its readiness with each provider. */
     @GetMapping
     @Operation(
         summary = "Preview the association's payment provider",
@@ -49,6 +50,7 @@ class AdminAssociationPaymentProviderController(
     fun preview(@PathVariable associationId: UUID): ResponseEntity<PaymentProviderPreviewDto> =
         ResponseEntity.ok(paymentProviderChangeService.preview(associationId))
 
+    /** Changes the association's payment provider (curator decision, reason journaled). */
     @PutMapping
     @Operation(
         summary = "Change the association's payment provider",

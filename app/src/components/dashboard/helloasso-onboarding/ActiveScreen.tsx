@@ -151,7 +151,7 @@ const ActiveScreen = forwardRef<HTMLButtonElement, ActiveScreenProps>(function A
                     <div className="small hao-mismatch-hint">{t('test.missingImpact')}</div>
                   </div>
                 </div>
-                <p className="small hao-p-spaced">
+                <p className="small hao-row-spaced">
                   {t('test.missingFixBefore')} <PathCrumbs label={tLink('crumbs.label')} steps={crumbs} />
                   {t('test.missingFixAfter')}
                 </p>

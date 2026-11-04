@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -26,6 +27,7 @@ class HelloAssoOnboardingReminderService(
     private val rows: HelloAssoConnectionRows,
     private val emailService: EmailService,
     @Value("\${app.frontend-url}") private val frontendUrl: String,
+    private val transactionTemplate: TransactionTemplate,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -36,6 +38,8 @@ class HelloAssoOnboardingReminderService(
 
     /**
      * Records that the association started the journey (button « Commencer »). Idempotent: the first time is kept.
+     * The row is created if needed, then only `onboarding_started_at` is written (targeted update, no lock): the link's
+     * tokens are never written back.
      *
      * @throws org.commonlink.exception.HelloAssoNotAssociationProviderException when the association is not on HELLOASSO.
      */
@@ -44,12 +48,11 @@ class HelloAssoOnboardingReminderService(
         val association = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
         rows.requireHelloAssoProvider(association)
-        val connection = rows.findOrCreate(association)
-        if (connection.onboardingStartedAt != null) return
-        connection.onboardingStartedAt = Instant.now()
-        connection.updatedAt = Instant.now()
-        connectionRepository.save(connection)
-        log.info("HelloAsso journey started by association {}", association.id)
+        val associationId = association.id!!
+        rows.findOrCreate(association)
+        if (connectionRepository.markOnboardingStarted(associationId, Instant.now()) == 1) {
+            log.info("HelloAsso journey started by association {}", associationId)
+        }
     }
 
     /**
@@ -87,13 +90,18 @@ class HelloAssoOnboardingReminderService(
         }
     }
 
-    @Transactional
+    /**
+     * Records the reminder sent at [at] ([final]: the D+7 one, which also stands for a missed D+1), under the link's row
+     * lock in a transaction of its own — through [transactionTemplate], as [sendDueReminders] calls it on `this`.
+     */
     fun markSent(associationId: UUID, final: Boolean, at: Instant) {
-        val connection = connectionRepository.findByAssociationIdForUpdate(associationId) ?: return
-        connection.reminderJ1SentAt = connection.reminderJ1SentAt ?: at
-        if (final) connection.reminderJ7SentAt = at
-        connection.updatedAt = at
-        connectionRepository.save(connection)
+        transactionTemplate.executeWithoutResult {
+            val connection = connectionRepository.findByAssociationIdForUpdate(associationId) ?: return@executeWithoutResult
+            connection.reminderJ1SentAt = connection.reminderJ1SentAt ?: at
+            if (final) connection.reminderJ7SentAt = at
+            connection.updatedAt = at
+            connectionRepository.save(connection)
+        }
     }
 }
 
@@ -101,6 +109,7 @@ class HelloAssoOnboardingReminderService(
 @Component
 class HelloAssoOnboardingReminderScheduler(private val service: HelloAssoOnboardingReminderService) {
 
+    /** Sends the reminders due now. */
     @Scheduled(
         initialDelayString = "\${app.helloasso.reminder-initial-delay-ms:300000}",
         fixedDelayString = "\${app.helloasso.reminder-check-delay-ms:3600000}",

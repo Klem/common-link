@@ -10,6 +10,7 @@ import {
   HELLOASSO_ADMIN_URL,
   HELLOASSO_MANDATE_VERSION,
   KEY_CHECK_DEBOUNCE_MS,
+  KEY_MAX_LENGTH,
   helloAssoVisioUrl,
   keysReady,
   linkMissing,
@@ -271,8 +272,10 @@ export default function LinkScreen({
                 id="hao-client-id"
                 className={`form-input${inputState}`}
                 autoComplete="off"
+                data-1p-ignore
+                data-lpignore="true"
                 spellCheck={false}
-                maxLength={255}
+                maxLength={KEY_MAX_LENGTH}
                 placeholder={t('step2.clientIdPlaceholder')}
                 value={clientId}
                 aria-invalid={invalid}
@@ -297,9 +300,13 @@ export default function LinkScreen({
                 id="hao-client-secret"
                 className={`form-input${inputState}`}
                 type={revealed ? 'text' : 'password'}
-                autoComplete="off"
+                // "off" is ignored by browsers on password fields: "new-password" plus the password-manager opt-outs
+                // keep the secret from being offered for saving (it must never be stored client-side).
+                autoComplete="new-password"
+                data-1p-ignore
+                data-lpignore="true"
                 spellCheck={false}
-                maxLength={255}
+                maxLength={KEY_MAX_LENGTH}
                 placeholder={t('step2.secretPlaceholder')}
                 value={clientSecret}
                 aria-invalid={invalid}
@@ -375,8 +382,10 @@ export default function LinkScreen({
                   {t('step2.mismatchHint')}
                   {visioUrl && (
                     <>
-                      {' '}{t('step2.mismatchHelp')}{' '}
-                      <a href={visioUrl} target="_blank" rel="noopener noreferrer">{t('step2.mismatchHelpLink')}</a>.
+                      {' '}
+                      {t.rich('step2.mismatchHelp', {
+                        link: (chunks) => <a href={visioUrl} target="_blank" rel="noopener noreferrer">{chunks}</a>,
+                      })}
                     </>
                   )}
                 </div>

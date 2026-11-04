@@ -27,7 +27,9 @@ import java.time.Duration
  * Tokens returned by HelloAsso's OAuth2 endpoint.
  *
  * @property accessToken bearer token for API calls (about 30 minutes).
- * @property refreshToken single-use token to obtain the next pair (about one month); rotated on every refresh.
+ * @property refreshToken token to obtain the next pair (about one month); every refresh returns a new one, which
+ *   replaces the stored one. The sandbox still accepted the previous token right after a refresh; whether reusing it
+ *   revokes the newer one is undocumented.
  * @property expiresIn [accessToken] lifetime in seconds.
  */
 data class HelloAssoTokens(val accessToken: String, val refreshToken: String, val expiresIn: Long) {

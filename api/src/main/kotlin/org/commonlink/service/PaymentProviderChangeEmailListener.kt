@@ -24,6 +24,7 @@ class PaymentProviderChangeEmailListener(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    /** Emails the association its new payment provider after the change commits; failures are logged, never thrown. */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     fun onProviderChanged(event: PaymentProviderChangedEvent) {

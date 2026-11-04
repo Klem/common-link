@@ -17,8 +17,10 @@ import java.util.UUID
 
 /**
  * Marks a HelloAsso link BROKEN once HelloAsso rejected its refresh token, and announces it once
- * ([HelloAssoConnectionBrokenEvent], emailed after commit). A separate bean so the caller's failed transaction (which
- * holds no lock any more) never rolls the state back.
+ * ([HelloAssoConnectionBrokenEvent], emailed after commit). A separate bean with its own transaction, called once the
+ * token manager's transaction is over and outside any caller transaction: nothing holds the link's row lock any more,
+ * and no failed caller transaction can roll the state back. Never `REQUIRES_NEW`: called under the row lock, it would
+ * wait for itself.
  */
 @Component
 class HelloAssoConnectionBreaker(
@@ -27,7 +29,10 @@ class HelloAssoConnectionBreaker(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    /** ACTIVE → BROKEN (cannot collect). No-op, and no event, when the link is not ACTIVE any more. */
+    /**
+     * ACTIVE → BROKEN (cannot collect). No-op, and no event, when the link is not ACTIVE any more. Joins the caller's
+     * transaction if any: callers invoke it outside one (see [HelloAssoTokenManager]).
+     */
     @Transactional
     fun markBroken(associationId: UUID) {
         val connection = connectionRepository.findByAssociationIdForUpdate(associationId) ?: return
@@ -90,6 +95,7 @@ class HelloAssoTokenRefreshExecutor(
 @Component
 class HelloAssoTokenRefreshScheduler(private val executor: HelloAssoTokenRefreshExecutor) {
 
+    /** Runs one renewal sweep. */
     @Scheduled(
         initialDelayString = "\${app.helloasso.token-refresh-initial-delay-ms:180000}",
         fixedDelayString = "\${app.helloasso.token-refresh-check-delay-ms:3600000}",

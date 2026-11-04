@@ -198,7 +198,7 @@ class OnboardingGateServiceTest {
         assertTrue(onboardingGate.isPaymentLinkStarted(userId))
     }
 
-    // ── Provider with no implementation yet (HELLOASSO before its adapter) ───────
+    // ── Provider with no registered implementation (defensive) ───────
 
     /**
      * The association carries a ready Mollie connection and a live OAuth state, then is moved to HELLOASSO:

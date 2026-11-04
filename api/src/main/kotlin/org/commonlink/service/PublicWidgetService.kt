@@ -69,7 +69,7 @@ class PublicWidgetService(
     /**
      * Whether [association]'s payment provider can collect right now. Database reads only, no network call (contract
      * of [org.commonlink.payment.PaymentProvider.readiness]) — safe on these unauthenticated public GETs. A provider
-     * with no implementation yet is not available.
+     * with no registered implementation (defensive; every provider has one today) is not available.
      */
     private fun isCollectAvailable(association: AssociationProfile): Boolean =
         paymentProviderRegistry.findForAssociation(association)?.readiness(association.id!!)?.isReady ?: false

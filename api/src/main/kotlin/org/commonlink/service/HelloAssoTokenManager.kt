@@ -19,6 +19,9 @@ import java.util.UUID
  *
  * A rejected refresh token surfaces as [HelloAssoUnauthorizedException] and nothing is written here: callers mark the
  * link BROKEN through [HelloAssoConnectionBreaker] once this transaction is over (scheduled renewal, checkout, re-read).
+ * Callers therefore never wrap these methods in a transaction of their own: the row lock is released, and a renewal
+ * committed, as soon as the token is handed out — a later failure of the caller cannot roll the rotated refresh token
+ * back.
  */
 @Service
 class HelloAssoTokenManager(

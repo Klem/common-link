@@ -17,9 +17,10 @@ import org.commonlink.payment.CheckoutSession
 import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
+import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.math.RoundingMode
 import java.net.URLEncoder
 import java.time.Instant
@@ -57,6 +58,8 @@ class HelloAssoCheckoutService(
     private val technicalAlertService: TechnicalAlertService,
     private val complianceAuditLogService: ComplianceAuditLogService,
     private val mollieProperties: MollieProperties,
+    private val transactionTemplate: TransactionTemplate,
+    private val entityManager: EntityManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -110,10 +113,23 @@ class HelloAssoCheckoutService(
     /**
      * Re-reads the HelloAsso payment of [providerRef] (`helloasso:<checkoutIntentId>`) and applies its state.
      *
+     * Deliberately **not** transactional, in three steps:
+     * 1. the donation and link are read without any lock;
+     * 2. the access token is obtained through [HelloAssoTokenManager] (its own transaction: a renewal is committed
+     *    even if the re-read then fails, so the rotated refresh token is never lost), then the payment is re-read at
+     *    HelloAsso outside any transaction — a rejected token marks the link BROKEN through
+     *    [HelloAssoConnectionBreaker] in its own transaction;
+     * 3. the result is applied in one short transaction holding the donation's row lock, its state re-read once
+     *    locked: concurrent re-reads of one payment (notification, return page, reconciler) confirm it at most once.
+     *
+     * Runs in the caller's transaction if any (none of the current callers has one).
+     *
      * @throws NotFoundException when no donation carries [providerRef].
-     * @throws HelloAssoException on a HelloAsso failure (a rejected token also marks the link BROKEN).
+     * @throws ConflictException when no valid access token can be obtained (a rejected refresh token also marks the
+     *   link BROKEN).
+     * @throws BadGatewayException when HelloAsso fails while renewing the access token.
+     * @throws HelloAssoException when the re-read itself fails (a rejected token also marks the link BROKEN).
      */
-    @Transactional
     fun refreshPayment(providerRef: String): HelloAssoPaymentOutcome {
         require(providerRef.startsWith(PaymentProviderId.HELLOASSO.refPrefix)) { "Not a HelloAsso payment reference" }
         val checkoutIntentId = providerRef.removePrefix(PaymentProviderId.HELLOASSO.refPrefix).toLongOrNull()
@@ -123,26 +139,36 @@ class HelloAssoCheckoutService(
         val connection = connectionRepository.findByAssociationId(associationId)
             ?: throw IllegalStateException("No HelloAsso link for association $associationId")
         val slug = connection.organizationSlug ?: throw IllegalStateException("HelloAsso link without organization")
+        val accessToken = accessToken(associationId)
         val intent = try {
-            gateway.getCheckoutIntent(accessToken(associationId), slug, checkoutIntentId)
+            gateway.getCheckoutIntent(accessToken, slug, checkoutIntentId)
         } catch (ex: HelloAssoUnauthorizedException) {
             breaker.markBroken(associationId)
             throw ex
         }
-        return apply(donation, intent)
+        return transactionTemplate.execute { applyLocked(providerRef, intent) }!!
     }
 
     /**
      * Records on the link of [providerRef]'s association that a payment was confirmed without its notification
-     * ([org.commonlink.payment.HelloAssoWebhookState.MISSING] until a notification arrives again).
+     * ([org.commonlink.payment.HelloAssoWebhookState.MISSING] until a notification arrives again). Targeted update of
+     * that timestamp only: never writes back the link's tokens.
      */
-    @Transactional
     fun markWebhookMissing(providerRef: String) {
         val donation = donationRepository.findByProviderRef(providerRef) ?: return
-        val connection = connectionRepository.findByAssociationId(donation.campaign.association.id!!) ?: return
-        connection.webhookMissingAt = Instant.now()
-        connection.updatedAt = Instant.now()
-        connectionRepository.save(connection)
+        connectionRepository.markWebhookMissing(donation.campaign.association.id!!, Instant.now())
+    }
+
+    /**
+     * Applies [intent] to [providerRef]'s donation under its row lock. The locked donation is refreshed first: under
+     * open-in-view the caller may already hold it, unlocked and possibly stale, in the persistence context. Must run in
+     * a transaction.
+     */
+    private fun applyLocked(providerRef: String, intent: HelloAssoCheckoutIntentJson): HelloAssoPaymentOutcome {
+        val donation = donationRepository.findByProviderRefForUpdate(providerRef)
+            ?: throw NotFoundException("Payment not found")
+        entityManager.refresh(donation)
+        return apply(donation, intent)
     }
 
     private fun apply(donation: Donation, intent: HelloAssoCheckoutIntentJson): HelloAssoPaymentOutcome {

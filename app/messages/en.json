@@ -864,7 +864,7 @@
         "title": "Payment provider",
         "loading": "Loading payment provider…",
         "error": "Could not load the payment provider.",
-        "current": "Current provider",
+        "current": "Current provider: <strong>{provider}</strong>",
         "providers": {
           "MOLLIE": "Mollie",
           "HELLOASSO": "HelloAsso"
@@ -889,7 +889,8 @@
         "confirm": "Confirm the change",
         "success": "Provider changed. The association has been notified by email.",
         "invalidReason": "Reason refused: mandatory, {max} characters maximum.",
-        "failed": "The change failed. Please try again."
+        "failed": "The change failed. Please try again.",
+        "targetOption": "{provider} — {readiness}"
       }
     },
     "freezeScreen": {
@@ -952,14 +953,40 @@
               },
               "title": "Association verification"
             },
-            "validated": "✓ Validated"
+            "validated": "✓ Validated",
+            "helloAssoBank": {
+              "title": "HelloAsso account",
+              "NOT_CONNECTED": {
+                "desc": "HelloAsso account not linked — required to publish",
+                "cta": "Link my account →"
+              },
+              "IN_REVIEW": {
+                "desc": "HelloAsso verification in progress — required to publish",
+                "cta": "My file →"
+              },
+              "NEEDS_DATA": {
+                "desc": "Collection suspended by HelloAsso — resolve to publish",
+                "cta": "Open my verification page →"
+              },
+              "COMPLETED": {
+                "desc": "HelloAsso account linked, donations open"
+              },
+              "BROKEN": {
+                "desc": "HelloAsso access to renew — paste your key again to publish",
+                "cta": "Paste my key again →"
+              }
+            }
           },
           "dismiss": "Hide",
           "sub": {
             "allDone": "Your account is complete: your association is verified and your bank account is operational.",
             "bankOnly": "Your association is verified! Complete the bank account connection to receive donations.",
             "notVerified": "While your association is being validated, you can create and publish campaigns in private mode (direct link only).",
-            "rejected": "Your verification file was rejected. Fix your documents to publish publicly."
+            "rejected": "Your verification file was rejected. Fix your documents to publish publicly.",
+            "helloAsso": {
+              "allDone": "Your account is complete: your association is verified and your HelloAsso account is linked, donations open.",
+              "bankOnly": "Your association is verified! Link your HelloAsso account to receive donations."
+            }
           },
           "title": "⚙️ Complete your CommonLink account"
         },
@@ -3210,8 +3237,7 @@
             "mismatchTitle": "These codes belong to “{orgName}”.",
             "mismatchText": "This is not the association verified on CommonLink. Nothing was saved.",
             "mismatchHint": "Select the right association in HelloAsso, then copy its codes.",
-            "mismatchHelp": "It is you, under another name?",
-            "mismatchHelpLink": "Write to us",
+            "mismatchHelp": "It is you, under another name? <link>Write to us</link>.",
             "unavailable": "HelloAsso is not answering right now. Nothing was saved: try again in a few minutes."
           },
           "step3": {
@@ -3368,9 +3394,8 @@
             "intro": "An online donation payment must go through an authorised institution. For French associations, we chose HelloAsso, which presents itself as follows:",
             "imposedLabel": "HelloAsso's presentation",
             "contribution": "<strong>The voluntary contribution</strong> is offered by HelloAsso to your donor at payment time, on top of the donation. It goes to HelloAsso, neither to your association nor to CommonLink, and remains optional.",
-            "approval": "Its approval:",
-            "verifyOn": "You can check it on",
-            "howItWorks": "How HelloAsso works ↗"
+            "howItWorks": "Comment fonctionne HelloAsso ↗",
+            "approvalLine": "Its approval: <em>“{approval}”</em> You can check it on <link>regafi.fr</link>."
           },
           "donors": {
             "q": "What will our donors see when paying?",
@@ -3552,7 +3577,7 @@
       "payWith": "Payer avec",
       "secured": "Paiement sécurisé",
       "payAria": "Payer avec HelloAsso",
-      "howItWorks": "How HelloAsso works ↗"
+      "howItWorks": "Comment fonctionne HelloAsso ↗"
     }
   }
 }

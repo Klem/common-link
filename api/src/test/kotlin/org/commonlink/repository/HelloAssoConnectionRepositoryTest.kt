@@ -103,6 +103,60 @@ class HelloAssoConnectionRepositoryTest(
     }
 
     @Test
+    fun `the targeted timestamp updates leave a rotated refresh token intact`() {
+        val association = association()
+        val id = connection(association).id!!
+        flushAndClear()
+        // A renewal under the lock rotates the pair after a lock-free writer would have read the row.
+        repository.findByAssociationId(association.id!!)!!.apply { refreshToken = "rotated-refresh" }
+            .also { repository.save(it) }
+        flushAndClear()
+        val at = Instant.parse("2026-11-04T09:00:00Z")
+
+        assertThat(repository.markWebhookReceived(id, at)).isEqualTo(1)
+        assertThat(repository.markWebhookMissing(association.id!!, at)).isEqualTo(1)
+        assertThat(repository.markOnboardingStarted(association.id!!, at)).isEqualTo(1)
+        flushAndClear()
+
+        val reloaded = repository.findByAssociationId(association.id!!)!!
+        assertThat(reloaded.refreshToken).isEqualTo("rotated-refresh")
+        assertThat(reloaded.accessToken).isEqualTo("access-secret-value")
+        assertThat(reloaded.webhookLastReceivedAt).isEqualTo(at)
+        assertThat(reloaded.webhookMissingAt).isEqualTo(at)
+        assertThat(reloaded.onboardingStartedAt).isEqualTo(at)
+        assertThat(reloaded.updatedAt).isEqualTo(at)
+    }
+
+    @Test
+    fun `the locked read returns the state under the lock even when a stale copy is already managed`() {
+        val association = association()
+        connection(association)
+        flushAndClear()
+        val stale = repository.findByAssociationId(association.id!!)!!
+        // Committed meanwhile by another writer, behind the persistence context's back.
+        jdbc.update("UPDATE helloasso_connections SET organization_slug = 'renamed' WHERE association_id = ?", association.id)
+
+        val locked = repository.findByAssociationIdForUpdate(association.id!!)!!
+
+        assertThat(locked).isSameAs(stale)
+        assertThat(locked.organizationSlug).isEqualTo("renamed")
+    }
+
+    @Test
+    fun `the journey start is recorded only the first time`() {
+        val association = association()
+        connection(association)
+        flushAndClear()
+        val first = Instant.parse("2026-11-04T09:00:00Z")
+
+        assertThat(repository.markOnboardingStarted(association.id!!, first)).isEqualTo(1)
+        assertThat(repository.markOnboardingStarted(association.id!!, first.plusSeconds(60))).isEqualTo(0)
+        flushAndClear()
+
+        assertThat(repository.findByAssociationId(association.id!!)!!.onboardingStartedAt).isEqualTo(first)
+    }
+
+    @Test
     fun `the notification token is unique`() {
         connection(association(), token = "wh_dup")
         flushAndClear()

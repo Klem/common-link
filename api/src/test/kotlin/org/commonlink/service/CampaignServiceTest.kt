@@ -919,7 +919,7 @@ class CampaignServiceTest {
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
-        assertEquals("Association must connect a Mollie account before going live", ex.message)
+        assertEquals("Association must connect a payment provider account before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -934,7 +934,7 @@ class CampaignServiceTest {
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
-        assertEquals("Mollie connection is broken — re-authorization required before going live", ex.message)
+        assertEquals("Payment provider connection is broken — re-authorization required before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -954,7 +954,7 @@ class CampaignServiceTest {
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
-        assertEquals("Association must complete Mollie KYC before going live", ex.message)
+        assertEquals("Association must complete the payment provider verification before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 
@@ -969,7 +969,7 @@ class CampaignServiceTest {
         val ex = assertThrows<UnprocessableEntityException> {
             campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true))
         }
-        assertEquals("Association must complete Mollie KYC before going live", ex.message)
+        assertEquals("Association must complete the payment provider verification before going live", ex.message)
         assertEquals(0, onchainJobRepository.findAll().size)
     }
 

@@ -131,6 +131,37 @@ describe('views', () => {
     expect(screen.getByRole('checkbox', { name: 'step3.ack' })).toBeChecked();
   });
 
+  it('after re-pasting the key, re-reads the status before leaving screen 4: the broken view never flashes', async () => {
+    vi.mocked(verifyCredentials).mockResolvedValue(okVerify);
+    vi.mocked(linkAccount).mockResolvedValue(undefined);
+    let finishRefresh: () => void = () => undefined;
+    refresh.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishRefresh = () => {
+            useAccStatusStore.setState({ helloasso: linked() });
+            resolve();
+          };
+        }),
+    );
+    renderFlow(status({ link: HelloAssoLink.BROKEN, everCompliant: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'replace' }));
+    typeKeys('id', 'secret');
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'step2.confirm' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'mandate' }));
+    fireEvent.click(screen.getByRole('button', { name: 'submitReplace' }));
+
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    // Re-read in flight, old BROKEN status still in the store: screen 4 stays, no "accès à renouveler".
+    expect(screen.queryByText('keep')).not.toBeInTheDocument();
+    expect(screen.getByText('replaceBanner')).toBeInTheDocument();
+
+    await act(async () => finishRefresh());
+
+    expect(screen.queryByText('keep')).not.toBeInTheDocument();
+    expect(screen.getByText('linkedBanner')).toBeInTheDocument();
+  });
+
   it('shows the last eligibility check time, politely announced', () => {
     renderFlow(linked());
     expect(screen.getByText('checkedAt')).toHaveAttribute('aria-live', 'polite');
@@ -238,9 +269,12 @@ describe('screen 4 — key check and link', () => {
     typeKeys('id', 'bad');
 
     expect(await screen.findByText('step2.invalidTitle', {}, { timeout: 3000 })).toBeInTheDocument();
-    expect(screen.getByLabelText(/step2.clientIdLabel/)).toHaveAttribute('aria-invalid', 'true');
-    const steps = screen.getAllByRole('listitem').filter((li) => li.classList.contains('stepper-item'));
-    expect(steps[1]).toHaveClass('warn');
+    // Re-queried until stable: the stepper warns once the key-check outcome has reached the parent flow.
+    await waitFor(() => {
+      expect(screen.getByLabelText(/step2.clientIdLabel/)).toHaveAttribute('aria-invalid', 'true');
+      const steps = screen.getAllByRole('listitem').filter((li) => li.classList.contains('stepper-item'));
+      expect(steps[1]).toHaveClass('warn');
+    });
   });
 
   it('refuses another association: nothing is ever sent to /connection', async () => {

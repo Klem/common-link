@@ -2,24 +2,53 @@ package org.commonlink.repository
 
 import org.commonlink.entity.HelloAssoConnection
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.util.UUID
 
-/** Persistence of [HelloAssoConnection] — one row per association, never deleted on disconnection. */
-interface HelloAssoConnectionRepository : JpaRepository<HelloAssoConnection, UUID> {
+/**
+ * Persistence of [HelloAssoConnection] — one row per association, never deleted on disconnection.
+ *
+ * The entity is saved whole (no `@DynamicUpdate`): a full-row `save` is only safe under the row lock
+ * ([findByAssociationIdForUpdate], [HelloAssoConnectionLocking]), otherwise it can write back a refresh token rotated
+ * meanwhile. Writers that only record a timestamp without the lock use the targeted `mark…` updates below.
+ */
+interface HelloAssoConnectionRepository : JpaRepository<HelloAssoConnection, UUID>, HelloAssoConnectionLocking {
 
+    /** The association's HelloAsso row, or null when it has none yet. Read only: never save it back without the lock. */
     fun findByAssociationId(associationId: UUID): HelloAssoConnection?
 
-    /**
-     * Same as [findByAssociationId] with a row lock (`SELECT … FOR UPDATE`) held until the transaction ends — the
-     * single-renewal guarantee of [org.commonlink.service.HelloAssoTokenManager].
-     */
+    /** Records a notification recognised as CommonLink's on [connectionId]; touches no other column. */
+    @Transactional
+    @Modifying
+    @Query("UPDATE HelloAssoConnection c SET c.webhookLastReceivedAt = :at, c.updatedAt = :at WHERE c.id = :connectionId")
+    fun markWebhookReceived(@Param("connectionId") connectionId: UUID, @Param("at") at: Instant): Int
+
+    /** Records that the reconciler confirmed a payment of [associationId] without its notification; touches no other column. */
+    @Transactional
+    @Modifying
     @Query(
-        value = "SELECT * FROM helloasso_connections WHERE association_id = :associationId FOR UPDATE",
-        nativeQuery = true,
+        "UPDATE HelloAssoConnection c SET c.webhookMissingAt = :at, c.updatedAt = :at " +
+            "WHERE c.association.id = :associationId",
     )
-    fun findByAssociationIdForUpdate(@Param("associationId") associationId: UUID): HelloAssoConnection?
+    fun markWebhookMissing(@Param("associationId") associationId: UUID, @Param("at") at: Instant): Int
+
+    /**
+     * Records the start of the "no HelloAsso account yet" journey of [associationId], only the first time
+     * (`onboarding_started_at` still null); touches no other column.
+     *
+     * @return 1 when recorded now, 0 when already started (or no row).
+     */
+    @Transactional
+    @Modifying
+    @Query(
+        "UPDATE HelloAssoConnection c SET c.onboardingStartedAt = :at, c.updatedAt = :at " +
+            "WHERE c.association.id = :associationId AND c.onboardingStartedAt IS NULL",
+    )
+    fun markOnboardingStarted(@Param("associationId") associationId: UUID, @Param("at") at: Instant): Int
 
     /** Resolves the association of a notification URL; null for an unknown token. */
     fun findByWebhookToken(webhookToken: String): HelloAssoConnection?

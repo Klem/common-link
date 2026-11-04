@@ -14,8 +14,8 @@ export interface AccStatusPayload {
   /** Reason given by the back-office when `verificationStatus` is REJECTED. */
   rejectionReason: string | null;
   /**
-   * Link to the action the payment provider expects from the association (today the Mollie hosted
-   * onboarding wizard), null when no action is pending.
+   * Link to the action the payment provider expects from the association (Mollie hosted onboarding
+   * wizard, or HelloAsso verification page), null when no action is pending.
    */
   bankActionUrl: string | null;
   /**
@@ -29,9 +29,9 @@ export interface AccStatusPayload {
   paymentProvider: PaymentProviderId | null;
   /**
    * HelloAsso link details of the payment status (read by the HelloAsso journey of the "Encaissement des dons" tab);
-   * null for another provider or until read. Optional so callers that predate HelloAsso keep compiling (absent = null).
+   * null for another provider or until read.
    */
-  helloasso?: HelloAssoStatus | null;
+  helloasso: HelloAssoStatus | null;
 }
 
 /** Re-reads the payment status (`usePaymentStatus.refresh`); `silent` for re-reads the user did not trigger. */
@@ -52,7 +52,6 @@ interface AccStatusState extends AccStatusPayload {
   verified: boolean;
   /** True when the provider reports the bank setup as complete (required for publishing). */
   bank: boolean;
-  helloasso: HelloAssoStatus | null;
   /**
    * Re-reads the payment status through the dashboard-wide hook of `AssociationStatusSync` (a single status read for
    * every consumer); a no-op until that component has mounted.
@@ -90,7 +89,6 @@ export const useAccStatusStore = create<AccStatusState>((set) => ({
     const bank = payload.bankStatus === BankSetupStatus.COMPLETED;
     set((state) => ({
       ...payload,
-      helloasso: payload.helloasso ?? null,
       hydrated: true,
       // Sticky: a manual `refresh()` puts the status hook back into loading, and the bank state
       // must not fall back to "unknown" once it has been resolved at least once.

@@ -3,6 +3,7 @@ package org.commonlink.service
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.commonlink.config.HelloAssoProperties
 import org.commonlink.dto.HelloAssoOrganizationJson
 import org.commonlink.dto.HelloAssoOrganizationLightJson
@@ -24,6 +25,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 import java.util.Optional
 import java.util.UUID
 
@@ -35,8 +38,10 @@ class HelloAssoEligibilityServiceTest {
     private val tokenManager = mockk<HelloAssoTokenManager>()
     private val gateway = mockk<HelloAssoGateway>()
     private val breaker = mockk<HelloAssoConnectionBreaker>(relaxed = true)
+    private val txManager = mockk<PlatformTransactionManager>(relaxed = true)
     private val service = HelloAssoEligibilityService(
         repo, associations, tokenManager, gateway, breaker, HelloAssoConnectionRows(repo), AuthRateLimiter(), HelloAssoProperties(),
+        TransactionTemplate(txManager),
     )
 
     private val userId = UUID.randomUUID()
@@ -70,6 +75,22 @@ class HelloAssoEligibilityServiceTest {
         service.refresh(associationId)
         assertFalse(row.canCollect)
         assertTrue(row.everCompliant)
+    }
+
+    @Test
+    fun `refresh stores the read under the row lock inside a transaction (no self-invocation bypass)`() {
+        every { gateway.getOrganization("access", "techno") } returns HelloAssoOrganizationJson(cashInCompliant = true)
+
+        assertTrue(service.refresh(associationId))
+
+        verifyOrder {
+            tokenManager.getValidAccessToken(associationId)
+            gateway.getOrganization("access", "techno")
+            txManager.getTransaction(any())
+            repo.findByAssociationIdForUpdate(associationId)
+            repo.save(row)
+            txManager.commit(any())
+        }
     }
 
     @Test

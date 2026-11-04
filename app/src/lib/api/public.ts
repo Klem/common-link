@@ -162,8 +162,9 @@ export interface PublicLandingDto {
   /** Public serving path of the association logo, null when none was uploaded. */
   landingLogo: string | null;
   /**
-   * False only in preview mode on a campaign that is not LIVE: the donation endpoint would refuse
-   * the payment, so the form must be rendered disabled rather than fail on submit.
+   * False when the donation endpoint would refuse the payment — preview mode on a campaign that is
+   * not LIVE, or the association's payment provider cannot collect right now — so the form must be
+   * rendered disabled rather than fail on submit.
    */
   donationsEnabled: boolean;
   /** Same figure and purpose as {@link PublicWidgetDto.remainingCapacity}. */

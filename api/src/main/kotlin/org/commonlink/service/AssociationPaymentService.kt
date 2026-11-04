@@ -26,7 +26,7 @@ class AssociationPaymentService(
      * then the status is read from the database ([org.commonlink.payment.PaymentProvider.paymentStatus]) — the same
      * freshness as `GET /api/mollie/connect/status` for a Mollie association.
      *
-     * When the association's provider has no implementation yet (HelloAsso before its adapter ships), returns
+     * When the association's provider has no registered implementation (defensive; every provider has one today), returns
      * that provider with [BankSetupStatus.NOT_CONNECTED] and no refresh — never another provider's status.
      *
      * Deliberately not wrapped in one transaction: the refresh commits in its own transactions, and the following

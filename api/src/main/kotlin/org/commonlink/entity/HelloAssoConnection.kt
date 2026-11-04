@@ -78,7 +78,11 @@ class HelloAssoConnection(
     @Column(name = "last_eligibility_check_at")
     var lastEligibilityCheckAt: Instant? = null,
 
-    /** Last notification received on [webhookToken] that belonged to CommonLink. */
+    /**
+     * Last notification received on [webhookToken] that belonged to CommonLink: an `Order` / `Payment` of one of its
+     * donations, or an `Organization` event received on this URL. A foreign or unreadable notification is never
+     * recorded.
+     */
     @Column(name = "webhook_last_received_at")
     var webhookLastReceivedAt: Instant? = null,
 

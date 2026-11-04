@@ -215,14 +215,8 @@ app:
     # compliance function across staff changes. Blank disables the notification and logs a warning.
     alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL}
 
-  payments:
-    # Payment provider given to a newly created association (PaymentsProperties); never re-read
-    # afterwards. Existing associations stay MOLLIE; the curator sets MOLLIE by hand on request.
-    default-provider: ${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}
-
-  helloasso:
-    # Staging runs against the HelloAsso sandbox (base defaults); only the notification URL prefix differs.
-    notification-base-url: ${HELLOASSO_NOTIFICATION_BASE_URL:}
+  # app.payments and app.helloasso: base defaults (HelloAsso sandbox), set per environment through
+  # PAYMENTS_DEFAULT_PROVIDER and HELLOASSO_* variables.
 
 
 commonlink:

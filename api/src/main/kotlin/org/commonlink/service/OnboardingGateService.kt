@@ -69,8 +69,8 @@ class OnboardingGateService(
      * When a flow is abandoned (for Mollie, once its OAuth state expires), the lock lifts on purpose:
      * the next attempt carries whatever contact data is current, so no inconsistency can arise.
      *
-     * False when the association's provider has no implementation yet (HelloAsso before its adapter ships):
-     * no link can have been started.
+     * False when the association's provider has no registered implementation (defensive; every provider has one
+     * today): no link can have been started.
      */
     @Transactional(readOnly = true)
     fun isPaymentLinkStarted(userId: UUID): Boolean {
@@ -94,11 +94,14 @@ class OnboardingGateService(
     @Transactional(readOnly = true)
     fun requireBankReady(userId: UUID) {
         if (!isReady(resolveAssociation(userId))) {
-            throw ConflictException("A bank account (Mollie) authorised to receive payments is required before enabling the donation widget")
+            throw ConflictException("A payment provider account authorised to receive payments is required before enabling the donation widget")
         }
     }
 
-    /** Not ready when the association's provider has no implementation yet (HelloAsso before its adapter ships). */
+    /**
+     * Not ready when the association's provider has no registered implementation (defensive; every provider has one
+     * today).
+     */
     private fun isReady(association: AssociationProfile): Boolean =
         paymentProviderRegistry.findForAssociation(association)?.readiness(association.id!!)?.isReady ?: false
 

@@ -717,7 +717,8 @@ class CampaignService(
      * `BankSetupStatus.COMPLETED` condition the frontend uses to enable the publish button (see
      * `app/src/lib/bankSetupStatus.ts`). Each non-ready status maps one-to-one onto a refusal reason
      * because "not connected", "broken link" and "KYC incomplete" call for different user actions.
-     * A provider with no implementation yet (HelloAsso before its adapter ships) is refused as "not connected".
+     * A provider with no registered implementation (defensive; every provider has one today) is refused as
+     * "not connected".
      */
     private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean) {
         if (campaign.goal <= BigDecimal.ZERO) {
@@ -748,21 +749,22 @@ class CampaignService(
             logRefusal(campaign, associationId, CampaignReviewRefusalReason.KYB_NOT_VERIFIED)
             throw UnprocessableEntityException("Association KYB must be verified before going live")
         }
-        // A provider with no implementation yet (HelloAsso before its adapter ships) is refused as not connected.
+        // A provider with no registered implementation (defensive; every provider has one today) is refused as not
+        // connected.
         val readiness = paymentProviderRegistry.findForAssociation(profile)?.readiness(associationId)?.status
             ?: ProviderReadinessStatus.NOT_CONNECTED
         when (readiness) {
             ProviderReadinessStatus.NOT_CONNECTED -> {
                 logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_NOT_CONNECTED)
-                throw UnprocessableEntityException("Association must connect a Mollie account before going live")
+                throw UnprocessableEntityException("Association must connect a payment provider account before going live")
             }
             ProviderReadinessStatus.BROKEN -> {
                 logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_CONNECTION_BROKEN)
-                throw UnprocessableEntityException("Mollie connection is broken — re-authorization required before going live")
+                throw UnprocessableEntityException("Payment provider connection is broken — re-authorization required before going live")
             }
             ProviderReadinessStatus.PENDING -> {
                 logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_KYC_INCOMPLETE)
-                throw UnprocessableEntityException("Association must complete Mollie KYC before going live")
+                throw UnprocessableEntityException("Association must complete the payment provider verification before going live")
             }
             ProviderReadinessStatus.READY -> Unit
         }

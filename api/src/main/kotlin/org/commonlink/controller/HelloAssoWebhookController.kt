@@ -39,6 +39,7 @@ class HelloAssoWebhookController(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    /** Accepts a HelloAsso notification for the association of [token]; always 200 once the source IP is allowed. */
     @PostMapping("/helloasso/{token}")
     @Operation(
         summary = "HelloAsso notification",

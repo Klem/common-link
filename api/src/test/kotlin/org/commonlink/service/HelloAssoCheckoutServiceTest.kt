@@ -5,6 +5,8 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
+import jakarta.persistence.EntityManager
 import org.commonlink.config.MollieProperties
 import org.commonlink.dto.HelloAssoCheckoutIntentJson
 import org.commonlink.dto.HelloAssoCheckoutIntentResponseJson
@@ -20,15 +22,20 @@ import org.commonlink.entity.HelloAssoConnectionState
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoUnauthorizedException
+import org.commonlink.exception.HelloAssoUnavailableException
 import org.commonlink.payment.CheckoutPayer
 import org.commonlink.payment.CheckoutRequest
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -44,9 +51,11 @@ class HelloAssoCheckoutServiceTest {
     private val eligibility = mockk<HelloAssoEligibilityService>(relaxed = true)
     private val alerts = mockk<TechnicalAlertService>(relaxed = true)
     private val auditLog = mockk<ComplianceAuditLogService>(relaxed = true)
+    private val txManager = mockk<PlatformTransactionManager>(relaxed = true)
+    private val entityManager = mockk<EntityManager>(relaxed = true)
     private val service = HelloAssoCheckoutService(
         connectionRepo, donationRepo, donationService, tokenManager, gateway, breaker, eligibility, alerts, auditLog,
-        MollieProperties(redirectBaseUrl = "https://app.common-link.test"),
+        MollieProperties(redirectBaseUrl = "https://app.common-link.test"), TransactionTemplate(txManager), entityManager,
     )
 
     private val associationId = UUID.randomUUID()
@@ -151,10 +160,16 @@ class HelloAssoCheckoutServiceTest {
         order = HelloAssoOrderJson(1, 4242, states.mapIndexed { i, s -> HelloAssoPaymentJson(i.toLong(), 2550, s, "Card") }),
     )
 
+    /** The same donation for the unlocked first read and the locked re-read of the apply step. */
+    private fun stubDonation(donation: Donation) {
+        every { donationRepo.findByProviderRef("helloasso:4242") } returns donation
+        every { donationRepo.findByProviderRefForUpdate("helloasso:4242") } returns donation
+    }
+
     @Test
     fun `Authorized confirms the donation with its payment means`() {
         val donation = donation()
-        every { donationRepo.findByProviderRef("helloasso:4242") } returns donation
+        stubDonation(donation)
         every { gateway.getCheckoutIntent("access", "techno-plus", 4242) } returns intentWith("Authorized")
 
         assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
@@ -168,7 +183,7 @@ class HelloAssoCheckoutServiceTest {
         val donation = donation()
         every { donation.confirmedAt } answers { if (confirmed) java.time.Instant.now() else null }
         every { donationService.recordPayment(any(), any(), any(), any()) } answers { confirmed = true }
-        every { donationRepo.findByProviderRef("helloasso:4242") } returns donation
+        stubDonation(donation)
         every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Authorized")
 
         repeat(16) { assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242")) }
@@ -176,9 +191,86 @@ class HelloAssoCheckoutServiceTest {
         verify(exactly = 1) { donationService.recordPayment(any(), any(), any(), any()) }
     }
 
+    // ── Re-read: transaction structure (A2/A3) ─────────────────────────────
+
+    @Test
+    fun `refreshPayment is not transactional - neither the method nor the class`() {
+        val method = HelloAssoCheckoutService::class.java.getMethod("refreshPayment", String::class.java)
+        assertNull(method.getAnnotation(Transactional::class.java))
+        assertNull(HelloAssoCheckoutService::class.java.getAnnotation(Transactional::class.java))
+    }
+
+    @Test
+    fun `the token and the HelloAsso re-read happen before the apply transaction, applied under the donation lock`() {
+        val donation = donation()
+        stubDonation(donation)
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Authorized")
+
+        service.refreshPayment("helloasso:4242")
+
+        verifyOrder {
+            tokenManager.getValidAccessToken(associationId)
+            gateway.getCheckoutIntent("access", "techno-plus", 4242)
+            txManager.getTransaction(any())
+            donationRepo.findByProviderRefForUpdate("helloasso:4242")
+            entityManager.refresh(donation)
+            donationService.recordPayment("helloasso:4242", any(), any(), any())
+            txManager.commit(any())
+        }
+    }
+
+    @Test
+    fun `a donation found confirmed once locked is not confirmed again`() {
+        val stale = donation()
+        val locked = donation(confirmed = true)
+        every { donationRepo.findByProviderRef("helloasso:4242") } returns stale
+        every { donationRepo.findByProviderRefForUpdate("helloasso:4242") } returns locked
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Authorized")
+
+        assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+
+        verify(exactly = 0) { donationService.recordPayment(any(), any(), any(), any()) }
+        verify(exactly = 0) { donationRepo.save(any<Donation>()) }
+    }
+
+    @Test
+    fun `a HelloAsso failure after a token renewal opens no transaction, so the renewal (own transaction) is kept`() {
+        stubDonation(donation())
+        every { gateway.getCheckoutIntent(any(), any(), any()) } throws HelloAssoUnavailableException("GET", 502)
+
+        assertThrows<HelloAssoUnavailableException> { service.refreshPayment("helloasso:4242") }
+
+        verify { tokenManager.getValidAccessToken(associationId) }
+        verify(exactly = 0) { txManager.getTransaction(any()) }
+        verify(exactly = 0) { txManager.rollback(any()) }
+    }
+
+    @Test
+    fun `a token rejected by the re-read marks the link BROKEN outside any transaction and rethrows`() {
+        stubDonation(donation())
+        every { gateway.getCheckoutIntent(any(), any(), any()) } throws HelloAssoUnauthorizedException("GET", 401)
+
+        assertThrows<HelloAssoUnauthorizedException> { service.refreshPayment("helloasso:4242") }
+
+        verify { breaker.markBroken(associationId) }
+        verify(exactly = 0) { txManager.getTransaction(any()) }
+    }
+
+    @Test
+    fun `a rejected refresh token during the re-read marks the link BROKEN and refuses`() {
+        stubDonation(donation())
+        every { tokenManager.getValidAccessToken(associationId) } throws HelloAssoUnauthorizedException("refresh_token", 400)
+
+        assertThrows<ConflictException> { service.refreshPayment("helloasso:4242") }
+
+        verify { breaker.markBroken(associationId) }
+        verify(exactly = 0) { gateway.getCheckoutIntent(any(), any(), any()) }
+        verify(exactly = 0) { txManager.getTransaction(any()) }
+    }
+
     @Test
     fun `no order yet, waiting or refused states leave the donation pending`() {
-        every { donationRepo.findByProviderRef("helloasso:4242") } returns donation()
+        stubDonation(donation())
         for (intent in listOf(HelloAssoCheckoutIntentJson(id = 4242), intentWith("Pending"), intentWith("WaitingBankValidation"), intentWith("Refused"))) {
             every { gateway.getCheckoutIntent(any(), any(), any()) } returns intent
             assertEquals(HelloAssoPaymentOutcome.PENDING, service.refreshPayment("helloasso:4242"))
@@ -188,7 +280,7 @@ class HelloAssoCheckoutServiceTest {
 
     @Test
     fun `a refunded or contested confirmed donation is alerted and journaled, never re-confirmed`() {
-        every { donationRepo.findByProviderRef("helloasso:4242") } returns donation(confirmed = true)
+        stubDonation(donation(confirmed = true))
         every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Refunded")
 
         assertEquals(HelloAssoPaymentOutcome.REVERSED, service.refreshPayment("helloasso:4242"))

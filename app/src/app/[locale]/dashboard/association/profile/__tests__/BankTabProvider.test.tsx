@@ -82,8 +82,8 @@ vi.mock('@/components/auth/SetPasswordForm', () => ({ SetPasswordForm: () => nul
 const bankTabButton = (): HTMLElement =>
   screen.getByText((_, el) => el?.tagName === 'BUTTON' && !!el.textContent?.includes('association.profile.tabs.bank '));
 
-function openBankTab(provider: PaymentProviderId | null) {
-  useAccStatusStore.setState({ paymentProvider: provider });
+function openBankTab(provider: PaymentProviderId | null, resolved = true) {
+  useAccStatusStore.setState({ paymentProvider: provider, bankResolved: resolved });
   render(<AssociationProfilePage />);
   fireEvent.click(bankTabButton());
 }
@@ -103,7 +103,14 @@ describe('Bank tab — journey chosen by payment provider (S2-05)', () => {
     expect(screen.queryByText('title')).not.toBeInTheDocument();
   });
 
-  it('keeps the Mollie flow while the provider is still unknown', () => {
+  it('renders no journey while the payment status is not read yet (no Mollie flash for HelloAsso)', () => {
+    openBankTab(null, false);
+
+    expect(screen.queryByText('test.mollieFlow')).not.toBeInTheDocument();
+    expect(screen.queryByText('test.helloAssoFlow')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the Mollie flow when the status read failed (provider unknown)', () => {
     openBankTab(null);
 
     expect(screen.getByText('test.mollieFlow')).toBeInTheDocument();
@@ -150,5 +157,61 @@ describe('Bank tab — journey chosen by payment provider (S2-05)', () => {
     openBankTab(PaymentProviderId.MOLLIE);
 
     expect(bankTabButton().textContent).toContain('💳');
+  });
+});
+
+describe('Diffusion tab and setup notice — HelloAsso association (A1)', () => {
+  const helloAssoLinked = (canCollect: boolean) => ({
+    link: HelloAssoLink.OK,
+    notificationUrl: null,
+    organizationSlug: 'les-amis',
+    canCollect,
+    everCompliant: canCollect,
+    lastEligibilityCheckAt: null,
+    webhook: HelloAssoWebhookState.UNKNOWN,
+    clientIdMasked: null,
+    linkedAt: null,
+    linkedBy: null,
+    secretWipedAt: null,
+    lastRefreshAt: null,
+  });
+  const diffusionTabButton = (): HTMLElement =>
+    screen.getByText((_, el) => el?.tagName === 'BUTTON' && !!el.textContent?.includes('association.profile.tabs.diffusion'));
+  const NOTICE = 'association.profile.setupNotice.title';
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+
+  it('unlocks Diffusion and hides the setup notice when HelloAsso can collect', () => {
+    useAccStatusStore.setState({
+      paymentProvider: PaymentProviderId.HELLOASSO,
+      bankResolved: true,
+      helloasso: helloAssoLinked(true),
+    });
+    render(<AssociationProfilePage />);
+
+    expect(diffusionTabButton()).toBeEnabled();
+    expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
+  });
+
+  it('keeps Diffusion locked and shows the setup notice while HelloAsso cannot collect', () => {
+    useAccStatusStore.setState({
+      paymentProvider: PaymentProviderId.HELLOASSO,
+      bankResolved: true,
+      helloasso: helloAssoLinked(false),
+    });
+    render(<AssociationProfilePage />);
+
+    expect(diffusionTabButton()).toBeDisabled();
+    expect(screen.getByText(NOTICE)).toBeInTheDocument();
+  });
+
+  it('does not flash the setup notice before the payment status is read', () => {
+    useAccStatusStore.setState({ paymentProvider: null, bankResolved: false, helloasso: null });
+    render(<AssociationProfilePage />);
+
+    expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
   });
 });

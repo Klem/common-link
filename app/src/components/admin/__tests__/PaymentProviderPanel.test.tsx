@@ -3,19 +3,31 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PaymentProviderPanel } from '../PaymentProviderPanel';
 import { changePaymentProvider, getPaymentProviderPreview } from '@/lib/api/admin';
 import type { PaymentProviderPreview } from '@/types/admin';
+import { PaymentProviderId, ProviderReadinessStatus } from '@/types/paymentProvider';
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key, useLocale: () => 'fr' }));
+vi.mock('next-intl', () => {
+  // Keys are returned as-is; the two messages built from parameters render them so the tests can read the values.
+  const t = Object.assign(
+    (key: string, values?: Record<string, string>) =>
+      key === 'targetOption' && values ? `${values.provider} | ${values.readiness}` : key,
+    {
+      rich: (key: string, values?: { provider?: string; strong?: (chunks: string) => unknown }) =>
+        key === 'current' && values?.strong && values.provider ? values.strong(values.provider) : key,
+    },
+  );
+  return { useTranslations: () => t, useLocale: () => 'fr' };
+});
 vi.mock('@/lib/api/admin', () => ({ getPaymentProviderPreview: vi.fn(), changePaymentProvider: vi.fn() }));
 
 const mockedGet = vi.mocked(getPaymentProviderPreview);
 const mockedChange = vi.mocked(changePaymentProvider);
 
-const preview = (current: 'MOLLIE' | 'HELLOASSO'): PaymentProviderPreview => ({
+const preview = (current: PaymentProviderId): PaymentProviderPreview => ({
   associationId: 'assoc-1',
   currentProvider: current,
   providers: [
-    { provider: 'MOLLIE', readiness: 'READY' },
-    { provider: 'HELLOASSO', readiness: null },
+    { provider: PaymentProviderId.MOLLIE, readiness: ProviderReadinessStatus.READY },
+    { provider: PaymentProviderId.HELLOASSO, readiness: null },
   ],
   liveCampaigns: 2,
   widgetEnabled: true,
@@ -30,7 +42,7 @@ async function renderLoaded() {
 describe('PaymentProviderPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGet.mockResolvedValue(preview('MOLLIE'));
+    mockedGet.mockResolvedValue(preview(PaymentProviderId.MOLLIE));
   });
 
   it('shows the current provider and its readiness', async () => {
@@ -39,7 +51,7 @@ describe('PaymentProviderPanel', () => {
     expect(screen.getByText('providers.MOLLIE')).toBeInTheDocument();
     expect(screen.getByText('readiness.READY')).toHaveClass('badge-success');
     // Only the other provider is offered as a target, labelled as not integrated yet.
-    expect(screen.getByRole('option')).toHaveTextContent('providers.HELLOASSO — readiness.UNAVAILABLE');
+    expect(screen.getByRole('option')).toHaveTextContent('providers.HELLOASSO | readiness.UNAVAILABLE');
   });
 
   it('refuses a blank reason without opening the confirmation nor calling the API', async () => {
@@ -62,7 +74,7 @@ describe('PaymentProviderPanel', () => {
   });
 
   it('changes the provider in two steps: confirmation with the impact, then the call with the trimmed reason', async () => {
-    mockedChange.mockResolvedValue(preview('HELLOASSO'));
+    mockedChange.mockResolvedValue(preview(PaymentProviderId.HELLOASSO));
     await renderLoaded();
 
     fireEvent.change(screen.getByLabelText('reason'), { target: { value: '  asked by the board  ' } });
@@ -75,7 +87,7 @@ describe('PaymentProviderPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'confirm' }));
 
     await waitFor(() => expect(screen.getByText('success')).toBeInTheDocument());
-    expect(mockedChange).toHaveBeenCalledWith('assoc-1', { provider: 'HELLOASSO', reason: 'asked by the board' });
+    expect(mockedChange).toHaveBeenCalledWith('assoc-1', { provider: PaymentProviderId.HELLOASSO, reason: 'asked by the board' });
     expect(screen.getByText('providers.HELLOASSO')).toBeInTheDocument();
   });
 

@@ -74,7 +74,7 @@ export function BrokenState({ onReplaceKey }: BrokenStateProps) {
 
 /**
  * Persistent help card "Un doute ? Faites-le à deux." with "Réserver une visio" (brief §2.7). The booking URL comes
- * from `NEXT_PUBLIC_visioUrl`; the card is hidden when it is empty.
+ * from `NEXT_PUBLIC_HELLOASSO_VISIO_URL`; the card is hidden when it is empty.
  */
 export function HelpCard() {
   const t = useTranslations('settings.helloasso.onboarding.help');

@@ -53,7 +53,7 @@ class MolliePaymentReconciler(
     fun reconcile() {
         val threshold = Instant.now().minus(Duration.ofMinutes(staleAfterMinutes))
         val prefix = PaymentProviderId.MOLLIE.refPrefix
-        val stale = donationRepository.findStalePendingByProviderRefPrefix(prefix, threshold)
+        val stale = donationRepository.findStalePendingByProviderRefPrefix(prefix, threshold, Instant.EPOCH)
         if (stale.isEmpty()) {
             logger.debug("Reconciler: no Mollie donation pending more than {} min", staleAfterMinutes)
             return

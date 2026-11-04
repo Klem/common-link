@@ -3,7 +3,7 @@ import type { OnboardingProvidedDocument } from '@/types/mollie-connect';
 
 /**
  * Lists the KYB documents the association already provided (statutes, RNA receipt, representative's ID), id and type
- * only (`GET /api/association/documents/kyb`), for re-download with [downloadOwnAssociationDocument].
+ * only (`GET /api/association/documents/kyb`), for re-download with {@link downloadOwnAssociationDocument}.
  */
 export const listKybDocuments = (): Promise<OnboardingProvidedDocument[]> =>
   api.get<OnboardingProvidedDocument[]>('/api/association/documents/kyb').then((r) => r.data);

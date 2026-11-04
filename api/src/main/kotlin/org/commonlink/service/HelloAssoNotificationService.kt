@@ -36,7 +36,7 @@ enum class HelloAssoNotificationOutcome {
  * Receives a HelloAsso notification for one association (flow §6). HelloAsso sends **every** event of the organization
  * to its URL, so the first step is filtering: only an `Order` / `Payment` matching one of our checkout-intents (by id or
  * `metadata.publicRef`) and `Organization` events go further. Anything else is ignored **without persisting nor logging
- * its body** — only the time of reception is recorded on the link.
+ * its body**, and without recording anything: the time of reception is recorded on the link only for what goes further.
  *
  * Never trusts the body for a state: a payment is re-read with `GET checkout-intents/{id}`, an organization with
  * `GET organizations/{slug}`, asynchronously so HelloAsso gets its 200 at once. Idempotent: HelloAsso resends until it
@@ -55,7 +55,13 @@ class HelloAssoNotificationService(
     /** Whether [ip] is one of HelloAsso's notification source addresses. */
     fun isAllowedSource(ip: String): Boolean = ip in properties.allowedNotificationIps
 
-    /** Filters [rawBody] received on [token] and schedules what concerns CommonLink. Never logs the body. */
+    /**
+     * Filters [rawBody] received on [token] and schedules what concerns CommonLink. Never logs the body.
+     *
+     * The reception time is recorded on the link (targeted update, the tokens are never written back) **only** for a
+     * notification recognised as CommonLink's: an `Order` / `Payment` of one of our donations, or an `Organization`
+     * event received on the association's URL. An unreadable, unknown or foreign notification leaves no trace.
+     */
     @Transactional
     fun receive(token: String, rawBody: String): HelloAssoNotificationOutcome {
         val connection = connectionRepository.findByWebhookToken(token) ?: run {
@@ -63,8 +69,6 @@ class HelloAssoNotificationService(
             return HelloAssoNotificationOutcome.UNKNOWN_TOKEN
         }
         val associationId = connection.association.id!!
-        connection.webhookLastReceivedAt = Instant.now()
-        connectionRepository.save(connection)
 
         val root = try {
             objectMapper.readTree(rawBody)
@@ -74,6 +78,7 @@ class HelloAssoNotificationService(
         }
         val eventType = root.path("eventType").asText("")
         if (eventType.startsWith("Organization")) {
+            connectionRepository.markWebhookReceived(connection.id!!, Instant.now())
             processor.refreshEligibility(associationId)
             log.info("HelloAsso {} notification for association {}: eligibility re-read scheduled", eventType, associationId)
             return HelloAssoNotificationOutcome.ORGANIZATION
@@ -86,6 +91,7 @@ class HelloAssoNotificationService(
             log.debug("HelloAsso notification for association {} is not one of ours: ignored", associationId)
             return HelloAssoNotificationOutcome.IGNORED
         }
+        connectionRepository.markWebhookReceived(connection.id!!, Instant.now())
         processor.refreshPayment(donation.providerRef)
         log.info("HelloAsso {} notification for donation {}: re-read scheduled", eventType, donation.id)
         return HelloAssoNotificationOutcome.PAYMENT

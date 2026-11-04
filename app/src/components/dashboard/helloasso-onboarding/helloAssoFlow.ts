@@ -88,10 +88,10 @@ export function resolveFlowView(resolved: boolean, status: LinkState, replacing:
 }
 
 /** i18n keys of the four stepper steps, in order. */
-export const HELLOASSO_STEPS = ['account', 'link', 'review', 'active'] as const;
+const HELLOASSO_STEPS = ['account', 'link', 'review', 'active'] as const;
 
 /** 1-based stepper step of each screen. */
-export const SCREEN_TO_STEP: Record<HelloAssoScreen, number> = {
+const SCREEN_TO_STEP: Record<HelloAssoScreen, number> = {
   [HelloAssoScreen.WELCOME]: 1,
   [HelloAssoScreen.OPEN_ACCOUNT]: 1,
   [HelloAssoScreen.LINK]: 2,
@@ -247,8 +247,6 @@ export const HELLOASSO_ADMIN_URL = 'https://admin.helloasso.com';
  * the exact sign-up URL is known.
  */
 export const HELLOASSO_SIGNUP_URL = 'https://www.helloasso.com/';
-
-export { HELLOASSO_HOW_IT_WORKS_URL } from '@/lib/helloasso';
 
 /** Public register of authorised payment institutions, where HelloAsso's ACPR approval can be checked. */
 export const REGAFI_URL = 'https://www.regafi.fr';

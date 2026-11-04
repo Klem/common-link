@@ -98,13 +98,14 @@ enum class HelloAssoWebhookState {
     /** Nothing received and nothing missed yet. */
     UNKNOWN,
 
-    /** A notification was received (and none was missed since). */
+    /** A notification recognised as CommonLink's was received (and none was missed since). */
     RECEIVED,
 
     /** The reconciler confirmed a payment whose notification never arrived, and none was received since. */
     MISSING;
 
     companion object {
+        /** The state of [connection] from its last recognised notification and its last missed one (latest wins). */
         fun of(connection: HelloAssoConnection): HelloAssoWebhookState {
             val missing = connection.webhookMissingAt
             val received = connection.webhookLastReceivedAt

@@ -118,11 +118,16 @@ export default function HelloAssoOnboardingFlow({ profile }: HelloAssoOnboarding
     goTo(path === HelloAssoPath.EXISTING ? HelloAssoScreen.WELCOME : HelloAssoScreen.OPEN_ACCOUNT);
   };
 
+  // The status is re-read BEFORE leaving the replacement mode: with the old BROKEN status still in the store, leaving it
+  // first would flash the "accès à renouveler" view until the re-read lands.
   const onLinked = useCallback(async () => {
-    setReplacing(false);
-    setJustLinked(true);
-    setKeyCheck(KeyCheck.IDLE);
-    await refreshPaymentStatus();
+    try {
+      await refreshPaymentStatus();
+    } finally {
+      setReplacing(false);
+      setJustLinked(true);
+      setKeyCheck(KeyCheck.IDLE);
+    }
     if (typeof window !== 'undefined') window.scrollTo?.({ top: 0, behavior: 'smooth' });
   }, [refreshPaymentStatus]);
 

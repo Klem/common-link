@@ -24,6 +24,18 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     fun findByProviderRef(providerRef: String): Donation?
 
     /**
+     * Same as [findByProviderRef] with a row lock (`SELECT … FOR UPDATE`) held until the transaction ends — serializes
+     * concurrent confirmations of one payment (notification, return page, reconciler), see
+     * [org.commonlink.service.HelloAssoCheckoutService.refreshPayment].
+     *
+     * Native, like the other `FOR UPDATE` lookups, to emit a plain row lock. When the donation is already managed in
+     * the current persistence context (open-in-view), Hibernate returns that instance without re-reading its state:
+     * callers needing the locked state must refresh it.
+     */
+    @Query(value = "SELECT * FROM donations WHERE provider_ref = :providerRef FOR UPDATE", nativeQuery = true)
+    fun findByProviderRefForUpdate(@Param("providerRef") providerRef: String): Donation?
+
+    /**
      * Returns confirmed donations that have no matching RECORD_DONATION outbox job.
      *
      * Used by the receipt reconciler to recover from failures in the async event listener.
@@ -604,16 +616,21 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
      * created), so no null-check is needed here.
      *
      * @param prefix provider reference prefix, colon included ([org.commonlink.payment.PaymentProviderId.refPrefix]).
+     * @param threshold only donations created strictly before this instant.
+     * @param createdAfter only donations created strictly after this instant — a reconciler that gives up on old
+     *   checkouts (HelloAsso's abandon delay) excludes them here; [Instant.EPOCH] for no lower bound (Mollie).
      */
     @Query("""
         SELECT d FROM Donation d
         WHERE d.confirmedAt IS NULL
           AND d.createdAt < :threshold
+          AND d.createdAt > :createdAfter
           AND d.providerRef LIKE CONCAT(:prefix, '%')
     """)
     fun findStalePendingByProviderRefPrefix(
         @Param("prefix") prefix: String,
         @Param("threshold") threshold: Instant,
+        @Param("createdAfter") createdAfter: Instant,
     ): List<Donation>
 
     // ── Donor dashboard (Sprint 2 — allocation & campaign report) ─────────
