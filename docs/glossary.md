@@ -399,7 +399,7 @@ The OAuth `access_token` is short-lived (`expires_in` = 3600s) and refreshed sil
 `technical` `integration` `association`
 
 ### Token Encryption Key
-The `MONERIUM_TOKEN_ENC_KEY` env var (base64, 32 bytes = AES-256). Despite its Monerium-centric name it is a **shared** key: the same `MoneriumTokenConverter` encrypts both Monerium and Mollie Connect OAuth tokens at rest (AES-256-GCM). When unset the converter is a no-op (plaintext) — intended for dev/staging, **must be set in prod**. ⚠ Rotating or removing it breaks decryption of every stored token for both integrations (old rows throw → 500 on status read); any change requires a re-encryption migration. A neutrally-named key is deferred to keep the blast radius minimal.
+The `OAUTH_TOKEN_ENC_KEY` env var (property `app.oauth.token-enc-key`, base64, 32 bytes = AES-256), formerly `MOLLIE_TOKEN_ENC_KEY`. A **shared** key: `OAuthTokenConverter` encrypts the Mollie Connect and HelloAsso OAuth tokens at rest with it (AES-256-GCM). When unset the converter is a no-op (plaintext) — intended for dev/staging; under the prod profile a blank key is a startup failure. ⚠ Changing its value breaks decryption of every stored token of both providers (old rows throw → 500 on status read); a rotation requires a re-encryption migration. Renaming the env var while keeping its value needs no migration.
 `technical` `security`
 
 ### Mollie Capabilities API

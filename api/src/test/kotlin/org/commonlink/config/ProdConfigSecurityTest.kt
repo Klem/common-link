@@ -157,8 +157,8 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `mollie token-enc-key is required with no plaintext-inheriting default in prod`() {
-        assertEquals("\${MOLLIE_TOKEN_ENC_KEY}", prop("app.mollie.token-enc-key"))
+    fun `oauth token-enc-key is required with no plaintext-inheriting default in prod`() {
+        assertEquals("\${OAUTH_TOKEN_ENC_KEY}", prop("app.oauth.token-enc-key"))
     }
 
     @Test

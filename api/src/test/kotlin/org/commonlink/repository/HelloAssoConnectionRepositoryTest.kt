@@ -21,7 +21,7 @@ import java.util.UUID
  * encrypted at rest, and the "active link of a HELLOASSO association" probe used by the scheduled tasks.
  */
 @ImportTestcontainers(TestcontainersConfig::class)
-@TestPropertySource(properties = ["app.mollie.token-enc-key=AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="])
+@TestPropertySource(properties = ["app.oauth.token-enc-key=AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="])
 class HelloAssoConnectionRepositoryTest(
     @Autowired private val userRepository: UserRepository,
     @Autowired private val associationProfileRepository: AssociationProfileRepository,

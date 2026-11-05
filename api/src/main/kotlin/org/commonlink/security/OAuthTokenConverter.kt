@@ -13,7 +13,8 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Encrypts OAuth access/refresh tokens at rest (e.g. [org.commonlink.entity.MollieConnection]).
+ * Encrypts the payment providers' OAuth access/refresh tokens at rest ([org.commonlink.entity.MollieConnection],
+ * [org.commonlink.entity.HelloAssoConnection]), with the key `app.oauth.token-enc-key` (env `OAUTH_TOKEN_ENC_KEY`).
  *
  * Opt-in only — NOT `autoApply`: callers must annotate the field with
  * `@Convert(converter = OAuthTokenConverter::class)`. AES-256-GCM with a fresh random 12-byte IV
@@ -27,7 +28,7 @@ import javax.crypto.spec.SecretKeySpec
 @Component
 @Converter
 class OAuthTokenConverter(
-    @Value("\${app.mollie.token-enc-key:}") rawKey: String,
+    @Value("\${app.oauth.token-enc-key:}") rawKey: String,
     environment: Environment,
 ) : AttributeConverter<String?, String?> {
 
@@ -37,22 +38,22 @@ class OAuthTokenConverter(
         if (rawKey.isBlank()) {
             if (environment.activeProfiles.contains("prod")) {
                 throw IllegalStateException(
-                    "app.mollie.token-enc-key must be set under the prod profile — " +
+                    "app.oauth.token-enc-key must be set under the prod profile — " +
                         "refusing to store OAuth tokens as plaintext"
                 )
             }
             secretKey = null
             if (statusLogged.compareAndSet(false, true)) {
-                logger.warn("OAuthTokenConverter: DISABLED — app.mollie.token-enc-key not set; fields using this converter are stored as plaintext")
+                logger.warn("OAuthTokenConverter: DISABLED — app.oauth.token-enc-key not set; fields using this converter are stored as plaintext")
             }
         } else {
             val keyBytes = try {
                 Base64.getDecoder().decode(rawKey)
             } catch (e: IllegalArgumentException) {
-                throw IllegalStateException("app.mollie.token-enc-key is not valid Base64", e)
+                throw IllegalStateException("app.oauth.token-enc-key is not valid Base64", e)
             }
             require(keyBytes.size == KEY_LENGTH_BYTES) {
-                "app.mollie.token-enc-key must decode to exactly $KEY_LENGTH_BYTES bytes (AES-256); got ${keyBytes.size}"
+                "app.oauth.token-enc-key must decode to exactly $KEY_LENGTH_BYTES bytes (AES-256); got ${keyBytes.size}"
             }
             secretKey = SecretKeySpec(keyBytes, "AES")
             if (statusLogged.compareAndSet(false, true)) {
