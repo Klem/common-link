@@ -13,6 +13,7 @@ import org.commonlink.exception.HelloAssoRateLimitedException
 import org.commonlink.exception.HelloAssoUnauthorizedException
 import org.commonlink.exception.HelloAssoUnavailableException
 import org.commonlink.exception.HelloAssoNotEligibleException
+import org.commonlink.exception.HelloAssoRequestRefusedException
 import org.commonlink.exception.RateLimitException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -44,7 +45,13 @@ class HelloAssoCredentialsService(
         /** Key checks allowed per association within [VERIFY_WINDOW_MINUTES]. */
         const val VERIFY_MAX_ATTEMPTS = 5
         const val VERIFY_WINDOW_MINUTES = 10L
-        const val NOTIFICATION_PATH = "/api/public/webhooks/helloasso/"
+
+        /**
+         * An association's notification URL: [webhookUrl] (`app.helloasso.webhook-url`, path included) followed by
+         * its [token]; null when [webhookUrl] is blank.
+         */
+        fun notificationUrl(webhookUrl: String, token: String): String? =
+            webhookUrl.trim().trimEnd('/').takeIf { it.isNotEmpty() }?.let { "$it/$token" }
     }
 
     /**
@@ -102,18 +109,17 @@ class HelloAssoCredentialsService(
      * exists even when no URL can be shown yet.
      *
      * @throws org.commonlink.exception.HelloAssoNotAssociationProviderException when the association is not on HELLOASSO.
-     * @throws HelloAssoNotificationUrlNotConfiguredException when `app.helloasso.notification-base-url` is blank.
+     * @throws HelloAssoNotificationUrlNotConfiguredException when `app.helloasso.webhook-url` is blank.
      */
     fun ensureNotificationUrl(userId: UUID): HelloAssoNotificationUrlResponse {
         val association = resolveAssociation(userId)
         rows.requireHelloAssoProvider(association)
         val connection = rows.findOrCreate(association)
-        val base = properties.notificationBaseUrl.trim().trimEnd('/')
-        if (base.isEmpty()) {
-            log.warn("app.helloasso.notification-base-url is blank: cannot show the HelloAsso notification URL")
+        val url = notificationUrl(properties.webhookUrl, connection.webhookToken) ?: run {
+            log.warn("app.helloasso.webhook-url is blank: cannot show the HelloAsso notification URL")
             throw HelloAssoNotificationUrlNotConfiguredException()
         }
-        return HelloAssoNotificationUrlResponse(base + NOTIFICATION_PATH + connection.webhookToken)
+        return HelloAssoNotificationUrlResponse(url)
     }
 
     /** Maps HelloAsso infrastructure failures to API errors; refusals already mapped inside [call] pass through. */
@@ -127,6 +133,8 @@ class HelloAssoCredentialsService(
         } catch (ex: HelloAssoUnavailableException) {
             throw BadGatewayException("HelloAsso is unavailable")
         } catch (ex: HelloAssoNotEligibleException) {
+            throw BadGatewayException("HelloAsso refused the request")
+        } catch (ex: HelloAssoRequestRefusedException) {
             throw BadGatewayException("HelloAsso refused the request")
         }
 

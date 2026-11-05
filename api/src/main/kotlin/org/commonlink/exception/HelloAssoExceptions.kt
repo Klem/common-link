@@ -18,6 +18,14 @@ class HelloAssoUnauthorizedException(operation: String, status: Int) :
 class HelloAssoNotEligibleException(operation: String) :
     HelloAssoException("HelloAsso refused the operation: organization not eligible ($operation, HTTP 409)")
 
+/**
+ * HelloAsso understood the request and refused it (HTTP 400 or 422 on an authenticated call): the request we built
+ * is wrong, HelloAsso is not down — a non-HTTPS return URL on a checkout did exactly that on 2026-11-05. The refused
+ * fields are not reported: HelloAsso does not document its error body, and the body is never read.
+ */
+class HelloAssoRequestRefusedException(operation: String, status: Int) :
+    HelloAssoException("HelloAsso refused the request ($operation, HTTP $status)")
+
 /** Too many calls (HTTP 429 after bounded retries, or the local auth-call limit reached before any call). */
 class HelloAssoRateLimitedException(operation: String) :
     HelloAssoException("HelloAsso rate limit reached ($operation)")
@@ -72,7 +80,7 @@ class HelloAssoVerificationExpiredException :
 class HelloAssoNotLinkedException :
     HelloAssoLinkException("No active HelloAsso link for this association", HttpStatus.CONFLICT, "HELLOASSO_NOT_LINKED")
 
-/** `app.helloasso.notification-base-url` is blank: no notification URL can be shown (HTTP 503). */
+/** `app.helloasso.webhook-url` is blank: no notification URL can be shown (HTTP 503). */
 class HelloAssoNotificationUrlNotConfiguredException :
     HelloAssoLinkException(
         "The HelloAsso notification URL is not configured on this server",

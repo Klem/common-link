@@ -12,6 +12,7 @@ import org.commonlink.exception.HelloAssoException
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoRateLimitedException
 import org.commonlink.exception.HelloAssoUnauthorizedException
+import org.commonlink.exception.HelloAssoRequestRefusedException
 import org.commonlink.exception.HelloAssoUnavailableException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -213,6 +214,7 @@ class HelloAssoClient(
                 }
                 log.warn("HelloAsso {} failed with HTTP {}", operation, status)
                 throw when (status) {
+                    400, 422 -> HelloAssoRequestRefusedException(operation, status)
                     401 -> HelloAssoUnauthorizedException(operation, status)
                     409 -> HelloAssoNotEligibleException(operation)
                     429 -> HelloAssoRateLimitedException(operation)

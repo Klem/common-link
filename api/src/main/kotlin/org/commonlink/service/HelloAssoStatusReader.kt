@@ -25,15 +25,13 @@ class HelloAssoStatusReader(
     fun read(associationId: UUID): HelloAssoStatusDto {
         val connection = connectionRepository.findByAssociationId(associationId)
             ?: return HelloAssoStatusDto(link = HelloAssoLinkState.NONE, webhook = HelloAssoWebhookState.UNKNOWN)
-        val base = properties.notificationBaseUrl.trim().trimEnd('/')
         return HelloAssoStatusDto(
             link = when (connection.state) {
                 HelloAssoConnectionState.ACTIVE -> HelloAssoLinkState.OK
                 HelloAssoConnectionState.BROKEN -> HelloAssoLinkState.BROKEN
                 HelloAssoConnectionState.NOT_LINKED, HelloAssoConnectionState.DISCONNECTED -> HelloAssoLinkState.NONE
             },
-            notificationUrl = base.takeIf { it.isNotEmpty() }
-                ?.let { it + HelloAssoCredentialsService.NOTIFICATION_PATH + connection.webhookToken },
+            notificationUrl = HelloAssoCredentialsService.notificationUrl(properties.webhookUrl, connection.webhookToken),
             organizationSlug = connection.organizationSlug,
             canCollect = connection.canCollect,
             everCompliant = connection.everCompliant,

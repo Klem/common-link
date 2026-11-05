@@ -7,7 +7,7 @@ import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import jakarta.persistence.EntityManager
-import org.commonlink.config.MollieProperties
+import org.commonlink.config.HelloAssoProperties
 import org.commonlink.dto.HelloAssoCheckoutIntentJson
 import org.commonlink.dto.HelloAssoCheckoutIntentResponseJson
 import org.commonlink.dto.HelloAssoInitCheckoutJson
@@ -20,7 +20,9 @@ import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.HelloAssoConnection
 import org.commonlink.entity.HelloAssoConnectionState
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.HelloAssoCheckoutRefusedException
 import org.commonlink.exception.HelloAssoNotEligibleException
+import org.commonlink.exception.HelloAssoRequestRefusedException
 import org.commonlink.exception.HelloAssoUnauthorizedException
 import org.commonlink.exception.HelloAssoUnavailableException
 import org.commonlink.payment.CheckoutPayer
@@ -55,7 +57,7 @@ class HelloAssoCheckoutServiceTest {
     private val entityManager = mockk<EntityManager>(relaxed = true)
     private val service = HelloAssoCheckoutService(
         connectionRepo, donationRepo, donationService, tokenManager, gateway, breaker, eligibility, alerts, auditLog,
-        MollieProperties(redirectBaseUrl = "https://app.common-link.test"), TransactionTemplate(txManager), entityManager,
+        HelloAssoProperties(redirectBaseUrl = "https://app.common-link.test"), TransactionTemplate(txManager), entityManager,
     )
 
     private val associationId = UUID.randomUUID()
@@ -127,6 +129,14 @@ class HelloAssoCheckoutServiceTest {
         assertThrows<ConflictException> { service.createCheckout(request()) }
         verify { eligibility.store(associationId, false) }
         verify { eligibility.refresh(associationId) }
+    }
+
+    @Test
+    fun `a HelloAsso 400 is our refused request, not an outage`() {
+        every { gateway.createCheckoutIntent(any(), any(), any()) } throws HelloAssoRequestRefusedException("POST", 400)
+
+        assertThrows<HelloAssoCheckoutRefusedException> { service.createCheckout(request()) }
+        verify(exactly = 0) { breaker.markBroken(any()) }
     }
 
     @Test

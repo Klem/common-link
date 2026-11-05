@@ -217,15 +217,19 @@ app:
     default-provider: ${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}
 
   helloasso:
-    # HelloAsso API keys mode (HelloAssoProperties). Sandbox by default: never the production API by accident.
-    api-base-url: ${HELLOASSO_API_BASE_URL:https://api.helloasso-sandbox.com/v5}
-    oauth-token-url: ${HELLOASSO_OAUTH_TOKEN_URL:https://api.helloasso-sandbox.com/oauth2/token}
-    # Notification source IPs (sandbox 4.233.135.234, prod 51.138.206.200), comma-separated.
-    allowed-notification-ips: ${HELLOASSO_ALLOWED_NOTIFICATION_IPS:4.233.135.234}
+    # HelloAsso API keys mode (HelloAssoProperties). No default for the URLs and IPs: each environment sets them
+    # (sandbox locally: https://api.helloasso-sandbox.com/v5 and /oauth2/token, IP 4.233.135.234).
+    api-base-url: ${HELLOASSO_API_BASE_URL}
+    oauth-token-url: ${HELLOASSO_OAUTH_TOKEN_URL}
+    # Frontend base URL the donor returns to after the payment. HelloAsso accepts HTTPS only.
+    redirect-base-url: ${HELLOASSO_REDIRECT_BASE_URL}
+    # Public URL of this API's HelloAsso webhook, path included (https://<api>/api/public/webhooks/helloasso);
+    # each association's notification URL is {webhook-url}/{token}. Blank = not configured.
+    webhook-url: ${HELLOASSO_WEBHOOK_URL:}
+    # Webhook source IPs (sandbox 4.233.135.234, prod 51.138.206.200), comma-separated.
+    webhook-allowed-ips: ${HELLOASSO_WEBHOOK_ALLOWED_IPS}
     # Local / E2E mode without HelloAsso network calls — never in prod.
     mock: ${HELLOASSO_MOCK:false}
-    # Public base URL of this API, prefix of each association's notification URL. Blank = not configured.
-    notification-base-url: ${HELLOASSO_NOTIFICATION_BASE_URL:}
     token-refresh-interval: ${HELLOASSO_TOKEN_REFRESH_INTERVAL:P7D}
     eligibility-pending-interval: ${HELLOASSO_ELIGIBILITY_PENDING_INTERVAL:PT2H}
     eligibility-ready-interval: ${HELLOASSO_ELIGIBILITY_READY_INTERVAL:P1D}

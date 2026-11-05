@@ -1,6 +1,6 @@
 package org.commonlink.service
 
-import org.commonlink.config.MollieProperties
+import org.commonlink.config.HelloAssoProperties
 import org.commonlink.dto.HelloAssoCheckoutIntentJson
 import org.commonlink.dto.HelloAssoInitCheckoutJson
 import org.commonlink.entity.ComplianceAuditSubjectType
@@ -8,8 +8,10 @@ import org.commonlink.entity.Donation
 import org.commonlink.entity.HelloAssoConnectionState
 import org.commonlink.exception.BadGatewayException
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.HelloAssoCheckoutRefusedException
 import org.commonlink.exception.HelloAssoException
 import org.commonlink.exception.HelloAssoNotEligibleException
+import org.commonlink.exception.HelloAssoRequestRefusedException
 import org.commonlink.exception.HelloAssoUnauthorizedException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.payment.CheckoutRequest
@@ -57,7 +59,7 @@ class HelloAssoCheckoutService(
     private val eligibilityService: HelloAssoEligibilityService,
     private val technicalAlertService: TechnicalAlertService,
     private val complianceAuditLogService: ComplianceAuditLogService,
-    private val mollieProperties: MollieProperties,
+    private val properties: HelloAssoProperties,
     private val transactionTemplate: TransactionTemplate,
     private val entityManager: EntityManager,
 ) {
@@ -77,6 +79,7 @@ class HelloAssoCheckoutService(
      *
      * @throws ConflictException when the association cannot collect (not linked, broken, not eligible, or HelloAsso
      *   answers 409 — the latter also records the lost eligibility and re-reads it).
+     * @throws HelloAssoCheckoutRefusedException when HelloAsso refuses the request we built (HTTP 400/422): no alert.
      * @throws BadGatewayException when HelloAsso is unavailable or returns no payment page.
      */
     fun createCheckout(request: CheckoutRequest): CheckoutSession {
@@ -96,6 +99,9 @@ class HelloAssoCheckoutService(
         } catch (ex: HelloAssoUnauthorizedException) {
             breaker.markBroken(request.associationId)
             throw ConflictException(CANNOT_COLLECT)
+        } catch (ex: HelloAssoRequestRefusedException) {
+            log.error("HelloAsso refused the checkout request for association {}: {}", request.associationId, ex.message)
+            throw HelloAssoCheckoutRefusedException("HelloAsso refused the payment request")
         } catch (ex: HelloAssoException) {
             log.warn("HelloAsso checkout failed for association {}: {}", request.associationId, ex.javaClass.simpleName)
             throw BadGatewayException("HelloAsso is unavailable")
@@ -214,7 +220,7 @@ class HelloAssoCheckoutService(
 
     private fun body(request: CheckoutRequest): HelloAssoInitCheckoutJson {
         val cents = request.amount.movePointRight(2).setScale(0, RoundingMode.HALF_UP).intValueExact()
-        val base = "${mollieProperties.redirectBaseUrl}/${request.locale}/embed/donate/${request.widgetToken}/return"
+        val base = "${properties.redirectBaseUrl}/${request.locale}/embed/donate/${request.widgetToken}/return"
         val source = request.sourceSite?.let { "&source=" + URLEncoder.encode(it, StandardCharsets.UTF_8) }.orEmpty()
         return HelloAssoInitCheckoutJson(
             totalAmount = cents,

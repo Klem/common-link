@@ -111,10 +111,12 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `helloasso points to the production API and notification IP in prod`() {
-        assertEquals("\${HELLOASSO_API_BASE_URL:https://api.helloasso.com/v5}", prop("app.helloasso.api-base-url"))
-        assertEquals("\${HELLOASSO_OAUTH_TOKEN_URL:https://api.helloasso.com/oauth2/token}", prop("app.helloasso.oauth-token-url"))
-        assertEquals("\${HELLOASSO_ALLOWED_NOTIFICATION_IPS:51.138.206.200}", prop("app.helloasso.allowed-notification-ips"))
+    fun `helloasso URLs and webhook IPs are required with no default in prod`() {
+        assertEquals("\${HELLOASSO_API_BASE_URL}", prop("app.helloasso.api-base-url"))
+        assertEquals("\${HELLOASSO_OAUTH_TOKEN_URL}", prop("app.helloasso.oauth-token-url"))
+        assertEquals("\${HELLOASSO_REDIRECT_BASE_URL}", prop("app.helloasso.redirect-base-url"))
+        assertEquals("\${HELLOASSO_WEBHOOK_URL}", prop("app.helloasso.webhook-url"))
+        assertEquals("\${HELLOASSO_WEBHOOK_ALLOWED_IPS}", prop("app.helloasso.webhook-allowed-ips"))
     }
 
     @Test

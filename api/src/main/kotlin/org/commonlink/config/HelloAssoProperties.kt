@@ -15,11 +15,14 @@ import java.time.Duration
  *
  * @param apiBaseUrl HelloAsso API base URL, version included (prod `https://api.helloasso.com/v5`).
  * @param oauthTokenUrl HelloAsso OAuth2 token endpoint (prod `https://api.helloasso.com/oauth2/token`).
- * @param allowedNotificationIps Source IPs HelloAsso sends notifications from (prod `51.138.206.200`, sandbox
+ * @param redirectBaseUrl Frontend base URL used to build the post-payment return, back and error URLs (HelloAsso
+ *   accepts HTTPS only; [HelloAssoRedirectUrlGuard] refuses to start otherwise, outside mock mode).
+ * @param webhookUrl Publicly reachable URL of the HelloAsso webhook endpoint on this API server, path included
+ *   (`https://<api>/api/public/webhooks/helloasso`); each association's notification URL is `{webhookUrl}/{token}`.
+ *   Blank = not configured.
+ * @param webhookAllowedIps Source IPs HelloAsso sends notifications from (prod `51.138.206.200`, sandbox
  *   `4.233.135.234`); any other source is refused.
  * @param mock Local / E2E mode without HelloAsso network calls. MUST stay false in production.
- * @param notificationBaseUrl Public base URL of this API, prefix of each association's notification URL
- *   (`{notificationBaseUrl}/api/public/webhooks/helloasso/{token}`). Blank = not configured.
  * @param tokenRefreshInterval Cadence of the scheduled token refresh (a refresh token lives one month).
  * @param eligibilityPendingInterval Eligibility (`isCashInCompliant`) read cadence while an organization cannot
  *   collect yet.
@@ -34,9 +37,10 @@ import java.time.Duration
 data class HelloAssoProperties(
     val apiBaseUrl: String = "https://api.helloasso-sandbox.com/v5",
     val oauthTokenUrl: String = "https://api.helloasso-sandbox.com/oauth2/token",
-    val allowedNotificationIps: List<String> = listOf("4.233.135.234"),
+    val redirectBaseUrl: String = "https://localhost:3000",
+    val webhookUrl: String = "",
+    val webhookAllowedIps: List<String> = listOf("4.233.135.234"),
     val mock: Boolean = false,
-    val notificationBaseUrl: String = "",
     val tokenRefreshInterval: Duration = Duration.ofDays(7),
     val eligibilityPendingInterval: Duration = Duration.ofHours(2),
     val eligibilityReadyInterval: Duration = Duration.ofDays(1),

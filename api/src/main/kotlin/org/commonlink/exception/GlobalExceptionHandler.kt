@@ -286,6 +286,22 @@ class GlobalExceptionHandler(
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
     }
 
+    /**
+     * Handles [HelloAssoCheckoutRefusedException] — HelloAsso answered the checkout creation and refused it.
+     *
+     * Logged at ERROR and **never alerted**, for the same reason as [handleBridgeRefusal]: HelloAsso is up, the
+     * request we built is what needs fixing. The status stays 502, which the donation page already reports.
+     */
+    @ExceptionHandler(HelloAssoCheckoutRefusedException::class)
+    fun handleHelloAssoCheckoutRefusal(
+        ex: HelloAssoCheckoutRefusedException,
+        request: HttpServletRequest?,
+    ): ResponseEntity<ProblemDetail> {
+        appLogger.error("HelloAsso refused the checkout on {}: {}", path(request), ex.message)
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "Bad gateway")
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
+    }
+
     @ExceptionHandler(BadGatewayException::class)
     fun handleBadGateway(ex: BadGatewayException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
         appLogger.error("Upstream dependency unavailable on {}: {}", path(request), ex.message)

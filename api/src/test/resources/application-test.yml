@@ -19,6 +19,9 @@ app:
   jwt:
     secret: ${COMMON_LINK_SECRET:test-secret-key-for-automated-tests-only-not-production!!}
   frontend-url: http://localhost:3000
+  # HelloAssoRedirectUrlGuard: the real HelloAsso needs an https return URL.
+  helloasso:
+    redirect-base-url: https://localhost:3000
   # Unroutable on purpose: tests never call geo.api.gouv.fr (geocoding is best-effort or mocked).
   geo:
     base-url: http://localhost:1

@@ -59,7 +59,7 @@ import java.time.Instant
     "app.frontend-url=http://localhost:3000",
     "app.vop.demo-mode=true",
     "app.helloasso.mock=true",
-    "app.helloasso.notification-base-url=https://api.common-link.test",
+    "app.helloasso.webhook-url=https://api.common-link.test/api/public/webhooks/helloasso",
 ])
 class HelloAssoEndToEndMockTest {
 

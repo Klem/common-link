@@ -53,7 +53,7 @@ class HelloAssoNotificationService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     /** Whether [ip] is one of HelloAsso's notification source addresses. */
-    fun isAllowedSource(ip: String): Boolean = ip in properties.allowedNotificationIps
+    fun isAllowedSource(ip: String): Boolean = ip in properties.webhookAllowedIps
 
     /**
      * Filters [rawBody] received on [token] and schedules what concerns CommonLink. Never logs the body.

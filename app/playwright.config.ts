@@ -7,7 +7,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'https://localhost:3000',
+    // `npm run dev` serves a locally generated certificate.
+    ignoreHTTPSErrors: true,
     locale: 'fr',
     trace: 'on-first-retry',
   },
@@ -19,7 +21,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'https://localhost:3000',
+    ignoreHTTPSErrors: true,
     reuseExistingServer: true,
     timeout: 120000,
   },

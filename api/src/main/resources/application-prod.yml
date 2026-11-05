@@ -238,11 +238,12 @@ app:
 
   helloasso:
     # Production HelloAsso API and notification source IP. Mock pinned false (ProdConfigSecurityTest).
-    api-base-url: ${HELLOASSO_API_BASE_URL:https://api.helloasso.com/v5}
-    oauth-token-url: ${HELLOASSO_OAUTH_TOKEN_URL:https://api.helloasso.com/oauth2/token}
-    allowed-notification-ips: ${HELLOASSO_ALLOWED_NOTIFICATION_IPS:51.138.206.200}
+    api-base-url: ${HELLOASSO_API_BASE_URL}
+    oauth-token-url: ${HELLOASSO_OAUTH_TOKEN_URL}
+    redirect-base-url: ${HELLOASSO_REDIRECT_BASE_URL}
+    webhook-url: ${HELLOASSO_WEBHOOK_URL}
+    webhook-allowed-ips: ${HELLOASSO_WEBHOOK_ALLOWED_IPS}
     mock: false
-    notification-base-url: ${HELLOASSO_NOTIFICATION_BASE_URL:}
 
 
 commonlink:

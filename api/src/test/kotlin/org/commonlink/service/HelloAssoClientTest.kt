@@ -10,6 +10,7 @@ import org.commonlink.exception.HelloAssoException
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoRateLimitedException
 import org.commonlink.exception.HelloAssoUnauthorizedException
+import org.commonlink.exception.HelloAssoRequestRefusedException
 import org.commonlink.exception.HelloAssoUnavailableException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -224,6 +225,16 @@ class HelloAssoClientTest {
 
         val ex: HelloAssoException = assertThrows<HelloAssoUnavailableException> { client.get("/x", accessToken, Map::class.java) }
         assertNothingLeaked(ex)
+    }
+
+    @Test
+    fun `a 400 or 422 is a refused request, without leaking the body`() {
+        server.expect(requestTo("$api/x")).andRespond(withStatus(HttpStatus.BAD_REQUEST).body(leakyBody))
+        server.expect(requestTo("$api/x")).andRespond(withStatus(HttpStatus.UNPROCESSABLE_CONTENT).body(leakyBody))
+
+        val ex: HelloAssoException = assertThrows<HelloAssoRequestRefusedException> { client.get("/x", accessToken, Map::class.java) }
+        assertNothingLeaked(ex)
+        assertThrows<HelloAssoRequestRefusedException> { client.get("/x", accessToken, Map::class.java) }
     }
 
     // ── Wire format of the gateway methods (shapes of the sandbox probe of 2026-11-02 and dev.helloasso.com) ─────

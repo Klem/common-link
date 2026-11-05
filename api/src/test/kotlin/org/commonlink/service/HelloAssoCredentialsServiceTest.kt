@@ -57,8 +57,8 @@ class HelloAssoCredentialsServiceTest {
     private lateinit var appender: ListAppender<ILoggingEvent>
     private val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
 
-    private fun service(baseUrl: String = "https://api.common-link.test/") = HelloAssoCredentialsService(
-        associationRepo, client, store, rateLimiter, HelloAssoProperties(notificationBaseUrl = baseUrl),
+    private fun service(webhookUrl: String = "https://api.common-link.test/api/public/webhooks/helloasso/") = HelloAssoCredentialsService(
+        associationRepo, client, store, rateLimiter, HelloAssoProperties(webhookUrl = webhookUrl),
         HelloAssoConnectionRows(connectionRepo),
     )
 
@@ -213,11 +213,11 @@ class HelloAssoCredentialsServiceTest {
     }
 
     @Test
-    fun `a blank base URL still creates the token, then refuses with not configured`() {
+    fun `a blank webhook URL still creates the token, then refuses with not configured`() {
         every { connectionRepo.findByAssociationId(associationId) } returns null
         every { connectionRepo.saveAndFlush(any()) } answers { firstArg() }
 
-        assertThrows<HelloAssoNotificationUrlNotConfiguredException> { service(baseUrl = " ").ensureNotificationUrl(userId) }
+        assertThrows<HelloAssoNotificationUrlNotConfiguredException> { service(webhookUrl = " ").ensureNotificationUrl(userId) }
         verify(exactly = 1) { connectionRepo.saveAndFlush(any()) }
     }
 }

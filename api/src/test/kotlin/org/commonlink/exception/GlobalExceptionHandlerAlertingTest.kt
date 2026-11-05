@@ -73,6 +73,17 @@ class GlobalExceptionHandlerAlertingTest {
     }
 
     @Test
+    fun `does not report a checkout HelloAsso refused`() {
+        val response = handler().handleHelloAssoCheckoutRefusal(
+            HelloAssoCheckoutRefusedException("HelloAsso refused the payment request"),
+            request("POST", "/api/widget/donations"),
+        )
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_GATEWAY)
+        verify(exactly = 0) { alertService.reportFailure(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `counts an access denial towards a burst rather than reporting it outright`() {
         val response = handler().handleAccessDenied(AccessDeniedException("nope"), request("GET", "/api/admin/users"))
 
