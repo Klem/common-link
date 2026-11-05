@@ -66,6 +66,12 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
     PAYMENT_REVERSED("Don remboursé ou contesté chez le prestataire de paiement", "ERROR"),
 
     /**
+     * The payment re-read at the provider does not carry the donation's amount ([PaymentAmountGuard]): the donation
+     * is not confirmed — no receipt, no on-chain proof — until a human looks at it.
+     */
+    PAYMENT_AMOUNT_MISMATCH("Montant payé différent du montant du don — don non confirmé", "ERROR"),
+
+    /**
      * Bridge reported a transfer settled on a payout whose amount had already gone back to the
      * campaign's confirmable balance — a payout failed after a bank rejection, or released after
      * its link died.

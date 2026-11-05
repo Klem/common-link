@@ -60,11 +60,15 @@ data class HelloAssoOrderJson(
     @field:JsonProperty("payments") val payments: List<HelloAssoPaymentJson>? = null,
 )
 
-/** One payment of an order: [state] (e.g. `Authorized`) and [paymentMeans] (e.g. `Card`, `Sepa`). Amount in cents. */
+/**
+ * One payment of an order: [state] (e.g. `Authorized`) and [paymentMeans] (e.g. `Card`, `Sepa`). Amount in cents;
+ * [date] is the payment time, ISO-8601 with offset (`2026-11-05T15:27:41.8549543+01:00`, sandbox 2026-11-05).
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class HelloAssoPaymentJson(
     @field:JsonProperty("id") val id: Long? = null,
     @field:JsonProperty("amount") val amount: Int? = null,
     @field:JsonProperty("state") val state: String? = null,
     @field:JsonProperty("paymentMeans") val paymentMeans: String? = null,
+    @field:JsonProperty("date") val date: String? = null,
 )

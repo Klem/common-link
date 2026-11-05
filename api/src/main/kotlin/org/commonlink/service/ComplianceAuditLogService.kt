@@ -170,6 +170,13 @@ class ComplianceAuditLogService(
          * ([org.commonlink.service.HelloAssoCheckoutService]). Payload `{providerRef, state}`; no actor.
          */
         const val HELLOASSO_PAYMENT_REVERSED = "HELLOASSO_PAYMENT_REVERSED"
+
+        /**
+         * A paid payment, re-read at the provider, does not carry its donation's amount: the donation is not confirmed
+         * ([org.commonlink.service.PaymentAmountGuard]). Written once per donation. Payload
+         * `{providerRef, expected, paid}`; no actor.
+         */
+        const val PAYMENT_AMOUNT_MISMATCH = "PAYMENT_AMOUNT_MISMATCH"
     }
 
     /**

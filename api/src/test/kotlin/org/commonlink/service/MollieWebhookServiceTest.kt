@@ -27,6 +27,8 @@ import org.springframework.test.context.event.ApplicationEvents
 import org.springframework.test.context.event.RecordApplicationEvents
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
@@ -183,6 +185,32 @@ class MollieWebhookServiceTest {
         assertEquals("bancontact", donationRepository.findByProviderRef(providerRef)?.paymentMethod)
     }
 
+    @Test
+    fun `paid webhook - another amount leaves the donation pending`() {
+        val mollieId = "tr_amount_${UUID.randomUUID()}"
+        val providerRef = "mollie:$mollieId"
+        createPendingDonation(providerRef)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId).copy(amount = BigDecimal("5.00"))
+
+        mollieWebhookService.handleWebhook(mollieId)
+
+        assertNull(donationRepository.findByProviderRef(providerRef)?.confirmedAt)
+        assertEquals(0, events.stream(DonationConfirmedEvent::class.java).count())
+    }
+
+    @Test
+    fun `paid webhook - the donation is dated at Mollie's paidAt`() {
+        val mollieId = "tr_paidat_${UUID.randomUUID()}"
+        val providerRef = "mollie:$mollieId"
+        createPendingDonation(providerRef)
+        val paidAt = Instant.now().minusSeconds(60).truncatedTo(ChronoUnit.MICROS)
+        every { mollieClient.getPayment(mollieId, any()) } returns paidPayment(mollieId).copy(paidAt = paidAt)
+
+        mollieWebhookService.handleWebhook(mollieId)
+
+        assertEquals(paidAt, donationRepository.findByProviderRef(providerRef)?.confirmedAt)
+    }
+
     /** Mollie may report no method; the receipt then states "Non précisé" rather than guessing. */
     @Test
     fun `paid webhook - a missing payment method leaves the column null`() {
@@ -214,7 +242,7 @@ class MollieWebhookServiceTest {
     private fun paidPayment(id: String) = MolliePayment(
         id = id,
         status = MolliePaymentStatus.PAID,
-        amount = BigDecimal("25.00"),
+        amount = BigDecimal("50.00"),
         checkoutUrl = null,
         metadata = mapOf(
             "donorProfileId" to donorProfileId.toString(),

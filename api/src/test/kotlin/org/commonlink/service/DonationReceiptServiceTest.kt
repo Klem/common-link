@@ -4,6 +4,7 @@ import org.commonlink.entity.OnchainJobAction
 import org.commonlink.event.DonationConfirmedEvent
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.verify
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -46,6 +47,7 @@ class DonationReceiptServiceTest {
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var donationRepository: DonationRepository
     @Autowired private lateinit var onchainJobRepository: OnchainJobRepository
+    @Autowired private lateinit var donationService: DonationService
     // PDF generation uses Postgres-specific SQL — mock to keep tests H2-compatible
     @MockkBean private lateinit var receiptService: ReceiptService
     @MockkBean private lateinit var receiptNumberService: ReceiptNumberService
@@ -118,6 +120,32 @@ class DonationReceiptServiceTest {
             .filter { it.correlationKey == "DONATION:$donationId" }
         assertEquals(1, jobs.size, "onDonationConfirmed must enqueue exactly one RECORD_DONATION job")
         assertNotNull(jobs[0].payloadJson)
+    }
+
+    // ── Receipt year = year of the provider payment ─────────────────────────
+
+    @Test
+    fun `a payment made on 31 December and read back later gets a receipt of that year`() {
+        val (confirmedId) = setupConfirmedDonation()
+        val confirmed = donationRepository.findById(confirmedId).orElseThrow()
+        // Pending donation created at 23:50 Paris on 31/12, paid at 23:55, confirmed only now (a later year).
+        val donation = donationRepository.save(
+            TestFixtures.donation(
+                donor = confirmed.donor,
+                campaign = confirmed.campaign,
+                confirmedAt = null,
+                createdAt = Instant.parse("2025-12-31T22:50:00Z"),
+            )
+        )
+        val donationId = donation.id!!
+
+        donationService.recordPayment(
+            donation.providerRef, donation.donor.id!!, donation.campaign.id!!, donation.amount,
+            paidAt = Instant.parse("2025-12-31T22:55:00Z"),
+        )
+        donationReceiptService.enqueueOnchainJob(donationId)
+
+        verify(exactly = 1) { receiptNumberService.nextNumber(donation.campaign.association.id!!, 2025) }
     }
 
     // ── Setup helper ─────────────────────────────────────────────────────────

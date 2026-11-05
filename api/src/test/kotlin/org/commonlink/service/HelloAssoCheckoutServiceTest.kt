@@ -26,6 +26,7 @@ import org.commonlink.exception.HelloAssoRequestRefusedException
 import org.commonlink.exception.HelloAssoUnauthorizedException
 import org.commonlink.exception.HelloAssoUnavailableException
 import org.commonlink.payment.CheckoutPayer
+import org.commonlink.repository.ComplianceAuditLogRepository
 import org.commonlink.payment.CheckoutRequest
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
@@ -39,6 +40,7 @@ import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.UUID
 
 /** Checkout body (flow §4), 409 handling, and the payment states applied on re-read (flow §6). */
@@ -53,10 +55,14 @@ class HelloAssoCheckoutServiceTest {
     private val eligibility = mockk<HelloAssoEligibilityService>(relaxed = true)
     private val alerts = mockk<TechnicalAlertService>(relaxed = true)
     private val auditLog = mockk<ComplianceAuditLogService>(relaxed = true)
+    private val auditLogRepo = mockk<ComplianceAuditLogRepository> {
+        every { findTopBySubjectIdAndEventTypeOrderBySequenceNoDesc(any(), any()) } returns null
+    }
     private val txManager = mockk<PlatformTransactionManager>(relaxed = true)
     private val entityManager = mockk<EntityManager>(relaxed = true)
     private val service = HelloAssoCheckoutService(
         connectionRepo, donationRepo, donationService, tokenManager, gateway, breaker, eligibility, alerts, auditLog,
+        PaymentAmountGuard(alerts, auditLog, auditLogRepo),
         HelloAssoProperties(redirectBaseUrl = "https://app.common-link.test"), TransactionTemplate(txManager), entityManager,
     )
 
@@ -185,6 +191,58 @@ class HelloAssoCheckoutServiceTest {
         assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
         verify { donation.paymentMethod = "Card" }
         verify { donationService.recordPayment("helloasso:4242", any(), any(), BigDecimal("25.50")) }
+    }
+
+    @Test
+    fun `the donation is dated at the HelloAsso payment time`() {
+        val donation = donation()
+        stubDonation(donation)
+        val payment = HelloAssoPaymentJson(1, 2550, "Authorized", "Card", "2026-12-31T23:55:00.1234567+01:00")
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns
+            HelloAssoCheckoutIntentJson(id = 4242, order = HelloAssoOrderJson(1, 4242, listOf(payment)))
+
+        service.refreshPayment("helloasso:4242")
+
+        verify {
+            donationService.recordPayment(
+                "helloasso:4242", any(), any(), BigDecimal("25.50"), Instant.parse("2026-12-31T22:55:00.1234567Z"),
+            )
+        }
+    }
+
+    @Test
+    fun `an unreadable payment time confirms without a date`() {
+        stubDonation(donation())
+        val payment = HelloAssoPaymentJson(1, 2550, "Authorized", "Card", "yesterday")
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns
+            HelloAssoCheckoutIntentJson(id = 4242, order = HelloAssoOrderJson(1, 4242, listOf(payment)))
+
+        assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+        verify { donationService.recordPayment("helloasso:4242", any(), any(), any(), null) }
+    }
+
+    @Test
+    fun `a paid amount other than the donation's leaves it pending, alerted and journaled once`() {
+        stubDonation(donation())
+        val payment = HelloAssoPaymentJson(1, 2500, "Authorized", "Card")
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns
+            HelloAssoCheckoutIntentJson(id = 4242, order = HelloAssoOrderJson(1, 4242, listOf(payment)))
+
+        assertEquals(HelloAssoPaymentOutcome.AMOUNT_MISMATCH, service.refreshPayment("helloasso:4242"))
+        verify(exactly = 0) { donationService.recordPayment(any(), any(), any(), any(), any()) }
+        verify { alerts.reportFailure(TechnicalAlertKind.PAYMENT_AMOUNT_MISMATCH, null, "helloasso:4242", null) }
+        verify(exactly = 1) { auditLog.append(ComplianceAuditLogService.PAYMENT_AMOUNT_MISMATCH, any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a paid payment without an amount is not confirmed`() {
+        stubDonation(donation())
+        val payment = HelloAssoPaymentJson(1, null, "Authorized", "Card")
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns
+            HelloAssoCheckoutIntentJson(id = 4242, order = HelloAssoOrderJson(1, 4242, listOf(payment)))
+
+        assertEquals(HelloAssoPaymentOutcome.AMOUNT_MISMATCH, service.refreshPayment("helloasso:4242"))
+        verify(exactly = 0) { donationService.recordPayment(any(), any(), any(), any(), any()) }
     }
 
     @Test

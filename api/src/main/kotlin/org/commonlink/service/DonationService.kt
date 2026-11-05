@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -49,6 +50,11 @@ class DonationService(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    companion object {
+        /** Tolerated clock difference between the payment provider and this server when dating a donation. */
+        val CLOCK_SKEW: Duration = Duration.ofMinutes(5)
+    }
+
     /**
      * Idempotent entry point for payment webhook handlers.
      *
@@ -64,6 +70,8 @@ class DonationService(
      * @param donorProfileId UUID of the [org.commonlink.entity.DonorProfile].
      * @param campaignId UUID of the [org.commonlink.entity.Campaign].
      * @param amount Donation amount in EUR.
+     * @param paidAt Payment time reported by the provider's re-read; becomes the donation date when plausible
+     *   (see [confirmDonation]).
      */
     @Transactional
     fun recordPayment(
@@ -71,6 +79,7 @@ class DonationService(
         donorProfileId: UUID,
         campaignId: UUID,
         amount: BigDecimal,
+        paidAt: Instant? = null,
     ) {
         val existing = donationRepository.findByProviderRef(providerRef)
         if (existing != null) {
@@ -78,7 +87,7 @@ class DonationService(
                 logger.info("Skipping already-confirmed donation providerRef={}", providerRef)
                 return
             }
-            confirmDonation(existing.id!!)
+            confirmDonation(existing.id!!, paidAt)
             return
         }
 
@@ -90,7 +99,7 @@ class DonationService(
         val donation = donationRepository.save(
             Donation(donor = donor, campaign = campaign, amount = amount, providerRef = providerRef)
         )
-        confirmDonation(donation.id!!)
+        confirmDonation(donation.id!!, paidAt)
     }
 
     /**
@@ -100,11 +109,17 @@ class DonationService(
      * generation and on-chain enqueue happen asynchronously without blocking the caller.
      * Idempotent: if the donation is already confirmed the call is a no-op.
      *
+     * [Donation.confirmedAt] is the donation date everywhere (fiscal receipt year, yearly filters, statistics), so it
+     * takes the provider's [paidAt] rather than the time of this call, which may come later (late notification,
+     * reconciler) — a payment made on 31 December keeps its year. An implausible [paidAt] (in the future, or before
+     * the donation was created, beyond [CLOCK_SKEW]) or a missing one falls back to now.
+     *
      * @param donationId UUID of the [Donation] to confirm.
+     * @param paidAt Payment time reported by the provider, if known.
      * @throws NotFoundException if the donation is not found.
      */
     @Transactional
-    fun confirmDonation(donationId: UUID) {
+    fun confirmDonation(donationId: UUID, paidAt: Instant? = null) {
         val donation = donationRepository.findById(donationId)
             .orElseThrow { NotFoundException("Donation not found: $donationId") }
 
@@ -120,12 +135,25 @@ class DonationService(
             logger.info("Derived wallet address for donor {}", donor.id)
         }
 
-        donation.confirmedAt = Instant.now()
+        donation.confirmedAt = donationDate(donation, paidAt)
         donationRepository.save(donation)
         creditCampaign(donation)
 
         publisher.publishEvent(DonationConfirmedEvent(donation.id!!))
         logger.info("Confirmed donation {} — receipt generation enqueued async", donation.id)
+    }
+
+    /** [paidAt] when plausible for [donation], else now (see [confirmDonation]). */
+    private fun donationDate(donation: Donation, paidAt: Instant?): Instant {
+        val now = Instant.now()
+        if (paidAt == null) return now
+        if (paidAt.isAfter(now.plus(CLOCK_SKEW)) || paidAt.isBefore(donation.createdAt.minus(CLOCK_SKEW))) {
+            logger.warn(
+                "Implausible payment time {} for donation {} (created {}): dated now", paidAt, donation.id, donation.createdAt,
+            )
+            return now
+        }
+        return minOf(paidAt, now)
     }
 
     /**

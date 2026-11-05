@@ -100,7 +100,8 @@ class MolliePaymentReconcilerTest {
     private fun paidPayment(id: String) = MolliePayment(
         id = id,
         status = MolliePaymentStatus.PAID,
-        amount = BigDecimal("25.00"),
+        // TestFixtures.donation amount: PaymentAmountGuard refuses any other.
+        amount = BigDecimal("50.00"),
         checkoutUrl = null,
         metadata = mapOf(
             "donorProfileId" to donorProfileId.toString(),

@@ -23,9 +23,11 @@ import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
+import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URLEncoder
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
@@ -39,6 +41,9 @@ enum class HelloAssoPaymentOutcome {
 
     /** Refunded, being refunded or contested: alert + compliance journal, the donation is left as is. */
     REVERSED,
+
+    /** Paid, but not the donation's amount ([PaymentAmountGuard]): the donation stays pending. */
+    AMOUNT_MISMATCH,
 }
 
 /**
@@ -59,6 +64,7 @@ class HelloAssoCheckoutService(
     private val eligibilityService: HelloAssoEligibilityService,
     private val technicalAlertService: TechnicalAlertService,
     private val complianceAuditLogService: ComplianceAuditLogService,
+    private val paymentAmountGuard: PaymentAmountGuard,
     private val properties: HelloAssoProperties,
     private val transactionTemplate: TransactionTemplate,
     private val entityManager: EntityManager,
@@ -187,10 +193,15 @@ class HelloAssoCheckoutService(
         val paid = payments.firstOrNull { it.state in PAID } ?: return HelloAssoPaymentOutcome.PENDING
         // Already confirmed (resent notification, return page, reconciler): nothing more to do.
         if (donation.confirmedAt != null) return HelloAssoPaymentOutcome.CONFIRMED
+        val paidAmount = paid.amount?.let { BigDecimal.valueOf(it.toLong(), 2) }
+        if (!paymentAmountGuard.matches(donation, paidAmount)) return HelloAssoPaymentOutcome.AMOUNT_MISMATCH
         // Written before confirming: the receipt is rendered after commit and reads it.
         donation.paymentMethod = paid.paymentMeans
         donationRepository.save(donation)
-        donationService.recordPayment(donation.providerRef, donation.donor.id!!, donation.campaign.id!!, donation.amount)
+        val paidAt = paid.date?.let { runCatching { OffsetDateTime.parse(it).toInstant() }.getOrNull() }
+        donationService.recordPayment(
+            donation.providerRef, donation.donor.id!!, donation.campaign.id!!, donation.amount, paidAt,
+        )
         return HelloAssoPaymentOutcome.CONFIRMED
     }
 

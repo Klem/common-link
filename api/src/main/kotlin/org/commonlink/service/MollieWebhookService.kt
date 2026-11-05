@@ -11,7 +11,8 @@ import org.springframework.transaction.annotation.Transactional
  *
  * Always re-fetches the payment from Mollie (never trusts the webhook body).
  * Routes based on [MolliePaymentStatus]:
- * - [MolliePaymentStatus.PAID] → record the real payment method, then confirm the pending donation
+ * - [MolliePaymentStatus.PAID] → check the amount ([PaymentAmountGuard]: a mismatch leaves the donation pending),
+ *   record the real payment method, then confirm the pending donation dated at Mollie's `paidAt`
  *   (synchronous, fast path)
  * - [MolliePaymentStatus.isFailed] → log and no-op (donation stays unconfirmed)
  * - [MolliePaymentStatus.isPending] → no-op (wait for next webhook)
@@ -22,6 +23,7 @@ class MollieWebhookService(
     private val donationService: DonationService,
     private val donationRepository: DonationRepository,
     private val mollieConnectTokenManager: MollieConnectTokenManager,
+    private val paymentAmountGuard: PaymentAmountGuard,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -48,6 +50,10 @@ class MollieWebhookService(
         val payment = mollieClient.getPayment(molliePaymentId, bearerToken = assocToken)
 
         when {
+            payment.status.isConfirmed && pending.confirmedAt == null &&
+                !paymentAmountGuard.matches(pending, payment.amount) -> {
+                logger.error("Mollie webhook PAID for {} with another amount: donation left pending", molliePaymentId)
+            }
             payment.status.isConfirmed -> {
                 logger.info("Mollie webhook PAID for {} (method={})", molliePaymentId, payment.method)
                 // Persist the real payment method BEFORE confirming: confirmDonation publishes
@@ -56,7 +62,9 @@ class MollieWebhookService(
                 // would print "Non précisé" for a donation whose method is known.
                 pending.paymentMethod = payment.method
                 donationRepository.save(pending)
-                donationService.recordPayment(providerRef, pending.donor.id!!, pending.campaign.id!!, pending.amount)
+                donationService.recordPayment(
+                    providerRef, pending.donor.id!!, pending.campaign.id!!, pending.amount, payment.paidAt,
+                )
             }
             payment.status.isFailed -> {
                 logger.info("Mollie webhook {} for {} — no-op", payment.status, molliePaymentId)
