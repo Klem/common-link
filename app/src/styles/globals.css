@@ -1306,6 +1306,9 @@ textarea.form-input {
   justify-content: center;
   padding: 16px;
 }
+/* A confirmation always answers something already on screen — a side panel (.ov, 1000) or a
+   modal (.cm-ov, 1050) included — so it sits above every overlay, below toasts (2000). */
+.modal-backdrop.confirm-backdrop { z-index: 1100; }
 
 /* -- Campaign DS -------------------------------------------------------- */
 
@@ -2146,6 +2149,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* A comfortable target, not a micro-button. */
 .pj-action { padding: 7px 14px; }
+.pj-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .pj-chevron { width: 32px; height: 32px; border-radius: var(--radius-md); border: 1px solid var(--mist-lavender); background: var(--white); color: var(--slate-lavender); font-size: 16px; line-height: 1; cursor: pointer; transition: all var(--tb); }
 .pj-chevron:hover { border-color: var(--bright-teal); color: var(--ink-navy); }
 
@@ -2174,7 +2178,7 @@ tbody tr:last-child td { border-bottom: none; }
 .side-panel-h { flex-shrink: 0; padding: 18px 24px; border-bottom: 1px solid var(--mist-lavender); display: flex; align-items: center; justify-content: space-between; background: var(--white); }
 .side-panel-h h3 { font-size: 17px; }
 .side-panel-b { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 24px; }
-.side-panel-f { flex-shrink: 0; padding: 14px 24px; border-top: 1px solid var(--mist-lavender); background: var(--soft-cream); }
+.side-panel-f { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 14px 24px; border-top: 1px solid var(--mist-lavender); background: var(--soft-cream); }
 
 /* The amount, the state and the beneficiary: what the panel is opened to read. */
 .pd-hero { padding: 16px 18px; background: var(--soft-cream); border: 1px solid var(--mist-lavender); border-radius: var(--radius-lg); }

@@ -8,6 +8,7 @@ import {
 import {
   PayoutAction,
   PayoutUiState,
+  canCancelPayout,
   payoutAction,
   payoutErrorMessageKey,
   payoutUiState,
@@ -24,6 +25,8 @@ interface Props {
   awaitingReturnPayoutId: string | null;
   isSaving: boolean;
   onRetry: (payoutId: string) => void;
+  /** Asks to cancel the payout; the caller confirms with the association first. */
+  onCancel: (payout: PayoutDto) => void;
   onClose: () => void;
 }
 
@@ -35,7 +38,7 @@ interface Props {
  * particular is the reason a rejected row is worth opening at all.
  */
 export function PayoutDetailPanel({
-  payout, reference, typeLabel, awaitingReturnPayoutId, isSaving, onRetry, onClose,
+  payout, reference, typeLabel, awaitingReturnPayoutId, isSaving, onRetry, onCancel, onClose,
 }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
 
@@ -49,8 +52,12 @@ export function PayoutDetailPanel({
     && (state === PayoutUiState.FAILED || state === PayoutUiState.RETRYABLE);
   const inTransit = state === PayoutUiState.AUTHORISED || state === PayoutUiState.IN_TRANSIT;
 
+  // Same rule as the backend: PENDING with no transfer in progress. Offered here rather than in
+  // the journal row, whose single action cell is reserved for the step that moves the payout on.
+  const cancellable = canCancelPayout(payout);
+
   /** Null when the payout asks nothing of the association, which is most of them. */
-  const footer = action === PayoutAction.NONE ? null : (
+  const footer = action === PayoutAction.NONE && !cancellable ? null : (
     <>
       {action === PayoutAction.AWAITING_RETURN && (
         <p className="pd-note">{t('history.awaitingBank')}</p>
@@ -74,6 +81,17 @@ export function PayoutDetailPanel({
         >
           {t('history.authorise')}
         </a>
+      )}
+      {cancellable && (
+        <button
+          type="button"
+          className="cm-btn cm-btn-ghost w-full"
+          title={t('history.cancelHint')}
+          disabled={isSaving}
+          onClick={() => onCancel(payout)}
+        >
+          {t('history.cancel')}
+        </button>
       )}
     </>
   );

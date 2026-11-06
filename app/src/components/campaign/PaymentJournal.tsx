@@ -18,6 +18,7 @@ import {
 import {
   PayoutAction,
   PayoutUiState,
+  canCancelPayout,
   payoutAction,
   payoutErrorMessageKey,
   payoutUiState,
@@ -33,6 +34,8 @@ interface Props {
   /** Human label of an accounting code. */
   typeLabel: (code: string) => string;
   onRetry: (payoutId: string) => void;
+  /** Asks to cancel a payout; the caller confirms with the association first. */
+  onCancel: (payout: PayoutDto) => void;
   /** Opens the detail panel on a payout. */
   onOpen: (payout: PayoutDto) => void;
 }
@@ -72,7 +75,7 @@ type SortDir = 'asc' | 'desc';
  */
 export function PaymentJournal({
   payouts, isLoading, error, isSaving, awaitingReturnPayoutId,
-  typeLabel, onRetry, onOpen,
+  typeLabel, onRetry, onCancel, onOpen,
 }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
 
@@ -514,43 +517,60 @@ export function PaymentJournal({
                         real bank transfer must not be the same gesture.
                       */}
                       <td className="col-right" onClick={(e) => e.stopPropagation()}>
-                        {action === PayoutAction.AWAITING_RETURN ? (
-                          <span className="cm-hint-sm">{t('history.awaitingBank')}</span>
-                        ) : action === PayoutAction.RETRY ? (
-                          /*
-                            Nothing was debited and the payout was deliberately left retryable rather
-                            than failed. Without this button that only means something in the
-                            database: the association re-creates the payout instead, which is how
-                            four identical rows appeared from one payment. The old link is dead by
-                            then, so this asks for a fresh one rather than re-opening the stored URL.
-                          */
-                          <button
-                            type="button"
-                            className="cm-btn cm-btn-ghost cm-btn-sm pj-action"
-                            title={t('history.retryHint')}
-                            disabled={isSaving}
-                            onClick={() => onRetry(p.id)}
-                          >
-                            {t('history.retry')}
-                          </button>
-                        ) : action === PayoutAction.AUTHORISE && p.bridgeCheckoutUrl ? (
-                          <a
-                            className="cm-btn cm-btn-ghost cm-btn-sm pj-action"
-                            href={p.bridgeCheckoutUrl}
-                            title={t('history.authoriseHint')}
-                          >
-                            {t('history.authorise')}
-                          </a>
-                        ) : (
-                          <button
-                            type="button"
-                            className="pj-chevron"
-                            aria-label={t('journal.openDetail', { reference: r.reference })}
-                            onClick={() => onOpen(p)}
-                          >
-                            ›
-                          </button>
-                        )}
+                        <div className="pj-actions">
+                          {/*
+                            Before the row's main action, so that one keeps the right edge on every
+                            row. Same rule as the backend: PENDING with no transfer in progress.
+                          */}
+                          {canCancelPayout(p) && (
+                            <button
+                              type="button"
+                              className="cm-btn cm-btn-ghost cm-btn-sm pj-action"
+                              title={t('history.cancelHint')}
+                              disabled={isSaving}
+                              onClick={() => onCancel(p)}
+                            >
+                              {t('history.cancelShort')}
+                            </button>
+                          )}
+                          {action === PayoutAction.AWAITING_RETURN ? (
+                            <span className="cm-hint-sm">{t('history.awaitingBank')}</span>
+                          ) : action === PayoutAction.RETRY ? (
+                            /*
+                              Nothing was debited and the payout was deliberately left retryable rather
+                              than failed. Without this button that only means something in the
+                              database: the association re-creates the payout instead, which is how
+                              four identical rows appeared from one payment. The old link is dead by
+                              then, so this asks for a fresh one rather than re-opening the stored URL.
+                            */
+                            <button
+                              type="button"
+                              className="cm-btn cm-btn-ghost cm-btn-sm pj-action"
+                              title={t('history.retryHint')}
+                              disabled={isSaving}
+                              onClick={() => onRetry(p.id)}
+                            >
+                              {t('history.retry')}
+                            </button>
+                          ) : action === PayoutAction.AUTHORISE && p.bridgeCheckoutUrl ? (
+                            <a
+                              className="cm-btn cm-btn-ghost cm-btn-sm pj-action"
+                              href={p.bridgeCheckoutUrl}
+                              title={t('history.authoriseHint')}
+                            >
+                              {t('history.authorise')}
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              className="pj-chevron"
+                              aria-label={t('journal.openDetail', { reference: r.reference })}
+                              onClick={() => onOpen(p)}
+                            >
+                              ›
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

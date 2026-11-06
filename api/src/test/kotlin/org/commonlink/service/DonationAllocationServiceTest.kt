@@ -61,8 +61,8 @@ class DonationAllocationServiceTest {
     fun `one payout consumed by a single donation`() {
         val d1 = donation("100", t0)
         val p1 = payout("60", t0.plusSeconds(1))
-        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId) } returns listOf(d1)
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1)
+        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId) } returns listOf(d1)
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1)
 
         val result = service.allocateCampaign(campaignId)
 
@@ -80,8 +80,8 @@ class DonationAllocationServiceTest {
         val older = donation("50", t0)
         val newer = donation("50", t0.plusSeconds(60))
         val p1 = payout("80", t0.plusSeconds(120))
-        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId) } returns listOf(older, newer)
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1)
+        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId) } returns listOf(older, newer)
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1)
 
         val result = service.allocateCampaign(campaignId)
 
@@ -97,8 +97,8 @@ class DonationAllocationServiceTest {
         val d1 = donation("100", t0)
         val p1 = payout("30", t0.plusSeconds(1), "Loyer")
         val p2 = payout("40", t0.plusSeconds(2), "Matériel")
-        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId) } returns listOf(d1)
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1, p2)
+        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId) } returns listOf(d1)
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1, p2)
 
         val result = service.allocateCampaign(campaignId)
 
@@ -114,8 +114,8 @@ class DonationAllocationServiceTest {
     fun `no confirmed payout leaves every donation fully unused`() {
         val d1 = donation("100", t0)
         val d2 = donation("50", t0.plusSeconds(1))
-        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId) } returns listOf(d1, d2)
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
+        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId) } returns listOf(d1, d2)
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
 
         val result = service.allocateCampaign(campaignId)
 
@@ -134,8 +134,8 @@ class DonationAllocationServiceTest {
         val olderSmall = donation("10", t0)
         val newerLarge = donation("1000", t0.plusSeconds(1))
         val p1 = payout("15", t0.plusSeconds(2))
-        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId) } returns listOf(olderSmall, newerLarge)
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1)
+        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId) } returns listOf(olderSmall, newerLarge)
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(p1)
 
         val result = service.allocateCampaign(campaignId)
 
@@ -148,12 +148,12 @@ class DonationAllocationServiceTest {
 
     @Test
     fun `only CONFIRMED payouts and non-null confirmedAt donations are ever requested from the repositories`() {
-        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId) } returns emptyList()
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
+        every { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId) } returns emptyList()
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
 
         service.allocateCampaign(campaignId)
 
-        verify(exactly = 1) { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId) }
-        verify(exactly = 1) { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) }
+        verify(exactly = 1) { donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId) }
+        verify(exactly = 1) { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) }
     }
 }

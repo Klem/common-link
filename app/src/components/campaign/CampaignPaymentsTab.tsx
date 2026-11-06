@@ -7,6 +7,7 @@ import { Donut, DONUT_PALETTE } from '@/components/ui/Donut';
 import { PaymentJournal } from '@/components/campaign/PaymentJournal';
 import { PayoutDetailPanel } from '@/components/campaign/PayoutDetailPanel';
 import { IssuePaymentForm } from '@/components/campaign/IssuePaymentForm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { fmtDate, fmtEur } from '@/components/campaign/payoutDisplay';
 import { useToastStore } from '@/stores/toastStore';
 import { PayoutStatus, isPayoutInFlight, needsBankAuthorisation } from '@/types/payment';
@@ -25,13 +26,15 @@ const PRESET_TYPE_CODES = new Set<string>([
 
 export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
-  const { payouts, summary, isLoading, isSaving, error, retry, awaitingReturnPayoutId } = payments;
+  const { payouts, summary, isLoading, isSaving, error, retry, cancel, awaitingReturnPayoutId } = payments;
   const addToast = useToastStore((s) => s.addToast);
 
   /** Expense line expanded in the breakdown. One at a time, so the list never runs long. */
   const [openBreakdownCode, setOpenBreakdownCode] = useState<string | null>(null);
   /** Payout whose detail panel is open, by id — not by object, so a poll refresh keeps it live. */
   const [detailPayoutId, setDetailPayoutId] = useState<string | null>(null);
+  /** Payout the association asked to cancel, awaiting its confirmation. */
+  const [cancelTarget, setCancelTarget] = useState<PayoutDto | null>(null);
 
   /** Human label of a payout type: the translated preset, or the free text of a custom code. */
   const typeLabel = useCallback(
@@ -67,6 +70,24 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
       addToast('error', 'paymentError');
     }
   }, [retry, addToast]);
+
+  /**
+   * Cancels the payout the association just confirmed in the dialog.
+   *
+   * The backend re-checks the rule under the campaign lock: a confirmation that engaged the payout
+   * in the meantime wins, and this answers 409 with nothing changed.
+   */
+  const handleCancelConfirmed = useCallback(async () => {
+    if (!cancelTarget) return;
+    const payoutId = cancelTarget.id;
+    setCancelTarget(null);
+    try {
+      await cancel(payoutId);
+      addToast('success', 'paymentCancelled');
+    } catch {
+      addToast('error', 'paymentCancelError');
+    }
+  }, [cancelTarget, cancel, addToast]);
 
   /**
    * Settled payouts grouped by expense line, largest first. Feeds both the donut and the list below
@@ -209,6 +230,7 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         awaitingReturnPayoutId={awaitingReturnPayoutId}
         typeLabel={typeLabel}
         onRetry={handleRetry}
+        onCancel={setCancelTarget}
         onOpen={(p) => setDetailPayoutId(p.id)}
       />
 
@@ -219,7 +241,21 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         awaitingReturnPayoutId={awaitingReturnPayoutId}
         isSaving={isSaving}
         onRetry={handleRetry}
+        onCancel={setCancelTarget}
         onClose={() => setDetailPayoutId(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={cancelTarget !== null}
+        title={t('history.cancelConfirm.title')}
+        message={t('history.cancelConfirm.message', {
+          amount: cancelTarget ? fmtEur(cancelTarget.amount) : '',
+          payee: cancelTarget?.payeeName ?? '',
+        })}
+        confirmLabel={t('history.cancelConfirm.submit')}
+        cancelLabel={t('history.cancelConfirm.keep')}
+        onConfirm={handleCancelConfirmed}
+        onCancel={() => setCancelTarget(null)}
       />
     </div>
   );

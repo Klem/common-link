@@ -251,8 +251,18 @@ enum class PayoutKind {
     }
 }
 
-/** Lifecycle status of a [org.commonlink.entity.Payout]. */
-enum class PayoutStatus { PENDING, CONFIRMED, FAILED }
+/**
+ * Lifecycle status of a [org.commonlink.entity.Payout].
+ *
+ * - [PENDING]: created, not settled. Reserved on the campaign's available balance.
+ * - [CONFIRMED]: settled at the bank. The only status the donor FIFO allocation consumes.
+ * - [FAILED]: refused by the bank. Terminal, reserves nothing.
+ * - [CANCELLED]: withdrawn by the association while no transfer was in progress
+ *   ([org.commonlink.entity.Payout.bridgeStatus] null). Terminal, reserves nothing.
+ *
+ * Values must stay identical to the `payouts_status_check` constraint.
+ */
+enum class PayoutStatus { PENDING, CONFIRMED, FAILED, CANCELLED }
 
 /**
  * A business rule preventing a payout from being issued, surfaced to the association

@@ -99,7 +99,11 @@ class BridgeWebhookService(
                 // raised the alarm on ordinary replays — observed 2026-09-24 at 08:58:45, forty
                 // minutes after a correct settlement. An alert that cries wolf on every replay is
                 // an alert nobody reads the day it means something.
+                // CANCELLED belongs here too: the association withdrew the payout and its amount
+                // went back to the balance — the link was revoked first, but a transfer the bank
+                // had already authorised can still settle.
                 val amountWasGivenBack = payout.status == PayoutStatus.FAILED ||
+                    payout.status == PayoutStatus.CANCELLED ||
                     (payout.status == PayoutStatus.PENDING && payout.bridgeStatus == null)
                 if (amountWasGivenBack) {
                     log.error(

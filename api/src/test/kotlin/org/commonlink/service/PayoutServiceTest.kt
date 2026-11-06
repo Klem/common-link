@@ -544,6 +544,82 @@ class PayoutServiceTest {
         assertThat(reasons).containsExactly(org.commonlink.entity.PayoutBlockingReason.DESCRIPTION_TOO_SHORT)
     }
 
+    // ── cancel ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `cancel - a never-initiated payout is cancelled without calling Bridge`() {
+        val cancelled = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
+            amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel",
+            status = PayoutStatus.CANCELLED)
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns null
+        every { confirmer.cancel(campaignId, payoutId) } returns cancelled
+
+        val result = service.cancel(campaignId, payoutId, userId)
+
+        assertThat(result.status).isEqualTo(PayoutStatus.CANCELLED)
+        verify(exactly = 0) { bridgeInitiation.revokePaymentLink(any()) }
+    }
+
+    @Test
+    fun `cancel - a known link is revoked before the payout is cancelled`() {
+        // Never after: the amount must not return to the balance while an authorisation URL for it
+        // may still be live.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns "link_dead"
+        every { bridgeInitiation.revokePaymentLink("link_dead") } returns Unit
+        every { confirmer.cancel(campaignId, payoutId) } returns pendingPayout
+
+        service.cancel(campaignId, payoutId, userId)
+
+        verifyOrder {
+            bridgeInitiation.revokePaymentLink("link_dead")
+            confirmer.cancel(campaignId, payoutId)
+        }
+    }
+
+    @Test
+    fun `cancel - a revocation Bridge could not confirm leaves the payout PENDING`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns "link_live"
+        every { bridgeInitiation.revokePaymentLink("link_live") } throws BadGatewayException("Bridge down")
+
+        assertThrows<BadGatewayException> { service.cancel(campaignId, payoutId, userId) }
+
+        verify(exactly = 0) { confirmer.cancel(any(), any()) }
+    }
+
+    @Test
+    fun `cancel - campaign of another association throws NotFoundException`() {
+        val otherCampaign = Campaign(association = AssociationProfile(user = assocUser, name = "Other", identifier = "987654321")
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) },
+            name = "Other", emoji = "🌍", description = "desc", goal = BigDecimal("10000"), status = CampaignStatus.LIVE)
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(otherCampaign)
+
+        assertThrows<NotFoundException> { service.cancel(campaignId, payoutId, userId) }
+
+        verify(exactly = 0) { confirmer.loadForCancel(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancel - allowed in prod even while payouts are closed there`() {
+        // Withdrawing a payout moves no money: an association must be able to clear what was
+        // created before the environment was closed.
+        every { bridgeInitiation.isDemoMode } returns true
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns null
+        every { confirmer.cancel(campaignId, payoutId) } returns pendingPayout
+
+        prodService.cancel(campaignId, payoutId, userId)
+
+        verify { confirmer.cancel(campaignId, payoutId) }
+    }
+
     private companion object {
         const val FRONTEND_URL = "http://localhost:3000"
     }

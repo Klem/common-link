@@ -124,6 +124,28 @@ class PayoutControllerTest {
     }
 
     @Test
+    fun `POST cancel returns 200`() {
+        every { payoutService.cancel(campaignId, payoutId, any()) } returns sampleDto.copy(status = PayoutStatus.CANCELLED)
+
+        mockMvc.perform(
+            post("/api/campaigns/$campaignId/payments/$payoutId/cancel")
+                .with(user(assocId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("CANCELLED"))
+    }
+
+    @Test
+    fun `POST cancel returns 409 when a transfer is in progress`() {
+        every { payoutService.cancel(any(), any(), any()) } throws ConflictException("Transfer in progress")
+
+        mockMvc.perform(
+            post("/api/campaigns/$campaignId/payments/$payoutId/cancel")
+                .with(user(assocId.toString()).roles("ASSOCIATION"))
+        ).andExpect(status().isConflict)
+    }
+
+    @Test
     fun `GET list returns 200 with page`() {
         every { payoutService.list(any(), any(), any()) } returns PageImpl(listOf(sampleDto))
 

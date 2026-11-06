@@ -13,6 +13,15 @@ import java.util.UUID
  * Computes, for a campaign, which confirmed donations funded which confirmed payouts — strict
  * FIFO by confirmation time, across all donors of the campaign.
  *
+ * Only CONFIRMED payouts consume donations: "used" means spent, never committed. A PENDING payout
+ * reserves its amount on the association's available balance
+ * ([PayoutService.getSummary]) but takes no donation here — so a payout confirmed while an older
+ * one is still pending consumes the oldest donations, and the pending one, once confirmed, the next
+ * ones. Payouts only ever join at the end; FAILED and CANCELLED payouts never enter it. Donations
+ * almost always join at the end too, but a donation confirmed late (delayed notification, reconciler)
+ * is dated at the provider's payment time and may sort before donations confirmed in between, which
+ * shifts the allocation already shown for those donations.
+ *
  * Pure computation, no persistence: recomputed on every call. Not scoped by donor — callers
  * enforce donor read scope before invoking this (see [DonorDonationJourneyService], the
  * donor-scoped campaign report) since the allocation itself must see every donor's donations to
@@ -32,8 +41,8 @@ class DonationAllocationService(
      * @return one entry per confirmed donation of the campaign, in confirmedAt order.
      */
     fun allocateCampaign(campaignId: UUID): List<DonationAllocationDto> {
-        val donations = donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId)
-        val payouts = payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED)
+        val donations = donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId)
+        val payouts = payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED)
 
         val remaining = donations.associateTo(LinkedHashMap()) { it.id!! to it.amount }
         val fundedPayouts = donations.associateTo(LinkedHashMap()) { it.id!! to mutableListOf<FundedPayoutShareDto>() }

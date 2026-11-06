@@ -21,6 +21,14 @@ export const confirmPayment = (campaignId: string, payoutId: string): Promise<Pa
   api.post<PayoutDto>(`${base(campaignId)}/${payoutId}/confirm`).then((r) => r.data);
 
 /**
+ * Cancels a PENDING payout with no transfer in progress; its amount is no longer reserved.
+ * Calls `POST /api/campaigns/{campaignId}/payments/{payoutId}/cancel` — 409 if a transfer is in
+ * progress or the payout already left PENDING.
+ */
+export const cancelPayment = (campaignId: string, payoutId: string): Promise<PayoutDto> =>
+  api.post<PayoutDto>(`${base(campaignId)}/${payoutId}/cancel`).then((r) => r.data);
+
+/**
  * Returns a paginated list of payouts for a campaign, newest first.
  * Calls `GET /api/campaigns/{campaignId}/payments`.
  */
