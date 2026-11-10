@@ -85,7 +85,7 @@ class PayoutConfirmerTest {
     private fun stubBalance(confirmed: String, inFlight: String = "0", raised: String) {
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal(confirmed)
         every { payoutRepository.sumInFlightAmountByCampaignId(campaignId) } returns BigDecimal(inFlight)
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal(raised)
+        every { donationRepository.sumAvailableAmountByCampaignId(campaignId) } returns BigDecimal(raised)
     }
 
     // ── loadForConfirm ───────────────────────────────────────────────────────

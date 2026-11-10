@@ -40,6 +40,15 @@ class Donation(
     var confirmedAt: Instant? = null,
 
     /**
+     * Instant from which this donation's money can fund a payout; null while it cannot. Provider-agnostic: for Mollie
+     * it equals [confirmedAt] (the money is on the association's account at confirmation); for HelloAsso it is the
+     * instant the provider's payout to the association is considered arrived, set at that transition and never
+     * back-dated. Only donations with this instant enter the FIFO allocation and the payout balances.
+     */
+    @Column(name = "funds_available_at")
+    var fundsAvailableAt: Instant? = null,
+
+    /**
      * Payment method actually used, as reported by the provider (e.g. `creditcard`, `banktransfer`).
      *
      * Written once by [org.commonlink.service.MollieWebhookService] when the payment is confirmed,

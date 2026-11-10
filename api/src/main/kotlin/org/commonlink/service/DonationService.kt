@@ -4,6 +4,7 @@ import org.commonlink.entity.Donation
 import org.commonlink.event.DonationConfirmedEvent
 import org.commonlink.exception.NotFoundException
 import org.commonlink.onchain.DonorAddressGenerator
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
@@ -114,6 +115,10 @@ class DonationService(
      * reconciler) — a payment made on 31 December keeps its year. An implausible [paidAt] (in the future, or before
      * the donation was created, beyond [CLOCK_SKEW]) or a missing one falls back to now.
      *
+     * [Donation.fundsAvailableAt] is set to that same instant for every provider but HelloAsso: the money is then on
+     * the association's account, so the donation can fund a payout at once. A `helloasso:` donation is left without
+     * it: its money stays at HelloAsso until paid out to the association, which the cash-out tracking records later.
+     *
      * @param donationId UUID of the [Donation] to confirm.
      * @param paidAt Payment time reported by the provider, if known.
      * @throws NotFoundException if the donation is not found.
@@ -136,6 +141,9 @@ class DonationService(
         }
 
         donation.confirmedAt = donationDate(donation, paidAt)
+        if (!donation.providerRef.startsWith(PaymentProviderId.HELLOASSO.refPrefix)) {
+            donation.fundsAvailableAt = donation.confirmedAt
+        }
         donationRepository.save(donation)
         creditCampaign(donation)
 

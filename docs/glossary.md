@@ -245,19 +245,23 @@ Traditional government-issued currency (EUR in our case). On CommonLink, donors 
 `business` `blockchain`
 
 ### FIFO Donation Allocation
-The engine that determines which confirmed donations funded which confirmed payouts of a campaign:
-donations and payouts are each sorted by `confirmedAt` ascending, and payouts consume donations
+The engine that determines which available donations funded which confirmed payouts of a campaign.
+Only donations whose funds reached the association's bank account (`funds_available_at` set) enter
+it: every donation at confirmation, except HelloAsso donations, which stay out until HelloAsso pays
+them out. Donations are sorted by (`funds_available_at`, `confirmedAt`, id) ascending, payouts by
+`confirmedAt` ascending, and payouts consume donations
 chronologically, oldest first, across all donors of the campaign combined — never per-donor. A
 single payout may span several donations; a single donation may (partially) fund several payouts.
 Computed on the fly (`DonationAllocationService`), not materialized. Feeds the "Part utilisée"
-column of the donor's donation history and the traceability modal. Ties on `confirmedAt` are
-broken by id, so the allocation is identical on every read. Only `CONFIRMED` payouts consume
+column of the donor's donation history and the traceability modal. The sort is total, so the
+allocation is identical on every read. Only `CONFIRMED` payouts consume
 donations ("used" means spent, never committed): a `PENDING` payout reserves its amount on the
 association's available balance but takes no donation, so a payout confirmed while an older one
 is still pending consumes the oldest donations. Payouts only join at the end. Donations almost
-always do too, but a donation confirmed late is dated at the provider's payment time (see
-**Donation Date**) and may sort before donations confirmed in between, shifting the allocation
-already shown for those. See **Available balance**.
+always do too: a HelloAsso donation always does (available when paid out), but a Mollie donation
+confirmed late is dated, and made available, at the provider's payment time (see **Donation Date**)
+and may sort before donations confirmed in between, shifting the allocation already shown for those.
+See **Available balance**.
 `functional` `technical`
 
 ### Flyway
@@ -747,8 +751,12 @@ Google Analytics 4 ecommerce events delivered to the association's own page `win
 ## P (continued)
 
 ### Available balance (Solde disponible)
-What an association can still commit on a campaign: confirmed donations − `CONFIRMED` payouts −
-`PENDING` payouts (`PayoutService.computeAvailableBalance`). `PENDING` payouts are reserved so that
+What an association can still commit on a campaign: available donations − `CONFIRMED` payouts −
+`PENDING` payouts (`PayoutService.computeAvailableBalance`). Available donations are those whose
+funds reached the association's bank account (`funds_available_at` set,
+`DonationRepository.sumAvailableAmountByCampaignId`): Mollie donations at confirmation, HelloAsso
+donations only once paid out. The same donation base backs the confirm-time check
+(`PayoutConfirmer`). `PENDING` payouts are reserved so that
 several pending payouts cannot together exceed the funds raised. Deliberately different from the
 donor-side **FIFO Donation Allocation**, which counts only `CONFIRMED` payouts: the two figures
 diverge by the amount of pending payouts. A `PENDING` payout nothing will resolve stops being

@@ -10,17 +10,21 @@ import java.math.BigDecimal
 import java.util.UUID
 
 /**
- * Computes, for a campaign, which confirmed donations funded which confirmed payouts — strict
- * FIFO by confirmation time, across all donors of the campaign.
+ * Computes, for a campaign, which available donations funded which confirmed payouts — strict
+ * FIFO by availability time ([org.commonlink.entity.Donation.fundsAvailableAt], then confirmation
+ * time, then id), across all donors of the campaign. A donation is available once its funds have
+ * reached the association's bank account: at confirmation for every provider but HelloAsso, whose
+ * confirmed donations stay out of the allocation until paid out to the association.
  *
  * Only CONFIRMED payouts consume donations: "used" means spent, never committed. A PENDING payout
  * reserves its amount on the association's available balance
  * ([PayoutService.getSummary]) but takes no donation here — so a payout confirmed while an older
  * one is still pending consumes the oldest donations, and the pending one, once confirmed, the next
  * ones. Payouts only ever join at the end; FAILED and CANCELLED payouts never enter it. Donations
- * almost always join at the end too, but a donation confirmed late (delayed notification, reconciler)
- * is dated at the provider's payment time and may sort before donations confirmed in between, which
- * shifts the allocation already shown for those donations.
+ * almost always join at the end too. A HelloAsso donation becomes available when it is paid out, so
+ * it always joins at the end (append-only). A Mollie donation confirmed late (delayed notification,
+ * reconciler) is available at the provider's payment time and may sort before donations confirmed in
+ * between, which shifts the allocation already shown for those donations.
  *
  * Pure computation, no persistence: recomputed on every call. Not scoped by donor — callers
  * enforce donor read scope before invoking this (see [DonorDonationJourneyService], the
@@ -34,20 +38,22 @@ class DonationAllocationService(
 ) {
 
     /**
-     * Allocates all confirmed payouts of [campaignId] against its confirmed donations, oldest
-     * donation first, oldest payout first. A payout may span several donations; a donation may
-     * fund several payouts (partially).
+     * Allocates all confirmed payouts of [campaignId] against its available donations, earliest
+     * available donation first, oldest payout first. A payout may span several donations; a donation
+     * may fund several payouts (partially).
      *
-     * @return one entry per confirmed donation of the campaign, in confirmedAt order.
+     * @return one entry per available donation of the campaign, in (fundsAvailableAt, confirmedAt, id)
+     *   order. A confirmed donation not yet available has no entry: callers treat it as unused.
      */
     fun allocateCampaign(campaignId: UUID): List<DonationAllocationDto> {
-        val donations = donationRepository.findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId)
+        val donations = donationRepository
+            .findByCampaignIdAndFundsAvailableAtIsNotNullOrderByFundsAvailableAtAscConfirmedAtAscIdAsc(campaignId)
         val payouts = payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED)
 
         val remaining = donations.associateTo(LinkedHashMap()) { it.id!! to it.amount }
         val fundedPayouts = donations.associateTo(LinkedHashMap()) { it.id!! to mutableListOf<FundedPayoutShareDto>() }
 
-        // Two cursors over lists already sorted ASC by confirmedAt: donationIndex only ever moves
+        // Two cursors over lists already sorted ASC (donations by availability, payouts by confirmedAt): donationIndex only ever moves
         // forward, so once a donation is exhausted it is never revisited by a later payout.
         var donationIndex = 0
         for (payout in payouts) {

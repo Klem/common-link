@@ -405,7 +405,7 @@ class PayoutService(
     }
 
     /**
-     * Available funds still allocatable = confirmed donations − CONFIRMED payouts − **PENDING** payouts.
+     * Available funds still allocatable = available donations − CONFIRMED payouts − **PENDING** payouts.
      * PENDING payouts are reserved (H2): without this, N pending payouts each ≤ balance could be created
      * and later confirmed to collectively exceed the funds raised. A PENDING payout nothing will
      * resolve stops being reserved only once [cancel]led; FAILED and CANCELLED reserve nothing.
@@ -417,15 +417,16 @@ class PayoutService(
     }
 
     /**
-     * Funds confirmable right now = confirmed donations − already-CONFIRMED payouts (PENDING excluded).
-     * Used at confirm time: the payout being confirmed is itself still PENDING, so it must be checked
-     * against the balance net of *other* CONFIRMED payouts only.
+     * Available donations − already-CONFIRMED payouts (PENDING excluded): the base of
+     * [computeAvailableBalance]. Available donations are those whose funds have reached the
+     * association's bank account ([DonationRepository.sumAvailableAmountByCampaignId]). The check at
+     * confirm time is [PayoutConfirmer]'s own, under the campaign lock.
      */
     private fun computeConfirmableBalance(campaignId: UUID): BigDecimal {
         val confirmedAmount = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
             ?: BigDecimal.ZERO
-        val totalRaised = donationRepository.sumConfirmedAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
-        return totalRaised - confirmedAmount
+        val available = donationRepository.sumAvailableAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
+        return available - confirmedAmount
     }
 
     private fun assertCampaignOwnership(campaignId: UUID, associationId: UUID) {

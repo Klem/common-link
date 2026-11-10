@@ -10,7 +10,8 @@ import java.math.BigDecimal
  * @param pendingAmount Total amount (EUR) of PENDING payouts.
  * @param txTotal Total number of payouts across all statuses.
  * @param txConfirmed Count of CONFIRMED payouts (same as [confirmedCount], exposed separately for frontend convenience).
- * @param availableBalance Estimated available funds = total confirmed donations - confirmed payouts.
+ * @param availableBalance Funds a new payout may still use = available donations (funds arrived on the
+ *   association's bank account) - CONFIRMED payouts - PENDING payouts.
  * @param paymentsEnabled Whether a payout can be issued at all. False only under the prod profile
  *   while Bridge runs in demo mode (`app.bridge.demo-mode`): the transfer would be simulated, never
  *   sent to a bank, yet reported as settled. The Payments tab greys out its submit button on this

@@ -121,16 +121,19 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     ): List<Donation>
 
     /**
-     * Sum of confirmed donation amounts for a single campaign.
-     * Returns null when no confirmed donations exist; callers should treat null as zero.
+     * Sum of the amounts of a campaign's donations whose funds have reached the association's bank
+     * account ([org.commonlink.entity.Donation.fundsAvailableAt] set) — the single donation base of
+     * every payout balance ([org.commonlink.service.PayoutService], [org.commonlink.service.PayoutConfirmer]).
+     * Confirmed HelloAsso donations still held by HelloAsso are excluded.
+     * Returns null when no donation is available; callers should treat null as zero.
      */
     @Query("""
         SELECT COALESCE(SUM(d.amount), 0)
         FROM Donation d
         WHERE d.campaign.id = :campaignId
-          AND d.confirmedAt IS NOT NULL
+          AND d.fundsAvailableAt IS NOT NULL
     """)
-    fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
+    fun sumAvailableAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 
     /**
      * Sum of amounts held by payment sessions still in flight on a campaign: donations created after
@@ -636,11 +639,14 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     // ── Donor dashboard (Sprint 2 — allocation & campaign report) ─────────
 
     /**
-     * All confirmed donations of a campaign, oldest first — FIFO input for
-     * [org.commonlink.service.DonationAllocationService], all donors combined. Ties on
-     * `confirmedAt` are broken by id so the allocation is identical on every read.
+     * All available donations of a campaign ([org.commonlink.entity.Donation.fundsAvailableAt] set),
+     * earliest available first — FIFO input for [org.commonlink.service.DonationAllocationService], all
+     * donors combined. Ties on `fundsAvailableAt` are broken by `confirmedAt`, then by id, so the
+     * allocation is identical on every read.
      */
-    fun findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAscIdAsc(campaignId: UUID): List<Donation>
+    fun findByCampaignIdAndFundsAvailableAtIsNotNullOrderByFundsAvailableAtAscConfirmedAtAscIdAsc(
+        campaignId: UUID,
+    ): List<Donation>
 
     /**
      * This donor's total confirmed amount on one campaign — for the campaign report's "votre

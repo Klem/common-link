@@ -460,7 +460,9 @@ class PayoutConfirmer(
     }
 
     /**
-     * Funds confirmable right now = confirmed donations − CONFIRMED payouts − engaged payouts.
+     * Funds confirmable right now = available donations − CONFIRMED payouts − engaged payouts.
+     * Available donations are those whose funds have reached the association's bank account
+     * ([DonationRepository.sumAvailableAmountByCampaignId]).
      *
      * Mirrors [PayoutService]'s own computation; duplicated here rather than shared because this
      * one runs under the campaign lock and additionally deducts initiations in progress.
@@ -469,8 +471,8 @@ class PayoutConfirmer(
         val confirmed = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
             ?: BigDecimal.ZERO
         val inFlight = payoutRepository.sumInFlightAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
-        val raised = donationRepository.sumConfirmedAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
-        return raised - confirmed - inFlight
+        val available = donationRepository.sumAvailableAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
+        return available - confirmed - inFlight
     }
 
     private companion object {

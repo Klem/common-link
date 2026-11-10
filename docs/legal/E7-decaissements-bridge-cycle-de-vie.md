@@ -78,7 +78,17 @@ C'est le point le plus contre-intuitif du dispositif, et le plus important pour 
 
 Le **solde disponible** d'une campagne, celui qu'affiche le tableau de bord, vaut :
 
-> dons encaissés − virements exécutés − **virements enregistrés mais non encore exécutés**
+> dons **arrivés sur le compte de l'association** − virements exécutés − **virements enregistrés mais non encore exécutés**
+
+Un don est « arrivé » quand son argent est réellement sur le compte bancaire de l'association, d'où
+part le virement. Pour un don payé via Mollie, c'est le cas dès sa confirmation. Un don payé via
+HelloAsso reste d'abord chez HelloAsso, qui le reverse plus tard à l'association : **un don HelloAsso
+confirmé ne peut aujourd'hui financer aucun paiement**, tant que le suivi des versements HelloAsso
+n'est pas livré. La même règle vaut pour la traçabilité côté donateur : seuls les dons arrivés sont
+imputés aux paiements exécutés, du plus anciennement arrivé au plus récent.
+
+La même base « dons arrivés » sert aux trois calculs : le solde affiché, le contrôle à
+l'enregistrement d'un paiement et le contrôle au moment du virement (§4.2).
 
 Autrement dit : à la seconde où une association enregistre un paiement de 5 000 €, ces 5 000 €
 **cessent d'être allouables**, alors même qu'aucun euro n'a quitté son compte et qu'elle n'a encore
@@ -101,7 +111,7 @@ indisponibles.
 ### 4.2 Le contrôle au moment de l'émission porte sur un solde différent
 
 Au moment où l'association confirme un paiement, le contrôle de provision se fait contre les **dons
-encaissés moins les seuls virements déjà exécutés** — les paiements enregistrés sont exclus du
+arrivés sur le compte de l'association (§4.1) moins les seuls virements déjà exécutés** — les paiements enregistrés sont exclus du
 calcul.
 
 La raison est arithmétique : le paiement que l'on est en train de confirmer est lui-même enregistré.
@@ -311,7 +321,7 @@ et désactiver explicitement le mode démonstration sur cet environnement.
 
 ## 8. Ce que ce dispositif ne couvre pas
 
-Trois points sont ouverts. Aucun n'est un défaut de rédaction : ce sont des travaux non faits.
+Quatre points sont ouverts. Aucun n'est un défaut de rédaction : ce sont des travaux non faits.
 
 ### 8.1 Deux motifs annoncent une alerte technique qui n'est pas branchée
 
@@ -353,6 +363,14 @@ confrontée à un refus réel — elle est tirée de la documentation, pas d'une
 La provision insuffisante étant un cas très probable en usage courant, ce point mérite une
 vérification dès la première exécution réelle en production.
 
+### 8.4 Les dons HelloAsso ne peuvent encore financer aucun paiement
+
+Un don HelloAsso confirmé n'est pas encore « arrivé » au sens du §4.1 : rien ne détecte aujourd'hui
+le moment où HelloAsso le reverse à l'association. Ces dons ne comptent donc ni dans le solde
+disponible ni dans la traçabilité côté donateur. Le blocage est volontaire (on ne finance pas un
+paiement avec de l'argent absent du compte) ; le suivi des versements HelloAsso, qui les rendra
+utilisables, est en cours de développement.
+
 ---
 
 ## 9. Suivi des travaux restants
@@ -362,6 +380,7 @@ vérification dès la première exécution réelle en production.
 | Brancher l'alerte technique sur les deux motifs d'intégration (8.1) | Développement | Rien — mais le message affiché est inexact tant que ce n'est pas fait |
 | Détecter un virement figé chez une banque qui ne rapporte pas (8.2) | Développement | La traçabilité des virements exécutés par LCL et Nickel |
 | Vérifier la formulation des deux motifs non testables (8.3) | Observation en production | Rien — vérification à la première occurrence réelle |
+| Suivre les versements HelloAsso pour rendre ces dons utilisables (8.4) | Développement | Tout paiement financé par des dons HelloAsso |
 | Provisionner les identifiants Bridge de production et désactiver le mode démonstration (7) | Prérequis non technique | **Toute exécution réelle de virement en production** |
 
 ---

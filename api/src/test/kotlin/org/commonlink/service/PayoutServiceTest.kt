@@ -89,7 +89,7 @@ class PayoutServiceTest {
     private fun stubBalance(confirmed: String, pending: String = "0", raised: String) {
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal(confirmed)
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING) } returns BigDecimal(pending)
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal(raised)
+        every { donationRepository.sumAvailableAmountByCampaignId(campaignId) } returns BigDecimal(raised)
     }
 
     /** A payee belonging to a different association, used to pin the ownership checks. */
