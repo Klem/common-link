@@ -14,6 +14,7 @@ import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.BridgeDestinationRefusedException
 import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -99,9 +100,11 @@ class PayoutService(
      *
      * @throws NotFoundException if campaign, payee, or IBAN do not belong to the user's association.
      * @throws IllegalArgumentException if the IBAN does not belong to the requested payee.
+     * @throws FundsNotAvailableException if the available balance is the only [PayoutBlockingReason]: carries the
+     *         amount still disbursable.
      * @throws ConflictException if payouts are disabled on this environment (see
-     *         [assertPaymentsEnabled]), or if a [PayoutBlockingReason] applies (unverified IBAN,
-     *         insufficient balance, description too short).
+     *         [assertPaymentsEnabled]), or if several [PayoutBlockingReason]s apply, or one other than the
+     *         balance (unverified IBAN, description too short).
      */
     @Transactional
     fun create(campaignId: UUID, request: CreatePayoutRequest, userId: UUID): PayoutDto {
@@ -130,6 +133,9 @@ class PayoutService(
         if (payeeIban.payee.id != payee.id) throw NotFoundException("IBAN ${request.payeeIbanId} does not belong to payee ${request.payeeId}")
 
         val blockingReasons = blockingReasonsFor(campaignId, payeeIban, request.amount!!, request.label!!)
+        if (blockingReasons == listOf(PayoutBlockingReason.INSUFFICIENT_BALANCE)) {
+            throw FundsNotAvailableException(computeAvailableBalance(campaignId).max(BigDecimal.ZERO))
+        }
         if (blockingReasons.isNotEmpty()) {
             throw ConflictException("Payout blocked: ${blockingReasons.joinToString()}")
         }
@@ -172,7 +178,9 @@ class PayoutService(
      * @throws ConflictException if payouts are disabled on this environment (see
      *         [assertPaymentsEnabled] — a payout created before the environment was closed must
      *         not be settleable either), if the payout is not PENDING, if its IBAN is no longer
-     *         VERIFIED, or if confirming it would exceed the confirmable balance.
+     *         VERIFIED. A [FundsNotAvailableException] (a [ConflictException]) if confirming it would exceed the
+     *         confirmable balance: thrown by [PayoutConfirmer.reserve] and left to propagate — its transaction
+     *         rolled back, nothing is engaged and the payout stays PENDING, confirmable again.
      * @throws org.commonlink.exception.BadGatewayException if Bridge is unreachable or refuses the
      *         initiation — nothing has been debited, the reservation is released and the payout is
      *         left PENDING so it can be confirmed again.

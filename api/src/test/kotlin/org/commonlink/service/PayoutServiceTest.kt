@@ -24,6 +24,7 @@ import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
@@ -622,5 +623,60 @@ class PayoutServiceTest {
 
     private companion object {
         const val FRONTEND_URL = "http://localhost:3000"
+    }
+
+    // ── FD2-01: coded FUNDS_NOT_AVAILABLE refusal ─────────────────────────────
+
+    private fun stubCreatable(iban: PayeeIban = payeeIban) {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(iban)
+    }
+
+    private fun createRequest(amount: String, label: String = "Achat matériel pédagogique") =
+        CreatePayoutRequest(payeeId, ibanId, BigDecimal(amount), PayoutKind.EXPENSE, "60-mat", label)
+
+    @Test
+    fun `create - an amount equal to the available balance is accepted`() {
+        stubCreatable()
+        stubBalance(confirmed = "300", pending = "200", raised = "1000")
+        every { payoutRepository.save(any()) } returnsArgument 0
+
+        val result = service.create(campaignId, createRequest("500.00"), userId)
+
+        assertThat(result.amount).isEqualByComparingTo("500.00")
+    }
+
+    @Test
+    fun `create - one cent above the available balance is refused with the coded exception`() {
+        stubCreatable()
+        stubBalance(confirmed = "300", pending = "200", raised = "1000")
+
+        val ex = assertThrows<FundsNotAvailableException> { service.create(campaignId, createRequest("500.01"), userId) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("500.00")
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `create - the balance alongside another blocking reason keeps the plain conflict`() {
+        stubCreatable()
+        stubBalance(confirmed = "0", raised = "100")
+
+        val ex = assertThrows<ConflictException> { service.create(campaignId, createRequest("500", label = "Trop court"), userId) }
+
+        assertThat(ex).isNotInstanceOf(FundsNotAvailableException::class.java)
+        assertThat(ex.message).contains("INSUFFICIENT_BALANCE").contains("DESCRIPTION_TOO_SHORT")
+    }
+
+    @Test
+    fun `create - a negative available balance is reported as nothing disbursable`() {
+        stubCreatable()
+        stubBalance(confirmed = "800", pending = "300", raised = "1000")
+
+        val ex = assertThrows<FundsNotAvailableException> { service.create(campaignId, createRequest("10"), userId) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("0")
     }
 }

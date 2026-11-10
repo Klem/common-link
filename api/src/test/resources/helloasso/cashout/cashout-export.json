@@ -1,0 +1,36 @@
+[
+  {
+    "_comment": "HAND-BUILT from SDK schema, not observed (U3: credit/debit assumed in euros; U5: sandbox payout unavailable)",
+    "paymentId": 70001,
+    "orderId": 90001,
+    "credit": 10.0,
+    "debit": 0.0,
+    "operationType": "OneTimeDonation",
+    "paymentStatus": "Paid",
+    "cashOutDate": "2026-11-12T10:00:00+01:00",
+    "cashOutId": 60001,
+    "campaignName": "Checkout"
+  },
+  {
+    "paymentId": 70003,
+    "orderId": 90003,
+    "credit": 25.0,
+    "debit": 0.0,
+    "operationType": "OneTimePayment",
+    "paymentStatus": "Paid",
+    "cashOutDate": "2026-11-12T10:00:00+01:00",
+    "cashOutId": 60001,
+    "campaignName": "Billetterie exemple"
+  },
+  {
+    "paymentId": 70004,
+    "orderId": 90004,
+    "credit": 0.0,
+    "debit": 5.0,
+    "operationType": "Debit",
+    "paymentStatus": "Refunded",
+    "cashOutDate": "2026-11-12T10:00:00+01:00",
+    "cashOutId": 60001,
+    "campaignName": "Checkout"
+  }
+]

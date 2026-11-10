@@ -43,6 +43,10 @@ class PayoutController(private val payoutService: PayoutService) {
         ApiResponse(responseCode = "400", description = "Validation error", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Campaign, payee, or IBAN not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Payout blocked. When the available balance is the only " +
+            "reason, the body carries `code: FUNDS_NOT_AVAILABLE` and `disbursable` (amount still usable); " +
+            "otherwise no `code` (see GET blocking-reasons), or payouts are disabled on this environment.",
+            content = [Content()]),
     )
     fun create(
         @PathVariable campaignId: UUID,
@@ -60,7 +64,9 @@ class PayoutController(private val payoutService: PayoutService) {
             content = [Content(schema = Schema(implementation = PayoutDto::class))]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Payout not found", content = [Content()]),
-        ApiResponse(responseCode = "409", description = "Payout is not in PENDING status", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Payout is not in PENDING status, has a transfer in " +
+            "progress, or is no longer covered by the confirmable balance: the latter carries " +
+            "`code: FUNDS_NOT_AVAILABLE` and `disbursable` (amount still usable).", content = [Content()]),
     )
     fun confirm(
         @PathVariable campaignId: UUID,

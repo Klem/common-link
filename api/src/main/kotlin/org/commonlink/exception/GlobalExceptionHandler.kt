@@ -173,6 +173,18 @@ class GlobalExceptionHandler(
     }
 
     /**
+     * Handles [FundsNotAvailableException] with a `code: FUNDS_NOT_AVAILABLE` property and the amount still
+     * disbursable (HTTP 409). More specific than [handleConflict], which it takes precedence over.
+     */
+    @ExceptionHandler(FundsNotAvailableException::class)
+    fun handleFundsNotAvailable(ex: FundsNotAvailableException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Funds not available")
+        problem.setProperty("code", "FUNDS_NOT_AVAILABLE")
+        problem.setProperty("disbursable", ex.disbursable)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [CollectionCapExceededException] with a `code: COLLECTION_CAP_EXCEEDED` property and
      * the still-acceptable amount (HTTP 409).
      *

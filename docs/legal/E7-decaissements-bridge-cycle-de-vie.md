@@ -111,11 +111,23 @@ indisponibles.
 ### 4.2 Le contrôle au moment de l'émission porte sur un solde différent
 
 Au moment où l'association confirme un paiement, le contrôle de provision se fait contre les **dons
-arrivés sur le compte de l'association (§4.1) moins les seuls virements déjà exécutés** — les paiements enregistrés sont exclus du
-calcul.
+arrivés sur le compte de l'association (§4.1) moins les virements déjà exécutés et ceux dont
+l'exécution est en cours** — les paiements seulement enregistrés sont exclus du calcul.
 
 La raison est arithmétique : le paiement que l'on est en train de confirmer est lui-même enregistré.
 S'il était compté, il se bloquerait lui-même.
+
+**Un refus identifiable.** Quand le seul obstacle est l'argent disponible, à l'enregistrement comme à
+la confirmation, le refus porte un code propre (« fonds non disponibles ») et le montant encore
+utilisable à cet instant (jamais négatif). Cela vaut pour tous les prestataires de paiement des dons.
+Rien n'est engagé : le paiement reste enregistré et peut être confirmé à nouveau plus tard. Quand
+l'argent manque **et** qu'un autre motif bloque (IBAN non vérifié, description trop courte), le refus
+reste générique et liste les motifs.
+
+Deux garanties sont vérifiées par des tests sur une base de données identique à la production :
+deux enregistrements simultanés dont la somme dépasse le disponible — un seul passe, l'autre reçoit
+ce refus ; et, après une suite d'enregistrements, d'exécutions, d'annulations et de refus bancaires,
+la somme des paiements exécutés et enregistrés ne dépasse jamais celle des dons arrivés.
 
 ### 4.3 La restitution, et les deux garde-fous qui l'encadrent
 

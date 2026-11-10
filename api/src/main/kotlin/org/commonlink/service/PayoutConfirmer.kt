@@ -9,6 +9,7 @@ import org.commonlink.entity.PayoutBlockingReason
 import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -133,8 +134,9 @@ class PayoutConfirmer(
      * @param campaignId Campaign owning the payout.
      * @param payoutId Payout to reserve.
      * @throws NotFoundException if the campaign or payout disappeared.
-     * @throws ConflictException if the payout is no longer PENDING, is already engaged, or the
-     *   confirmable balance no longer covers it.
+     * @throws FundsNotAvailableException if the confirmable balance no longer covers it: carries that balance
+     *   (never negative) as the amount still disbursable.
+     * @throws ConflictException if the payout is no longer PENDING or is already engaged.
      */
     @Transactional
     fun reserve(campaignId: UUID, payoutId: UUID) {
@@ -151,8 +153,9 @@ class PayoutConfirmer(
         if (payout.bridgeStatus != null) {
             throw ConflictException("Payout $payoutId already has a transfer in progress")
         }
-        if (payout.amount > confirmableBalance(campaignId)) {
-            throw ConflictException("Payout blocked: ${PayoutBlockingReason.INSUFFICIENT_BALANCE}")
+        val confirmable = confirmableBalance(campaignId)
+        if (payout.amount > confirmable) {
+            throw FundsNotAvailableException(confirmable.max(BigDecimal.ZERO))
         }
 
         payout.bridgeStatus = BridgePaymentStatus.CREA

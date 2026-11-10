@@ -8,6 +8,7 @@ import org.commonlink.entity.PayoutBlockingReason
 import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.UserRepository
 import org.commonlink.security.JwtAuthenticationFilter
@@ -209,5 +210,52 @@ class PayoutControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.reasons[0]").value("IBAN_NOT_VERIFIED"))
+    }
+
+    // ── FD2-01: coded FUNDS_NOT_AVAILABLE refusal ─────────────────────────────
+
+    @Test
+    fun `POST create returns 409 FUNDS_NOT_AVAILABLE with the disbursable amount`() {
+        every { payoutService.create(any(), any(), any()) } throws FundsNotAvailableException(BigDecimal("42.50"))
+
+        val body = """{"payeeId":"$payeeId","payeeIbanId":"$ibanId","amount":500.00,"kind":"EXPENSE","typeCode":"60-mat","label":"Achat matériel pédagogique"}"""
+        mockMvc.perform(
+            post("/api/campaigns/$campaignId/payments")
+                .with(user(assocId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("FUNDS_NOT_AVAILABLE"))
+            .andExpect(jsonPath("$.disbursable").value(42.5))
+    }
+
+    @Test
+    fun `POST create returns a plain 409 without code for other blocking reasons`() {
+        every { payoutService.create(any(), any(), any()) } throws
+            ConflictException("Payout blocked: INSUFFICIENT_BALANCE, DESCRIPTION_TOO_SHORT")
+
+        val body = """{"payeeId":"$payeeId","payeeIbanId":"$ibanId","amount":500.00,"kind":"EXPENSE","typeCode":"60-mat","label":"Achat matériel pédagogique"}"""
+        mockMvc.perform(
+            post("/api/campaigns/$campaignId/payments")
+                .with(user(assocId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").doesNotExist())
+    }
+
+    @Test
+    fun `POST confirm returns 409 FUNDS_NOT_AVAILABLE with the disbursable amount`() {
+        every { payoutService.confirm(any(), any(), any()) } throws FundsNotAvailableException(BigDecimal.ZERO)
+
+        mockMvc.perform(
+            post("/api/campaigns/$campaignId/payments/$payoutId/confirm")
+                .with(user(assocId.toString()).roles("ASSOCIATION"))
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("FUNDS_NOT_AVAILABLE"))
+            .andExpect(jsonPath("$.disbursable").value(0))
     }
 }

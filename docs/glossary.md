@@ -756,7 +756,9 @@ What an association can still commit on a campaign: available donations − `CON
 funds reached the association's bank account (`funds_available_at` set,
 `DonationRepository.sumAvailableAmountByCampaignId`): Mollie donations at confirmation, HelloAsso
 donations only once paid out. The same donation base backs the confirm-time check
-(`PayoutConfirmer`). `PENDING` payouts are reserved so that
+(`PayoutConfirmer`). A payout refused for this balance alone, at creation or confirmation, gets
+a `409` with `code: FUNDS_NOT_AVAILABLE` and `disbursable` (the amount still usable, never negative)
+— see `FundsNotAvailableException`; with any other blocking reason the `409` stays uncoded. `PENDING` payouts are reserved so that
 several pending payouts cannot together exceed the funds raised. Deliberately different from the
 donor-side **FIFO Donation Allocation**, which counts only `CONFIRMED` payouts: the two figures
 diverge by the amount of pending payouts. A `PENDING` payout nothing will resolve stops being

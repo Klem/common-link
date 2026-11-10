@@ -22,6 +22,7 @@ import org.commonlink.entity.PayoutStatus
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -576,5 +577,66 @@ class PayoutConfirmerTest {
 
         assertThrows<ConflictException> { confirmer.reserve(campaignId, payout.id) }
         verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    // ── FD2-01: coded FUNDS_NOT_AVAILABLE refusal ─────────────────────────────
+
+    @Test
+    fun `reserve - an amount equal to the confirmable balance is engaged`() {
+        val payout = newPayout(amount = "400.00")
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        stubBalance(confirmed = "500", inFlight = "100", raised = "1000")
+        every { payoutRepository.save(payout) } returns payout
+
+        confirmer.reserve(campaignId, payout.id)
+
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.CREA)
+    }
+
+    @Test
+    fun `reserve - one cent above the confirmable balance is refused with the coded exception`() {
+        val payout = newPayout(amount = "400.01")
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        stubBalance(confirmed = "500", inFlight = "100", raised = "1000")
+
+        val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("400.00")
+        assertThat(payout.bridgeStatus).isNull()
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `reserve - a payout released back from in flight is checked against the balance again`() {
+        val payout = newPayout(amount = "400.00", bridgeStatus = BridgePaymentStatus.CREA)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
+        every { payoutRepository.save(payout) } returns payout
+        confirmer.releaseReservation(payout.id, "Link expired", PayoutErrorCode.LINK_EXPIRED)
+        assertThat(payout.bridgeStatus).isNull()
+
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        stubBalance(confirmed = "600", raised = "999.99")
+
+        val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
+        assertThat(ex.disbursable).isEqualByComparingTo("399.99")
+
+        stubBalance(confirmed = "600", raised = "1000.00")
+        confirmer.reserve(campaignId, payout.id)
+        assertThat(payout.bridgeStatus).isEqualTo(BridgePaymentStatus.CREA)
+    }
+
+    @Test
+    fun `reserve - a negative confirmable balance is reported as nothing disbursable`() {
+        val payout = newPayout(amount = "10")
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        stubBalance(confirmed = "900", inFlight = "200", raised = "1000")
+
+        val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("0")
     }
 }

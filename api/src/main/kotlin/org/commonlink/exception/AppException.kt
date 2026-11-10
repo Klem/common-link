@@ -42,8 +42,11 @@ class TokenExpiredException(message: String = "Expired token") :
 class InvalidTokenException(message: String = "Invalid token") :
     AppException(message, HttpStatus.UNAUTHORIZED)
 
-/** Thrown when a uniqueness constraint would be violated, e.g. duplicate email on registration (HTTP 409). */
-class ConflictException(message: String) :
+/**
+ * Thrown when a request conflicts with the current state, e.g. duplicate email on registration (HTTP 409).
+ * Open for coded refusals that must still be handled as conflicts ([FundsNotAvailableException]).
+ */
+open class ConflictException(message: String) :
     AppException(message, HttpStatus.CONFLICT)
 
 /**
