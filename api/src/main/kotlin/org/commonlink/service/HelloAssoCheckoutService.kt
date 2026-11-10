@@ -3,6 +3,7 @@ package org.commonlink.service
 import org.commonlink.config.HelloAssoProperties
 import org.commonlink.dto.HelloAssoCheckoutIntentJson
 import org.commonlink.dto.HelloAssoInitCheckoutJson
+import org.commonlink.dto.HelloAssoOrderJson
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.Donation
 import org.commonlink.entity.HelloAssoConnectionState
@@ -77,6 +78,7 @@ class HelloAssoCheckoutService(
         private const val ITEM_NAME_MAX = 250
         private val PAID = setOf("Authorized", "Registered")
         private val REVERSED_STATES = setOf("Refunded", "Refunding", "Contested")
+        private const val DONATION_ITEM_TYPE = "Payment"
     }
 
     /**
@@ -195,6 +197,7 @@ class HelloAssoCheckoutService(
         if (donation.confirmedAt != null) return HelloAssoPaymentOutcome.CONFIRMED
         val paidAmount = paid.amount?.let { BigDecimal.valueOf(it.toLong(), 2) }
         if (!paymentAmountGuard.matches(donation, paidAmount)) return HelloAssoPaymentOutcome.AMOUNT_MISMATCH
+        intent.order?.let { reportOrderDelta(donation, it, paid.amount!!) }
         // Written before confirming: the receipt is rendered after commit and reads it.
         donation.paymentMethod = paid.paymentMeans
         donationRepository.save(donation)
@@ -228,6 +231,25 @@ class HelloAssoCheckoutService(
         } catch (ex: HelloAssoException) {
             throw BadGatewayException("HelloAsso is unavailable")
         }
+
+    /**
+     * Reports, without blocking the confirmation, an order that does not match the payment that confirms [donation]:
+     * a total other than [paidCents], several lines, or a line whose type is not the donation's. Runs on the
+     * confirming path only, hence once per donation. Fields HelloAsso does not send are not checked. Logs ids and
+     * amounts only, never payer data.
+     */
+    private fun reportOrderDelta(donation: Donation, order: HelloAssoOrderJson, paidCents: Int) {
+        val total = order.totalCents()
+        val items = order.lines()
+        val totalDiffers = total != null && total != paidCents
+        val unexpectedItems = items != null && (items.size > 1 || items.any { it.type != DONATION_ITEM_TYPE })
+        if (!totalDiffers && !unexpectedItems) return
+        log.warn(
+            "HelloAsso order {} of donation {} does not match its payment of {} cents: total {}, items {}",
+            order.id, donation.id, paidCents, total, items?.map { "${it.type}:${it.amount}" },
+        )
+        technicalAlertService.reportFailure(TechnicalAlertKind.HELLOASSO_ORDER_AMOUNT_DELTA, null, donation.providerRef, null)
+    }
 
     private fun body(request: CheckoutRequest): HelloAssoInitCheckoutJson {
         val cents = request.amount.movePointRight(2).setScale(0, RoundingMode.HALF_UP).intValueExact()

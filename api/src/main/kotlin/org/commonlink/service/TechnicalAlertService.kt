@@ -72,6 +72,13 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
     PAYMENT_AMOUNT_MISMATCH("Montant payé différent du montant du don — don non confirmé", "ERROR"),
 
     /**
+     * A HelloAsso donation was confirmed (its payment carries the donation's amount), but its order does not match
+     * that payment: another total, several lines, or a line that is not the donation. Observed never to happen with a
+     * voluntary HelloAsso contribution (sandbox, 2026-11-10); raised so that a change on HelloAsso's side is seen.
+     */
+    HELLOASSO_ORDER_AMOUNT_DELTA("Commande HelloAsso différente du paiement — don confirmé", "WARN"),
+
+    /**
      * Bridge reported a transfer settled on a payout whose amount had already gone back to the
      * campaign's confirmable balance — a payout failed after a bank rejection, or released after
      * its link died.

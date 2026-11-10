@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -155,7 +156,7 @@ class HelloAssoCheckoutServiceTest {
 
     // ── Re-read ────────────────────────────────────────────────────────────
 
-    private fun donation(confirmed: Boolean = false): Donation {
+    private fun donation(confirmed: Boolean = false, amount: BigDecimal = BigDecimal("25.50")): Donation {
         val association = mockk<AssociationProfile> { every { id } returns associationId }
         val campaign = mockk<Campaign> {
             every { id } returns UUID.randomUUID()
@@ -166,7 +167,7 @@ class HelloAssoCheckoutServiceTest {
             every { providerRef } returns "helloasso:4242"
             every { this@mockk.campaign } returns campaign
             every { this@mockk.donor } returns donor
-            every { amount } returns BigDecimal("25.50")
+            every { this@mockk.amount } returns amount
             every { confirmedAt } returns if (confirmed) java.time.Instant.now() else null
         }
     }
@@ -232,6 +233,85 @@ class HelloAssoCheckoutServiceTest {
         verify(exactly = 0) { donationService.recordPayment(any(), any(), any(), any(), any()) }
         verify { alerts.reportFailure(TechnicalAlertKind.PAYMENT_AMOUNT_MISMATCH, null, "helloasso:4242", null) }
         verify(exactly = 1) { auditLog.append(ComplianceAuditLogService.PAYMENT_AMOUNT_MISMATCH, any(), any(), any(), any()) }
+    }
+
+    /**
+     * U9, observed in sandbox on 10/11/2026: a donation paid WITH a voluntary HelloAsso contribution carries the
+     * donation amount only (fixture: anonymised order of that payment), so it is confirmed like any other.
+     */
+    @Test
+    fun `a donation paid with a HelloAsso contribution is confirmed at the donation amount`() {
+        stubDonation(donation(amount = BigDecimal("10.00")))
+        val intent = javaClass.getResourceAsStream("/helloasso/cashout/checkout-intent-with-contribution.json")!!
+            .use { jacksonObjectMapper().readValue(it, HelloAssoCheckoutIntentJson::class.java) }
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intent
+
+        assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+        verify { donationService.recordPayment("helloasso:4242", any(), any(), BigDecimal("10.00"), any()) }
+        verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_AMOUNT_MISMATCH, any(), any(), any()) }
+        verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.HELLOASSO_ORDER_AMOUNT_DELTA, any(), any(), any()) }
+    }
+
+    /** A paid order in the raw shape observed on `GET /v5/orders/{id}`: `amount.total` and `{amount, type}` lines. */
+    private fun paidOrder(total: Int? = null, items: List<Pair<Int, String>>? = null) = HelloAssoCheckoutIntentJson(
+        id = 4242,
+        order = HelloAssoOrderJson(
+            1, 4242, listOf(HelloAssoPaymentJson(1, 2550, "Authorized", "Card")),
+            total?.let { mapOf("total" to it) }, items?.map { (amount, type) -> mapOf("amount" to amount, "type" to type) },
+        ),
+    )
+
+    /** An order that does not match its payment is reported, once, and never blocks a payment carrying the donation's amount. */
+    @Test
+    fun `an order total other than the payment confirms the donation and reports the delta once`() {
+        var confirmed = false
+        val donation = donation()
+        every { donation.confirmedAt } answers { if (confirmed) Instant.now() else null }
+        stubDonation(donation)
+        every { donationService.recordPayment(any(), any(), any(), any(), any()) } answers { confirmed = true }
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns paidOrder(total = 3050)
+
+        repeat(3) { assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242")) }
+        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.HELLOASSO_ORDER_AMOUNT_DELTA, null, "helloasso:4242", null) }
+    }
+
+    @Test
+    fun `an order with several lines or a non donation line confirms the donation and is reported`() {
+        stubDonation(donation())
+        for (items in listOf(
+            listOf(2550 to "Payment", 500 to "Payment"),
+            listOf(2550 to "Donation"),
+        )) {
+            every { gateway.getCheckoutIntent(any(), any(), any()) } returns paidOrder(total = 2550, items = items)
+            assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+        }
+        verify(exactly = 2) { alerts.reportFailure(TechnicalAlertKind.HELLOASSO_ORDER_AMOUNT_DELTA, null, "helloasso:4242", null) }
+    }
+
+    @Test
+    fun `an order matching its payment, or without total and lines, is not reported`() {
+        stubDonation(donation())
+        for (intent in listOf(paidOrder(total = 2550, items = listOf(2550 to "Payment")), paidOrder())) {
+            every { gateway.getCheckoutIntent(any(), any(), any()) } returns intent
+            assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+        }
+        verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.HELLOASSO_ORDER_AMOUNT_DELTA, any(), any(), any()) }
+    }
+
+    @Test
+    fun `a paid amount other than the donation's journals the delta`() {
+        stubDonation(donation())
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns
+            HelloAssoCheckoutIntentJson(id = 4242, order = HelloAssoOrderJson(1, 4242, listOf(HelloAssoPaymentJson(1, 3050, "Authorized", "Card"))))
+
+        assertEquals(HelloAssoPaymentOutcome.AMOUNT_MISMATCH, service.refreshPayment("helloasso:4242"))
+        verify {
+            auditLog.append(
+                ComplianceAuditLogService.PAYMENT_AMOUNT_MISMATCH, any(),
+                match<Map<String, Any?>> { it["delta"] == "5.00" }, any(), any(),
+            )
+        }
+        verify(exactly = 0) { alerts.reportFailure(TechnicalAlertKind.HELLOASSO_ORDER_AMOUNT_DELTA, any(), any(), any()) }
     }
 
     @Test

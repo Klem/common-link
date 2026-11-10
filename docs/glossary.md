@@ -468,7 +468,7 @@ The KYB documents an association already gave CommonLink (statutes, RNA receipt,
 ### Proximity Filter — see **Place of Action**
 
 ### Payment Amount Guard (PaymentAmountGuard)
-Last check before a paid payment confirms its donation, for every provider (Mollie, HelloAsso): the amount re-read at the provider must equal the donation's amount exactly. Otherwise the donation stays pending (no receipt, no on-chain proof), with a `PAYMENT_AMOUNT_MISMATCH` technical alert and one compliance journal entry per donation.
+Last check before a paid payment confirms its donation, for every provider (Mollie, HelloAsso): the amount re-read at the provider must equal the donation's amount exactly. Otherwise the donation stays pending (no receipt, no on-chain proof), with a `PAYMENT_AMOUNT_MISMATCH` technical alert and one compliance journal entry per donation (expected amount, paid amount and their delta). For HelloAsso, a voluntary contribution to HelloAsso is not part of the paid amount (observed in sandbox, 2026-11-10); an order that does not match the payment that confirms a donation (another total, several lines, a line that is not the donation) is reported by a `HELLOASSO_ORDER_AMOUNT_DELTA` alert without blocking the confirmation.
 
 ### Donation Date (Donation.confirmedAt)
 The date of a donation everywhere (fiscal receipt year, yearly filters, statistics): the payment time reported by the provider (HelloAsso `payments[].date`, Mollie `paidAt`) when plausible — not in the future, not before the donation was created, 5 minutes of clock skew tolerated — else the time of confirmation.

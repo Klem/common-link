@@ -52,13 +52,34 @@ data class HelloAssoCheckoutIntentJson(
     @field:JsonProperty("order") val order: HelloAssoOrderJson? = null,
 )
 
-/** Order of a paid checkout-intent. */
+/**
+ * Order of a paid checkout-intent.
+ *
+ * [amount] and [items] were observed on `GET /v5/orders/{id}` (sandbox, 2026-11-10): `amount` an object whose `total`
+ * is in cents, `items` a list of `{amount, type}`. Whether the checkout-intent's order carries them, and in which
+ * shape, is not observed yet, so both are kept raw ([Any]): an unexpected shape can never break the parsing of a
+ * payment. Read through [totalCents] and [lines], only to report a discrepancy, never to confirm a donation.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class HelloAssoOrderJson(
     @field:JsonProperty("id") val id: Long? = null,
     @field:JsonProperty("checkoutIntentId") val checkoutIntentId: Long? = null,
     @field:JsonProperty("payments") val payments: List<HelloAssoPaymentJson>? = null,
-)
+    @field:JsonProperty("amount") val amount: Any? = null,
+    @field:JsonProperty("items") val items: Any? = null,
+) {
+    /** `amount.total` in cents, or null when absent or not in the observed shape. */
+    fun totalCents(): Int? = ((amount as? Map<*, *>)?.get("total") as? Number)?.toInt()
+
+    /** The order lines, or null when absent or not a list; a line that is not an object has a null amount and type. */
+    fun lines(): List<HelloAssoOrderLine>? = (items as? List<*>)?.map {
+        val line = it as? Map<*, *>
+        HelloAssoOrderLine((line?.get("amount") as? Number)?.toInt(), line?.get("type") as? String)
+    }
+}
+
+/** One order line as read by [HelloAssoOrderJson.lines]: amount in cents and type (`Payment` for a Checkout donation). */
+data class HelloAssoOrderLine(val amount: Int?, val type: String?)
 
 /**
  * One payment of an order: [state] (e.g. `Authorized`) and [paymentMeans] (e.g. `Card`, `Sepa`). Amount in cents;

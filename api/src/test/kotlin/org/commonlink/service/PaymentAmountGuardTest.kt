@@ -34,7 +34,7 @@ class PaymentAmountGuardTest {
     }
 
     @Test
-    fun `another or a missing amount is reported, journaled the first time only`() {
+    fun `another or a missing amount is reported with its delta, journaled the first time only`() {
         every { auditLogRepo.findTopBySubjectIdAndEventTypeOrderBySequenceNoDesc(donationId, any()) } returns null
         assertFalse(guard.matches(donation, BigDecimal("25.00")))
         every { auditLogRepo.findTopBySubjectIdAndEventTypeOrderBySequenceNoDesc(donationId, any()) } returns mockk<ComplianceAuditLog>()
@@ -44,7 +44,8 @@ class PaymentAmountGuardTest {
         verify(exactly = 1) {
             auditLog.append(
                 ComplianceAuditLogService.PAYMENT_AMOUNT_MISMATCH, any(),
-                mapOf("providerRef" to "helloasso:4242", "expected" to "25.50", "paid" to "25.00"), donationId, any(),
+                mapOf("providerRef" to "helloasso:4242", "expected" to "25.50", "paid" to "25.00", "delta" to "-0.50"),
+                donationId, any(),
             )
         }
     }

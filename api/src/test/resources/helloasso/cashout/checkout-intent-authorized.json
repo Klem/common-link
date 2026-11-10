@@ -1,0 +1,24 @@
+{
+  "_comment": "HAND-BUILT from SDK schema, not observed (E1 not observed yet, FD0-02 pending; shape of the existing HelloAssoClientTest sample)",
+  "id": 30002,
+  "metadata": {
+    "publicRef": "00000000-0000-0000-0000-000000000011",
+    "campaignId": "00000000-0000-0000-0000-000000000002",
+    "donorProfileId": "00000000-0000-0000-0000-000000000003",
+    "widgetToken": "widget-exemple"
+  },
+  "order": {
+    "id": 90002,
+    "checkoutIntentId": 30002,
+    "payments": [
+      {
+        "id": 70002,
+        "amount": 2550,
+        "state": "Authorized",
+        "paymentMeans": "Card",
+        "cashOutState": "Transfered",
+        "date": "2026-11-06T10:34:00+01:00"
+      }
+    ]
+  }
+}

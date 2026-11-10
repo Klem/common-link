@@ -29,7 +29,11 @@ class PaymentAmountGuard(
      */
     fun matches(donation: Donation, paid: BigDecimal?): Boolean {
         if (paid != null && paid.compareTo(donation.amount) == 0) return true
-        log.error("Payment of donation {} carries {} EUR instead of {}: not confirmed", donation.id, paid, donation.amount)
+        val delta = paid?.subtract(donation.amount)
+        log.error(
+            "Payment of donation {} carries {} EUR instead of {} (delta {}): not confirmed",
+            donation.id, paid, donation.amount, delta,
+        )
         technicalAlertService.reportFailure(TechnicalAlertKind.PAYMENT_AMOUNT_MISMATCH, null, donation.providerRef, null)
         val donationId = donation.id!!
         val event = ComplianceAuditLogService.PAYMENT_AMOUNT_MISMATCH
@@ -41,6 +45,7 @@ class PaymentAmountGuard(
                     "providerRef" to donation.providerRef,
                     "expected" to donation.amount.toPlainString(),
                     "paid" to paid?.toPlainString(),
+                    "delta" to delta?.toPlainString(),
                 ),
                 subjectId = donationId,
             )

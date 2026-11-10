@@ -5,6 +5,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import org.commonlink.config.HelloAssoProperties
 import org.commonlink.dto.HelloAssoInitCheckoutJson
+import org.commonlink.dto.HelloAssoOrderLine
 import org.commonlink.dto.HelloAssoPayerJson
 import org.commonlink.exception.HelloAssoException
 import org.commonlink.exception.HelloAssoNotEligibleException
@@ -322,5 +323,37 @@ class HelloAssoClientTest {
         assertEquals("Card", payment.paymentMeans)
         assertEquals(2550, payment.amount)
         assertEquals("abc", intent.metadata!!["publicRef"])
+    }
+
+    /** The order total and lines of a paid checkout-intent survive the real client's deserialization (FD0-05). */
+    @Test
+    fun `getCheckoutIntent reads the order total and lines`() {
+        val body = javaClass.getResource("/helloasso/cashout/checkout-intent-with-contribution.json")!!.readText()
+        server.expect(requestTo("$api/organizations/asso-exemple/checkout-intents/30001"))
+            .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        val order = client.getCheckoutIntent(accessToken, "asso-exemple", 30001).order!!
+
+        assertEquals(1000, order.payments!!.single().amount)
+        assertEquals(1000, order.totalCents())
+        assertEquals(listOf(HelloAssoOrderLine(1000, "Payment")), order.lines())
+    }
+
+    /** An order total or lines in an unexpected shape never break the parsing of the payment. */
+    @Test
+    fun `getCheckoutIntent tolerates an unexpected order total or lines shape`() {
+        server.expect(requestTo("$api/organizations/techno-plus/checkout-intents/4242")).andRespond(
+            withSuccess(
+                """{"id":4242,"order":{"id":9,"amount":2550,"items":"none",""" +
+                    """"payments":[{"id":77,"amount":2550,"state":"Authorized"}]}}""",
+                MediaType.APPLICATION_JSON,
+            )
+        )
+
+        val order = client.getCheckoutIntent(accessToken, "techno-plus", 4242).order!!
+
+        assertEquals(2550, order.payments!!.single().amount)
+        assertEquals(null, order.totalCents())
+        assertEquals(null, order.lines())
     }
 }

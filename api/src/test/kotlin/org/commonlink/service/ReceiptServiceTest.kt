@@ -10,6 +10,7 @@ import org.commonlink.entity.Donation
 import org.commonlink.entity.FiscalMandate
 import org.commonlink.entity.MandateEligibility
 import org.commonlink.repository.FiscalMandateRepository
+import org.commonlink.util.FrenchAmountWords
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -53,12 +54,13 @@ class ReceiptServiceTest {
         paymentMethod: String?,
         birthDate: LocalDate? = null,
         birthCity: String? = null,
+        amount: BigDecimal = BigDecimal("42.00"),
     ): Donation {
         val assoc = association()
         val campaign = mockk<Campaign>(relaxed = true).also { every { it.association } returns assoc }
         return mockk<Donation>(relaxed = true).also {
             every { it.campaign } returns campaign
-            every { it.amount } returns BigDecimal("42.00")
+            every { it.amount } returns amount
             every { it.donorFullName } returns "Jean Dupont"
             every { it.donorBirthDate } returns birthDate
             every { it.donorBirthCity } returns birthCity
@@ -77,6 +79,7 @@ class ReceiptServiceTest {
         paymentMethod: String? = "creditcard",
         birthDate: LocalDate? = null,
         birthCity: String? = null,
+        amount: BigDecimal = BigDecimal("42.00"),
     ): String {
         val mandate = mockk<FiscalMandate>(relaxed = true).also {
             every { it.eligibility } returns MandateEligibility.OIG_66
@@ -84,7 +87,7 @@ class ReceiptServiceTest {
         every { mandateRepository.findByAssociationIdAndRevokedAtIsNull(associationId) } returns mandate
         every { taxRateService.taxReductionRate(any()) } returns 66
 
-        val bytes = service.generate(donation(paymentMethod, birthDate, birthCity), "2026-0042")
+        val bytes = service.generate(donation(paymentMethod, birthDate, birthCity, amount), "2026-0042")
         val reader = PdfReader(bytes)
         val text = (1..reader.numberOfPages)
             .joinToString(" ") { PdfTextExtractor(reader).getTextFromPage(it) }
@@ -124,6 +127,19 @@ class ReceiptServiceTest {
         assertTrue(text.contains("susceptible d'ouvrir droit"), text)
         assertTrue(text.contains("66 % du montant"), text)
         assertTrue(text.contains("sous réserve"), text)
+    }
+
+    /**
+     * The receipt prints the donation amount, never the amount paid at the provider: a voluntary HelloAsso
+     * contribution (U9, observed absent from the paid amount on 10/11/2026) can never inflate it.
+     */
+    @Test
+    fun `prints the donation amount of a HelloAsso donation paid with a contribution`() {
+        val amount = BigDecimal("10.00")
+        val text = receiptText(paymentMethod = "Card", amount = amount)
+
+        assertTrue(text.contains("Somme reçue " + "%,.2f €".format(amount)), text)
+        assertTrue(text.contains(FrenchAmountWords.format(amount)), text)
     }
 
     /** The mode really used, not the list of modes the platform accepts. */
