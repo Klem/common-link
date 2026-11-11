@@ -178,6 +178,12 @@ const ActiveScreen = forwardRef<HTMLButtonElement, ActiveScreenProps>(function A
           </div>
         </div>
       )}
+
+      {/* CEO decision Q2: "on request" payouts recommended, never required (nothing is checked server side). */}
+      <div className="alert alert-info hao-card-spaced" data-testid="hao-payout-mode-tip">
+        <span className="alert-icon" aria-hidden="true">👆</span>
+        <div>{t.rich('payoutMode', { strong })}</div>
+      </div>
     </section>
   );
 });

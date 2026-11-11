@@ -39,6 +39,16 @@ export const verifyCredentials = (keys: HelloAssoVerifyRequest, signal?: AbortSi
 export const linkAccount = (request: HelloAssoConnectRequest): Promise<void> =>
   api.post('/api/association/helloasso/connection', request, { silentErrors: true }).then(() => undefined);
 
+/**
+ * Donations HelloAsso has not paid out yet, every campaign (`GET /api/association/helloasso/disconnect-preview`), shown
+ * in the disconnection warning: once disconnected they can no longer be tracked. Silent: on failure the warning is
+ * simply not shown, the disconnection stays possible.
+ */
+export const getDisconnectPreview = (): Promise<{ notYetPaidOutCount: number; notYetPaidOutAmount: number }> =>
+  api
+    .get<{ notYetPaidOutCount: number; notYetPaidOutAmount: number }>('/api/association/helloasso/disconnect-preview', { silentErrors: true })
+    .then((r) => r.data);
+
 /** Disconnects the HelloAsso account: our tokens are erased, donation buttons pause (204, idempotent). */
 export const disconnect = (): Promise<void> =>
   api.delete('/api/association/helloasso/connection').then(() => undefined);

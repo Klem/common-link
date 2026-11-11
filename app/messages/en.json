@@ -384,7 +384,8 @@
       "disconnected": "HelloAsso disconnected. We no longer keep any access."
     },
     "paymentCancelled": "Payout cancelled: its amount is available again.",
-    "paymentCancelError": "This payout could not be cancelled. Please try again."
+    "paymentCancelError": "This payout could not be cancelled. Please try again.",
+    "cashOutConfirmed": "Transfer confirmed: the funds are available"
   },
   "compliance": {
     "alerts": {
@@ -1561,7 +1562,19 @@
           "submit": "Issue payment →",
           "title": "Issue a payment",
           "typeCode": "Expense type",
-          "typeCodePlaceholder": "— Type —"
+          "typeCodePlaceholder": "— Type —",
+          "funds": {
+            "computing": "Working out the available amount…",
+            "available": "Available for your payments: {amount}",
+            "exceeds": "This amount exceeds the funds that have arrived in your account ({amount}).",
+            "inTransit": "{amount} are on their way: confirm receipt as soon as they appear on your statement.",
+            "none": "No funds available for a payment.",
+            "noneUsed": "The donations that have arrived in your account are already used by your payments. The others have not arrived yet.",
+            "noneUsedAtProvider": "The donations that have arrived in your account are already used by your payments. The others have not arrived yet ({amount} at HelloAsso).",
+            "notPaidOut": "This campaign's donations have not been paid out to your bank account yet.",
+            "notPaidOutAtProvider": "This campaign's donations have not been paid out to your bank account yet ({amount} at HelloAsso).",
+            "payWhenArrived": "You will be able to pay as soon as they arrive."
+          }
         },
         "history": {
           "authorise": "Authorise",
@@ -1673,11 +1686,12 @@
           "CANCELLED": "Cancelled"
         },
         "stats": {
-          "availableBalance": "Available balance",
+          "availableBalance": "Available for payment",
           "confirmed": "Confirmed",
           "paid": "Already paid",
           "pending": "Pending",
-          "transactions": "Transactions"
+          "transactions": "Transactions",
+          "availableSub": "arrived in your account"
         },
         "status": {
           "CONFIRMED": "Confirmed",
@@ -1700,6 +1714,89 @@
           "operational": "Operational costs",
           "other": "Other",
           "personnel": "Personnel"
+        },
+        "funds": {
+          "title": "Where your donations stand",
+          "updated": "Updated {relative}",
+          "refresh": "Refresh",
+          "refreshing": "Refreshing…",
+          "nextRefresh": "Next refresh possible at {time}",
+          "barLabel": "Breakdown of the donations collected",
+          "steps": {
+            "atProvider": {
+              "label": "At HelloAsso",
+              "sub": "Not paid out yet"
+            },
+            "payoutPreparing": {
+              "label": "Being prepared",
+              "sub": "Payout started by HelloAsso"
+            },
+            "inTransit": {
+              "label": "On its way",
+              "sub": "Transfer sent by HelloAsso"
+            },
+            "available": {
+              "label": "Arrived in your account",
+              "sub": "Usable for your payments"
+            }
+          },
+          "toConfirm": "{count, plural, one {# transfer to confirm} other {# transfers to confirm}}",
+          "total": {
+            "label": "Available for your payments",
+            "formula": "{available} arrived − {paid} already paid − {pending} in progress"
+          },
+          "foot": "Each payment is linked to the donations that funded it. So only donations that have arrived in your bank account can be used. Hover over a section for details.",
+          "tips": {
+            "atProvider": {
+              "text": "These donations are waiting to be paid out to your account. Depending on your HelloAsso setting: on request (available 7 business days after each donation) or monthly (around the 10th).",
+              "link": "Request the payout on HelloAsso ↗"
+            },
+            "payoutPreparing": {
+              "text": "HelloAsso has started the payout; the transfer will be sent shortly. Nothing to do on your side."
+            },
+            "inTransit": {
+              "text": "HelloAsso has sent the transfer. It becomes usable as soon as you confirm you received it, or automatically after the safety delay.",
+              "cashOutTitle": "Transfer of {date}",
+              "cashOutTitleNoDate": "Transfer in progress",
+              "ofTotal": "out of {total} received in total · ",
+              "autoOn": "available automatically on {date}",
+              "confirm": "I received this transfer"
+            },
+            "available": {
+              "text": "Donations paid out by HelloAsso that have arrived in your bank account. Only these donations can fund your payments.",
+              "confirmedManual": "receipt confirmed by you on {date}",
+              "confirmedAuto": "available since {date}",
+              "confirmedCurator": "made available by the CommonLink team on {date}",
+              "releaseTitle": "Made available on {date}",
+              "releaseSub": "made available by the CommonLink team",
+              "none": "No transfer received yet."
+            }
+          },
+          "syncError": {
+            "title": "HelloAsso is not responding at the moment.",
+            "since": "The amounts below date from {date}. A transfer that has arrived since may not show yet.",
+            "noDate": "A transfer that arrived recently may not show yet."
+          },
+          "loadError": "The status of your donations cannot be shown at the moment.",
+          "receipt": {
+            "title": "Did you receive this transfer?",
+            "subtitle": "Check that it appears on your bank account statement.",
+            "issuer": "Sender",
+            "issuerValue": "HelloAsso",
+            "issueDate": "Date sent",
+            "statementAmount": "Amount on your statement",
+            "effect": "By confirming, <strong>{amount}</strong> of donations to this campaign become available for your payments.",
+            "rest": "The rest ({amount}) relates to your other HelloAsso campaigns or forms.",
+            "auto": "Your confirmation is recorded in your history. Without confirmation, these funds will become available automatically on {date}",
+            "notYet": "Not yet",
+            "confirm": "Yes, I received it",
+            "errors": {
+              "notCashedOut": "HelloAsso does not show this transfer as paid out yet. Please try again later.",
+              "notLinked": "Your HelloAsso account is no longer linked to CommonLink: the receipt cannot be checked.",
+              "unavailable": "HelloAsso is not responding at the moment. Please try again later.",
+              "notFound": "This transfer no longer needs confirming."
+            }
+          }
         }
       },
       "publish": {
@@ -3347,7 +3444,8 @@
             "missingFixAfter": ", paste this address into the notifications field, then save:",
             "retry": "Fixed, make another test donation",
             "visio": "Do it with you on a video call"
-          }
+          },
+          "payoutMode": "<strong>Tip: choose “on request” payouts</strong> in your HelloAsso space. With monthly payouts, a donation can wait up to about 40 days before it can fund a payment; on request, you trigger the payout yourself."
         },
         "disconnect": {
           "title": "Disconnect from HelloAsso?",
@@ -3358,7 +3456,9 @@
           "secretNoDate": "Your secret key has already been erased from our side. To be sure it is no longer used anywhere, regenerate it in your HelloAsso space.",
           "cancel": "Cancel",
           "confirm": "Yes, disconnect me",
-          "confirming": "Disconnecting…"
+          "confirming": "Disconnecting…",
+          "notYetPaidOut": "<strong>{count, plural, one {# donation} other {# donations}} ({amount}) not yet paid out by HelloAsso</strong> to your bank account will no longer be tracked automatically after disconnecting.",
+          "notYetPaidOutRelease": "The CommonLink team will be able to make them available for your payments on presentation of the line of your bank statement showing the transfer."
         },
         "faq": {
           "titleStart": "Your questions before you start",
@@ -3485,6 +3585,11 @@
           "real": {
             "q": "Is this the real HelloAsso website?",
             "text": "Before typing anything, look at the address bar: it must show <strong>helloasso.com</strong> (your administration space is on <strong>admin.helloasso.com</strong>). Otherwise, close the tab and contact us. <strong>CommonLink will never ask for your HelloAsso password</strong>: the key is not your password."
+          },
+          "payoutMode": {
+            "q": "Which payout schedule should I choose?",
+            "text": "We recommend <strong>on-request</strong> payouts, without requiring them.",
+            "why": "Only donations that have arrived in your bank account can fund your payments from CommonLink. With monthly payouts, a donation can wait up to about 40 days before it is usable; on request, you trigger the payout yourself as soon as you need it."
           }
         },
         "help": {

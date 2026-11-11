@@ -9,6 +9,7 @@ import type { HelloAssoStatus } from '@/types/helloasso';
 import type { AssociationProfileDto } from '@/types/association';
 import {
   disconnect,
+  getDisconnectPreview,
   ensureNotificationUrl,
   linkAccount,
   markOnboardingStarted,
@@ -31,6 +32,7 @@ vi.mock('@/lib/api/helloasso', async (importOriginal) => {
     verifyCredentials: vi.fn(),
     linkAccount: vi.fn(),
     disconnect: vi.fn(),
+    getDisconnectPreview: vi.fn(),
     refreshEligibility: vi.fn(),
     markOnboardingStarted: vi.fn(),
   };
@@ -104,6 +106,7 @@ beforeEach(() => {
   vi.mocked(ensureNotificationUrl).mockResolvedValue(URL_);
   vi.mocked(markOnboardingStarted).mockResolvedValue(undefined);
   vi.mocked(listKybDocuments).mockResolvedValue([]);
+  vi.mocked(getDisconnectPreview).mockResolvedValue({ notYetPaidOutCount: 0, notYetPaidOutAmount: 0 });
   useToastStore.setState({ toasts: [] });
   vi.stubEnv('NEXT_PUBLIC_HELLOASSO_VISIO_URL', '');
 });
@@ -437,6 +440,29 @@ describe('disconnect modal', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
+  it('warns about the donations HelloAsso has not paid out yet, and still allows disconnecting', async () => {
+    vi.mocked(getDisconnectPreview).mockResolvedValue({ notYetPaidOutCount: 3, notYetPaidOutAmount: 42.5 });
+    vi.mocked(disconnect).mockResolvedValue(undefined);
+    openModal();
+
+    expect(await screen.findByTestId('hao-disconnect-not-paid-out')).toHaveTextContent('notYetPaidOutRelease');
+    fireEvent.click(screen.getByRole('button', { name: 'confirm' }));
+    await waitFor(() => expect(disconnect).toHaveBeenCalledTimes(1));
+  });
+
+  it('shows no warning without donations pending, nor when the preview fails', async () => {
+    openModal();
+    await waitFor(() => expect(getDisconnectPreview).toHaveBeenCalled());
+    expect(screen.queryByTestId('hao-disconnect-not-paid-out')).not.toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    vi.mocked(getDisconnectPreview).mockRejectedValue(apiError(502));
+    fireEvent.click(screen.getByRole('button', { name: 'disconnect' }));
+    await waitFor(() => expect(getDisconnectPreview).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId('hao-disconnect-not-paid-out')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'confirm' })).toBeEnabled();
+  });
+
   it('disconnects, toasts and re-reads the status', async () => {
     vi.mocked(disconnect).mockResolvedValue(undefined);
     openModal();
@@ -446,6 +472,19 @@ describe('disconnect modal', () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(useToastStore.getState().toasts.map((t) => t.messageKey)).toContain('helloasso.disconnected');
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('"on request" payout recommendation (CEO Q2)', () => {
+  it('is shown on the active screen', () => {
+    renderFlow(linked({ canCollect: true, everCompliant: true }));
+    expect(screen.getByTestId('hao-payout-mode-tip')).toHaveTextContent('payoutMode');
+  });
+
+  it('has its FAQ entry', () => {
+    renderFlow(linked({ canCollect: true, everCompliant: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'payoutMode.q' }));
+    expect(screen.getByText('payoutMode.why')).toBeInTheDocument();
   });
 });
 

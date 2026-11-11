@@ -77,7 +77,8 @@ class CampaignFundsServiceTest {
         every { syncRepo.findById(associationId) } answers { Optional.ofNullable(sync) }
         every { payoutRepo.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal("100.00")
         every { payoutRepo.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING) } returns BigDecimal("50.00")
-        every { totals.netTotalOf(associationId, any()) } returns null
+        every { totals.storedNetTotal(associationId, any()) } returns null
+        every { totals.fetchMissing(associationId, any()) } returns Unit
         balances(raised = "0", available = "0", disbursable = "0")
     }
 
@@ -233,6 +234,21 @@ class CampaignFundsServiceTest {
 
         verify(exactly = 1) { refreshService.requestRefresh(associationId) }
         assertEquals(NOW.plusSeconds(900), funds.nextRefreshAvailableAt)
+    }
+
+    @Test
+    fun `a plain read never calls HelloAsso, a refresh reads the missing payout totals`() {
+        row(FundsState.IN_TRANSIT, "30.00", idCashOut = 60002, cashOutDate = Instant.parse("2026-11-10T10:00:00Z"))
+        every { totals.storedNetTotal(associationId, 60002) } returns BigDecimal("1001.00")
+
+        assertEquals(0, BigDecimal("1001.00").compareTo(service.getFunds(campaignId, userId).cashOuts.single().netTotal))
+        verify(exactly = 0) { totals.fetchMissing(any(), any()) }
+        verify(exactly = 0) { refreshService.requestRefresh(any()) }
+
+        every { refreshService.requestRefresh(associationId) } returns
+            CashOutRefreshOutcome(CashOutSyncResult(NOW, null), false, NOW.plusSeconds(900))
+        service.refresh(campaignId, userId)
+        verify(exactly = 1) { totals.fetchMissing(associationId, listOf(60002L)) }
     }
 
     @Test

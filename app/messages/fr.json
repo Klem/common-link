@@ -384,7 +384,8 @@
       "disconnected": "HelloAsso déconnecté. Nous ne gardons plus aucun accès."
     },
     "paymentCancelled": "Paiement annulé : son montant est de nouveau disponible.",
-    "paymentCancelError": "Impossible d'annuler ce paiement. Veuillez réessayer."
+    "paymentCancelError": "Impossible d'annuler ce paiement. Veuillez réessayer.",
+    "cashOutConfirmed": "Virement confirmé : les fonds sont disponibles"
   },
   "compliance": {
     "alerts": {
@@ -1561,7 +1562,19 @@
           "submit": "Émettre le paiement →",
           "title": "Émettre un paiement",
           "typeCode": "Type de dépense",
-          "typeCodePlaceholder": "— Type —"
+          "typeCodePlaceholder": "— Type —",
+          "funds": {
+            "computing": "Calcul du montant disponible…",
+            "available": "Disponible pour vos paiements : {amount}",
+            "exceeds": "Ce montant dépasse les fonds arrivés sur votre compte ({amount}).",
+            "inTransit": "{amount} sont en route : confirmez leur réception dès qu'ils apparaissent sur votre relevé.",
+            "none": "Aucun fonds disponible pour un paiement.",
+            "noneUsed": "Les dons arrivés sur votre compte sont déjà utilisés par vos paiements. Les autres n'y sont pas encore.",
+            "noneUsedAtProvider": "Les dons arrivés sur votre compte sont déjà utilisés par vos paiements. Les autres n'y sont pas encore ({amount} chez HelloAsso).",
+            "notPaidOut": "Les dons de cette campagne n'ont pas encore été versés sur votre compte bancaire.",
+            "notPaidOutAtProvider": "Les dons de cette campagne n'ont pas encore été versés sur votre compte bancaire ({amount} chez HelloAsso).",
+            "payWhenArrived": "Vous pourrez payer dès leur arrivée."
+          }
         },
         "history": {
           "authorise": "Autoriser",
@@ -1673,11 +1686,12 @@
           "CANCELLED": "Annulé"
         },
         "stats": {
-          "availableBalance": "Solde disponible",
+          "availableBalance": "Disponible pour paiement",
           "confirmed": "Confirmées",
           "paid": "Déjà versé",
           "pending": "En attente",
-          "transactions": "Transactions"
+          "transactions": "Transactions",
+          "availableSub": "arrivé sur votre compte"
         },
         "status": {
           "CONFIRMED": "Confirmé",
@@ -1700,6 +1714,89 @@
           "operational": "Charges opérationnelles",
           "other": "Autres",
           "personnel": "Personnel"
+        },
+        "funds": {
+          "title": "Où en sont vos dons",
+          "updated": "Mis à jour {relative}",
+          "refresh": "Actualiser",
+          "refreshing": "Actualisation…",
+          "nextRefresh": "Prochaine actualisation possible à {time}",
+          "barLabel": "Répartition des dons collectés",
+          "steps": {
+            "atProvider": {
+              "label": "Chez HelloAsso",
+              "sub": "Pas encore versé"
+            },
+            "payoutPreparing": {
+              "label": "En préparation",
+              "sub": "Versement lancé par HelloAsso"
+            },
+            "inTransit": {
+              "label": "En route",
+              "sub": "Virement émis par HelloAsso"
+            },
+            "available": {
+              "label": "Arrivé sur votre compte",
+              "sub": "Utilisable pour vos paiements"
+            }
+          },
+          "toConfirm": "{count, plural, one {# virement à confirmer} other {# virements à confirmer}}",
+          "total": {
+            "label": "Disponible pour vos paiements",
+            "formula": "{available} arrivés − {paid} déjà payés − {pending} en cours"
+          },
+          "foot": "Chaque paiement est relié aux dons qui l'ont financé. Seuls les dons arrivés sur votre compte bancaire peuvent donc être utilisés. Survolez une section pour le détail.",
+          "tips": {
+            "atProvider": {
+              "text": "Ces dons attendent d'être versés sur votre compte. Selon votre réglage HelloAsso : à la demande (disponibles 7 jours ouvrés après chaque don) ou chaque mois (vers le 10).",
+              "link": "Demander le versement sur HelloAsso ↗"
+            },
+            "payoutPreparing": {
+              "text": "HelloAsso a lancé le versement, le virement sera émis sous peu. Rien à faire de votre côté."
+            },
+            "inTransit": {
+              "text": "HelloAsso a émis le virement. Il devient utilisable dès que vous confirmez l'avoir reçu, ou automatiquement après le délai de sécurité.",
+              "cashOutTitle": "Virement du {date}",
+              "cashOutTitleNoDate": "Virement en cours",
+              "ofTotal": "sur {total} reçus au total · ",
+              "autoOn": "disponible automatiquement le {date}",
+              "confirm": "J'ai reçu ce virement"
+            },
+            "available": {
+              "text": "Dons versés par HelloAsso et arrivés sur votre compte bancaire. Seuls ces dons peuvent financer vos paiements.",
+              "confirmedManual": "réception confirmée par vous le {date}",
+              "confirmedAuto": "disponible depuis le {date}",
+              "confirmedCurator": "rendu disponible par l'équipe CommonLink le {date}",
+              "releaseTitle": "Rendu disponible le {date}",
+              "releaseSub": "rendu disponible par l'équipe CommonLink",
+              "none": "Aucun virement reçu pour le moment."
+            }
+          },
+          "syncError": {
+            "title": "HelloAsso ne répond pas pour le moment.",
+            "since": "Les montants ci-dessous datent du {date}. Un virement arrivé depuis peut ne pas encore apparaître.",
+            "noDate": "Un virement arrivé récemment peut ne pas encore apparaître."
+          },
+          "loadError": "Impossible d'afficher l'état de vos dons pour le moment.",
+          "receipt": {
+            "title": "Avez-vous reçu ce virement ?",
+            "subtitle": "Vérifiez qu'il apparaît sur le relevé de votre compte bancaire.",
+            "issuer": "Émetteur",
+            "issuerValue": "HelloAsso",
+            "issueDate": "Date d'émission",
+            "statementAmount": "Montant sur votre relevé",
+            "effect": "En confirmant, <strong>{amount}</strong> de dons de cette campagne deviennent disponibles pour vos paiements.",
+            "rest": "Le reste ({amount}) concerne vos autres campagnes ou formulaires HelloAsso.",
+            "auto": "Votre confirmation est enregistrée dans votre historique. Sans confirmation, ces fonds deviendront disponibles automatiquement le {date}",
+            "notYet": "Pas encore",
+            "confirm": "Oui, je l'ai reçu",
+            "errors": {
+              "notCashedOut": "HelloAsso n'indique pas encore ce virement comme versé. Réessayez plus tard.",
+              "notLinked": "Votre compte HelloAsso n'est plus relié à CommonLink : la réception ne peut pas être vérifiée.",
+              "unavailable": "HelloAsso ne répond pas pour le moment. Réessayez plus tard.",
+              "notFound": "Ce virement n'est plus à confirmer."
+            }
+          }
         }
       },
       "publish": {
@@ -3347,7 +3444,8 @@
             "missingFixAfter": ", collez cette adresse dans le champ des notifications, puis enregistrez :",
             "retry": "C'est corrigé, refaire un don test",
             "visio": "Le faire avec vous en visio"
-          }
+          },
+          "payoutMode": "<strong>Conseil : choisissez le versement « à la demande »</strong> dans votre espace HelloAsso. En mode mensuel, un don peut attendre jusqu'à environ 40 jours avant de pouvoir financer un paiement ; à la demande, c'est vous qui déclenchez le versement."
         },
         "disconnect": {
           "title": "Se déconnecter de HelloAsso ?",
@@ -3358,7 +3456,9 @@
           "secretNoDate": "Votre clé secrète, elle, est déjà effacée de chez nous. Pour être certain qu'elle ne sert plus nulle part, régénérez-la dans votre espace HelloAsso.",
           "cancel": "Annuler",
           "confirm": "Oui, me déconnecter",
-          "confirming": "Déconnexion…"
+          "confirming": "Déconnexion…",
+          "notYetPaidOut": "<strong>{count, plural, one {# don} other {# dons}} ({amount}) pas encore versés par HelloAsso</strong> sur votre compte bancaire ne pourront plus être suivis automatiquement après la déconnexion.",
+          "notYetPaidOutRelease": "L'équipe CommonLink pourra les rendre disponibles pour vos paiements sur présentation de la ligne de votre relevé bancaire qui montre le virement."
         },
         "faq": {
           "titleStart": "Vos questions avant de commencer",
@@ -3485,6 +3585,11 @@
           "real": {
             "q": "Est-ce le vrai site HelloAsso ?",
             "text": "Avant de saisir quoi que ce soit, regardez la barre d'adresse : elle doit afficher <strong>helloasso.com</strong> (votre espace d'administration est sur <strong>admin.helloasso.com</strong>). Sinon, fermez l'onglet et contactez-nous. <strong>CommonLink ne vous demandera jamais votre mot de passe HelloAsso</strong> : la clé n'est pas votre mot de passe."
+          },
+          "payoutMode": {
+            "q": "Quel rythme de versement choisir ?",
+            "text": "Nous vous conseillons le versement <strong>à la demande</strong>, sans l'imposer.",
+            "why": "Seuls les dons arrivés sur votre compte bancaire peuvent financer vos paiements depuis CommonLink. En mode mensuel, un don peut attendre jusqu'à environ 40 jours avant d'être utilisable ; à la demande, vous déclenchez le versement vous-même dès que vous en avez besoin."
           }
         },
         "help": {

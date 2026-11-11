@@ -5,20 +5,21 @@ const base = (campaignId: string) => `/api/campaigns/${campaignId}/payments`;
 
 /**
  * Creates a new PENDING payout for a campaign.
- * Calls `POST /api/campaigns/{campaignId}/payments`.
+ * Calls `POST /api/campaigns/{campaignId}/payments`. Silent: every caller toasts its own failure, and a
+ * `409 FUNDS_NOT_AVAILABLE` is explained by the form (no generic conflict toast on top).
  */
 export const createPayment = (
   campaignId: string,
   data: CreatePayoutRequest,
 ): Promise<PayoutDto> =>
-  api.post<PayoutDto>(base(campaignId), data).then((r) => r.data);
+  api.post<PayoutDto>(base(campaignId), data, { silentErrors: true }).then((r) => r.data);
 
 /**
  * Transitions a PENDING payout to CONFIRMED and enqueues an on-chain job.
- * Calls `POST /api/campaigns/{campaignId}/payments/{payoutId}/confirm`.
+ * Calls `POST /api/campaigns/{campaignId}/payments/{payoutId}/confirm`. Silent, like {@link createPayment}.
  */
 export const confirmPayment = (campaignId: string, payoutId: string): Promise<PayoutDto> =>
-  api.post<PayoutDto>(`${base(campaignId)}/${payoutId}/confirm`).then((r) => r.data);
+  api.post<PayoutDto>(`${base(campaignId)}/${payoutId}/confirm`, null, { silentErrors: true }).then((r) => r.data);
 
 /**
  * Cancels a PENDING payout with no transfer in progress; its amount is no longer reserved.

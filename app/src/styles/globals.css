@@ -3424,3 +3424,68 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .ha-cart-text{font-size:12.5px;line-height:1.6;color:var(--slate-lavender);text-align:center;margin:0}
 .ha-submitting{font-size:12.5px;color:var(--slate-lavender);margin:0}
 .ha-how-it-works{font-size:12.5px;font-weight:600;color:var(--deep-indigo)}
+
+/* Campaign funds (HelloAsso payouts) — "Où en sont vos dons", ported from
+   minisite/mise_a_disposition_des_fonds_helloasso.html (l. 521-566). The tooltip is driven by the InfoTooltip state
+   (.open), not by :hover/:focus-within, so Escape can close it while hovered. DEV classes not ported. */
+.funds-sync{font-family:var(--font-inter),sans-serif;font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate-lavender);margin-left:auto}
+.funds-sync button{background:none;border:none;color:var(--teal-dark);font-weight:600;cursor:pointer;font-size:11.5px;padding:0 0 0 4px}
+.funds-sync button:disabled{color:var(--slate-lavender);cursor:not-allowed;font-weight:400}
+.funds-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--mist-lavender);margin:4px 0 14px}
+.funds-bar span{height:100%;transition:width .5s ease;cursor:help}
+.funds-seg-avail{background:var(--teal-dark)}
+.funds-seg-transit{background:var(--bright-teal)}
+.funds-seg-prep{background:var(--soft-amber)}
+.funds-seg-ha{background:#c9c6e6}
+.funds-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;position:relative}
+.funds-leg{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--slate-lavender);line-height:1.4}
+.funds-leg i{width:10px;height:10px;border-radius:3px;flex-shrink:0;margin-top:3px}
+.funds-leg strong{display:block;font-family:var(--font-syne),sans-serif;font-size:15px;color:var(--ink-navy)}
+.funds-leg-btn{background:none;border:0;padding:0;margin:0;width:100%;font:inherit;color:inherit;text-align:left;cursor:help;border-radius:var(--radius-md)}
+.funds-leg-btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bright-teal)}
+.funds-total{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;border-radius:var(--radius-md);background:rgba(78,205,196,.06);border:1px solid rgba(78,205,196,.2)}
+.funds-total-val{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:26px;color:var(--teal-dark)}
+.funds-total-lbl{font-size:12px;color:var(--slate-lavender);line-height:1.5}
+.funds-total-lbl strong{color:var(--ink-navy)}
+.funds-total.zero{background:rgba(255,179,71,.08);border-color:rgba(255,179,71,.3)}
+.funds-total.zero .funds-total-val{color:#b37800}
+.funds-block{padding:12px 14px;border-radius:var(--radius-md);background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.3);font-size:12.5px;line-height:1.55;color:var(--ink-navy);margin-bottom:14px}
+.funds-skel{height:14px;border-radius:7px;margin-bottom:10px}
+.funds-skel.w70{width:70%}
+.funds-skel.total{width:45%;height:38px}
+.funds-foot{font-size:11.5px;color:var(--slate-lavender);margin-top:10px;line-height:1.5}
+.funds-leg-wrap{position:relative;border-radius:var(--radius-md);padding:6px 8px;margin:-6px -8px;transition:background var(--tb)}
+.funds-leg-wrap:hover,.funds-leg-wrap:focus-within,.funds-leg-wrap.open{background:rgba(78,205,196,.06)}
+.funds-leg-wrap:not(:last-child)::after{content:'→';position:absolute;right:6px;top:7px;font-size:14px;color:var(--slate-lavender);opacity:.5;pointer-events:none}
+.funds-leg .funds-info{font-size:11px;color:var(--slate-lavender);margin-left:4px;font-weight:400}
+.funds-cue{display:inline-block;margin-top:5px;padding:2px 8px;border-radius:50px;background:rgba(78,205,196,.14);color:var(--teal-dark);font-size:10.5px;font-weight:700}
+.funds-tip{display:none;position:absolute;top:100%;left:0;z-index:30;width:330px;max-width:calc(100vw - 48px);padding-top:8px;cursor:default}
+.funds-tip.right{left:auto;right:0}
+.funds-leg-wrap.open .funds-tip{display:block}
+.funds-tip-in{background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);box-shadow:var(--shadow-xl);padding:14px 16px;font-size:12.5px;line-height:1.55;color:var(--ink-navy);text-align:left}
+.funds-tip-title{font-weight:700;font-size:13px;margin-bottom:4px}
+.funds-tip-text{color:var(--slate-lavender)}
+.funds-tip-co{padding:9px 0;border-top:1px solid var(--mist-lavender);margin-top:9px}
+.funds-tip-co-head{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.funds-tip-co-sub{font-size:11.5px;color:var(--slate-lavender)}
+.funds-tip .cm-btn{margin-top:8px;width:100%;justify-content:center}
+.funds-tip-link{display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:var(--teal-dark);text-decoration:none}
+.funds-tip-link:hover{text-decoration:underline}
+.pay-amt-hint{font-size:11.5px;color:var(--slate-lavender);margin-top:6px;line-height:1.45}
+.pay-amt-hint.err{color:var(--warm-coral)}
+@media (prefers-reduced-motion:reduce){.funds-bar span{transition:none}}
+/* "Avez-vous reçu ce virement ?" (CashOutReceiptDialog) — inline styles of the mockup (l. 1745-1751) as classes. */
+.cashout-ov-icon{font-size:36px;margin-bottom:10px;text-align:center}
+.cashout-ov-title{font-family:var(--font-nunito-sans),sans-serif;font-size:20px;font-weight:900;color:var(--ink-navy);text-align:center;margin:0 0 6px}
+.cashout-ov-sub{font-size:13px;color:var(--slate-lavender);text-align:center;margin-bottom:18px}
+.cashout-ov-details{background:var(--soft-cream);border-radius:var(--radius-md);padding:14px;margin-bottom:14px;font-size:13px}
+.cashout-ov-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--mist-lavender)}
+.cashout-ov-row:last-child{border-bottom:0}
+.cashout-ov-row span:first-child{color:var(--slate-lavender)}
+.cashout-ov-effect{font-size:13px;line-height:1.55;margin-bottom:14px}
+.cashout-ov-effect strong{color:var(--teal-dark)}
+.cashout-ov-auto{padding:10px;border-radius:var(--radius-md);background:rgba(255,179,71,.06);border:1px solid rgba(255,179,71,.2);font-size:12px;color:#b37800;margin-bottom:18px}
+.cashout-ov-error{font-size:12.5px;color:var(--warm-coral);margin-bottom:12px;text-align:center}
+.cashout-ov-actions{display:flex;gap:10px}
+.cashout-ov-actions .btn-secondary{flex:1}
+.cashout-ov-actions .btn-primary{flex:2}

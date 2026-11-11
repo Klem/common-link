@@ -87,7 +87,8 @@ export interface UsePaymentsReturn {
    * or a dead link — and until it is cancelled its amount stays reserved on the available balance.
    */
   cancel: (payoutId: string) => Promise<PayoutDto>;
-  refetch: () => Promise<void>;
+  /** Re-reads the payouts and the summary; `silent` keeps the journal from showing its loading state. */
+  refetch: (silent?: boolean) => Promise<void>;
   /**
    * The payout the association has just come back from its bank for, while its fate is still
    * unknown — null otherwise.

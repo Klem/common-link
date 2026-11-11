@@ -18,6 +18,16 @@ vi.mock('next-intl', () => ({
     if (params) return `${key}:${JSON.stringify(params)}`;
     return key;
   },
+  useFormatter: () => ({ relativeTime: () => 'now', dateTime: () => '09:15' }),
+}));
+
+// The funds block has its own tests (CampaignFundsCard, useCampaignFunds); here only its wiring into the tab.
+const fundsState = vi.hoisted(() => ({ value: null as unknown }));
+vi.mock('@/hooks/campaign/useCampaignFunds', () => ({
+  useCampaignFunds: () => ({
+    funds: fundsState.value, isLoading: false, error: false, refreshing: false, nextRefreshAvailableAt: null,
+    refresh: vi.fn(), reload: vi.fn(), confirmReceipt: vi.fn(),
+  }),
 }));
 
 vi.mock('@/hooks/payee/usePayees');
@@ -268,6 +278,24 @@ describe('CampaignPaymentsTab', () => {
     expect(screen.getByText('stats.pending')).toBeDefined();
     expect(screen.getByText('stats.transactions')).toBeDefined();
     expect(screen.getByText('stats.confirmed')).toBeDefined();
+  });
+
+  it('the first stat is the amount payments can use, from the funds (same figure as the creation check)', () => {
+    setupMocks();
+    fundsState.value = {
+      provider: 'HELLOASSO', raised: 100, atProvider: 40, payoutPreparing: 0, inTransit: 30, available: 30, withdrawn: 0,
+      paidOut: 10, pendingPayouts: 0, disbursable: 20, cashOuts: [], manualReleases: [], lastSyncAt: null,
+      syncError: false, syncErrorCode: null, nextRefreshAvailableAt: null,
+    };
+    try {
+      render(<CampaignPaymentsTab campaign={campaign} payments={setupPayments({ summary: sampleSummary })} />);
+      const stat = screen.getByText('stats.availableBalance').closest('.cm-stat')!;
+      expect(within(stat as HTMLElement).getByText('20,00 €')).toBeDefined();
+      expect(within(stat as HTMLElement).getByText('stats.availableSub')).toBeDefined();
+      expect(document.getElementById('funds-card')).not.toBeNull();
+    } finally {
+      fundsState.value = null;
+    }
   });
 
   // ── Issuance panel ─────────────────────────────────────────────────────────

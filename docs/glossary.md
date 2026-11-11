@@ -166,6 +166,14 @@ Bank account tab state meaning Mollie sent the dossier back for more information
 A security mechanism that restricts which domains can communicate with the backend API. Only the authorized frontend URL is allowed — no other website can make requests to the API.
 `technical` `security`
 
+### Cash-out (HelloAsso) — Versement
+A HelloAsso payout: the transfer by which HelloAsso pays an association's collected money out to its bank account,
+on request (the association triggers it in its HelloAsso space; not possible through the public API) or monthly
+(around the 10th). Identified by `idCashOut`; one payout groups CommonLink donations of several campaigns with the
+association's other HelloAsso payments (memberships, ticketing) and may be lowered by refunds — hence the **Cash-out
+net total**. HelloAsso sends no notification for it: CommonLink polls each payment (**Cash-out tracking**).
+`functional` `association`
+
 ### Cash-out tracking (HelloAsso) — Suivi des versements
 How CommonLink learns that the money of a confirmed HelloAsso donation reached the association's bank account. At
 confirmation, the paying HelloAsso payment is recorded (`helloasso_donation_funds`, one row per donation); a pass
@@ -197,7 +205,7 @@ donation counts by its own provider reference, not by the association's current 
 `POST …/funds/refresh` asks for a tracking pass (at most one per association per 15 minutes, always `200`).
 `functional` `technical` `association`
 
-### Settlement delay (Délai de sécurité)
+### Settlement delay (settlement safety delay, Délai de sécurité)
 The number of **TARGET2 business days** after HelloAsso's payout date (or, missing it, after the payout was first
 seen) after which a paid-out HelloAsso donation becomes available on its own: 2 by default
 (`app.payments.helloasso.cashout-settlement-business-days`, provisional CEO decision Q1). TARGET2 business days exclude
@@ -281,6 +289,15 @@ One of the three login methods. Users register with an email and a password (min
 ### Fiat
 Traditional government-issued currency (EUR in our case). On CommonLink, donors pay in euros — the platform is not a crypto payment system. The blockchain layer is used for certification, not for transferring funds.
 `business` `blockchain`
+
+### Funds availability (FundsState) — Mise à disposition des fonds
+Where the money of a confirmed HelloAsso donation stands between HelloAsso and the association's bank account
+(`helloasso_donation_funds.funds_state`): `AT_PROVIDER` (held by HelloAsso), `PAYOUT_PREPARING` (payout started),
+`IN_TRANSIT` (paid out, within the **Settlement delay**), `AVAILABLE` (arrived: usable for payments,
+`donations.funds_available_at` set), `WITHDRAWN` (refunded or contested, never usable). Mapped from HelloAsso's
+`cashOutState` by `HelloAssoFundsStateMapper`; transitions never go back, except to `WITHDRAWN`. Mollie donations have
+no such row: they are available at confirmation. See **Cash-out tracking**, **Campaign funds**.
+`functional` `technical` `association`
 
 ### FIFO Donation Allocation
 The engine that determines which available donations funded which confirmed payouts of a campaign.
@@ -687,7 +704,7 @@ An internal utility that generates cryptographically random tokens and computes 
 A recorded donation event. Each transaction has: a unique ID, a blockchain hash (for on-chain verification), the donor reference, campaign reference, amount, status (`confirmed`, `pending`, or `failed`), and date. Transactions are displayed in the campaign detail view.
 `functional` `blockchain`
 
-### Transfer receipt confirmation (Confirmation « Virement reçu »)
+### Transfer receipt confirmation (cash-out receipt confirmation, Confirmation « Virement reçu »)
 The association states that a HelloAsso payout (`idCashOut`) reached its bank account, making its donations of that
 payout `AVAILABLE` before the **Settlement delay** ends (CEO decision Q3: the association alone). Never trusted on
 the click: each donation is re-read at HelloAsso and must be `CashedOut` in that payout, else
@@ -808,7 +825,7 @@ Google Analytics 4 ecommerce events delivered to the association's own page `win
 
 ## P (continued)
 
-### Available balance (Solde disponible)
+### Available balance (disbursable balance, Solde disponible)
 What an association can still commit on a campaign: available donations − `CONFIRMED` payouts −
 `PENDING` payouts (`PayoutService.computeAvailableBalance`). Available donations are those whose
 funds reached the association's bank account (`funds_available_at` set,

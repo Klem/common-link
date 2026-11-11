@@ -386,8 +386,8 @@ Depuis le 11 novembre 2026, deux voies permettent d'utiliser ces dons avant la f
 par cette fiche : la confirmation de réception par l'association, après relecture de chaque don
 chez HelloAsso, et le déblocage manuel par un curateur, sur la ligne du relevé bancaire de
 l'association (texte et fichier), notamment quand le lien HelloAsso est coupé. Les deux sont
-journalisés au journal de conformité. Elles existent côté serveur ; le bouton de confirmation dans
-l'onglet Paiements n'est pas encore livré, et le déblocage n'a pas d'écran (le curateur passe par
+journalisés au journal de conformité. La confirmation se fait depuis l'onglet Paiements, qui
+affiche aussi l'état des dons et le montant utilisable ; le déblocage n'a pas d'écran (le curateur passe par
 l'interface de programmation). Le délai automatique repose sur une date de HelloAsso dont le sens
 (émission ou crédit) n'est pas encore confirmé.
 
@@ -400,7 +400,6 @@ l'interface de programmation). Le délai automatique repose sur une date de Hell
 | Brancher l'alerte technique sur les deux motifs d'intégration (8.1) | Développement | Rien — mais le message affiché est inexact tant que ce n'est pas fait |
 | Détecter un virement figé chez une banque qui ne rapporte pas (8.2) | Développement | La traçabilité des virements exécutés par LCL et Nickel |
 | Vérifier la formulation des deux motifs non testables (8.3) | Observation en production | Rien — vérification à la première occurrence réelle |
-| Bouton de confirmation de réception des dons HelloAsso dans l'onglet Paiements (8.4 ; le serveur est livré) | Développement | Confirmation par l'association depuis l'écran (le déblocage par un curateur reste possible) |
 | Provisionner les identifiants Bridge de production et désactiver le mode démonstration (7) | Prérequis non technique | **Toute exécution réelle de virement en production** |
 
 ---

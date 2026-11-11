@@ -160,6 +160,17 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
       ),
     },
     {
+      // CEO decision Q2: "on request" recommended, never required.
+      id: 'payoutMode',
+      icon: '👆',
+      panel: () => (
+        <>
+          <p>{t.rich('payoutMode.text', { strong })}</p>
+          <p>{t('payoutMode.why')}</p>
+        </>
+      ),
+    },
+    {
       id: 'receipts',
       icon: '📄',
       panel: () => <p>{t.rich('receipts.text', { strong })}</p>,

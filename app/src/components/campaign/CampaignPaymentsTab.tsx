@@ -5,6 +5,10 @@ import { useTranslations } from 'next-intl';
 import type { UsePaymentsReturn } from '@/hooks/campaign/usePayments';
 import { Donut, DONUT_PALETTE } from '@/components/ui/Donut';
 import { PaymentJournal } from '@/components/campaign/PaymentJournal';
+import { CampaignFundsCard } from '@/components/campaign/CampaignFundsCard';
+import { CashOutReceiptDialog } from '@/components/campaign/CashOutReceiptDialog';
+import { useCampaignFunds } from '@/hooks/campaign/useCampaignFunds';
+import type { CampaignCashOut } from '@/types/campaignFunds';
 import { PayoutDetailPanel } from '@/components/campaign/PayoutDetailPanel';
 import { IssuePaymentForm } from '@/components/campaign/IssuePaymentForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -28,6 +32,10 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
   const { payouts, summary, isLoading, isSaving, error, retry, cancel, awaitingReturnPayoutId } = payments;
   const addToast = useToastStore((s) => s.addToast);
+  /** Where the campaign's donations stand, and what a payment can use ("Où en sont vos dons"). */
+  const funds = useCampaignFunds(campaign.id, payments.refetch);
+  /** HelloAsso payout whose receipt the association is confirming. */
+  const [receiptCashOut, setReceiptCashOut] = useState<CampaignCashOut | null>(null);
 
   /** Expense line expanded in the breakdown. One at a time, so the list never runs long. */
   const [openBreakdownCode, setOpenBreakdownCode] = useState<string | null>(null);
@@ -84,10 +92,11 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
     try {
       await cancel(payoutId);
       addToast('success', 'paymentCancelled');
+      void funds.reload();
     } catch {
       addToast('error', 'paymentCancelError');
     }
-  }, [cancelTarget, cancel, addToast]);
+  }, [cancelTarget, cancel, addToast, funds]);
 
   /**
    * Settled payouts grouped by expense line, largest first. Feeds both the donut and the list below
@@ -122,8 +131,9 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           <div className="cm-stat-icon">💰</div>
           <div className="cm-stat-lbl">{t('stats.availableBalance')}</div>
           <div className="cm-stat-val val-dark">
-            {summary ? fmtEur(summary.availableBalance) : '—'}
+            {funds.funds ? fmtEur(funds.funds.disbursable) : '—'}
           </div>
+          <div className="cm-stat-sub">{t('stats.availableSub')}</div>
         </div>
         <div className="cm-stat">
           <div className="cm-stat-icon">📤</div>
@@ -160,6 +170,18 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         </div>
       </div>
 
+      {/* ── Where the donations stand (HelloAsso payouts) ─────────────── */}
+      <div className="mb-18">
+        <CampaignFundsCard
+          funds={funds.funds}
+          isLoading={funds.isLoading}
+          error={funds.error}
+          refreshing={funds.refreshing}
+          onRefresh={() => { void funds.refresh(); }}
+          onOpenReceipt={setReceiptCashOut}
+        />
+      </div>
+
       {/* ── Two-column grid: issue on the left, what was spent on the right ─ */}
       <div className="pay-form-grid mb-18">
         <IssuePaymentForm
@@ -167,6 +189,13 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
           submit={payments.submit}
           isSaving={isSaving}
           paymentsDisabled={paymentsDisabled}
+          funds={funds.funds}
+          fundsLoading={funds.isLoading}
+          onFundsChanged={() => {
+            void funds.reload();
+            // A refusal at the confirm step leaves a PENDING payout the journal must show.
+            void payments.refetch(true);
+          }}
         />
 
         <div className="cm-card">
@@ -256,6 +285,12 @@ export function CampaignPaymentsTab({ campaign, payments }: Props) {
         cancelLabel={t('history.cancelConfirm.keep')}
         onConfirm={handleCancelConfirmed}
         onCancel={() => setCancelTarget(null)}
+      />
+
+      <CashOutReceiptDialog
+        cashOut={receiptCashOut}
+        onClose={() => setReceiptCashOut(null)}
+        onConfirm={funds.confirmReceipt}
       />
     </div>
   );

@@ -16,6 +16,9 @@ import {
 } from '@/types/payment';
 import { IbanVerificationStatus } from '@/types/payee';
 import { ROUTES } from '@/lib/routes';
+import { fundsNotAvailableBody } from '@/lib/api/campaignFunds';
+import { FundsProvider } from '@/types/campaignFunds';
+import type { CampaignFunds, FundsNotAvailableBody } from '@/types/campaignFunds';
 import type { CreatePayoutRequest, PayoutDto } from '@/types/payment';
 
 interface Props {
@@ -28,6 +31,15 @@ interface Props {
    * a payment reported as sent that never reached a bank is worse than one that cannot be issued.
    */
   paymentsDisabled: boolean;
+  /**
+   * The campaign's funds (`useCampaignFunds`): mirror of the server check, which stays the reference
+   * (`blocking-reasons`, then the 409 at creation). Absent: no hint, no funds-based limit.
+   */
+  funds?: CampaignFunds | null;
+  /** True while the funds are read for the first time. */
+  fundsLoading?: boolean;
+  /** Re-reads the funds after a payment or a `FUNDS_NOT_AVAILABLE` refusal. */
+  onFundsChanged?: () => void;
 }
 
 const REMUNERATION_CODES = new Set(['64-rem', '64-soc']);
@@ -55,9 +67,17 @@ function kindFromTypeCode(code: string) {
  * Extracted from the tab so the journal below can be read on its own, with the same controls and
  * the same confirmation dialog it has always had. Its state is local: nothing outside needs a
  * half-typed payment.
+ *
+ * With the campaign's funds it mirrors the server's rule "only donations arrived on the bank account
+ * can fund a payment": the amount usable is shown under the amount, a larger amount is flagged and
+ * cannot be sent, and nothing usable at all is explained at the top. A `409 FUNDS_NOT_AVAILABLE`
+ * (funds changed meanwhile) is explained with the figures of the refusal, without the generic toast.
  */
-export function IssuePaymentForm({ campaignId, submit, isSaving, paymentsDisabled }: Props) {
+export function IssuePaymentForm({
+  campaignId, submit, isSaving, paymentsDisabled, funds = null, fundsLoading = false, onFundsChanged,
+}: Props) {
   const t = useTranslations('dashboard.campaigns.payments');
+  const tf = useTranslations('dashboard.campaigns.payments.form.funds');
   const router = useRouter();
   const { payees } = usePayees();
   const addToast = useToastStore((s) => s.addToast);
@@ -121,8 +141,42 @@ export function IssuePaymentForm({ campaignId, submit, isSaving, paymentsDisable
     return reasons;
   }, [blockingReasons, isDescriptionTooShort]);
 
+  /** Last `409 FUNDS_NOT_AVAILABLE` refusal, shown until the amount changes. */
+  const [fundsRefusal, setFundsRefusal] = useState<FundsNotAvailableBody | null>(null);
+  useEffect(() => { setFundsRefusal(null); }, [amount]);
+
+  const nothingDisbursable = funds !== null && funds.disbursable <= 0;
+  const exceedsFunds = funds !== null && amountNum > 0 && amountNum > funds.disbursable;
+
   const isValid = !paymentsDisabled && !!payeeId && !!payeeIbanId && !!effectiveTypeCode && amountNum > 0
-    && label.trim().length >= MIN_LABEL_LENGTH && displayedBlockingReasons.length === 0;
+    && label.trim().length >= MIN_LABEL_LENGTH && displayedBlockingReasons.length === 0
+    && !nothingDisbursable && !exceedsFunds;
+
+  /** The hint under the amount: available amount, or why the amount is too high. */
+  function amountHint(): { text: string; err: boolean } | null {
+    if (fundsRefusal) {
+      return {
+        text: [
+          tf('exceeds', { amount: fmtEur(fundsRefusal.disbursable) }),
+          fundsRefusal.inTransit > 0 ? tf('inTransit', { amount: fmtEur(fundsRefusal.inTransit) }) : '',
+        ].filter(Boolean).join(' '),
+        err: true,
+      };
+    }
+    if (fundsLoading && !funds) return { text: tf('computing'), err: false };
+    if (!funds) return null;
+    if (exceedsFunds) {
+      return {
+        text: [
+          tf('exceeds', { amount: fmtEur(funds.disbursable) }),
+          funds.inTransit > 0 ? tf('inTransit', { amount: fmtEur(funds.inTransit) }) : '',
+        ].filter(Boolean).join(' '),
+        err: true,
+      };
+    }
+    return { text: tf('available', { amount: fmtEur(funds.disbursable) }), err: false };
+  }
+  const hint = amountHint();
 
   function handleTypeChange(value: string) {
     const newIsRemu = REMUNERATION_CODES.has(value);
@@ -167,15 +221,42 @@ export function IssuePaymentForm({ campaignId, submit, isSaving, paymentsDisable
         return;
       }
       addToast('success', isPayoutInFlight(initiated) ? 'paymentSubmitted' : 'paymentSuccess');
-    } catch {
+      onFundsChanged?.();
+    } catch (error) {
+      const refusal = fundsNotAvailableBody(error);
+      if (refusal) {
+        setFundsRefusal(refusal);
+        onFundsChanged?.();
+        return;
+      }
       addToast('error', 'paymentError');
     }
+  }
+
+  /** Why nothing can be paid (top of the form), HelloAsso wording; Mollie gets the first sentence only. */
+  function noFundsReason(f: CampaignFunds): string[] {
+    if (f.provider === FundsProvider.MOLLIE) return [];
+    const atProvider = f.atProvider > 0 ? { amount: fmtEur(f.atProvider) } : null;
+    const reason = f.available > 0
+      ? (atProvider ? tf('noneUsedAtProvider', atProvider) : tf('noneUsed'))
+      : (atProvider ? tf('notPaidOutAtProvider', atProvider) : tf('notPaidOut'));
+    return [
+      reason,
+      f.inTransit > 0 ? tf('inTransit', { amount: fmtEur(f.inTransit) }) : '',
+      tf('payWhenArrived'),
+    ].filter(Boolean);
   }
 
   return (
     <>
       <div className="cm-card">
         <div className="cm-card-title">💸 {t('form.title')}</div>
+
+        {funds && nothingDisbursable && (
+          <div className="funds-block" role="status">
+            <strong>{tf('none')}</strong> {noFundsReason(funds).join(' ')}
+          </div>
+        )}
 
         {/* Type + Amount row2 — FIRST */}
         <div className="row2 mb-14">
@@ -221,7 +302,12 @@ export function IssuePaymentForm({ campaignId, submit, isSaving, paymentsDisable
               placeholder="0,00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              aria-describedby={hint ? 'pay-amt-hint' : undefined}
+              aria-invalid={hint?.err ? true : undefined}
             />
+            {hint && (
+              <div id="pay-amt-hint" className={`pay-amt-hint${hint.err ? ' err' : ''}`}>{hint.text}</div>
+            )}
           </div>
         </div>
 

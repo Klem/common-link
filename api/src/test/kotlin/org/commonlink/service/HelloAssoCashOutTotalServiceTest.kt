@@ -21,7 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 import java.util.UUID
 
-/** Lazy read of a HelloAsso payout's net total: once per payout, unit conversion, never blocking. */
+/** Net total of a HelloAsso payout: read once, one token per batch, unit conversion, never blocking, never on a plain read. */
 class HelloAssoCashOutTotalServiceTest {
 
     private val repository = mockk<HelloAssoCashOutRepository>()
@@ -52,39 +52,59 @@ class HelloAssoCashOutTotalServiceTest {
         HelloAssoConnection(association = mockk(relaxed = true), webhookToken = "t", state = state, organizationSlug = "mon-asso")
 
     @Test
-    fun `the first read fetches and stores the total in euros, the next ones are served from the table`() {
-        every { gateway.getCashOutNetTotal("access", "mon-asso", 60001) } returns BigDecimal("30.0")
+    fun `a stored total is read without any call`() {
+        stored[1] = BigDecimal("12.00")
         val service = serviceWith()
 
-        assertEquals(BigDecimal("30.00"), service.netTotalOf(association, 60001))
-        assertEquals(BigDecimal("30.00"), service.netTotalOf(association, 60001))
+        assertEquals(BigDecimal("12.00"), service.storedNetTotal(association, 1))
+        assertNull(service.storedNetTotal(association, 2))
+        verify(exactly = 0) { tokenManager.getValidAccessToken(any()) }
+        verify(exactly = 0) { gateway.getCashOutNetTotal(any(), any(), any()) }
+    }
 
-        verify(exactly = 1) { gateway.getCashOutNetTotal(any(), any(), any()) }
+    @Test
+    fun `fetchMissing reads only the missing totals, with one token for all, and stores them in euros`() {
+        stored[1] = BigDecimal("12.00")
+        every { gateway.getCashOutNetTotal("access", "mon-asso", 2) } returns BigDecimal("30.0")
+        every { gateway.getCashOutNetTotal("access", "mon-asso", 3) } returns BigDecimal("8")
+
+        serviceWith().fetchMissing(association, listOf(1, 2, 3, 2))
+
         verify(exactly = 1) { tokenManager.getValidAccessToken(association) }
-        assertEquals(mapOf(60001L to BigDecimal("30.00")), stored)
+        verify(exactly = 0) { gateway.getCashOutNetTotal(any(), any(), 1) }
+        assertEquals(mapOf(1L to BigDecimal("12.00"), 2L to BigDecimal("30.00"), 3L to BigDecimal("8.00")), stored)
+    }
+
+    @Test
+    fun `nothing missing means no token and no call`() {
+        stored[1] = BigDecimal("12.00")
+        serviceWith().fetchMissing(association, listOf(1))
+        verify(exactly = 0) { tokenManager.getValidAccessToken(any()) }
     }
 
     @Test
     fun `an export in cents is converted to euros`() {
         every { gateway.getCashOutNetTotal("access", "mon-asso", 1) } returns BigDecimal("3050")
-        assertEquals(BigDecimal("30.50"), serviceWith(CashOutExportAmountUnit.CENTS).netTotalOf(association, 1))
+        serviceWith(CashOutExportAmountUnit.CENTS).fetchMissing(association, listOf(1))
+        assertEquals(BigDecimal("30.50"), stored[1])
     }
 
     @Test
-    fun `a HelloAsso failure gives null, stores nothing, and the next call tries again`() {
+    fun `a HelloAsso failure stores nothing, and the next call tries again`() {
         every { gateway.getCashOutNetTotal("access", "mon-asso", 2) } throws HelloAssoUnavailableException("GET", 404) andThen BigDecimal("12.5")
         val service = serviceWith()
 
-        assertNull(service.netTotalOf(association, 2))
+        service.fetchMissing(association, listOf(2))
         assertEquals(emptyMap<Long, BigDecimal>(), stored)
-        assertEquals(BigDecimal("12.50"), service.netTotalOf(association, 2))
+        service.fetchMissing(association, listOf(2))
+        assertEquals(BigDecimal("12.50"), stored[2])
     }
 
     @Test
-    fun `without an active link nothing is called and the total is unknown`() {
+    fun `without an active link nothing is called`() {
         every { connectionRepository.findByAssociationId(association) } returns connection(HelloAssoConnectionState.DISCONNECTED)
 
-        assertNull(serviceWith().netTotalOf(association, 3))
+        serviceWith().fetchMissing(association, listOf(3))
         verify(exactly = 0) { tokenManager.getValidAccessToken(any()) }
         verify(exactly = 0) { gateway.getCashOutNetTotal(any(), any(), any()) }
     }

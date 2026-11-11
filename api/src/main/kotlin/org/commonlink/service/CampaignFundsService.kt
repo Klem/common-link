@@ -60,8 +60,8 @@ class CampaignFundsService(
     internal var clock: Clock = Clock.systemUTC()
 
     /**
-     * The funds of [campaignId], for the association of user [userId]. Not transactional on purpose: the net total
-     * of a payout not read yet is fetched at HelloAsso ([HelloAssoCashOutTotalService]).
+     * The funds of [campaignId], for the association of user [userId]. Read only: no HelloAsso call (a payout total
+     * not read yet stays `null` until a [refresh] or a receipt confirmation reads it).
      *
      * @throws NotFoundException when the campaign does not exist or belongs to another association.
      */
@@ -73,7 +73,9 @@ class CampaignFundsService(
     /**
      * Requests a tracking pass for the campaign's association ([HelloAssoCashOutRefreshService.requestRefresh]: at
      * most one per association per interval, guarded in the database), then returns the funds. A request over the
-     * limit, or for an association without HelloAsso donation, runs nothing and is not an error.
+     * limit, or for an association without HelloAsso donation, runs nothing and is not an error. It also reads the
+     * campaign's payout totals not known yet (only those), with one access token
+     * ([HelloAssoCashOutTotalService.fetchMissing]). Must not run inside a transaction (HelloAsso calls).
      *
      * @throws NotFoundException when the campaign does not exist or belongs to another association.
      */
@@ -81,6 +83,8 @@ class CampaignFundsService(
         val associationId = ownedAssociationId(campaignId, userId)
         if (!fundsRepository.existsByAssociationId(associationId)) return build(campaignId, associationId, null)
         val outcome = refreshService.requestRefresh(associationId)
+        // Also when the pass itself was limited: the scheduled pass may have found new payouts since.
+        cashOutTotalService.fetchMissing(associationId, fundsRepository.findByCampaignId(campaignId).mapNotNull { it.idCashOut })
         return build(campaignId, associationId, outcome.nextRefreshAvailableAt.takeIf { it.isAfter(clock.instant()) })
     }
 
@@ -130,7 +134,7 @@ class CampaignFundsService(
                 CampaignCashOutDto(
                     idCashOut = idCashOut,
                     cashOutDate = start?.let(BusinessDayCalendar::dayOf),
-                    netTotal = cashOutTotalService.netTotalOf(associationId, idCashOut),
+                    netTotal = cashOutTotalService.storedNetTotal(associationId, idCashOut),
                     campaignAmount = group.sumAmounts(),
                     state = if (allAvailable) FundsState.AVAILABLE else FundsState.IN_TRANSIT,
                     autoAvailableOn = start?.let {

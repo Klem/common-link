@@ -18,7 +18,8 @@ import java.util.UUID
  * payout export), shown next to the "transfer received" confirmation. It may differ from the sum of CommonLink's
  * donations: the payout can carry other payments of the association and be lowered by refunds or contestations.
  *
- * Read lazily, once per payout, then served from `helloasso_cash_outs`. Only the total is stored: the export's rows
+ * Read once per payout — at the receipt confirmation or at a refresh of the Payments tab, never by a plain read of
+ * the funds — then served from `helloasso_cash_outs`. Only the total is stored: the export's rows
  * (third-party payers' data) are summed in memory by the gateway and dropped. Never blocks: any failure (no link,
  * HelloAsso unavailable, payout not exported yet) gives `null`, and the next call tries again.
  */
@@ -33,23 +34,33 @@ class HelloAssoCashOutTotalService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    /** The total of payout [idCashOut] of [associationId] in euros, read at HelloAsso if not stored yet; `null` if unknown. */
-    fun netTotalOf(associationId: UUID, idCashOut: Long): BigDecimal? {
-        repository.findByAssociationIdAndIdCashOut(associationId, idCashOut)?.let { return it.netTotal }
+    /** The stored total of payout [idCashOut] of [associationId] in euros, `null` until read. Never calls HelloAsso. */
+    fun storedNetTotal(associationId: UUID, idCashOut: Long): BigDecimal? =
+        repository.findByAssociationIdAndIdCashOut(associationId, idCashOut)?.netTotal
+
+    /**
+     * Reads at HelloAsso the totals of [idCashOuts] not stored yet, with **one** access token for the association
+     * (the refresh of the Payments tab). Without an active link, or without any missing total, makes no call. Never
+     * throws; a failed read leaves that total unknown until the next refresh. Must not run inside a transaction.
+     */
+    fun fetchMissing(associationId: UUID, idCashOuts: Collection<Long>) {
+        val missing = idCashOuts.distinct().filter { storedNetTotal(associationId, it) == null }
+        if (missing.isEmpty()) return
         val connection = connectionRepository.findByAssociationId(associationId)
-        if (connection?.state != HelloAssoConnectionState.ACTIVE) return null
+        if (connection?.state != HelloAssoConnectionState.ACTIVE) return
         val token = try {
             tokenManager.getValidAccessToken(associationId)
         } catch (ex: Exception) {
-            log.warn("HelloAsso payout {} total: no token for association {}: {}", idCashOut, associationId, ex.javaClass.simpleName)
-            return null
+            log.warn("HelloAsso payout totals: no token for association {}: {}", associationId, ex.javaClass.simpleName)
+            return
         }
-        return fetch(associationId, idCashOut, token, connection.organizationSlug)
+        missing.forEach { fetch(associationId, it, token, connection.organizationSlug) }
     }
 
     /**
-     * Same as [netTotalOf] for a caller that already holds the association's [accessToken] and organization [slug]
-     * (the receipt confirmation): no second token request. Must not run inside a transaction (HTTP call).
+     * The total of payout [idCashOut], read at HelloAsso if not stored yet, for a caller that already holds the
+     * association's [accessToken] and organization [slug] (the receipt confirmation): no token request. `null` if
+     * unknown. Must not run inside a transaction (HTTP call).
      */
     fun netTotalOf(associationId: UUID, idCashOut: Long, accessToken: String, slug: String?): BigDecimal? =
         repository.findByAssociationIdAndIdCashOut(associationId, idCashOut)?.netTotal
