@@ -147,6 +147,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var helloAssoOnboardingReminderService: HelloAssoOnboardingReminderService
     @MockkBean private lateinit var kybDocumentService: KybDocumentService
     @MockkBean private lateinit var cashOutReceiptService: CashOutReceiptService
+    @MockkBean private lateinit var campaignFundsService: org.commonlink.service.CampaignFundsService
     @MockkBean private lateinit var helloAssoFundsReleaseService: HelloAssoFundsReleaseService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 

@@ -216,7 +216,8 @@ class PayoutControllerTest {
 
     @Test
     fun `POST create returns 409 FUNDS_NOT_AVAILABLE with the disbursable amount`() {
-        every { payoutService.create(any(), any(), any()) } throws FundsNotAvailableException(BigDecimal("42.50"))
+        every { payoutService.create(any(), any(), any()) } throws
+            FundsNotAvailableException(BigDecimal("42.50"), BigDecimal("371.00"), BigDecimal("40.00"))
 
         val body = """{"payeeId":"$payeeId","payeeIbanId":"$ibanId","amount":500.00,"kind":"EXPENSE","typeCode":"60-mat","label":"Achat matériel pédagogique"}"""
         mockMvc.perform(
@@ -228,6 +229,8 @@ class PayoutControllerTest {
             .andExpect(status().isConflict)
             .andExpect(jsonPath("$.code").value("FUNDS_NOT_AVAILABLE"))
             .andExpect(jsonPath("$.disbursable").value(42.5))
+            .andExpect(jsonPath("$.inTransit").value(371.0))
+            .andExpect(jsonPath("$.atProvider").value(40.0))
     }
 
     @Test

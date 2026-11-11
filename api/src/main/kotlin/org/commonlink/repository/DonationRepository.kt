@@ -19,9 +19,35 @@ interface MonthlyAmountRow {
     fun getAmount(): BigDecimal
 }
 
+/** Sum of a campaign's confirmed HelloAsso donations in one [org.commonlink.entity.FundsState]. */
+data class FundsStateAmount(val state: org.commonlink.entity.FundsState, val amount: BigDecimal)
+
 interface DonationRepository : JpaRepository<Donation, UUID> {
 
     fun findByProviderRef(providerRef: String): Donation?
+
+    /** Sum of the campaign's confirmed donations, every provider; null when none (callers treat null as zero). */
+    @Query("""
+        SELECT SUM(d.amount)
+        FROM Donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
+
+    /**
+     * Sums of the campaign's confirmed HelloAsso donations per cash-out tracking state (one element per state
+     * present). Donations without a tracking row (Mollie, or HelloAsso confirmed before the tracking) are absent.
+     */
+    @Query("""
+        SELECT new org.commonlink.repository.FundsStateAmount(f.fundsState, SUM(d.amount))
+        FROM HelloAssoDonationFunds f
+        JOIN f.donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+        GROUP BY f.fundsState
+    """)
+    fun sumConfirmedAmountsByCampaignIdGroupedByFundsState(@Param("campaignId") campaignId: UUID): List<FundsStateAmount>
 
     /**
      * Same as [findByProviderRef] with a row lock (`SELECT … FOR UPDATE`) held until the transaction ends — serializes

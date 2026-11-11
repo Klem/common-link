@@ -187,6 +187,16 @@ stored (`helloasso_cash_outs`), never an export row (third-party payers' data). 
 configurable, `app.payments.helloasso.cashout-export-amount-unit`, provisional `EUROS` (question U3). Null when unreadable.
 `functional` `technical` `association`
 
+### Campaign funds (Où en sont vos dons)
+The server-computed read model of a campaign's money for the Payments tab (`CampaignFundsService`,
+`GET /api/association/campaigns/{id}/funds`): `raised`, split into `atProvider`, `payoutPreparing`, `inTransit`,
+`available` (they add up to `raised − withdrawn`), `paidOut`, `pendingPayouts`, `disbursable` (the **Available
+balance** function of the creation check, clamped at 0), the campaign's HelloAsso payouts (`cashOuts[]`), curator
+releases (`manualReleases[]`) and the tracking state (`lastSyncAt`, `syncError`, `nextRefreshAvailableAt`). Each
+donation counts by its own provider reference, not by the association's current provider. The front adds nothing.
+`POST …/funds/refresh` asks for a tracking pass (at most one per association per 15 minutes, always `200`).
+`functional` `technical` `association`
+
 ### Settlement delay (Délai de sécurité)
 The number of **TARGET2 business days** after HelloAsso's payout date (or, missing it, after the payout was first
 seen) after which a paid-out HelloAsso donation becomes available on its own: 2 by default
@@ -806,8 +816,9 @@ funds reached the association's bank account (`funds_available_at` set,
 donations only once paid out and the **Settlement delay** elapsed, never once withdrawn (refunded or contested, see
 **Cash-out tracking**). The same donation base backs the confirm-time check
 (`PayoutConfirmer`). A payout refused for this balance alone, at creation or confirmation, gets
-a `409` with `code: FUNDS_NOT_AVAILABLE` and `disbursable` (the amount still usable, never negative)
-— see `FundsNotAvailableException`; with any other blocking reason the `409` stays uncoded. `PENDING` payouts are reserved so that
+a `409` with `code: FUNDS_NOT_AVAILABLE`, `disbursable` (the amount still usable, never negative), `inTransit`
+and `atProvider` (HelloAsso donations paid out but not arrived, and still held by HelloAsso — zero for Mollie)
+— see `FundsNotAvailableException`; the Payments tab reads the same figure as **Campaign funds** `disbursable`; with any other blocking reason the `409` stays uncoded. `PENDING` payouts are reserved so that
 several pending payouts cannot together exceed the funds raised. Deliberately different from the
 donor-side **FIFO Donation Allocation**, which counts only `CONFIRMED` payouts: the two figures
 diverge by the amount of pending payouts. A `PENDING` payout nothing will resolve stops being

@@ -192,6 +192,8 @@ class GlobalExceptionHandler(
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Funds not available")
         problem.setProperty("code", "FUNDS_NOT_AVAILABLE")
         problem.setProperty("disbursable", ex.disbursable)
+        problem.setProperty("inTransit", ex.inTransit)
+        problem.setProperty("atProvider", ex.atProvider)
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
     }
 

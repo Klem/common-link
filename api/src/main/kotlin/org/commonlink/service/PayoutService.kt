@@ -134,7 +134,7 @@ class PayoutService(
 
         val blockingReasons = blockingReasonsFor(campaignId, payeeIban, request.amount!!, request.label!!)
         if (blockingReasons == listOf(PayoutBlockingReason.INSUFFICIENT_BALANCE)) {
-            throw FundsNotAvailableException(computeAvailableBalance(campaignId).max(BigDecimal.ZERO))
+            throw donationRepository.fundsNotAvailable(campaignId, computeAvailableBalance(campaignId))
         }
         if (blockingReasons.isNotEmpty()) {
             throw ConflictException("Payout blocked: ${blockingReasons.joinToString()}")
@@ -417,8 +417,12 @@ class PayoutService(
      * PENDING payouts are reserved (H2): without this, N pending payouts each ≤ balance could be created
      * and later confirmed to collectively exceed the funds raised. A PENDING payout nothing will
      * resolve stops being reserved only once [cancel]led; FAILED and CANCELLED reserve nothing.
+     *
+     * Public as the single source of the campaign's disbursable amount: the creation check ([create]), the
+     * Payments tab summary ([getSummary]) and the funds read model ([CampaignFundsService]) all call it. No
+     * ownership check: callers check it. May be negative (payouts confirmed before a withdrawal).
      */
-    private fun computeAvailableBalance(campaignId: UUID): BigDecimal {
+    fun computeAvailableBalance(campaignId: UUID): BigDecimal {
         val pending = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING)
             ?: BigDecimal.ZERO
         return computeConfirmableBalance(campaignId) - pending

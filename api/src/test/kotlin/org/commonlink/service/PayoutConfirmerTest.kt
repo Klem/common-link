@@ -87,6 +87,7 @@ class PayoutConfirmerTest {
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal(confirmed)
         every { payoutRepository.sumInFlightAmountByCampaignId(campaignId) } returns BigDecimal(inFlight)
         every { donationRepository.sumAvailableAmountByCampaignId(campaignId) } returns BigDecimal(raised)
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignId) } returns emptyList()
     }
 
     // ── loadForConfirm ───────────────────────────────────────────────────────
@@ -638,5 +639,23 @@ class PayoutConfirmerTest {
         val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
 
         assertThat(ex.disbursable).isEqualByComparingTo("0")
+    }
+
+    @Test
+    fun `reserve - the refusal carries the HelloAsso donations in transit and still at HelloAsso`() {
+        val payout = newPayout(amount = "10")
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        stubBalance(confirmed = "0", raised = "5")
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignId) } returns listOf(
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.IN_TRANSIT, BigDecimal("20.00")),
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.AT_PROVIDER, BigDecimal("7.00")),
+        )
+
+        val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("5")
+        assertThat(ex.inTransit).isEqualByComparingTo("20.00")
+        assertThat(ex.atProvider).isEqualByComparingTo("7.00")
     }
 }

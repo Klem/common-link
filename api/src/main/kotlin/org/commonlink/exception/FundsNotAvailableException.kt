@@ -8,15 +8,18 @@ import java.math.BigDecimal
  * creation ([org.commonlink.service.PayoutService.create]) or at confirmation
  * ([org.commonlink.service.PayoutConfirmer.reserve]). Applies to every payment provider.
  *
- * Returns HTTP 409 with a `code: FUNDS_NOT_AVAILABLE` property and [disbursable], the amount a payout could still
- * use at the moment of the refusal (never negative), so the Payments tab can branch without parsing the message.
- * The `inTransit` and `atProvider` properties (HelloAsso donations paid out but not yet arrived, and donations still
- * held by HelloAsso) are added with the HelloAsso payout tracking (FD5-01).
+ * Returns HTTP 409 with a `code: FUNDS_NOT_AVAILABLE` property and:
+ * - [disbursable], the amount a payout could still use at the moment of the refusal (never negative);
+ * - [inTransit], the campaign's HelloAsso donations paid out by HelloAsso but not arrived yet (settlement delay);
+ * - [atProvider], its HelloAsso donations still held by HelloAsso (not paid out yet, payout in preparation included).
+ * Both are zero for a Mollie campaign. The Payments tab branches on them without parsing the message.
  *
  * A [ConflictException], so every caller handling a balance refusal as a conflict keeps doing so; the message is the
  * one the refusal carried before it was coded.
  */
 class FundsNotAvailableException(
     val disbursable: BigDecimal,
+    val inTransit: BigDecimal = BigDecimal.ZERO,
+    val atProvider: BigDecimal = BigDecimal.ZERO,
     message: String = "Payout blocked: ${PayoutBlockingReason.INSUFFICIENT_BALANCE}",
 ) : ConflictException(message)

@@ -143,7 +143,8 @@ class HelloAssoFundsReleaseService(
                 createdBy = curatorUserId,
             ),
         )
-        val now = clock.instant()
+        // PostgreSQL keeps microseconds (rounded): the instant returned is the one stored.
+        val now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS)
         for (row in rows) {
             row.fundsState = FundsState.AVAILABLE
             row.receiptConfirmedAt = now

@@ -143,7 +143,8 @@ class CashOutReceiptService(
 
     /** Step 3, in the caller's transaction: rows still pending become AVAILABLE; journaled once if any did. */
     private fun makeAvailable(associationId: UUID, idCashOut: Long, donationIds: List<UUID>, actorUserId: UUID) {
-        val now = clock.instant()
+        // PostgreSQL keeps microseconds (rounded): the instant returned is the one stored.
+        val now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS)
         val made = fundsRepository.lockAllForUpdate(donationIds)
             .filter { it.fundsState != FundsState.AVAILABLE && it.fundsState != FundsState.WITHDRAWN }
         for (row in made) {

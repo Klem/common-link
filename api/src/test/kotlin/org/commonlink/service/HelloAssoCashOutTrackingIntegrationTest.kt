@@ -248,8 +248,7 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
 
         assertEquals(FundsState.AVAILABLE, row().fundsState)
         assertEquals(ReceiptConfirmationMode.CURATOR_RELEASE, row().receiptConfirmationMode)
-        // PostgreSQL keeps microseconds: the persisted instant is the response's, truncated.
-        assertEquals(response.releasedAt.truncatedTo(java.time.temporal.ChronoUnit.MICROS), donation().fundsAvailableAt)
+        assertEquals(response.releasedAt, donation().fundsAvailableAt)
         assertEquals(0, BigDecimal("50.00").compareTo(available()))
         val evidence = evidenceRepository.findById(response.evidenceId).get()
         assertEquals("12/11 VIR HELLOASSO +10,00", evidence.statementLine)

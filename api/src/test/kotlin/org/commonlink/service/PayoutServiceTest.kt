@@ -91,6 +91,7 @@ class PayoutServiceTest {
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal(confirmed)
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING) } returns BigDecimal(pending)
         every { donationRepository.sumAvailableAmountByCampaignId(campaignId) } returns BigDecimal(raised)
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignId) } returns emptyList()
     }
 
     /** A payee belonging to a different association, used to pin the ownership checks. */
@@ -678,5 +679,29 @@ class PayoutServiceTest {
         val ex = assertThrows<FundsNotAvailableException> { service.create(campaignId, createRequest("10"), userId) }
 
         assertThat(ex.disbursable).isEqualByComparingTo("0")
+    }
+
+    @Test
+    fun `create - the refusal carries the HelloAsso donations in transit and still at HelloAsso`() {
+        stubCreatable()
+        stubBalance(confirmed = "0", raised = "100")
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignId) } returns listOf(
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.IN_TRANSIT, BigDecimal("371.00")),
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.AT_PROVIDER, BigDecimal("40.00")),
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.PAYOUT_PREPARING, BigDecimal("2.50")),
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.WITHDRAWN, BigDecimal("9.00")),
+        )
+
+        val ex = assertThrows<FundsNotAvailableException> { service.create(campaignId, createRequest("500"), userId) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("100")
+        assertThat(ex.inTransit).isEqualByComparingTo("371.00")
+        assertThat(ex.atProvider).isEqualByComparingTo("42.50")
+    }
+
+    @Test
+    fun `computeAvailableBalance - available donations minus confirmed and pending payouts`() {
+        stubBalance(confirmed = "300", pending = "200", raised = "1000")
+        assertThat(service.computeAvailableBalance(campaignId)).isEqualByComparingTo("500")
     }
 }

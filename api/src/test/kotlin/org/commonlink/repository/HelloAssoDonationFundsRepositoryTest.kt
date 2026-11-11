@@ -192,6 +192,26 @@ class HelloAssoDonationFundsRepositoryTest : RealPostgresTest() {
     }
 
     @Test
+    fun `funds read model queries - per-state sums, confirmed sum, campaign rows, association existence`() {
+        assertFalse(fundsRepository.existsByAssociationId(associationA))
+        tracked(campaignA, FundsState.AT_PROVIDER, amount = "10.00")
+        tracked(campaignA, FundsState.AT_PROVIDER, amount = "5.00")
+        tracked(campaignA, FundsState.IN_TRANSIT, amount = "30.00", idCashOut = 60001)
+        tracked(campaignOther, FundsState.IN_TRANSIT, amount = "999.00")
+        donationRepository.save(TestFixtures.donation(donor, campaignA, amount = BigDecimal("40.00"), providerRef = "mollie:${UUID.randomUUID()}"))
+        entityManager.flush()
+        entityManager.clear()
+
+        val byState = donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignA.id!!).associate { it.state to it.amount }
+        assertEquals(setOf(FundsState.AT_PROVIDER, FundsState.IN_TRANSIT), byState.keys)
+        assertEquals(0, BigDecimal("15.00").compareTo(byState[FundsState.AT_PROVIDER]))
+        assertEquals(0, BigDecimal("30.00").compareTo(byState[FundsState.IN_TRANSIT]))
+        assertEquals(0, BigDecimal("85.00").compareTo(donationRepository.sumConfirmedAmountByCampaignId(campaignA.id!!)))
+        assertEquals(3, fundsRepository.findByCampaignId(campaignA.id!!).size)
+        assertTrue(fundsRepository.existsByAssociationId(associationA))
+    }
+
+    @Test
     fun `a payout total is stored once, the first value kept`() {
         assertEquals(1, cashOutRepository.insertIfMissing(associationA, 60001, BigDecimal("30.00"), Instant.now()))
         assertEquals(0, cashOutRepository.insertIfMissing(associationA, 60001, BigDecimal("99.00"), Instant.now()))

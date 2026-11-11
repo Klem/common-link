@@ -155,7 +155,7 @@ class PayoutConfirmer(
         }
         val confirmable = confirmableBalance(campaignId)
         if (payout.amount > confirmable) {
-            throw FundsNotAvailableException(confirmable.max(BigDecimal.ZERO))
+            throw donationRepository.fundsNotAvailable(campaignId, confirmable)
         }
 
         payout.bridgeStatus = BridgePaymentStatus.CREA

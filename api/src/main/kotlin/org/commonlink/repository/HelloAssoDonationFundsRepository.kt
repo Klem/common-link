@@ -52,6 +52,22 @@ interface HelloAssoDonationFundsRepository : JpaRepository<HelloAssoDonationFund
     """)
     fun sumNotPaidOutByAssociationId(@Param("associationId") associationId: UUID): NotPaidOutTotal
 
+    /** Every tracking row of a campaign's donations (any state), with the donation loaded, for the funds read model. */
+    @Query("""
+        SELECT f FROM HelloAssoDonationFunds f
+        JOIN FETCH f.donation d
+        WHERE d.campaign.id = :campaignId
+        ORDER BY f.createdAt, f.donationId
+    """)
+    fun findByCampaignId(@Param("campaignId") campaignId: UUID): List<HelloAssoDonationFunds>
+
+    /** Whether the association has any tracked HelloAsso donation (any state, every campaign). */
+    @Query("""
+        SELECT COUNT(f) > 0 FROM HelloAssoDonationFunds f
+        WHERE f.donation.campaign.association.id = :associationId
+    """)
+    fun existsByAssociationId(@Param("associationId") associationId: UUID): Boolean
+
     /** Whether any row is still to track: the guard that keeps the tracking pass from calling HelloAsso for nothing. */
     @Query("""
         SELECT COUNT(f) > 0 FROM HelloAssoDonationFunds f
