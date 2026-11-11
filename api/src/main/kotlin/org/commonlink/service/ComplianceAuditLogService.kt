@@ -161,7 +161,9 @@ class ComplianceAuditLogService(
 
         /**
          * An association withdrew CommonLink's HelloAsso access
-         * ([org.commonlink.service.HelloAssoLinkService.disconnect]). Payload `{organizationSlug}`.
+         * ([org.commonlink.service.HelloAssoLinkService.disconnect]). Payload `{organizationSlug, notYetPaidOutCount,
+         * notYetPaidOutAmount}`: the donations HelloAsso had not paid out yet at that instant, which then need a
+         * curator release.
          */
         const val HELLOASSO_DISCONNECTED = "HELLOASSO_DISCONNECTED"
 
@@ -177,6 +179,22 @@ class ComplianceAuditLogService(
          * `{providerRef, expected, paid}`; no actor.
          */
         const val PAYMENT_AMOUNT_MISMATCH = "PAYMENT_AMOUNT_MISMATCH"
+
+        /**
+         * An association confirmed it received a HelloAsso payout on its bank account: its donations in it, re-read
+         * as paid out at HelloAsso, became available ([org.commonlink.service.CashOutReceiptService]). Subject
+         * ASSOCIATION. Payload `{idCashOut, donationCount, amount}` (donations actually made available); actor = the
+         * association's user.
+         */
+        const val CASHOUT_RECEIPT_CONFIRMED = "CASHOUT_RECEIPT_CONFIRMED"
+
+        /**
+         * A curator made HelloAsso donations available by hand, on a line of the association's bank statement
+         * ([org.commonlink.service.HelloAssoFundsReleaseService]). Subject ASSOCIATION. Payload `{associationId,
+         * donationIds, amount, reason, evidenceId}` — never the statement line nor the file, kept apart in the
+         * evidence table (the journal is never erased); actor = the curator.
+         */
+        const val HELLOASSO_FUNDS_MANUALLY_RELEASED = "HELLOASSO_FUNDS_MANUALLY_RELEASED"
     }
 
     /**

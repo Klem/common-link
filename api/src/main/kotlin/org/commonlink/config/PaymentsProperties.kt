@@ -41,6 +41,8 @@ data class PaymentsProperties(
  * @property cashoutUnknownAlertAfter An `Unknown` (or unrecognised) payout state persisting this long raises a
  *   technical alert. Default 3 days, proposed (no product decision): long enough to ignore a transient value.
  * @property cashoutSyncFailureAlertAfter Consecutive failed passes of one association that raise a technical alert.
+ * @property cashoutExportAmountUnit Unit of `credit` / `debit` in HelloAsso's payout export. **Provisional default**
+ *   [CashOutExportAmountUnit.EUROS] (the SDK types them as floats), until HelloAsso answers question U3.
  */
 data class HelloAssoCashOutProperties(
     val cashoutSettlementBusinessDays: Int = 2,
@@ -51,10 +53,20 @@ data class HelloAssoCashOutProperties(
     val cashoutRefreshTimeout: Duration = Duration.ofSeconds(10),
     val cashoutUnknownAlertAfter: Duration = Duration.ofDays(3),
     val cashoutSyncFailureAlertAfter: Int = 3,
+    val cashoutExportAmountUnit: CashOutExportAmountUnit = CashOutExportAmountUnit.EUROS,
 ) {
     init {
         require(cashoutSettlementBusinessDays >= 0) { "cashout-settlement-business-days must not be negative" }
         require(cashoutInTransitAlertBusinessDays > 0) { "cashout-in-transit-alert-business-days must be positive" }
         require(cashoutSyncFailureAlertAfter > 0) { "cashout-sync-failure-alert-after must be positive" }
     }
+}
+
+/** Unit of the amounts of HelloAsso's payout export (question U3). */
+enum class CashOutExportAmountUnit {
+    /** Decimal euros (`10.5` = 10.50 €). */
+    EUROS,
+
+    /** Integer cents (`1050` = 10.50 €), like HelloAsso's payment amounts. */
+    CENTS,
 }

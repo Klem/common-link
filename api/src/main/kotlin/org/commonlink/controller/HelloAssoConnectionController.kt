@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.commonlink.dto.HelloAssoConnectRequest
+import org.commonlink.dto.HelloAssoDisconnectPreviewResponse
 import org.commonlink.dto.HelloAssoNotificationUrlResponse
 import org.commonlink.dto.HelloAssoVerifyRequest
 import org.commonlink.dto.HelloAssoVerifyResponse
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -181,6 +183,26 @@ class HelloAssoConnectionController(
         eligibilityService.requestRefresh(UUID.fromString(principal.username))
         return ResponseEntity.noContent().build()
     }
+
+    /** What a disconnection would leave behind; see [HelloAssoLinkService.disconnectPreview]. */
+    @GetMapping("/disconnect-preview")
+    @Operation(
+        summary = "Preview a HelloAsso disconnection",
+        description = "Number and amount (euros) of the association's donations HelloAsso has not paid out yet, every " +
+            "campaign, to warn before disconnecting: they can no longer be tracked afterwards and need a manual release. " +
+            "Donations already paid out (in transit) are not counted. Never blocks the disconnection.",
+    )
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "200", description = "Preview returned",
+            content = [Content(schema = Schema(implementation = HelloAssoDisconnectPreviewResponse::class))],
+        ),
+        ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
+        ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
+    )
+    fun disconnectPreview(@AuthenticationPrincipal principal: UserDetails): ResponseEntity<HelloAssoDisconnectPreviewResponse> =
+        ResponseEntity.ok(linkService.disconnectPreview(UUID.fromString(principal.username)))
 
     /** Disconnects the HelloAsso account: tokens erased, row and notification token kept (idempotent). */
     @DeleteMapping("/connection")

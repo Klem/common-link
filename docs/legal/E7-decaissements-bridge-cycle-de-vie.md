@@ -382,11 +382,14 @@ délai de sécurité écoulé (deux jours ouvrés après le virement). Le suivi 
 est décrit par la fiche *Mise à disposition des fonds des dons HelloAsso*
 (`mise-a-disposition-fonds-helloasso.md`). Jusque-là, ces dons ne comptent ni dans le solde
 disponible ni dans la traçabilité côté donateur ; un don remboursé ou contesté n'y compte jamais.
-Restent ouverts, et décrits par cette fiche : la confirmation de réception par l'association, qui
-permettrait d'utiliser ces dons avant la fin du délai, et le déblocage manuel par un curateur des
-dons d'une association dont le lien HelloAsso est coupé — tant qu'ils ne sont pas livrés, ces dons
-restent bloqués. Le délai automatique repose sur une date de HelloAsso dont le sens (émission ou
-crédit) n'est pas encore confirmé.
+Depuis le 11 novembre 2026, deux voies permettent d'utiliser ces dons avant la fin du délai, décrites
+par cette fiche : la confirmation de réception par l'association, après relecture de chaque don
+chez HelloAsso, et le déblocage manuel par un curateur, sur la ligne du relevé bancaire de
+l'association (texte et fichier), notamment quand le lien HelloAsso est coupé. Les deux sont
+journalisés au journal de conformité. Elles existent côté serveur ; le bouton de confirmation dans
+l'onglet Paiements n'est pas encore livré, et le déblocage n'a pas d'écran (le curateur passe par
+l'interface de programmation). Le délai automatique repose sur une date de HelloAsso dont le sens
+(émission ou crédit) n'est pas encore confirmé.
 
 ---
 
@@ -397,7 +400,7 @@ crédit) n'est pas encore confirmé.
 | Brancher l'alerte technique sur les deux motifs d'intégration (8.1) | Développement | Rien — mais le message affiché est inexact tant que ce n'est pas fait |
 | Détecter un virement figé chez une banque qui ne rapporte pas (8.2) | Développement | La traçabilité des virements exécutés par LCL et Nickel |
 | Vérifier la formulation des deux motifs non testables (8.3) | Observation en production | Rien — vérification à la première occurrence réelle |
-| Confirmation de réception et déblocage manuel des dons HelloAsso (8.4) | Développement | Paiements financés par des dons HelloAsso avant la fin du délai, ou d'une association dont le lien HelloAsso est coupé |
+| Bouton de confirmation de réception des dons HelloAsso dans l'onglet Paiements (8.4 ; le serveur est livré) | Développement | Confirmation par l'association depuis l'écran (le déblocage par un curateur reste possible) |
 | Provisionner les identifiants Bridge de production et désactiver le mode démonstration (7) | Prérequis non technique | **Toute exécution réelle de virement en production** |
 
 ---

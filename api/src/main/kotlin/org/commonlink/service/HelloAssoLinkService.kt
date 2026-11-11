@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import org.commonlink.dto.HelloAssoConnectRequest
+import org.commonlink.dto.HelloAssoDisconnectPreviewResponse
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.HelloAssoConnectionState
@@ -9,9 +10,11 @@ import org.commonlink.exception.HelloAssoVerificationExpiredException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
+import org.commonlink.repository.HelloAssoDonationFundsRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
@@ -30,6 +33,7 @@ class HelloAssoLinkService(
     private val pendingLinks: HelloAssoPendingLinkStore,
     private val rows: HelloAssoConnectionRows,
     private val complianceAuditLogService: ComplianceAuditLogService,
+    private val fundsRepository: HelloAssoDonationFundsRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -99,9 +103,22 @@ class HelloAssoLinkService(
     }
 
     /**
+     * What a disconnection would leave behind (CEO decision Q5): the association's donations HelloAsso has not paid
+     * out yet, every campaign, shown before it confirms. They can no longer be tracked once disconnected and will need
+     * a curator release ([HelloAssoFundsReleaseService]). Never blocks the disconnection.
+     */
+    @Transactional(readOnly = true)
+    fun disconnectPreview(userId: UUID): HelloAssoDisconnectPreviewResponse {
+        val total = fundsRepository.sumNotPaidOutByAssociationId(resolveAssociation(userId).id!!)
+        return HelloAssoDisconnectPreviewResponse(total.count, (total.amount ?: BigDecimal.ZERO).setScale(2))
+    }
+
+    /**
      * Disconnects the association's HelloAsso account: tokens erased, state DISCONNECTED, row and notification token
-     * kept. Idempotent; allowed whatever the association's provider (withdrawing an access must always work). Campaigns
-     * are untouched: the readiness gate pauses donations.
+     * kept. Idempotent; allowed whatever the association's provider (withdrawing an access must always work), even with
+     * donations HelloAsso has not paid out yet (CEO decision Q5): their number and amount at that instant go to the
+     * journal entry, and they then need a curator release. Campaigns are untouched: the readiness gate pauses
+     * donations.
      */
     @Transactional
     fun disconnect(userId: UUID) {
@@ -119,10 +136,15 @@ class HelloAssoLinkService(
             updatedAt = now
         }
         connectionRepository.save(connection)
+        val notPaidOut = fundsRepository.sumNotPaidOutByAssociationId(associationId)
         complianceAuditLogService.append(
             eventType = ComplianceAuditLogService.HELLOASSO_DISCONNECTED,
             subjectType = ComplianceAuditSubjectType.ASSOCIATION,
-            payload = mapOf("organizationSlug" to connection.organizationSlug),
+            payload = mapOf(
+                "organizationSlug" to connection.organizationSlug,
+                "notYetPaidOutCount" to notPaidOut.count,
+                "notYetPaidOutAmount" to (notPaidOut.amount ?: BigDecimal.ZERO).setScale(2).toPlainString(),
+            ),
             subjectId = associationId,
             actorUserId = userId,
         )

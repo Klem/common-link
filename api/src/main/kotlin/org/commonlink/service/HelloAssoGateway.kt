@@ -36,4 +36,12 @@ interface HelloAssoGateway {
 
     /** `GET /v5/payments/{id}`: the payout state of one payment (cash-out tracking), read with the association's token. */
     fun getPayment(accessToken: String, paymentId: Long): HelloAssoPaymentDetailJson
+
+    /**
+     * `GET /v5/organizations/{slug}/cash-out/{cashOutId}/export` (JSON): the net amount of payout [cashOutId] as it
+     * reaches the association's bank account, Σ credits − Σ debits of its rows, **in the export's unit** (see
+     * [org.commonlink.config.HelloAssoCashOutProperties.cashoutExportAmountUnit]; the caller converts). The rows
+     * carry third-party payers' data: they are summed in memory and dropped, never kept nor logged.
+     */
+    fun getCashOutNetTotal(accessToken: String, slug: String, cashOutId: Long): java.math.BigDecimal
 }

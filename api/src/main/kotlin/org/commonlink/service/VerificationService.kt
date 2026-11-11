@@ -27,7 +27,7 @@ import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.AssociationRegistryCheckRepository
 import org.commonlink.repository.BeneficialOwnerRepository
 import org.commonlink.repository.UserRepository
-import org.commonlink.util.FileTypeSniffer
+import org.commonlink.util.UploadedFileValidator
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -52,7 +52,6 @@ private val OPTIONAL_ALLOWED_MIME = VERIF_ALLOWED_MIME + setOf(
 
 private val VALID_CATEGORIES = setOf("FINANCIAL", "REPORT", "SUPPORTING_DOC", "OTHER")
 
-private const val MAX_FILE_SIZE = 10L * 1024 * 1024 // 10 MB
 
 /**
  * Business logic for association KYC verification and document management.
@@ -495,22 +494,9 @@ class VerificationService(
         }
     }
 
-    private fun validateFile(file: MultipartFile, allowedMime: Set<String>) {
-        if (file.size > MAX_FILE_SIZE) {
-            throw UnprocessableEntityException("File size exceeds the 10 MB limit (${file.size} bytes)")
-        }
-        val mime = file.contentType ?: "application/octet-stream"
-        if (mime !in allowedMime) {
-            throw UnprocessableEntityException("File type '$mime' is not allowed. Accepted: ${allowedMime.joinToString()}")
-        }
-        // The declared type is caller-controlled and is replayed as the Content-Type when a curator
-        // downloads the document. The bytes must match what was announced
-        // (security audit 2026-08-20, M9).
-        if (!FileTypeSniffer.matches(file.bytes, mime)) {
-            logger.warn("Rejected document upload: bytes do not match declared type {}", mime)
-            throw UnprocessableEntityException("File content does not match its declared type '$mime'")
-        }
-    }
+    /** Size (10 MB), allowed type and content sniffing; see [UploadedFileValidator.validate]. */
+    private fun validateFile(file: MultipartFile, allowedMime: Set<String>) =
+        UploadedFileValidator.validate(file, allowedMime)
 }
 
 private fun org.commonlink.repository.AssociationDocumentMetadata.toOptionalDto() = OptionalDocumentDto(

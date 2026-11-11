@@ -18,12 +18,16 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
-/** Queries of [HelloAssoDonationFundsRepository] and the WITHDRAWN exclusion of the available sum, on real PostgreSQL (V92). */
+/**
+ * Queries of [HelloAssoDonationFundsRepository] (WITHDRAWN exclusion of the available sum, not-paid-out total, row
+ * locks) and of [HelloAssoCashOutRepository], on real PostgreSQL (V92, V93).
+ */
 @Transactional
 class HelloAssoDonationFundsRepositoryTest : RealPostgresTest() {
 
     @Autowired private lateinit var fundsRepository: HelloAssoDonationFundsRepository
     @Autowired private lateinit var syncRepository: HelloAssoCashOutSyncRepository
+    @Autowired private lateinit var cashOutRepository: HelloAssoCashOutRepository
     @Autowired private lateinit var donationRepository: DonationRepository
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
@@ -150,5 +154,50 @@ class HelloAssoDonationFundsRepositoryTest : RealPostgresTest() {
         assertEquals(1, syncRepository.claimRefresh(associationA, now, now.minus(15, ChronoUnit.MINUTES)))
         assertEquals(0, syncRepository.claimRefresh(associationA, now.plusSeconds(60), now.plusSeconds(60).minus(15, ChronoUnit.MINUTES)))
         assertEquals(1, syncRepository.claimRefresh(associationA, now.plus(16, ChronoUnit.MINUTES), now.plus(1, ChronoUnit.MINUTES)))
+    }
+
+    @Test
+    fun `not paid out = AT_PROVIDER and PAYOUT_PREPARING of the association only, every campaign`() {
+        assertEquals(NotPaidOutTotal(0, null), fundsRepository.sumNotPaidOutByAssociationId(associationA))
+
+        val campaignA2 = campaignRepository.save(TestFixtures.campaign(campaignA.association, status = CampaignStatus.LIVE))
+        tracked(campaignA, FundsState.AT_PROVIDER, amount = "10.00")
+        tracked(campaignA2, FundsState.PAYOUT_PREPARING, amount = "5.50")
+        tracked(campaignA, FundsState.IN_TRANSIT, amount = "100.00")
+        tracked(campaignA, FundsState.AVAILABLE, amount = "200.00", availableAt = Instant.now())
+        tracked(campaignA, FundsState.WITHDRAWN, amount = "300.00")
+        tracked(campaignOther, FundsState.AT_PROVIDER, amount = "400.00")
+        entityManager.flush()
+
+        val total = fundsRepository.sumNotPaidOutByAssociationId(associationA)
+        assertEquals(2, total.count)
+        assertEquals(0, BigDecimal("15.50").compareTo(total.amount))
+    }
+
+    @Test
+    fun `rows of a payout are found per association, and locked in id order with their state read under the lock`() {
+        val a = tracked(campaignA, FundsState.IN_TRANSIT, idCashOut = 60001)
+        val b = tracked(campaignA, FundsState.IN_TRANSIT, idCashOut = 60001)
+        tracked(campaignOther, FundsState.IN_TRANSIT, idCashOut = 60001)
+        entityManager.flush()
+
+        assertEquals(setOf(a.donationId, b.donationId), fundsRepository.findByAssociationIdAndIdCashOut(associationA, 60001).map { it.donationId }.toSet())
+
+        // A stale managed instance is refreshed by the lock.
+        entityManager.createNativeQuery("UPDATE helloasso_donation_funds SET funds_state = 'AVAILABLE' WHERE donation_id = :id")
+            .setParameter("id", a.donationId).executeUpdate()
+        val locked = fundsRepository.lockAllForUpdate(listOf(b.donationId!!, a.donationId!!, UUID.randomUUID()))
+        assertEquals(listOf(a.donationId, b.donationId).sortedBy { it }, locked.map { it.donationId })
+        assertEquals(FundsState.AVAILABLE, locked.first { it.donationId == a.donationId }.fundsState)
+    }
+
+    @Test
+    fun `a payout total is stored once, the first value kept`() {
+        assertEquals(1, cashOutRepository.insertIfMissing(associationA, 60001, BigDecimal("30.00"), Instant.now()))
+        assertEquals(0, cashOutRepository.insertIfMissing(associationA, 60001, BigDecimal("99.00"), Instant.now()))
+        entityManager.clear()
+
+        assertEquals(0, BigDecimal("30.00").compareTo(cashOutRepository.findByAssociationIdAndIdCashOut(associationA, 60001)!!.netTotal))
+        assertEquals(null, cashOutRepository.findByAssociationIdAndIdCashOut(associationA, 60002))
     }
 }

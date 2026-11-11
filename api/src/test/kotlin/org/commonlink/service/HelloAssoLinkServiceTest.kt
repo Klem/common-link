@@ -16,6 +16,10 @@ import org.commonlink.exception.HelloAssoVerificationExpiredException
 import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
+import org.commonlink.repository.HelloAssoDonationFundsRepository
+import org.commonlink.repository.NotPaidOutTotal
+import org.commonlink.dto.HelloAssoDisconnectPreviewResponse
+import java.math.BigDecimal
 import org.commonlink.repository.TestFixtures
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -35,7 +39,8 @@ class HelloAssoLinkServiceTest {
     private val connectionRepo = mockk<HelloAssoConnectionRepository>()
     private val store = HelloAssoPendingLinkStore()
     private val auditLog = mockk<ComplianceAuditLogService>(relaxed = true)
-    private val service = HelloAssoLinkService(associationRepo, connectionRepo, store, HelloAssoConnectionRows(connectionRepo), auditLog)
+    private val fundsRepo = mockk<HelloAssoDonationFundsRepository>()
+    private val service = HelloAssoLinkService(associationRepo, connectionRepo, store, HelloAssoConnectionRows(connectionRepo), auditLog, fundsRepo)
 
     private val userId = UUID.randomUUID()
     private val associationId = UUID.randomUUID()
@@ -54,6 +59,7 @@ class HelloAssoLinkServiceTest {
         every { connectionRepo.findByAssociationId(associationId) } returns row
         every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns row
         every { connectionRepo.save(any()) } answers { firstArg() }
+        every { fundsRepo.sumNotPaidOutByAssociationId(associationId) } returns NotPaidOutTotal(0, null)
     }
 
     private fun verified(canCollect: Boolean = true, owner: UUID = associationId) = store.put(
@@ -157,5 +163,28 @@ class HelloAssoLinkServiceTest {
 
         verify(exactly = 0) { connectionRepo.save(any()) }
         verify(exactly = 0) { auditLog.append(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `disconnect journals the donations HelloAsso has not paid out yet, and still disconnects`() {
+        service.connect(userId, HelloAssoConnectRequest(verified(), mandate))
+        every { fundsRepo.sumNotPaidOutByAssociationId(associationId) } returns NotPaidOutTotal(3, BigDecimal("42.50"))
+        val payload = slot<Any>()
+
+        service.disconnect(userId)
+
+        assertEquals(HelloAssoConnectionState.DISCONNECTED, row.state)
+        verify { auditLog.append(ComplianceAuditLogService.HELLOASSO_DISCONNECTED, ComplianceAuditSubjectType.ASSOCIATION, capture(payload), associationId, userId) }
+        val journaled = payload.captured as Map<*, *>
+        assertEquals(3L, journaled["notYetPaidOutCount"])
+        assertEquals("42.50", journaled["notYetPaidOutAmount"])
+    }
+
+    @Test
+    fun `disconnect preview gives the not-paid-out count and amount, zero when none`() {
+        assertEquals(HelloAssoDisconnectPreviewResponse(0, BigDecimal("0.00")), service.disconnectPreview(userId))
+
+        every { fundsRepo.sumNotPaidOutByAssociationId(associationId) } returns NotPaidOutTotal(2, BigDecimal("15.00"))
+        assertEquals(HelloAssoDisconnectPreviewResponse(2, BigDecimal("15.00")), service.disconnectPreview(userId))
     }
 }

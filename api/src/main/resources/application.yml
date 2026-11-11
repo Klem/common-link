@@ -228,6 +228,8 @@ app:
       cashout-refresh-timeout: ${HELLOASSO_CASHOUT_REFRESH_TIMEOUT:PT10S}
       cashout-unknown-alert-after: ${HELLOASSO_CASHOUT_UNKNOWN_ALERT_AFTER:P3D}
       cashout-sync-failure-alert-after: ${HELLOASSO_CASHOUT_SYNC_FAILURE_ALERT_AFTER:3}
+      # Unit of credit/debit in the payout export: EUROS | CENTS. Provisional (question U3 to HelloAsso).
+      cashout-export-amount-unit: ${HELLOASSO_CASHOUT_EXPORT_AMOUNT_UNIT:EUROS}
 
   helloasso:
     # HelloAsso API keys mode (HelloAssoProperties). No default for the URLs and IPs: each environment sets them

@@ -3,6 +3,7 @@ package org.commonlink.service
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.commonlink.config.HelloAssoProperties
+import org.commonlink.dto.HelloAssoCashOutExportRowJson
 import org.commonlink.dto.HelloAssoCheckoutIntentJson
 import org.commonlink.dto.HelloAssoCheckoutIntentResponseJson
 import org.commonlink.dto.HelloAssoInitCheckoutJson
@@ -134,6 +135,27 @@ class HelloAssoClient(
 
     override fun getPayment(accessToken: String, paymentId: Long): HelloAssoPaymentDetailJson =
         get("/payments/$paymentId", accessToken, HelloAssoPaymentDetailJson::class.java)
+
+    /** See [HelloAssoGateway.getCashOutNetTotal]. The export also exists as xlsx/csv: JSON is asked explicitly. */
+    override fun getCashOutNetTotal(accessToken: String, slug: String, cashOutId: Long): java.math.BigDecimal {
+        val path = "/organizations/${encode(slug)}/cash-out/$cashOutId/export"
+        val rows = authenticated("GET $path") {
+            restClient.get()
+                .uri(properties.apiBaseUrl + path)
+                .header("Authorization", "Bearer $accessToken")
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .body(Array<HelloAssoCashOutExportRowJson>::class.java)
+        }
+        // A payout holds at least one payment: an empty export (not produced yet?) is no total, never a 0.00 one.
+        if (rows.isEmpty()) {
+            log.warn("HelloAsso payout {} export is empty", cashOutId)
+            throw HelloAssoUnavailableException("GET $path")
+        }
+        return rows.fold(java.math.BigDecimal.ZERO) { sum, row ->
+            sum + (row.credit ?: java.math.BigDecimal.ZERO) - (row.debit ?: java.math.BigDecimal.ZERO)
+        }
+    }
 
     /** Slugs come from HelloAsso, but are still encoded as a path segment. */
     private fun encode(segment: String): String =

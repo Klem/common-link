@@ -246,6 +246,7 @@ app:
       cashout-refresh-timeout: ${HELLOASSO_CASHOUT_REFRESH_TIMEOUT:PT10S}
       cashout-unknown-alert-after: ${HELLOASSO_CASHOUT_UNKNOWN_ALERT_AFTER:P3D}
       cashout-sync-failure-alert-after: ${HELLOASSO_CASHOUT_SYNC_FAILURE_ALERT_AFTER:3}
+      cashout-export-amount-unit: ${HELLOASSO_CASHOUT_EXPORT_AMOUNT_UNIT:EUROS}
 
   helloasso:
     # Production HelloAsso API and notification source IP. Mock pinned false (ProdConfigSecurityTest).

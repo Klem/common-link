@@ -425,4 +425,50 @@ class HelloAssoClientTest {
             assertFalse(logs.contains(personal), "logged '$personal' in: $logs")
         }
     }
+
+    @Test
+    fun `getCashOutNetTotal asks for JSON and sums credits minus debits, the debit included`() {
+        server.expect(requestTo("$api/organizations/mon-asso/cash-out/60001/export"))
+            .andExpect(method(HttpMethod.GET))
+            .andExpect(header("Authorization", "Bearer $accessToken"))
+            .andExpect(header("Accept", MediaType.APPLICATION_JSON_VALUE))
+            .andRespond(withSuccess(fixture("cashout-export.json"), MediaType.APPLICATION_JSON))
+
+        // 10.0 + 25.0 − 5.0: the payout carries another form's payment and a refund, not only our donation.
+        assertEquals(0, java.math.BigDecimal("30.0").compareTo(client.getCashOutNetTotal(accessToken, "mon-asso", 60001)))
+        server.verify()
+    }
+
+    @Test
+    fun `getCashOutNetTotal sums decimal amounts without float rounding`() {
+        server.expect(requestTo("$api/organizations/mon-asso/cash-out/1/export")).andRespond(
+            withSuccess("""[{"credit":0.1,"debit":0},{"credit":0.2,"debit":0},{"credit":0,"debit":0.3}]""", MediaType.APPLICATION_JSON),
+        )
+        assertEquals(0, java.math.BigDecimal.ZERO.compareTo(client.getCashOutNetTotal(accessToken, "mon-asso", 1)))
+    }
+
+    @Test
+    fun `an empty export is no total, never a zero one`() {
+        server.expect(requestTo("$api/organizations/mon-asso/cash-out/5/export")).andRespond(withSuccess("[]", MediaType.APPLICATION_JSON))
+        assertThrows<HelloAssoUnavailableException> { client.getCashOutNetTotal(accessToken, "mon-asso", 5) }
+    }
+
+    @Test
+    fun `getCashOutNetTotal maps errors like the other calls and never logs the export, which carries payers' data`() {
+        val export = """[{"paymentId":1,"credit":12.5,"debit":0,"cashOutId":7,"payerFirstName":"Camille","payerLastName":"Exemple",
+            |"payerEmail":"donateur@example.org","payerAddress":"1 rue de la Paix","payerZipCode":"75000"}]""".trimMargin()
+        server.expect(requestTo("$api/organizations/mon-asso/cash-out/7/export")).andRespond(withSuccess(export, MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$api/organizations/mon-asso/cash-out/8/export")).andRespond(withStatus(HttpStatus.BAD_GATEWAY).body(export))
+        server.expect(requestTo("$api/organizations/mon-asso/cash-out/9/export")).andRespond(withStatus(HttpStatus.UNAUTHORIZED).body(export))
+
+        assertEquals(0, java.math.BigDecimal("12.5").compareTo(client.getCashOutNetTotal(accessToken, "mon-asso", 7)))
+        val unavailable: HelloAssoException = assertThrows<HelloAssoUnavailableException> { client.getCashOutNetTotal(accessToken, "mon-asso", 8) }
+        val unauthorized: HelloAssoException = assertThrows<HelloAssoUnauthorizedException> { client.getCashOutNetTotal(accessToken, "mon-asso", 9) }
+
+        val texts = appender.list.map { it.formattedMessage } + listOfNotNull(unavailable.message, unauthorized.message)
+        for (personal in listOf("Camille", "Exemple", "donateur@example.org", "rue de la Paix", "75000")) {
+            assertFalse(texts.any { it.contains(personal) }, "leaked '$personal' in: $texts")
+        }
+        assertNothingLeaked(unauthorized)
+    }
 }

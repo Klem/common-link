@@ -173,6 +173,17 @@ class GlobalExceptionHandler(
     }
 
     /**
+     * Handles [HelloAssoFundsConflictException] (transfer receipt confirmation, curator release) with its `code`
+     * property (HTTP 409). More specific than [handleConflict], which it takes precedence over.
+     */
+    @ExceptionHandler(HelloAssoFundsConflictException::class)
+    fun handleHelloAssoFundsConflict(ex: HelloAssoFundsConflictException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Conflict")
+        problem.setProperty("code", ex.code)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [FundsNotAvailableException] with a `code: FUNDS_NOT_AVAILABLE` property and the amount still
      * disbursable (HTTP 409). More specific than [handleConflict], which it takes precedence over.
      */

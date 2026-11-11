@@ -171,9 +171,20 @@ How CommonLink learns that the money of a confirmed HelloAsso donation reached t
 confirmation, the paying HelloAsso payment is recorded (`helloasso_donation_funds`, one row per donation); a pass
 (`HelloAssoCashOutSyncExecutor`, scheduled and on-demand, at most one per association per 15 minutes; first scheduled pass minutes after startup, then every 24 hours) re-reads each payment (`GET /v5/payments/{id}`) and maps its `cashOutState` to a **Funds state**
 (`HelloAssoFundsStateMapper`): `AT_PROVIDER` → `PAYOUT_PREPARING` → `IN_TRANSIT` (paid out) → `AVAILABLE` after the
-**Settlement delay**, or `WITHDRAWN` on refund/contestation. Only `AVAILABLE` donations count in the **Available
+**Settlement delay**, a **Transfer receipt confirmation** or a **Manual funds release**, or `WITHDRAWN` on
+refund/contestation. The way a row became available is kept (`receipt_confirmation_mode`: `AUTO`, `MANUAL`,
+`CURATOR_RELEASE`). Only `AVAILABLE` donations count in the **Available
 balance** and the **FIFO Donation Allocation**; `funds_available_at` is set at the transition, never back-dated. Only
 HelloAsso ids and states are stored, never payer data. See `docs/legal/mise-a-disposition-fonds-helloasso.md`.
+`functional` `technical` `association`
+
+### Cash-out net total (Montant net d'un versement)
+The amount of a HelloAsso payout as it reaches the association's bank account: Σ credits − Σ debits of HelloAsso's
+payout export (`GET /v5/organizations/{slug}/cash-out/{id}/export`). It can differ from the sum of CommonLink's
+donations in the payout: the payout also carries the association's other HelloAsso payments, and refunds or
+contestations are debited from it. Read lazily once per payout (`HelloAssoCashOutTotalService`); only the total is
+stored (`helloasso_cash_outs`), never an export row (third-party payers' data). Export unit (euros or cents) is
+configurable, `app.payments.helloasso.cashout-export-amount-unit`, provisional `EUROS` (question U3). Null when unreadable.
 `functional` `technical` `association`
 
 ### Settlement delay (Délai de sécurité)
@@ -382,6 +393,17 @@ The French law governing non-profit associations. Only organizations registered 
 ### Magic Link
 A passwordless login method. The user enters their email → receives a link valid for 15 minutes → clicks it → is instantly authenticated. The link contains an opaque token whose SHA-256 hash is stored in the database. Each link can only be used once. Rate-limited to 3 requests per email per 10 minutes.
 `functional` `security`
+
+### Manual funds release (Déblocage manuel)
+A curator makes HelloAsso donations `AVAILABLE` by hand when HelloAsso cannot tell that their payout arrived
+(HelloAsso incident, payout shown in transit although received, HelloAsso link disconnected or broken — CEO decisions
+Q4/Q5). Requires a reason, the association's bank statement line copied as text and a file of that single line (PDF,
+JPEG, PNG ≤ 10 MB, sniffed), stored in `helloasso_funds_release_evidence` (retention undecided, Q8, no purge). Only
+tracked, non-terminal donations of that association; one transaction, rows locked; journal
+`HELLOASSO_FUNDS_MANUALLY_RELEASED` without the line nor the file. API only:
+`POST /api/admin/associations/{id}/helloasso-funds/release` (`HelloAssoFundsReleaseService`). Not available for a
+donation confirmed without a tracking row.
+`functional` `compliance` `technical`
 
 ### Milestone (Palier)
 A funding threshold within a campaign that unlocks a specific deliverable. Each milestone has a title, emoji, description, target amount, status, and sort order. Status (`MilestoneStatus`) can be: `LOCKED` (not yet funded), `CURRENT` (actively being targeted), or `REACHED` (funded). Milestones connect financial goals to measurable, concrete impact (e.g., "€5,000 → heating equipment for 8 families"). Managed via `POST /PUT /DELETE /api/association/campaigns/{id}/milestones`.
@@ -654,6 +676,15 @@ An internal utility that generates cryptographically random tokens and computes 
 ### Transaction
 A recorded donation event. Each transaction has: a unique ID, a blockchain hash (for on-chain verification), the donor reference, campaign reference, amount, status (`confirmed`, `pending`, or `failed`), and date. Transactions are displayed in the campaign detail view.
 `functional` `blockchain`
+
+### Transfer receipt confirmation (Confirmation « Virement reçu »)
+The association states that a HelloAsso payout (`idCashOut`) reached its bank account, making its donations of that
+payout `AVAILABLE` before the **Settlement delay** ends (CEO decision Q3: the association alone). Never trusted on
+the click: each donation is re-read at HelloAsso and must be `CashedOut` in that payout, else
+`409 CASH_OUT_NOT_CASHED_OUT`; withdrawn donations are left out; no active HelloAsso link → `409 HELLOASSO_NOT_LINKED`.
+One transaction, idempotent, journal `CASHOUT_RECEIPT_CONFIRMED`. `POST /api/association/cash-outs/{idCashOut}/receipt`
+(`CashOutReceiptService`).
+`functional` `association` `compliance`
 
 ### Transparency Badge
 A badge category specifically tied to financial accountability. Examples: "Budget Équilibré" (published a balanced budget), "Transparence Totale" (all outgoing payments documented), "Rapport Certifié" (end-of-campaign report anchored on IPFS).

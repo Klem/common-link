@@ -114,3 +114,21 @@ data class HelloAssoPaymentDetailJson(
     @field:JsonProperty("cashOutDate") val cashOutDate: String? = null,
     @field:JsonProperty("idCashOut") val idCashOut: Long? = null,
 )
+
+/**
+ * One row of `GET /v5/organizations/{slug}/cash-out/{cashOutId}/export` (E3, `CashoutExportRowModel`), reduced to
+ * what the net total needs. The export lists **every** payment of the payout, including other forms' and their
+ * payers' identity: those fields are not even bound (`ignoreUnknown`), and the rows themselves are never persisted
+ * nor logged — only their sum is kept (`helloasso_cash_outs.net_total`).
+ *
+ * [credit] and [debit] are in the export's unit (euros as a float a priori, unconfirmed: question U3), bound as
+ * [java.math.BigDecimal] so that no float rounding enters the sum.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class HelloAssoCashOutExportRowJson(
+    @field:JsonProperty("paymentId") val paymentId: Long? = null,
+    @field:JsonProperty("credit") val credit: java.math.BigDecimal? = null,
+    @field:JsonProperty("debit") val debit: java.math.BigDecimal? = null,
+    @field:JsonProperty("operationType") val operationType: String? = null,
+    @field:JsonProperty("cashOutId") val cashOutId: Long? = null,
+)

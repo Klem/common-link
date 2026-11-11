@@ -72,6 +72,11 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
     private val api = properties.apiBaseUrl
     private lateinit var server: MockRestServiceServer
     private lateinit var executor: HelloAssoCashOutSyncExecutor
+    private lateinit var receiptService: CashOutReceiptService
+    @Autowired private lateinit var cashOutRepository: org.commonlink.repository.HelloAssoCashOutRepository
+    @Autowired private lateinit var releaseService: HelloAssoFundsReleaseService
+    @Autowired private lateinit var evidenceRepository: org.commonlink.repository.HelloAssoFundsReleaseEvidenceRepository
+    @Autowired private lateinit var auditLogRepository: org.commonlink.repository.ComplianceAuditLogRepository
     private val alerts = mockk<TechnicalAlertService>(relaxed = true)
     private val appender = ListAppender<ILoggingEvent>()
     private val loggers = listOf(HelloAssoClient::class.java, HelloAssoCashOutSyncExecutor::class.java, HelloAssoDonationFundsService::class.java)
@@ -89,10 +94,15 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
         server = MockRestServiceServer.bindTo(builder).build()
         val client = HelloAssoClient(properties, builder, HelloAssoAuthRateLimiter())
         val tokenManager = mockk<HelloAssoTokenManager> { every { getValidAccessToken(any()) } returns "ACCESS-token" }
+        val donationFundsService = HelloAssoDonationFundsService(fundsRepository, alerts, complianceAuditLogService)
         executor = HelloAssoCashOutSyncExecutor(
             fundsRepository, syncRepository, connectionRepository, tokenManager, breaker, client,
-            HelloAssoDonationFundsService(fundsRepository, alerts, complianceAuditLogService), alerts,
-            PaymentsProperties(), transactionTemplate,
+            donationFundsService, alerts, PaymentsProperties(), transactionTemplate,
+        )
+        receiptService = CashOutReceiptService(
+            fundsRepository, connectionRepository, tokenManager, breaker, client, donationFundsService,
+            HelloAssoCashOutTotalService(cashOutRepository, connectionRepository, tokenManager, client, PaymentsProperties(), transactionTemplate),
+            complianceAuditLogService, transactionTemplate,
         )
         appender.start()
         loggers.forEach { it.addAppender(appender) }
@@ -198,6 +208,54 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
         assertEquals(FundsState.WITHDRAWN, row().fundsState)
         assertNull(donation().fundsAvailableAt)
         verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, donation().providerRef, null) }
+    }
+
+    private fun journaled(eventType: String) =
+        auditLogRepository.findAll().count { it.eventType == eventType && it.subjectId == associationId }
+
+    @Test
+    fun `transfer received re-reads at HelloAsso, makes available now, stores the net total, journals once`() {
+        serve("payment-cashedout.json")
+        serve("payment-cashedout.json")
+        server.expect(ExpectedCount.once(), requestTo("$api/organizations/asso-exemple/cash-out/60001/export"))
+            .andRespond(withSuccess(javaClass.getResource("/helloasso/cashout/cashout-export.json")!!.readText(), MediaType.APPLICATION_JSON))
+
+        at("2026-11-13T08:00:00Z")
+        executor.syncAssociation(associationId)
+        assertEquals(FundsState.IN_TRANSIT, row().fundsState)
+        val actor = userRepository.save(TestFixtures.donorUser(email = "actor-${UUID.randomUUID().toString().take(8)}@example.com")).id!!
+
+        val result = receiptService.confirm(associationId, 60001, actor)
+        receiptService.confirm(associationId, 60001, actor) // idempotent: no re-read, no second entry
+        server.verify()
+
+        assertEquals(FundsState.AVAILABLE, row().fundsState)
+        assertEquals(ReceiptConfirmationMode.MANUAL, row().receiptConfirmationMode)
+        assertEquals(actor, row().receiptConfirmedBy)
+        assertEquals(row().receiptConfirmedAt, donation().fundsAvailableAt)
+        assertEquals(0, BigDecimal("50.00").compareTo(available()))
+        assertEquals(0, BigDecimal("30.00").compareTo(result.netTotal))
+        assertEquals(0, BigDecimal("30.00").compareTo(cashOutRepository.findByAssociationIdAndIdCashOut(associationId, 60001)!!.netTotal))
+        assertEquals(1, journaled(ComplianceAuditLogService.CASHOUT_RECEIPT_CONFIRMED))
+    }
+
+    @Test
+    fun `curator release stores the evidence, makes the donation available now, journals once`() {
+        val curator = userRepository.save(TestFixtures.donorUser(email = "curator-${UUID.randomUUID().toString().take(8)}@example.com")).id!!
+        val file = org.springframework.mock.web.MockMultipartFile("file", "line.png", "image/png", byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0))
+
+        val response = releaseService.release(associationId, listOf(helloAssoDonationId), "HelloAsso link broken", "12/11 VIR HELLOASSO +10,00", file, curator)
+
+        assertEquals(FundsState.AVAILABLE, row().fundsState)
+        assertEquals(ReceiptConfirmationMode.CURATOR_RELEASE, row().receiptConfirmationMode)
+        // PostgreSQL keeps microseconds: the persisted instant is the response's, truncated.
+        assertEquals(response.releasedAt.truncatedTo(java.time.temporal.ChronoUnit.MICROS), donation().fundsAvailableAt)
+        assertEquals(0, BigDecimal("50.00").compareTo(available()))
+        val evidence = evidenceRepository.findById(response.evidenceId).get()
+        assertEquals("12/11 VIR HELLOASSO +10,00", evidence.statementLine)
+        assertEquals(associationId, evidence.associationId)
+        assertEquals(1, journaled(ComplianceAuditLogService.HELLOASSO_FUNDS_MANUALLY_RELEASED))
+        assertFalse(auditLogRepository.findAll().any { it.payload.contains("VIR HELLOASSO") }, "statement line journaled")
     }
 
     @Test

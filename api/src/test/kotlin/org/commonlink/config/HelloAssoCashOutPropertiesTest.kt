@@ -27,7 +27,17 @@ class HelloAssoCashOutPropertiesTest {
             assertEquals(Duration.ofSeconds(10), props.cashoutRefreshTimeout)
             assertEquals(Duration.ofDays(3), props.cashoutUnknownAlertAfter)
             assertEquals(3, props.cashoutSyncFailureAlertAfter)
+            assertEquals(CashOutExportAmountUnit.EUROS, props.cashoutExportAmountUnit)
         }
+    }
+
+    @Test
+    fun `the export amount unit binds from configuration`() {
+        ApplicationContextRunner().withUserConfiguration(Config::class.java)
+            .withPropertyValues("app.payments.helloasso.cashout-export-amount-unit=CENTS")
+            .run { context ->
+                assertEquals(CashOutExportAmountUnit.CENTS, context.getBean(PaymentsProperties::class.java).helloasso.cashoutExportAmountUnit)
+            }
     }
 
     @Test
@@ -60,6 +70,7 @@ class HelloAssoCashOutPropertiesTest {
             "cashout-refresh-timeout" to "\${HELLOASSO_CASHOUT_REFRESH_TIMEOUT:PT10S}",
             "cashout-unknown-alert-after" to "\${HELLOASSO_CASHOUT_UNKNOWN_ALERT_AFTER:P3D}",
             "cashout-sync-failure-alert-after" to "\${HELLOASSO_CASHOUT_SYNC_FAILURE_ALERT_AFTER:3}",
+            "cashout-export-amount-unit" to "\${HELLOASSO_CASHOUT_EXPORT_AMOUNT_UNIT:EUROS}",
         )
         for (file in listOf("application.yml", "application-staging.yml", "application-prod.yml")) {
             val source = YamlPropertySourceLoader().load(file, ClassPathResource(file)).first()

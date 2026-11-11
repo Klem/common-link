@@ -86,6 +86,20 @@ class FakeHelloAssoGatewayTest {
     }
 
     @Test
+    fun `a payout total sums its mock payments in euros, unless set explicitly`() {
+        val tokens = fake.obtainTokens("mock:W751121684", "s")
+        fake.setCashIn("mock-w751121684", true)
+        val id = fake.createCheckoutIntent(tokens.accessToken, "mock-w751121684", body).id!!
+        fake.setCashOut(id, "CashedOut", "2026-11-12T10:00:00+01:00", 60001)
+
+        assertEquals(java.math.BigDecimal("25.00"), fake.getCashOutNetTotal(tokens.accessToken, "mock-w751121684", 60001))
+        fake.setCashOutNetTotal(60001, java.math.BigDecimal("31.40"))
+        assertEquals(java.math.BigDecimal("31.40"), fake.getCashOutNetTotal(tokens.accessToken, "mock-w751121684", 60001))
+        assertThrows<org.commonlink.exception.HelloAssoUnavailableException> { fake.getCashOutNetTotal(tokens.accessToken, "mock-w751121684", 1) }
+        assertThrows<HelloAssoUnauthorizedException> { fake.getCashOutNetTotal("unknown-token", "mock-w751121684", 60001) }
+    }
+
+    @Test
     fun `refresh rotates the pair, an unknown refresh token is rejected`() {
         val tokens = fake.obtainTokens("mock:W751121684", "s")
         assertDoesNotThrow { fake.refreshTokens(tokens.refreshToken) }

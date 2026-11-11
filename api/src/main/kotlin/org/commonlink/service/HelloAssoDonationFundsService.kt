@@ -32,7 +32,8 @@ class HelloAssoDonationFundsService(
      *
      * Never blocks the confirmation it belongs to: a paying payment without id (not expected from HelloAsso) leaves
      * the donation confirmed but untracked — it never becomes available on its own — and raises
-     * [TechnicalAlertKind.HELLOASSO_CASHOUT_UNTRACKED] for a manual release.
+     * [TechnicalAlertKind.HELLOASSO_CASHOUT_UNTRACKED] for a technical intervention (the curator release only covers
+     * tracked donations).
      */
     fun track(donation: Donation, payment: HelloAssoPaymentJson) {
         if (repository.existsById(donation.id!!)) return

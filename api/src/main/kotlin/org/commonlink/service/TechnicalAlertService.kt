@@ -86,9 +86,10 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
 
     /**
      * A HelloAsso donation was confirmed but its cash-out cannot be tracked (the paying payment has no id): it will
-     * never become available on its own and needs a manual release by a curator.
+     * never become available on its own. The curator release ([HelloAssoFundsReleaseService]) only covers tracked
+     * donations: this case (never observed) needs a technical intervention.
      */
-    HELLOASSO_CASHOUT_UNTRACKED("Don HelloAsso confirmé sans suivi de versement — déblocage manuel requis", "ERROR"),
+    HELLOASSO_CASHOUT_UNTRACKED("Don HelloAsso confirmé sans suivi de versement — intervention technique requise", "ERROR"),
 
     /** HelloAsso reports a payment it cannot move to the association (`CantTransferReceiverFull`): funds stuck. */
     HELLOASSO_CASHOUT_RECEIVER_FULL("Versement HelloAsso bloqué (transfert impossible)", "ERROR"),

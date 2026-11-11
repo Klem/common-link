@@ -35,6 +35,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -248,6 +249,27 @@ class HelloAssoConnectionControllerTest {
     @Test
     fun `disconnect - 401 without JWT`() {
         mockMvc.perform(delete("/api/association/helloasso/connection")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `disconnect-preview - 200 with the not-paid-out count and amount`() {
+        every { linkService.disconnectPreview(userId) } returns
+            org.commonlink.dto.HelloAssoDisconnectPreviewResponse(2, java.math.BigDecimal("15.00"))
+
+        mockMvc.perform(get("/api/association/helloasso/disconnect-preview").with(user(userId.toString()).roles("ASSOCIATION")))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.notYetPaidOutCount").value(2))
+            .andExpect(jsonPath("$.notYetPaidOutAmount").value(15.00))
+    }
+
+    @Test
+    fun `disconnect-preview - 403 for other roles, 401 without JWT`() {
+        for (role in listOf("DONOR", "CURATOR")) {
+            mockMvc.perform(get("/api/association/helloasso/disconnect-preview").with(user(userId.toString()).roles(role)))
+                .andExpect(status().isForbidden)
+        }
+        mockMvc.perform(get("/api/association/helloasso/disconnect-preview")).andExpect(status().isUnauthorized)
+        verify(exactly = 0) { linkService.disconnectPreview(any()) }
     }
 
     @Test

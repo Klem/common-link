@@ -15,6 +15,8 @@ import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationComplianceStatusService
+import org.commonlink.service.CashOutReceiptService
+import org.commonlink.service.HelloAssoFundsReleaseService
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationLandingService
 import org.commonlink.service.AssociationPaymentService
@@ -144,6 +146,8 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var helloAssoNotificationService: HelloAssoNotificationService
     @MockkBean private lateinit var helloAssoOnboardingReminderService: HelloAssoOnboardingReminderService
     @MockkBean private lateinit var kybDocumentService: KybDocumentService
+    @MockkBean private lateinit var cashOutReceiptService: CashOutReceiptService
+    @MockkBean private lateinit var helloAssoFundsReleaseService: HelloAssoFundsReleaseService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test

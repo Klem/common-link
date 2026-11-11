@@ -59,6 +59,7 @@ class FakeHelloAssoGateway : HelloAssoGateway {
     private val cashIn = ConcurrentHashMap<String, Boolean>()
     private val intents = ConcurrentHashMap<Long, Intent>()
     private val ids = AtomicLong(1000)
+    private val cashOutTotals = ConcurrentHashMap<Long, java.math.BigDecimal>()
 
     override fun obtainTokens(clientId: String, clientSecret: String): HelloAssoTokens {
         if (!clientId.startsWith(KEY_PREFIX) || clientSecret == INVALID_SECRET) {
@@ -134,6 +135,23 @@ class FakeHelloAssoGateway : HelloAssoGateway {
         intent.cashOutDate = cashOutDate
         intent.idCashOut = idCashOut
         return true
+    }
+
+    /**
+     * Net total of payout [cashOutId], in euros (the default export unit): the one set by [setCashOutNetTotal], else
+     * the sum of the mock payments paid out in it.
+     */
+    override fun getCashOutNetTotal(accessToken: String, slug: String, cashOutId: Long): java.math.BigDecimal {
+        if (organizationsByToken[accessToken] == null) throw HelloAssoUnauthorizedException("GET /cash-out", 401)
+        cashOutTotals[cashOutId]?.let { return it }
+        val cents = intents.values.filter { it.idCashOut == cashOutId }.sumOf { it.body.totalAmount.toLong() }
+        if (cents == 0L) throw org.commonlink.exception.HelloAssoUnavailableException("GET /cash-out", 404)
+        return java.math.BigDecimal.valueOf(cents, 2)
+    }
+
+    /** Sets the net total returned for payout [cashOutId], e.g. one that includes other forms' payments or a debit. */
+    fun setCashOutNetTotal(cashOutId: Long, total: java.math.BigDecimal) {
+        cashOutTotals[cashOutId] = total
     }
 
     /** Switches an organization's eligibility (mock controller). */

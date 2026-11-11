@@ -477,9 +477,13 @@ en être tirée. Son nom de fichier ne porte volontairement aucun préfixe `E`.
 don payé via HelloAsso est arrivé sur le compte bancaire de l'association (suivi quotidien de chaque
 don, délai de sécurité de deux jours ouvrés après le virement de HelloAsso), et pourquoi seuls ces
 dons peuvent financer un paiement fournisseur, comme le précise la fiche *E7* (points 4.1 et 4.2).
-Elle décrit aussi le retrait des dons remboursés et les alertes à l'équipe technique, et déclare ce
-qui n'est pas encore en place (confirmation de réception par l'association, déblocage manuel,
-avertissement avant déconnexion, statut « remboursé » et annulation du reçu fiscal). Elle n'est pas
+Elle décrit aussi le retrait des dons remboursés et les alertes à l'équipe technique, et, depuis le
+11 novembre 2026, la confirmation de réception d'un versement par l'association (après relecture
+chez HelloAsso), le déblocage manuel par un curateur sur la ligne du relevé bancaire, et le montant
+des dons pas encore versés fourni avant une déconnexion — tous trois côté serveur et journalisés au
+journal de conformité. Elle déclare ce qui n'est pas encore en place (bouton de confirmation et
+avertissement de déconnexion à l'écran, durée de conservation du justificatif de déblocage, statut
+« remboursé » et annulation du reçu fiscal). Elle n'est pas
 comptée parmi les seize fiches du dispositif. Aucune conclusion sur le dispositif LCB-FT ne peut en
 être tirée. Son nom de fichier ne porte volontairement aucun préfixe `E`.
 
