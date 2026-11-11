@@ -79,6 +79,36 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
     HELLOASSO_ORDER_AMOUNT_DELTA("Commande HelloAsso différente du paiement — don confirmé", "WARN"),
 
     /**
+     * A HelloAsso order carries several payments (a Checkout donation is expected to have exactly one, U8): the
+     * donation is confirmed and its cash-out tracked on the payment that confirmed it.
+     */
+    HELLOASSO_ORDER_SEVERAL_PAYMENTS("Commande HelloAsso avec plusieurs paiements — don confirmé", "WARN"),
+
+    /**
+     * A HelloAsso donation was confirmed but its cash-out cannot be tracked (the paying payment has no id): it will
+     * never become available on its own and needs a manual release by a curator.
+     */
+    HELLOASSO_CASHOUT_UNTRACKED("Don HelloAsso confirmé sans suivi de versement — déblocage manuel requis", "ERROR"),
+
+    /** HelloAsso reports a payment it cannot move to the association (`CantTransferReceiverFull`): funds stuck. */
+    HELLOASSO_CASHOUT_RECEIVER_FULL("Versement HelloAsso bloqué (transfert impossible)", "ERROR"),
+
+    /** A payout state HelloAsso reports as `Unknown`, or a value we do not know, persists beyond the threshold. */
+    HELLOASSO_CASHOUT_STATE_UNKNOWN("État de versement HelloAsso inconnu persistant", "WARN"),
+
+    /** A donation paid out by HelloAsso is still not available beyond the threshold (no automatic delay elapsed). */
+    HELLOASSO_CASHOUT_IN_TRANSIT_TOO_LONG("Versement HelloAsso en route depuis trop longtemps", "WARN"),
+
+    /** The cash-out tracking of one association failed several passes in a row. */
+    HELLOASSO_CASHOUT_SYNC_FAILING("Suivi des versements HelloAsso en échec répété", "ERROR"),
+
+    /**
+     * An association has donations HelloAsso has not paid out yet while its HelloAsso link is disconnected or broken:
+     * they can no longer be tracked and need a manual release by a curator (CEO decision Q5).
+     */
+    HELLOASSO_CASHOUT_UNLINKED("Dons HelloAsso non versés sans lien HelloAsso — déblocage manuel requis", "ERROR"),
+
+    /**
      * Bridge reported a transfer settled on a payout whose amount had already gone back to the
      * campaign's confirmable balance — a payout failed after a bank rejection, or released after
      * its link died.
@@ -199,6 +229,38 @@ class TechnicalAlertService(
     }
 
     /**
+     * Reports an event about one [subject] (a donation reference, an association id), throttled per `kind + subject`
+     * instead of per kind: two associations losing their link in the same pass both get an e-mail. For events the
+     * caller already deduplicates (raised once and stamped in the database), so that the cooldown of one subject never
+     * swallows another subject's only alert.
+     *
+     * @param kind    Incident class.
+     * @param subject What the event is about; part of the throttling key and shown in the e-mail.
+     * @param detail  Optional extra context (counts, amounts), never personal data.
+     */
+    @Async
+    fun reportForSubject(kind: TechnicalAlertKind, subject: String, detail: String? = null) {
+        try {
+            val signature = "${kind.name}|subject:$subject"
+            if (!acquire(signature)) {
+                logger.debug("Technical alert {} suppressed by cooldown", signature)
+                return
+            }
+            send(
+                kind = kind,
+                context = buildMap {
+                    put("Objet", subject)
+                    if (detail != null) put("Détail", detail)
+                    put("Anti-répétition", "prochaine alerte identique pour cet objet dans au plus ${properties.cooldown}")
+                },
+                stackTrace = null,
+            )
+        } catch (e: Exception) {
+            logger.error("Technical alert {} could not be processed: {}", kind, e.javaClass.simpleName)
+        }
+    }
+
+    /**
      * Records one occurrence of a burst-eligible signal and e-mails only once the count reaches
      * [TechnicalAlertProperties.burstThreshold] within [TechnicalAlertProperties.burstWindow].
      *
@@ -301,6 +363,10 @@ class TechnicalAlertService(
      */
     private fun acquire(signature: String): Boolean {
         val now = Instant.now()
+        // Subject signatures are one per donation or association: drop the expired ones so the map stays small.
+        if (signature.contains("|subject:")) {
+            lastSentAt.entries.removeIf { it.key.contains("|subject:") && Duration.between(it.value, now) >= properties.cooldown }
+        }
         var allowed = false
         lastSentAt.compute(signature) { _, previous ->
             if (previous == null || Duration.between(previous, now) >= properties.cooldown) {

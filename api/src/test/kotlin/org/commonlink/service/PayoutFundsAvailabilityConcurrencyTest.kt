@@ -14,22 +14,16 @@ import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.PayeeIbanRepository
 import org.commonlink.repository.PayeeRepository
 import org.commonlink.repository.PayoutRepository
+import org.commonlink.repository.RealPostgresTest
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.context.TestPropertySource
-import org.testcontainers.containers.PostgreSQLContainer
 import java.math.BigDecimal
 import java.util.UUID
 import java.util.concurrent.CyclicBarrier
@@ -47,31 +41,8 @@ import java.util.concurrent.TimeUnit
  * the lock. Each test works on its own campaign. Every campaign also holds a confirmed HelloAsso donation not yet
  * available, which must never be spendable.
  */
-@Tag("testcontainers")
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(properties = [
-    "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
-    "app.frontend-url=http://localhost:3000",
-    "app.vop.demo-mode=true",
-])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class PayoutFundsAvailabilityConcurrencyTest {
-
-    companion object {
-        private val postgres = PostgreSQLContainer("postgres:16-alpine")
-
-        /** Same explicit override as [FundsAvailabilityGoldenTest]: the shared `@ServiceConnection` leaves H2 in place. */
-        @JvmStatic
-        @DynamicPropertySource
-        fun datasource(registry: DynamicPropertyRegistry) {
-            postgres.start()
-            registry.add("spring.datasource.url", postgres::getJdbcUrl)
-            registry.add("spring.datasource.username", postgres::getUsername)
-            registry.add("spring.datasource.password", postgres::getPassword)
-            registry.add("spring.datasource.driver-class-name") { "org.postgresql.Driver" }
-        }
-    }
+class PayoutFundsAvailabilityConcurrencyTest : RealPostgresTest() {
 
     @Autowired private lateinit var payoutService: PayoutService
     @Autowired private lateinit var payoutConfirmer: PayoutConfirmer

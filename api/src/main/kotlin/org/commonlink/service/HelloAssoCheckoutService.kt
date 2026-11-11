@@ -4,7 +4,6 @@ import org.commonlink.config.HelloAssoProperties
 import org.commonlink.dto.HelloAssoCheckoutIntentJson
 import org.commonlink.dto.HelloAssoInitCheckoutJson
 import org.commonlink.dto.HelloAssoOrderJson
-import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.Donation
 import org.commonlink.entity.HelloAssoConnectionState
 import org.commonlink.exception.BadGatewayException
@@ -64,8 +63,8 @@ class HelloAssoCheckoutService(
     private val breaker: HelloAssoConnectionBreaker,
     private val eligibilityService: HelloAssoEligibilityService,
     private val technicalAlertService: TechnicalAlertService,
-    private val complianceAuditLogService: ComplianceAuditLogService,
     private val paymentAmountGuard: PaymentAmountGuard,
+    private val donationFundsService: HelloAssoDonationFundsService,
     private val properties: HelloAssoProperties,
     private val transactionTemplate: TransactionTemplate,
     private val entityManager: EntityManager,
@@ -205,18 +204,18 @@ class HelloAssoCheckoutService(
         donationService.recordPayment(
             donation.providerRef, donation.donor.id!!, donation.campaign.id!!, donation.amount, paidAt,
         )
+        if (payments.size > 1) {
+            log.warn("HelloAsso order of donation {} holds {} payments; tracking payment {}", donation.id, payments.size, paid.id)
+            technicalAlertService.reportForSubject(TechnicalAlertKind.HELLOASSO_ORDER_SEVERAL_PAYMENTS, donation.providerRef, "${payments.size} paiements")
+        }
+        // Same transaction as the confirmation: a confirmed donation always has its cash-out tracking row.
+        donationFundsService.track(donation, paid)
         return HelloAssoPaymentOutcome.CONFIRMED
     }
 
+    /** One alert and one journal entry per reversal: see [HelloAssoDonationFundsService.recordReversal]. */
     private fun reportReversal(donation: Donation, state: String) {
-        log.warn("HelloAsso reports donation {} as {}", donation.id, state)
-        technicalAlertService.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, donation.providerRef, null)
-        complianceAuditLogService.append(
-            eventType = ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED,
-            subjectType = ComplianceAuditSubjectType.DONATION,
-            payload = mapOf("providerRef" to donation.providerRef, "state" to state),
-            subjectId = donation.id,
-        )
+        donationFundsService.recordReversal(donation, state, cashOutState = null)
     }
 
     /** A valid access token, or [ConflictException] once a rejected refresh token has marked the link BROKEN. */

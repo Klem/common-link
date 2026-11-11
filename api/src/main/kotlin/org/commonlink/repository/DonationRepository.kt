@@ -124,7 +124,11 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
      * Sum of the amounts of a campaign's donations whose funds have reached the association's bank
      * account ([org.commonlink.entity.Donation.fundsAvailableAt] set) — the single donation base of
      * every payout balance ([org.commonlink.service.PayoutService], [org.commonlink.service.PayoutConfirmer]).
-     * Confirmed HelloAsso donations still held by HelloAsso are excluded.
+     * Confirmed HelloAsso donations still held by HelloAsso are excluded, and so are HelloAsso donations withdrawn
+     * (refunded or contested) after becoming available: their tracking row is
+     * [org.commonlink.entity.FundsState.WITHDRAWN] while `fundsAvailableAt` stays set. The FIFO allocation
+     * ([findByCampaignIdAndFundsAvailableAtIsNotNullOrderByFundsAvailableAtAscConfirmedAtAscIdAsc]) keeps them, on
+     * purpose: payouts they already funded stay explained (known gap, no refund model in the domain).
      * Returns null when no donation is available; callers should treat null as zero.
      */
     @Query("""
@@ -132,6 +136,10 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
         FROM Donation d
         WHERE d.campaign.id = :campaignId
           AND d.fundsAvailableAt IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM HelloAssoDonationFunds f
+              WHERE f.donationId = d.id AND f.fundsState = org.commonlink.entity.FundsState.WITHDRAWN
+          )
     """)
     fun sumAvailableAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 

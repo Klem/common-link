@@ -6,6 +6,7 @@ import org.commonlink.dto.HelloAssoInitCheckoutJson
 import org.commonlink.dto.HelloAssoOrderJson
 import org.commonlink.dto.HelloAssoOrganizationJson
 import org.commonlink.dto.HelloAssoOrganizationLightJson
+import org.commonlink.dto.HelloAssoPaymentDetailJson
 import org.commonlink.dto.HelloAssoPaymentJson
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoUnauthorizedException
@@ -29,8 +30,9 @@ import java.util.concurrent.atomic.AtomicLong
  * - any other client id, or the secret `invalid` → HelloAsso refuses the keys.
  *
  * Eligibility (`isCashInCompliant`) starts false and is switched by [setCashIn]; a checkout-intent is paid
- * (`Authorized`, card) as soon as it is created unless [setPaymentState] says otherwise. Both are driven by the mock
- * controller.
+ * (`Authorized`, card) as soon as it is created unless [setPaymentState] says otherwise. Its single payment has the
+ * checkout-intent's id and starts `Transfered` (the usual state at confirmation); [setCashOut] moves its payout state.
+ * All are driven by the mock controller.
  */
 @Component
 @Primary
@@ -44,7 +46,13 @@ class FakeHelloAssoGateway : HelloAssoGateway {
         fun slugFor(rna: String) = "mock-${rna.lowercase()}"
     }
 
-    private data class Intent(val body: HelloAssoInitCheckoutJson, var state: String = "Authorized")
+    private data class Intent(
+        val body: HelloAssoInitCheckoutJson,
+        var state: String = "Authorized",
+        var cashOutState: String = "Transfered",
+        var cashOutDate: String? = null,
+        var idCashOut: Long? = null,
+    )
 
     private val organizationsByToken = ConcurrentHashMap<String, String>()
     private val rnaBySlug = ConcurrentHashMap<String, String>()
@@ -94,9 +102,38 @@ class FakeHelloAssoGateway : HelloAssoGateway {
     override fun getCheckoutIntent(accessToken: String, slug: String, checkoutIntentId: Long): HelloAssoCheckoutIntentJson {
         val intent = intents[checkoutIntentId] ?: throw org.commonlink.exception.HelloAssoUnavailableException("GET /checkout-intents", 404)
         val order = if (intent.state in setOf("Authorized", "Refunded", "Refunding", "Contested")) {
-            HelloAssoOrderJson(checkoutIntentId, checkoutIntentId, listOf(HelloAssoPaymentJson(checkoutIntentId, intent.body.totalAmount, intent.state, "Card")))
+            HelloAssoOrderJson(
+                checkoutIntentId, checkoutIntentId,
+                listOf(
+                    HelloAssoPaymentJson(
+                        checkoutIntentId, intent.body.totalAmount, intent.state, "Card",
+                        cashOutState = intent.cashOutState, cashOutDate = intent.cashOutDate, idCashOut = intent.idCashOut,
+                    ),
+                ),
+            )
         } else null
         return HelloAssoCheckoutIntentJson(checkoutIntentId, intent.body.metadata, order)
+    }
+
+    /** The payment of a checkout-intent has the checkout-intent's id. */
+    override fun getPayment(accessToken: String, paymentId: Long): HelloAssoPaymentDetailJson {
+        if (organizationsByToken[accessToken] == null) throw HelloAssoUnauthorizedException("GET /payments", 401)
+        val intent = intents[paymentId] ?: throw org.commonlink.exception.HelloAssoUnavailableException("GET /payments", 404)
+        return HelloAssoPaymentDetailJson(
+            paymentId, intent.body.totalAmount, intent.state, intent.cashOutState, intent.cashOutDate, intent.idCashOut,
+        )
+    }
+
+    /**
+     * Sets the payout state of the payment of checkout-intent [paymentId] (`WaitingForCashOutConfirmation`,
+     * `CashedOut` with its [cashOutDate] and [idCashOut], `Refunded`...).
+     */
+    fun setCashOut(paymentId: Long, cashOutState: String, cashOutDate: String? = null, idCashOut: Long? = null): Boolean {
+        val intent = intents[paymentId] ?: return false
+        intent.cashOutState = cashOutState
+        intent.cashOutDate = cashOutDate
+        intent.idCashOut = idCashOut
+        return true
     }
 
     /** Switches an organization's eligibility (mock controller). */

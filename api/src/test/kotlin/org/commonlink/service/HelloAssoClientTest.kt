@@ -356,4 +356,73 @@ class HelloAssoClientTest {
         assertEquals(null, order.totalCents())
         assertEquals(null, order.lines())
     }
+
+    // ── E2: GET /payments/{id} (cash-out tracking, FD3-01) ─────────────────────────────────────────────────────────
+
+    private fun fixture(name: String) = javaClass.getResource("/helloasso/cashout/$name")!!.readText()
+
+    @Test
+    fun `getPayment reads the payout state of each E2 fixture`() {
+        val expected = listOf(
+            Triple("payment-transfered.json", "Transfered", null),
+            Triple("payment-waiting-cashout.json", "WaitingForCashOutConfirmation", null),
+            Triple("payment-cashedout.json", "CashedOut", 60001L),
+            Triple("payment-refunded.json", "Refunded", null),
+        )
+        expected.forEach { (file, _, _) ->
+            server.expect(requestTo("$api/payments/70001"))
+                .andExpect(header("Authorization", "Bearer $accessToken"))
+                .andRespond(withSuccess(fixture(file), MediaType.APPLICATION_JSON))
+        }
+
+        expected.forEach { (file, cashOutState, idCashOut) ->
+            val payment = client.getPayment(accessToken, 70001)
+            assertEquals(70001L, payment.id, file)
+            assertEquals(1000, payment.amount, file)
+            assertEquals(cashOutState, payment.cashOutState, file)
+            assertEquals(idCashOut, payment.idCashOut, file)
+        }
+        server.verify()
+    }
+
+    @Test
+    fun `getPayment binds the cash-out date and the refunded state`() {
+        server.expect(requestTo("$api/payments/70001")).andRespond(withSuccess(fixture("payment-cashedout.json"), MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$api/payments/70001")).andRespond(withSuccess(fixture("payment-refunded.json"), MediaType.APPLICATION_JSON))
+
+        val cashedOut = client.getPayment(accessToken, 70001)
+        val refunded = client.getPayment(accessToken, 70001)
+
+        assertEquals("Authorized", cashedOut.state)
+        assertEquals("2026-11-12T10:00:00+01:00", cashedOut.cashOutDate)
+        assertEquals("Refunded", refunded.state)
+        assertEquals(null, refunded.cashOutDate)
+    }
+
+    @Test
+    fun `getPayment maps 404, 429 and 401 like the other calls`() {
+        server.expect(requestTo("$api/payments/1")).andRespond(withStatus(HttpStatus.NOT_FOUND).body(leakyBody))
+        server.expect(ExpectedCount.times(3), requestTo("$api/payments/2")).andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS))
+        server.expect(requestTo("$api/payments/3")).andRespond(withStatus(HttpStatus.UNAUTHORIZED).body(leakyBody))
+
+        val notFound: HelloAssoException = assertThrows<HelloAssoUnavailableException> { client.getPayment(accessToken, 1) }
+        assertThrows<HelloAssoRateLimitedException> { client.getPayment(accessToken, 2) }
+        val unauthorized: HelloAssoException = assertThrows<HelloAssoUnauthorizedException> { client.getPayment(accessToken, 3) }
+        assertNothingLeaked(notFound)
+        assertNothingLeaked(unauthorized)
+    }
+
+    @Test
+    fun `getPayment never logs the response body, which carries the payer's identity`() {
+        server.expect(requestTo("$api/payments/70001")).andRespond(withSuccess(fixture("payment-cashedout.json"), MediaType.APPLICATION_JSON))
+        server.expect(requestTo("$api/payments/70002")).andRespond(withStatus(HttpStatus.BAD_GATEWAY).body(fixture("payment-cashedout.json")))
+
+        client.getPayment(accessToken, 70001)
+        assertThrows<HelloAssoUnavailableException> { client.getPayment(accessToken, 70002) }
+
+        val logs = appender.list.joinToString("\n") { it.formattedMessage }
+        for (personal in listOf("donateur@example.org", "Exemple", "rue de l", "75000", "paiement-attestation")) {
+            assertFalse(logs.contains(personal), "logged '$personal' in: $logs")
+        }
+    }
 }

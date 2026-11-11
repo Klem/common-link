@@ -235,6 +235,17 @@ app:
     alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL}
 
   # app.payments: base default (application.yml), set through PAYMENTS_DEFAULT_PROVIDER.
+  payments:
+    helloasso:
+      # Cash-out tracking of HelloAsso donations; see application.yml.
+      cashout-settlement-business-days: ${HELLOASSO_CASHOUT_SETTLEMENT_BUSINESS_DAYS:2}
+      cashout-in-transit-alert-business-days: ${HELLOASSO_CASHOUT_IN_TRANSIT_ALERT_BUSINESS_DAYS:5}
+      cashout-sync-initial-delay-ms: ${HELLOASSO_CASHOUT_SYNC_INITIAL_DELAY_MS:300000}
+      cashout-sync-delay-ms: ${HELLOASSO_CASHOUT_SYNC_DELAY_MS:86400000}
+      cashout-refresh-min-interval: ${HELLOASSO_CASHOUT_REFRESH_MIN_INTERVAL:PT15M}
+      cashout-refresh-timeout: ${HELLOASSO_CASHOUT_REFRESH_TIMEOUT:PT10S}
+      cashout-unknown-alert-after: ${HELLOASSO_CASHOUT_UNKNOWN_ALERT_AFTER:P3D}
+      cashout-sync-failure-alert-after: ${HELLOASSO_CASHOUT_SYNC_FAILURE_ALERT_AFTER:3}
 
   helloasso:
     # Production HelloAsso API and notification source IP. Mock pinned false (ProdConfigSecurityTest).

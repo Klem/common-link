@@ -166,6 +166,23 @@ Bank account tab state meaning Mollie sent the dossier back for more information
 A security mechanism that restricts which domains can communicate with the backend API. Only the authorized frontend URL is allowed — no other website can make requests to the API.
 `technical` `security`
 
+### Cash-out tracking (HelloAsso) — Suivi des versements
+How CommonLink learns that the money of a confirmed HelloAsso donation reached the association's bank account. At
+confirmation, the paying HelloAsso payment is recorded (`helloasso_donation_funds`, one row per donation); a pass
+(`HelloAssoCashOutSyncExecutor`, scheduled and on-demand, at most one per association per 15 minutes; first scheduled pass minutes after startup, then every 24 hours) re-reads each payment (`GET /v5/payments/{id}`) and maps its `cashOutState` to a **Funds state**
+(`HelloAssoFundsStateMapper`): `AT_PROVIDER` → `PAYOUT_PREPARING` → `IN_TRANSIT` (paid out) → `AVAILABLE` after the
+**Settlement delay**, or `WITHDRAWN` on refund/contestation. Only `AVAILABLE` donations count in the **Available
+balance** and the **FIFO Donation Allocation**; `funds_available_at` is set at the transition, never back-dated. Only
+HelloAsso ids and states are stored, never payer data. See `docs/legal/mise-a-disposition-fonds-helloasso.md`.
+`functional` `technical` `association`
+
+### Settlement delay (Délai de sécurité)
+The number of **TARGET2 business days** after HelloAsso's payout date (or, missing it, after the payout was first
+seen) after which a paid-out HelloAsso donation becomes available on its own: 2 by default
+(`app.payments.helloasso.cashout-settlement-business-days`, provisional CEO decision Q1). TARGET2 business days exclude
+weekends, 1 January, Good Friday, Easter Monday, 1 May, 25 and 26 December (`BusinessDayCalendar`, Europe/Paris).
+`functional` `technical`
+
 ### Cash-in eligibility (isCashInCompliant)
 Whether HelloAsso lets an organization receive payments right now, read from HelloAsso's API (`isCashInCompliant` of `GET /v5/organizations/{slug}`, returned to an organization admin, which an association API key is). CommonLink reads it at linking, on the association's request (at most once a minute), on its return to the page, every 2 h while not eligible, daily once eligible, and after any HelloAsso organization notification — never by creating a test payment. A linked HelloAsso association collects only while eligible; one that was eligible and is not any more is shown as suspended.
 `technical` `compliance`
@@ -755,7 +772,8 @@ What an association can still commit on a campaign: available donations − `CON
 `PENDING` payouts (`PayoutService.computeAvailableBalance`). Available donations are those whose
 funds reached the association's bank account (`funds_available_at` set,
 `DonationRepository.sumAvailableAmountByCampaignId`): Mollie donations at confirmation, HelloAsso
-donations only once paid out. The same donation base backs the confirm-time check
+donations only once paid out and the **Settlement delay** elapsed, never once withdrawn (refunded or contested, see
+**Cash-out tracking**). The same donation base backs the confirm-time check
 (`PayoutConfirmer`). A payout refused for this balance alone, at creation or confirmation, gets
 a `409` with `code: FUNDS_NOT_AVAILABLE` and `disbursable` (the amount still usable, never negative)
 — see `FundsNotAvailableException`; with any other blocking reason the `409` stays uncoded. `PENDING` payouts are reserved so that

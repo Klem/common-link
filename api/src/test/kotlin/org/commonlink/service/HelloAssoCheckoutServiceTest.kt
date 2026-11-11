@@ -20,6 +20,8 @@ import org.commonlink.entity.Donation
 import org.commonlink.entity.DonorProfile
 import org.commonlink.entity.HelloAssoConnection
 import org.commonlink.entity.HelloAssoConnectionState
+import org.commonlink.entity.FundsState
+import org.commonlink.entity.HelloAssoDonationFunds
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.HelloAssoCheckoutRefusedException
 import org.commonlink.exception.HelloAssoNotEligibleException
@@ -31,6 +33,7 @@ import org.commonlink.repository.ComplianceAuditLogRepository
 import org.commonlink.payment.CheckoutRequest
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
+import org.commonlink.repository.HelloAssoDonationFundsRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -61,9 +64,14 @@ class HelloAssoCheckoutServiceTest {
     }
     private val txManager = mockk<PlatformTransactionManager>(relaxed = true)
     private val entityManager = mockk<EntityManager>(relaxed = true)
+    private val fundsRepo = mockk<HelloAssoDonationFundsRepository> {
+        every { existsById(any()) } returns false
+        every { findByDonationIdForUpdate(any()) } returns null
+        every { save(any<HelloAssoDonationFunds>()) } answers { firstArg() }
+    }
     private val service = HelloAssoCheckoutService(
-        connectionRepo, donationRepo, donationService, tokenManager, gateway, breaker, eligibility, alerts, auditLog,
-        PaymentAmountGuard(alerts, auditLog, auditLogRepo),
+        connectionRepo, donationRepo, donationService, tokenManager, gateway, breaker, eligibility, alerts,
+        PaymentAmountGuard(alerts, auditLog, auditLogRepo), HelloAssoDonationFundsService(fundsRepo, alerts, auditLog),
         HelloAssoProperties(redirectBaseUrl = "https://app.common-link.test"), TransactionTemplate(txManager), entityManager,
     )
 
@@ -435,5 +443,121 @@ class HelloAssoCheckoutServiceTest {
         verify { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:4242", null) }
         verify { auditLog.append(ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED, any(), any(), any(), any()) }
         verify(exactly = 0) { donationService.recordPayment(any(), any(), any(), any()) }
+    }
+
+    // ── Cash-out tracking (FD3-05) ─────────────────────────────────────────
+
+    private val donationId = UUID.randomUUID()
+
+    private fun trackedDonation(confirmed: Boolean = false) = donation(confirmed).also { every { it.id } returns donationId }
+
+    private fun fundsRow(state: FundsState) = HelloAssoDonationFunds(
+        donation = mockk(relaxed = true), haPaymentId = 7, cashOutState = "Transfered", fundsState = state,
+    )
+
+    @Test
+    fun `the confirmation tracks the payment that confirmed the donation, in its payout state`() {
+        stubDonation(trackedDonation())
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns HelloAssoCheckoutIntentJson(
+            id = 4242,
+            order = HelloAssoOrderJson(1, 4242, listOf(HelloAssoPaymentJson(7, 2550, "Authorized", "Card", cashOutState = "Transfered"))),
+        )
+        val saved = slot<HelloAssoDonationFunds>()
+        every { fundsRepo.save(capture(saved)) } answers { firstArg() }
+
+        assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+
+        assertEquals(7L, saved.captured.haPaymentId)
+        assertEquals(FundsState.AT_PROVIDER, saved.captured.fundsState)
+        assertEquals("Transfered", saved.captured.cashOutState)
+        assertNull(saved.captured.unknownSince)
+        verifyOrder {
+            donationService.recordPayment("helloasso:4242", any(), any(), any(), any())
+            fundsRepo.save(any<HelloAssoDonationFunds>())
+        }
+    }
+
+    @Test
+    fun `an existing tracking row is left unchanged`() {
+        stubDonation(trackedDonation())
+        every { fundsRepo.existsById(donationId) } returns true
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Authorized")
+
+        assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+        verify(exactly = 0) { fundsRepo.save(any<HelloAssoDonationFunds>()) }
+    }
+
+    @Test
+    fun `an order with several payments is alerted, confirmed and tracked on the paid one`() {
+        stubDonation(trackedDonation())
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Refused", "Authorized")
+        val saved = slot<HelloAssoDonationFunds>()
+        every { fundsRepo.save(capture(saved)) } answers { firstArg() }
+
+        assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+
+        verify(exactly = 1) { alerts.reportForSubject(TechnicalAlertKind.HELLOASSO_ORDER_SEVERAL_PAYMENTS, "helloasso:4242", "2 paiements") }
+        assertEquals(1L, saved.captured.haPaymentId)
+    }
+
+    @Test
+    fun `a single payment raises no several-payments alert`() {
+        stubDonation(trackedDonation())
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Authorized")
+
+        service.refreshPayment("helloasso:4242")
+        verify(exactly = 0) { alerts.reportForSubject(TechnicalAlertKind.HELLOASSO_ORDER_SEVERAL_PAYMENTS, any(), any()) }
+    }
+
+    @Test
+    fun `refunding a donation still at HelloAsso withdraws it, one alert, journaled with its previous state`() {
+        assertReversalWithdraws(FundsState.AT_PROVIDER)
+    }
+
+    @Test
+    fun `refunding an available donation withdraws it, one alert, journaled with its previous state`() {
+        assertReversalWithdraws(FundsState.AVAILABLE)
+    }
+
+    private fun assertReversalWithdraws(previous: FundsState) {
+        stubDonation(trackedDonation(confirmed = true))
+        val row = fundsRow(previous)
+        every { fundsRepo.findByDonationIdForUpdate(donationId) } returns row
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Refunded")
+        val payload = slot<Any>()
+        every { auditLog.append(ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED, any(), capture(payload), any(), any()) } returns mockk(relaxed = true)
+
+        assertEquals(HelloAssoPaymentOutcome.REVERSED, service.refreshPayment("helloasso:4242"))
+
+        assertEquals(FundsState.WITHDRAWN, row.fundsState)
+        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:4242", null) }
+        val journaled = payload.captured as Map<*, *>
+        assertEquals(previous.name, journaled["previousFundsState"])
+        assertEquals("Refunded", journaled["state"])
+    }
+
+    @Test
+    fun `a reversal reported again on a withdrawn donation is alerted again but journaled once`() {
+        stubDonation(trackedDonation(confirmed = true))
+        every { fundsRepo.findByDonationIdForUpdate(donationId) } returns fundsRow(FundsState.WITHDRAWN)
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Refunded")
+
+        assertEquals(HelloAssoPaymentOutcome.REVERSED, service.refreshPayment("helloasso:4242"))
+        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:4242", null) }
+        verify(exactly = 0) { auditLog.append(ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED, any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a paying payment without id still confirms the donation, untracked and alerted`() {
+        stubDonation(trackedDonation())
+        every { gateway.getCheckoutIntent(any(), any(), any()) } returns HelloAssoCheckoutIntentJson(
+            id = 4242, order = HelloAssoOrderJson(1, 4242, listOf(HelloAssoPaymentJson(null, 2550, "Authorized", "Card"))),
+        )
+
+        assertEquals(HelloAssoPaymentOutcome.CONFIRMED, service.refreshPayment("helloasso:4242"))
+
+        verify { donationService.recordPayment("helloasso:4242", any(), any(), any(), any()) }
+        verify(exactly = 0) { fundsRepo.save(any<HelloAssoDonationFunds>()) }
+        verify(exactly = 1) { alerts.reportForSubject(TechnicalAlertKind.HELLOASSO_CASHOUT_UNTRACKED, "helloasso:4242", any()) }
     }
 }

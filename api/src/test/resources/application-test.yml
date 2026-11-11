@@ -22,6 +22,10 @@ app:
   # HelloAssoRedirectUrlGuard: the real HelloAsso needs an https return URL.
   helloasso:
     redirect-base-url: https://localhost:3000
+  # Cash-out tracking passes are driven by the tests themselves, never by the scheduler.
+  payments:
+    helloasso:
+      cashout-sync-enabled: false
   # Unroutable on purpose: tests never call geo.api.gouv.fr (geocoding is best-effort or mocked).
   geo:
     base-url: http://localhost:1

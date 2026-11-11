@@ -215,6 +215,19 @@ app:
     # Payment provider given to a newly created association (PaymentsProperties); never re-read
     # afterwards. Existing associations stay MOLLIE; the curator sets MOLLIE by hand on request.
     default-provider: ${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}
+    helloasso:
+      # Cash-out tracking of HelloAsso donations (HelloAssoCashOutProperties). TARGET2 business days.
+      # Settlement delay after HelloAsso's payout date: provisional value (CEO decision Q1, pending HelloAsso's answer).
+      cashout-settlement-business-days: ${HELLOASSO_CASHOUT_SETTLEMENT_BUSINESS_DAYS:2}
+      cashout-in-transit-alert-business-days: ${HELLOASSO_CASHOUT_IN_TRANSIT_ALERT_BUSINESS_DAYS:5}
+      cashout-sync-initial-delay-ms: ${HELLOASSO_CASHOUT_SYNC_INITIAL_DELAY_MS:300000}
+      # First pass after startup, then every 24 hours (HelloAssoCashOutSyncScheduler, fixed delay).
+      cashout-sync-enabled: ${HELLOASSO_CASHOUT_SYNC_ENABLED:true}
+      cashout-sync-delay-ms: ${HELLOASSO_CASHOUT_SYNC_DELAY_MS:86400000}
+      cashout-refresh-min-interval: ${HELLOASSO_CASHOUT_REFRESH_MIN_INTERVAL:PT15M}
+      cashout-refresh-timeout: ${HELLOASSO_CASHOUT_REFRESH_TIMEOUT:PT10S}
+      cashout-unknown-alert-after: ${HELLOASSO_CASHOUT_UNKNOWN_ALERT_AFTER:P3D}
+      cashout-sync-failure-alert-after: ${HELLOASSO_CASHOUT_SYNC_FAILURE_ALERT_AFTER:3}
 
   helloasso:
     # HelloAsso API keys mode (HelloAssoProperties). No default for the URLs and IPs: each environment sets them

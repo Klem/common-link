@@ -8,6 +8,7 @@ import org.commonlink.dto.HelloAssoInitCheckoutJson
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoUnauthorizedException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -58,6 +59,30 @@ class FakeHelloAssoGatewayTest {
 
         fake.setPaymentState(created.id!!, "Refused")
         assertNull(fake.getCheckoutIntent(tokens.accessToken, "mock-w751121684", created.id!!).order)
+    }
+
+    @Test
+    fun `a payment starts Transfered, its payout state is driven and read by E1 and E2`() {
+        val tokens = fake.obtainTokens("mock:W751121684", "s")
+        fake.setCashIn("mock-w751121684", true)
+        val id = fake.createCheckoutIntent(tokens.accessToken, "mock-w751121684", body).id!!
+
+        val initial = fake.getPayment(tokens.accessToken, id)
+        assertEquals("Transfered", initial.cashOutState)
+        assertEquals(2500, initial.amount)
+        assertNull(initial.idCashOut)
+
+        assertTrue(fake.setCashOut(id, "CashedOut", "2026-11-12T10:00:00+01:00", 60001))
+        val paidOut = fake.getPayment(tokens.accessToken, id)
+        assertEquals("CashedOut", paidOut.cashOutState)
+        assertEquals("2026-11-12T10:00:00+01:00", paidOut.cashOutDate)
+        assertEquals(60001L, paidOut.idCashOut)
+        val e1 = fake.getCheckoutIntent(tokens.accessToken, "mock-w751121684", id).order!!.payments!!.single()
+        assertEquals("CashedOut", e1.cashOutState)
+        assertEquals(60001L, e1.idCashOut)
+
+        assertFalse(fake.setCashOut(999_999, "CashedOut"))
+        assertThrows<HelloAssoUnauthorizedException> { fake.getPayment("unknown-token", id) }
     }
 
     @Test

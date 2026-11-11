@@ -84,6 +84,10 @@ data class HelloAssoOrderLine(val amount: Int?, val type: String?)
 /**
  * One payment of an order: [state] (e.g. `Authorized`) and [paymentMeans] (e.g. `Card`, `Sepa`). Amount in cents;
  * [date] is the payment time, ISO-8601 with offset (`2026-11-05T15:27:41.8549543+01:00`, sandbox 2026-11-05).
+ *
+ * Payout fields, kept raw (mapped to a funds state by [org.commonlink.service.HelloAssoFundsStateMapper]):
+ * [cashOutState] (e.g. `Transfered`, `CashedOut`), [cashOutDate] (ISO-8601 with offset, present once paid out) and
+ * [idCashOut] (the payout grouping this payment with others, present once paid out).
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class HelloAssoPaymentJson(
@@ -92,4 +96,21 @@ data class HelloAssoPaymentJson(
     @field:JsonProperty("state") val state: String? = null,
     @field:JsonProperty("paymentMeans") val paymentMeans: String? = null,
     @field:JsonProperty("date") val date: String? = null,
+    @field:JsonProperty("cashOutState") val cashOutState: String? = null,
+    @field:JsonProperty("cashOutDate") val cashOutDate: String? = null,
+    @field:JsonProperty("idCashOut") val idCashOut: Long? = null,
+)
+
+/**
+ * `GET /v5/payments/{id}`: the payout state of one payment. Only these fields are bound (data minimisation): the
+ * response also carries the payer's identity and address, never read. Same field semantics as [HelloAssoPaymentJson].
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class HelloAssoPaymentDetailJson(
+    @field:JsonProperty("id") val id: Long? = null,
+    @field:JsonProperty("amount") val amount: Int? = null,
+    @field:JsonProperty("state") val state: String? = null,
+    @field:JsonProperty("cashOutState") val cashOutState: String? = null,
+    @field:JsonProperty("cashOutDate") val cashOutDate: String? = null,
+    @field:JsonProperty("idCashOut") val idCashOut: Long? = null,
 )

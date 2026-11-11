@@ -8,6 +8,7 @@ import org.commonlink.dto.HelloAssoCheckoutIntentResponseJson
 import org.commonlink.dto.HelloAssoInitCheckoutJson
 import org.commonlink.dto.HelloAssoOrganizationJson
 import org.commonlink.dto.HelloAssoOrganizationLightJson
+import org.commonlink.dto.HelloAssoPaymentDetailJson
 import org.commonlink.exception.HelloAssoException
 import org.commonlink.exception.HelloAssoNotEligibleException
 import org.commonlink.exception.HelloAssoRateLimitedException
@@ -130,6 +131,9 @@ class HelloAssoClient(
 
     override fun getCheckoutIntent(accessToken: String, slug: String, checkoutIntentId: Long): HelloAssoCheckoutIntentJson =
         get("/organizations/${encode(slug)}/checkout-intents/$checkoutIntentId", accessToken, HelloAssoCheckoutIntentJson::class.java)
+
+    override fun getPayment(accessToken: String, paymentId: Long): HelloAssoPaymentDetailJson =
+        get("/payments/$paymentId", accessToken, HelloAssoPaymentDetailJson::class.java)
 
     /** Slugs come from HelloAsso, but are still encoded as a path segment. */
     private fun encode(segment: String): String =

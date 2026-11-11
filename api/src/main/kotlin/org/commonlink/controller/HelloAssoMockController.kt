@@ -66,6 +66,26 @@ class HelloAssoMockController(
     fun setState(@PathVariable id: Long, @RequestParam state: String): ResponseEntity<Void> =
         if (fake.setPaymentState(id, state)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 
+    /** Sets the payout state of the payment of mock checkout-intent [paymentId] (its payment has the same id). */
+    @PostMapping("/payments/{paymentId}/cash-out")
+    @Operation(
+        summary = "Mock: set a payment's payout state (WaitingForCashOutConfirmation, CashedOut, Refunded...)",
+        description = "Read by the next cash-out tracking pass. `cashOutDate` (ISO-8601 with offset) and `idCashOut` " +
+            "are what HelloAsso sets once the payment is paid out.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Payout state set", content = [Content()]),
+        ApiResponse(responseCode = "404", description = "Unknown payment, or mock mode disabled", content = [Content()]),
+    )
+    fun setCashOut(
+        @PathVariable paymentId: Long,
+        @RequestParam cashOutState: String,
+        @RequestParam(required = false) cashOutDate: String?,
+        @RequestParam(required = false) idCashOut: Long?,
+    ): ResponseEntity<Void> =
+        if (fake.setCashOut(paymentId, cashOutState, cashOutDate, idCashOut)) ResponseEntity.noContent().build()
+        else ResponseEntity.notFound().build()
+
     /** Sends HelloAsso's `Order` notification of checkout-intent [checkoutIntentId] to the URL of [webhookToken]. */
     @PostMapping("/notifications/{webhookToken}")
     @Operation(

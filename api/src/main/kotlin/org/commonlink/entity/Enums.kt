@@ -608,3 +608,36 @@ enum class HelloAssoConnectionState {
     /** Disconnected by the association: tokens erased, row and notification token kept for history. */
     DISCONNECTED,
 }
+
+/**
+ * Where the money of a confirmed HelloAsso donation stands between HelloAsso and the association's bank account
+ * ([HelloAssoDonationFunds]). Only [AVAILABLE] money can fund a payout ([Donation.fundsAvailableAt]).
+ *
+ * Stored as a string column with a CHECK constraint (V92) whose values must stay identical to these entries.
+ */
+enum class FundsState {
+    /** Held by HelloAsso (on the payer's wallet, being transferred, or on the association's HelloAsso account). */
+    AT_PROVIDER,
+    /** HelloAsso is preparing the payout (`WaitingForCashOutConfirmation`). */
+    PAYOUT_PREPARING,
+    /** Paid out by HelloAsso (`CashedOut`), not yet considered arrived on the association's bank account. */
+    IN_TRANSIT,
+    /** Arrived: settlement delay elapsed or transfer receipt confirmed. Terminal. */
+    AVAILABLE,
+    /** Refunded or contested: never spendable. Terminal. */
+    WITHDRAWN,
+}
+
+/**
+ * How a HelloAsso donation became [FundsState.AVAILABLE].
+ *
+ * Stored as a string column with a CHECK constraint (V92) whose values must stay identical to these entries.
+ */
+enum class ReceiptConfirmationMode {
+    /** The settlement delay after the payout elapsed. */
+    AUTO,
+    /** The association confirmed it received the transfer. */
+    MANUAL,
+    /** A curator released the funds on a bank statement line. */
+    CURATOR_RELEASE,
+}

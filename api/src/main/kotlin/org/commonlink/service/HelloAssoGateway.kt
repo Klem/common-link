@@ -5,6 +5,7 @@ import org.commonlink.dto.HelloAssoCheckoutIntentResponseJson
 import org.commonlink.dto.HelloAssoInitCheckoutJson
 import org.commonlink.dto.HelloAssoOrganizationJson
 import org.commonlink.dto.HelloAssoOrganizationLightJson
+import org.commonlink.dto.HelloAssoPaymentDetailJson
 
 /**
  * Every HelloAsso operation CommonLink performs, in business terms. Implemented by [HelloAssoClient] (real HTTP) and,
@@ -32,4 +33,7 @@ interface HelloAssoGateway {
 
     /** `GET /v5/organizations/{slug}/checkout-intents/{id}`: the source of truth of a payment, never a notification body. */
     fun getCheckoutIntent(accessToken: String, slug: String, checkoutIntentId: Long): HelloAssoCheckoutIntentJson
+
+    /** `GET /v5/payments/{id}`: the payout state of one payment (cash-out tracking), read with the association's token. */
+    fun getPayment(accessToken: String, paymentId: Long): HelloAssoPaymentDetailJson
 }

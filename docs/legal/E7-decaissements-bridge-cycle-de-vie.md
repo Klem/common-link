@@ -375,13 +375,18 @@ confrontée à un refus réel — elle est tirée de la documentation, pas d'une
 La provision insuffisante étant un cas très probable en usage courant, ce point mérite une
 vérification dès la première exécution réelle en production.
 
-### 8.4 Les dons HelloAsso ne peuvent encore financer aucun paiement
+### 8.4 Les dons HelloAsso ne sont utilisables qu'après leur versement par HelloAsso
 
-Un don HelloAsso confirmé n'est pas encore « arrivé » au sens du §4.1 : rien ne détecte aujourd'hui
-le moment où HelloAsso le reverse à l'association. Ces dons ne comptent donc ni dans le solde
-disponible ni dans la traçabilité côté donateur. Le blocage est volontaire (on ne finance pas un
-paiement avec de l'argent absent du compte) ; le suivi des versements HelloAsso, qui les rendra
-utilisables, est en cours de développement.
+Un don HelloAsso confirmé n'est « arrivé » au sens du §4.1 qu'une fois versé par HelloAsso et le
+délai de sécurité écoulé (deux jours ouvrés après le virement). Le suivi quotidien qui le constate
+est décrit par la fiche *Mise à disposition des fonds des dons HelloAsso*
+(`mise-a-disposition-fonds-helloasso.md`). Jusque-là, ces dons ne comptent ni dans le solde
+disponible ni dans la traçabilité côté donateur ; un don remboursé ou contesté n'y compte jamais.
+Restent ouverts, et décrits par cette fiche : la confirmation de réception par l'association, qui
+permettrait d'utiliser ces dons avant la fin du délai, et le déblocage manuel par un curateur des
+dons d'une association dont le lien HelloAsso est coupé — tant qu'ils ne sont pas livrés, ces dons
+restent bloqués. Le délai automatique repose sur une date de HelloAsso dont le sens (émission ou
+crédit) n'est pas encore confirmé.
 
 ---
 
@@ -392,7 +397,7 @@ utilisables, est en cours de développement.
 | Brancher l'alerte technique sur les deux motifs d'intégration (8.1) | Développement | Rien — mais le message affiché est inexact tant que ce n'est pas fait |
 | Détecter un virement figé chez une banque qui ne rapporte pas (8.2) | Développement | La traçabilité des virements exécutés par LCL et Nickel |
 | Vérifier la formulation des deux motifs non testables (8.3) | Observation en production | Rien — vérification à la première occurrence réelle |
-| Suivre les versements HelloAsso pour rendre ces dons utilisables (8.4) | Développement | Tout paiement financé par des dons HelloAsso |
+| Confirmation de réception et déblocage manuel des dons HelloAsso (8.4) | Développement | Paiements financés par des dons HelloAsso avant la fin du délai, ou d'une association dont le lien HelloAsso est coupé |
 | Provisionner les identifiants Bridge de production et désactiver le mode démonstration (7) | Prérequis non technique | **Toute exécution réelle de virement en production** |
 
 ---
