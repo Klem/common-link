@@ -30,6 +30,8 @@ interface ActiveScreenProps {
   fundraisingUrl: string | null;
   /** Opens the disconnect modal; the button keeps focus return through the forwarded ref. */
   onAskDisconnect: () => void;
+  /** "En savoir plus" of the payout-mode tip: opens the matching FAQ entry. */
+  onLearnMore: () => void;
 }
 
 /**
@@ -39,7 +41,7 @@ interface ActiveScreenProps {
  * button, to give focus back when the modal closes.
  */
 const ActiveScreen = forwardRef<HTMLButtonElement, ActiveScreenProps>(function ActiveScreen(
-  { collecting, suspended, organizationSlug, webhook, notificationUrl, fundraisingUrl, onAskDisconnect },
+  { collecting, suspended, organizationSlug, webhook, notificationUrl, fundraisingUrl, onAskDisconnect, onLearnMore },
   disconnectRef,
 ) {
   const t = useTranslations('settings.helloasso.onboarding.active');
@@ -182,7 +184,12 @@ const ActiveScreen = forwardRef<HTMLButtonElement, ActiveScreenProps>(function A
       {/* CEO decision Q2: "on request" payouts recommended, never required (nothing is checked server side). */}
       <div className="alert alert-info hao-card-spaced" data-testid="hao-payout-mode-tip">
         <span className="alert-icon" aria-hidden="true">👆</span>
-        <div>{t.rich('payoutMode', { strong })}</div>
+        <div>
+          {t.rich('payoutMode', { strong })}{' '}
+          <button type="button" className="btn-camp-link" onClick={onLearnMore} data-testid="hao-payout-mode-learn-more">
+            {t('payoutModeLearnMore')}
+          </button>
+        </div>
       </div>
     </section>
   );

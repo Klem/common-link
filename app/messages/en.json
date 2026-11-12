@@ -3445,7 +3445,8 @@
             "retry": "Fixed, make another test donation",
             "visio": "Do it with you on a video call"
           },
-          "payoutMode": "<strong>Tip: choose “on request” payouts</strong> in your HelloAsso space. With monthly payouts, a donation can wait up to about 40 days before it can fund a payment; on request, you trigger the payout yourself."
+          "payoutMode": "<strong>Tip: choose “on request” payouts</strong> in your HelloAsso space. With monthly payouts, a donation can wait up to about 40 days before it can fund a payment; on request, you trigger the payout yourself.",
+          "payoutModeLearnMore": "Learn more"
         },
         "disconnect": {
           "title": "Disconnect from HelloAsso?",
@@ -3588,7 +3589,9 @@
           },
           "payoutMode": {
             "q": "Which payout schedule should I choose?",
-            "text": "We recommend <strong>on-request</strong> payouts, without requiring them.",
+            "intro": "We recommend <strong>on-request</strong> payouts, without requiring them.",
+            "onDemand": "On demand: funds available 7 business days after each payment.",
+            "automatic": "Monthly: payout around the 10th of the following month.",
             "why": "Only donations that have arrived in your bank account can fund your payments from CommonLink. With monthly payouts, a donation can wait up to about 40 days before it is usable; on request, you trigger the payout yourself as soon as you need it."
           }
         },

@@ -3445,7 +3445,8 @@
             "retry": "C'est corrigé, refaire un don test",
             "visio": "Le faire avec vous en visio"
           },
-          "payoutMode": "<strong>Conseil : choisissez le versement « à la demande »</strong> dans votre espace HelloAsso. En mode mensuel, un don peut attendre jusqu'à environ 40 jours avant de pouvoir financer un paiement ; à la demande, c'est vous qui déclenchez le versement."
+          "payoutMode": "<strong>Conseil : choisissez le versement « à la demande »</strong> dans votre espace HelloAsso, puis demandez vos versements dès que les sommes sont disponibles. Vous pourrez utiliser vos dons plus tôt pour payer vos dépenses depuis CommonLink.",
+          "payoutModeLearnMore": "En savoir plus"
         },
         "disconnect": {
           "title": "Se déconnecter de HelloAsso ?",
@@ -3587,9 +3588,11 @@
             "text": "Avant de saisir quoi que ce soit, regardez la barre d'adresse : elle doit afficher <strong>helloasso.com</strong> (votre espace d'administration est sur <strong>admin.helloasso.com</strong>). Sinon, fermez l'onglet et contactez-nous. <strong>CommonLink ne vous demandera jamais votre mot de passe HelloAsso</strong> : la clé n'est pas votre mot de passe."
           },
           "payoutMode": {
-            "q": "Quel rythme de versement choisir ?",
-            "text": "Nous vous conseillons le versement <strong>à la demande</strong>, sans l'imposer.",
-            "why": "Seuls les dons arrivés sur votre compte bancaire peuvent financer vos paiements depuis CommonLink. En mode mensuel, un don peut attendre jusqu'à environ 40 jours avant d'être utilisable ; à la demande, vous déclenchez le versement vous-même dès que vous en avez besoin."
+            "q": "Quand l’argent arrive-t-il sur votre compte ?",
+            "intro": "HelloAsso vous propose deux rythmes de versement, à choisir dans votre espace HelloAsso :",
+            "onDemand": "À la demande (recommandé) : vous demandez un versement quand vous le souhaitez, dès que les sommes sont disponibles, environ 7 jours ouvrés après chaque don.",
+            "automatic": "Automatique : HelloAsso vous verse les sommes une fois par mois, sans action de votre part.",
+            "why": "Sur CommonLink, vous payez vos dépenses avec les dons déjà arrivés sur votre compte bancaire. Le versement à la demande vous permet de les utiliser plus tôt. Vous restez libre de votre choix."
           }
         },
         "help": {

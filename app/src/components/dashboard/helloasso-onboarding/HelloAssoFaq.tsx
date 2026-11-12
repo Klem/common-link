@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { HelloAssoLink } from '@/types/helloasso';
@@ -27,19 +27,43 @@ interface HelloAssoFaqProps {
   onReplaceKey: () => void;
 }
 
+/** Imperative handle of [HelloAssoFaq], for links pointing at one of its entries ("En savoir plus"). */
+export interface HelloAssoFaqHandle {
+  /** Opens entry [id], scrolls it into view and moves focus to its question. */
+  reveal: (id: string) => void;
+}
+
 /**
  * Shared FAQ of the HelloAsso journey (mockup `faq-card`, v3.7: 13 entries in 2 groups), shown on screens 0, 5 and 6.
  * Accordions with `aria-expanded` / `aria-controls`, panels `role=region`. HelloAsso's imposed texts (presentation,
  * cart text, ACPR approval) are rendered verbatim from `settings.helloasso.imposed` — never reworded nor translated by
  * us. "Combien ça coûte ?" carries a visible "Décision en attente" placeholder until the CEO decides
  * ([HELLOASSO_FEES_DECISION_PENDING]).
+ *
+ * Exposes [HelloAssoFaqHandle.reveal] so another part of the journey can open one entry, e.g. the "Conseil" box of the
+ * active screen opening "Quand l'argent arrive-t-il sur votre compte ?".
  */
-export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: HelloAssoFaqProps) {
+const HelloAssoFaq = forwardRef<HelloAssoFaqHandle, HelloAssoFaqProps>(function HelloAssoFaq(
+  { beforeStart, status, onReplaceKey },
+  ref,
+) {
   const t = useTranslations('settings.helloasso.onboarding.faq');
   const tImposed = useTranslations('settings.helloasso.imposed');
   const locale = useLocale();
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const linked = status?.link === HelloAssoLink.OK;
+
+  useImperativeHandle(ref, () => ({
+    reveal: (id: string) => {
+      setOpen((o) => ({ ...o, [id]: true }));
+      // After the panel has rendered: bring the question on screen and give it focus (keyboard and screen readers).
+      setTimeout(() => {
+        const trigger = document.getElementById(`hao-faq-${id}-t`);
+        trigger?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        trigger?.focus();
+      }, 0);
+    },
+  }), []);
 
   const imposed = (label: string, text: string) => (
     <div className="imposed hao-imposed-spaced">
@@ -165,7 +189,11 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
       icon: '👆',
       panel: () => (
         <>
-          <p>{t.rich('payoutMode.text', { strong })}</p>
+          <p>{t.rich('payoutMode.intro', { strong })}</p>
+          <ul>
+            <li>{t('payoutMode.onDemand')}</li>
+            <li>{t('payoutMode.automatic')}</li>
+          </ul>
           <p>{t('payoutMode.why')}</p>
         </>
       ),
@@ -319,7 +347,9 @@ export default function HelloAssoFaq({ beforeStart, status, onReplaceKey }: Hell
       </div>
     </div>
   );
-}
+});
+
+export default HelloAssoFaq;
 
 /** Colour of a mini-figure icon chip (mockup `mini-fig-ico` modifiers). */
 const FigTone = {

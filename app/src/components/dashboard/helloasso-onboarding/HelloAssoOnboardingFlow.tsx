@@ -30,6 +30,7 @@ import ReviewScreen from './ReviewScreen';
 import ActiveScreen from './ActiveScreen';
 import DisconnectModal from './DisconnectModal';
 import HelloAssoFaq from './HelloAssoFaq';
+import type { HelloAssoFaqHandle } from './HelloAssoFaq';
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>;
 
@@ -65,6 +66,7 @@ export default function HelloAssoOnboardingFlow({ profile }: HelloAssoOnboarding
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const disconnectButton = useRef<HTMLButtonElement>(null);
+  const faq = useRef<HelloAssoFaqHandle>(null);
 
   const view = resolveFlowView(resolved, status, replacing);
   const screen = replacing ? HelloAssoScreen.LINK : currentScreen(status, chosen);
@@ -215,11 +217,17 @@ export default function HelloAssoOnboardingFlow({ profile }: HelloAssoOnboarding
           notificationUrl={status?.notificationUrl ?? null}
           fundraisingUrl={fundraisingPageUrl(profile)}
           onAskDisconnect={() => setDisconnectOpen(true)}
+          onLearnMore={() => faq.current?.reveal('payoutMode')}
         />
       )}
 
       {faqVisible(screen) && (
-        <HelloAssoFaq beforeStart={screen === HelloAssoScreen.WELCOME} status={status} onReplaceKey={replaceKey} />
+        <HelloAssoFaq
+          ref={faq}
+          beforeStart={screen === HelloAssoScreen.WELCOME}
+          status={status}
+          onReplaceKey={replaceKey}
+        />
       )}
       <HelpCard />
 

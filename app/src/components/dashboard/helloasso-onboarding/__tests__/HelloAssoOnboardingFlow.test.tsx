@@ -481,10 +481,25 @@ describe('"on request" payout recommendation (CEO Q2)', () => {
     expect(screen.getByTestId('hao-payout-mode-tip')).toHaveTextContent('payoutMode');
   });
 
-  it('has its FAQ entry', () => {
+  it('has its FAQ entry listing both payout schedules', () => {
     renderFlow(linked({ canCollect: true, everCompliant: true }));
     fireEvent.click(screen.getByRole('button', { name: 'payoutMode.q' }));
+    expect(screen.getByText('payoutMode.intro')).toBeInTheDocument();
+    expect(screen.getByText('payoutMode.onDemand')).toBeInTheDocument();
+    expect(screen.getByText('payoutMode.automatic')).toBeInTheDocument();
     expect(screen.getByText('payoutMode.why')).toBeInTheDocument();
+  });
+
+  it('"En savoir plus" opens that FAQ entry and moves focus to it', async () => {
+    renderFlow(linked({ canCollect: true, everCompliant: true }));
+    const question = screen.getByRole('button', { name: 'payoutMode.q' });
+    expect(question).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(screen.getByTestId('hao-payout-mode-learn-more'));
+
+    expect(question).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('payoutMode.onDemand')).toBeInTheDocument();
+    await waitFor(() => expect(question).toHaveFocus());
   });
 });
 
