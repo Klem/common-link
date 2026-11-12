@@ -26,6 +26,16 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
 
     fun findByProviderRef(providerRef: String): Donation?
 
+    /**
+     * Association owning the campaign of [providerRef]'s donation, or null when no donation carries it.
+     *
+     * A scalar read: safe outside any transaction (scheduler threads, no open-in-view session), where navigating
+     * `donation.campaign.association` on a loaded entity would hit an uninitialised proxy. Backed by
+     * `donations_provider_ref_unique`.
+     */
+    @Query("SELECT d.campaign.association.id FROM Donation d WHERE d.providerRef = :providerRef")
+    fun findAssociationIdByProviderRef(@Param("providerRef") providerRef: String): UUID?
+
     /** Sum of the campaign's confirmed donations, every provider; null when none (callers treat null as zero). */
     @Query("""
         SELECT SUM(d.amount)

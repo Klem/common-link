@@ -23,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.event.ApplicationEvents
 import org.springframework.test.context.event.RecordApplicationEvents
 import org.springframework.transaction.annotation.Transactional
@@ -50,6 +51,8 @@ import java.util.UUID
     "app.vop.demo-mode=true",
 ])
 @RecordApplicationEvents
+// The amount guard journals a mismatch; H2 lacks the audit-log lock table and sequence from the migrations.
+@Sql(scripts = ["/sql/compliance_audit_log_test_schema.sql"], executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 @Transactional
 class MollieWebhookServiceTest {
 
