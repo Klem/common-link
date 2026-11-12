@@ -254,15 +254,25 @@ class VerificationService(
     }
 
     /**
-     * Deletes a supplementary document. Verifies ownership before deletion.
+     * Deletes a supplementary document. Verifies ownership and type before deletion.
+     *
+     * Only [AssociationDocumentType.OPTIONAL] documents may go through here: verification and mandate
+     * documents are compliance evidence, frozen by [guardMutableState] once submitted, and their ids
+     * are visible to the association through other responses (audit 2026-11-12, H2).
+     *
+     * @throws NotFoundException if the document does not exist or belongs to another association.
+     * @throws ConflictException if the document is not a supplementary one.
      */
     @Transactional
     fun deleteOptionalDocument(userId: UUID, docId: UUID) {
         val profile = associationProfileRepository.findByUserId(userId)
             .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
 
-        documentRepository.findMetadataByIdAndAssociationId(docId, profile.id!!)
+        val meta = documentRepository.findMetadataByIdAndAssociationId(docId, profile.id!!)
             ?: throw NotFoundException("Document $docId not found")
+        if (meta.docType != AssociationDocumentType.OPTIONAL) {
+            throw ConflictException("Only supplementary documents can be deleted")
+        }
 
         documentRepository.deleteById(docId)
         logger.info("Optional document {} deleted for association {}", docId, profile.id)

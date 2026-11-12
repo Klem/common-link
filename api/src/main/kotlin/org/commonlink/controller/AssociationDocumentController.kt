@@ -107,12 +107,14 @@ class AssociationDocumentController(
     @DeleteMapping("/{id}")
     @Operation(
         summary = "Delete a supplementary document",
-        description = "Removes the document. Verifies that the document belongs to the requesting association."
+        description = "Removes the document. Verifies that the document belongs to the requesting association " +
+            "and is a supplementary one: verification and mandate documents cannot be deleted."
     )
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "Document deleted", content = [Content()]),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Document not found", content = [Content()]),
+        ApiResponse(responseCode = "409", description = "Not a supplementary document", content = [Content()]),
     )
     fun deleteDocument(
         @AuthenticationPrincipal principal: UserDetails,
