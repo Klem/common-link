@@ -169,8 +169,10 @@ ultérieure ne supprime pas ce chiffrement en le jugeant superflu, ou ne remplac
 de révocation par une suppression physique en croyant simplifier la base.
 
 Le journal d'audit dans lequel chaque désignation et révocation est consignée est lui-même
-inaltérable : ni l'application ni un administrateur ne peut modifier ou supprimer une entrée
-existante. Cette inaltérabilité a fait l'objet d'une fiche distincte.
+protégé contre la modification : l'application ne peut ni modifier ni supprimer une entrée
+existante, et toute altération faite en base est rendue détectable. Cette protection, et ses
+limites — notamment qu'un administrateur disposant du compte technique de la base n'en est pas
+empêché —, sont décrites dans la fiche « Journal des contrôles de gel » (§ 4.2 et 4.3).
 
 ---
 

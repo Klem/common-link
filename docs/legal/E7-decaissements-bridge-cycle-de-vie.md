@@ -191,7 +191,7 @@ Elle n'est possible que lorsqu'**aucun virement n'est engagé** : paiement jamai
 (4.4). Elle est refusée dès qu'un lien d'autorisation est en cours d'utilisation ou qu'un virement
 est autorisé ou en exécution : seule la réponse de la banque peut alors clore le paiement. La même
 règle est vérifiée par le serveur, sous le même verrou que l'émission : une émission et une
-annulation simultanées ne peuvent pas aboutir toutes les deux. **Rectification du 12 novembre 2026** : jusqu'à cette date, la vérification sous verrou relisait une copie du paiement déjà chargée par la même requête, et non l'état enregistré en base ; deux émissions simultanées du même paiement, ou une émission et une annulation simultanées, pouvaient donc aboutir toutes les deux. La vérification relit désormais l'état enregistré sous le verrou, et un test exécuté sur une base PostgreSQL réelle reproduit les deux situations.
+annulation simultanées ne peuvent pas aboutir toutes les deux. **Rectification du 12 novembre 2026** : jusqu'au déploiement de la correction écrite à cette date, la vérification sous verrou relit une copie du paiement déjà chargée par la même requête, et non l'état enregistré en base ; deux émissions simultanées du même paiement, ou une émission et une annulation simultanées, peuvent donc aboutir toutes les deux. Après ce déploiement, la vérification relit l'état enregistré sous le verrou, et un test exécuté sur une base PostgreSQL réelle reproduit les deux situations.
 
 Les deux garde-fous de 4.3 s'appliquent :
 

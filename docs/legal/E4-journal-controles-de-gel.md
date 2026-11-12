@@ -79,8 +79,8 @@ Deux mécanismes indépendants protègent le registre contre toute modification 
 **Au niveau de la base de données.** Les droits de modification et de suppression ont été
 révoqués sur la table du registre. Toute tentative de modifier ou supprimer une ligne est refusée
 par la base de données elle-même, sans passer par la couche applicative. Un déclencheur
-automatique renforce ce refus comme second garde-fou. Depuis le 12 novembre 2026, un second
-déclencheur refuse également la remise à zéro complète du registre (instruction `TRUNCATE`), que
+automatique renforce ce refus comme second garde-fou. À compter du déploiement de la correction
+écrite le 12 novembre 2026, un second déclencheur refuse également la remise à zéro complète du registre (instruction `TRUNCATE`), que
 le seul retrait de droit ne suffisait pas à empêcher.
 
 **Limite de ce niveau de protection.** La base de données et l'application partagent aujourd'hui
@@ -104,9 +104,9 @@ qui le précèdent.
 
 Conséquence : si un enregistrement était modifié, supprimé, ou si un enregistrement était inséré
 entre deux enregistrements existants, la chaîne serait brisée — la vérification de cohérence le
-détecterait. Depuis le 12 novembre 2026, cette vérification est exécutée automatiquement une fois
-par jour ; une chaîne rompue, ou une vérification impossible, déclenche une alerte technique
-adressée à l'équipe technique. Auparavant, elle n'était exécutée que par les tests automatisés.
+détecterait. À compter du déploiement de la correction écrite le 12 novembre 2026, cette vérification
+est exécutée automatiquement une fois par jour ; une chaîne rompue, ou une vérification impossible, déclenche une alerte technique
+adressée à l'équipe technique. Jusqu'à ce déploiement, elle n'est exécutée que par les tests automatisés.
 
 Deux limites sont à retenir. L'empreinte est calculée sans clé secrète : une personne capable de
 réécrire en base l'enregistrement altéré **et tous ceux qui le suivent** produirait une chaîne
