@@ -79,7 +79,16 @@ Deux mécanismes indépendants protègent le registre contre toute modification 
 **Au niveau de la base de données.** Les droits de modification et de suppression ont été
 révoqués sur la table du registre. Toute tentative de modifier ou supprimer une ligne est refusée
 par la base de données elle-même, sans passer par la couche applicative. Un déclencheur
-automatique renforce ce refus comme second garde-fou.
+automatique renforce ce refus comme second garde-fou. Depuis le 12 novembre 2026, un second
+déclencheur refuse également la remise à zéro complète du registre (instruction `TRUNCATE`), que
+le seul retrait de droit ne suffisait pas à empêcher.
+
+**Limite de ce niveau de protection.** La base de données et l'application partagent aujourd'hui
+un même compte technique, propriétaire de la table du registre. Ce compte peut se rendre les droits
+retirés et supprimer les déclencheurs. Les protections ci-dessus arrêtent une erreur ou un
+programme défaillant ; elles n'arrêtent pas une personne disposant de ce compte. Séparer le compte
+qui fait évoluer le schéma de celui qu'utilise l'application relève de l'hébergement et reste à
+réaliser.
 
 **Au niveau de l'application.** L'ensemble du code de la plateforme est organisé de sorte qu'il
 n'existe qu'un seul point d'écriture dans ce registre. Aucune autre partie du logiciel ne peut y
@@ -95,7 +104,16 @@ qui le précèdent.
 
 Conséquence : si un enregistrement était modifié, supprimé, ou si un enregistrement était inséré
 entre deux enregistrements existants, la chaîne serait brisée — la vérification de cohérence le
-détecterait immédiatement. Cette vérification peut être lancée à tout moment, à la demande.
+détecterait. Depuis le 12 novembre 2026, cette vérification est exécutée automatiquement une fois
+par jour ; une chaîne rompue, ou une vérification impossible, déclenche une alerte technique
+adressée à l'équipe technique. Auparavant, elle n'était exécutée que par les tests automatisés.
+
+Deux limites sont à retenir. L'empreinte est calculée sans clé secrète : une personne capable de
+réécrire en base l'enregistrement altéré **et tous ceux qui le suivent** produirait une chaîne
+cohérente que la vérification ne signalerait pas. La suppression des enregistrements les plus
+récents n'est pas détectée non plus, la vérification ne connaissant pas le dernier maillon attendu.
+Un ancrage de ce dernier maillon hors de la base, ou une empreinte à clé conservée hors de la base,
+restent à réaliser.
 
 L'ordre des enregistrements est garanti par un numéro de séquence strictement croissant, attribué
 au moment de l'écriture et protégé contre les écritures simultanées. Deux contrôles effectués dans

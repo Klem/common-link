@@ -60,6 +60,13 @@ enum class TechnicalAlertKind(val title: String, val severity: String) {
     MISSED_WEBHOOK("Notification de paiement manquée — confirmée par le réconciliateur", "ERROR"),
 
     /**
+     * The scheduled integrity check of the compliance audit log ([ComplianceAuditChainScheduler]) found a row whose
+     * hash or link to the previous row does not match, or could not run at all. A broken chain means the journal was
+     * altered outside the application: a technical intervention and the compliance officer are both needed.
+     */
+    COMPLIANCE_AUDIT_CHAIN_BROKEN("Journal d'audit conformité : chaîne rompue ou non vérifiable", "ERROR"),
+
+    /**
      * The payment provider reports a confirmed donation as refunded, being refunded or contested (HelloAsso). There is
      * no refund model in CommonLink: the receipt and the on-chain proof already exist, so a human must handle it.
      */

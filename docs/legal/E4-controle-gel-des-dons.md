@@ -230,8 +230,8 @@ développement dédiée au dispositif LCB-FT.
 
 Chaque résultat de filtrage — qu'il s'agisse d'une correspondance, d'une absence de correspondance
 ou d'une impossibilité de contrôler — est inscrit dans un journal de contrôle de conformité protégé
-par une chaîne de hachage. Cette structure garantit qu'aucune entrée ne peut être modifiée ou
-supprimée sans que l'intégrité de la chaîne soit compromise.
+par une chaîne de hachage. Cette structure rend détectable la modification ou la suppression d'une
+entrée, dans les limites décrites dans la fiche « Journal des contrôles de gel » (§ 4.2 et 4.3).
 
 Les noms des donateurs ne figurent jamais dans les journaux applicatifs : seuls les journaux de
 conformité, soumis à des règles d'accès distinctes, contiennent les informations relatives aux

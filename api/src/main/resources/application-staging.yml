@@ -225,6 +225,12 @@ app:
     # (ComplianceAlertEmailListener). A role address, not a person: the alert must keep reaching the
     # compliance function across staff changes. Blank disables the notification and logs a warning.
     alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL}
+    # Scheduled integrity check of the compliance audit log hash chain (ComplianceAuditChainScheduler);
+    # a broken or unverifiable chain raises a technical alert.
+    audit-chain-check:
+      enabled: true
+      initial-delay-ms: 600000
+      delay-ms: 86400000
 
   # app.payments and app.helloasso: base defaults (HelloAsso sandbox), set per environment through
   # PAYMENTS_DEFAULT_PROVIDER and HELLOASSO_* variables.

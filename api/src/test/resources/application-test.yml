@@ -26,6 +26,10 @@ app:
   payments:
     helloasso:
       cashout-sync-enabled: false
+  # The audit-log chain check is exercised directly by its tests, never by the scheduler.
+  compliance:
+    audit-chain-check:
+      enabled: false
   # Unroutable on purpose: tests never call geo.api.gouv.fr (geocoding is best-effort or mocked).
   geo:
     base-url: http://localhost:1
