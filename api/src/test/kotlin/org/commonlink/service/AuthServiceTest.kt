@@ -418,6 +418,36 @@ class AuthServiceTest {
         assertEquals("new-google-sub", emailUser.googleSub)
         assertTrue(emailUser.emailVerified)
         verify { userRepository.save(emailUser) }
+        // Already verified: the account's own password and sessions are kept.
+        assertEquals("hashed", emailUser.passwordHash)
+        verify(exactly = 0) { refreshTokenRepository.revokeAllByUserId(any()) }
+    }
+
+    /**
+     * Account pre-hijacking (audit 2026-11-12, H1): an attacker registers the victim's address with
+     * their own password; the row stays unverified. The victim's first Google login proves the
+     * address — the planted password must not survive it.
+     */
+    @Test
+    fun `loginWithGoogle - MERGE - unverified account loses its password and sessions`() {
+        val planted = User(
+            id = UUID.randomUUID(),
+            email = "victim@example.com",
+            role = UserRole.ASSOCIATION,
+            provider = AuthProvider.EMAIL,
+            passwordHash = "attacker-hash",
+            emailVerified = false
+        )
+        val payload = buildGooglePayload(sub = "victim-sub", email = "victim@example.com")
+        every { googleIdTokenVerifier.verify("valid-token") } returns buildGoogleToken(payload)
+        every { userRepository.findByGoogleSub("victim-sub") } returns Optional.empty()
+        every { userRepository.findByEmailIgnoreCase("victim@example.com") } returns Optional.of(planted)
+
+        authService.loginWithGoogle("valid-token")
+
+        assertNull(planted.passwordHash)
+        assertTrue(planted.emailVerified)
+        verify { refreshTokenRepository.revokeAllByUserId(planted.id!!) }
     }
 
     @Test
@@ -715,6 +745,29 @@ class AuthServiceTest {
         assertTrue(googleUser.emailVerified)
         assertEquals(AuthProvider.GOOGLE, googleUser.provider) // provider unchanged
         verify(exactly = 0) { donorProfileRepository.save(any()) }
+    }
+
+    /** Same pre-hijacking scenario as the Google merge (audit 2026-11-12, H1), proven by a magic link. */
+    @Test
+    fun `verifyMagicLink - MERGE - unverified account loses its password and sessions`() {
+        val planted = User(
+            id = UUID.randomUUID(),
+            email = "victim@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.EMAIL,
+            passwordHash = "attacker-hash",
+            emailVerified = false
+        )
+        val token = TestFixtures.magicLinkToken(email = planted.email, role = planted.role)
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase(planted.email) } returns Optional.of(planted)
+
+        authService.verifyMagicLink("rawtoken123")
+
+        assertNull(planted.passwordHash)
+        assertTrue(planted.emailVerified)
+        verify { refreshTokenRepository.revokeAllByUserId(planted.id!!) }
     }
 
     /**
