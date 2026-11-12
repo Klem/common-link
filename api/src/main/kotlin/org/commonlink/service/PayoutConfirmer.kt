@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import jakarta.persistence.EntityManager
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.OnchainJobAction
@@ -81,6 +82,7 @@ class PayoutConfirmer(
     private val payeeIbanRepository: PayeeIbanRepository,
     private val donationRepository: DonationRepository,
     private val outbox: OnchainOutboxService,
+    private val entityManager: EntityManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -144,8 +146,7 @@ class PayoutConfirmer(
         campaignRepository.findByIdForUpdate(campaignId)
             ?: throw NotFoundException("Campaign not found: $campaignId")
 
-        val payout = payoutRepository.findById(payoutId)
-            .orElseThrow { NotFoundException("Payout not found: $payoutId") }
+        val payout = lockFresh(payoutId)
 
         if (payout.status != PayoutStatus.PENDING) {
             throw ConflictException("Payout $payoutId is already ${payout.status}")
@@ -441,8 +442,7 @@ class PayoutConfirmer(
         campaignRepository.findByIdForUpdate(campaignId)
             ?: throw NotFoundException("Campaign not found: $campaignId")
 
-        val payout = payoutRepository.findById(payoutId)
-            .orElseThrow { NotFoundException("Payout not found: $payoutId") }
+        val payout = lockFresh(payoutId)
         assertCancellable(payout)
 
         payout.status = PayoutStatus.CANCELLED
@@ -450,6 +450,24 @@ class PayoutConfirmer(
         val saved = payoutRepository.save(payout)
         log.info("Payout {} cancelled by the association", payoutId)
         return saved
+    }
+
+    /**
+     * Locks [payoutId]'s row and returns it with its committed state, after the campaign lock.
+     *
+     * [loadForConfirm] / [loadForCancel] already loaded the entity in the same request (open-in-view): a plain
+     * `findById` returned that instance without reading the row again, so the guards of [reserve] and [cancel] ran
+     * on a stale copy and a concurrent confirmation went unseen — two Bridge links for one payout (audit 2026-11-12,
+     * H5). The lock alone does not refresh a managed instance, hence the explicit refresh. Lock order stays campaign
+     * then payout, as everywhere else.
+     *
+     * @throws NotFoundException if the payout disappeared.
+     */
+    private fun lockFresh(payoutId: UUID): Payout {
+        val payout = payoutRepository.findByIdForUpdate(payoutId)
+            ?: throw NotFoundException("Payout not found: $payoutId")
+        entityManager.refresh(payout)
+        return payout
     }
 
     /** @throws ConflictException unless [payout] is PENDING with no transfer in progress. */

@@ -2,6 +2,7 @@ package org.commonlink.service
 
 import io.mockk.every
 import io.mockk.mockk
+import jakarta.persistence.EntityManager
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -48,9 +49,10 @@ class PayoutConfirmerTest {
     private val payeeIbanRepository = mockk<PayeeIbanRepository>()
     private val donationRepository  = mockk<DonationRepository>()
     private val outbox              = mockk<OnchainOutboxService>()
+    private val entityManager       = mockk<EntityManager>(relaxed = true)
 
     private val confirmer = PayoutConfirmer(
-        payoutRepository, campaignRepository, payeeIbanRepository, donationRepository, outbox,
+        payoutRepository, campaignRepository, payeeIbanRepository, donationRepository, outbox, entityManager,
     )
 
     private val assocId    = UUID.randomUUID()
@@ -173,7 +175,7 @@ class PayoutConfirmerTest {
     fun `reserve - engages the amount under the campaign lock`() {
         val payout = newPayout()
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "0", raised = "1000")
         every { payoutRepository.save(payout) } returns payout
 
@@ -189,7 +191,7 @@ class PayoutConfirmerTest {
         // 500 requested, only 100 confirmable (1000 raised − 900 already confirmed).
         val payout = newPayout()
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "900", raised = "1000")
 
         assertThrows<ConflictException> { confirmer.reserve(campaignId, payout.id) }
@@ -202,7 +204,7 @@ class PayoutConfirmerTest {
         // initiated a transfer not yet promoted to CONFIRMED, so its amount is already spent.
         val payout = newPayout()
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "0", inFlight = "900", raised = "1000")
 
         assertThrows<ConflictException> { confirmer.reserve(campaignId, payout.id) }
@@ -546,7 +548,7 @@ class PayoutConfirmerTest {
     fun `cancel - marks the payout CANCELLED under the campaign lock and drops its checkout url`() {
         val payout = newPayout().also { it.bridgeCheckoutUrl = "https://pay.bridgeapi.io/link/dead" }
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         every { payoutRepository.save(payout) } returns payout
 
         confirmer.cancel(campaignId, payout.id)
@@ -563,7 +565,7 @@ class PayoutConfirmerTest {
         // sees it and refuses, so a transfer being authorised is never cancelled.
         val payout = newPayout(bridgeStatus = BridgePaymentStatus.CREA)
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
         assertThrows<ConflictException> { confirmer.cancel(campaignId, payout.id) }
         assertThat(payout.status).isEqualTo(PayoutStatus.PENDING)
@@ -574,7 +576,7 @@ class PayoutConfirmerTest {
     fun `reserve - a cancelled payout can no longer be confirmed`() {
         val payout = newPayout(status = PayoutStatus.CANCELLED)
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
 
         assertThrows<ConflictException> { confirmer.reserve(campaignId, payout.id) }
         verify(exactly = 0) { payoutRepository.save(any()) }
@@ -586,7 +588,7 @@ class PayoutConfirmerTest {
     fun `reserve - an amount equal to the confirmable balance is engaged`() {
         val payout = newPayout(amount = "400.00")
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "500", inFlight = "100", raised = "1000")
         every { payoutRepository.save(payout) } returns payout
 
@@ -599,7 +601,7 @@ class PayoutConfirmerTest {
     fun `reserve - one cent above the confirmable balance is refused with the coded exception`() {
         val payout = newPayout(amount = "400.01")
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "500", inFlight = "100", raised = "1000")
 
         val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
@@ -618,7 +620,7 @@ class PayoutConfirmerTest {
         assertThat(payout.bridgeStatus).isNull()
 
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "600", raised = "999.99")
 
         val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
@@ -633,7 +635,7 @@ class PayoutConfirmerTest {
     fun `reserve - a negative confirmable balance is reported as nothing disbursable`() {
         val payout = newPayout(amount = "10")
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "900", inFlight = "200", raised = "1000")
 
         val ex = assertThrows<FundsNotAvailableException> { confirmer.reserve(campaignId, payout.id) }
@@ -645,7 +647,7 @@ class PayoutConfirmerTest {
     fun `reserve - the refusal carries the HelloAsso donations in transit and still at HelloAsso`() {
         val payout = newPayout(amount = "10")
         every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
-        every { payoutRepository.findById(payout.id) } returns Optional.of(payout)
+        every { payoutRepository.findByIdForUpdate(payout.id) } returns payout
         stubBalance(confirmed = "0", raised = "5")
         every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignId) } returns listOf(
             org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.IN_TRANSIT, BigDecimal("20.00")),

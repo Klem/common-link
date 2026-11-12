@@ -6,6 +6,7 @@ import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutKind
 import org.commonlink.entity.PayoutStatus
+import org.commonlink.exception.ConflictException
 import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 import java.util.UUID
 import java.util.concurrent.CyclicBarrier
@@ -54,6 +56,7 @@ class PayoutFundsAvailabilityConcurrencyTest : RealPostgresTest() {
     @Autowired private lateinit var payeeRepository: PayeeRepository
     @Autowired private lateinit var payeeIbanRepository: PayeeIbanRepository
     @Autowired private lateinit var payoutRepository: PayoutRepository
+    @Autowired private lateinit var transactionTemplate: TransactionTemplate
 
     private lateinit var associationUserId: UUID
     private lateinit var associationId: UUID
@@ -165,5 +168,51 @@ class PayoutFundsAvailabilityConcurrencyTest : RealPostgresTest() {
         val refusal = assertThrows<FundsNotAvailableException> { create(campaignId, "0.01") }
         assertEquals(0, BigDecimal.ZERO.compareTo(refusal.disbursable))
         assertInvariant(campaignId, "end")
+    }
+
+    /**
+     * Audit 2026-11-12, H5: the confirmation request already holds the payout (loaded by [PayoutConfirmer.loadForConfirm],
+     * open-in-view) when a concurrent confirmation engages it and commits. The second [PayoutConfirmer.reserve] must
+     * see the committed engagement under the lock, not its own stale copy — otherwise two Bridge links are created.
+     */
+    @Test
+    fun `a payout engaged meanwhile is refused to a request holding a stale copy`() {
+        val campaignId = campaignWith("100.00")
+        val payoutId = create(campaignId, "30.00")
+
+        transactionTemplate.executeWithoutResult { status ->
+            payoutConfirmer.loadForConfirm(campaignId, payoutId, associationId)
+
+            val other = Thread { payoutConfirmer.reserve(campaignId, payoutId) }
+            other.start()
+            other.join()
+
+            assertThrows<ConflictException> { payoutConfirmer.reserve(campaignId, payoutId) }
+            // The refusal marked the request's transaction rollback-only, as in production.
+            status.setRollbackOnly()
+        }
+        assertEquals(BridgePaymentStatus.CREA, payoutRepository.findById(payoutId).get().bridgeStatus)
+    }
+
+    /** Same race on cancellation: a payout engaged after [PayoutConfirmer.loadForCancel] must not be cancelled. */
+    @Test
+    fun `a payout engaged meanwhile is not cancelled by a request holding a stale copy`() {
+        val campaignId = campaignWith("100.00")
+        val payoutId = create(campaignId, "30.00")
+
+        transactionTemplate.executeWithoutResult { status ->
+            payoutConfirmer.loadForCancel(campaignId, payoutId, associationId)
+
+            val other = Thread { payoutConfirmer.reserve(campaignId, payoutId) }
+            other.start()
+            other.join()
+
+            assertThrows<ConflictException> { payoutConfirmer.cancel(campaignId, payoutId) }
+            // The refusal marked the request's transaction rollback-only, as in production.
+            status.setRollbackOnly()
+        }
+        val payout = payoutRepository.findById(payoutId).get()
+        assertEquals(PayoutStatus.PENDING, payout.status)
+        assertEquals(BridgePaymentStatus.CREA, payout.bridgeStatus)
     }
 }
