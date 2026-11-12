@@ -246,6 +246,7 @@ class AuthService(
             // address, so it is claimed rather than left blocking sign-up (audit 2026-08-20, M1).
             existing.guest -> {
                 logger.info("Claiming guest account {} via Google sign-up as {}", existing.id, role)
+                discardUnprovenCredentials(existing)
                 existing.guest = false
                 existing.provider = AuthProvider.GOOGLE
                 existing.role = role
