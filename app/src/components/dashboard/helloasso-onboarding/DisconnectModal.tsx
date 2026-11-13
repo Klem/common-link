@@ -76,7 +76,7 @@ export default function DisconnectModal({ secretWipedAt, busy, onCancel, onConfi
               <span className="alert-icon" aria-hidden="true">💶</span>
               <div>
                 {t.rich('notYetPaidOut', { strong, count: notYetPaidOut.count, amount: fmtEur(notYetPaidOut.amount) })}{' '}
-                {t('notYetPaidOutRelease')}
+                {t('notYetPaidOutRelease', { count: notYetPaidOut.count })}
               </div>
             </div>
           )}

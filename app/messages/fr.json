@@ -1768,7 +1768,7 @@
               "confirmedAuto": "disponible depuis le {date}",
               "confirmedCurator": "rendu disponible par l'équipe CommonLink le {date}",
               "releaseTitle": "Rendu disponible le {date}",
-              "releaseSub": "rendu disponible par l'équipe CommonLink",
+              "releaseSub": "par l'équipe CommonLink, sur présentation de votre relevé",
               "none": "Aucun virement reçu pour le moment."
             }
           },
@@ -3458,8 +3458,8 @@
           "cancel": "Annuler",
           "confirm": "Oui, me déconnecter",
           "confirming": "Déconnexion…",
-          "notYetPaidOut": "<strong>{count, plural, one {# don} other {# dons}} ({amount}) pas encore versés par HelloAsso</strong> sur votre compte bancaire ne pourront plus être suivis automatiquement après la déconnexion.",
-          "notYetPaidOutRelease": "L'équipe CommonLink pourra les rendre disponibles pour vos paiements sur présentation de la ligne de votre relevé bancaire qui montre le virement."
+          "notYetPaidOut": "<strong>{count, plural, one {# don ({amount}) n'a pas encore été versé} other {# dons ({amount}) n'ont pas encore été versés}} par HelloAsso</strong> sur votre compte bancaire. Après la déconnexion, nous ne pourrons plus {count, plural, one {le suivre} other {les suivre}} automatiquement.",
+          "notYetPaidOutRelease": "L'équipe CommonLink pourra {count, plural, one {le rendre disponible} other {les rendre disponibles}} pour vos paiements sur présentation de la ligne de votre relevé bancaire qui montre le virement."
         },
         "faq": {
           "titleStart": "Vos questions avant de commencer",
@@ -3490,8 +3490,8 @@
             }
           },
           "cert": {
-            "q": "Quels dons sont certifiés ? Et notre formulaire de don HelloAsso ?",
-            "yes": "Certifié",
+            "q": "Quels dons sont suivis par CommonLink ? Et notre formulaire de don HelloAsso ?",
+            "yes": "Suivi par CommonLink",
             "yesItems": {
               "widget": "Votre widget CommonLink, sur votre site",
               "page": "Votre page de collecte CommonLink"
@@ -3501,7 +3501,7 @@
               "form": "Un formulaire de don créé sur HelloAsso",
               "link": "Un lien HelloAsso partagé directement"
             },
-            "text": "Un formulaire de don HelloAsso continue de fonctionner, mais ses dons ne passent pas par CommonLink : ni certifiés, ni couverts par nos reçus fiscaux (HelloAsso les gère). Pour une campagne suivie sur CommonLink, remplacez son bouton, sur votre site ou dans vos emails, par votre widget ou votre page de collecte. Vos adhésions et votre billetterie HelloAsso ne changent pas."
+            "text": "Un formulaire de don HelloAsso continue de fonctionner, mais ses dons ne passent pas par CommonLink : ni suivis, ni couverts par nos reçus fiscaux (HelloAsso les gère). Pour une campagne suivie sur CommonLink, remplacez son bouton, sur votre site ou dans vos emails, par votre widget ou votre page de collecte. Vos adhésions et votre billetterie HelloAsso ne changent pas."
           },
           "why": {
             "q": "Pourquoi HelloAsso, et comment peut-il être gratuit ?",
@@ -3527,11 +3527,6 @@
             "shareLabel": "des dons versés à l'association, selon les CGU de HelloAsso",
             "heldValue": "0 €",
             "heldLabel": "détenu par CommonLink, à aucun moment",
-            "rhythm": "Le rythme des versements se choisit dans votre espace HelloAsso :",
-            "onDemandValue": "À la demande",
-            "onDemandLabel": "sommes disponibles 7 jours ouvrés après chaque paiement",
-            "monthlyValue": "Mensuel",
-            "monthlyLabel": "versement vers le 10 du mois suivant",
             "note": "Calendrier donné à titre d'information par HelloAsso. Changer de RIB suspend les versements le temps de la vérification."
           },
           "receipts": {
@@ -3541,8 +3536,7 @@
           "fees": {
             "q": "Combien ça coûte ?",
             "payment": "<strong>Côté paiement, rien</strong> : HelloAsso ne facture aucun frais à votre association.",
-            "platform": "<strong>Les frais CommonLink</strong> pour les associations qui encaissent via HelloAsso :",
-            "pending": "Décision en attente"
+            "platform": "CommonLink perçoit une commission de 8 % HT, soit 9,6 % TTC, sur les dons payés dans le mois. Elle vous est facturée à part en fin de mois et se règle par virement au plus tard à la fin du mois suivant : vous pouvez utiliser l'argent avant de la régler. Elle n'est jamais prélevée sur les dons."
           },
           "whyKey": {
             "q": "Pourquoi une clé, et pas un bouton « Se connecter » ?",

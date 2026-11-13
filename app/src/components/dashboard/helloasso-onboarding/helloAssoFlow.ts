@@ -282,13 +282,6 @@ export function helloAssoVisioUrl(): string {
 }
 
 /**
- * PLACEHOLDER — CEO decision pending: CommonLink's fees for associations collecting through HelloAsso (FAQ "Combien
- * ça coûte ?"). Shown with a visible "Décision en attente" badge. Must not ship to production: replace the wording,
- * then set this to false.
- */
-export const HELLOASSO_FEES_DECISION_PENDING = true;
-
-/**
  * Wall-clock time `HH:MM` of an ISO instant, in the user's time zone; null when absent or unreadable.
  *
  * @param iso ISO-8601 instant.

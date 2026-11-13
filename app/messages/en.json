@@ -3445,7 +3445,7 @@
             "retry": "Fixed, make another test donation",
             "visio": "Do it with you on a video call"
           },
-          "payoutMode": "<strong>Tip: choose “on request” payouts</strong> in your HelloAsso space. With monthly payouts, a donation can wait up to about 40 days before it can fund a payment; on request, you trigger the payout yourself.",
+          "payoutMode": "<strong>Tip: choose “on-demand” payouts</strong> in your HelloAsso space, then request your payouts as soon as funds are available. You'll be able to use your donations sooner to pay your expenses from CommonLink.",
           "payoutModeLearnMore": "Learn more"
         },
         "disconnect": {
@@ -3527,11 +3527,6 @@
             "shareLabel": "of donations paid to the association, under HelloAsso's terms",
             "heldValue": "€0",
             "heldLabel": "held by CommonLink, at any time",
-            "rhythm": "You choose the payout schedule in your HelloAsso space:",
-            "onDemandValue": "On demand",
-            "onDemandLabel": "funds available 7 business days after each payment",
-            "monthlyValue": "Monthly",
-            "monthlyLabel": "payout around the 10th of the following month",
             "note": "Schedule given for information by HelloAsso. Changing bank details suspends payouts while they are verified."
           },
           "receipts": {
@@ -3541,8 +3536,7 @@
           "fees": {
             "q": "How much does it cost?",
             "payment": "<strong>On the payment side, nothing</strong>: HelloAsso charges your association no fees.",
-            "platform": "<strong>CommonLink fees</strong> for associations collecting through HelloAsso:",
-            "pending": "Decision pending"
+            "platform": "<strong>CommonLink fees</strong> for associations collecting through HelloAsso: decision pending."
           },
           "whyKey": {
             "q": "Why a key, and not a “Log in” button?",
@@ -3588,11 +3582,11 @@
             "text": "Before typing anything, look at the address bar: it must show <strong>helloasso.com</strong> (your administration space is on <strong>admin.helloasso.com</strong>). Otherwise, close the tab and contact us. <strong>CommonLink will never ask for your HelloAsso password</strong>: the key is not your password."
           },
           "payoutMode": {
-            "q": "Which payout schedule should I choose?",
-            "intro": "We recommend <strong>on-request</strong> payouts, without requiring them.",
-            "onDemand": "On demand: funds available 7 business days after each payment.",
-            "automatic": "Monthly: payout around the 10th of the following month.",
-            "why": "Only donations that have arrived in your bank account can fund your payments from CommonLink. With monthly payouts, a donation can wait up to about 40 days before it is usable; on request, you trigger the payout yourself as soon as you need it."
+            "q": "When does the money reach your account?",
+            "intro": "HelloAsso offers two payout schedules, which you choose in your HelloAsso space:",
+            "onDemand": "On demand (recommended): you request a payout whenever you want, as soon as funds are available, about 7 business days after each donation.",
+            "automatic": "Automatic: HelloAsso pays out your funds once a month, with no action on your part.",
+            "why": "On CommonLink, you pay your expenses with donations that have already reached your bank account. On-demand payouts let you use them sooner. The choice is yours."
           }
         },
         "help": {

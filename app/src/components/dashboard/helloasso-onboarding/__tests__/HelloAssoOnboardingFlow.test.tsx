@@ -525,10 +525,11 @@ describe('FAQ and help card', () => {
     expect(screen.getByRole('region', { name: 'why.q' })).toBeInTheDocument();
   });
 
-  it('shows the pending-fees placeholder (must be replaced before production)', () => {
+  it('shows the CommonLink fees text, with no pending-decision placeholder', () => {
     renderFlow(status());
     fireEvent.click(screen.getByRole('button', { name: 'fees.q' }));
-    expect(screen.getByTestId('hao-fees-placeholder')).toHaveTextContent('fees.pending');
+    expect(screen.getByTestId('hao-fees-platform')).toHaveTextContent('fees.platform');
+    expect(screen.queryByText('fees.pending')).not.toBeInTheDocument();
   });
 
   it('hides the visio card when no booking URL is configured, shows it otherwise', () => {

@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { HelloAssoLink } from '@/types/helloasso';
 import type { HelloAssoStatus } from '@/types/helloasso';
 import { HELLOASSO_HOW_IT_WORKS_URL } from '@/lib/helloasso';
-import { HELLOASSO_FEES_DECISION_PENDING, REGAFI_URL, formatClock, formatDay } from './helloAssoFlow';
+import { REGAFI_URL, formatClock, formatDay } from './helloAssoFlow';
 import HelloAssoPayButton, { HelloAssoPayButtonVariant } from '@/components/helloasso/HelloAssoPayButton';
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>;
@@ -37,8 +37,7 @@ export interface HelloAssoFaqHandle {
  * Shared FAQ of the HelloAsso journey (mockup `faq-card`, v3.7: 13 entries in 2 groups), shown on screens 0, 5 and 6.
  * Accordions with `aria-expanded` / `aria-controls`, panels `role=region`. HelloAsso's imposed texts (presentation,
  * cart text, ACPR approval) are rendered verbatim from `settings.helloasso.imposed` — never reworded nor translated by
- * us. "Combien ça coûte ?" carries a visible "Décision en attente" placeholder until the CEO decides
- * ([HELLOASSO_FEES_DECISION_PENDING]).
+ * us. Payout schedules are described once, in "Quand l'argent arrive-t-il sur votre compte ?".
  *
  * Exposes [HelloAssoFaqHandle.reveal] so another part of the journey can open one entry, e.g. the "Conseil" box of the
  * active screen opening "Quand l'argent arrive-t-il sur votre compte ?".
@@ -174,11 +173,6 @@ const HelloAssoFaq = forwardRef<HelloAssoFaqHandle, HelloAssoFaqProps>(function 
             <MiniFig icon="🎯" tone={FigTone.INDIGO} value={t('money.shareValue')} label={t('money.shareLabel')} />
             <MiniFig icon="🔐" tone={FigTone.AMBER} value={t('money.heldValue')} label={t('money.heldLabel')} />
           </div>
-          <p className="hao-row-spaced-lg">{t('money.rhythm')}</p>
-          <div className="mini-figs two">
-            <MiniFig icon="👆" tone={FigTone.TEAL} value={t('money.onDemandValue')} label={t('money.onDemandLabel')} />
-            <MiniFig icon="📆" tone={FigTone.INDIGO} value={t('money.monthlyValue')} label={t('money.monthlyLabel')} />
-          </div>
           <p className="form-hint hao-note-spaced">{t('money.note')}</p>
         </>
       ),
@@ -209,11 +203,7 @@ const HelloAssoFaq = forwardRef<HelloAssoFaqHandle, HelloAssoFaqProps>(function 
       panel: () => (
         <>
           <p>{t.rich('fees.payment', { strong })}</p>
-          {HELLOASSO_FEES_DECISION_PENDING && (
-            <p data-testid="hao-fees-placeholder">
-              {t.rich('fees.platform', { strong })} <span className="badge badge-warning">{t('fees.pending')}</span>
-            </p>
-          )}
+          <p data-testid="hao-fees-platform">{t.rich('fees.platform', { strong })}</p>
         </>
       ),
     },
