@@ -71,7 +71,7 @@ class HelloAssoCheckoutServiceTest {
     }
     private val service = HelloAssoCheckoutService(
         connectionRepo, donationRepo, donationService, tokenManager, gateway, breaker, eligibility, alerts,
-        PaymentAmountGuard(alerts, auditLog, auditLogRepo), HelloAssoDonationFundsService(fundsRepo, alerts, auditLog),
+        PaymentAmountGuard(alerts, auditLog, auditLogRepo), HelloAssoDonationFundsService(fundsRepo, alerts, auditLog, mockk { every { findByDonationId(any()) } returns null }),
         HelloAssoProperties(redirectBaseUrl = "https://app.common-link.test"), TransactionTemplate(txManager), entityManager,
     )
 
@@ -165,10 +165,14 @@ class HelloAssoCheckoutServiceTest {
     // ── Re-read ────────────────────────────────────────────────────────────
 
     private fun donation(confirmed: Boolean = false, amount: BigDecimal = BigDecimal("25.50")): Donation {
-        val association = mockk<AssociationProfile> { every { id } returns associationId }
+        val association = mockk<AssociationProfile> {
+            every { id } returns associationId
+            every { name } returns "Asso"
+        }
         val campaign = mockk<Campaign> {
             every { id } returns UUID.randomUUID()
             every { this@mockk.association } returns association
+            every { name } returns "Campagne"
         }
         val donor = mockk<DonorProfile> { every { id } returns UUID.randomUUID() }
         return mockk(relaxed = true) {
@@ -177,6 +181,7 @@ class HelloAssoCheckoutServiceTest {
             every { this@mockk.donor } returns donor
             every { this@mockk.amount } returns amount
             every { confirmedAt } returns if (confirmed) java.time.Instant.now() else null
+            every { createdAt } returns java.time.Instant.parse("2026-11-02T10:00:00Z")
         }
     }
 
@@ -440,7 +445,7 @@ class HelloAssoCheckoutServiceTest {
         every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Refunded")
 
         assertEquals(HelloAssoPaymentOutcome.REVERSED, service.refreshPayment("helloasso:4242"))
-        verify { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:4242", null) }
+        verify { alerts.reportForSubject(TechnicalAlertKind.PAYMENT_REVERSED, "helloasso:4242", any()) }
         verify { auditLog.append(ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED, any(), any(), any(), any()) }
         verify(exactly = 0) { donationService.recordPayment(any(), any(), any(), any()) }
     }
@@ -530,7 +535,7 @@ class HelloAssoCheckoutServiceTest {
         assertEquals(HelloAssoPaymentOutcome.REVERSED, service.refreshPayment("helloasso:4242"))
 
         assertEquals(FundsState.WITHDRAWN, row.fundsState)
-        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:4242", null) }
+        verify(exactly = 1) { alerts.reportForSubject(TechnicalAlertKind.PAYMENT_REVERSED, "helloasso:4242", any()) }
         val journaled = payload.captured as Map<*, *>
         assertEquals(previous.name, journaled["previousFundsState"])
         assertEquals("Refunded", journaled["state"])
@@ -543,7 +548,7 @@ class HelloAssoCheckoutServiceTest {
         every { gateway.getCheckoutIntent(any(), any(), any()) } returns intentWith("Refunded")
 
         assertEquals(HelloAssoPaymentOutcome.REVERSED, service.refreshPayment("helloasso:4242"))
-        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:4242", null) }
+        verify(exactly = 1) { alerts.reportForSubject(TechnicalAlertKind.PAYMENT_REVERSED, "helloasso:4242", any()) }
         verify(exactly = 0) { auditLog.append(ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED, any(), any(), any(), any()) }
     }
 

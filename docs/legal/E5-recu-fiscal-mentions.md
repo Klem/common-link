@@ -137,7 +137,16 @@ remboursé après émission du reçu — décision de justice, erreur manifeste,
 plateforme n'offre aujourd'hui aucun moyen d'invalider le reçu délivré. Il n'existe ni marque
 d'annulation sur le document conservé, ni fonction permettant de la poser, ni exclusion des reçus
 annulés d'un décompte annuel. Ce point a été explicitement écarté du périmètre de la revue du
-17 août 2026 et reste entier.
+17 août 2026.
+
+Pour les dons encaissés via HelloAsso, à compter du déploiement de cette correction, un
+remboursement ou une opposition bancaire signalés par HelloAsso déclenchent une alerte à l'équipe,
+une par don, avec le numéro du reçu fiscal concerné. La procédure prévoit alors une annulation
+**à la main** (décision de la direction) : l'équipe informe le donateur que son reçu est annulé et
+ne peut pas servir à sa déclaration de revenus. Le
+reçu conservé par la plateforme ne porte toujours aucune marque d'annulation, et l'endroit où
+l'équipe consigne l'annulation reste à décider. Un remboursement que HelloAsso ne signale pas avec
+la référence du don n'est pas détecté. Pour les dons encaissés via Mollie, rien n'a changé.
 
 **Le décompte annuel des reçus délivré à l'administration n'est pas produit.** L'article 222 bis du
 CGI impose à l'organisme bénéficiaire de déclarer chaque année le montant global des dons et le

@@ -46,7 +46,7 @@ class CashOutReceiptServiceTest {
     private val alerts = mockk<TechnicalAlertService>(relaxed = true)
     private val auditLog = mockk<ComplianceAuditLogService>(relaxed = true)
     private val totals = mockk<HelloAssoCashOutTotalService>()
-    private val fundsService = HelloAssoDonationFundsService(fundsRepo, alerts, auditLog)
+    private val fundsService = HelloAssoDonationFundsService(fundsRepo, alerts, auditLog, mockk { every { findByDonationId(any()) } returns null })
     private val service = CashOutReceiptService(
         fundsRepo, connectionRepo, tokenManager, breaker, gateway, fundsService, totals, auditLog,
         TransactionTemplate(mockk<PlatformTransactionManager>(relaxed = true)),
@@ -79,10 +79,14 @@ class CashOutReceiptServiceTest {
         HelloAssoConnection(association = mockk(relaxed = true), webhookToken = "t", state = state, organizationSlug = "mon-asso")
 
     private fun row(paymentId: Long, state: FundsState = FundsState.IN_TRANSIT, amount: String = "10.00", idCashOut: Long = PAYOUT): HelloAssoDonationFunds {
-        val assoc = mockk<AssociationProfile> { every { id } returns association }
+        val assoc = mockk<AssociationProfile> {
+            every { id } returns association
+            every { name } returns "Asso"
+        }
         val campaign = mockk<Campaign> {
             every { id } returns campaignId
             every { this@mockk.association } returns assoc
+            every { name } returns "Campagne"
         }
         val donationId = UUID.randomUUID()
         val donation = mockk<Donation> {
@@ -90,6 +94,8 @@ class CashOutReceiptServiceTest {
             every { this@mockk.campaign } returns campaign
             every { providerRef } returns "helloasso:$paymentId"
             every { this@mockk.amount } returns BigDecimal(amount)
+            every { confirmedAt } returns null
+            every { createdAt } returns java.time.Instant.parse("2026-11-02T10:00:00Z")
             every { fundsAvailableAt } answers { availableAt[donationId] }
             every { fundsAvailableAt = any() } answers { availableAt[donationId] = firstArg() }
         }
@@ -215,7 +221,7 @@ class CashOutReceiptServiceTest {
         assertEquals(FundsState.WITHDRAWN, refunded.fundsState)
         verify(exactly = 0) { gateway.getPayment("access", 70001) }
         verify(exactly = 1) { auditLog.append(ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED, any(), any(), refunded.donationId, any()) }
-        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:70002", null) }
+        verify(exactly = 1) { alerts.reportForSubject(TechnicalAlertKind.PAYMENT_REVERSED, "helloasso:70002", any()) }
     }
 
     @Test

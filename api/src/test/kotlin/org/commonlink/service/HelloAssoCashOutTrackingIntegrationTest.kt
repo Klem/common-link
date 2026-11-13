@@ -62,6 +62,7 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
     @Autowired private lateinit var complianceAuditLogService: ComplianceAuditLogService
     @Autowired private lateinit var transactionTemplate: TransactionTemplate
     @Autowired private lateinit var donationRepository: DonationRepository
+    @Autowired private lateinit var receiptRepository: org.commonlink.repository.DonationReceiptRepository
     @Autowired private lateinit var donorProfileRepository: DonorProfileRepository
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
@@ -94,7 +95,7 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
         server = MockRestServiceServer.bindTo(builder).build()
         val client = HelloAssoClient(properties, builder, HelloAssoAuthRateLimiter())
         val tokenManager = mockk<HelloAssoTokenManager> { every { getValidAccessToken(any()) } returns "ACCESS-token" }
-        val donationFundsService = HelloAssoDonationFundsService(fundsRepository, alerts, complianceAuditLogService)
+        val donationFundsService = HelloAssoDonationFundsService(fundsRepository, alerts, complianceAuditLogService, receiptRepository)
         executor = HelloAssoCashOutSyncExecutor(
             fundsRepository, syncRepository, connectionRepository, tokenManager, breaker, client,
             donationFundsService, alerts, PaymentsProperties(), transactionTemplate,
@@ -207,7 +208,7 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
 
         assertEquals(FundsState.WITHDRAWN, row().fundsState)
         assertNull(donation().fundsAvailableAt)
-        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, donation().providerRef, null) }
+        verify(exactly = 1) { alerts.reportForSubject(TechnicalAlertKind.PAYMENT_REVERSED, donation().providerRef, any()) }
     }
 
     private fun journaled(eventType: String) =

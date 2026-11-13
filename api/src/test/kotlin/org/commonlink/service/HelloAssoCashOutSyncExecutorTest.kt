@@ -42,7 +42,7 @@ class HelloAssoCashOutSyncExecutorTest {
     private val gateway = mockk<HelloAssoGateway>()
     private val alerts = mockk<TechnicalAlertService>(relaxed = true)
     private val auditLog = mockk<ComplianceAuditLogService>(relaxed = true)
-    private val fundsService = HelloAssoDonationFundsService(fundsRepo, alerts, auditLog)
+    private val fundsService = HelloAssoDonationFundsService(fundsRepo, alerts, auditLog, mockk { every { findByDonationId(any()) } returns null })
     private fun executorWith(settings: HelloAssoCashOutProperties) = HelloAssoCashOutSyncExecutor(
         fundsRepo, syncRepo, connectionRepo, tokenManager, breaker, gateway, fundsService, alerts,
         PaymentsProperties(helloasso = settings), TransactionTemplate(mockk<PlatformTransactionManager>(relaxed = true)),
@@ -84,14 +84,22 @@ class HelloAssoCashOutSyncExecutorTest {
         cashOutDate: Instant? = null,
         amount: String = "10.00",
     ): HelloAssoDonationFunds {
-        val assoc = mockk<AssociationProfile> { every { id } returns association }
-        val campaign = mockk<Campaign> { every { this@mockk.association } returns assoc }
+        val assoc = mockk<AssociationProfile> {
+            every { id } returns association
+            every { name } returns "Asso"
+        }
+        val campaign = mockk<Campaign> {
+            every { this@mockk.association } returns assoc
+            every { name } returns "Campagne"
+        }
         val donationId = UUID.randomUUID()
         val donation = mockk<Donation>(relaxed = true) {
             every { id } returns donationId
             every { this@mockk.campaign } returns campaign
             every { providerRef } returns "helloasso:$paymentId"
             every { this@mockk.amount } returns BigDecimal(amount)
+            every { confirmedAt } returns null
+            every { createdAt } returns Instant.parse("2026-11-02T10:00:00Z")
         }
         return HelloAssoDonationFunds(donation = donation, haPaymentId = paymentId, cashOutState = "Transfered", fundsState = state, cashOutDate = cashOutDate)
             .also { it.donationId = donationId; rows[donationId] = it }
@@ -250,7 +258,7 @@ class HelloAssoCashOutSyncExecutorTest {
         executor.syncAll()
 
         assertEquals(FundsState.WITHDRAWN, r.fundsState)
-        verify(exactly = 1) { alerts.reportFailure(TechnicalAlertKind.PAYMENT_REVERSED, null, "helloasso:1", null) }
+        verify(exactly = 1) { alerts.reportForSubject(TechnicalAlertKind.PAYMENT_REVERSED, "helloasso:1", any()) }
         verify(exactly = 1) { auditLog.append(ComplianceAuditLogService.HELLOASSO_PAYMENT_REVERSED, any(), any(), any(), any()) }
     }
 
