@@ -1748,7 +1748,7 @@
           "foot": "Each payment is linked to the donations that funded it. So only donations that have arrived in your bank account can be used. Hover over a section for details.",
           "tips": {
             "atProvider": {
-              "text": "These donations are waiting to be paid out to your account. Depending on your HelloAsso setting: on request (available 7 business days after each donation) or monthly (around the 10th).",
+              "text": "These donations are waiting to be paid out to your account. Depending on your HelloAsso setting: on demand (available 7 business days after each donation) or automatically once a month.",
               "link": "Request the payout on HelloAsso ↗"
             },
             "payoutPreparing": {
@@ -1768,7 +1768,7 @@
               "confirmedAuto": "available since {date}",
               "confirmedCurator": "made available by the CommonLink team on {date}",
               "releaseTitle": "Made available on {date}",
-              "releaseSub": "made available by the CommonLink team",
+              "releaseSub": "by the CommonLink team, on presentation of your bank statement",
               "none": "No transfer received yet."
             }
           },
@@ -3432,12 +3432,12 @@
               "RECEIVED": "Verified",
               "MISSING": "To fix"
             },
-            "unknownText": "Make a <strong>€1</strong> donation to your association from your fundraising page. It is a real payment: the euro lands on your HelloAsso account. It lets us check, end to end, that the notification address is in place and that your donation is certified.",
+            "unknownText": "Make a <strong>€1</strong> donation to your association from your fundraising page. It is a real payment: the euro lands on your HelloAsso account. It lets us check, end to end, that the notification address is in place and that your donation is tracked by CommonLink.",
             "contribution": "On the payment page, HelloAsso will suggest a voluntary contribution: it funds its free service for associations. It remains optional.",
             "cta": "Make my €1 test donation",
             "ctaAlt": "You can also wait for your first real donation: we will run the same check.",
             "noPage": "Your fundraising page is not ready yet: set it up in the Distribution tab.",
-            "received": "<strong>Everything is connected.</strong> HelloAsso notified us of your donation. It appears in your reporting, certified.",
+            "received": "<strong>Everything is connected.</strong> HelloAsso notified us of your donation. It appears in your reporting, tracked by CommonLink.",
             "missing": "<strong>The donation is paid, but HelloAsso did not notify us.</strong> The notification address is probably not saved at HelloAsso.",
             "missingImpact": "Your donations are collected by HelloAsso. But we see them late, because we have to fetch them ourselves, and we will not be notified of a refund or a dispute.",
             "missingFixBefore": "In your HelloAsso space,",
@@ -3458,8 +3458,8 @@
           "cancel": "Cancel",
           "confirm": "Yes, disconnect me",
           "confirming": "Disconnecting…",
-          "notYetPaidOut": "<strong>{count, plural, one {# donation} other {# donations}} ({amount}) not yet paid out by HelloAsso</strong> to your bank account will no longer be tracked automatically after disconnecting.",
-          "notYetPaidOutRelease": "The CommonLink team will be able to make them available for your payments on presentation of the line of your bank statement showing the transfer."
+          "notYetPaidOut": "<strong>{count, plural, one {# donation ({amount}) has not yet been paid out} other {# donations ({amount}) have not yet been paid out}} by HelloAsso</strong> to your bank account. After disconnecting, we will no longer be able to track {count, plural, one {it} other {them}} automatically.",
+          "notYetPaidOutRelease": "The CommonLink team may make {count, plural, one {it} other {them}} available for your payments on presentation of the line of your bank statement showing the transfer."
         },
         "faq": {
           "titleStart": "Your questions before you start",
@@ -3478,7 +3478,7 @@
             "commonlinkItems": {
               "campaigns": "Your campaigns and your fundraising page",
               "widget": "Your donation widget, on your website",
-              "certification": "The certification of every donation",
+              "certification": "The tracking of each donation",
               "receipts": "Your donors' tax receipts",
               "reporting": "Your reporting and the transparency of your spending"
             },
@@ -3490,8 +3490,8 @@
             }
           },
           "cert": {
-            "q": "Which donations are certified? And our HelloAsso donation form?",
-            "yes": "Certified",
+            "q": "Which donations are tracked by CommonLink? And our HelloAsso donation form?",
+            "yes": "Tracked by CommonLink",
             "yesItems": {
               "widget": "Your CommonLink widget, on your website",
               "page": "Your CommonLink fundraising page"
@@ -3501,7 +3501,7 @@
               "form": "A donation form created on HelloAsso",
               "link": "A HelloAsso link shared directly"
             },
-            "text": "A HelloAsso donation form keeps working, but its donations do not go through CommonLink: neither certified nor covered by our tax receipts (HelloAsso handles them). For a campaign tracked on CommonLink, replace its button, on your website or in your emails, with your widget or your fundraising page. Your HelloAsso memberships and ticketing do not change."
+            "text": "A HelloAsso donation form keeps working, but its donations do not go through CommonLink: neither tracked nor covered by our tax receipts (HelloAsso handles them). For a campaign tracked on CommonLink, replace its button, on your website or in your emails, with your widget or your fundraising page. Your HelloAsso memberships and ticketing do not change."
           },
           "why": {
             "q": "Why HelloAsso, and how can it be free?",
@@ -3526,8 +3526,7 @@
             "shareValue": "100%",
             "shareLabel": "of donations paid to the association, under HelloAsso's terms",
             "heldValue": "€0",
-            "heldLabel": "held by CommonLink, at any time",
-            "note": "Schedule given for information by HelloAsso. Changing bank details suspends payouts while they are verified."
+            "heldLabel": "held by CommonLink, at any time"
           },
           "receipts": {
             "q": "Who issues our donors' tax receipts?",
@@ -3536,7 +3535,7 @@
           "fees": {
             "q": "How much does it cost?",
             "payment": "<strong>On the payment side, nothing</strong>: HelloAsso charges your association no fees.",
-            "platform": "<strong>CommonLink fees</strong> for associations collecting through HelloAsso: decision pending."
+            "platform": "CommonLink charges a commission of 8% excl. VAT (9.6% incl. VAT) on donations paid during the month. It is invoiced separately at the end of the month and paid by bank transfer no later than the end of the following month, so you can use the money before paying it. It is never deducted from donations."
           },
           "whyKey": {
             "q": "Why a key, and not a “Log in” button?",
@@ -3586,7 +3585,8 @@
             "intro": "HelloAsso offers two payout schedules, which you choose in your HelloAsso space:",
             "onDemand": "On demand (recommended): you request a payout whenever you want, as soon as funds are available, about 7 business days after each donation.",
             "automatic": "Automatic: HelloAsso pays out your funds once a month, with no action on your part.",
-            "why": "On CommonLink, you pay your expenses with donations that have already reached your bank account. On-demand payouts let you use them sooner. The choice is yours."
+            "why": "On CommonLink, you pay your expenses with donations that have already reached your bank account. On-demand payouts let you use them sooner. The choice is yours.",
+            "ribNote": "Changing bank details suspends payouts while they are verified."
           }
         },
         "help": {

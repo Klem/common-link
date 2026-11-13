@@ -1748,7 +1748,7 @@
           "foot": "Chaque paiement est relié aux dons qui l'ont financé. Seuls les dons arrivés sur votre compte bancaire peuvent donc être utilisés. Survolez une section pour le détail.",
           "tips": {
             "atProvider": {
-              "text": "Ces dons attendent d'être versés sur votre compte. Selon votre réglage HelloAsso : à la demande (disponibles 7 jours ouvrés après chaque don) ou chaque mois (vers le 10).",
+              "text": "Ces dons attendent d'être versés sur votre compte. Selon votre réglage HelloAsso : à la demande (disponibles 7 jours ouvrés après chaque don) ou automatiquement une fois par mois.",
               "link": "Demander le versement sur HelloAsso ↗"
             },
             "payoutPreparing": {
@@ -3432,12 +3432,12 @@
               "RECEIVED": "Vérifié",
               "MISSING": "À corriger"
             },
-            "unknownText": "Faites un don de <strong>1 €</strong> à votre association depuis votre page de collecte. C'est un vrai paiement : l'euro arrive sur votre compte HelloAsso. Il nous permet de vérifier, de bout en bout, que l'adresse de notification est en place et que votre don est bien certifié.",
+            "unknownText": "Faites un don de <strong>1 €</strong> à votre association depuis votre page de collecte. C'est un vrai paiement : l'euro arrive sur votre compte HelloAsso. Il nous permet de vérifier, de bout en bout, que l'adresse de notification est en place et que votre don est bien suivi par CommonLink.",
             "contribution": "Sur la page de paiement, HelloAsso vous proposera une contribution volontaire : c'est elle qui finance son service gratuit pour les associations. Elle reste facultative.",
             "cta": "Faire mon don test de 1 €",
             "ctaAlt": "Vous pouvez aussi attendre votre premier vrai don : nous ferons la même vérification.",
             "noPage": "Votre page de collecte n'est pas encore prête : configurez-la dans l'onglet Diffusion.",
-            "received": "<strong>Tout est branché.</strong> HelloAsso nous a bien prévenus de votre don. Il apparaît dans votre reporting, certifié.",
+            "received": "<strong>Tout est branché.</strong> HelloAsso nous a bien prévenus de votre don. Il apparaît dans votre reporting, suivi par CommonLink.",
             "missing": "<strong>Le don est payé, mais HelloAsso ne nous a pas prévenus.</strong> L'adresse de notification n'est probablement pas enregistrée chez HelloAsso.",
             "missingImpact": "Vos dons sont bien encaissés par HelloAsso. Mais nous les voyons avec du retard, car nous devons aller les chercher nous-mêmes, et nous ne serons pas prévenus d'un remboursement ou d'une contestation.",
             "missingFixBefore": "Dans votre espace HelloAsso,",
@@ -3478,7 +3478,7 @@
             "commonlinkItems": {
               "campaigns": "Vos campagnes et votre page de collecte",
               "widget": "Votre widget de don, sur votre site",
-              "certification": "La certification de chaque don",
+              "certification": "Le suivi de chaque don",
               "receipts": "Les reçus fiscaux de vos donateurs",
               "reporting": "Votre reporting et la transparence de vos dépenses"
             },
@@ -3526,8 +3526,7 @@
             "shareValue": "100 %",
             "shareLabel": "des dons versés à l'association, selon les CGU de HelloAsso",
             "heldValue": "0 €",
-            "heldLabel": "détenu par CommonLink, à aucun moment",
-            "note": "Calendrier donné à titre d'information par HelloAsso. Changer de RIB suspend les versements le temps de la vérification."
+            "heldLabel": "détenu par CommonLink, à aucun moment"
           },
           "receipts": {
             "q": "Qui émet les reçus fiscaux de nos donateurs ?",
@@ -3586,7 +3585,8 @@
             "intro": "HelloAsso vous propose deux rythmes de versement, à choisir dans votre espace HelloAsso :",
             "onDemand": "À la demande (recommandé) : vous demandez un versement quand vous le souhaitez, dès que les sommes sont disponibles, environ 7 jours ouvrés après chaque don.",
             "automatic": "Automatique : HelloAsso vous verse les sommes une fois par mois, sans action de votre part.",
-            "why": "Sur CommonLink, vous payez vos dépenses avec les dons déjà arrivés sur votre compte bancaire. Le versement à la demande vous permet de les utiliser plus tôt. Vous restez libre de votre choix."
+            "why": "Sur CommonLink, vous payez vos dépenses avec les dons déjà arrivés sur votre compte bancaire. Le versement à la demande vous permet de les utiliser plus tôt. Vous restez libre de votre choix.",
+            "ribNote": "Changer de RIB suspend les versements le temps de la vérification."
           }
         },
         "help": {

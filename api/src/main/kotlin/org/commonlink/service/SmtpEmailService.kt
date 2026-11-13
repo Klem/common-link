@@ -91,7 +91,7 @@ class SmtpEmailService(
             """
             <p>Bonjour,</p>
             <p>Nous avons le plaisir de vous informer que le dossier de vérification de l'association <strong>$associationName</strong> a été <strong>approuvé</strong>.</p>
-            <p>Votre espace CommonLink est maintenant pleinement accessible. Vous pouvez dès à présent publier des campagnes et recevoir des dons certifiés.</p>
+            <p>Votre espace CommonLink est maintenant pleinement accessible. Vous pouvez dès à présent publier des campagnes et recevoir des dons suivis par CommonLink.</p>
             """.trimIndent(),
         )
         mailSender.send(message)
@@ -277,7 +277,7 @@ class SmtpEmailService(
             """
             <p>Bonjour,</p>
             <p>Félicitations ! La vérification KYC Mollie de l'association <strong>$associationName</strong> est <strong>terminée</strong> et votre compte est désormais activé pour recevoir des paiements.</p>
-            <p>Vous pouvez dès à présent publier vos campagnes de dons et recevoir des contributions certifiées sur CommonLink.</p>
+            <p>Vous pouvez dès à présent publier vos campagnes de dons et recevoir des dons suivis par CommonLink.</p>
             """.trimIndent(),
         )
         mailSender.send(message)

@@ -173,7 +173,6 @@ const HelloAssoFaq = forwardRef<HelloAssoFaqHandle, HelloAssoFaqProps>(function 
             <MiniFig icon="🎯" tone={FigTone.INDIGO} value={t('money.shareValue')} label={t('money.shareLabel')} />
             <MiniFig icon="🔐" tone={FigTone.AMBER} value={t('money.heldValue')} label={t('money.heldLabel')} />
           </div>
-          <p className="form-hint hao-note-spaced">{t('money.note')}</p>
         </>
       ),
     },
@@ -189,6 +188,7 @@ const HelloAssoFaq = forwardRef<HelloAssoFaqHandle, HelloAssoFaqProps>(function 
             <li>{t('payoutMode.automatic')}</li>
           </ul>
           <p>{t('payoutMode.why')}</p>
+          <p className="form-hint hao-note-spaced">{t('payoutMode.ribNote')}</p>
         </>
       ),
     },
