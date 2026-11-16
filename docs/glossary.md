@@ -327,6 +327,10 @@ A database migration tool that manages the evolution of the database schema thro
 
 ## G
 
+### Freeze Clearance (Levée de correspondance)
+The effect of a compliance officer closing an asset-freeze alert as `FALSE_POSITIVE`: the (screened normalized name, register entry) pairs the alert screen displayed no longer block the next screening of the same subject, which journals `FREEZE_SCREENING_HIT_CLEARED` instead of raising a new alert (`FreezeClearanceService`). Applies to onboarding (association, representatives, beneficial owners) and to donations (scope: the donor profile, i.e. the e-mail address). Bounded by the `ALERT_CLOSED` journal entry; only the latest ruling counts (`SUSPICIOUS` afterwards cancels it); any uncovered pair re-blocks. For donors, an open donor freeze alert on the profile suspends every clearance.
+`functional` `compliance`
+
 ### Guest Donor
 A donor who makes a donation via the [[Donation Widget]] without having a CommonLink account. On form submission, `GuestDonorService.findOrCreateGuestDonor(email)` creates a `User` (role DONOR, `guest=true`, no usable password) and an associated `DonorProfile(anonymous=true)` — idempotent by email. The on-chain flow is identical to a registered donor: `DonationService.confirmDonation` derives a deterministic EVM wallet address via `DonorAddressGenerator.generate(donorProfile.id)` (HMAC-SHA256, no private key) and enqueues a `RECORD_DONATION` job. The fiscal identity (name, address) is captured in the donation form and stored as a snapshot on the `Donation` row — independent of `anonymousDisplay`, which only controls the public leaderboard.
 `functional` `technical`

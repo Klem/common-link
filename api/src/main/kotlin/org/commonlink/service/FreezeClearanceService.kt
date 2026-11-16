@@ -61,14 +61,19 @@ data class FreezeClearance(
  * against *open* alerts, and the closed one had freed the slot — and refused the dossier again.
  * The dossier was structurally unapprovable and the officer's decision had no effect on anything.
  *
+ * Donor screening had the same defect: [FreezeScreeningDonationService] screens on every donation
+ * attempt, so a donor who merely shares a designated person's name stayed refused forever, each
+ * attempt opening a new alert. [forDonor] gives that control the same reading of the ruling.
+ *
  * ### What a clearance covers
  * Exactly the (screened name, register entry) pairs the officer had in front of them, and no more:
  *
  * - **Scope** mirrors the alert detail screen. An alert whose subject is an association displays
  *   every correspondence of that association — its own, its representatives', its beneficial
  *   owners' ([FreezeScreeningMatchRepository.findByAssociationIdOrderByScoreDesc]); a beneficial
- *   owner's alert displays only that owner's. The clearance is granted on the same scope, so the
- *   officer never lifts a correspondence they could not read.
+ *   owner's alert displays only that owner's, and a donor's alert every correspondence of that
+ *   donor profile, whatever name it was screened under. The clearance is granted on the same
+ *   scope, so the officer never lifts a correspondence they could not read.
  * - **Time** is bounded by the `sequence_no` of the `ALERT_CLOSED` journal entry. Evidence written
  *   after the ruling is, by definition, not what was ruled upon.
  *
@@ -108,7 +113,7 @@ class FreezeClearanceService(
 
         // Association-scoped alerts also carry representative hits: FreezeHitAlertAdapter maps both
         // ASSOCIATION and REPRESENTATIVE roles onto subject_id = associationId.
-        latestRuling(associationId)?.let { (alertId, closureSeq) ->
+        latestRuling(associationId, ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING)?.let { (alertId, closureSeq) ->
             alertIds += alertId
             matchRepository
                 .findByAssociationIdAndAuditLogSeqRefLessThanEqual(associationId, closureSeq)
@@ -120,7 +125,7 @@ class FreezeClearanceService(
             .findAllByAssociationIdOrderByCollectedAtAsc(associationId)
             .mapNotNull { it.id }
         for (boId in boIds) {
-            latestRuling(boId)?.let { (alertId, closureSeq) ->
+            latestRuling(boId, ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING)?.let { (alertId, closureSeq) ->
                 alertIds += alertId
                 matchRepository
                     .findBySubjectIdAndAuditLogSeqRefLessThanEqual(boId, closureSeq)
@@ -129,6 +134,46 @@ class FreezeClearanceService(
         }
 
         return FreezeClearance(pairs, alertIds)
+    }
+
+    /**
+     * Every correspondence already ruled out for a donor profile.
+     *
+     * A donor profile is keyed on the e-mail address, and each donation attempt screens a single
+     * name — so one profile can carry several screened names, ruled on by successive alerts. The
+     * latest ruling covers every correspondence of the profile recorded up to its closure, which is
+     * exactly what its alert screen displayed.
+     *
+     * **An open donor freeze alert on the profile suspends every clearance.** While a correspondence
+     * of this donor is still under review, no earlier ruling may let a payment through: a donor
+     * cleared under one name who then hits under another must wait for the officer, whichever name
+     * the next attempt uses.
+     *
+     * @param donorProfileId UUID of the [org.commonlink.entity.DonorProfile].
+     * @return the clearance; [FreezeClearance.NONE] when an alert is open or the latest ruling is
+     *   not `FALSE_POSITIVE` — an empty clearance covers nothing, which is the safe default.
+     */
+    @Transactional(readOnly = true)
+    fun forDonor(donorProfileId: UUID): FreezeClearance {
+        val openAlert = alertRepository.findByOriginAndSubjectIdAndStatusIn(
+            origin = ComplianceAlertOrigin.FREEZE_HIT_DONATION,
+            subjectId = donorProfileId,
+            statuses = ComplianceAlertService.OPEN_STATUSES,
+        )
+        if (openAlert != null) {
+            logger.info(
+                "Donor freeze alert {} still open on donorProfile {} — no freeze clearance granted",
+                openAlert.id, donorProfileId,
+            )
+            return FreezeClearance.NONE
+        }
+
+        val (alertId, closureSeq) = latestRuling(donorProfileId, ComplianceAlertOrigin.FREEZE_HIT_DONATION)
+            ?: return FreezeClearance.NONE
+        val pairs = matchRepository
+            .findBySubjectIdAndAuditLogSeqRefLessThanEqual(donorProfileId, closureSeq)
+            .mapTo(mutableSetOf()) { ClearedPair(it.screenedNormalizedName, it.sanctionedIdRegistre) }
+        return FreezeClearance(pairs, listOf(alertId))
     }
 
     /**
@@ -167,11 +212,14 @@ class FreezeClearanceService(
      * An alert closed without a traceable `ALERT_CLOSED` entry is skipped rather than trusted: the
      * clearance would have no bound in time, and an unbounded clearance covers the evidence of the
      * screening currently under way.
+     *
+     * @param origin the control whose rulings are read — an onboarding ruling never speaks for a
+     *   donation, and the reverse.
      */
-    private fun latestRuling(subjectId: UUID): Pair<UUID, Long>? {
+    private fun latestRuling(subjectId: UUID, origin: ComplianceAlertOrigin): Pair<UUID, Long>? {
         val latest = alertRepository.findBySubjectIdAndOriginAndStatus(
             subjectId = subjectId,
-            origin = ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+            origin = origin,
             status = ComplianceAlertStatus.CLOSED,
         ).mapNotNull { alert ->
             val closureSeq = auditLogRepository.findTopBySubjectIdAndEventTypeOrderBySequenceNoDesc(

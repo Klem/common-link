@@ -6,6 +6,7 @@ import org.commonlink.entity.ComplianceAlertSubjectType
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.SanctionedNature
 import org.commonlink.repository.SanctionedEntityRepository
+import org.commonlink.util.NameNormalizer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -29,8 +30,18 @@ import java.util.UUID
  *
  * The donor's DOB is facultative — the widget form no longer requires it. When it is absent the
  * post-filter is inert: **every** name match above the threshold is retained, so a donor who is a
- * mere homonym of a designated person sees their donation refused. Never the reverse: an absent
- * DOB can only make the screening stricter.
+ * mere homonym of a designated person sees their donation refused until the compliance officer
+ * rules the correspondence a false positive. Never the reverse: an absent DOB can only make the
+ * screening stricter.
+ *
+ * ### Prior rulings
+ * The screening runs on every donation attempt. When every correspondence it finds was already
+ * ruled a false positive for this donor profile ([FreezeClearanceService.forDonor]), the hit is
+ * dismissed — journalled as `FREEZE_SCREENING_HIT_CLEARED`, never silent — no alert is raised and
+ * the outcome is [ScreeningOutcome.CLEAR]. A single uncovered correspondence (another name under the
+ * same e-mail, a register update), or any donor freeze alert still open on the profile, keeps the
+ * hit. Without this the officer's ruling had no effect: the homonym stayed refused forever and each
+ * attempt opened a new alert.
  *
  * ### Log hygiene
  * Donor names are never written to application logs. Per-screening traces belong exclusively in the
@@ -48,6 +59,7 @@ class FreezeScreeningDonationService(
     private val evidenceRecorder: FreezeScreeningEvidenceRecorder,
     private val props: SanctionsProperties,
     private val alertPort: FreezeHitAlertPort,
+    private val clearanceService: FreezeClearanceService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -117,6 +129,10 @@ class FreezeScreeningDonationService(
         val confirmedMatches = rawMatches.filter { isConfirmedHit(it, identity.birthDate) }
 
         if (confirmedMatches.isNotEmpty()) {
+            // A prior false-positive ruling on every correspondence found lifts the hit.
+            if (dismissIfCleared(donorProfileId, identity.fullName, confirmedMatches, publicationDate)) {
+                return ScreeningOutcome.CLEAR
+            }
             val seqNo = auditLogService.appendFreezeScreeningHit(
                 subjectType = ComplianceAuditSubjectType.DONOR,
                 subjectId = donorProfileId,
@@ -155,6 +171,38 @@ class FreezeScreeningDonationService(
             nature = SanctionedNature.PHYSICAL_PERSON.name,
         )
         return ScreeningOutcome.CLEAR
+    }
+
+    /**
+     * Dismisses the hit when every correspondence found was already ruled a false positive for
+     * this donor profile, and journals the dismissal. Returns false — the hit stands — otherwise.
+     *
+     * The pairs are built exactly as [FreezeScreeningEvidenceRecorder] stores them (normalized
+     * screened name, register id), or a clearance could never match. A failure reading the
+     * clearance propagates to [runFreezeCheck], which turns it into [ScreeningOutcome.UNAVAILABLE]:
+     * an unreadable ruling never lets a payment through.
+     */
+    private fun dismissIfCleared(
+        donorProfileId: UUID,
+        screenedName: String,
+        matches: List<ScreeningMatch>,
+        publicationDate: LocalDate,
+    ): Boolean {
+        val normalized = NameNormalizer.normalize(screenedName)
+        val found = matches.map { ClearedPair(normalized, it.idRegistre) }
+        val clearance = clearanceService.forDonor(donorProfileId)
+        if (!clearance.covers(found)) return false
+
+        auditLogService.appendFreezeScreeningHitCleared(
+            subjectType = ComplianceAuditSubjectType.DONOR,
+            subjectId = donorProfileId,
+            registryPublicationDate = publicationDate,
+            scoreThreshold = props.scoreThreshold,
+            matchCount = matches.size,
+            topScore = matches.first().score,
+            clearedByAlertIds = clearance.alertIds,
+        )
+        return true
     }
 
     /**

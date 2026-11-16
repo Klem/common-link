@@ -13,7 +13,9 @@ interface ComplianceAlertRepository : JpaRepository<ComplianceAlert, UUID> {
 
     /**
      * Looks for an open (non-CLOSED) alert for a non-null subject.
-     * Used by [org.commonlink.service.ComplianceAlertService.createOrIgnore] to enforce idempotency.
+     * Used by [org.commonlink.service.ComplianceAlertService.createOrIgnore] to enforce idempotency,
+     * and by [org.commonlink.service.FreezeClearanceService.forDonor], where an open donor freeze
+     * alert suspends every clearance.
      */
     fun findByOriginAndSubjectIdAndStatusIn(
         origin: ComplianceAlertOrigin,

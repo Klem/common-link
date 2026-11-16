@@ -115,7 +115,43 @@ Le contrôle produit l'un des résultats suivants :
   sous réserve des autres contrôles en place.
 - **Correspondance détectée** — le donateur présente une correspondance dans le registre. Le don
   est refusé. Une alerte est transmise au responsable de la conformité.
+- **Correspondance déjà jugée faux positif** — toutes les correspondances trouvées ont été
+  écartées par une décision antérieure du responsable de la conformité (voir § 4.5). Le don peut
+  être initié ; la mise à l'écart est inscrite au journal, aucune nouvelle alerte n'est ouverte.
 - **Contrôle impossible** — le service de filtrage est indisponible. Voir section 5.
+
+### 4.5 Effet d'une décision de faux positif
+
+Le contrôle est rejoué à chaque tentative de don. Dans sa première version, il ne lisait pas la
+décision du responsable de la conformité : un homonyme dont l'alerte avait été clôturée « faux
+positif » était refusé de nouveau à chaque tentative, et chaque tentative ouvrait une nouvelle
+alerte. La décision restait sans effet. Le correctif du 16 novembre 2026 — applicable à compter de
+son déploiement — fait appliquer au contrôle du don la même règle que le contrôle à l'entrée en
+relation (fiche `E4-traitement-alerte-et-information-tresor.md`
+§ 4.3) :
+
+- **Ce qui est levé.** Les couples **(nom déclaré, entrée du registre)** que l'écran de l'alerte
+  affichait, pour le **profil donateur** concerné — c'est-à-dire pour l'adresse électronique
+  saisie, le profil invité étant retrouvé par cette adresse. La levée ne porte jamais sur la
+  personne en tant que telle.
+- **Ce qui rebloque.** Un nom différent déclaré sous la même adresse, une entrée du registre non
+  examinée (mise à jour du registre national), ou un don sous une autre adresse électronique
+  (autre profil, aucune décision) : la correspondance non couverte refuse le don et ouvre une
+  nouvelle alerte.
+- **Borne dans le temps.** La levée ne couvre que les correspondances constatées jusqu'à la
+  clôture de l'alerte.
+- **Seule la dernière décision fait foi.** Une décision `SUSPICIOUS` postérieure annule la levée.
+  Réciproquement, un profil pouvant porter plusieurs noms, l'écran d'une alerte affiche toutes
+  les correspondances du profil : une décision « faux positif » rendue en dernier lève l'ensemble
+  de ce qu'elle affichait, y compris un nom jugé auparavant.
+- **Alerte en cours d'examen.** Tant qu'une alerte de gel sur un don du même profil n'est pas
+  clôturée, **aucune levée ne s'applique**, quel que soit le nom utilisé à la tentative suivante.
+- **Lecture impossible de la décision.** Elle est traitée comme un contrôle impossible (section 5) :
+  le don est refusé.
+
+Chaque mise à l'écart est inscrite au journal (`FREEZE_SCREENING_HIT_CLEARED`, avec la référence
+de l'alerte dont la clôture l'autorise — fiche `E4-journal-controles-de-gel.md` § 4.4) ; elle n'est
+jamais opérée en silence.
 
 ## 5. Traitement de l'indisponibilité du service de filtrage
 
@@ -150,6 +186,11 @@ en échec avant d'être intégrée.
 | Don de faible montant, correspondance détectée | Don refusé — le refus est indépendant du montant | Oui — vérifié (le chemin de refus ne tient pas compte du montant) |
 | Homonyme avec année de naissance différente | Don possible | Oui — résultat sans correspondance après exclusion par date de naissance — vérifié |
 | Homonyme, date de naissance non renseignée par le donateur | Don refusé — aucune exclusion possible, la correspondance part à l'examen humain | Oui — correspondance journalisée, alerte transmise — vérifié |
+| Même homonyme, après clôture « faux positif » de son alerte | Don possible | Oui — mise à l'écart journalisée avec la référence de l'alerte, aucune nouvelle alerte — vérifié |
+| Correspondance supplémentaire non examinée (autre entrée du registre, autre nom sous la même adresse) | Don refusé | Oui — correspondance journalisée, alerte transmise — vérifié |
+| Décision `SUSPICIOUS` postérieure à un faux positif | Don refusé | Oui — vérifié |
+| Alerte de gel du même donateur encore en cours d'examen | Don refusé — aucune levée ne s'applique | Oui — vérifié |
+| Décision du responsable de la conformité illisible (erreur technique) | Don refusé | Oui — impossibilité journalisée — vérifié |
 | Date de naissance renseignée par le donateur | Sans effet sur l'enregistrement du don | Oui — vérifié : la donnée n'est écrite sur aucune ligne de don |
 | Service de filtrage indisponible | Don refusé | Oui — indisponibilité journalisée — vérifié |
 | Correspondance détectée et service indisponible | Message identique au donateur dans les deux cas | Oui — indiscernabilité vérifiée par assertion explicite — vérifié |
@@ -159,11 +200,13 @@ utilisée pour écarter un homonyme, réduisant ainsi le nombre de faux positifs
 humain, sans jamais créer de faux négatif (une personne sans date de naissance dans le registre
 est toujours retenue pour examen).
 
-Le sixième scénario démontre que le message reçu par le donateur est identique qu'une correspondance
+Le scénario « Correspondance détectée et service indisponible » démontre que le message reçu par le
+donateur est identique qu'une correspondance
 ait été détectée ou que le service soit indisponible — conformément à l'obligation légale de
 non-divulgation.
 
-Chaque résultat de filtrage — correspondance, absence de correspondance ou impossibilité — est
+Chaque résultat de filtrage — correspondance, correspondance déjà écartée par une décision de faux
+positif, absence de correspondance ou impossibilité — est
 inscrit dans le journal de contrôle de conformité protégé par une chaîne de hachage. Les noms
 des donateurs ne figurent jamais dans les journaux applicatifs.
 
@@ -172,7 +215,8 @@ des donateurs ne figurent jamais dans les journaux applicatifs.
 Cette précision est apportée pour éviter toute lecture extensive de la présente fiche.
 
 Le présent contrôle garantit qu'aucun don ne peut être initié pour un donateur dont le nom figure
-dans le registre de gel. **Il ne porte pas sur les obligations suivantes** :
+dans le registre de gel, sauf correspondance expressément jugée faux positif par le responsable de
+la conformité (§ 4.5). **Il ne porte pas sur les obligations suivantes** :
 
 - le **contrôle de gel des associations** et de leurs représentants ou bénéficiaires effectifs —
   ce contrôle, qui précède l'entrée en relation d'affaires avec l'association, fait l'objet d'une
@@ -228,8 +272,8 @@ référentiel interne de gestion de projet aux références suivantes.
 Le contrôle est enregistré dans l'historique des modifications du logiciel, sur une ligne de
 développement dédiée au dispositif LCB-FT.
 
-Chaque résultat de filtrage — qu'il s'agisse d'une correspondance, d'une absence de correspondance
-ou d'une impossibilité de contrôler — est inscrit dans un journal de contrôle de conformité protégé
+Chaque résultat de filtrage — qu'il s'agisse d'une correspondance, d'une correspondance déjà écartée
+par une décision de faux positif, d'une absence de correspondance ou d'une impossibilité de contrôler — est inscrit dans un journal de contrôle de conformité protégé
 par une chaîne de hachage. Cette structure rend détectable la modification ou la suppression d'une
 entrée, dans les limites décrites dans la fiche « Journal des contrôles de gel » (§ 4.2 et 4.3).
 

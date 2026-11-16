@@ -141,6 +141,11 @@ indique la date de publication du registre, le seuil, le nombre de correspondanc
 plus élevé et **la ou les alertes dont la clôture fonde la mise à l'écart**, de sorte qu'un auditeur
 puisse remonter de la correspondance écartée à la décision qui l'a écartée.
 
+Cette nature est produite par le contrôle à l'entrée en relation (association, représentants,
+bénéficiaires effectifs) et, à compter du déploiement du correctif du 16 novembre 2026, par le
+contrôle à la création du don
+(sujet : le profil donateur — fiche `E4-controle-gel-des-dons.md` § 4.5).
+
 Cette nature est distincte de l'absence de correspondance : le registre a bien signalé des entrées.
 Les confondre reviendrait à faire dire au journal qu'un contrôle n'a rien trouvé alors qu'il a
 trouvé, et qu'une décision humaine est intervenue.

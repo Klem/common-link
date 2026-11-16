@@ -8,6 +8,7 @@ import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.SanctionedNature
 import org.commonlink.repository.FreezeScreeningMatchRepository
 import org.commonlink.repository.SanctionedEntityRepository
+import org.commonlink.util.NameNormalizer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -23,6 +24,7 @@ import java.util.UUID
  * - name match + register has no DOB → HIT (conservative: kept for human review)
  * - empty register → UNAVAILABLE, journalled
  * - unexpected exception → UNAVAILABLE, journalled
+ * - every correspondence already ruled a false positive → CLEAR, dismissal journalled, no alert
  */
 class FreezeScreeningDonationServiceTest {
 
@@ -32,6 +34,9 @@ class FreezeScreeningDonationServiceTest {
     private val matchRepository: FreezeScreeningMatchRepository = mockk(relaxed = true)
     private val props = SanctionsProperties(scoreThreshold = 0.85)
     private val alertPort: FreezeHitAlertPort = mockk(relaxed = true)
+    private val clearanceService: FreezeClearanceService = mockk {
+        every { forDonor(any()) } returns FreezeClearance.NONE
+    }
 
     /** Real recorder over a mocked repository — see `FreezeScreeningOnboardingServiceTest`. */
     private val evidenceRecorder = FreezeScreeningEvidenceRecorder(matchRepository, props)
@@ -43,6 +48,7 @@ class FreezeScreeningDonationServiceTest {
         evidenceRecorder,
         props,
         alertPort,
+        clearanceService,
     )
 
     private val associationId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
@@ -220,6 +226,105 @@ class FreezeScreeningDonationServiceTest {
         val result = service.runFreezeCheck(associationId, donorProfileId, identity)
 
         assertEquals(ScreeningOutcome.HIT, result)
+    }
+
+    // ─── Prior false-positive ruling ─────────────────────────────────────────
+
+    private val ruledAlertId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000099")
+
+    /** The officer's ruling covers the (normalized donor name, register entry) couples given. */
+    private fun stubClearance(vararg idRegistres: Int) {
+        val normalized = NameNormalizer.normalize(identity.fullName)
+        every { clearanceService.forDonor(donorProfileId) } returns FreezeClearance(
+            idRegistres.map { ClearedPair(normalized, it) }.toSet(),
+            listOf(ruledAlertId),
+        )
+    }
+
+    /** The reported bug: a homonym ruled a false positive was refused again on every attempt. */
+    @Test
+    fun `a correspondence already ruled a false positive no longer blocks the donation`() {
+        setupRegisterAvailable()
+        stubClearance(1)
+        every { screeningService.screen(any(), nature = SanctionedNature.PHYSICAL_PERSON) } returns listOf(match(score = 0.95))
+
+        val result = service.runFreezeCheck(associationId, donorProfileId, identity)
+
+        assertEquals(ScreeningOutcome.CLEAR, result)
+        verify(exactly = 1) {
+            auditLogService.appendFreezeScreeningHitCleared(
+                ComplianceAuditSubjectType.DONOR,
+                donorProfileId,
+                publicationDate,
+                0.85,
+                1,
+                0.95,
+                listOf(ruledAlertId),
+            )
+        }
+        verify(exactly = 0) { auditLogService.appendFreezeScreeningHit(any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { alertPort.onFreezeHit(any(), any()) }
+        verify(exactly = 0) { matchRepository.saveAll(any<List<org.commonlink.entity.FreezeScreeningMatch>>()) }
+    }
+
+    /** A past ruling speaks only for what it examined — a register update re-blocks. */
+    @Test
+    fun `one correspondence not covered by the ruling keeps the hit`() {
+        setupRegisterAvailable()
+        stubClearance(1)
+        every { screeningService.screen(any(), nature = SanctionedNature.PHYSICAL_PERSON) } returns
+            listOf(match(), match().copy(idRegistre = 2))
+
+        val result = service.runFreezeCheck(associationId, donorProfileId, identity)
+
+        assertEquals(ScreeningOutcome.HIT, result)
+        verify(exactly = 0) { auditLogService.appendFreezeScreeningHitCleared(any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { alertPort.onFreezeHit(any(), any()) }
+    }
+
+    /** Same e-mail, another name: the ruling covered the couples of the name it was shown. */
+    @Test
+    fun `a ruling on another name of the same donor profile does not cover this one`() {
+        setupRegisterAvailable()
+        every { clearanceService.forDonor(donorProfileId) } returns FreezeClearance(
+            setOf(ClearedPair(NameNormalizer.normalize("Bob l'eponge"), 1)),
+            listOf(ruledAlertId),
+        )
+        every { screeningService.screen(any(), nature = SanctionedNature.PHYSICAL_PERSON) } returns listOf(match())
+
+        val result = service.runFreezeCheck(associationId, donorProfileId, identity)
+
+        assertEquals(ScreeningOutcome.HIT, result)
+    }
+
+    /** An unreadable ruling never lets a payment through. */
+    @Test
+    fun `a failure reading the clearance produces UNAVAILABLE`() {
+        setupRegisterAvailable()
+        every { clearanceService.forDonor(donorProfileId) } throws RuntimeException("DB timeout")
+        every { screeningService.screen(any(), nature = SanctionedNature.PHYSICAL_PERSON) } returns listOf(match())
+
+        val result = service.runFreezeCheck(associationId, donorProfileId, identity)
+
+        assertEquals(ScreeningOutcome.UNAVAILABLE, result)
+        verify(exactly = 1) {
+            auditLogService.appendFreezeScreeningUnavailable(
+                ComplianceAuditSubjectType.DONOR,
+                donorProfileId,
+                "RuntimeException",
+            )
+        }
+        verify(exactly = 0) { alertPort.onFreezeHit(any(), any()) }
+    }
+
+    @Test
+    fun `no correspondence found does not consult the clearance`() {
+        setupRegisterAvailable()
+        every { screeningService.screen(any(), nature = SanctionedNature.PHYSICAL_PERSON) } returns emptyList()
+
+        service.runFreezeCheck(associationId, donorProfileId, identity)
+
+        verify(exactly = 0) { clearanceService.forDonor(any()) }
     }
 
     // ─── UNAVAILABLE — empty register ────────────────────────────────────────

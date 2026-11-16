@@ -52,7 +52,8 @@ class ComplianceAlertService(
 ) {
 
     companion object {
-        private val OPEN_STATUSES = listOf(ComplianceAlertStatus.PENDING, ComplianceAlertStatus.IN_REVIEW)
+        /** Statuses of an alert still awaiting the compliance officer's ruling. */
+        val OPEN_STATUSES = listOf(ComplianceAlertStatus.PENDING, ComplianceAlertStatus.IN_REVIEW)
 
         /**
          * Origins surfaced on the compliance officer's freeze screens.
