@@ -13,6 +13,7 @@ import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
 import org.commonlink.payment.PaymentProviderId
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.LegalDocumentVersionOutdatedException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.RateLimitException
 import org.commonlink.repository.UserRepository
@@ -111,7 +112,7 @@ class PublicWidgetControllerTest {
         anonymousDisplay = false,
         consent = true,
         cguAccepted = true,
-        cgvAccepted = true,
+        cguVersion = "test",
         sourceSite = "https://example.org",
     )
 
@@ -220,7 +221,7 @@ class PublicWidgetControllerTest {
               "anonymousDisplay": false,
               "consent": true,
               "cguAccepted": true,
-              "cgvAccepted": true
+              "cguVersion": "test"
             }
         """.trimIndent()
 
@@ -254,7 +255,7 @@ class PublicWidgetControllerTest {
               "anonymousDisplay": false,
               "consent": true,
               "cguAccepted": true,
-              "cgvAccepted": true
+              "cguVersion": "test"
             }
         """.trimIndent()
 
@@ -306,13 +307,27 @@ class PublicWidgetControllerTest {
     }
 
     @Test
-    fun `createDonation - 422 when cgvAccepted is false`() {
-        val req = validRequest.copy(cgvAccepted = false)
+    fun `createDonation - 422 when the displayed CGU version is missing`() {
+        val req = validRequest.copy(cguVersion = "")
         mockMvc.perform(
             post("/api/public/widget/clk_valid/donations")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req))
         ).andExpect(status().isUnprocessableContent)
+        verify(exactly = 0) { publicWidgetService.createDonation(any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - 409 LEGAL_VERSION_OUTDATED when a newer CGU was published meanwhile`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } throws
+            LegalDocumentVersionOutdatedException("CGU version test is not the current version")
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest))
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("LEGAL_VERSION_OUTDATED"))
     }
 
     @Test

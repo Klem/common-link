@@ -2568,12 +2568,21 @@
   },
   "legal": {
     "close": "Close",
+    "gate": {
+      "accept": "Accept and continue",
+      "checkbox": "I have read and accept these terms on behalf of the association",
+      "error": "Your acceptance could not be recorded. Please try again.",
+      "intro": "Please read and accept the current CommonLink terms of use to continue.",
+      "title": "Terms of use"
+    },
     "loadError": "Could not load this document. Please try again.",
     "loading": "Loading…",
+    "outdated": "These terms were just updated. Please read the new version before accepting it.",
     "title": {
       "CGU": "Terms of Use",
-      "CGV": "Terms of Sale"
+      "CGV": "Terms of use for associations"
     },
+    "tocTitle": "Contents",
     "version": "Version {version}"
   },
   "settings": {
@@ -3616,10 +3625,6 @@
       "label": "I accept the",
       "link": "Terms of Use (CGU)"
     },
-    "cgv": {
-      "label": "I accept the",
-      "link": "Terms of Sale (CGV)"
-    },
     "consent": {
       "label": "I consent to my personal data being processed for this donation (GDPR)"
     },
@@ -3631,7 +3636,6 @@
       "capExceeded": "This amount exceeds what the campaign can still collect. Please enter a lower amount.",
       "capFull": "This campaign has reached its collection cap and no longer accepts donations.",
       "cguRequired": "You must accept the Terms of Use",
-      "cgvRequired": "You must accept the Terms of Sale",
       "consentRequired": "You must consent to proceed",
       "countryInvalid": "Please enter a valid 2-letter country code",
       "duplicateSubmit": "This donation was already submitted. Please wait a minute before trying again.",
@@ -3642,7 +3646,9 @@
       "fullNameIncomplete": "Please enter your first and last name",
       "notCollecting": "This organisation cannot receive online donations yet. Please try again later.",
       "submitFailed": "An error occurred. Please try again.",
-      "collectUnavailable": "Online donations are temporarily unavailable for this campaign. Please try again a little later."
+      "collectUnavailable": "Online donations are temporarily unavailable for this campaign. Please try again a little later.",
+      "legalOutdated": "The terms were just updated: please read them again and tick the box once more.",
+      "legalUnavailable": "The terms could not be loaded. Please reload the page."
     },
     "identity": {
       "addressLine1": "Address",

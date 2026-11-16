@@ -19,7 +19,6 @@ import org.commonlink.entity.CampaignCoverImage
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
-import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.OnchainJobAction
@@ -231,7 +230,7 @@ class CampaignService(
         if (req.status != null) {
             validateStatusTransition(campaign.status, req.status)
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
-                preparePublish(campaign, associationId, req.cguAccepted)
+                preparePublish(campaign, associationId, req.cguAccepted, req.cguVersion)
             }
             if (req.status == CampaignStatus.REVERT_REQUESTED && campaign.raised > BigDecimal.ZERO) {
                 throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
@@ -720,7 +719,7 @@ class CampaignService(
      * A provider with no registered implementation (defensive; every provider has one today) is refused as
      * "not connected".
      */
-    private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean) {
+    private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean, cguVersion: String?) {
         if (campaign.goal <= BigDecimal.ZERO) {
             logRefusal(campaign, associationId, CampaignReviewRefusalReason.GOAL_MISSING)
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
@@ -768,13 +767,14 @@ class CampaignService(
             }
             ProviderReadinessStatus.READY -> Unit
         }
-        // Art. 1740 A CGI proof of acceptance — no-op once this association has already accepted
-        // the current CGU version (see LegalAcceptanceService KDoc).
+        // Art. 1740 A CGI proof of acceptance of the association terms (document CGV) — no-op once this
+        // association has already accepted the current version (see LegalAcceptanceService KDoc).
         try {
             legalAcceptanceService.requireAssociationAcceptance(
                 associationId = associationId,
-                documentType = LegalDocumentType.CGU,
+                documentType = LegalAcceptanceService.ASSOCIATION_DOCUMENT,
                 accepted = cguAccepted,
+                acceptedVersion = cguVersion,
                 signerName = profile.signerName ?: profile.name,
                 signerEmail = profile.user.email,
                 campaignId = campaign.id!!,

@@ -26,6 +26,8 @@ import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.commonlink.entity.LegalDocumentType
+import org.commonlink.exception.LegalDocumentVersionOutdatedException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
@@ -44,6 +46,7 @@ class PublicWidgetServiceTest {
 
     private val mollieConnectionRepository: MollieConnectionRepository = mockk(relaxed = true)
     private val guestDonorService: GuestDonorService = mockk(relaxed = true)
+    private val legalAcceptanceService: LegalAcceptanceService = mockk(relaxed = true)
 
     private val mollieProviderAdapter = MollieProviderAdapter(
         mollieConnectionRepository = mollieConnectionRepository,
@@ -65,7 +68,7 @@ class PublicWidgetServiceTest {
         landingPreviewTokenService = mockk(relaxed = true),
         freezeScreeningDonationService = mockk(relaxed = true),
         donationCapService = donationCapService,
-        legalAcceptanceService = mockk(relaxed = true),
+        legalAcceptanceService = legalAcceptanceService,
         paymentProviderRegistry = PaymentProviderRegistry(listOf(mollieProviderAdapter)),
     )
 
@@ -136,7 +139,7 @@ class PublicWidgetServiceTest {
             donorCity = "Paris",
             consent = true,
             cguAccepted = true,
-            cgvAccepted = true,
+            cguVersion = "test",
         )
 
         assertThrows<ConflictException> { service.createDonation("clk_x", request) }
@@ -158,7 +161,7 @@ class PublicWidgetServiceTest {
         donorCity = "Paris",
         consent = true,
         cguAccepted = true,
-        cgvAccepted = true,
+        cguVersion = "test",
     )
 
     @Test
@@ -202,5 +205,21 @@ class PublicWidgetServiceTest {
 
         verify(exactly = 0) { guestDonorService.findOrCreateGuestDonor(any(), any()) }
         verify(exactly = 0) { donationCapService.requireWithinCap(any(), any()) }
+    }
+
+    @Test
+    fun `createDonation refuses an outdated CGU version before creating any guest donor`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign)
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns readyConnection()
+        every {
+            legalAcceptanceService.requireCurrentDonorVersions(mapOf(LegalDocumentType.CGU to "test"))
+        } throws LegalDocumentVersionOutdatedException("CGU version test is not the current version")
+
+        assertThrows<LegalDocumentVersionOutdatedException> { service.createDonation("clk_x", request()) }
+
+        verify(exactly = 0) { guestDonorService.findOrCreateGuestDonor(any(), any()) }
+        verify(exactly = 0) { legalAcceptanceService.recordDonorAcceptance(any(), any(), any(), any(), any(), any()) }
     }
 }

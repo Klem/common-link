@@ -3,6 +3,7 @@ package org.commonlink.controller
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.commonlink.dto.LegalDocumentDto
+import org.commonlink.entity.LegalContentFormat
 import org.commonlink.entity.LegalDocumentType
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.UserRepository
@@ -40,11 +41,12 @@ class PublicLegalControllerTest {
     @Test
     fun `getCurrent - 200 accessible without authentication`() {
         every { legalAcceptanceService.currentDocumentDto(LegalDocumentType.CGU) } returns
-            LegalDocumentDto(LegalDocumentType.CGU, "2026-08-26", "texte des CGU", Instant.parse("2026-08-26T00:00:00Z"))
+            LegalDocumentDto(LegalDocumentType.CGU, "2026-08-26", LegalContentFormat.TEXT, "texte des CGU", Instant.parse("2026-08-26T00:00:00Z"))
 
         mockMvc.perform(get("/api/public/legal/CGU"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.version").value("2026-08-26"))
+            .andExpect(jsonPath("$.format").value("TEXT"))
             .andExpect(jsonPath("$.content").value("texte des CGU"))
     }
 

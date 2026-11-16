@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CampaignDto, BudgetSectionDto } from '@/types/campaign';
 import { BudgetSide } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
-import { LegalDocumentType } from '@/types/legal';
+import { ASSOCIATION_LEGAL_DOCUMENT } from '@/types/legal';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { PaymentProviderId } from '@/types/paymentProvider';
-import { getLegalAcceptanceState } from '@/lib/api/legal';
+import { getLegalAcceptanceState, isLegalVersionOutdated } from '@/lib/api/legal';
 import { LegalDocumentModal } from '@/components/legal/LegalDocumentModal';
 import { LegalLinkButton } from '@/components/legal/LegalLinkButton';
 
@@ -63,8 +63,11 @@ interface PrePublishModalProps {
   /** Association's payment provider: picks the provider's own account labels. Absent or null = Mollie labels. */
   paymentProvider?: PaymentProviderId | null;
   onClose: () => void;
-  /** @param cguAccepted Whether to send `cguAccepted: true` on the publish request. */
-  onConfirm: (cguAccepted: boolean) => Promise<void>;
+  /**
+   * @param cguAccepted Whether to send `cguAccepted: true` on the publish request.
+   * @param cguVersion The CGU version this dialog displayed, sent back as the accepted version.
+   */
+  onConfirm: (cguAccepted: boolean, cguVersion: string | null) => Promise<void>;
 }
 
 function sumSide(sections: BudgetSectionDto[], side: BudgetSide): number {
@@ -87,6 +90,7 @@ export function PrePublishModal({
   const t = useTranslations('dashboard.campaigns.publish');
   const bankLabels = paymentProvider === PaymentProviderId.HELLOASSO ? 'account.helloAssoBank' : 'account.bank';
   const tNav = useTranslations('dashboard.campaigns.editor.tabs');
+  const tLegal = useTranslations('legal');
 
   // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
   // `cguState.accepted` means this association already has a standing acceptance of the current
@@ -95,11 +99,12 @@ export function PrePublishModal({
   const [publishError, setPublishError] = useState<string | null>(null);
   const [cguState, setCguState] = useState<{ accepted: boolean; version: string } | null>(null);
   const [cguChecked, setCguChecked] = useState(false);
-  useEffect(() => {
-    getLegalAcceptanceState(LegalDocumentType.CGU)
+  const loadCguState = useCallback(() => {
+    getLegalAcceptanceState(ASSOCIATION_LEGAL_DOCUMENT)
       .then((state) => setCguState({ accepted: state.accepted, version: state.currentVersion }))
       .catch(() => setCguState({ accepted: false, version: '' }));
   }, []);
+  useEffect(loadCguState, [loadCguState]);
   const cguAccepted = cguState?.accepted === true || cguChecked;
   const [showCguDoc, setShowCguDoc] = useState(false);
 
@@ -152,8 +157,17 @@ export function PrePublishModal({
   const handlePublish = async () => {
     setAttempted(true);
     try {
-      await onConfirm(cguAccepted);
-    } catch {
+      await onConfirm(cguAccepted, cguState?.version || null);
+    } catch (err) {
+      if (isLegalVersionOutdated(err)) {
+        // A new CGU version was published while this dialog was open: show it, and ask again.
+        setCguChecked(false);
+        setCguState(null);
+        loadCguState();
+        setAttempted(false);
+        setPublishError(tLegal('outdated'));
+        return;
+      }
       setPublishError(t('publishRefused'));
     }
   };
@@ -293,7 +307,7 @@ export function PrePublishModal({
       </div>
 
       {showCguDoc && (
-        <LegalDocumentModal documentType={LegalDocumentType.CGU} onClose={() => setShowCguDoc(false)} />
+        <LegalDocumentModal documentType={ASSOCIATION_LEGAL_DOCUMENT} onClose={() => setShowCguDoc(false)} />
       )}
     </div>
   );

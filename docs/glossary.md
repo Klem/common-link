@@ -125,18 +125,36 @@ A public, unauthenticated report of a campaign's content, submitted via a "Repor
 
 ### CGU / CGV (Terms of Use / Terms of Sale)
 CGU (Conditions Générales d'Utilisation) and CGV (Conditions Générales de Vente) are versioned legal
-texts stored in `legal_document` (one immutable row per version). A `LegalAcceptance` row proves
-that a donor or an association expressly accepted a given version — document type, version,
-timestamp, and a snapshot of the signatory's name/e-mail taken at acceptance time (never re-read
-from the live profile, which could change afterwards). Donors accept both CGU and CGV fresh on
-every donation (a transactional act); an association accepts only the CGU, once per version, at
-campaign-publish time — reused for later campaigns until the CGU version changes. Required by the
-ACPR public-collection notice and, for the association, the sole protection CommonLink has under
-art. 1740 A CGI in the declarative tax-receipt model (no rescrit fiscal required as of the
-04/08/2026 decision) if a receipt is later challenged. Separate from the fiscal mandate
+texts stored in `legal_document` (one immutable row per version). Since 2026-11-16 they are the
+landing site's final texts: `CGU` = the donor terms (`legal.cguDonors`), `CGV` = — despite its
+historical name — the beneficiary-organisation terms (`legal.cguAssociations`); there are no separate
+terms of sale. See **Legal Document Version** for how they are injected and versioned. A
+`LegalAcceptance` row proves that a donor or an association expressly accepted a given version —
+document type, the version **displayed to them** (refused with 409 `LEGAL_VERSION_OUTDATED` if no
+longer current), timestamp, and a snapshot of the signatory's name/e-mail taken at acceptance time
+(never re-read from the live profile, which could change afterwards). Donors accept the CGU only,
+fresh on every donation (a transactional act; donations before 2026-11-16 also carry a CGV row); an
+association accepts its own terms — the `CGV` document (`LegalAcceptanceService.ASSOCIATION_DOCUMENT`;
+before 2026-11-16 it was `CGU`) — once per version, at login (post-login gate, UI only) or at
+campaign-publish time (server-enforced), reused for later campaigns until the version changes. The
+publish request fields keep their historical names `cguAccepted`/`cguVersion`, as does the refusal
+reason `CGU_NOT_ACCEPTED`. Required by the ACPR public-collection notice and, for the association, the sole protection
+CommonLink has under art. 1740 A CGI in the declarative tax-receipt model (no rescrit fiscal required
+as of the 04/08/2026 decision) if a receipt is later challenged. Separate from the fiscal mandate
 (`FiscalMandate` entity, `eligibility` + `accepted`), which authorises tax-receipt issuance and is
 signed independently.
 `functional` `security` `business`
+
+### Legal Document Version
+Identifier of one immutable CGU/CGV text in `legal_document.version`: `<effective date>-<first 12 hex
+of the SHA-256 of the content>` (e.g. `2026-09-09-a1b2c3d4e5f6`). The effective date is read from
+the text's "Version en vigueur au …" line, so two texts published the same day still get two
+versions. At startup `LegalDocumentSeeder` reads the landing site's `messages/fr.json` (bundled into
+the API jar at build time), converts each text into structured JSON (`content_format = JSON_V1`:
+title, intro, articles, paragraphs as text segments with absolute links — no HTML, no CSS) and
+inserts it if that version is absent; the newest row is the current version, in force at once. A
+version already stored with a different hash stops the boot. Rows are never updated or deleted.
+`functional` `technical`
 
 ### Campaign Category (Cause)
 What a **campaign** funds — not what the association is. Exactly one per campaign, chosen in the campaign editor (`CampaignCause` enum, stored in `campaigns.category`): Solidarité, Alimentation, Santé, Enfance & éducation, Animaux, Handicap, Environnement, Culture, Sport, Droits & citoyenneté, Autre. Boundaries: food aid and agriculture belong to Alimentation, disability sport to Handicap. **Autre** can be chosen but is never displayed publicly (no discovery chip, no badge). On `/projets` a cause chip only appears when at least one live campaign has it.

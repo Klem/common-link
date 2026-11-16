@@ -488,6 +488,17 @@ annulation du reçu fiscal). Elle n'est pas
 comptée parmi les seize fiches du dispositif. Aucune conclusion sur le dispositif LCB-FT ne peut en
 être tirée. Son nom de fichier ne porte volontairement aucun préfixe `E`.
 
+**Une huitième fiche, hors dispositif LCB-FT, a été ajoutée le 16 novembre 2026 :
+`acceptation-cgu-versionnees.md`.** Elle décrit l'acceptation des conditions générales définitives,
+reprises mot pour mot du site vitrine : une nouvelle version à chaque modification du texte, en
+vigueur dès la mise en production, l'historique conservé en base ; le donateur accepte les CGU
+donateurs à chaque don, l'association accepte les conditions qui lui sont destinées, dans leur
+version en vigueur, à sa connexion et, contrôle vérifié par le serveur, à la publication d'une
+campagne ; la preuve enregistre la version réellement affichée. Elle déclare ce qui reste ouvert
+(blocage limité à la publication, pas d'information préalable par courrier électronique). Elle n'est pas
+comptée parmi les seize fiches du dispositif. Aucune conclusion sur le dispositif LCB-FT ne peut en
+être tirée.
+
 La saisie des représentants légaux comme bénéficiaires effectifs faisait initialement l'objet d'une fiche séparée, rédigée dans un registre technique. Elle est intégrée à la fiche *Filtrage à l'entrée en relation d'affaires*, dont elle constitue le périmètre d'application : le contrôle de gel porte sur les personnes physiques identifiées au dossier, et les conditions de leur identification ne se lisent pas utilement séparément du contrôle qu'elles alimentent.
 
 ---

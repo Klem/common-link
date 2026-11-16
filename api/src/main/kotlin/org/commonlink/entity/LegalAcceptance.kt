@@ -18,8 +18,9 @@ import java.util.UUID
  * rewrite the historical record of who accepted what.
  *
  * ### Two different shapes, one table
- * - `DONOR`: one row per document per donation — a donation is a transactional act, not a
- *   standing agreement, so acceptance is captured fresh every time. No uniqueness constraint;
+ * - `DONOR`: one row per accepted document per donation — the CGU only since 2026-11-16 (donations
+ *   made before that also carry a CGV row). A donation is a transactional act, not a standing
+ *   agreement, so acceptance is captured fresh every time. No uniqueness constraint;
  *   [donationId] identifies which donation it proves.
  * - `ASSOCIATION`: at most one row per (association, documentType, documentVersion) — enforced by
  *   the partial unique index `legal_acceptance_association_version_uq` (V73). Reused across every

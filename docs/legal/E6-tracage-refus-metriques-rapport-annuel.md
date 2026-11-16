@@ -72,7 +72,8 @@ coup ne peut pas être comblée rétroactivement (§ 6).
 
 `CampaignService.preparePublish()` est le point unique où toutes les conditions d'ouverture d'une
 collecte sont évaluées (objectif, calendrier, budget prévisionnel équilibré, résultat attendu,
-vérification KYB, moyen d'encaissement bancaire, acceptation des CGU). Chaque condition non
+vérification KYB, moyen d'encaissement bancaire, acceptation des conditions générales d'utilisation
+applicables aux associations). Chaque condition non
 remplie lève une exception qui interrompt la transaction et remonte au client — sans jamais
 traverser le journal de conformité (`compliance_audit_log`, WORM, déjà utilisé par les autres
 contrôles LCB-FT de la plateforme).
@@ -112,7 +113,7 @@ vocation réglementaire — l'énumération a été alignée sur le code réel :
 | `BANK_NOT_CONNECTED` | Aucun compte Mollie connecté, ou, pour une association rattachée à HelloAsso, aucune liaison active (clé jamais liée ou liaison retirée) *(depuis le 2 novembre 2026)* |
 | `BANK_CONNECTION_BROKEN` | Connexion Mollie rompue, ou liaison HelloAsso rompue *(depuis le 2 novembre 2026)* |
 | `BANK_KYC_INCOMPLETE` | Vérification d'identité Mollie non aboutie, ou organisation HelloAsso non éligible à l'encaissement — éligibilité en attente ou suspendue *(depuis le 2 novembre 2026)* |
-| `CGU_NOT_ACCEPTED` | Conditions générales d'utilisation non acceptées (art. 1740 A CGI) |
+| `CGU_NOT_ACCEPTED` | Conditions générales d'utilisation applicables aux associations non acceptées (art. 1740 A CGI) ; le code garde son nom historique, voir `acceptation-cgu-versionnees.md` |
 
 **`FREEZE_HIT`, `OUT_OF_SCOPE_9220` et `MANUAL_CURATOR` ne figurent pas dans cette liste.**
 `preparePublish()` ne vérifie que `verificationStatus == VERIFIED` — une valeur binaire au sens

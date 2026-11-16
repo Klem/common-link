@@ -177,9 +177,11 @@ export const deleteMilestone = (campaignId: string, milestoneId: string): Promis
 /**
  * @param cguAccepted Must be true on the first publish for this association's current CGU
  *   version (art. 1740 A CGI proof of acceptance); ignored once already accepted.
+ * @param cguVersion The CGU version the publish dialog displayed; answered 409 `LEGAL_VERSION_OUTDATED`
+ *   when a newer one was published meanwhile.
  */
-export const publishCampaign = (id: string, cguAccepted: boolean): Promise<CampaignDto> =>
-  api.put<CampaignDto>(`/api/association/campaigns/${id}`, { status: 'LIVE', cguAccepted }).then((r) => r.data);
+export const publishCampaign = (id: string, cguAccepted: boolean, cguVersion: string | null): Promise<CampaignDto> =>
+  api.put<CampaignDto>(`/api/association/campaigns/${id}`, { status: 'LIVE', cguAccepted, cguVersion }).then((r) => r.data);
 
 /**
  * Reorders milestones for a campaign.

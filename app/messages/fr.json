@@ -2568,12 +2568,21 @@
   },
   "legal": {
     "close": "Fermer",
+    "gate": {
+      "accept": "Accepter et continuer",
+      "checkbox": "J'ai lu et j'accepte ces conditions au nom de l'association",
+      "error": "L'acceptation n'a pas pu être enregistrée. Veuillez réessayer.",
+      "intro": "Merci de lire et d'accepter les conditions d'utilisation de CommonLink en vigueur pour continuer.",
+      "title": "Conditions d'utilisation"
+    },
     "loadError": "Impossible de charger ce document. Veuillez réessayer.",
     "loading": "Chargement…",
+    "outdated": "Ces conditions viennent d'être mises à jour. Merci de relire la nouvelle version avant de l'accepter.",
     "title": {
       "CGU": "Conditions Générales d'Utilisation",
-      "CGV": "Conditions Générales de Vente"
+      "CGV": "Conditions générales d'utilisation des associations"
     },
+    "tocTitle": "Sommaire",
     "version": "Version {version}"
   },
   "settings": {
@@ -3616,10 +3625,6 @@
       "label": "J'accepte les",
       "link": "Conditions Générales d'Utilisation (CGU)"
     },
-    "cgv": {
-      "label": "J'accepte les",
-      "link": "Conditions Générales de Vente (CGV)"
-    },
     "consent": {
       "label": "Je consens au traitement de mes données personnelles pour ce don (RGPD)"
     },
@@ -3631,7 +3636,6 @@
       "capExceeded": "Ce montant dépasse ce que la campagne peut encore collecter. Merci de saisir un montant plus faible.",
       "capFull": "Cette campagne a atteint son plafond de collecte et n'accepte plus de dons.",
       "cguRequired": "Vous devez accepter les Conditions Générales d'Utilisation",
-      "cgvRequired": "Vous devez accepter les Conditions Générales de Vente",
       "consentRequired": "Vous devez consentir pour continuer",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
       "duplicateSubmit": "Ce don a déjà été envoyé. Merci de patienter une minute avant de réessayer.",
@@ -3642,7 +3646,9 @@
       "fullNameIncomplete": "Veuillez saisir votre prénom et votre nom",
       "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
       "submitFailed": "Une erreur est survenue. Veuillez réessayer.",
-      "collectUnavailable": "La collecte de dons en ligne est momentanément indisponible pour cette campagne. Merci de réessayer un peu plus tard."
+      "collectUnavailable": "La collecte de dons en ligne est momentanément indisponible pour cette campagne. Merci de réessayer un peu plus tard.",
+      "legalOutdated": "Les conditions viennent d'être mises à jour : merci de les relire et de cocher à nouveau la case.",
+      "legalUnavailable": "Les conditions n'ont pas pu être chargées. Veuillez recharger la page."
     },
     "identity": {
       "addressLine1": "Adresse",

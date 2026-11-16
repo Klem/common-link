@@ -89,8 +89,8 @@ export default function CampaignEditorPage() {
     if (campaign) updateCampaignInfo({ name: campaign.name, emoji: campaign.emoji });
   };
 
-  const handleConfirmPublish = async (cguAccepted: boolean) => {
-    const updated = await publishCampaign(campaignId, cguAccepted);
+  const handleConfirmPublish = async (cguAccepted: boolean, cguVersion: string | null) => {
+    const updated = await publishCampaign(campaignId, cguAccepted, cguVersion);
     setCampaign(updated);
     setShowPublishModal(false);
     addToast('success', 'publishCampaignSuccess');

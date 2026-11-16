@@ -746,7 +746,7 @@
             "CommonLink accuse réception de toute réclamation écrite dans un délai maximal de dix jours ouvrables à compter de son envoi, sauf si une réponse définitive est apportée dans ce même délai, et y répond de façon motivée dans un délai maximal de deux mois à compter de l'envoi de la première réclamation écrite.",
             "Ces délais courent à compter de l'envoi de la réclamation, et non de la date à laquelle CommonLink en prend connaissance.",
             "Une réclamation portant sur un service opéré par un prestataire de CommonLink, notamment l'encaissement des dons ou l'exécution d'un paiement, est traitée par CommonLink et n'est pas renvoyée vers ce prestataire.",
-            "Les modalités complètes sont décrites sur la <link>page Réclamations</link> du site."
+            "Les modalités complètes sont décrites sur la <complaints>page Réclamations</complaints> du site."
           ],
           "title": "Article 36. Nous contacter et réclamations"
         },
@@ -785,7 +785,7 @@
         },
         {
           "paragraphs": [
-            "Le contrat type est consultable sur la <link>page dédiée</link> du site."
+            "Le contrat type est consultable sur la <agreement>page dédiée</agreement> du site."
           ],
           "title": "Annexe 1. Contrat type entre le donateur et l'organisme bénéficiaire"
         },
@@ -1037,13 +1037,13 @@
         {
           "paragraphs": [
             "Les données du donateur sont traitées pour permettre la réalisation du don, l'émission du reçu fiscal, l'exécution des obligations légales de CommonLink et, le cas échéant, la gestion de son espace personnel.",
-            "Les finalités, les durées de conservation et les moyens d'exercer ses droits figurent dans la <link>politique de confidentialité</link> accessible sur le site. Toute demande peut être adressée à contact@common-link.org"
+            "Les finalités, les durées de conservation et les moyens d'exercer ses droits figurent dans la <privacy>politique de confidentialité</privacy> accessible sur le site. Toute demande peut être adressée à contact@common-link.org"
           ],
           "title": "Article 22. Données personnelles"
         },
         {
           "paragraphs": [
-            "Les règles applicables aux cookies et traceurs sont décrites dans la <link>politique cookies</link> accessible sur le site."
+            "Les règles applicables aux cookies et traceurs sont décrites dans la <cookies>politique cookies</cookies> accessible sur le site."
           ],
           "title": "Article 23. Cookies"
         },
@@ -1103,7 +1103,7 @@
             "Toute réclamation peut être adressée par courriel à reclamations@common-link.org, par courrier à CommonLink, Service Réclamations, 1047 Chemin des Impiniers, 06220 Vallauris, ou par téléphone au 04 23 40 02 06. Une réclamation formulée par téléphone et non résolue immédiatement doit être confirmée par écrit.",
             "CommonLink accuse réception de toute réclamation écrite dans un délai maximal de dix jours ouvrables à compter de son envoi, sauf si une réponse définitive est apportée dans ce même délai, et y répond de façon motivée dans un délai maximal de deux mois à compter de l'envoi de la première réclamation écrite.",
             "Ces délais courent à compter de l'envoi de la réclamation, et non de la date à laquelle CommonLink en prend connaissance.",
-            "Les modalités complètes sont décrites sur la <link>page Réclamations</link> du site.",
+            "Les modalités complètes sont décrites sur la <complaints>page Réclamations</complaints> du site.",
             "Si la réponse apportée ne satisfait pas le donateur, celui-ci conserve la possibilité de saisir les tribunaux compétents."
           ],
           "title": "Article 31. Nous contacter et réclamations"
@@ -1144,7 +1144,7 @@
         },
         {
           "paragraphs": [
-            "Le contrat type est consultable sur la <link>page dédiée</link> du site."
+            "Le contrat type est consultable sur la <agreement>page dédiée</agreement> du site."
           ],
           "title": "Annexe. Contrat type entre le donateur et l'organisme bénéficiaire"
         }
@@ -1236,6 +1236,12 @@
         "title": "Signaler une campagne"
       },
       "title": "Nous contacter"
+    },
+    "linkTargets": {
+      "agreement": "/contrat-type",
+      "complaints": "/reclamations",
+      "cookies": "/politique-cookies",
+      "privacy": "/politique-confidentialite"
     },
     "mentionsLegales": {
       "lastUpdated": "Version en vigueur au 28 septembre 2026",

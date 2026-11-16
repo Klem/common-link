@@ -19,6 +19,11 @@ app:
   jwt:
     secret: ${COMMON_LINK_SECRET:test-secret-key-for-automated-tests-only-not-production!!}
   frontend-url: http://localhost:3000
+  # Unit-test contexts seed their own legal documents; LegalDocumentSeeder is tested on its own.
+  legal:
+    seed-on-startup: false
+    source: classpath:legal/landing-fr.json
+    site-base-url: https://www.common-link.org
   # HelloAssoRedirectUrlGuard: the real HelloAsso needs an https return URL.
   helloasso:
     redirect-base-url: https://localhost:3000

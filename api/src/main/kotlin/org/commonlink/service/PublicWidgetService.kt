@@ -13,6 +13,7 @@ import org.commonlink.entity.AssociationStatus
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.Donation
+import org.commonlink.entity.LegalDocumentType
 import org.commonlink.exception.CollectionUnavailableException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
@@ -98,6 +99,11 @@ class PublicWidgetService(
         // numbered, hashed on-chain and emailed. Checked here rather than further down so a refused
         // attempt leaves no guest profile and no screening journal entry behind.
         donationCapService.requireWithinCap(campaign, request.amount)
+
+        // The CGU version the form displayed must still be the current one: the acceptance proof records it,
+        // and must not name a text the donor never saw. Checked before anything is created.
+        val acceptedVersions = mapOf(LegalDocumentType.CGU to request.cguVersion)
+        legalAcceptanceService.requireCurrentDonorVersions(acceptedVersions)
 
         // Provision guest donor (idempotent by email)
         val resolvedDonor = guestDonorService.findOrCreateGuestDonor(request.donorEmail, request.donorFullName)
@@ -189,6 +195,7 @@ class PublicWidgetService(
             campaignId = campaign.id!!,
             signerName = request.donorFullName,
             signerEmail = request.donorEmail,
+            acceptedVersions = acceptedVersions,
         )
 
         logger.info("Pending donation created — paymentId={} campaign={}", session.providerPaymentId, campaign.id)

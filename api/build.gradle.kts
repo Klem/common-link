@@ -171,6 +171,21 @@ tasks.register<JavaExec>("generateRegistryWrapper") {
     )
 }
 
+// CGU/CGV single source of truth: the landing site's texts (landing-page/messages/fr.json), bundled into the
+// jar and injected into legal_document at startup by LegalDocumentSeeder. The build fails if the file is missing
+// (Clever Cloud clones the whole monorepo, APP_FOLDER=api).
+val landingLegalMessages = file("../landing-page/messages/fr.json")
+tasks.named<ProcessResources>("processResources") {
+    inputs.file(landingLegalMessages)
+    doFirst {
+        require(landingLegalMessages.exists()) { "Missing CGU/CGV source: ${landingLegalMessages.path}" }
+    }
+    from(landingLegalMessages) {
+        into("legal")
+        rename { "landing-fr.json" }
+    }
+}
+
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
     val profile = project.findProperty("profile")?.toString() ?: "local"
     val envFile = file(".env.$profile")

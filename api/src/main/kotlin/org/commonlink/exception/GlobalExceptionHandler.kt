@@ -162,6 +162,17 @@ class GlobalExceptionHandler(
     }
 
     /**
+     * Handles [LegalDocumentVersionOutdatedException] with a `code: LEGAL_VERSION_OUTDATED` property
+     * (HTTP 409): the client reloads the CGU/CGV text and asks for acceptance again.
+     */
+    @ExceptionHandler(LegalDocumentVersionOutdatedException::class)
+    fun handleLegalDocumentVersionOutdated(ex: LegalDocumentVersionOutdatedException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Legal document version outdated")
+        problem.setProperty("code", "LEGAL_VERSION_OUTDATED")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [SirenAlreadyRegisteredException] with a `code: SIREN_ALREADY_REGISTERED` property
      * (HTTP 409), so the sign-up screen does not report a duplicate SIREN as a duplicate email.
      */

@@ -34,9 +34,12 @@ import java.time.LocalDate
  * @param reason Why the association is launching this campaign. Null = no change.
  * @param impactGoals Concrete expected outcomes. Null = no change.
  * @param coverImage URL or path of the cover image. Null = no change.
- * @param cguAccepted Must be true on the first DRAFT→LIVE publish for this association's current
- *   CGU version (art. 1740 A CGI proof of acceptance); ignored once already accepted, ignored on
+ * @param cguAccepted Must be true on the first DRAFT→LIVE publish for the current version of the
+ *   association terms — the "conditions générales d'utilisation applicables aux organismes", stored as
+ *   document `CGV` (art. 1740 A CGI proof of acceptance); ignored once already accepted, ignored on
  *   every other transition. Default false so unrelated updates need not think about it.
+ * @param cguVersion The version of those terms the publish dialog displayed, required with [cguAccepted]:
+ *   refused with 409 `LEGAL_VERSION_OUTDATED` when a newer version was published meanwhile.
  */
 data class UpdateCampaignRequest(
     @field:Size(max = 255)
@@ -68,4 +71,7 @@ data class UpdateCampaignRequest(
     val coverImage: String? = null,
 
     val cguAccepted: Boolean = false,
+
+    @field:Size(max = 32)
+    val cguVersion: String? = null,
 )

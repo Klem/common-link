@@ -505,6 +505,15 @@ enum class AssociationStatus { ACTIVE, ALERT, SUSPENDED }
 /** A versioned legal document text (notice ACPR / art. 1740 A CGI — preuve d'acceptation). */
 enum class LegalDocumentType { CGU, CGV }
 
+/**
+ * How [org.commonlink.entity.LegalDocument.content] must be read — mirrors the
+ * `legal_document_content_format_check` constraint (V97).
+ * - `TEXT`: plain text (the V73 placeholder rows).
+ * - `JSON_V1`: structured text ([org.commonlink.dto.LegalTextV1]) injected at startup by
+ *   [org.commonlink.bootstrap.LegalDocumentSeeder] — no HTML, no CSS.
+ */
+enum class LegalContentFormat { TEXT, JSON_V1 }
+
 /** Who accepted a [LegalDocumentType] — see [org.commonlink.entity.LegalAcceptance]. */
 enum class LegalAcceptanceSubjectType { DONOR, ASSOCIATION }
 

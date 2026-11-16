@@ -172,11 +172,12 @@ class PublicWidgetServiceIntegrationTest {
         val acceptances = legalAcceptanceRepository.findAllBySubjectTypeAndSubjectIdOrderByAcceptedAtDesc(
             LegalAcceptanceSubjectType.DONOR, donation.donor.id!!,
         )
-        assertEquals(2, acceptances.size, "One row per document type (CGU, CGV)")
-        acceptances.forEach {
-            assertEquals(donation.id, it.donationId)
-            assertEquals(donation.campaign.id, it.campaignId)
-        }
+        // Donors accept the CGU only — the CGV document is the associations' terms.
+        val acceptance = acceptances.single()
+        assertEquals(LegalDocumentType.CGU, acceptance.documentType)
+        assertEquals("test", acceptance.documentVersion, "records the version the form displayed")
+        assertEquals(donation.id, acceptance.donationId)
+        assertEquals(donation.campaign.id, acceptance.campaignId)
     }
 
     @Test
@@ -744,7 +745,7 @@ class PublicWidgetServiceIntegrationTest {
         anonymousDisplay  = anonymousDisplay,
         consent           = true,
         cguAccepted       = true,
-        cgvAccepted       = true,
+        cguVersion        = "test",
         sourceSite        = sourceSite,
     )
 }

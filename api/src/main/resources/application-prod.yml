@@ -90,6 +90,13 @@ app:
     secret: ${COMMON_LINK_SECRET}
     access-token-expiration: PT30M
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
+  # CGU/CGV injected at startup from the landing site's texts (LegalDocumentSeeder). The source file is
+  # landing-page/messages/fr.json, copied into the jar by processResources. site-base-url prefixes the
+  # links of the stored texts: changing it publishes new versions.
+  legal:
+    seed-on-startup: true
+    source: classpath:legal/landing-fr.json
+    site-base-url: ${APP_LEGAL_SITE_BASE_URL:https://www.common-link.org}
   cookies:
     secure: true
     same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)

@@ -2618,6 +2618,27 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
    the shared .modal's 480px max-width is tuned for short forms/confirmations, not paragraphs. */
 .modal-wide { max-width: 760px; }
 
+/* CGU/CGV text (LegalDocumentRenderer) - same rules as the landing site's legal pages
+   (landing-page globals.css: .legal-meta, .legal-body, .legal-callout, .legal-toc-auto, .legal-link),
+   without the page padding so it fits the donation, publication and post-login modals. */
+.legal-doc-meta { font-size: 14px; color: var(--slate-lavender); margin-bottom: 16px; }
+.legal-doc h3 { font-size: 19px; margin: 32px 0 10px; }
+.legal-doc h4 { font-size: 16px; margin: 26px 0 8px; }
+.legal-doc p { margin-bottom: 14px; line-height: 1.75; color: var(--ink-navy); }
+.legal-doc p a { color: var(--deep-indigo); text-decoration: underline; }
+.legal-doc-plain { white-space: pre-wrap; }
+.legal-doc-callout { background: var(--soft-cream); border-left: 3px solid var(--bright-teal); border-radius: var(--radius-lg); padding: 18px 22px; margin: 22px 0; line-height: 1.7; }
+.legal-doc-toc { background: var(--soft-cream); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 36px; }
+.legal-doc-toc strong { display: block; margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--slate-lavender); }
+.legal-doc-toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; list-style: decimal; }
+.legal-doc-toc li { font-size: 13px; line-height: 1.9; }
+.legal-doc-toc a { color: var(--ink-navy); text-decoration: none; }
+.legal-doc-toc a:hover { color: var(--bright-teal); }
+@media (max-width: 760px) { .legal-doc-toc ol { columns: 1; } }
+/* Post-login acceptance gate: a modal that cannot be dismissed, above every other overlay but toasts. */
+.modal-backdrop.legal-gate-backdrop { z-index: 1100; }
+.legal-gate-accept { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ink-navy); }
+
 /* Mollie trust modal - who Mollie is, why the KYC is unavoidable, where the documents go */
 .mollie-info-intro { font-size: 14px; color: var(--slate-lavender); line-height: 1.6; margin-bottom: 18px; }
 .mollie-info-section { margin-bottom: 18px; }

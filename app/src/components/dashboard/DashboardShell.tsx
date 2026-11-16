@@ -10,6 +10,7 @@ import { Sidebar } from './Sidebar';
 import { SetPasswordModal } from './SetPasswordModal';
 import { SidebarToggleContext } from './SidebarContext';
 import { AssociationStatusSync } from './AssociationStatusSync';
+import { AssociationLegalGate } from './AssociationLegalGate';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -76,6 +77,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   return (
     <SidebarToggleContext.Provider value={openSidebar}>
       {user.role === UserRole.ASSOCIATION && <AssociationStatusSync />}
+      {user.role === UserRole.ASSOCIATION && <AssociationLegalGate />}
       <div className="app-shell">
         <Sidebar user={user} currentPath={pathname} isOpen={sidebarOpen} onClose={closeSidebar} />
         {sidebarOpen && (

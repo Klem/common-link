@@ -19,6 +19,10 @@ import java.util.UUID
  * ([org.commonlink.repository.LegalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc]).
  * [LegalAcceptance.documentVersion] stores [version] as a plain string, not a foreign key: the
  * acceptance proof must remain readable even if this table were ever pruned.
+ *
+ * Since V97 the texts are injected at startup from the landing site
+ * ([org.commonlink.bootstrap.LegalDocumentSeeder]): [version] is then `<effective date>-<first 12 hex of
+ * [contentSha256]>`, so any change of text — even twice the same day — is a new version.
  */
 @Entity
 @Table(name = "legal_document")
@@ -36,8 +40,17 @@ class LegalDocument(
     @Column(name = "version", nullable = false, updatable = false, length = 32)
     val version: String,
 
+    /** The text itself, to be read according to [contentFormat]. */
     @Column(name = "content", nullable = false, updatable = false, columnDefinition = "TEXT")
     val content: String,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "content_format", nullable = false, updatable = false, length = 16)
+    val contentFormat: LegalContentFormat = LegalContentFormat.TEXT,
+
+    /** SHA-256 (lowercase hex) of [content]. Set on every `JSON_V1` row, null on the V73 placeholders. */
+    @Column(name = "content_sha256", updatable = false, length = 64)
+    val contentSha256: String? = null,
 
     @Column(name = "published_at", nullable = false, updatable = false)
     val publishedAt: Instant = Instant.now(),
