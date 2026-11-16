@@ -9,9 +9,19 @@ vi.mock('next-intl', () => ({
 vi.mock('@/lib/api/public', () => ({
   getWidget: vi.fn(),
   createGuestDonation: vi.fn(),
+  getLegalDocument: vi.fn(),
 }));
 
-import { getWidget, createGuestDonation } from '@/lib/api/public';
+import { getWidget, createGuestDonation, getLegalDocument } from '@/lib/api/public';
+
+// The form loads the CGU text on mount and sends its version as the accepted one.
+vi.mocked(getLegalDocument).mockResolvedValue({
+  documentType: 'CGU',
+  version: '2026-09-09-0123456789ab',
+  format: 'TEXT',
+  content: 'Texte des CGU.',
+  publishedAt: '2026-09-09T00:00:00Z',
+});
 
 const mockGetWidget = getWidget as ReturnType<typeof vi.fn>;
 const mockCreateGuestDonation = createGuestDonation as ReturnType<typeof vi.fn>;
@@ -53,7 +63,6 @@ function fillValidForm() {
   });
   fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
 }
 
 describe('EmbedDonateClient', () => {
@@ -146,7 +155,6 @@ describe('EmbedDonateClient', () => {
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -204,7 +212,6 @@ describe('EmbedDonateClient', () => {
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -233,7 +240,6 @@ describe('EmbedDonateClient', () => {
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {

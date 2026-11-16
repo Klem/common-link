@@ -32,9 +32,12 @@ export const donationSchema = z.object({
   donorCountry: z.string().regex(/^[A-Za-z]{2}$/, 'errors.countryInvalid'),
   anonymousDisplay: z.boolean(),
   consent: z.boolean().refine((v) => v === true, { message: 'errors.consentRequired' }),
-  // Distinct from `consent` (RGPD only) — art. 1740 A CGI proof of acceptance.
+  // Distinct from `consent` (RGPD only) — art. 1740 A CGI proof of acceptance. The donor accepts the
+  // CGU only: the CGV document is the associations' CGU.
   cguAccepted: z.boolean().refine((v) => v === true, { message: 'errors.cguRequired' }),
-  cgvAccepted: z.boolean().refine((v) => v === true, { message: 'errors.cgvRequired' }),
+  // Version of the CGU text loaded by the form, sent back as the accepted version. Empty while the text
+  // could not be loaded — mirrors `@NotBlank @Size(max = 32)` on CreateGuestDonationRequest.cguVersion.
+  cguVersion: z.string().min(1, 'errors.legalUnavailable').max(32, 'errors.legalUnavailable'),
 });
 
 export type DonationFormData = z.infer<typeof donationSchema>;

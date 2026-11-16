@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DonationForm } from '../DonationForm';
 import { PaymentProviderId } from '@/types/paymentProvider';
 
@@ -17,6 +17,16 @@ import { createGuestDonation, getLegalDocument } from '@/lib/api/public';
 const mockCreateGuestDonation = createGuestDonation as ReturnType<typeof vi.fn>;
 const mockGetLegalDocument = getLegalDocument as ReturnType<typeof vi.fn>;
 
+const CGU_DOC = {
+  documentType: 'CGU',
+  version: '2026-09-09-0123456789ab',
+  format: 'TEXT',
+  content: 'Texte des CGU.',
+  publishedAt: '2026-09-09T00:00:00Z',
+};
+// The form loads the CGU text on mount and sends its version as the accepted one.
+mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+
 const TRACKING_FIXTURE = {
   campaignId: 'campaign-1',
   campaignName: 'Test Campaign',
@@ -29,8 +39,11 @@ const TRACKING_FIXTURE = {
  *
  * @param birthDate ISO date, or `null` to leave the facultative birth date empty — the case the
  *   widget must accept since the value is only used for the freeze screening and never kept.
+ *
+ * Async: first lets the CGU text loaded on mount settle, so its version is in the form.
  */
-function fillValidForm(birthDate: string | null = '1990-01-15') {
+async function fillValidForm(birthDate: string | null = '1990-01-15') {
+  await act(async () => {});
   fireEvent.click(screen.getByText('25 €'));
   fireEvent.change(screen.getByLabelText(/identity.email/i), {
     target: { value: 'jean@example.com' },
@@ -54,7 +67,6 @@ function fillValidForm(birthDate: string | null = '1990-01-15') {
   });
   fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
 }
 
 describe('DonationForm — skin default', () => {
@@ -148,7 +160,7 @@ describe('DonationForm — 409 blocked state', () => {
             tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -177,7 +189,7 @@ describe('DonationForm — 409 blocked state', () => {
             tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -195,7 +207,7 @@ describe('DonationForm — 409 blocked state', () => {
             tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -214,7 +226,7 @@ describe('DonationForm — 409 blocked state', () => {
             tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -366,7 +378,7 @@ describe('DonationForm — collection cap', () => {
     render(<DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
             tracking={TRACKING_FIXTURE} skin="default" />);
 
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -438,7 +450,7 @@ describe('DonationForm — date de naissance facultative', () => {
             tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
-    fillValidForm(null);
+    await fillValidForm(null);
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -453,7 +465,7 @@ describe('DonationForm — date de naissance facultative', () => {
             tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
-    fillValidForm('1990-01-15');
+    await fillValidForm('1990-01-15');
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -513,25 +525,80 @@ describe('DonationForm — date de naissance facultative', () => {
     expect(cguCheckbox.checked).toBe(true);
   });
 
-  it('opening the CGV text does not toggle the CGV checkbox', async () => {
-    mockGetLegalDocument.mockResolvedValue({
-      documentType: 'CGV',
-      version: '2026-08-26',
-      content: 'Texte des CGV.',
-      publishedAt: '2026-08-26T00:00:00Z',
-    });
+  it('offers the CGU only — donors are not asked to accept the CGV', () => {
     render(
       <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
             tracking={TRACKING_FIXTURE} skin="default" />,
     );
 
-    const cgvCheckbox = screen.getByLabelText(/cgv.label/i) as HTMLInputElement;
-    expect(cgvCheckbox.checked).toBe(false);
+    expect(screen.getByLabelText(/cgu.label/i)).toBeInTheDocument();
+    expect(screen.queryByText('cgv.link')).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByText('cgv.link'));
-    await waitFor(() => screen.getByText('Texte des CGV.'));
+  it('shows the very CGU version it will send, without toggling the checkbox', async () => {
+    mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+    await act(async () => {});
 
-    expect(cgvCheckbox.checked).toBe(false);
+    const cguCheckbox = screen.getByLabelText(/cgu.label/i) as HTMLInputElement;
+    fireEvent.click(screen.getByText('cgu.link'));
+    await waitFor(() => screen.getByText('Texte des CGU.'));
+
+    expect(mockGetLegalDocument).toHaveBeenCalledTimes(1);
+    expect(cguCheckbox.checked).toBe(false);
+  });
+
+  it('sends the CGU version it loaded', async () => {
+    mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+    mockCreateGuestDonation.mockResolvedValue({ checkoutUrl: 'https://pay.example/x', paymentId: 'p', publicRef: 'r' });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    await fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => expect(mockCreateGuestDonation).toHaveBeenCalled());
+    const payload = mockCreateGuestDonation.mock.calls[0][1];
+    expect(payload.cguAccepted).toBe(true);
+    expect(payload.cguVersion).toBe(CGU_DOC.version);
+    expect(payload).not.toHaveProperty('cgvAccepted');
+  });
+
+  it('reloads the CGU and asks again on 409 LEGAL_VERSION_OUTDATED', async () => {
+    mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+    mockCreateGuestDonation.mockRejectedValue({ response: { status: 409, data: { code: 'LEGAL_VERSION_OUTDATED' } } });
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    await fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => expect(screen.getByText('errors.legalOutdated')).toBeInTheDocument());
+    expect(mockGetLegalDocument).toHaveBeenCalledTimes(2);
+    expect((screen.getByLabelText(/cgu.label/i) as HTMLInputElement).checked).toBe(false);
+    // Not a blocking refusal: the donor can tick the box again and resubmit.
+    expect(screen.getByRole('button', { name: 'submit' })).toBeEnabled();
+  });
+
+  it('refuses to submit when the CGU text could not be loaded', async () => {
+    mockGetLegalDocument.mockRejectedValueOnce(new Error('network'));
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+
+    await fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    await waitFor(() => expect(screen.getByText('errors.legalUnavailable')).toBeInTheDocument());
+    expect(mockCreateGuestDonation).not.toHaveBeenCalled();
   });
 });
 
@@ -550,7 +617,7 @@ describe('DonationForm — amount choice on begin_checkout', () => {
     );
 
     fireEvent.click(screen.getByText('10 €'));
-    fillValidForm(); // clicks 25 €
+    await fillValidForm(); // clicks 25 €
     const custom = screen.getByLabelText('amounts.custom');
     // Focusing the field that displays the clicked preset, then leaving it, is not a new choice.
     fireEvent.focus(custom);
@@ -606,7 +673,7 @@ describe('DonationForm — HelloAsso association (flow §5bis)', () => {
     mockCreateGuestDonation.mockRejectedValue({ response: { status: 409 } });
     renderHelloAsso();
 
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'helloasso.payAria' }));
 
     await waitFor(() => expect(mockCreateGuestDonation).toHaveBeenCalledTimes(1));

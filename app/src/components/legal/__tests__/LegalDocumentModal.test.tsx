@@ -18,6 +18,7 @@ const mockGetLegalDocument = getLegalDocument as ReturnType<typeof vi.fn>;
 const sampleDoc = {
   documentType: 'CGU',
   version: '2026-08-26',
+  format: 'TEXT',
   content: 'Texte des CGU.',
   publishedAt: '2026-08-26T00:00:00Z',
 };

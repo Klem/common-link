@@ -484,7 +484,7 @@
         },
         {
           "paragraphs": [
-            "CommonLink : la société identifiée en tête des présentes. Plateforme : l'environnement numérique permettant de présenter des campagnes, de recevoir des dons et de tracer les paiements. Organisme : l'association ou le fonds de dotation utilisant le service. Campagne : l'opération de collecte présentée par l'organisme. Don : le versement effectué sans contrepartie par un donateur au bénéfice de l'organisme. Bénéficiaire : la personne ou l'entité à laquelle l'organisme verse des fonds dans le cadre d'une campagne. Paiement tracé : un paiement effectué par l'organisme depuis la plateforme, enregistré et publié."
+            "CommonLink : la société identifiée en tête des présentes. Plateforme : l'environnement numérique permettant de présenter des campagnes, de recevoir des dons et de tracer les paiements. Organisme : l'association ou le fonds de dotation utilisant le service. Campagne : l'opération de collecte présentée par l'organisme. Don : le versement effectué sans contrepartie par un donateur au bénéfice de l'organisme. Bénéficiaire : la personne ou l'entité à laquelle l'organisme verse des fonds dans le cadre d'une campagne. Paiement tracé : un paiement effectué par l'organisme depuis la plateforme, enregistré et publié. Prestataire de paiement : l'établissement auprès duquel l'organisme encaisse ses dons, HelloAsso ou Mollie, dans les conditions de l'article 7. Page de paiement : la page du prestataire de paiement sur laquelle le donateur règle son don. Formulaires HelloAsso de l'association : les formulaires de don, d'adhésion ou de billetterie que l'organisme crée lui-même sur helloasso.com, en dehors de la plateforme. Contribution volontaire : la somme facultative que HelloAsso propose au donateur de lui verser, en plus de son don, sur sa page de paiement."
           ],
           "title": "Article 2. Définitions"
         },
@@ -515,14 +515,18 @@
           "paragraphs": [
             "CommonLink vérifie l'existence et l'identité de l'organisme auprès des registres publics, et procède aux vérifications que lui imposent ses obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
             "L'organisme fournit les informations demandées et s'engage à leur exactitude. Aucun document comptable, justificatif de dépense ou rapport d'activité ne lui est demandé.",
-            "Tant que ces vérifications ne sont pas achevées, l'organisme ne peut pas collecter de dons."
+            "Tant que ces vérifications ne sont pas achevées, l'organisme ne peut pas collecter de dons.",
+            "La collecte suppose en outre que le prestataire de paiement de l'organisme ait ouvert son compte et accepte d'y recevoir des paiements. L'organisme effectue directement auprès de ce prestataire les vérifications qu'il requiert ; celui-ci peut lui demander des documents."
           ],
           "title": "Article 6. Inscription et vérifications"
         },
         {
           "paragraphs": [
-            "Les dons sont encaissés sur un compte de paiement ouvert au nom de l'organisme auprès du prestataire d'encaissement, dont les conditions sont acceptées par l'organisme lors de son inscription.",
-            "L'organisme est titulaire de ce compte. Il en conserve la propriété et l'usage, y compris après la fin des présentes."
+            "7.1 Les dons sont encaissés sur un compte de paiement ouvert au nom de l'organisme auprès de l'un des prestataires de paiement de la plateforme : HelloAsso, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 17678Q, proposé en priorité aux associations et fonds de dotation établis en France, ou Mollie, établissement de monnaie électronique agréé aux Pays-Bas, pour les organismes qui n'encaissent pas par HelloAsso. L'organisme accepte les conditions de son prestataire directement auprès de celui-ci, lors de l'ouverture de son compte.",
+            "7.2 L'organisme est titulaire de ce compte. Il en conserve la propriété et l'usage, y compris après la fin des présentes.",
+            "7.3 Lorsque l'organisme encaisse par HelloAsso, il relie son compte HelloAsso à la plateforme. Pour cela, il transmet à CommonLink les identifiants d'accès qu'il génère dans son espace HelloAsso, et il y enregistre l'adresse de notification que CommonLink lui fournit. CommonLink conserve sous forme chiffrée les seuls éléments nécessaires au maintien de cet accès.",
+            "7.4 En reliant son compte, l'organisme donne mandat à CommonLink d'utiliser cet accès pour créer les paiements de ses campagnes, suivre ces paiements et leur versement sur son compte bancaire, et savoir si son compte peut recevoir des paiements. CommonLink n'exploite ni ne conserve les informations relatives aux autres paiements reçus par l'organisme sur HelloAsso. L'organisme peut retirer cet accès à tout moment ; la collecte de ses campagnes est alors suspendue.",
+            "7.5 CommonLink peut, pour un motif lié au fonctionnement du service, demander à l'organisme d'encaisser auprès d'un autre prestataire de la plateforme. Elle l'en informe par écrit, en indiquant le motif et les démarches à accomplir. La collecte peut être suspendue jusqu'à ce que le nouveau compte puisse recevoir des paiements. Les dons déjà reçus ne sont pas affectés. L'organisme qui refuse ce changement peut mettre fin aux présentes dans les conditions de l'article 33."
           ],
           "title": "Article 7. Compte de paiement"
         },
@@ -538,7 +542,8 @@
           "paragraphs": [
             "Les dons ne transitent jamais par CommonLink. Elle n'encaisse, ne conserve et ne reverse aucun don, et les sommes collectées ne figurent à aucun moment dans ses comptes.",
             "Ni CommonLink, ni le prestataire d'initiation de paiement ne détiennent les fonds à un quelconque moment.",
-            "Les dons sont acquis à l'organisme dès leur réception."
+            "Les dons sont acquis à l'organisme dès leur réception.",
+            "Lorsque l'organisme encaisse par HelloAsso, les dons restent sur son compte de paiement jusqu'à leur versement sur son compte bancaire, selon le rythme qu'il choisit dans son espace HelloAsso."
           ],
           "title": "Article 9. Les fonds"
         },
@@ -574,13 +579,18 @@
         {
           "paragraphs": [
             "L'organisme s'engage à effectuer depuis la plateforme les paiements financés par les dons collectés pour une campagne.",
-            "Cet engagement est au coeur du service : c'est lui qui permet aux donateurs de voir l'usage des sommes qu'ils ont versées."
+            "Cet engagement est au coeur du service : c'est lui qui permet aux donateurs de voir l'usage des sommes qu'ils ont versées.",
+            "Cet engagement porte sur les dons reçus par l'intermédiaire de la plateforme. Les sommes que l'organisme reçoit sur ses formulaires HelloAsso, ou par tout autre moyen extérieur à la plateforme, n'en relèvent pas.",
+            "Un paiement effectué depuis la plateforme ne peut être financé que par des dons arrivés sur le compte bancaire de l'organisme. Un don encaissé par HelloAsso est réputé arrivé deux jours ouvrés après l'émission, par HelloAsso, du virement qui le contient, ou plus tôt si l'organisme confirme sur la plateforme avoir reçu ce virement. En confirmant, l'organisme atteste l'exactitude de cette information.",
+            "Lorsqu'un incident empêche CommonLink de constater un virement, notamment une indisponibilité de HelloAsso ou une interruption de l'accès au compte HelloAsso de l'organisme, CommonLink peut, à la demande de l'organisme, rendre disponibles les dons concernés sur présentation de la ligne de son relevé bancaire faisant apparaître ce virement. Cette décision est motivée et consignée.",
+            "Tant que la plateforme ne permet pas d'effectuer des paiements pour les organismes qui encaissent par HelloAsso, l'engagement prévu au premier alinéa est suspendu pour ces organismes. Les paiements qu'ils effectuent pendant cette période hors de la plateforme ne sont ni tracés ni publiés."
           ],
           "title": "Article 14. Traçage des paiements"
         },
         {
           "paragraphs": [
             "CommonLink publie, sur la page de chaque campagne, les paiements effectués par l'organisme depuis la plateforme, avec leur destinataire et leur montant, ainsi que la part des fonds collectés qu'ils représentent.",
+            "Lorsque le destinataire est une personne physique, son nom n'est pas publié : le paiement apparaît avec la nature de la dépense et son montant. Les rémunérations apparaissent en un montant groupé. Cette règle ne vise pas le professionnel immatriculé payé pour son activité, publié comme toute entreprise. L'organisme informe les personnes qu'il paie depuis la plateforme du traitement de leurs données par CommonLink, décrit dans sa politique de confidentialité.",
             "Cette publication est une modalité du service, acceptée par l'organisme. Elle est factuelle et ne comporte aucune appréciation de son comportement.",
             "L'organisme peut à tout moment ajouter un commentaire expliquant tout ou partie du montant non tracé. Ce commentaire est publié avec l'information."
           ],
@@ -597,6 +607,8 @@
           "paragraphs": [
             "L'organisme déclare relever des catégories mentionnées aux articles 200 et 238 bis du code général des impôts, et être en mesure de délivrer des reçus fiscaux. CommonLink ne vérifie pas cette éligibilité.",
             "L'organisme donne mandat à CommonLink d'établir et de transmettre les reçus fiscaux en son nom et pour son compte, à partir des informations qu'il fournit. Les reçus sont émis sous la seule responsabilité de l'organisme, qui en est le déclarant.",
+            "Le reçu porte sur le seul montant du don. La contribution volontaire que le donateur peut verser à HelloAsso n'est pas un don à l'organisme et n'y figure pas.",
+            "Les dons reçus par l'organisme sur ses formulaires HelloAsso ne relèvent pas du présent mandat.",
             "L'organisme demeure seul redevable des obligations déclaratives lui incombant, notamment de la déclaration annuelle du montant global des dons et du nombre de reçus délivrés."
           ],
           "title": "Article 17. Reçus fiscaux"
@@ -619,24 +631,29 @@
           "paragraphs": [
             "Lorsque l'organisme met en ligne, sur son propre nom de domaine, une page de collecte alimentée par CommonLink, il en est l'éditeur.",
             "Il y fait figurer ses propres mentions légales et indique que le service de collecte est fourni par CommonLink.",
+            "L'organisme ne modifie pas les mentions relatives au prestataire de paiement que contient le formulaire, notamment le texte et le bouton fournis par HelloAsso.",
             "Les données saisies par les donateurs sur cette page sont traitées dans les conditions convenues entre les parties, précisées en annexe."
           ],
           "title": "Article 20. Pages de collecte hébergées par l'organisme"
         },
         {
           "paragraphs": [
-            "CommonLink perçoit une commission de 10 % hors taxes du montant des dons encaissés au cours du mois, soit 12 % toutes taxes comprises au taux de taxe sur la valeur ajoutée en vigueur.",
-            "Cette commission couvre l'intégralité du service, y compris les frais du prestataire d'encaissement, qui ne sont jamais refacturés à l'organisme.",
+            "CommonLink perçoit une commission sur les dons encaissés, dont le taux dépend du lieu d'établissement de l'organisme :",
+            "– pour les organismes établis en France, 8 % hors taxes, soit 9,6 % toutes taxes comprises au taux de taxe sur la valeur ajoutée en vigueur ;",
+            "– pour les organismes établis hors de France, lorsque le service leur sera ouvert, 10 % hors taxes, soit 12 % toutes taxes comprises au taux en vigueur.",
+            "Cette commission couvre l'intégralité du service, y compris, le cas échéant, les frais du prestataire de paiement, qui ne sont jamais refacturés à l'organisme.",
             "Il n'existe aucun autre frais : ni abonnement, ni frais d'ouverture, ni frais par transaction, ni frais de virement, ni frais de sortie. Il n'existe aucun montant minimum de facturation."
           ],
           "title": "Article 21. Prix"
         },
         {
           "paragraphs": [
-            "La commission est facturée en fin de mois sur la base des dons encaissés au cours du mois. Aucune facture n'est émise pour un mois sans collecte.",
-            "La facture est réglée par virement, au plus tard à la fin du mois suivant celui de son émission.",
-            "La commission n'est jamais prélevée sur les dons.",
-            "Un don annulé après facturation donne lieu à régularisation sur la facture suivante."
+            "La commission due sur chaque don est réglée par prélèvement SEPA, trente jours ouvrés après la date de paiement du don.",
+            "À l'inscription, l'organisme indique le compte bancaire à débiter et signe en ligne un mandat de prélèvement SEPA au profit de CommonLink. La collecte ne peut commencer qu'après la signature de ce mandat.",
+            "CommonLink émet en fin de mois une facture récapitulative des commissions dues sur les dons encaissés au cours du mois. Aucune facture n'est émise pour un mois sans collecte. La facture indique le montant et la date de chaque prélèvement, et vaut pré-notification. Les parties conviennent qu'elle est adressée au moins cinq jours calendaires avant le premier prélèvement qu'elle annonce.",
+            "La commission n'est jamais déduite des dons.",
+            "Un don remboursé ou annulé avant le prélèvement de sa commission entraîne l'annulation de ce prélèvement. Après le prélèvement, la commission correspondante est déduite du prélèvement suivant ou remboursée à l'organisme.",
+            "En cas de rejet d'un prélèvement, CommonLink en informe l'organisme et peut le présenter à nouveau. Les articles 23 et 31 s'appliquent."
           ],
           "title": "Article 22. Facturation et règlement"
         },
@@ -724,9 +741,9 @@
             "Les campagnes en cours sont clôturées. L'organisme publie le bilan prévu à l'article 16.",
             "Les dons déjà reçus lui demeurent acquis. Les dons récurrents en cours prennent fin, et les donateurs concernés en sont informés.",
             "Les pages des campagnes restent accessibles.",
-            "Le compte de paiement ouvert au nom de l'organisme lui demeure acquis.",
+            "Le compte de paiement ouvert au nom de l'organisme lui demeure acquis. Lorsque l'organisme encaisse par HelloAsso, CommonLink supprime les éléments d'accès à son compte HelloAsso. L'organisme peut retirer de son espace HelloAsso l'adresse de notification de CommonLink et y régénérer ses identifiants.",
             "Les commissions dues au titre des dons encaissés avant la fin du contrat restent exigibles.",
-            "En cas de cessation d'activité de CommonLink, l'organisme conserve son compte de paiement, son compte bancaire et les fonds qu'il a collectés. Les organismes et les donateurs sont informés préalablement, et les pages des campagnes restent accessibles.",
+            "En cas de cessation d'activité de CommonLink, l'organisme conserve son compte de paiement, son compte bancaire et les fonds qu'il a collectés. Les organismes et les donateurs sont informés préalablement, et les pages des campagnes restent accessibles. CommonLink supprime alors les éléments d'accès aux comptes HelloAsso des organismes et désactive son adresse de notification.",
             "La fin du contrat n'entraîne pas la suppression immédiate des données de l'organisme. CommonLink conserve celles que la loi lui impose de conserver, notamment pendant cinq ans au titre de ses obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme. À l'expiration de ces durées, les données sont supprimées."
           ],
           "title": "Article 34. Effets de la fin du contrat"
@@ -745,7 +762,7 @@
             "Toute réclamation peut être adressée par courriel à reclamations@common-link.org, par courrier à CommonLink, Service Réclamations, 1047 Chemin des Impiniers, 06220 Vallauris, ou par téléphone au 04 23 40 02 06. Une réclamation formulée par téléphone et non résolue immédiatement doit être confirmée par écrit.",
             "CommonLink accuse réception de toute réclamation écrite dans un délai maximal de dix jours ouvrables à compter de son envoi, sauf si une réponse définitive est apportée dans ce même délai, et y répond de façon motivée dans un délai maximal de deux mois à compter de l'envoi de la première réclamation écrite.",
             "Ces délais courent à compter de l'envoi de la réclamation, et non de la date à laquelle CommonLink en prend connaissance.",
-            "Une réclamation portant sur un service opéré par un prestataire de CommonLink, notamment l'encaissement des dons ou l'exécution d'un paiement, est traitée par CommonLink et n'est pas renvoyée vers ce prestataire.",
+            "Une réclamation portant sur l'encaissement d'un don ou sur l'exécution d'un paiement est reçue et suivie par CommonLink, y compris lorsque le service est fourni par le prestataire de paiement ou par Bridge. Lorsque seul ce prestataire peut y répondre, notamment pour une contribution volontaire versée à HelloAsso, CommonLink lui transmet la réclamation, en informe son auteur et lui indique le service de réclamations du prestataire.",
             "Les modalités complètes sont décrites sur la <complaints>page Réclamations</complaints> du site."
           ],
           "title": "Article 36. Nous contacter et réclamations"
@@ -800,9 +817,10 @@
             {
               "paragraphs": [
                 "Chaque partie est responsable de traitement pour les finalités qu'elle détermine, et aucune n'agit comme sous-traitant de l'autre.",
-                "CommonLink est responsable de traitement pour le fonctionnement de la plateforme, la réalisation du don, l'émission du reçu fiscal pour le compte de l'Organisme, la publication des paiements tracés, et ses obligations légales de vigilance et de conservation.",
+                "CommonLink est responsable de traitement pour le fonctionnement de la plateforme, la réalisation du don, y compris la transmission au prestataire de paiement des données nécessaires au paiement, l'émission du reçu fiscal pour le compte de l'Organisme, la publication des paiements tracés, et ses obligations légales de vigilance et de conservation.",
                 "L'Organisme est responsable de traitement pour l'usage qu'il fait des données qui lui sont transmises, notamment les remerciements, l'information sur ses actions et ses sollicitations ultérieures, ainsi que pour ses obligations comptables et déclaratives.",
-                "Par exception, lorsque le don est effectué sur une page éditée par l'Organisme, les parties sont responsables conjointes de la collecte des données saisies par le donateur et de leur transmission à CommonLink, dans les conditions de l'article 6."
+                "Par exception, lorsque le don est effectué sur une page éditée par l'Organisme, les parties sont responsables conjointes de la collecte des données saisies par le donateur et de leur transmission à CommonLink, dans les conditions de l'article 6.",
+                "Lorsque l'Organisme encaisse par HelloAsso, CommonLink accède à son compte HelloAsso dans les limites du mandat prévu à l'article 7.4 des présentes. Elle est responsable de traitement pour les données qu'elle y lit afin de créer et de suivre les paiements de ses campagnes. Les notifications que HelloAsso lui adresse au sujet des autres paiements de l'Organisme, notamment les adhésions et la billetterie, sont écartées dès leur réception, sans être conservées ni exploitées."
               ],
               "title": "2. Qui est responsable de quoi"
             },
@@ -846,7 +864,7 @@
             {
               "paragraphs": [
                 "CommonLink fait appel à des prestataires, notamment pour l'hébergement et l'acheminement des courriers électroniques. Leur liste à jour, ainsi que les éventuels transferts de données en dehors de l'Union européenne et leurs garanties, figurent dans sa politique de confidentialité.",
-                "Le prestataire d'encaissement et l'établissement de paiement qui exécute les paiements sortants traitent les données pour leur propre compte, dans les conditions prévues aux articles 7 et 8. Ils ne sont pas des prestataires de CommonLink."
+                "Le prestataire de paiement de l'Organisme, HelloAsso ou Mollie, et l'établissement de paiement qui exécute les paiements sortants traitent les données pour leur propre compte, dans les conditions prévues aux articles 7 et 8. Ils ne sont pas des sous-traitants de CommonLink."
               ],
               "title": "7. Prestataires"
             },
@@ -868,7 +886,7 @@
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 5 octobre 2026",
+      "lastUpdated": "Version en vigueur au 17 novembre 2026",
       "title": "Conditions générales d'utilisation applicables aux organismes bénéficiaires"
     },
     "cguDonors": {
@@ -883,7 +901,7 @@
         },
         {
           "paragraphs": [
-            "CommonLink : la société identifiée en tête des présentes. Site : le site accessible à l'adresse www.common-link.org. Plateforme : l'environnement numérique proposé par CommonLink permettant aux organismes bénéficiaires de présenter des campagnes et aux donateurs de réaliser et de suivre leurs dons. Donateur : toute personne réalisant un don via la plateforme. Organisme bénéficiaire : l'association ou le fonds de dotation bénéficiaire du don. Campagne : la page dédiée à une opération de collecte présentée par un organisme bénéficiaire. Don : le versement effectué sans contrepartie, avec une intention libérale, au bénéfice d'un organisme."
+            "CommonLink : la société identifiée en tête des présentes. Site : le site accessible à l'adresse www.common-link.org. Plateforme : l'environnement numérique proposé par CommonLink permettant aux organismes bénéficiaires de présenter des campagnes et aux donateurs de réaliser et de suivre leurs dons. Donateur : toute personne réalisant un don via la plateforme. Organisme bénéficiaire : l'association ou le fonds de dotation bénéficiaire du don. Campagne : la page dédiée à une opération de collecte présentée par un organisme bénéficiaire. Don : le versement effectué sans contrepartie, avec une intention libérale, au bénéfice d'un organisme. Prestataire de paiement : l'établissement auprès duquel l'organisme bénéficiaire encaisse ses dons, HelloAsso ou Mollie. Page de paiement : la page du prestataire de paiement sur laquelle le donateur règle son don. Contribution volontaire : la somme facultative que HelloAsso propose au donateur de lui verser, en plus de son don, sur sa page de paiement. Elle revient à HelloAsso et ne constitue pas un don à l'organisme."
           ],
           "title": "Article 2. Définitions"
         },
@@ -898,14 +916,14 @@
         {
           "paragraphs": [
             "CommonLink est un intermédiaire en financement participatif. Son rôle est de mettre en relation des donateurs et des organismes porteurs de projets d'intérêt général, et de publier les informations relatives à l'utilisation des dons collectés.",
-            "CommonLink n'est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires habilités.",
+            "CommonLink n'est pas un établissement de paiement. Les services de paiement sont fournis par des prestataires agréés : HelloAsso, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 17678Q, ou Mollie, établissement de monnaie électronique agréé aux Pays-Bas, selon l'organisme bénéficiaire.",
             "CommonLink n'est pas le bénéficiaire du don. Elle ne dirige pas l'activité des organismes présents sur la plateforme et ne se substitue pas à eux."
           ],
           "title": "Article 4. Statut et rôle de CommonLink"
         },
         {
           "paragraphs": [
-            "Les dons ne transitent jamais par CommonLink. Ils sont encaissés sur un compte ouvert au nom de l'organisme bénéficiaire auprès du prestataire d'encaissement, puis versés sur son compte bancaire.",
+            "Les dons ne transitent jamais par CommonLink. Ils sont encaissés sur un compte ouvert au nom de l'organisme bénéficiaire auprès de son prestataire de paiement, puis versés sur son compte bancaire.",
             "CommonLink n'encaisse, ne conserve et ne reverse aucun don. Les sommes collectées ne figurent à aucun moment dans ses comptes, et elle ne peut ni se les approprier ni en disposer.",
             "CommonLink ne collecte, ne stocke et ne traite pas directement les données complètes de carte bancaire."
           ],
@@ -944,7 +962,8 @@
         {
           "paragraphs": [
             "Le donateur choisit une campagne, un montant et un moyen de paiement. Le don est réalisé lorsque le paiement est autorisé.",
-            "Les dons sont réalisés en euros. Les moyens de paiement proposés sont indiqués au moment du don."
+            "Les dons sont réalisés en euros. Les moyens de paiement proposés sont indiqués au moment du don.",
+            "Le donateur règle son don sur la page de paiement du prestataire de l'organisme, dont il accepte les conditions pour ce paiement. Sur la page de paiement HelloAsso, une contribution volontaire à HelloAsso peut lui être proposée. Elle est facultative et distincte du don."
           ],
           "title": "Article 10. Réalisation d'un don ponctuel"
         },
@@ -978,6 +997,7 @@
             "L'article précédent ne fait pas obstacle à la régularisation de ce qui n'est pas un don.",
             "Un double paiement ou une erreur technique constitue un paiement indu et donne lieu à régularisation.",
             "Une opération de paiement non autorisée, notamment en cas d'utilisation frauduleuse d'un moyen de paiement, relève de la réglementation applicable aux services de paiement, et les droits que le donateur en tire ne sont pas affectés par les présentes.",
+            "Lorsque le don a été réglé sur la page de paiement HelloAsso, le remboursement est effectué par l'organisme bénéficiaire depuis son espace HelloAsso. CommonLink reçoit la demande et la transmet à l'organisme. Une demande portant sur la contribution volontaire relève de HelloAsso.",
             "Toute demande est adressée à contact@common-link.org"
           ],
           "title": "Article 14. Paiements indus et opérations non autorisées"
@@ -993,6 +1013,7 @@
             "Le reçu fiscal est établi et délivré par l'organisme bénéficiaire, qui est seul responsable de son éligibilité au régime fiscal du mécénat et de la régularité du document.",
             "CommonLink met à sa disposition un outil d'émission et transmet le reçu au donateur pour son compte. CommonLink ne vérifie pas l'éligibilité fiscale de l'organisme et ne garantit ni la validité du reçu ni l'obtention d'une réduction d'impôt.",
             "L'organisme bénéficiaire atteste relever des catégories mentionnées aux articles 200 et 238 bis du code général des impôts.",
+            "Le reçu porte sur le seul montant du don. La contribution volontaire éventuellement versée à HelloAsso n'y figure pas. L'attestation de paiement adressée par HelloAsso n'est pas un reçu fiscal. Un don remboursé entraîne l'annulation du reçu correspondant ; le donateur en est informé.",
             "Les certificats numériques et éléments de preuve complémentaires éventuellement mis à disposition ne constituent pas des reçus fiscaux."
           ],
           "title": "Article 16. Reçu fiscal"
@@ -1006,7 +1027,7 @@
         },
         {
           "paragraphs": [
-            "CommonLink publie, pour chaque campagne, les versements effectués par l'organisme bénéficiaire vers ses propres bénéficiaires, avec leur destinataire et leur montant, ainsi que le bilan de clôture établi par l'organisme.",
+            "CommonLink publie, pour chaque campagne, les versements effectués par l'organisme bénéficiaire vers ses propres bénéficiaires, avec leur destinataire et leur montant, ainsi que le bilan de clôture établi par l'organisme. Lorsque le destinataire est une personne physique, son nom n'est pas publié, sauf s'il s'agit d'un professionnel immatriculé payé pour son activité : le paiement apparaît avec la nature de la dépense et son montant, et les rémunérations en un montant groupé.",
             "Cette information porte sur les mouvements que CommonLink constate. Elle ne constitue ni un audit, ni une certification, ni une vérification de l'usage réel des sommes versées, qui relèvent de la seule responsabilité de l'organisme bénéficiaire.",
             "Les informations descriptives d'une campagne, notamment son objet, son budget prévisionnel et son résultat attendu, sont fournies par l'organisme bénéficiaire sous sa responsabilité."
           ],
@@ -1023,6 +1044,7 @@
         {
           "paragraphs": [
             "L'utilisation de CommonLink est gratuite pour le donateur. Aucun frais ne lui est facturé et aucune somme n'est prélevée sur son don.",
+            "La contribution volontaire que HelloAsso peut proposer au moment du paiement est facultative. Elle s'ajoute au don sans le réduire, et revient à HelloAsso.",
             "CommonLink est rémunérée par les organismes bénéficiaires, selon les modalités publiées sur sa page tarifaire."
           ],
           "title": "Article 20. Gratuité pour le donateur"
@@ -1037,6 +1059,7 @@
         {
           "paragraphs": [
             "Les données du donateur sont traitées pour permettre la réalisation du don, l'émission du reçu fiscal, l'exécution des obligations légales de CommonLink et, le cas échéant, la gestion de son espace personnel.",
+            "Les données nécessaires au paiement sont transmises au prestataire de paiement de l'organisme, qui les traite pour son propre compte.",
             "Les finalités, les durées de conservation et les moyens d'exercer ses droits figurent dans la <privacy>politique de confidentialité</privacy> accessible sur le site. Toute demande peut être adressée à contact@common-link.org"
           ],
           "title": "Article 22. Données personnelles"
@@ -1103,6 +1126,7 @@
             "Toute réclamation peut être adressée par courriel à reclamations@common-link.org, par courrier à CommonLink, Service Réclamations, 1047 Chemin des Impiniers, 06220 Vallauris, ou par téléphone au 04 23 40 02 06. Une réclamation formulée par téléphone et non résolue immédiatement doit être confirmée par écrit.",
             "CommonLink accuse réception de toute réclamation écrite dans un délai maximal de dix jours ouvrables à compter de son envoi, sauf si une réponse définitive est apportée dans ce même délai, et y répond de façon motivée dans un délai maximal de deux mois à compter de l'envoi de la première réclamation écrite.",
             "Ces délais courent à compter de l'envoi de la réclamation, et non de la date à laquelle CommonLink en prend connaissance.",
+            "Une réclamation portant sur le paiement est reçue et suivie par CommonLink. Lorsque seul le prestataire de paiement peut y répondre, notamment pour une contribution volontaire versée à HelloAsso, CommonLink la lui transmet, en informe son auteur et lui indique le service de réclamations du prestataire.",
             "Les modalités complètes sont décrites sur la <complaints>page Réclamations</complaints> du site.",
             "Si la réponse apportée ne satisfait pas le donateur, celui-ci conserve la possibilité de saisir les tribunaux compétents."
           ],
@@ -1150,7 +1174,7 @@
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 9 septembre 2026",
+      "lastUpdated": "Version en vigueur au 17 novembre 2026",
       "title": "Conditions générales d'utilisation applicables aux donateurs"
     },
     "complaints": {

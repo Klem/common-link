@@ -13,7 +13,9 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'fr',
 }));
 
-vi.mock('@/lib/api/legal', () => ({
+vi.mock('@/lib/api/legal', async (importOriginal) => ({
+  // Keeps the real isLegalVersionOutdated: the 409 branch is part of what is tested.
+  ...(await importOriginal<typeof import('@/lib/api/legal')>()),
   getLegalAcceptanceState: vi.fn(),
 }));
 
@@ -64,7 +66,7 @@ beforeEach(() => {
   // Default: CGU already accepted, so pre-existing tests exercising other gates aren't also
   // blocked on a checkbox they don't know about.
   vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-    documentType: 'CGU',
+    documentType: 'CGV',
     currentVersion: '2026-08-26',
     accepted: true,
   });
@@ -201,7 +203,7 @@ describe('PrePublishModal — budget and expected outcome are blocking', () => {
 describe('PrePublishModal — CGU acceptance is blocking', () => {
   it('the publish button is always enabled — CGU acceptance is enforced by the backend', async () => {
     vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       currentVersion: '2026-08-26',
       accepted: false,
     });
@@ -229,13 +231,37 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
     fireEvent.click(screen.getByText('confirm'));
 
-    expect(onConfirm).toHaveBeenCalledWith(true);
+    expect(onConfirm).toHaveBeenCalledWith(true, '2026-08-26');
+  });
+
+  it('reloads the CGU state and asks again when publishing hits LEGAL_VERSION_OUTDATED', async () => {
+    vi.mocked(getLegalAcceptanceState).mockClear();
+    vi.mocked(getLegalAcceptanceState).mockResolvedValue({
+      documentType: 'CGV',
+      currentVersion: '2026-08-26',
+      accepted: false,
+    });
+    const onConfirm = vi.fn().mockRejectedValue({ response: { status: 409, data: { code: 'LEGAL_VERSION_OUTDATED' } } });
+    renderWith({ onConfirm });
+
+    const checkbox = await waitFor(() => screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement);
+    await waitFor(() => expect(checkbox).toBeEnabled());
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByText('confirm'));
+
+    await waitFor(() => expect(screen.getByText('outdated')).toBeInTheDocument());
+    expect(onConfirm).toHaveBeenCalledWith(true, '2026-08-26');
+    expect(getLegalAcceptanceState).toHaveBeenCalledTimes(2);
+    // Associations accept their own terms (document CGV), not the donor CGU.
+    expect(getLegalAcceptanceState).toHaveBeenCalledWith('CGV');
+    await waitFor(() => expect((screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement).checked).toBe(false));
   });
 
   it('opens the CGU text in a modal instead of navigating away', async () => {
     vi.mocked(getLegalDocument).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       version: '2026-08-26',
+      format: 'TEXT',
       content: 'Texte des CGU.',
       publishedAt: '2026-08-26T00:00:00Z',
     });
@@ -244,7 +270,7 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
     fireEvent.click(screen.getByText('cgu.link'));
 
-    expect(getLegalDocument).toHaveBeenCalledWith('CGU');
+    expect(getLegalDocument).toHaveBeenCalledWith('CGV');
     await waitFor(() => {
       expect(screen.getByText('Texte des CGU.')).toBeInTheDocument();
     });
@@ -252,13 +278,14 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
 
   it('opening the CGU text does not itself check the unaccepted checkbox', async () => {
     vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       currentVersion: '2026-08-26',
       accepted: false,
     });
     vi.mocked(getLegalDocument).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       version: '2026-08-26',
+      format: 'TEXT',
       content: 'Texte des CGU.',
       publishedAt: '2026-08-26T00:00:00Z',
     });

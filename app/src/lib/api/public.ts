@@ -49,6 +49,10 @@ export interface CreateGuestDonationRequest {
   donorCountry: string;
   anonymousDisplay: boolean;
   consent: boolean;
+  /** Express acceptance of the donor CGU (art. 1740 A CGI). */
+  cguAccepted: boolean;
+  /** `LegalDocumentDto.version` of the CGU text displayed — 409 `LEGAL_VERSION_OUTDATED` if no longer current. */
+  cguVersion: string;
   sourceSite?: string | null;
   /** UI locale (e.g. "fr", "en"). Used by the backend to build locale-prefixed redirect URLs. */
   locale?: string;
