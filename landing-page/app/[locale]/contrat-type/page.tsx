@@ -3,10 +3,10 @@ import { getTranslations } from 'next-intl/server';
 import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
 /**
- * Contrat type entre le donateur et l'organisme bénéficiaire.
- * Markup et classes repris à l'identique de la maquette (`p16-contrat.html` :
+ * Model agreement between the donor and the beneficiary organisation.
+ * Markup and classes taken verbatim from the mockup (`p16-contrat.html`:
  * `.legal-subnav`, `.legal-hero`, `.legal-body`, `.legal-toc-auto`).
- * Ne pas remplacer par des classes Tailwind : le CSS de la maquette est la source de vérité.
+ * Do not replace with Tailwind classes: the mockup CSS is the source of truth.
  */
 interface Article {
   title: string;
@@ -34,49 +34,53 @@ export default async function ModelAgreementPage({ params }: { params: Promise<{
 
   return (
     <main>
-      <LegalSubnav active="modelAgreement" />
+      {/* The mockup scopes the legal-page classes under this container. */}
+      <div className="legal-page">
+        <LegalSubnav active="modelAgreement" />
 
-      <div className="legal-hero">
-        <div className="max-w">
-          <h1>{t('title')}</h1>
-          <p className="legal-meta">{t('meta')}</p>
-        </div>
-      </div>
-
-      <div className="legal-body">
-        <div className="legal-toc-auto">
-          <strong>{tl('tocTitle')}</strong>
-          <ol>
-            {articles.map((article, i) => (
-              <li key={i}>
-                <a href={`#p16-a${i}`}>{article.title}</a>
-              </li>
-            ))}
-          </ol>
+        <div className="legal-hero">
+          <div className="max-w">
+            <h1>{t('title')}</h1>
+            <p className="legal-meta">{t('meta')}</p>
+            <p className="legal-meta">{t('lastUpdated')}</p>
+          </div>
         </div>
 
-        <p>{t('intro')}</p>
+        <div className="legal-body">
+          <div className="legal-toc-auto">
+            <strong>{tl('tocTitle')}</strong>
+            <ol>
+              {articles.map((article, i) => (
+                <li key={i}>
+                  <a href={`#p16-a${i}`}>{article.title}</a>
+                </li>
+              ))}
+            </ol>
+          </div>
 
-        <h2>{t('parties.title')}</h2>
-        <p>{t('parties.p1')}</p>
-        <p>{t('parties.donor')}</p>
-        <p>{t('parties.org')}</p>
+          <p>{t('intro')}</p>
 
-        <h2>{t('intermediary.title')}</h2>
-        <p>{t('intermediary.p1')}</p>
-        <p>{t('intermediary.p2')}</p>
+          <h2>{t('parties.title')}</h2>
+          <p>{t('parties.p1')}</p>
+          <p>{t('parties.donor')}</p>
+          <p>{t('parties.org')}</p>
 
-        <h2>{t('complaintsService.title')}</h2>
-        <p>{t('complaintsService.p1')}</p>
+          <h2>{t('intermediary.title')}</h2>
+          <p>{t('intermediary.p1')}</p>
+          <p>{t('intermediary.p2')}</p>
 
-        {articles.map((article, i) => (
-          <Fragment key={i}>
-            <h3 id={`p16-a${i}`}>{article.title}</h3>
-            {article.paragraphs?.map((paragraph, j) => (
-              <p key={j}>{paragraph}</p>
-            ))}
-          </Fragment>
-        ))}
+          <h2>{t('complaintsService.title')}</h2>
+          <p>{t('complaintsService.p1')}</p>
+
+          {articles.map((article, i) => (
+            <Fragment key={i}>
+              <h3 id={`p16-a${i}`}>{article.title}</h3>
+              {article.paragraphs?.map((paragraph, j) => (
+                <p key={j}>{paragraph}</p>
+              ))}
+            </Fragment>
+          ))}
+        </div>
       </div>
     </main>
   );
