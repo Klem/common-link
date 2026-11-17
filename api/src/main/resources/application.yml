@@ -46,6 +46,13 @@ app:
     secret: ${COMMON_LINK_SECRET}
     access-token-expiration: P3650D
   frontend-url: ${COMMON_LINK_FRONTEND_URL:http://localhost:3000}
+  # CGU/CGV injected at startup from the landing site's texts (LegalDocumentSeeder). The source file is
+  # landing-page/messages/fr.json, copied into the jar by processResources. site-base-url prefixes the
+  # links of the stored texts: changing it publishes new versions.
+  legal:
+    seed-on-startup: true
+    source: classpath:legal/landing-fr.json
+    site-base-url: ${APP_LEGAL_SITE_BASE_URL:https://www.common-link.org}
   cookies:
     secure: ${APP_COOKIES_SECURE:true}
     same-site: Strict
@@ -133,13 +140,16 @@ app:
     demo-mode: true
     api-url: ${VOP_BASE_URL:https://api.mollie.com/v2/business-accounts/payee-verifications}
     api-token: ${VOP_API_TOKEN:}
+  oauth:
+    # AES-256-GCM key (Base64, 32 bytes) encrypting the payment providers' OAuth tokens at rest
+    # (Mollie, HelloAsso) — see OAuthTokenConverter. Changing its value makes stored tokens unreadable.
+    token-enc-key: ${OAUTH_TOKEN_ENC_KEY:}
   mollie:
     api-key: ${MOLLIE_API_KEY:}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}
     test-mode: ${MOLLIE_TEST_MODE:true}
-    token-enc-key: ${MOLLIE_TOKEN_ENC_KEY:}
     # api-key ci-dessus = clé de PAIEMENT, ne sert PAS au Connect (incapable d'appeler /v2/client-links)
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID}
@@ -195,6 +205,12 @@ app:
     # (ComplianceAlertEmailListener). A role address, not a person: the alert must keep reaching the
     # compliance function across staff changes. Blank disables the notification and logs a warning.
     alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL:compliance@common-link.org}
+    # Scheduled integrity check of the compliance audit log hash chain (ComplianceAuditChainScheduler);
+    # a broken or unverifiable chain raises a technical alert.
+    audit-chain-check:
+      enabled: true
+      initial-delay-ms: 600000
+      delay-ms: 86400000
   donation:
     # Collection cap enforced at payment initiation (DonationCapProperties). A donation beyond the
     # cap is refused before any money moves — never refunded afterwards, since the receipt is
@@ -204,9 +220,50 @@ app:
       # the last donation of a campaign over a few euros of overshoot.
       margin-percent: ${APP_DONATION_CAP_MARGIN_PERCENT:10}
       # Open payment sessions are counted against the cap for this long, so simultaneous checkouts
-      # cannot collectively overshoot. Must stay above Mollie's ~15 min expiry of an untouched
-      # payment, otherwise capacity is released while it is still payable.
-      reservation-ttl: ${APP_DONATION_CAP_RESERVATION_TTL:PT30M}
+      # cannot collectively overshoot. Must stay above every provider's payable window (Mollie ~15 min,
+      # HelloAsso 45 min before abandonment), otherwise capacity is released while it is still payable.
+      reservation-ttl: ${APP_DONATION_CAP_RESERVATION_TTL:PT50M}
+
+  payments:
+    # Payment provider given to a newly created association (PaymentsProperties); never re-read
+    # afterwards. Existing associations stay MOLLIE; the curator sets MOLLIE by hand on request.
+    default-provider: ${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}
+    helloasso:
+      # Cash-out tracking of HelloAsso donations (HelloAssoCashOutProperties). TARGET2 business days.
+      # Settlement delay after HelloAsso's payout date: provisional value (CEO decision Q1, pending HelloAsso's answer).
+      cashout-settlement-business-days: ${HELLOASSO_CASHOUT_SETTLEMENT_BUSINESS_DAYS:2}
+      cashout-in-transit-alert-business-days: ${HELLOASSO_CASHOUT_IN_TRANSIT_ALERT_BUSINESS_DAYS:5}
+      cashout-sync-initial-delay-ms: ${HELLOASSO_CASHOUT_SYNC_INITIAL_DELAY_MS:300000}
+      # First pass after startup, then every 24 hours (HelloAssoCashOutSyncScheduler, fixed delay).
+      cashout-sync-enabled: ${HELLOASSO_CASHOUT_SYNC_ENABLED:true}
+      cashout-sync-delay-ms: ${HELLOASSO_CASHOUT_SYNC_DELAY_MS:86400000}
+      cashout-refresh-min-interval: ${HELLOASSO_CASHOUT_REFRESH_MIN_INTERVAL:PT15M}
+      cashout-refresh-timeout: ${HELLOASSO_CASHOUT_REFRESH_TIMEOUT:PT10S}
+      cashout-unknown-alert-after: ${HELLOASSO_CASHOUT_UNKNOWN_ALERT_AFTER:P3D}
+      cashout-sync-failure-alert-after: ${HELLOASSO_CASHOUT_SYNC_FAILURE_ALERT_AFTER:3}
+      # Unit of credit/debit in the payout export: EUROS | CENTS. Provisional (question U3 to HelloAsso).
+      cashout-export-amount-unit: ${HELLOASSO_CASHOUT_EXPORT_AMOUNT_UNIT:EUROS}
+
+  helloasso:
+    # HelloAsso API keys mode (HelloAssoProperties). No default for the URLs and IPs: each environment sets them
+    # (sandbox locally: https://api.helloasso-sandbox.com/v5 and /oauth2/token, IP 4.233.135.234).
+    api-base-url: ${HELLOASSO_API_BASE_URL}
+    oauth-token-url: ${HELLOASSO_OAUTH_TOKEN_URL}
+    # Frontend base URL the donor returns to after the payment. HelloAsso accepts HTTPS only.
+    redirect-base-url: ${HELLOASSO_REDIRECT_BASE_URL}
+    # Public URL of this API's HelloAsso webhook, path included (https://<api>/api/public/webhooks/helloasso);
+    # each association's notification URL is {webhook-url}/{token}. Blank = not configured.
+    webhook-url: ${HELLOASSO_WEBHOOK_URL:}
+    # Webhook source IPs (sandbox 4.233.135.234, prod 51.138.206.200), comma-separated.
+    webhook-allowed-ips: ${HELLOASSO_WEBHOOK_ALLOWED_IPS}
+    # Local / E2E mode without HelloAsso network calls — never in prod.
+    mock: ${HELLOASSO_MOCK:false}
+    token-refresh-interval: ${HELLOASSO_TOKEN_REFRESH_INTERVAL:P7D}
+    eligibility-pending-interval: ${HELLOASSO_ELIGIBILITY_PENDING_INTERVAL:PT2H}
+    eligibility-ready-interval: ${HELLOASSO_ELIGIBILITY_READY_INTERVAL:P1D}
+    reconciler-stale-after: ${HELLOASSO_RECONCILER_STALE_AFTER:PT15M}
+    checkout-abandon-after: ${HELLOASSO_CHECKOUT_ABANDON_AFTER:PT45M}
+    eligibility-refresh-rate-limit: ${HELLOASSO_ELIGIBILITY_REFRESH_RATE_LIMIT:PT1M}
 
 commonlink:
   compliance:

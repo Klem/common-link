@@ -1,13 +1,17 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LegalSubnav } from '@/components/layout/LegalSubnav';
 
 /**
- * CGU applicables aux organismes bénéficiaires.
- * Markup et classes repris à l'identique de la maquette (`p15-cgu-asso.html` :
+ * CGU for beneficiary organisations.
+ * Markup and classes taken verbatim from the mockup (`p15-cgu-asso.html`:
  * `.legal-subnav`, `.legal-hero`, `.legal-body`, `.legal-toc-auto`).
- * Ne pas remplacer par des classes Tailwind : le CSS de la maquette est la source de vérité.
+ * Do not replace with Tailwind classes: the mockup CSS is the source of truth.
+ *
+ * The texts (`legal.cguAssociations` in `messages/fr.json`) are also the document stored as `CGV` and
+ * accepted in the app: the API bundles this file and injects every change at startup as a new version
+ * (`api/.../bootstrap/LegalDocumentSeeder.kt`).
  */
 interface Subsection {
   title: string;
@@ -18,15 +22,9 @@ interface Article {
   title: string;
   callout?: string;
   paragraphs?: string[];
-  /** Sections numérotées internes, utilisées par l'annexe 2 seule. */
+  /** Numbered inner sections, used by annex 2 only. */
   subsections?: Subsection[];
 }
-
-/** Paragraphes contenant un lien interne, indexés par `article.paragraphe`. */
-const INLINE_LINKS: Record<string, string> = {
-  '35.6': '/reclamations',
-  '41.0': '/contrat-type',
-};
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -49,6 +47,19 @@ export default async function CguAssociationsPage({ params }: { params: Promise<
   const t = await getTranslations({ locale, namespace: 'legal.cguAssociations' });
   const tl = await getTranslations({ locale, namespace: 'legal' });
   const articles = t.raw('articles') as Article[];
+  // Links are written `<privacy>…</privacy>` in the texts; `legal.linkTargets` maps each tag to its page.
+  // The API resolves the same tags the same way, so both renderings carry the same links.
+  const linkTargets = tl.raw('linkTargets') as Record<string, string>;
+  const linkTags = Object.fromEntries(
+    Object.entries(linkTargets).map(([tag, href]) => [
+      tag,
+      (chunks: ReactNode) => (
+        <Link href={href} className="legal-link">
+          {chunks}
+        </Link>
+      ),
+    ]),
+  );
 
   return (
     <main>
@@ -79,22 +90,11 @@ export default async function CguAssociationsPage({ params }: { params: Promise<
           <Fragment key={i}>
             <h3 id={`p15-a${i}`}>{article.title}</h3>
             {article.callout && <div className="legal-callout">{article.callout}</div>}
-            {article.paragraphs?.map((paragraph, j) => {
-              const href = INLINE_LINKS[`${i}.${j}`];
-              return (
-                <p key={j}>
-                  {href
-                    ? t.rich(`articles.${i}.paragraphs.${j}`, {
-                        link: (chunks) => (
-                          <Link href={href} className="legal-link">
-                            {chunks}
-                          </Link>
-                        ),
-                      })
-                    : paragraph}
-                </p>
-              );
-            })}
+            {article.paragraphs?.map((paragraph, j) => (
+              <p key={j}>
+                {paragraph.includes('<') ? t.rich(`articles.${i}.paragraphs.${j}`, linkTags) : paragraph}
+              </p>
+            ))}
             {article.subsections?.map((subsection, j) => (
               <Fragment key={`s${j}`}>
                 <h4>{subsection.title}</h4>

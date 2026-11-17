@@ -56,12 +56,14 @@ class FreezeClearanceServiceTest {
         subjectId: UUID,
         subjectType: ComplianceAlertSubjectType,
         decision: ComplianceAlertDecision = ComplianceAlertDecision.FALSE_POSITIVE,
+        origin: ComplianceAlertOrigin = ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+        status: ComplianceAlertStatus = ComplianceAlertStatus.CLOSED,
     ) = ComplianceAlert(
-        origin = ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+        origin = origin,
         subjectType = subjectType,
         subjectId = subjectId,
         severity = ComplianceAlertSeverity.HIGH,
-        status = ComplianceAlertStatus.CLOSED,
+        status = status,
         decision = decision,
         createdAt = Instant.now(),
     )
@@ -81,11 +83,15 @@ class FreezeClearanceServiceTest {
     )
 
     /** Registers the closed alerts of a subject, each dated by its `ALERT_CLOSED` position. */
-    private fun stubClosures(subjectId: UUID, vararg closures: Pair<ComplianceAlert, Long>) {
+    private fun stubClosures(
+        subjectId: UUID,
+        vararg closures: Pair<ComplianceAlert, Long>,
+        origin: ComplianceAlertOrigin = ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+    ) {
         every {
             alertRepository.findBySubjectIdAndOriginAndStatus(
                 subjectId,
-                ComplianceAlertOrigin.FREEZE_HIT_ONBOARDING,
+                origin,
                 ComplianceAlertStatus.CLOSED,
             )
         } returns closures.map { it.first }
@@ -231,5 +237,125 @@ class FreezeClearanceServiceTest {
     fun `covers is false on an empty match list`() {
         assertFalse(FreezeClearance.NONE.covers(emptyList()))
         assertFalse(FreezeClearance(setOf(ClearedPair("TECHNO", 1)), emptyList()).covers(emptyList()))
+    }
+
+    // ─── Donor ───────────────────────────────────────────────────────────────
+
+    private val donorProfileId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000030")
+
+    private fun donorAlert(
+        decision: ComplianceAlertDecision = ComplianceAlertDecision.FALSE_POSITIVE,
+        status: ComplianceAlertStatus = ComplianceAlertStatus.CLOSED,
+    ) = closedAlert(
+        donorProfileId,
+        ComplianceAlertSubjectType.DONOR,
+        decision = decision,
+        origin = ComplianceAlertOrigin.FREEZE_HIT_DONATION,
+        status = status,
+    )
+
+    /** No donor freeze alert under review — the relaxed mock would otherwise return one. */
+    private fun stubNoOpenDonorAlert() {
+        every {
+            alertRepository.findByOriginAndSubjectIdAndStatusIn(
+                ComplianceAlertOrigin.FREEZE_HIT_DONATION, donorProfileId, ComplianceAlertService.OPEN_STATUSES,
+            )
+        } returns null
+    }
+
+    private fun stubDonorClosures(vararg closures: Pair<ComplianceAlert, Long>) =
+        stubClosures(donorProfileId, *closures, origin = ComplianceAlertOrigin.FREEZE_HIT_DONATION)
+
+    /** The homonym case: the officer ruled a false positive, the next attempt must go through. */
+    @Test
+    fun `a donor false positive covers the donor's evidence up to the ruling`() {
+        stubNoOpenDonorAlert()
+        val alert = donorAlert()
+        stubDonorClosures(alert to 50L)
+        every {
+            matchRepository.findBySubjectIdAndAuditLogSeqRefLessThanEqual(donorProfileId, 50L)
+        } returns listOf(evidence("BOB L EPONGE", 4))
+
+        val clearance = service.forDonor(donorProfileId)
+
+        assertEquals(setOf(ClearedPair("BOB L EPONGE", 4)), clearance.pairs)
+        assertEquals(listOf(alert.id), clearance.alertIds)
+    }
+
+    @Test
+    fun `a donor suspicious ruling grants nothing`() {
+        stubNoOpenDonorAlert()
+        stubDonorClosures(donorAlert(decision = ComplianceAlertDecision.SUSPICIOUS) to 50L)
+
+        val clearance = service.forDonor(donorProfileId)
+
+        assertTrue(clearance.pairs.isEmpty())
+        verify(exactly = 0) { matchRepository.findBySubjectIdAndAuditLogSeqRefLessThanEqual(any(), any()) }
+    }
+
+    @Test
+    fun `a donor suspicious ruling supersedes an earlier false positive`() {
+        stubNoOpenDonorAlert()
+        stubDonorClosures(donorAlert() to 40L, donorAlert(decision = ComplianceAlertDecision.SUSPICIOUS) to 50L)
+
+        val clearance = service.forDonor(donorProfileId)
+
+        assertTrue(clearance.pairs.isEmpty())
+    }
+
+    /**
+     * One profile (one e-mail) can be screened under several names. The alert screen of the latest
+     * ruling displays every correspondence of the profile, those of the name confirmed earlier
+     * included — so a false positive ruled last lifts them too, exactly as at onboarding. Pinned
+     * here because it is a deliberate consequence of "the latest ruling governs".
+     */
+    @Test
+    fun `a donor false positive ruled last also lifts a name confirmed earlier on the same profile`() {
+        stubNoOpenDonorAlert()
+        val cleared = donorAlert()
+        stubDonorClosures(donorAlert(decision = ComplianceAlertDecision.SUSPICIOUS) to 40L, cleared to 50L)
+        every {
+            matchRepository.findBySubjectIdAndAuditLogSeqRefLessThanEqual(donorProfileId, 50L)
+        } returns listOf(evidence("NOM A", 4, seqRef = 30L), evidence("NOM B", 5, seqRef = 45L))
+
+        val clearance = service.forDonor(donorProfileId)
+
+        assertEquals(setOf(ClearedPair("NOM A", 4), ClearedPair("NOM B", 5)), clearance.pairs)
+        assertEquals(listOf(cleared.id), clearance.alertIds)
+    }
+
+    /**
+     * While a correspondence of the donor is under review, no earlier ruling lets a payment
+     * through — whichever name the next attempt uses.
+     */
+    @Test
+    fun `an open donor freeze alert suspends every clearance`() {
+        every {
+            alertRepository.findByOriginAndSubjectIdAndStatusIn(
+                ComplianceAlertOrigin.FREEZE_HIT_DONATION, donorProfileId, ComplianceAlertService.OPEN_STATUSES,
+            )
+        } returns donorAlert(status = ComplianceAlertStatus.PENDING)
+        stubDonorClosures(donorAlert() to 50L)
+
+        val clearance = service.forDonor(donorProfileId)
+
+        assertEquals(FreezeClearance.NONE, clearance)
+        verify(exactly = 0) { matchRepository.findBySubjectIdAndAuditLogSeqRefLessThanEqual(any(), any()) }
+    }
+
+    /** An onboarding ruling never speaks for a donation: rulings are read per origin. */
+    @Test
+    fun `an onboarding ruling on the same id grants no donor clearance`() {
+        stubNoOpenDonorAlert()
+        stubClosures(donorProfileId, closedAlert(donorProfileId, ComplianceAlertSubjectType.DONOR) to 50L)
+        every {
+            alertRepository.findBySubjectIdAndOriginAndStatus(
+                donorProfileId, ComplianceAlertOrigin.FREEZE_HIT_DONATION, ComplianceAlertStatus.CLOSED,
+            )
+        } returns emptyList()
+
+        val clearance = service.forDonor(donorProfileId)
+
+        assertTrue(clearance.pairs.isEmpty())
     }
 }

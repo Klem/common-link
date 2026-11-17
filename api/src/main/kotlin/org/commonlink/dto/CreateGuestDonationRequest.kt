@@ -62,14 +62,20 @@ data class CreateGuestDonationRequest(
 
     /**
      * Distinct from [consent] (RGPD only) — express acceptance of the platform's Conditions
-     * Générales d'Utilisation, required on every donation (art. 1740 A CGI proof of acceptance).
+     * Générales d'Utilisation for donors, required on every donation (art. 1740 A CGI proof of
+     * acceptance). The CGU is the only document a donor accepts: the `CGV` document is the
+     * associations' CGU and does not concern donors.
      */
     @field:AssertTrue(message = "CGU acceptance is required")
     val cguAccepted: Boolean,
 
-    /** Express acceptance of the Conditions Générales de Vente, required on every donation. */
-    @field:AssertTrue(message = "CGV acceptance is required")
-    val cgvAccepted: Boolean,
+    /**
+     * The CGU version the donation form displayed (`LegalDocumentDto.version`). Recorded as the accepted
+     * version; refused with 409 `LEGAL_VERSION_OUTDATED` when no longer current.
+     */
+    @field:NotBlank(message = "CGU version is required")
+    @field:Size(max = 32)
+    val cguVersion: String,
 
     /**
      * Date de naissance — **facultative** et **jamais persistée** pour un don widget.

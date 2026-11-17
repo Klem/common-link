@@ -15,8 +15,18 @@ import org.commonlink.security.RefreshCookieFactory
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
 import org.commonlink.service.AssociationComplianceStatusService
+import org.commonlink.service.CashOutReceiptService
+import org.commonlink.service.HelloAssoFundsReleaseService
 import org.commonlink.service.AssociationDashboardService
 import org.commonlink.service.AssociationLandingService
+import org.commonlink.service.AssociationPaymentService
+import org.commonlink.service.HelloAssoCredentialsService
+import org.commonlink.service.HelloAssoLinkService
+import org.commonlink.service.HelloAssoEligibilityService
+import org.commonlink.service.HelloAssoNotificationService
+import org.commonlink.service.HelloAssoOnboardingReminderService
+import org.commonlink.service.KybDocumentService
+import org.commonlink.service.PaymentProviderChangeService
 import org.commonlink.service.CampaignReportPdfService
 import org.commonlink.service.CampaignReportService
 import org.commonlink.service.DonorCampaignReportService
@@ -128,6 +138,17 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var associationComplianceStatusService: AssociationComplianceStatusService
     @MockkBean private lateinit var campaignReportService: CampaignReportService
     @MockkBean private lateinit var legalAcceptanceService: LegalAcceptanceService
+    @MockkBean private lateinit var associationPaymentService: AssociationPaymentService
+    @MockkBean private lateinit var paymentProviderChangeService: PaymentProviderChangeService
+    @MockkBean private lateinit var helloAssoCredentialsService: HelloAssoCredentialsService
+    @MockkBean private lateinit var helloAssoLinkService: HelloAssoLinkService
+    @MockkBean private lateinit var helloAssoEligibilityService: HelloAssoEligibilityService
+    @MockkBean private lateinit var helloAssoNotificationService: HelloAssoNotificationService
+    @MockkBean private lateinit var helloAssoOnboardingReminderService: HelloAssoOnboardingReminderService
+    @MockkBean private lateinit var kybDocumentService: KybDocumentService
+    @MockkBean private lateinit var cashOutReceiptService: CashOutReceiptService
+    @MockkBean private lateinit var campaignFundsService: org.commonlink.service.CampaignFundsService
+    @MockkBean private lateinit var helloAssoFundsReleaseService: HelloAssoFundsReleaseService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test

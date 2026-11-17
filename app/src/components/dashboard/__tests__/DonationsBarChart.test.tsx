@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { DonationsBarChart } from '../DonationsBarChart';
 import type { MonthlyPoint } from '@/types/association';

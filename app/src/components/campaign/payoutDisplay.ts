@@ -44,6 +44,8 @@ const BADGE_STYLES: Record<PayoutUiState, BadgeStyle> = {
   [PayoutUiState.RETRYABLE]: { variant: 'badge-retry', hollow: false },
   [PayoutUiState.FAILED]: { variant: 'badge-urgent', hollow: false },
   [PayoutUiState.PENDING]: { variant: 'badge-ended', hollow: true },
+  // Same neutral hue as PENDING, told apart by the filled dot: nothing more will happen to it.
+  [PayoutUiState.CANCELLED]: { variant: 'badge-ended', hollow: false },
 };
 
 /** CSS classes for a state's badge, `.badge` included. */
@@ -69,6 +71,7 @@ export const PayoutFilter = {
   FAILED: 'FAILED',
   PENDING: 'PENDING',
   DONE: 'DONE',
+  CANCELLED: 'CANCELLED',
 } as const;
 export type PayoutFilter = (typeof PayoutFilter)[keyof typeof PayoutFilter];
 
@@ -79,9 +82,15 @@ export const PAYOUT_FILTERS: readonly PayoutFilter[] = [
   PayoutFilter.FAILED,
   PayoutFilter.PENDING,
   PayoutFilter.DONE,
+  PayoutFilter.CANCELLED,
 ];
 
-/** States each pill selects. `ALL` selects everything and is handled separately. */
+/**
+ * States each pill selects. `ALL` selects everything and is handled separately.
+ *
+ * `CANCELLED` has its own pill: it asks for no click, is not a refusal, is not on its way and was
+ * never paid, so it fits none of the others.
+ */
 const FILTER_STATES: Record<Exclude<PayoutFilter, 'ALL'>, readonly PayoutUiState[]> = {
   [PayoutFilter.TODO]: [PayoutUiState.RETRYABLE, PayoutUiState.AWAITING_AUTHORISATION],
   [PayoutFilter.FAILED]: [PayoutUiState.FAILED],
@@ -91,6 +100,7 @@ const FILTER_STATES: Record<Exclude<PayoutFilter, 'ALL'>, readonly PayoutUiState
     PayoutUiState.PENDING,
   ],
   [PayoutFilter.DONE]: [PayoutUiState.CONFIRMED],
+  [PayoutFilter.CANCELLED]: [PayoutUiState.CANCELLED],
 };
 
 /** Whether a payout in `state` belongs under `filter`. */

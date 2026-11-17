@@ -90,6 +90,13 @@ app:
     secret: ${COMMON_LINK_SECRET}
     access-token-expiration: PT30M
   frontend-url: ${COMMON_LINK_FRONTEND_URL}
+  # CGU/CGV injected at startup from the landing site's texts (LegalDocumentSeeder). The source file is
+  # landing-page/messages/fr.json, copied into the jar by processResources. site-base-url prefixes the
+  # links of the stored texts: changing it publishes new versions.
+  legal:
+    seed-on-startup: true
+    source: classpath:legal/landing-fr.json
+    site-base-url: ${APP_LEGAL_SITE_BASE_URL:https://www.common-link.org}
   cookies:
     secure: true
     same-site: Strict #set "strict" if frontend and backend are on the same domain (app/api.common-link.org)
@@ -173,13 +180,16 @@ app:
     demo-mode: false
     api-url: ${VOP_BASE_URL:https://api.mollie.com/v2/business-accounts/payee-verifications}
     api-token: ${VOP_API_TOKEN:}
+  oauth:
+    # AES-256-GCM key (Base64, 32 bytes) encrypting the payment providers' OAuth tokens at rest
+    # (Mollie, HelloAsso) — see OAuthTokenConverter. Changing its value makes stored tokens unreadable.
+    token-enc-key: ${OAUTH_TOKEN_ENC_KEY}
   mollie:
     api-key: ${MOLLIE_API_KEY}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
     redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL}
     webhook-url: ${MOLLIE_WEBHOOK_URL}
     test-mode: false
-    token-enc-key: ${MOLLIE_TOKEN_ENC_KEY}
     connect:
       client-id: ${MOLLIE_CONNECT_CLIENT_ID}
       client-secret: ${MOLLIE_CONNECT_CLIENT_SECRET}
@@ -230,6 +240,35 @@ app:
     # (ComplianceAlertEmailListener). A role address, not a person: the alert must keep reaching the
     # compliance function across staff changes. Blank disables the notification and logs a warning.
     alert-notification-email: ${APP_COMPLIANCE_OFFICER_EMAIL}
+    # Scheduled integrity check of the compliance audit log hash chain (ComplianceAuditChainScheduler);
+    # a broken or unverifiable chain raises a technical alert.
+    audit-chain-check:
+      enabled: true
+      initial-delay-ms: 600000
+      delay-ms: 86400000
+
+  # app.payments: base default (application.yml), set through PAYMENTS_DEFAULT_PROVIDER.
+  payments:
+    helloasso:
+      # Cash-out tracking of HelloAsso donations; see application.yml.
+      cashout-settlement-business-days: ${HELLOASSO_CASHOUT_SETTLEMENT_BUSINESS_DAYS:2}
+      cashout-in-transit-alert-business-days: ${HELLOASSO_CASHOUT_IN_TRANSIT_ALERT_BUSINESS_DAYS:5}
+      cashout-sync-initial-delay-ms: ${HELLOASSO_CASHOUT_SYNC_INITIAL_DELAY_MS:300000}
+      cashout-sync-delay-ms: ${HELLOASSO_CASHOUT_SYNC_DELAY_MS:86400000}
+      cashout-refresh-min-interval: ${HELLOASSO_CASHOUT_REFRESH_MIN_INTERVAL:PT15M}
+      cashout-refresh-timeout: ${HELLOASSO_CASHOUT_REFRESH_TIMEOUT:PT10S}
+      cashout-unknown-alert-after: ${HELLOASSO_CASHOUT_UNKNOWN_ALERT_AFTER:P3D}
+      cashout-sync-failure-alert-after: ${HELLOASSO_CASHOUT_SYNC_FAILURE_ALERT_AFTER:3}
+      cashout-export-amount-unit: ${HELLOASSO_CASHOUT_EXPORT_AMOUNT_UNIT:EUROS}
+
+  helloasso:
+    # Production HelloAsso API and notification source IP. Mock pinned false (ProdConfigSecurityTest).
+    api-base-url: ${HELLOASSO_API_BASE_URL}
+    oauth-token-url: ${HELLOASSO_OAUTH_TOKEN_URL}
+    redirect-base-url: ${HELLOASSO_REDIRECT_BASE_URL}
+    webhook-url: ${HELLOASSO_WEBHOOK_URL}
+    webhook-allowed-ips: ${HELLOASSO_WEBHOOK_ALLOWED_IPS}
+    mock: false
 
 
 commonlink:

@@ -9,6 +9,7 @@ import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -19,6 +20,9 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Tag("testcontainers")
@@ -67,6 +71,29 @@ class DonationServiceIdempotencyTest {
             .filter { it.providerRef == providerRef }
         assertEquals(1, donations.size, "Expected exactly one Donation row")
         assertNotNull(donations[0].confirmedAt, "Donation must be confirmed")
+    }
+
+    @Test
+    fun `a plausible provider payment time dates the donation`() {
+        val providerRef = "mollie:tr_${UUID.randomUUID()}"
+        val paidAt = Instant.now().minusSeconds(60).truncatedTo(ChronoUnit.MICROS)
+
+        donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("50.00"), paidAt)
+
+        assertEquals(paidAt, donationRepository.findByProviderRef(providerRef)?.confirmedAt)
+    }
+
+    @Test
+    fun `a payment time in the future or long before the donation dates it now`() {
+        for (paidAt in listOf(Instant.now().plus(Duration.ofHours(1)), Instant.now().minus(Duration.ofDays(2)))) {
+            val providerRef = "mollie:tr_${UUID.randomUUID()}"
+            val before = Instant.now()
+
+            donationService.recordPayment(providerRef, donorProfileId, campaignId, BigDecimal("50.00"), paidAt)
+
+            val confirmedAt = donationRepository.findByProviderRef(providerRef)?.confirmedAt!!
+            assertTrue(!confirmedAt.isBefore(before.truncatedTo(ChronoUnit.MICROS)), "$paidAt must be ignored")
+        }
     }
 
     @Test

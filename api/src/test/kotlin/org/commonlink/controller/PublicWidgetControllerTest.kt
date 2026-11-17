@@ -1,5 +1,6 @@
 package org.commonlink.controller
 
+import org.commonlink.exception.CollectionUnavailableException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -10,7 +11,9 @@ import org.commonlink.dto.DonationPublicStatus
 import org.commonlink.dto.DonationStatusDto
 import org.commonlink.dto.PublicLandingDto
 import org.commonlink.dto.PublicWidgetDto
+import org.commonlink.payment.PaymentProviderId
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.LegalDocumentVersionOutdatedException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.RateLimitException
 import org.commonlink.repository.UserRepository
@@ -92,6 +95,8 @@ class PublicWidgetControllerTest {
         currency = "EUR",
         widgetAllowedOrigin = "https://www.msf.fr",
         remainingCapacity = BigDecimal("7500.00"),
+        collectAvailable = true,
+        paymentProvider = PaymentProviderId.HELLOASSO,
     )
 
     private val validRequest = CreateGuestDonationRequest(
@@ -107,7 +112,7 @@ class PublicWidgetControllerTest {
         anonymousDisplay = false,
         consent = true,
         cguAccepted = true,
-        cgvAccepted = true,
+        cguVersion = "test",
         sourceSite = "https://example.org",
     )
 
@@ -143,6 +148,9 @@ class PublicWidgetControllerTest {
             .andExpect(jsonPath("$.identifier").doesNotExist())
             .andExpect(jsonPath("$.verificationStatus").doesNotExist())
             .andExpect(jsonPath("$.widgetToken").doesNotExist())
+            // Only the provider itself is public: it picks the payment button and mandatory texts.
+            .andExpect(jsonPath("$.paymentProvider").value("HELLOASSO"))
+            .andExpect(jsonPath("$.helloasso").doesNotExist())
     }
 
     @Test
@@ -213,7 +221,7 @@ class PublicWidgetControllerTest {
               "anonymousDisplay": false,
               "consent": true,
               "cguAccepted": true,
-              "cgvAccepted": true
+              "cguVersion": "test"
             }
         """.trimIndent()
 
@@ -247,7 +255,7 @@ class PublicWidgetControllerTest {
               "anonymousDisplay": false,
               "consent": true,
               "cguAccepted": true,
-              "cgvAccepted": true
+              "cguVersion": "test"
             }
         """.trimIndent()
 
@@ -299,13 +307,27 @@ class PublicWidgetControllerTest {
     }
 
     @Test
-    fun `createDonation - 422 when cgvAccepted is false`() {
-        val req = validRequest.copy(cgvAccepted = false)
+    fun `createDonation - 422 when the displayed CGU version is missing`() {
+        val req = validRequest.copy(cguVersion = "")
         mockMvc.perform(
             post("/api/public/widget/clk_valid/donations")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req))
         ).andExpect(status().isUnprocessableContent)
+        verify(exactly = 0) { publicWidgetService.createDonation(any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - 409 LEGAL_VERSION_OUTDATED when a newer CGU was published meanwhile`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } throws
+            LegalDocumentVersionOutdatedException("CGU version test is not the current version")
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest))
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("LEGAL_VERSION_OUTDATED"))
     }
 
     @Test
@@ -357,6 +379,19 @@ class PublicWidgetControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRequest))
         ).andExpect(status().isConflict)
+    }
+
+    @Test
+    fun `createDonation - 409 with code COLLECTION_UNAVAILABLE when the provider cannot collect`() {
+        every { publicWidgetService.createDonation("clk_valid", any()) } throws CollectionUnavailableException()
+
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest))
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("COLLECTION_UNAVAILABLE"))
     }
 
     @Test
@@ -473,6 +508,7 @@ class PublicWidgetControllerTest {
         budgetHash = null,
         milestones = emptyList(),
         remainingCapacity = BigDecimal("850.00"),
+        paymentProvider = PaymentProviderId.MOLLIE,
     )
 
     @Test
@@ -483,6 +519,7 @@ class PublicWidgetControllerTest {
         mockMvc.perform(get("/api/public/landing/clk_abc?preview=prev_jwt"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.campaignName").value("Campagne Test"))
+            .andExpect(jsonPath("$.paymentProvider").value("MOLLIE"))
 
         verify(exactly = 1) { publicWidgetService.getLanding("clk_abc", "prev_jwt") }
     }

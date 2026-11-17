@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { getLegalDocument } from '@/lib/api/public';
 import { LegalDocumentType } from '@/types/legal';
+import { LegalDocumentRenderer, legalTitle } from '@/components/legal/LegalDocumentRenderer';
 
 interface Props {
   params: Promise<{ locale: string; documentType: string }>;
@@ -40,10 +41,9 @@ export default async function LegalDocumentPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex justify-center px-4 py-12">
-      <div className="card card-no-hover p-8 max-w-2xl w-full">
-        <h1 className="font-display font-bold text-lg mb-1">{t(`title.${type}`)}</h1>
-        <p className="text-sm text-text-2 mb-6">{t('version', { version: document.version })}</p>
-        <div style={{ whiteSpace: 'pre-wrap' }}>{document.content}</div>
+      <div className="card card-no-hover p-8 max-w-3xl w-full">
+        <h1 className="font-display font-bold text-lg mb-1">{legalTitle(document, t(`title.${type}`))}</h1>
+        <LegalDocumentRenderer document={document} />
       </div>
     </div>
   );

@@ -1,16 +1,36 @@
 package org.commonlink.dto
 
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import org.commonlink.entity.LegalAcceptanceSubjectType
+import org.commonlink.entity.LegalContentFormat
 import org.commonlink.entity.LegalDocumentType
 import java.time.Instant
 import java.util.UUID
 
-/** Current published text of a CGU/CGV document. */
+/**
+ * Current published text of a CGU/CGV document.
+ *
+ * @property version opaque identifier the client must send back when accepting this text.
+ * @property format how to read [content]: plain text, or a serialized [LegalTextV1].
+ */
 data class LegalDocumentDto(
     val documentType: LegalDocumentType,
     val version: String,
+    val format: LegalContentFormat,
     val content: String,
     val publishedAt: Instant,
+)
+
+/**
+ * Body of the association's acceptance outside a publication (post-login gate).
+ *
+ * @property version the version the gate displayed, refused with 409 if no longer current.
+ */
+data class AcceptLegalDocumentRequest(
+    @field:NotBlank
+    @field:Size(max = 32)
+    val version: String,
 )
 
 /**

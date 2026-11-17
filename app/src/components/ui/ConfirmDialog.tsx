@@ -55,7 +55,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="modal-backdrop"
+      className="modal-backdrop confirm-backdrop"
       onClick={onCancel}
       role="dialog"
       aria-modal="true"

@@ -1306,6 +1306,9 @@ textarea.form-input {
   justify-content: center;
   padding: 16px;
 }
+/* A confirmation always answers something already on screen — a side panel (.ov, 1000) or a
+   modal (.cm-ov, 1050) included — so it sits above every overlay, below toasts (2000). */
+.modal-backdrop.confirm-backdrop { z-index: 1100; }
 
 /* -- Campaign DS -------------------------------------------------------- */
 
@@ -2146,6 +2149,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* A comfortable target, not a micro-button. */
 .pj-action { padding: 7px 14px; }
+.pj-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .pj-chevron { width: 32px; height: 32px; border-radius: var(--radius-md); border: 1px solid var(--mist-lavender); background: var(--white); color: var(--slate-lavender); font-size: 16px; line-height: 1; cursor: pointer; transition: all var(--tb); }
 .pj-chevron:hover { border-color: var(--bright-teal); color: var(--ink-navy); }
 
@@ -2174,7 +2178,7 @@ tbody tr:last-child td { border-bottom: none; }
 .side-panel-h { flex-shrink: 0; padding: 18px 24px; border-bottom: 1px solid var(--mist-lavender); display: flex; align-items: center; justify-content: space-between; background: var(--white); }
 .side-panel-h h3 { font-size: 17px; }
 .side-panel-b { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 24px; }
-.side-panel-f { flex-shrink: 0; padding: 14px 24px; border-top: 1px solid var(--mist-lavender); background: var(--soft-cream); }
+.side-panel-f { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 14px 24px; border-top: 1px solid var(--mist-lavender); background: var(--soft-cream); }
 
 /* The amount, the state and the beneficiary: what the panel is opened to read. */
 .pd-hero { padding: 16px 18px; background: var(--soft-cream); border: 1px solid var(--mist-lavender); border-radius: var(--radius-lg); }
@@ -2613,6 +2617,27 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 /* Wide modals: readable line-length for long-form content (e.g. the full campaign story) --
    the shared .modal's 480px max-width is tuned for short forms/confirmations, not paragraphs. */
 .modal-wide { max-width: 760px; }
+
+/* CGU/CGV text (LegalDocumentRenderer) - same rules as the landing site's legal pages
+   (landing-page globals.css: .legal-meta, .legal-body, .legal-callout, .legal-toc-auto, .legal-link),
+   without the page padding so it fits the donation, publication and post-login modals. */
+.legal-doc-meta { font-size: 14px; color: var(--slate-lavender); margin-bottom: 16px; }
+.legal-doc h3 { font-size: 19px; margin: 32px 0 10px; }
+.legal-doc h4 { font-size: 16px; margin: 26px 0 8px; }
+.legal-doc p { margin-bottom: 14px; line-height: 1.75; color: var(--ink-navy); }
+.legal-doc p a { color: var(--deep-indigo); text-decoration: underline; }
+.legal-doc-plain { white-space: pre-wrap; }
+.legal-doc-callout { background: var(--soft-cream); border-left: 3px solid var(--bright-teal); border-radius: var(--radius-lg); padding: 18px 22px; margin: 22px 0; line-height: 1.7; }
+.legal-doc-toc { background: var(--soft-cream); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 36px; }
+.legal-doc-toc strong { display: block; margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--slate-lavender); }
+.legal-doc-toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; list-style: decimal; }
+.legal-doc-toc li { font-size: 13px; line-height: 1.9; }
+.legal-doc-toc a { color: var(--ink-navy); text-decoration: none; }
+.legal-doc-toc a:hover { color: var(--bright-teal); }
+@media (max-width: 760px) { .legal-doc-toc ol { columns: 1; } }
+/* Post-login acceptance gate: a modal that cannot be dismissed, above every other overlay but toasts. */
+.modal-backdrop.legal-gate-backdrop { z-index: 1100; }
+.legal-gate-accept { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ink-navy); }
 
 /* Mollie trust modal - who Mollie is, why the KYC is unavoidable, where the documents go */
 .mollie-info-intro { font-size: 14px; color: var(--slate-lavender); line-height: 1.6; margin-bottom: 18px; }
@@ -3209,3 +3234,279 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .copy-row-label { width: auto; }
   .help-card { flex-wrap: wrap; }
 }
+/* ── Bank tab — HelloAsso onboarding flow (lot G, S7-02) ──────────────────────────────────
+   Ported from minisite/onboarding-helloasso-v2.html (validated mockup, notes v3 of 28/10/2026), same rules as the
+   Mollie blocks above: classes absent from this file are ported as-is (font stacks via the next/font variables);
+   classes that already exist with different values are left untouched globally and overridden inside `.hao-flow`
+   (the flow's root) only. Shared with the Mollie port, not redefined: stepper*, acc-list/item/trigger/chev/panel,
+   copy-row*, copy-btn*, skel, row, row-between, muted, small, lead, screen-foot, help-card, ol-steps, tr-num, mw-*.
+   `.spinner` and `.mono` differ globally (15px spinner, 11.5px indigo mono): the mockup values apply inside
+   `.hao-flow` only, like the other collisions. The demo-bar is not implemented. */
+
+/* Tab badge: error tone (mockup `.set-tab-badge.err`) */
+.set-tab-badge.err{background:rgba(232,69,60,.12);color:var(--error-red)}
+
+/* Stepper: "Déjà fait" step of the "existing account" path */
+.stepper-item.skipped .stepper-num{background:var(--mist-lavender);border-color:var(--mist-lavender);color:var(--teal-dark)}
+.stepper-sub{display:block;font-size:11px;font-weight:500;color:var(--slate-lavender)}
+
+/* NEW COMPONENT: imposed-text (verbatim partner text) */
+.imposed{background:var(--soft-cream);border:1px solid var(--mist-lavender);border-left:4px solid var(--deep-indigo);border-radius:var(--radius-md);padding:16px 20px}
+.imposed-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate-lavender);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.imposed blockquote{font-size:14px;color:var(--ink-navy);line-height:1.7}
+
+/* NEW COMPONENT: role-split ("qui fait quoi") */
+.role-split{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-top:24px}
+.role-col{border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);padding:18px 20px;background:var(--white)}
+.role-col.main{border-color:rgba(78,205,196,.5);background:linear-gradient(180deg,rgba(78,205,196,.06),var(--white) 70%)}
+.role-col h4{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.role-col ul{list-style:none}
+.role-col li{font-size:13.5px;padding:5px 0 5px 22px;position:relative;color:var(--ink-navy)}
+.role-col li::before{content:'•';position:absolute;left:6px;color:var(--teal-dark);font-weight:800}
+
+/* NEW COMPONENT: cert-rule (✓ / ✗ entry points) */
+.cert-rule{border:1px solid var(--mist-lavender);border-left:4px solid var(--bright-teal);border-radius:var(--radius-lg);padding:18px 22px;background:var(--white)}
+.cert-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cert-col{border-radius:var(--radius-md);padding:12px 14px;font-size:13.5px}
+.cert-col.yes{background:rgba(52,199,89,.08)}
+.cert-col.no{background:rgba(232,69,60,.06)}
+.cert-col strong{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.cert-col.yes strong{color:#1f8a3b}
+.cert-col.no strong{color:var(--error-red)}
+.cert-col div+div{margin-top:4px}
+
+/* EXTERNAL COMPONENT: official "Payer avec HelloAsso" button (light variant), CSS verbatim from dev.helloasso.com
+   "Bouton: Payer avec HelloAsso" (updatedAt 2026-03-04). HelloAsso's asset, not a DS component: do not restyle. */
+.HaPay{width:fit-content;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.HaPay *{font-family:"Open Sans","Trebuchet MS","Lucida Sans Unicode","Lucida Grande","Lucida Sans",Arial,sans-serif;transition:all .3s ease-out}
+.HaPayButton{align-items:stretch;background:none;border:none;display:flex;padding:0;border-radius:8px}
+.HaPayButton:hover{cursor:pointer}
+.HaPayButton:not(:disabled):focus{box-shadow:0 0 0 .25rem rgba(73,211,138,.25)}
+.HaPayButton:not(:disabled):hover .HaPayButtonLabel,.HaPayButton:not(:disabled):focus .HaPayButtonLabel{background-color:#483dbe}
+.HaPayButton:not(:disabled):hover .HaPayButtonLogo,.HaPayButton:not(:disabled):focus .HaPayButtonLogo,.HaPayButton:not(:disabled):hover .HaPayButtonLabel,.HaPayButton:not(:disabled):focus .HaPayButtonLabel{border:1px solid #483dbe}
+.HaPayButtonLogo{background-color:#ffffff;border:1px solid #4c40cf;border-top-left-radius:8px;border-bottom-left-radius:8px;padding:10px 16px;width:30px}
+.HaPayButtonLabel{align-items:center;justify-content:space-between;column-gap:5px;background-color:#4c40cf;border:1px solid #4c40cf;border-top-right-radius:8px;border-bottom-right-radius:8px;color:#ffffff;font-size:16px;font-weight:800;display:flex;padding:0 16px}
+.HaPaySecured{align-items:center;justify-content:space-between;display:flex;column-gap:5px;padding:8px 16px;font-size:12px;font-weight:600;color:#2e2f5e}
+.HaPay svg{fill:currentColor}
+
+/* FAQ v3.2: groups, icon chips, rich panels */
+.faq-group+.faq-group{margin-top:22px}
+.faq-group-label{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--slate-lavender);margin:0 0 8px 4px}
+.acc-trigger .acc-q{flex:1}
+.acc-ico{width:32px;height:32px;border-radius:var(--radius-md);background:var(--soft-cream);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:background .2s}
+.acc-trigger:hover .acc-ico,.acc-trigger[aria-expanded="true"] .acc-ico{background:rgba(78,205,196,.14)}
+.acc-item:has(.acc-trigger[aria-expanded="true"]){background:linear-gradient(180deg,rgba(78,205,196,.04),var(--white) 60%)}
+.cert-rule.faq-compact{border:none;padding:0;background:none;margin-top:4px}
+.mini-figs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.mini-fig{display:flex;gap:12px;align-items:flex-start;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);padding:14px}
+.mini-fig-ico{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.mini-fig-ico.teal{background:rgba(78,205,196,.12)}
+.mini-fig-ico.indigo{background:rgba(50,50,125,.08)}
+.mini-fig-ico.amber{background:rgba(255,179,71,.14)}
+.mini-fig-val{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:20px;color:var(--ink-navy);line-height:1.2}
+.mini-fig-lbl{font-size:12.5px;color:var(--slate-lavender);line-height:1.5}
+.mini-figs.two{grid-template-columns:repeat(2,1fr);margin-top:8px}
+.access-live{margin-top:14px;border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);padding:16px 18px;background:var(--white)}
+.access-live-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:14px}
+
+/* NEW COMPONENT: path-choice (two entry cards) */
+.path-choice{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
+.path-card{background:var(--white);border:2px solid var(--mist-lavender);border-radius:var(--radius-xl);padding:24px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm);transition:border-color .2s,box-shadow .2s}
+.path-card:hover{border-color:var(--bright-teal);box-shadow:var(--shadow-md)}
+.path-card h3{font-size:19px}
+.path-card p{font-size:14px;color:var(--slate-lavender);flex:1}
+.path-card .btn{align-self:flex-start;margin-top:6px}
+.path-card.featured{border-color:rgba(78,205,196,.5);background:linear-gradient(180deg,rgba(78,205,196,.06),var(--white) 60%)}
+
+/* NEW COMPONENT: provider window (screen 3, single centred card) */
+.solo-wrap{display:flex;justify-content:center;margin:8px 0 4px}
+.provider-window{position:sticky;top:84px;background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-md)}
+.provider-window-solo{position:static;width:100%;max-width:420px}
+
+/* NEW COMPONENT: link-step (one card per gesture) */
+.link-step{background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);margin-top:28px}
+.link-step-head{display:flex;align-items:center;gap:14px;padding:24px 32px 0}
+.link-step-head h3{font-size:18px;flex:1}
+.link-step-body{padding:16px 32px 28px 74px}
+.link-step-body>*+*{margin-top:18px}
+.link-step-body>p{font-size:14px;color:var(--slate-lavender);line-height:1.8}
+.link-step.done .tr-num{background:var(--bright-teal);color:#fff}
+.link-submit{margin-top:36px;padding-top:28px;border-top:1px solid var(--mist-lavender)}
+.path-crumbs{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink-navy);background:var(--soft-cream);border:1px solid var(--mist-lavender);border-radius:var(--radius-full);padding:4px 12px;vertical-align:middle}
+.path-crumbs .sep{color:var(--slate-lavender)}
+.secret-hint{margin-top:10px;color:var(--teal-dark)}
+.secret-hint strong{color:var(--teal-dark)}
+
+/* NEW COMPONENT: disclose (folded edge case) */
+.disclose summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--deep-indigo);list-style:none;display:inline-flex;align-items:center;gap:6px}
+.disclose summary::-webkit-details-marker{display:none}
+.disclose summary::before{content:'+';font-weight:800;color:var(--slate-lavender);width:12px}
+.disclose[open] summary::before{content:'−'}
+.disclose p{font-size:13px;color:var(--slate-lavender);line-height:1.7;margin-top:8px;padding-left:18px}
+.disclose+.disclose{margin-top:8px}
+
+/* NEW COMPONENT: key-field (input + paste + reveal) */
+.key-field{display:flex;gap:8px;align-items:stretch}
+.key-field .form-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em}
+.key-field .btn{flex-shrink:0}
+.key-result{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius-lg);border:1px solid var(--mist-lavender);background:var(--soft-cream);margin-top:4px}
+.key-result.ok{border-color:rgba(52,199,89,.35);background:rgba(52,199,89,.06)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;font-size:13px}
+.kv dt{color:var(--slate-lavender);font-weight:600}
+.kv dd{font-weight:600}
+
+/* Collisions: mockup values applied inside the flow only (same list as `.mob-flow`, plus the FAQ panel indent, the
+   success input border and the modal backdrop — global backdrop: black .5, blur, z-index 50). */
+.hao-flow .card-body{padding:24px}
+.hao-flow .card-header-bar{padding:16px 24px;gap:12px}
+.hao-flow .card-header-bar h3{font-size:16px}
+.hao-flow .badge{white-space:nowrap}
+.hao-flow .badge-success{background:rgba(52,199,89,.12)}
+.hao-flow .btn-ghost{border:2px solid transparent;padding:12px 24px;font-size:14px}
+.hao-flow .btn-ghost.btn-sm{padding:8px 18px;font-size:13px}
+.hao-flow .empty-state{display:block;padding:40px 24px;text-align:center;animation:none}
+.hao-flow .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:.6}
+.hao-flow .empty-state h4{font-size:20px;margin-bottom:8px}
+.hao-flow .empty-state p{font-size:14px;color:var(--slate-lavender);margin:0 auto 20px;max-width:460px;line-height:1.6}
+.hao-flow .mw-body .empty-state-icon{font-size:40px;margin-bottom:10px}
+.hao-flow .acc-panel{padding-left:64px}
+.hao-flow .acc-panel .role-split{margin-top:14px;grid-template-columns:1fr 1fr}
+.hao-flow .acc-panel .HaPay{margin:0}
+.hao-flow .form-input.success{border-color:var(--success-green)}
+.hao-flow .spinner{width:18px;height:18px;border:3px solid var(--mist-lavender);border-top-color:var(--bright-teal);animation:spin .8s linear infinite}
+@media (prefers-reduced-motion:reduce){.hao-flow .spinner{animation:none}}
+.hao-flow .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:inherit;letter-spacing:normal}
+.hao-flow .modal-backdrop{background:rgba(23,23,68,.45);backdrop-filter:none;z-index:1000;padding:24px}
+.hao-flow .modal{background:var(--white);animation:mobFadeUp .2s ease}
+.hao-flow .modal-header h3{font-size:18px;color:var(--ink-navy)}
+@media (prefers-reduced-motion:reduce){.hao-flow .modal{animation:none}}
+
+/* Static inline styles of the mockup, as classes */
+.hao-refresh-info{text-align:right;margin:-16px 0 8px}
+.hao-linked-banner{margin-bottom:24px}
+.hao-grow{flex:1}
+.hao-self-start{align-self:flex-start}
+.hao-screen-title{font-size:24px}
+.hao-title-row{margin-bottom:6px}
+.hao-title-row-lg{margin-bottom:8px}
+.hao-lead-spaced{margin-bottom:20px}
+.hao-mw-title{font-size:17px;margin-bottom:6px}
+.hao-mw-text{margin-bottom:14px}
+.hao-mw-alert{text-align:left;margin-top:14px}
+.hao-alert-top{margin-top:24px}
+.hao-form-group-flat{margin-bottom:0}
+.hao-label-hint{font-weight:500}
+.hao-org-name{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:17px}
+.hao-org-match{color:var(--teal-dark);font-weight:600;margin-top:2px}
+.hao-org-label{font-weight:600}
+.hao-tips{margin-top:6px}
+.hao-mismatch-hint{margin-top:6px}
+.hao-mandate{align-items:flex-start}
+.hao-mandate input{margin-top:2px}
+.hao-submit-row{margin-top:24px}
+.hao-copy-row-spaced{margin-top:10px}
+.hao-row-spaced{margin-top:12px}
+.hao-row-spaced-lg{margin-top:14px}
+.hao-row-center{justify-content:center}
+.hao-flow .empty-state p.hao-broken-hint{margin-top:16px}
+.hao-flow .empty-state.hao-active-state{padding:24px}
+.hao-card-spaced{margin-top:20px}
+.hao-faq-card{margin-top:24px}
+.hao-help-card{margin-top:28px}
+.hao-flow .card-body.hao-help-body{padding:18px 24px}
+.hao-imposed-spaced{margin-top:10px}
+.hao-note-spaced{margin-top:8px}
+.hao-alert-bottom{margin-bottom:14px}
+.hao-files{margin-top:14px}
+.hao-files li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;font-size:13px}
+.hao-files li+li{border-top:1px solid var(--mist-lavender)}
+.hao-skel-stepper{height:72px;border-radius:var(--radius-xl);margin-bottom:24px}
+.hao-skel-title{height:26px;width:40%;margin-bottom:14px}
+.hao-skel-line{height:14px;width:75%;margin-bottom:8px}
+.hao-skel-line-short{height:14px;width:60%;margin-bottom:28px}
+.hao-skel-block{height:120px}
+
+/* Responsive (the mockup is desktop-only; same breakpoints as the rest of this file) */
+@media (max-width: 900px) {
+  .path-choice, .role-split, .hao-flow .acc-panel .role-split, .cert-cols, .mini-figs, .mini-figs.two { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .link-step-head { padding: 20px 20px 0; }
+  .link-step-body { padding: 14px 20px 24px; }
+  .hao-flow .acc-panel { padding-left: 20px; }
+  .key-field { flex-wrap: wrap; }
+  .kv { grid-template-columns: 1fr; }
+}
+
+/* -- Donation form, HelloAsso association (lot G2, S8-02, flow 5bis) --
+   Not in a mockup: layout of HelloAsso's mandatory elements around its official button (.HaPay*, above).
+   Cart text right above the button, then the link to HelloAsso's how-it-works page. */
+.ha-checkout{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:4px}
+.ha-cart-text{font-size:12.5px;line-height:1.6;color:var(--slate-lavender);text-align:center;margin:0}
+.ha-submitting{font-size:12.5px;color:var(--slate-lavender);margin:0}
+.ha-how-it-works{font-size:12.5px;font-weight:600;color:var(--deep-indigo)}
+
+/* Campaign funds (HelloAsso payouts) — "Où en sont vos dons", ported from
+   minisite/mise_a_disposition_des_fonds_helloasso.html (l. 521-566). The tooltip is driven by the InfoTooltip state
+   (.open), not by :hover/:focus-within, so Escape can close it while hovered. DEV classes not ported. */
+.funds-sync{font-family:var(--font-inter),sans-serif;font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate-lavender);margin-left:auto}
+.funds-sync button{background:none;border:none;color:var(--teal-dark);font-weight:600;cursor:pointer;font-size:11.5px;padding:0 0 0 4px}
+.funds-sync button:disabled{color:var(--slate-lavender);cursor:not-allowed;font-weight:400}
+.funds-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--mist-lavender);margin:4px 0 14px}
+.funds-bar span{height:100%;transition:width .5s ease;cursor:help}
+.funds-seg-avail{background:var(--teal-dark)}
+.funds-seg-transit{background:var(--bright-teal)}
+.funds-seg-prep{background:var(--soft-amber)}
+.funds-seg-ha{background:#c9c6e6}
+.funds-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;position:relative}
+.funds-leg{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--slate-lavender);line-height:1.4}
+.funds-leg i{width:10px;height:10px;border-radius:3px;flex-shrink:0;margin-top:3px}
+.funds-leg strong{display:block;font-family:var(--font-syne),sans-serif;font-size:15px;color:var(--ink-navy)}
+.funds-leg-btn{background:none;border:0;padding:0;margin:0;width:100%;font:inherit;color:inherit;text-align:left;cursor:help;border-radius:var(--radius-md)}
+.funds-leg-btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bright-teal)}
+.funds-total{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;border-radius:var(--radius-md);background:rgba(78,205,196,.06);border:1px solid rgba(78,205,196,.2)}
+.funds-total-val{font-family:var(--font-nunito-sans),sans-serif;font-weight:900;font-size:26px;color:var(--teal-dark)}
+.funds-total-lbl{font-size:12px;color:var(--slate-lavender);line-height:1.5}
+.funds-total-lbl strong{color:var(--ink-navy)}
+.funds-total.zero{background:rgba(255,179,71,.08);border-color:rgba(255,179,71,.3)}
+.funds-total.zero .funds-total-val{color:#b37800}
+.funds-block{padding:12px 14px;border-radius:var(--radius-md);background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.3);font-size:12.5px;line-height:1.55;color:var(--ink-navy);margin-bottom:14px}
+.funds-skel{height:14px;border-radius:7px;margin-bottom:10px}
+.funds-skel.w70{width:70%}
+.funds-skel.total{width:45%;height:38px}
+.funds-foot{font-size:11.5px;color:var(--slate-lavender);margin-top:10px;line-height:1.5}
+.funds-leg-wrap{position:relative;border-radius:var(--radius-md);padding:6px 8px;margin:-6px -8px;transition:background var(--tb)}
+.funds-leg-wrap:hover,.funds-leg-wrap:focus-within,.funds-leg-wrap.open{background:rgba(78,205,196,.06)}
+.funds-leg-wrap:not(:last-child)::after{content:'→';position:absolute;right:6px;top:7px;font-size:14px;color:var(--slate-lavender);opacity:.5;pointer-events:none}
+.funds-leg .funds-info{font-size:11px;color:var(--slate-lavender);margin-left:4px;font-weight:400}
+.funds-cue{display:inline-block;margin-top:5px;padding:2px 8px;border-radius:50px;background:rgba(78,205,196,.14);color:var(--teal-dark);font-size:10.5px;font-weight:700}
+.funds-tip{display:none;position:absolute;top:100%;left:0;z-index:30;width:330px;max-width:calc(100vw - 48px);padding-top:8px;cursor:default}
+.funds-tip.right{left:auto;right:0}
+.funds-leg-wrap.open .funds-tip{display:block}
+.funds-tip-in{background:var(--white);border:1px solid var(--mist-lavender);border-radius:var(--radius-lg);box-shadow:var(--shadow-xl);padding:14px 16px;font-size:12.5px;line-height:1.55;color:var(--ink-navy);text-align:left}
+.funds-tip-title{font-weight:700;font-size:13px;margin-bottom:4px}
+.funds-tip-text{color:var(--slate-lavender)}
+.funds-tip-co{padding:9px 0;border-top:1px solid var(--mist-lavender);margin-top:9px}
+.funds-tip-co-head{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.funds-tip-co-sub{font-size:11.5px;color:var(--slate-lavender)}
+.funds-tip .cm-btn{margin-top:8px;width:100%;justify-content:center}
+.funds-tip-link{display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:var(--teal-dark);text-decoration:none}
+.funds-tip-link:hover{text-decoration:underline}
+.pay-amt-hint{font-size:11.5px;color:var(--slate-lavender);margin-top:6px;line-height:1.45}
+.pay-amt-hint.err{color:var(--warm-coral)}
+@media (prefers-reduced-motion:reduce){.funds-bar span{transition:none}}
+/* "Avez-vous reçu ce virement ?" (CashOutReceiptDialog) — inline styles of the mockup (l. 1745-1751) as classes. */
+.cashout-ov-icon{font-size:36px;margin-bottom:10px;text-align:center}
+.cashout-ov-title{font-family:var(--font-nunito-sans),sans-serif;font-size:20px;font-weight:900;color:var(--ink-navy);text-align:center;margin:0 0 6px}
+.cashout-ov-sub{font-size:13px;color:var(--slate-lavender);text-align:center;margin-bottom:18px}
+.cashout-ov-details{background:var(--soft-cream);border-radius:var(--radius-md);padding:14px;margin-bottom:14px;font-size:13px}
+.cashout-ov-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--mist-lavender)}
+.cashout-ov-row:last-child{border-bottom:0}
+.cashout-ov-row span:first-child{color:var(--slate-lavender)}
+.cashout-ov-effect{font-size:13px;line-height:1.55;margin-bottom:14px}
+.cashout-ov-effect strong{color:var(--teal-dark)}
+.cashout-ov-auto{padding:10px;border-radius:var(--radius-md);background:rgba(255,179,71,.06);border:1px solid rgba(255,179,71,.2);font-size:12px;color:#b37800;margin-bottom:18px}
+.cashout-ov-error{font-size:12.5px;color:var(--warm-coral);margin-bottom:12px;text-align:center}
+.cashout-ov-actions{display:flex;gap:10px}
+.cashout-ov-actions .btn-secondary{flex:1}
+.cashout-ov-actions .btn-primary{flex:2}

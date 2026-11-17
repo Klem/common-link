@@ -68,7 +68,8 @@ interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
      * candidate set for the scheduled proactive refresh ([org.commonlink.service.MollieTokenRefreshExecutor]).
      *
      * BROKEN connections are excluded: they can only be recovered by a user-driven re-authorisation,
-     * and `getValidAccessToken` throws on them without attempting anything.
+     * and `getValidAccessToken` throws on them without attempting anything. So are connections of
+     * associations moved to another payment provider: the row is kept, but no longer maintained.
      *
      * No lock and no mock filtering here. Mock rows cannot be excluded in SQL because
      * [org.commonlink.security.OAuthTokenConverter] stores tokens as AES-GCM with a random IV
@@ -79,6 +80,7 @@ interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
         "SELECT new org.commonlink.repository.MollieRefreshCandidate(c.association.id, c.refreshToken) " +
             "FROM MollieConnection c " +
             "WHERE c.state = org.commonlink.entity.MollieConnectionState.ACTIVE " +
+            "AND c.association.paymentProvider = org.commonlink.payment.PaymentProviderId.MOLLIE " +
             "AND c.expiresAt < :threshold",
     )
     fun findActiveExpiringBefore(@Param("threshold") threshold: Instant): List<MollieRefreshCandidate>
@@ -89,7 +91,8 @@ interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
      *
      * "Collects" is `COMPLETED AND can_receive_payments`: such a connection is never re-polled
      * (sprint 20, Q1 — a regression would cut donations automatically). BROKEN connections are
-     * excluded: no token can be obtained for them. Mock rows are filtered by the caller in Kotlin,
+     * excluded: no token can be obtained for them. So are connections of associations moved to another
+     * payment provider. Mock rows are filtered by the caller in Kotlin,
      * for the encrypted-token reason documented on [findActiveExpiringBefore]. Full scan of a table
      * holding one row per association; no index needed.
      */
@@ -98,6 +101,7 @@ interface MollieConnectionRepository : JpaRepository<MollieConnection, UUID> {
             "c.association.id, c.refreshToken, c.onboardingStatus, c.canReceivePayments, c.onboardingStatusSince, c.lastSyncedAt) " +
             "FROM MollieConnection c " +
             "WHERE c.state = org.commonlink.entity.MollieConnectionState.ACTIVE " +
+            "AND c.association.paymentProvider = org.commonlink.payment.PaymentProviderId.MOLLIE " +
             "AND NOT (c.onboardingStatus = org.commonlink.entity.MollieOnboardingStatus.COMPLETED " +
             "AND c.canReceivePayments = true)",
     )

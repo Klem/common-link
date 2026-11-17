@@ -19,21 +19,20 @@ import org.commonlink.entity.CampaignCoverImage
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
-import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MilestoneStatus
-import org.commonlink.entity.MollieConnectionState
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.OnchainJobAction
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
+import org.commonlink.payment.PaymentProviderRegistry
+import org.commonlink.payment.ProviderReadinessStatus
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetSectionRepository
 import org.commonlink.repository.CampaignCoverImageRepository
 import org.commonlink.repository.CampaignMilestoneRepository
 import org.commonlink.repository.CampaignRepository
-import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.util.FileTypeSniffer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -76,7 +75,7 @@ class CampaignService(
     private val campaignMilestoneRepository: CampaignMilestoneRepository,
     private val campaignCoverImageRepository: CampaignCoverImageRepository,
     private val associationProfileRepository: AssociationProfileRepository,
-    private val mollieConnectionRepository: MollieConnectionRepository,
+    private val paymentProviderRegistry: PaymentProviderRegistry,
     private val complianceAuditLogService: ComplianceAuditLogService,
     private val budgetHasher: CampaignBudgetHasher,
     private val outbox: OnchainOutboxService,
@@ -231,7 +230,7 @@ class CampaignService(
         if (req.status != null) {
             validateStatusTransition(campaign.status, req.status)
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
-                preparePublish(campaign, associationId, req.cguAccepted)
+                preparePublish(campaign, associationId, req.cguAccepted, req.cguVersion)
             }
             if (req.status == CampaignStatus.REVERT_REQUESTED && campaign.raised > BigDecimal.ZERO) {
                 throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
@@ -712,13 +711,15 @@ class CampaignService(
      * a dossier revoked afterwards would otherwise still publish. LCB-FT requires the gate to hold at
      * the moment of publication, so the check is explicit and independent of the Mollie state.
      *
-     * The bank-account guard delegates to [MollieConnection.canCollectDonations], which mirrors the
+     * The bank-account guard reads the association's [org.commonlink.payment.PaymentProvider.readiness]
+     * (for Mollie, [org.commonlink.entity.MollieConnection.canCollectDonations]), which mirrors the
      * `BankSetupStatus.COMPLETED` condition the frontend uses to enable the publish button (see
-     * `app/src/lib/bankSetupStatus.ts`). The two preceding checks only exist to give a specific
-     * message — "not connected" and "broken link" call for different user actions than
-     * "KYC incomplete".
+     * `app/src/lib/bankSetupStatus.ts`). Each non-ready status maps one-to-one onto a refusal reason
+     * because "not connected", "broken link" and "KYC incomplete" call for different user actions.
+     * A provider with no registered implementation (defensive; every provider has one today) is refused as
+     * "not connected".
      */
-    private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean) {
+    private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean, cguVersion: String?) {
         if (campaign.goal <= BigDecimal.ZERO) {
             logRefusal(campaign, associationId, CampaignReviewRefusalReason.GOAL_MISSING)
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
@@ -747,26 +748,33 @@ class CampaignService(
             logRefusal(campaign, associationId, CampaignReviewRefusalReason.KYB_NOT_VERIFIED)
             throw UnprocessableEntityException("Association KYB must be verified before going live")
         }
-        val connection = mollieConnectionRepository.findByAssociationId(associationId)
-            ?: run {
+        // A provider with no registered implementation (defensive; every provider has one today) is refused as not
+        // connected.
+        val readiness = paymentProviderRegistry.findForAssociation(profile)?.readiness(associationId)?.status
+            ?: ProviderReadinessStatus.NOT_CONNECTED
+        when (readiness) {
+            ProviderReadinessStatus.NOT_CONNECTED -> {
                 logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_NOT_CONNECTED)
-                throw UnprocessableEntityException("Association must connect a Mollie account before going live")
+                throw UnprocessableEntityException("Association must connect a payment provider account before going live")
             }
-        if (connection.state == MollieConnectionState.BROKEN) {
-            logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_CONNECTION_BROKEN)
-            throw UnprocessableEntityException("Mollie connection is broken — re-authorization required before going live")
+            ProviderReadinessStatus.BROKEN -> {
+                logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_CONNECTION_BROKEN)
+                throw UnprocessableEntityException("Payment provider connection is broken — re-authorization required before going live")
+            }
+            ProviderReadinessStatus.PENDING -> {
+                logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_KYC_INCOMPLETE)
+                throw UnprocessableEntityException("Association must complete the payment provider verification before going live")
+            }
+            ProviderReadinessStatus.READY -> Unit
         }
-        if (!connection.canCollectDonations()) {
-            logRefusal(campaign, associationId, CampaignReviewRefusalReason.BANK_KYC_INCOMPLETE)
-            throw UnprocessableEntityException("Association must complete Mollie KYC before going live")
-        }
-        // Art. 1740 A CGI proof of acceptance — no-op once this association has already accepted
-        // the current CGU version (see LegalAcceptanceService KDoc).
+        // Art. 1740 A CGI proof of acceptance of the association terms (document CGV) — no-op once this
+        // association has already accepted the current version (see LegalAcceptanceService KDoc).
         try {
             legalAcceptanceService.requireAssociationAcceptance(
                 associationId = associationId,
-                documentType = LegalDocumentType.CGU,
+                documentType = LegalAcceptanceService.ASSOCIATION_DOCUMENT,
                 accepted = cguAccepted,
+                acceptedVersion = cguVersion,
                 signerName = profile.signerName ?: profile.name,
                 signerEmail = profile.user.email,
                 campaignId = campaign.id!!,

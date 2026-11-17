@@ -7,7 +7,7 @@
 | **Entité** | CommonLink |
 | **Nature du document** | Fiche descriptive du fonctionnement d'un mécanisme livré, destinée à la direction et à la commission juridique |
 | **Rattachement** | Aucun — ce mécanisme porte sur les virements sortants d'une campagne. Il ne relève d'aucune des six responsabilités du dispositif LCB-FT et n'est pas une mesure de vigilance client. Il détaille la ligne « Autorisation bancaire du décaissement par l'association » de `LCB-FT-compliance-overview.md`, section 5.3. |
-| **Date de rédaction** | 28 septembre 2026 |
+| **Date de rédaction** | 28 septembre 2026 — mise à jour le 21 octobre 2026 (annulation d'un paiement, correction de la restitution après abandon, points 3 et 4) |
 | **État** | Livré et exercé en pré-production. **Non activé en production** — voir point 7. Trois points restent ouverts, recensés au point 8. |
 | **Rédacteur** | Équipe technique CommonLink |
 
@@ -53,15 +53,16 @@ comptabilité du solde restant allouable.
 
 ## 3. Le cycle de vie d'un virement, en termes d'argent
 
-Cinq étapes. La colonne qui compte est la troisième.
+Cinq étapes, et une issue hors virement (l'annulation). La colonne qui compte est la troisième.
 
 | Étape | Ce que voit l'association | Où est l'argent | Réversible ? |
 |---|---|---|---|
-| **1. Enregistré** | Le paiement est saisi, pas encore émis | Sur le compte de l'association. **Déjà retiré du solde disponible de la campagne.** | Oui — sans conséquence |
+| **1. Enregistré** | Le paiement est saisi, pas encore émis | Sur le compte de l'association. **Déjà retiré du solde disponible de la campagne.** | Oui — l'association peut l'annuler (4.5) |
 | **2. En attente de validation** | « Autoriser » : un lien mène à sa banque | Sur le compte de l'association. Toujours retiré du solde. | Oui — l'abandon est sans conséquence |
 | **3. Virement autorisé** | L'ordre est parti | La banque exécute. **Point de non-retour côté CommonLink.** | Non |
 | **4. Virement exécuté** | Le bénéficiaire est crédité | Sur le compte du bénéficiaire | Non |
 | **5. Refusé** | Le motif traduit est affiché | Sur le compte de l'association. **Rendu au solde disponible.** | Sans objet — rien n'est parti |
+| **Annulé** | L'association a retiré un paiement qu'aucun virement n'engageait | Sur le compte de l'association. **Rendu au solde disponible.** | Non — définitif, rien n'est parti |
 
 **L'attestation au registre public n'est publiée qu'à l'étape 4**, après règlement effectivement
 constaté par la banque. Jamais avant. C'est la contrainte qui explique la prudence de tout ce qui
@@ -77,7 +78,17 @@ C'est le point le plus contre-intuitif du dispositif, et le plus important pour 
 
 Le **solde disponible** d'une campagne, celui qu'affiche le tableau de bord, vaut :
 
-> dons encaissés − virements exécutés − **virements enregistrés mais non encore exécutés**
+> dons **arrivés sur le compte de l'association** − virements exécutés − **virements enregistrés mais non encore exécutés**
+
+Un don est « arrivé » quand son argent est réellement sur le compte bancaire de l'association, d'où
+part le virement. Pour un don payé via Mollie, c'est le cas dès sa confirmation. Un don payé via
+HelloAsso reste d'abord chez HelloAsso, qui le reverse plus tard à l'association : **un don HelloAsso
+confirmé ne peut aujourd'hui financer aucun paiement**, tant que le suivi des versements HelloAsso
+n'est pas livré. La même règle vaut pour la traçabilité côté donateur : seuls les dons arrivés sont
+imputés aux paiements exécutés, du plus anciennement arrivé au plus récent.
+
+La même base « dons arrivés » sert aux trois calculs : le solde affiché, le contrôle à
+l'enregistrement d'un paiement et le contrôle au moment du virement (§4.2).
 
 Autrement dit : à la seconde où une association enregistre un paiement de 5 000 €, ces 5 000 €
 **cessent d'être allouables**, alors même qu'aucun euro n'a quitté son compte et qu'elle n'a encore
@@ -93,22 +104,41 @@ ce qui reste allouable, la carte **« En attente »** donne exactement la somme 
 paiements ouverts. Les deux s'additionnent pour redonner le total non encore décaissé.
 
 **Effet de bord assumé :** une association qui enregistre des paiements sans les émettre immobilise
-la capacité de sa campagne. Les montants lui reviennent dès que le paiement est abandonné ou
-refusé, mais tant qu'il reste ouvert, ils sont indisponibles.
+la capacité de sa campagne. Les montants lui reviennent quand la banque refuse le paiement ou quand
+l'association l'annule (4.5) ; tant qu'il reste ouvert — y compris après un abandon (4.4) — ils sont
+indisponibles.
 
 ### 4.2 Le contrôle au moment de l'émission porte sur un solde différent
 
 Au moment où l'association confirme un paiement, le contrôle de provision se fait contre les **dons
-encaissés moins les seuls virements déjà exécutés** — les paiements enregistrés sont exclus du
-calcul.
+arrivés sur le compte de l'association (§4.1) moins les virements déjà exécutés et ceux dont
+l'exécution est en cours** — les paiements seulement enregistrés sont exclus du calcul.
 
 La raison est arithmétique : le paiement que l'on est en train de confirmer est lui-même enregistré.
 S'il était compté, il se bloquerait lui-même.
 
+**Un refus identifiable.** Quand le seul obstacle est l'argent disponible, à l'enregistrement comme à
+la confirmation, le refus porte un code propre (« fonds non disponibles ») et le montant encore
+utilisable à cet instant (jamais négatif). Cela vaut pour tous les prestataires de paiement des dons.
+Rien n'est engagé : le paiement reste enregistré et peut être confirmé à nouveau plus tard. Quand
+l'argent manque **et** qu'un autre motif bloque (IBAN non vérifié, description trop courte), le refus
+reste générique et liste les motifs.
+
+Deux garanties sont vérifiées par des tests sur une base de données identique à la production :
+deux enregistrements simultanés dont la somme dépasse le disponible — un seul passe, l'autre reçoit
+ce refus ; et, après une suite d'enregistrements, d'exécutions, d'annulations et de refus bancaires,
+la somme des paiements exécutés et enregistrés ne dépasse jamais celle des dons arrivés.
+
 ### 4.3 La restitution, et les deux garde-fous qui l'encadrent
 
-Un montant réservé retourne au solde disponible dans deux cas seulement : **abandon** ou **refus**.
-Dans les deux cas, rien n'a été débité.
+Un montant réservé retourne au solde disponible dans deux cas seulement : **refus** de la banque ou
+**annulation** par l'association (4.5). Dans les deux cas, rien n'a été débité.
+
+Un **abandon** (4.4) ne rend le montant qu'au solde contrôlé à l'émission (4.2) : le paiement reste
+ouvert, donc toujours déduit du solde disponible affiché, jusqu'à ce que l'association le réémette
+ou l'annule. Jusqu'au 21 octobre 2026, cette fiche indiquait à tort qu'un abandon rendait le montant
+au solde disponible ; aucune action ne permettait alors de lever cette réservation, et des montants
+restaient immobilisés sans issue.
 
 Deux protections encadrent cette restitution, chacune écrite après un incident réel.
 
@@ -140,14 +170,39 @@ C'est la distinction structurante du dispositif, et elle n'est pas intuitive :
 
 - **Un abandon n'est pas un échec.** Délai d'autorisation expiré, lien annulé, association qui ferme
   son onglet, ou qui clique sur « Annuler » chez sa banque : personne n'a jamais demandé à la
-  banque d'exécuter quoi que ce soit. Le paiement redevient **réémettable**, avec un nouveau lien,
-  et son montant retourne au solde.
+  banque d'exécuter quoi que ce soit. Le paiement redevient **réémettable**, avec un nouveau lien ;
+  son montant redevient émettable (4.2) mais reste réservé sur le solde disponible tant que
+  l'association ne l'a ni réémis ni annulé (4.5).
 - **Un refus bancaire est terminal.** La banque a été interrogée et a dit non. Le paiement est
   définitivement retiré, son montant rendu au solde, et l'association doit en créer un nouveau.
 
 Sans cette distinction, une association qui laissait expirer un écran voyait son paiement retiré
 définitivement. Elle en recréait alors un autre — ce qui a produit, le 23 septembre 2026, **quatre
 lignes identiques issues d'un seul paiement**.
+
+### 4.5 L'annulation par l'association
+
+Depuis le 21 octobre 2026, l'association peut **annuler** un paiement enregistré, depuis sa ligne
+dans le journal des paiements ou depuis son panneau de détail, après une confirmation explicite.
+Les paiements annulés restent visibles dans le journal, sous un filtre « Annulés ». L'annulation est définitive et rend le
+montant au solde disponible.
+
+Elle n'est possible que lorsqu'**aucun virement n'est engagé** : paiement jamais émis, ou abandonné
+(4.4). Elle est refusée dès qu'un lien d'autorisation est en cours d'utilisation ou qu'un virement
+est autorisé ou en exécution : seule la réponse de la banque peut alors clore le paiement. La même
+règle est vérifiée par le serveur, sous le même verrou que l'émission : une émission et une
+annulation simultanées ne peuvent pas aboutir toutes les deux. **Rectification du 12 novembre 2026** : jusqu'au déploiement de la correction écrite à cette date, la vérification sous verrou relit une copie du paiement déjà chargée par la même requête, et non l'état enregistré en base ; deux émissions simultanées du même paiement, ou une émission et une annulation simultanées, peuvent donc aboutir toutes les deux. Après ce déploiement, la vérification relit l'état enregistré sous le verrou, et un test exécuté sur une base PostgreSQL réelle reproduit les deux situations.
+
+Les deux garde-fous de 4.3 s'appliquent :
+
+- si un lien d'autorisation a existé, il est **révoqué avant** l'annulation ; si la révocation ne
+  peut être confirmée, l'annulation est refusée et le paiement reste ouvert ;
+- si la banque rapporte malgré tout un virement exécuté sur un paiement annulé, le règlement est
+  enregistré tel quel — la banque a exécuté — et une alerte technique est émise, comme pour un
+  règlement sur un montant déjà rendu au solde.
+
+Un paiement annulé ne finance aucun don dans la traçabilité côté donateur, qui ne compte que les
+virements exécutés.
 
 ---
 
@@ -278,7 +333,7 @@ et désactiver explicitement le mode démonstration sur cet environnement.
 
 ## 8. Ce que ce dispositif ne couvre pas
 
-Trois points sont ouverts. Aucun n'est un défaut de rédaction : ce sont des travaux non faits.
+Quatre points sont ouverts. Aucun n'est un défaut de rédaction : ce sont des travaux non faits.
 
 ### 8.1 Deux motifs annoncent une alerte technique qui n'est pas branchée
 
@@ -320,6 +375,22 @@ confrontée à un refus réel — elle est tirée de la documentation, pas d'une
 La provision insuffisante étant un cas très probable en usage courant, ce point mérite une
 vérification dès la première exécution réelle en production.
 
+### 8.4 Les dons HelloAsso ne sont utilisables qu'après leur versement par HelloAsso
+
+Un don HelloAsso confirmé n'est « arrivé » au sens du §4.1 qu'une fois versé par HelloAsso et le
+délai de sécurité écoulé (deux jours ouvrés après le virement). Le suivi quotidien qui le constate
+est décrit par la fiche *Mise à disposition des fonds des dons HelloAsso*
+(`mise-a-disposition-fonds-helloasso.md`). Jusque-là, ces dons ne comptent ni dans le solde
+disponible ni dans la traçabilité côté donateur ; un don remboursé ou contesté n'y compte jamais.
+Depuis le 11 novembre 2026, deux voies permettent d'utiliser ces dons avant la fin du délai, décrites
+par cette fiche : la confirmation de réception par l'association, après relecture de chaque don
+chez HelloAsso, et le déblocage manuel par un curateur, sur la ligne du relevé bancaire de
+l'association (texte et fichier), notamment quand le lien HelloAsso est coupé. Les deux sont
+journalisés au journal de conformité. La confirmation se fait depuis l'onglet Paiements, qui
+affiche aussi l'état des dons et le montant utilisable ; le déblocage n'a pas d'écran (le curateur passe par
+l'interface de programmation). Le délai automatique repose sur une date de HelloAsso dont le sens
+(émission ou crédit) n'est pas encore confirmé.
+
 ---
 
 ## 9. Suivi des travaux restants
@@ -339,8 +410,8 @@ Pour le lecteur technique, la logique décrite ici se trouve dans :
 
 - `PayoutService` — calcul des soldes disponible et confirmable, fermeture de la fonctionnalité par
   environnement ;
-- `PayoutConfirmer` — réservation, restitution, refus terminal, règlement et mise en file de
-  l'attestation ;
+- `PayoutConfirmer` — réservation, restitution, refus terminal, annulation, règlement et mise en
+  file de l'attestation ;
 - `BridgeWebhookService` — traitement des comptes rendus de Bridge, distinction abandon / refus,
   sursis avant restitution ;
 - `BridgePayoutReconciler` — balayage de rattrapage et signalement ;

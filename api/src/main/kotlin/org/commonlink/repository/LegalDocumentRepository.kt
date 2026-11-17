@@ -9,4 +9,7 @@ interface LegalDocumentRepository : JpaRepository<LegalDocument, UUID> {
 
     /** The current version of [documentType] — the one most recently published. */
     fun findTopByDocumentTypeOrderByPublishedAtDesc(documentType: LegalDocumentType): LegalDocument?
+
+    /** One exact version — backed by the `legal_document_type_version_uq` unique constraint (V73). */
+    fun findByDocumentTypeAndVersion(documentType: LegalDocumentType, version: String): LegalDocument?
 }

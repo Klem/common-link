@@ -109,9 +109,10 @@ interface PayoutRepository : JpaRepository<Payout, UUID> {
 
     /**
      * Confirmed payouts of a campaign, oldest first — FIFO consumption order for
-     * [org.commonlink.service.DonationAllocationService].
+     * [org.commonlink.service.DonationAllocationService]. Ties on `confirmedAt` are broken by id
+     * so the allocation is identical on every read.
      */
-    fun findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId: UUID, status: PayoutStatus): List<Payout>
+    fun findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId: UUID, status: PayoutStatus): List<Payout>
 
     /**
      * Payouts confirmed since [since] on associations [donorId] has funded -- feeds the donor

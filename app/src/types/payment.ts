@@ -16,13 +16,15 @@ export const PayoutStatus = {
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
   FAILED: 'FAILED',
+  /** Withdrawn by the association while no transfer was in progress. Terminal, reserves nothing. */
+  CANCELLED: 'CANCELLED',
 } as const;
 export type PayoutStatus = (typeof PayoutStatus)[keyof typeof PayoutStatus];
 
 /**
  * State of the Bridge payment initiation for a payout — mirrors backend BridgePaymentStatus.
  *
- * Deliberately separate from {@link PayoutStatus}: the accounting lifecycle stays three-state so
+ * Deliberately separate from {@link PayoutStatus}: the accounting lifecycle stays its own small set so
  * balance, KPI and breakdown computations keep their meaning, while the bank's own view is carried
  * here for display. The first six values are Bridge's ISO 20022 transaction statuses; the last two
  * are payment-link terminal states.
@@ -164,6 +166,18 @@ export function needsBankAuthorisation(payout: PayoutDto): boolean {
 }
 
 /**
+ * True when the association may cancel the payout — mirrors `PayoutConfirmer.assertCancellable`.
+ *
+ * Only a PENDING payout with no transfer in progress: never sent, or released after a failed
+ * initiation or a dead link. Nothing resolves those on their own, and their amount stays reserved
+ * on the available balance until cancelled. A non-null `bridgeStatus` means the association may be
+ * authorising at its bank right now — only the bank's answer ends that.
+ */
+export function canCancelPayout(payout: PayoutDto): boolean {
+  return payout.status === PayoutStatus.PENDING && payout.bridgeStatus === null;
+}
+
+/**
  * True when the last attempt to initiate the transfer failed, leaving nothing engaged.
  *
  * The payout deliberately stays PENDING rather than FAILED: FAILED is terminal, and stamping it on
@@ -187,7 +201,7 @@ export function lastAttemptFailed(payout: PayoutDto): boolean {
 /**
  * What the journal shows in a payout's status cell.
  *
- * Deliberately finer than {@link PayoutStatus}: the accounting lifecycle has three values, but a
+ * Deliberately finer than {@link PayoutStatus}: the accounting lifecycle has four values, but a
  * payout sitting in `PENDING` can be four very different things to the association — never
  * submitted, waiting for it to authorise the transfer at its bank, authorised and travelling, or
  * failed on the way out and retryable. Collapsing them is what made a hourglass mean anything.
@@ -198,6 +212,8 @@ export function lastAttemptFailed(payout: PayoutDto): boolean {
 export const PayoutUiState = {
   /** Terminal refusal by the bank. Nothing more can be done from here. */
   FAILED: 'FAILED',
+  /** Withdrawn by the association before any transfer. Terminal. */
+  CANCELLED: 'CANCELLED',
   /** Settled: the beneficiary has been credited. */
   CONFIRMED: 'CONFIRMED',
   /** Waiting for the association to authorise the transfer with its own bank. */
@@ -225,6 +241,7 @@ export type PayoutUiState = (typeof PayoutUiState)[keyof typeof PayoutUiState];
  */
 export function payoutUiState(payout: PayoutDto): PayoutUiState {
   if (payout.status === PayoutStatus.FAILED) return PayoutUiState.FAILED;
+  if (payout.status === PayoutStatus.CANCELLED) return PayoutUiState.CANCELLED;
   if (payout.status === PayoutStatus.CONFIRMED) return PayoutUiState.CONFIRMED;
   if (isPayoutInFlight(payout)) {
     if (

@@ -478,4 +478,44 @@ class VerificationServiceTest {
         verify(exactly = 0) { documentRepo.findContentById(any()) }
         verify(exactly = 0) { complianceAuditLogService.appendAssociationDocumentDownloaded(any(), any(), any(), any()) }
     }
+
+    // ── deleteOptionalDocument (audit 2026-11-12, H2) ────────────────────────────
+
+    private fun ownDocument(type: AssociationDocumentType) {
+        ownProfile()
+        val meta: AssociationDocumentMetadata = mockk(relaxed = true)
+        every { meta.docType } returns type
+        every { documentRepo.findMetadataByIdAndAssociationId(docId, associationId) } returns meta
+        justRun { documentRepo.deleteById(docId) }
+    }
+
+    @Test
+    fun `deleteOptionalDocument - supplementary document is deleted`() {
+        ownDocument(AssociationDocumentType.OPTIONAL)
+
+        service.deleteOptionalDocument(userId, docId)
+
+        verify(exactly = 1) { documentRepo.deleteById(docId) }
+    }
+
+    @Test
+    fun `deleteOptionalDocument - verification and mandate documents are refused and kept`() {
+        AssociationDocumentType.entries.filter { it != AssociationDocumentType.OPTIONAL }.forEach { type ->
+            ownDocument(type)
+
+            assertThrows(ConflictException::class.java) { service.deleteOptionalDocument(userId, docId) }
+        }
+
+        verify(exactly = 0) { documentRepo.deleteById(any()) }
+    }
+
+    @Test
+    fun `deleteOptionalDocument - document of another association is 404`() {
+        ownProfile()
+        every { documentRepo.findMetadataByIdAndAssociationId(docId, associationId) } returns null
+
+        assertThrows(NotFoundException::class.java) { service.deleteOptionalDocument(userId, docId) }
+
+        verify(exactly = 0) { documentRepo.deleteById(any()) }
+    }
 }

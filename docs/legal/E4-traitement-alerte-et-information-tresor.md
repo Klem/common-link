@@ -111,14 +111,22 @@ La clôture d'une alerte exige :
 
 ### 4.3 Effet de la décision sur le dossier contrôlé
 
-Le contrôle de gel est rejoué à chaque tentative d'approbation d'un dossier. Une décision qui ne
-serait pas prise en compte par ce contrôle resterait sans effet : les mêmes entrées du registre
-seraient retrouvées, le dossier refusé de nouveau, et une alerte en double ouverte à chaque essai.
+Le contrôle de gel est rejoué à chaque tentative d'approbation d'un dossier, et à chaque tentative
+de don. Une décision qui ne serait pas prise en compte par ce contrôle resterait sans effet : les
+mêmes entrées du registre seraient retrouvées, le dossier ou le don refusé de nouveau, et une alerte
+en double ouverte à chaque essai. Le contrôle du don n'appliquait pas cette règle dans sa première
+version : un donateur homonyme jugé faux positif restait refusé. Le correctif du 16 novembre 2026
+s'applique à compter de son déploiement.
 
 Une clôture `FALSE_POSITIVE` **lève** donc les correspondances concernées :
 
 - la levée porte sur les couples **(nom criblé, entrée du registre)** que l'écran de décision
-  affichait — jamais sur la personne ou l'association en tant que telle ;
+  affichait — jamais sur la personne ou l'association en tant que telle. Pour un donateur, cet
+  écran affiche toutes les correspondances du profil donateur (retrouvé par l'adresse
+  électronique), quel que soit le nom déclaré à chaque tentative ;
+- pour un donateur, **une alerte de gel encore ouverte sur le même profil suspend toute levée** :
+  tant qu'une correspondance est en cours d'examen, aucune décision antérieure ne laisse passer un
+  paiement (fiche `E4-controle-gel-des-dons.md` § 4.5) ;
 - elle est bornée dans le temps par l'enregistrement `ALERT_CLOSED` : les correspondances
   constatées après la décision n'en bénéficient pas ;
 - une entrée du registre non couverte par la décision — mise à jour du registre national,

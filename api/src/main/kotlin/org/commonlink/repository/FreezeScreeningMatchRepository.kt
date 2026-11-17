@@ -50,7 +50,10 @@ interface FreezeScreeningMatchRepository : JpaRepository<FreezeScreeningMatch, U
         auditLogSeqRef: Long,
     ): List<FreezeScreeningMatch>
 
-    /** Same scope as [findBySubjectIdOrderByScoreDesc], bounded to a journal position. */
+    /**
+     * Same scope as [findBySubjectIdOrderByScoreDesc], bounded to a journal position. Backs the
+     * beneficial-owner and donor clearances of [org.commonlink.service.FreezeClearanceService].
+     */
     fun findBySubjectIdAndAuditLogSeqRefLessThanEqual(
         subjectId: UUID,
         auditLogSeqRef: Long,

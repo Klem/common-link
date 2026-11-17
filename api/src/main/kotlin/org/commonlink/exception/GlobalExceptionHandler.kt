@@ -162,6 +162,17 @@ class GlobalExceptionHandler(
     }
 
     /**
+     * Handles [LegalDocumentVersionOutdatedException] with a `code: LEGAL_VERSION_OUTDATED` property
+     * (HTTP 409): the client reloads the CGU/CGV text and asks for acceptance again.
+     */
+    @ExceptionHandler(LegalDocumentVersionOutdatedException::class)
+    fun handleLegalDocumentVersionOutdated(ex: LegalDocumentVersionOutdatedException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Legal document version outdated")
+        problem.setProperty("code", "LEGAL_VERSION_OUTDATED")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
      * Handles [SirenAlreadyRegisteredException] with a `code: SIREN_ALREADY_REGISTERED` property
      * (HTTP 409), so the sign-up screen does not report a duplicate SIREN as a duplicate email.
      */
@@ -169,6 +180,31 @@ class GlobalExceptionHandler(
     fun handleSirenAlreadyRegistered(ex: SirenAlreadyRegisteredException): ResponseEntity<ProblemDetail> {
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "SIREN already registered")
         problem.setProperty("code", "SIREN_ALREADY_REGISTERED")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
+     * Handles [HelloAssoFundsConflictException] (transfer receipt confirmation, curator release) with its `code`
+     * property (HTTP 409). More specific than [handleConflict], which it takes precedence over.
+     */
+    @ExceptionHandler(HelloAssoFundsConflictException::class)
+    fun handleHelloAssoFundsConflict(ex: HelloAssoFundsConflictException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Conflict")
+        problem.setProperty("code", ex.code)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
+     * Handles [FundsNotAvailableException] with a `code: FUNDS_NOT_AVAILABLE` property and the amount still
+     * disbursable (HTTP 409). More specific than [handleConflict], which it takes precedence over.
+     */
+    @ExceptionHandler(FundsNotAvailableException::class)
+    fun handleFundsNotAvailable(ex: FundsNotAvailableException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Funds not available")
+        problem.setProperty("code", "FUNDS_NOT_AVAILABLE")
+        problem.setProperty("disbursable", ex.disbursable)
+        problem.setProperty("inTransit", ex.inTransit)
+        problem.setProperty("atProvider", ex.atProvider)
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
     }
 
@@ -185,6 +221,28 @@ class GlobalExceptionHandler(
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Collection cap reached")
         problem.setProperty("code", "COLLECTION_CAP_EXCEEDED")
         problem.setProperty("remainingCapacity", ex.remainingCapacity)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
+    /**
+     * Handles [HelloAssoLinkException] with its `code` property, so the dashboard tells invalid keys, an unresolved
+     * organization and a missing server configuration apart. Its message never carries a secret.
+     */
+    @ExceptionHandler(HelloAssoLinkException::class)
+    fun handleHelloAssoLink(ex: HelloAssoLinkException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(ex.status, ex.message ?: ex.code)
+        problem.setProperty("code", ex.code)
+        return ResponseEntity.status(ex.status).body(problem)
+    }
+
+    /**
+     * Handles [CollectionUnavailableException] with a `code: COLLECTION_UNAVAILABLE` property (HTTP 409), so the
+     * widget shows "temporarily unavailable" rather than a generic failure.
+     */
+    @ExceptionHandler(CollectionUnavailableException::class)
+    fun handleCollectionUnavailable(ex: CollectionUnavailableException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Collection unavailable")
+        problem.setProperty("code", "COLLECTION_UNAVAILABLE")
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
     }
 
@@ -260,6 +318,22 @@ class GlobalExceptionHandler(
     @ExceptionHandler(BridgeRequestRefusedException::class)
     fun handleBridgeRefusal(ex: BridgeRequestRefusedException, request: HttpServletRequest?): ResponseEntity<ProblemDetail> {
         appLogger.error("Bridge refused the request on {}: {}", path(request), ex.message)
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "Bad gateway")
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
+    }
+
+    /**
+     * Handles [HelloAssoCheckoutRefusedException] — HelloAsso answered the checkout creation and refused it.
+     *
+     * Logged at ERROR and **never alerted**, for the same reason as [handleBridgeRefusal]: HelloAsso is up, the
+     * request we built is what needs fixing. The status stays 502, which the donation page already reports.
+     */
+    @ExceptionHandler(HelloAssoCheckoutRefusedException::class)
+    fun handleHelloAssoCheckoutRefusal(
+        ex: HelloAssoCheckoutRefusedException,
+        request: HttpServletRequest?,
+    ): ResponseEntity<ProblemDetail> {
+        appLogger.error("HelloAsso refused the checkout on {}: {}", path(request), ex.message)
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "Bad gateway")
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(problem)
     }

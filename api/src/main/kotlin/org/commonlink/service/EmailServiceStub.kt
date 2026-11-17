@@ -54,6 +54,25 @@ class EmailServiceStub : EmailService {
         logger.info("Mollie KYC completed for '$associationName' — would notify $recipientEmail")
     }
 
+    override fun sendPaymentProviderChanged(
+        associationName: String,
+        recipientEmail: String,
+        providerName: String,
+        dashboardUrl: String,
+    ) {
+        logger.info(
+            "Payment provider of '$associationName' changed to $providerName — would notify $recipientEmail (setup: $dashboardUrl)"
+        )
+    }
+
+    override fun sendHelloAssoOnboardingReminder(associationName: String, recipientEmail: String, collectionUrl: String, final: Boolean) {
+        logger.info("HelloAsso ${if (final) "D+7" else "D+1"} reminder for '$associationName' — would notify $recipientEmail ($collectionUrl)")
+    }
+
+    override fun sendHelloAssoConnectionBroken(associationName: String, recipientEmail: String, relinkUrl: String) {
+        logger.info("HelloAsso link BROKEN for '$associationName' — would notify $recipientEmail (relink: $relinkUrl)")
+    }
+
     override fun sendMollieConnectionBroken(associationName: String, recipientEmail: String, reconnectUrl: String) {
         logger.info(
             "Mollie connection BROKEN for '$associationName' — would notify $recipientEmail (reconnect: $reconnectUrl)"

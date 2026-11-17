@@ -53,7 +53,7 @@ export default function CampaignEditorPage() {
     useCampaign(campaignId);
   const payments = usePayments(campaignId, returningPayoutId);
   const { donorsPage } = useCampaignDonors(campaignId);
-  const { verificationStatus, bankStatus, mollieResolved, mollieDashboardUrl } = useAccStatusStore();
+  const { verificationStatus, bankStatus, bankResolved, bankActionUrl, paymentProvider } = useAccStatusStore();
   const { addToast } = useToastStore();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') ?? 'info');
@@ -89,8 +89,8 @@ export default function CampaignEditorPage() {
     if (campaign) updateCampaignInfo({ name: campaign.name, emoji: campaign.emoji });
   };
 
-  const handleConfirmPublish = async (cguAccepted: boolean) => {
-    const updated = await publishCampaign(campaignId, cguAccepted);
+  const handleConfirmPublish = async (cguAccepted: boolean, cguVersion: string | null) => {
+    const updated = await publishCampaign(campaignId, cguAccepted, cguVersion);
     setCampaign(updated);
     setShowPublishModal(false);
     addToast('success', 'publishCampaignSuccess');
@@ -208,8 +208,9 @@ export default function CampaignEditorPage() {
           campaign={campaign}
           verificationStatus={verificationStatus}
           bankStatus={bankStatus}
-          mollieResolved={mollieResolved}
-          mollieDashboardUrl={mollieDashboardUrl}
+          bankResolved={bankResolved}
+          bankActionUrl={bankActionUrl}
+          paymentProvider={paymentProvider}
           onClose={() => setShowPublishModal(false)}
           onConfirm={handleConfirmPublish}
         />

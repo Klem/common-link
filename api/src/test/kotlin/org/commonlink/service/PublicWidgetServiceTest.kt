@@ -1,5 +1,12 @@
 package org.commonlink.service
 
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.commonlink.payment.PaymentProviderId
+import org.commonlink.exception.CollectionUnavailableException
+import org.commonlink.entity.MollieConnectionState
+import org.commonlink.entity.MollieConnection
+import io.mockk.verify
 import io.mockk.every
 import io.mockk.mockk
 import org.commonlink.config.MollieProperties
@@ -12,11 +19,15 @@ import org.commonlink.entity.CampaignStatus
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.ConflictException
+import org.commonlink.payment.MollieProviderAdapter
+import org.commonlink.payment.PaymentProviderRegistry
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.commonlink.entity.LegalDocumentType
+import org.commonlink.exception.LegalDocumentVersionOutdatedException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
@@ -33,22 +44,32 @@ class PublicWidgetServiceTest {
     private val associationProfileRepository: AssociationProfileRepository = mockk()
     private val donationCapService: DonationCapService = mockk(relaxed = true)
 
+    private val mollieConnectionRepository: MollieConnectionRepository = mockk(relaxed = true)
+    private val guestDonorService: GuestDonorService = mockk(relaxed = true)
+    private val legalAcceptanceService: LegalAcceptanceService = mockk(relaxed = true)
+
+    private val mollieProviderAdapter = MollieProviderAdapter(
+        mollieConnectionRepository = mollieConnectionRepository,
+        mollieOAuthStateRepository = mockk(relaxed = true),
+        mollieConnectTokenManager = mockk(relaxed = true),
+        mollieClient = mockk(relaxed = true),
+        mollieProperties = mockk<MollieProperties>(relaxed = true),
+        mollieWebhookService = mockk(relaxed = true),
+        mollieConnectService = mockk(relaxed = true),
+    )
+
     private val service = PublicWidgetService(
         associationProfileRepository = associationProfileRepository,
         donationRepository = mockk(relaxed = true),
         donorProfileRepository = mockk(relaxed = true),
-        guestDonorService = mockk(relaxed = true),
-        mollieClient = mockk(relaxed = true),
-        mollieProperties = mockk(relaxed = true),
+        guestDonorService = guestDonorService,
         donationService = mockk(relaxed = true),
-        mollieConnectionRepository = mockk(relaxed = true),
-        mollieConnectTokenManager = mockk(relaxed = true),
         taxRateService = mockk(relaxed = true),
         landingPreviewTokenService = mockk(relaxed = true),
         freezeScreeningDonationService = mockk(relaxed = true),
         donationCapService = donationCapService,
-        mollieWebhookService = mockk(relaxed = true),
-        legalAcceptanceService = mockk(relaxed = true),
+        legalAcceptanceService = legalAcceptanceService,
+        paymentProviderRegistry = PaymentProviderRegistry(listOf(mollieProviderAdapter)),
     )
 
     private fun campaign(status: CampaignStatus = CampaignStatus.LIVE) = Campaign(
@@ -118,9 +139,87 @@ class PublicWidgetServiceTest {
             donorCity = "Paris",
             consent = true,
             cguAccepted = true,
-            cgvAccepted = true,
+            cguVersion = "test",
         )
 
         assertThrows<ConflictException> { service.createDonation("clk_x", request) }
+    }
+
+    // ── Collection availability (lot D) ──────────────────────────────────────
+
+    private fun readyConnection() = mockk<MollieConnection> {
+        every { state } returns MollieConnectionState.ACTIVE
+        every { canCollectDonations() } returns true
+    }
+
+    private fun request() = CreateGuestDonationRequest(
+        amount = BigDecimal("10.00"),
+        donorEmail = "donor@example.org",
+        donorFullName = "Jean Donateur",
+        donorAddressLine1 = "1 rue de la Paix",
+        donorPostalCode = "75001",
+        donorCity = "Paris",
+        consent = true,
+        cguAccepted = true,
+        cguVersion = "test",
+    )
+
+    @Test
+    fun `getWidget exposes collectAvailable false when the provider is not ready`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign)
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns null
+
+        assertFalse(service.getWidget("clk_x").collectAvailable)
+    }
+
+    @Test
+    fun `getWidget exposes collectAvailable true when the provider is ready`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign)
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns readyConnection()
+
+        assertTrue(service.getWidget("clk_x").collectAvailable)
+    }
+
+    @Test
+    fun `getWidget exposes collectAvailable false for a HELLOASSO association, Mollie data ignored`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign).apply { paymentProvider = PaymentProviderId.HELLOASSO }
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns readyConnection()
+
+        assertFalse(service.getWidget("clk_x").collectAvailable)
+    }
+
+    @Test
+    fun `createDonation refuses an unavailable collection before creating any guest donor`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign)
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns null
+
+        assertThrows<CollectionUnavailableException> { service.createDonation("clk_x", request()) }
+
+        verify(exactly = 0) { guestDonorService.findOrCreateGuestDonor(any(), any()) }
+        verify(exactly = 0) { donationCapService.requireWithinCap(any(), any()) }
+    }
+
+    @Test
+    fun `createDonation refuses an outdated CGU version before creating any guest donor`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign)
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns readyConnection()
+        every {
+            legalAcceptanceService.requireCurrentDonorVersions(mapOf(LegalDocumentType.CGU to "test"))
+        } throws LegalDocumentVersionOutdatedException("CGU version test is not the current version")
+
+        assertThrows<LegalDocumentVersionOutdatedException> { service.createDonation("clk_x", request()) }
+
+        verify(exactly = 0) { guestDonorService.findOrCreateGuestDonor(any(), any()) }
+        verify(exactly = 0) { legalAcceptanceService.recordDonorAcceptance(any(), any(), any(), any(), any(), any()) }
     }
 }

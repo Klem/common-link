@@ -1,25 +1,41 @@
 import { create } from 'zustand';
 import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
+import type { PaymentProviderId } from '@/types/paymentProvider';
+import type { HelloAssoStatus } from '@/types/helloasso';
+import type { PaymentStatusRefreshOptions } from '@/hooks/payment/usePaymentStatus';
 
 /** Raw statuses pushed into the store by `AssociationStatusSync`. */
 export interface AccStatusPayload {
   /** KYC verification lifecycle state of the association profile. */
   verificationStatus: VerificationStatus;
-  /** Bank-setup state derived from the Mollie KYC DTO. */
+  /** Bank-setup state computed server-side by the association's payment provider. */
   bankStatus: BankSetupStatus;
   /** Reason given by the back-office when `verificationStatus` is REJECTED. */
   rejectionReason: string | null;
-  /** Deep link to the Mollie hosted onboarding wizard, null once onboarding is complete. */
-  mollieDashboardUrl: string | null;
   /**
-   * False while the Mollie KYC request is still in flight. `bankStatus` is meaningless until it
-   * flips: `deriveBankSetupStatus` returns `NOT_CONNECTED` both for "never connected" and for
-   * "not loaded yet", so consumers must not claim the bank account is missing before the request
-   * settles. A failed request counts as resolved — the status is then genuinely unknown.
+   * Link to the action the payment provider expects from the association (Mollie hosted onboarding
+   * wizard, or HelloAsso verification page), null when no action is pending.
    */
-  mollieResolved: boolean;
+  bankActionUrl: string | null;
+  /**
+   * False while the payment-status request is still in flight. `bankStatus` is meaningless until it
+   * flips: it defaults to `NOT_CONNECTED` both for "never connected" and for "not loaded yet", so
+   * consumers must not claim the bank account is missing before the request settles. A failed
+   * request counts as resolved — the status is then genuinely unknown.
+   */
+  bankResolved: boolean;
+  /** Payment provider of the association, null until the payment status has been read. */
+  paymentProvider: PaymentProviderId | null;
+  /**
+   * HelloAsso link details of the payment status (read by the HelloAsso journey of the "Encaissement des dons" tab);
+   * null for another provider or until read.
+   */
+  helloasso: HelloAssoStatus | null;
 }
+
+/** Re-reads the payment status (`usePaymentStatus.refresh`); `silent` for re-reads the user did not trigger. */
+export type PaymentStatusRefresh = (options?: PaymentStatusRefreshOptions) => Promise<void>;
 
 interface AccStatusState extends AccStatusPayload {
   /**
@@ -34,10 +50,17 @@ interface AccStatusState extends AccStatusPayload {
   total: number;
   /** True when the association's KYC dossier is verified. Derived from `verificationStatus`. */
   verified: boolean;
-  /** True when Mollie KYC is complete and the association can receive payments (required for publishing). */
+  /** True when the provider reports the bank setup as complete (required for publishing). */
   bank: boolean;
-  /** Called by `AssociationStatusSync` whenever the profile or the Mollie status changes. */
+  /**
+   * Re-reads the payment status through the dashboard-wide hook of `AssociationStatusSync` (a single status read for
+   * every consumer); a no-op until that component has mounted.
+   */
+  refreshPaymentStatus: PaymentStatusRefresh;
+  /** Called by `AssociationStatusSync` whenever the profile or the payment status changes. */
   setAccStatus: (payload: AccStatusPayload) => void;
+  /** Called by `AssociationStatusSync` to expose its status hook's `refresh`. */
+  setPaymentStatusRefresh: (refresh: PaymentStatusRefresh) => void;
 }
 
 /**
@@ -51,8 +74,11 @@ export const useAccStatusStore = create<AccStatusState>((set) => ({
   verificationStatus: VerificationStatus.UNVERIFIED,
   bankStatus: BankSetupStatus.NOT_CONNECTED,
   rejectionReason: null,
-  mollieDashboardUrl: null,
-  mollieResolved: false,
+  bankActionUrl: null,
+  bankResolved: false,
+  paymentProvider: null,
+  helloasso: null,
+  refreshPaymentStatus: () => Promise.resolve(),
   hydrated: false,
   done: 0,
   total: 2,
@@ -64,13 +90,14 @@ export const useAccStatusStore = create<AccStatusState>((set) => ({
     set((state) => ({
       ...payload,
       hydrated: true,
-      // Sticky: a manual `refresh()` puts the Mollie hook back into loading, and the bank state
+      // Sticky: a manual `refresh()` puts the status hook back into loading, and the bank state
       // must not fall back to "unknown" once it has been resolved at least once.
-      mollieResolved: state.mollieResolved || payload.mollieResolved,
+      bankResolved: state.bankResolved || payload.bankResolved,
       verified,
       bank,
       done: (verified ? 1 : 0) + (bank ? 1 : 0),
       total: 2,
     }));
   },
+  setPaymentStatusRefresh: (refresh) => set({ refreshPaymentStatus: refresh }),
 }));

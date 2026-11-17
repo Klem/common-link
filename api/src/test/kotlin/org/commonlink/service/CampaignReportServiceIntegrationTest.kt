@@ -55,6 +55,8 @@ import java.util.concurrent.TimeUnit
 @TestPropertySource(properties = [
     "app.jwt.secret=test-secret-key-must-be-at-least-32-chars!!",
     "app.frontend-url=http://localhost:3000",
+    // HelloAssoRedirectUrlGuard: the local profile gives no default, and the real HelloAsso needs https.
+    "app.helloasso.redirect-base-url=https://localhost:3000",
 ])
 @Transactional
 class CampaignReportServiceIntegrationTest {

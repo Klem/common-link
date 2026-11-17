@@ -1,0 +1,60 @@
+{
+  "_comment": "HAND-BUILT from SDK schema, not observed (state and cashOutState per meta-plan 3.3 / 3.5)",
+  "cardExpirationDate": "2030-01-31T00:00:00Z",
+  "disputes": [],
+  "order": {
+    "id": 90001,
+    "date": "2026-11-05T15:27:41.8549543+01:00",
+    "formSlug": "default",
+    "formType": "Checkout",
+    "organizationName": "ASSO EXEMPLE",
+    "organizationSlug": "asso-exemple",
+    "organizationType": "Association1901",
+    "organizationIsUnderColucheLaw": false,
+    "formName": "Checkout",
+    "meta": {
+      "createdAt": "2026-11-05T15:27:22.9572846+01:00",
+      "updatedAt": "2026-11-05T15:27:41.9166667+01:00"
+    },
+    "isAnonymous": false,
+    "isAmountHidden": false
+  },
+  "payer": {
+    "email": "donateur@example.org",
+    "address": "1 rue de l'Exemple",
+    "city": "Exempleville",
+    "zipCode": "75000",
+    "country": "FRA",
+    "firstName": "Alex",
+    "lastName": "Exemple"
+  },
+  "items": [
+    {
+      "shareAmount": 1000,
+      "shareItemAmount": 1000,
+      "id": 80001,
+      "amount": 1000,
+      "type": "Payment",
+      "state": "Processed",
+      "name": "Don - Campagne exemple"
+    }
+  ],
+  "displayData": {
+    "formDisplayType": "Checkout",
+    "isTapToPay": false
+  },
+  "cashOutState": "Refunded",
+  "paymentReceiptUrl": "https://www.helloasso-sandbox.com/associations/asso-exemple/checkout/paiement-attestation/90001",
+  "paymentProviderType": "StripeV2",
+  "id": 70001,
+  "amount": 1000,
+  "date": "2026-11-05T15:27:41.8549543+01:00",
+  "paymentMeans": "Card",
+  "installmentNumber": 1,
+  "state": "Refunded",
+  "meta": {
+    "createdAt": "2026-11-05T15:27:22.9572846+01:00",
+    "updatedAt": "2026-11-05T15:27:41.9230926+01:00"
+  },
+  "refundOperations": []
+}

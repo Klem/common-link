@@ -4,17 +4,17 @@ import { AssociationStatusSync } from '../AssociationStatusSync';
 import { useAccStatusStore } from '@/stores/accStatusStore';
 import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
-import { MollieOnboardingStatus } from '@/types/mollie-connect';
+import { PaymentProviderId } from '@/types/paymentProvider';
 
 const profileMock = vi.fn();
-const mollieMock = vi.fn();
+const paymentMock = vi.fn();
 
 vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({
   useAssociationProfile: () => profileMock(),
 }));
 
-vi.mock('@/hooks/mollie/useMollieKycStatus', () => ({
-  useMollieKycStatus: () => mollieMock(),
+vi.mock('@/hooks/payment/usePaymentStatus', () => ({
+  usePaymentStatus: () => paymentMock(),
 }));
 
 /** Minimal profile shape consumed by the sync component. */
@@ -22,14 +22,17 @@ function profile(verificationStatus: VerificationStatus, rejectionReason: string
   return { profile: { verificationStatus, verificationRejectionReason: rejectionReason } };
 }
 
-/** Mollie hook return, defaulting to "request settled / never connected". */
-function mollie(overrides: Record<string, unknown> = {}) {
+/** Payment-status hook return, defaulting to "request settled / Mollie, never connected". */
+function payment(overrides: Record<string, unknown> = {}) {
   return {
-    connected: false,
-    broken: false,
-    onboardingStatus: null,
-    dashboardUrl: null,
+    provider: PaymentProviderId.MOLLIE,
+    status: BankSetupStatus.NOT_CONNECTED,
+    actionUrl: null,
+    warnings: [],
+    helloasso: null,
     isLoading: false,
+    error: null,
+    refresh: () => Promise.resolve(),
     ...overrides,
   };
 }
@@ -39,8 +42,9 @@ beforeEach(() => {
     verificationStatus: VerificationStatus.UNVERIFIED,
     bankStatus: BankSetupStatus.NOT_CONNECTED,
     rejectionReason: null,
-    mollieDashboardUrl: null,
-    mollieResolved: false,
+    bankActionUrl: null,
+    bankResolved: false,
+    paymentProvider: null,
     hydrated: false,
     done: 0,
     total: 2,
@@ -52,12 +56,12 @@ beforeEach(() => {
 describe('AssociationStatusSync', () => {
   /**
    * Regression guard: an earlier implementation only hydrated the store when BOTH the profile and
-   * the Mollie status were resolved, so a verified association that never connected Mollie kept the
-   * default `verified: false` and was shown as "pending verification".
+   * the bank status were resolved, so a verified association that never connected a provider kept
+   * the default `verified: false` and was shown as "pending verification".
    */
-  it('hydrates the store from the profile alone, whatever the Mollie status', () => {
+  it('hydrates the store from the profile alone, whatever the payment status', () => {
     profileMock.mockReturnValue(profile(VerificationStatus.VERIFIED));
-    mollieMock.mockReturnValue(mollie());
+    paymentMock.mockReturnValue(payment());
 
     render(<AssociationStatusSync />);
 
@@ -71,19 +75,19 @@ describe('AssociationStatusSync', () => {
   });
 
   /**
-   * Regression guard for the "compte bancaire non connecté" bug: while the Mollie request is in
-   * flight, `deriveBankSetupStatus` yields NOT_CONNECTED, which is indistinguishable from a real
-   * absence of connection. `mollieResolved` carries that distinction so consumers can wait instead
+   * Regression guard for the "compte bancaire non connecté" bug: while the status request is in
+   * flight, the bank status defaults to NOT_CONNECTED, which is indistinguishable from a real
+   * absence of connection. `bankResolved` carries that distinction so consumers can wait instead
    * of claiming a fully onboarded association has no bank account.
    */
-  it('reports the Mollie status as unresolved while it is still loading', () => {
+  it('reports the payment status as unresolved while it is still loading', () => {
     profileMock.mockReturnValue(profile(VerificationStatus.VERIFIED));
-    mollieMock.mockReturnValue(mollie({ connected: null, broken: null, isLoading: true }));
+    paymentMock.mockReturnValue(payment({ provider: null, status: null, isLoading: true }));
 
     render(<AssociationStatusSync />);
 
     const state = useAccStatusStore.getState();
-    expect(state.mollieResolved).toBe(false);
+    expect(state.bankResolved).toBe(false);
     // The verification state comes from the profile alone and is published immediately.
     expect(state.hydrated).toBe(true);
     expect(state.verificationStatus).toBe(VerificationStatus.VERIFIED);
@@ -92,7 +96,7 @@ describe('AssociationStatusSync', () => {
 
   it('does not touch the store while the profile is still loading', () => {
     profileMock.mockReturnValue({ profile: null });
-    mollieMock.mockReturnValue(mollie({ connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED }));
+    paymentMock.mockReturnValue(payment({ status: BankSetupStatus.COMPLETED }));
 
     render(<AssociationStatusSync />);
 
@@ -102,43 +106,56 @@ describe('AssociationStatusSync', () => {
     expect(useAccStatusStore.getState().hydrated).toBe(false);
   });
 
-  it('derives the bank status and exposes the Mollie wizard URL', () => {
+  it('stores the server-computed bank status and the provider action URL', () => {
     profileMock.mockReturnValue(profile(VerificationStatus.PENDING));
-    mollieMock.mockReturnValue(mollie({
-      connected: true,
-      broken: false,
-      onboardingStatus: MollieOnboardingStatus.NEEDS_DATA,
-      dashboardUrl: 'https://my.mollie.com/dashboard/onboarding',
+    paymentMock.mockReturnValue(payment({
+      status: BankSetupStatus.NEEDS_DATA,
+      actionUrl: 'https://my.mollie.com/dashboard/onboarding',
     }));
 
     render(<AssociationStatusSync />);
 
     const state = useAccStatusStore.getState();
     expect(state.bankStatus).toBe(BankSetupStatus.NEEDS_DATA);
-    expect(state.mollieDashboardUrl).toBe('https://my.mollie.com/dashboard/onboarding');
+    expect(state.bankActionUrl).toBe('https://my.mollie.com/dashboard/onboarding');
     expect(state.done).toBe(0);
   });
 
-  it('keeps the Mollie status resolved while a manual refresh is in flight', () => {
+  it('stores the payment provider of the association', () => {
     profileMock.mockReturnValue(profile(VerificationStatus.VERIFIED));
-    mollieMock.mockReturnValue(mollie({ connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED }));
+    paymentMock.mockReturnValue(payment({ provider: PaymentProviderId.HELLOASSO }));
+
+    render(<AssociationStatusSync />);
+
+    expect(useAccStatusStore.getState().paymentProvider).toBe(PaymentProviderId.HELLOASSO);
+  });
+
+  it('counts a failed status read as resolved', () => {
+    profileMock.mockReturnValue(profile(VerificationStatus.VERIFIED));
+    paymentMock.mockReturnValue(payment({ provider: null, status: null, error: 'common.errors.serverError' }));
+
+    render(<AssociationStatusSync />);
+
+    expect(useAccStatusStore.getState().bankResolved).toBe(true);
+    expect(useAccStatusStore.getState().bankStatus).toBe(BankSetupStatus.NOT_CONNECTED);
+  });
+
+  it('keeps the payment status resolved while a manual refresh is in flight', () => {
+    profileMock.mockReturnValue(profile(VerificationStatus.VERIFIED));
+    paymentMock.mockReturnValue(payment({ status: BankSetupStatus.COMPLETED }));
 
     const { rerender } = render(<AssociationStatusSync />);
-    expect(useAccStatusStore.getState().mollieResolved).toBe(true);
+    expect(useAccStatusStore.getState().bankResolved).toBe(true);
 
-    mollieMock.mockReturnValue(mollie({
-      connected: true,
-      onboardingStatus: MollieOnboardingStatus.COMPLETED,
-      isLoading: true,
-    }));
+    paymentMock.mockReturnValue(payment({ status: BankSetupStatus.COMPLETED, isLoading: true }));
     rerender(<AssociationStatusSync />);
 
-    expect(useAccStatusStore.getState().mollieResolved).toBe(true);
+    expect(useAccStatusStore.getState().bankResolved).toBe(true);
   });
 
   it('propagates the rejection reason and marks both steps done when everything is complete', () => {
     profileMock.mockReturnValue(profile(VerificationStatus.REJECTED, 'Statuts illisibles'));
-    mollieMock.mockReturnValue(mollie({ connected: true, onboardingStatus: MollieOnboardingStatus.COMPLETED }));
+    paymentMock.mockReturnValue(payment({ status: BankSetupStatus.COMPLETED }));
 
     render(<AssociationStatusSync />);
 

@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CampaignDto, BudgetSectionDto } from '@/types/campaign';
 import { BudgetSide } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
-import { LegalDocumentType } from '@/types/legal';
+import { ASSOCIATION_LEGAL_DOCUMENT } from '@/types/legal';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
-import { getLegalAcceptanceState } from '@/lib/api/legal';
+import { PaymentProviderId } from '@/types/paymentProvider';
+import { getLegalAcceptanceState, isLegalVersionOutdated } from '@/lib/api/legal';
 import { LegalDocumentModal } from '@/components/legal/LegalDocumentModal';
 import { LegalLinkButton } from '@/components/legal/LegalLinkButton';
 
@@ -49,16 +50,24 @@ interface PrePublishModalProps {
   /** Bank-setup state derived from the Mollie KYC DTO. */
   bankStatus: BankSetupStatus;
   /**
-   * False while the Mollie request is still in flight. `bankStatus` then defaults to
+   * False while the payment-status request is still in flight. `bankStatus` then defaults to
    * `NOT_CONNECTED`, so the modal shows a neutral loading row instead of claiming a fully
    * onboarded association has no bank account.
    */
-  mollieResolved: boolean;
-  /** Mollie hosted-onboarding deep link, used by the `NEEDS_DATA` call-to-action. */
-  mollieDashboardUrl: string | null;
+  bankResolved: boolean;
+  /**
+   * Payment-provider action link (Mollie hosted onboarding, HelloAsso verification page), used by the `NEEDS_DATA`
+   * call-to-action.
+   */
+  bankActionUrl: string | null;
+  /** Association's payment provider: picks the provider's own account labels. Absent or null = Mollie labels. */
+  paymentProvider?: PaymentProviderId | null;
   onClose: () => void;
-  /** @param cguAccepted Whether to send `cguAccepted: true` on the publish request. */
-  onConfirm: (cguAccepted: boolean) => Promise<void>;
+  /**
+   * @param cguAccepted Whether to send `cguAccepted: true` on the publish request.
+   * @param cguVersion The CGU version this dialog displayed, sent back as the accepted version.
+   */
+  onConfirm: (cguAccepted: boolean, cguVersion: string | null) => Promise<void>;
 }
 
 function sumSide(sections: BudgetSectionDto[], side: BudgetSide): number {
@@ -72,13 +81,16 @@ export function PrePublishModal({
   campaign,
   verificationStatus,
   bankStatus,
-  mollieResolved,
-  mollieDashboardUrl,
+  bankResolved,
+  bankActionUrl,
+  paymentProvider,
   onClose,
   onConfirm,
 }: PrePublishModalProps) {
   const t = useTranslations('dashboard.campaigns.publish');
+  const bankLabels = paymentProvider === PaymentProviderId.HELLOASSO ? 'account.helloAssoBank' : 'account.bank';
   const tNav = useTranslations('dashboard.campaigns.editor.tabs');
+  const tLegal = useTranslations('legal');
 
   // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
   // `cguState.accepted` means this association already has a standing acceptance of the current
@@ -87,11 +99,12 @@ export function PrePublishModal({
   const [publishError, setPublishError] = useState<string | null>(null);
   const [cguState, setCguState] = useState<{ accepted: boolean; version: string } | null>(null);
   const [cguChecked, setCguChecked] = useState(false);
-  useEffect(() => {
-    getLegalAcceptanceState(LegalDocumentType.CGU)
+  const loadCguState = useCallback(() => {
+    getLegalAcceptanceState(ASSOCIATION_LEGAL_DOCUMENT)
       .then((state) => setCguState({ accepted: state.accepted, version: state.currentVersion }))
       .catch(() => setCguState({ accepted: false, version: '' }));
   }, []);
+  useEffect(loadCguState, [loadCguState]);
   const cguAccepted = cguState?.accepted === true || cguChecked;
   const [showCguDoc, setShowCguDoc] = useState(false);
 
@@ -137,15 +150,24 @@ export function PrePublishModal({
     },
   ];
 
-  const bankReady = mollieResolved && bankStatus === BankSetupStatus.COMPLETED;
+  const bankReady = bankResolved && bankStatus === BankSetupStatus.COMPLETED;
   const kybReady = verificationStatus === VerificationStatus.VERIFIED;
   const accountComplete = bankReady && kybReady;
 
   const handlePublish = async () => {
     setAttempted(true);
     try {
-      await onConfirm(cguAccepted);
-    } catch {
+      await onConfirm(cguAccepted, cguState?.version || null);
+    } catch (err) {
+      if (isLegalVersionOutdated(err)) {
+        // A new CGU version was published while this dialog was open: show it, and ask again.
+        setCguChecked(false);
+        setCguState(null);
+        loadCguState();
+        setAttempted(false);
+        setPublishError(tLegal('outdated'));
+        return;
+      }
       setPublishError(t('publishRefused'));
     }
   };
@@ -233,7 +255,7 @@ export function PrePublishModal({
               </div>
             ) : (
               <>
-                {!mollieResolved ? (
+                {!bankResolved ? (
                   <div className="pp-row boost">
                     <div className="pp-row-ic">⏳</div>
                     <div className="pp-row-lbl">{t('account.loading')}</div>
@@ -241,11 +263,11 @@ export function PrePublishModal({
                 ) : (
                   <div className={`pp-row ${BANK_ROWS[bankStatus].cls}`}>
                     <div className="pp-row-ic">{BANK_ROWS[bankStatus].icon}</div>
-                    <div className="pp-row-lbl">{t(`account.bank.${bankStatus}`)}</div>
-                    {bankStatus === BankSetupStatus.NEEDS_DATA && mollieDashboardUrl !== null && (
+                    <div className="pp-row-lbl">{t(`${bankLabels}.${bankStatus}`)}</div>
+                    {bankStatus === BankSetupStatus.NEEDS_DATA && bankActionUrl !== null && (
                       <a
                         className="pp-row-link"
-                        href={mollieDashboardUrl}
+                        href={bankActionUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -285,7 +307,7 @@ export function PrePublishModal({
       </div>
 
       {showCguDoc && (
-        <LegalDocumentModal documentType={LegalDocumentType.CGU} onClose={() => setShowCguDoc(false)} />
+        <LegalDocumentModal documentType={ASSOCIATION_LEGAL_DOCUMENT} onClose={() => setShowCguDoc(false)} />
       )}
     </div>
   );

@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AssociationProfilePage from '../page';
 import type { UseMollieKycStatusReturn } from '@/hooks/mollie/useMollieKycStatus';
 import { MollieOnboardingStatus } from '@/types/mollie-connect';
+import { useAccStatusStore } from '@/stores/accStatusStore';
+import { PaymentProviderId } from '@/types/paymentProvider';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +116,8 @@ function openBankTab() {
 describe('Bank tab — status refresh and navigation (S4)', () => {
   beforeEach(() => {
     mollie = {};
+    // Payment status read: a Mollie association (the page waits for it before judging the bank state).
+    useAccStatusStore.setState({ paymentProvider: PaymentProviderId.MOLLIE, bankResolved: true, helloasso: null });
     tabParam = null;
     window.localStorage.clear();
     forceRefresh.mockReset().mockResolvedValue(undefined);

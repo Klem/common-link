@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import jakarta.persistence.EntityManager
 import org.commonlink.entity.BridgePaymentStatus
 import org.commonlink.entity.IbanVerificationStatus
 import org.commonlink.entity.OnchainJobAction
@@ -9,6 +10,7 @@ import org.commonlink.entity.PayoutBlockingReason
 import org.commonlink.entity.PayoutErrorCode
 import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
@@ -80,6 +82,7 @@ class PayoutConfirmer(
     private val payeeIbanRepository: PayeeIbanRepository,
     private val donationRepository: DonationRepository,
     private val outbox: OnchainOutboxService,
+    private val entityManager: EntityManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -133,8 +136,9 @@ class PayoutConfirmer(
      * @param campaignId Campaign owning the payout.
      * @param payoutId Payout to reserve.
      * @throws NotFoundException if the campaign or payout disappeared.
-     * @throws ConflictException if the payout is no longer PENDING, is already engaged, or the
-     *   confirmable balance no longer covers it.
+     * @throws FundsNotAvailableException if the confirmable balance no longer covers it: carries that balance
+     *   (never negative) as the amount still disbursable.
+     * @throws ConflictException if the payout is no longer PENDING or is already engaged.
      */
     @Transactional
     fun reserve(campaignId: UUID, payoutId: UUID) {
@@ -142,8 +146,7 @@ class PayoutConfirmer(
         campaignRepository.findByIdForUpdate(campaignId)
             ?: throw NotFoundException("Campaign not found: $campaignId")
 
-        val payout = payoutRepository.findById(payoutId)
-            .orElseThrow { NotFoundException("Payout not found: $payoutId") }
+        val payout = lockFresh(payoutId)
 
         if (payout.status != PayoutStatus.PENDING) {
             throw ConflictException("Payout $payoutId is already ${payout.status}")
@@ -151,8 +154,9 @@ class PayoutConfirmer(
         if (payout.bridgeStatus != null) {
             throw ConflictException("Payout $payoutId already has a transfer in progress")
         }
-        if (payout.amount > confirmableBalance(campaignId)) {
-            throw ConflictException("Payout blocked: ${PayoutBlockingReason.INSUFFICIENT_BALANCE}")
+        val confirmable = confirmableBalance(campaignId)
+        if (payout.amount > confirmable) {
+            throw donationRepository.fundsNotAvailable(campaignId, confirmable)
         }
 
         payout.bridgeStatus = BridgePaymentStatus.CREA
@@ -339,6 +343,12 @@ class PayoutConfirmer(
             log.warn("Refusing to fail payout {} — it is already confirmed as settled", payoutId)
             return
         }
+        // A rejection on a payout the association already withdrew moved no money either way:
+        // the association's own decision stays the recorded outcome.
+        if (payout.status == PayoutStatus.CANCELLED) {
+            log.warn("Refusing to fail payout {} — it was cancelled by the association", payoutId)
+            return
+        }
         payout.status = PayoutStatus.FAILED
         payout.bridgeStatus = bridgeStatus
         payout.bridgeCheckoutUrl = null
@@ -390,7 +400,90 @@ class PayoutConfirmer(
     }
 
     /**
-     * Funds confirmable right now = confirmed donations − CONFIRMED payouts − engaged payouts.
+     * Validates that [payoutId] may be cancelled and returns the payment link to revoke first.
+     *
+     * Phase 1 of [PayoutService.cancel]. A payout may be cancelled only while PENDING with no
+     * transfer in progress ([Payout.bridgeStatus] null): never initiated, or released after a
+     * failed initiation or a dead link. A non-null [Payout.bridgeStatus] means the amount may be
+     * authorised at the association's bank right now — only Bridge can end that.
+     *
+     * @param campaignId Campaign owning the payout.
+     * @param payoutId Payout to cancel.
+     * @param associationId Association making the request.
+     * @return the payout's Bridge payment-link id, or null when no link was ever recorded.
+     * @throws NotFoundException if the payout cannot be found for [associationId].
+     * @throws ConflictException if the payout is not cancellable.
+     */
+    @Transactional(readOnly = true)
+    fun loadForCancel(campaignId: UUID, payoutId: UUID, associationId: UUID): String? {
+        val payout = payoutRepository.findByCampaignIdAndIdAndCampaignAssociationId(
+            campaignId, payoutId, associationId,
+        ) ?: throw NotFoundException("Payout not found: $payoutId")
+        assertCancellable(payout)
+        return payout.bridgePaymentLinkId
+    }
+
+    /**
+     * Marks [payoutId] CANCELLED; its amount stops being reserved on the campaign.
+     *
+     * Phase 2 of [PayoutService.cancel], after any known link was revoked. Takes the campaign lock
+     * first, like [reserve]: the two serialize, so a confirmation that stamped [Payout.bridgeStatus]
+     * in between is seen here and the cancellation refused, and a confirmation arriving after reads
+     * CANCELLED and is refused by [reserve].
+     *
+     * @param campaignId Campaign owning the payout.
+     * @param payoutId Payout to cancel.
+     * @return the cancelled payout.
+     * @throws NotFoundException if the campaign or payout disappeared.
+     * @throws ConflictException if the payout is no longer cancellable.
+     */
+    @Transactional
+    fun cancel(campaignId: UUID, payoutId: UUID): Payout {
+        campaignRepository.findByIdForUpdate(campaignId)
+            ?: throw NotFoundException("Campaign not found: $campaignId")
+
+        val payout = lockFresh(payoutId)
+        assertCancellable(payout)
+
+        payout.status = PayoutStatus.CANCELLED
+        payout.bridgeCheckoutUrl = null
+        val saved = payoutRepository.save(payout)
+        log.info("Payout {} cancelled by the association", payoutId)
+        return saved
+    }
+
+    /**
+     * Locks [payoutId]'s row and returns it with its committed state, after the campaign lock.
+     *
+     * [loadForConfirm] / [loadForCancel] already loaded the entity in the same request (open-in-view): a plain
+     * `findById` returned that instance without reading the row again, so the guards of [reserve] and [cancel] ran
+     * on a stale copy and a concurrent confirmation went unseen — two Bridge links for one payout (audit 2026-11-12,
+     * H5). The lock alone does not refresh a managed instance, hence the explicit refresh. Lock order stays campaign
+     * then payout, as everywhere else.
+     *
+     * @throws NotFoundException if the payout disappeared.
+     */
+    private fun lockFresh(payoutId: UUID): Payout {
+        val payout = payoutRepository.findByIdForUpdate(payoutId)
+            ?: throw NotFoundException("Payout not found: $payoutId")
+        entityManager.refresh(payout)
+        return payout
+    }
+
+    /** @throws ConflictException unless [payout] is PENDING with no transfer in progress. */
+    private fun assertCancellable(payout: Payout) {
+        if (payout.status != PayoutStatus.PENDING) {
+            throw ConflictException("Payout ${payout.id} is already ${payout.status}")
+        }
+        if (payout.bridgeStatus != null) {
+            throw ConflictException("Payout ${payout.id} has a transfer in progress")
+        }
+    }
+
+    /**
+     * Funds confirmable right now = available donations − CONFIRMED payouts − engaged payouts.
+     * Available donations are those whose funds have reached the association's bank account
+     * ([DonationRepository.sumAvailableAmountByCampaignId]).
      *
      * Mirrors [PayoutService]'s own computation; duplicated here rather than shared because this
      * one runs under the campaign lock and additionally deducts initiations in progress.
@@ -399,8 +492,8 @@ class PayoutConfirmer(
         val confirmed = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
             ?: BigDecimal.ZERO
         val inFlight = payoutRepository.sumInFlightAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
-        val raised = donationRepository.sumConfirmedAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
-        return raised - confirmed - inFlight
+        val available = donationRepository.sumAvailableAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
+        return available - confirmed - inFlight
     }
 
     private companion object {

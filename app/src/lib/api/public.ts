@@ -1,4 +1,5 @@
 import type { CampaignCause } from '@/types/campaign';
+import type { PaymentProviderId } from '@/types/paymentProvider';
 import axios from 'axios';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -26,6 +27,13 @@ export interface PublicWidgetDto {
   remainingCapacity: number;
   /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
   gtmContainerId: string | null;
+  /**
+   * Whether the association's payment provider can collect right now. False → the form shows "temporarily
+   * unavailable" instead of failing on submit; the backend refuses the donation anyway (code COLLECTION_UNAVAILABLE).
+   */
+  collectAvailable: boolean;
+  /** The association's payment provider: HelloAsso gets its cart text, official button and "how it works" link. */
+  paymentProvider: PaymentProviderId;
 }
 
 export interface CreateGuestDonationRequest {
@@ -41,6 +49,10 @@ export interface CreateGuestDonationRequest {
   donorCountry: string;
   anonymousDisplay: boolean;
   consent: boolean;
+  /** Express acceptance of the donor CGU (art. 1740 A CGI). */
+  cguAccepted: boolean;
+  /** `LegalDocumentDto.version` of the CGU text displayed — 409 `LEGAL_VERSION_OUTDATED` if no longer current. */
+  cguVersion: string;
   sourceSite?: string | null;
   /** UI locale (e.g. "fr", "en"). Used by the backend to build locale-prefixed redirect URLs. */
   locale?: string;
@@ -154,14 +166,17 @@ export interface PublicLandingDto {
   /** Public serving path of the association logo, null when none was uploaded. */
   landingLogo: string | null;
   /**
-   * False only in preview mode on a campaign that is not LIVE: the donation endpoint would refuse
-   * the payment, so the form must be rendered disabled rather than fail on submit.
+   * False when the donation endpoint would refuse the payment — preview mode on a campaign that is
+   * not LIVE, or the association's payment provider cannot collect right now — so the form must be
+   * rendered disabled rather than fail on submit.
    */
   donationsEnabled: boolean;
   /** Same figure and purpose as {@link PublicWidgetDto.remainingCapacity}. */
   remainingCapacity: number;
   /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
   gtmContainerId: string | null;
+  /** Same purpose as {@link PublicWidgetDto.paymentProvider}. */
+  paymentProvider: PaymentProviderId;
 }
 
 /**

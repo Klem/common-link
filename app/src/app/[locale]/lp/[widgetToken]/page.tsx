@@ -181,8 +181,10 @@ export default async function LandingPage({ params, searchParams }: Props) {
           embedType,
         }}
         donationsEnabled={data.donationsEnabled}
+        collectUnavailable={!data.donationsEnabled && !previewToken}
         remainingCapacity={data.remainingCapacity}
         parentOrigin={parentOrigin}
+        paymentProvider={data.paymentProvider}
       >
         {/* Objet, montant cible, calendrier and résultat attendu are ACPR-mandated on a public
             collection page — this section is never gated by the association's landing preference. */}

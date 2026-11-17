@@ -3,6 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import AssociationProfilePage from '../page';
 import type { UseMollieKycStatusReturn } from '@/hooks/mollie/useMollieKycStatus';
 import { MollieOnboardingStatus } from '@/types/mollie-connect';
+import { useAccStatusStore } from '@/stores/accStatusStore';
+import { PaymentProviderId } from '@/types/paymentProvider';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -74,6 +76,8 @@ const KEY = 'cl.associationProfile.setupNoticeDismissed';
 describe('Setup notice — profile/page.tsx', () => {
   beforeEach(() => {
     mollie = {};
+    // Payment status read: a Mollie association (the page waits for it before judging the bank state).
+    useAccStatusStore.setState({ paymentProvider: PaymentProviderId.MOLLIE, bankResolved: true, helloasso: null });
     sessionStorage.clear();
   });
 

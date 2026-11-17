@@ -19,9 +19,57 @@ interface MonthlyAmountRow {
     fun getAmount(): BigDecimal
 }
 
+/** Sum of a campaign's confirmed HelloAsso donations in one [org.commonlink.entity.FundsState]. */
+data class FundsStateAmount(val state: org.commonlink.entity.FundsState, val amount: BigDecimal)
+
 interface DonationRepository : JpaRepository<Donation, UUID> {
 
     fun findByProviderRef(providerRef: String): Donation?
+
+    /**
+     * Association owning the campaign of [providerRef]'s donation, or null when no donation carries it.
+     *
+     * A scalar read: safe outside any transaction (scheduler threads, no open-in-view session), where navigating
+     * `donation.campaign.association` on a loaded entity would hit an uninitialised proxy. Backed by
+     * `donations_provider_ref_unique`.
+     */
+    @Query("SELECT d.campaign.association.id FROM Donation d WHERE d.providerRef = :providerRef")
+    fun findAssociationIdByProviderRef(@Param("providerRef") providerRef: String): UUID?
+
+    /** Sum of the campaign's confirmed donations, every provider; null when none (callers treat null as zero). */
+    @Query("""
+        SELECT SUM(d.amount)
+        FROM Donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+    """)
+    fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
+
+    /**
+     * Sums of the campaign's confirmed HelloAsso donations per cash-out tracking state (one element per state
+     * present). Donations without a tracking row (Mollie, or HelloAsso confirmed before the tracking) are absent.
+     */
+    @Query("""
+        SELECT new org.commonlink.repository.FundsStateAmount(f.fundsState, SUM(d.amount))
+        FROM HelloAssoDonationFunds f
+        JOIN f.donation d
+        WHERE d.campaign.id = :campaignId
+          AND d.confirmedAt IS NOT NULL
+        GROUP BY f.fundsState
+    """)
+    fun sumConfirmedAmountsByCampaignIdGroupedByFundsState(@Param("campaignId") campaignId: UUID): List<FundsStateAmount>
+
+    /**
+     * Same as [findByProviderRef] with a row lock (`SELECT … FOR UPDATE`) held until the transaction ends — serializes
+     * concurrent confirmations of one payment (notification, return page, reconciler), see
+     * [org.commonlink.service.HelloAssoCheckoutService.refreshPayment].
+     *
+     * Native, like the other `FOR UPDATE` lookups, to emit a plain row lock. When the donation is already managed in
+     * the current persistence context (open-in-view), Hibernate returns that instance without re-reading its state:
+     * callers needing the locked state must refresh it.
+     */
+    @Query(value = "SELECT * FROM donations WHERE provider_ref = :providerRef FOR UPDATE", nativeQuery = true)
+    fun findByProviderRefForUpdate(@Param("providerRef") providerRef: String): Donation?
 
     /**
      * Returns confirmed donations that have no matching RECORD_DONATION outbox job.
@@ -109,16 +157,27 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     ): List<Donation>
 
     /**
-     * Sum of confirmed donation amounts for a single campaign.
-     * Returns null when no confirmed donations exist; callers should treat null as zero.
+     * Sum of the amounts of a campaign's donations whose funds have reached the association's bank
+     * account ([org.commonlink.entity.Donation.fundsAvailableAt] set) — the single donation base of
+     * every payout balance ([org.commonlink.service.PayoutService], [org.commonlink.service.PayoutConfirmer]).
+     * Confirmed HelloAsso donations still held by HelloAsso are excluded, and so are HelloAsso donations withdrawn
+     * (refunded or contested) after becoming available: their tracking row is
+     * [org.commonlink.entity.FundsState.WITHDRAWN] while `fundsAvailableAt` stays set. The FIFO allocation
+     * ([findByCampaignIdAndFundsAvailableAtIsNotNullOrderByFundsAvailableAtAscConfirmedAtAscIdAsc]) keeps them, on
+     * purpose: payouts they already funded stay explained (known gap, no refund model in the domain).
+     * Returns null when no donation is available; callers should treat null as zero.
      */
     @Query("""
         SELECT COALESCE(SUM(d.amount), 0)
         FROM Donation d
         WHERE d.campaign.id = :campaignId
-          AND d.confirmedAt IS NOT NULL
+          AND d.fundsAvailableAt IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM HelloAssoDonationFunds f
+              WHERE f.donationId = d.id AND f.fundsState = org.commonlink.entity.FundsState.WITHDRAWN
+          )
     """)
-    fun sumConfirmedAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
+    fun sumAvailableAmountByCampaignId(@Param("campaignId") campaignId: UUID): BigDecimal?
 
     /**
      * Sum of amounts held by payment sessions still in flight on a campaign: donations created after
@@ -150,6 +209,24 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     """)
     fun countPendingByCampaignIdSince(
         @Param("campaignId") campaignId: UUID,
+        @Param("since") since: Instant,
+    ): Long
+
+    /**
+     * Unconfirmed donations of an association created since [since] whose `providerRef` starts with [prefix] — the
+     * payments still in flight at one provider, shown in the curator's provider-change preview.
+     */
+    @Query("""
+        SELECT COUNT(d)
+        FROM Donation d
+        WHERE d.campaign.association.id = :associationId
+          AND d.confirmedAt IS NULL
+          AND d.createdAt >= :since
+          AND d.providerRef LIKE CONCAT(:prefix, '%')
+    """)
+    fun countPendingByAssociationIdAndProviderRefPrefixSince(
+        @Param("associationId") associationId: UUID,
+        @Param("prefix") prefix: String,
         @Param("since") since: Instant,
     ): Long
 
@@ -576,26 +653,44 @@ interface DonationRepository : JpaRepository<Donation, UUID> {
     fun findByPublicRef(publicRef: UUID): Donation?
 
     /**
-     * Donations still unconfirmed [threshold] after creation — candidates for
-     * [org.commonlink.service.MolliePaymentReconciler]: either the Mollie webhook was never
-     * delivered, or it was delivered and failed processing. `providerRef` is always set by this
-     * point ([org.commonlink.service.DonationService.initiatePendingDonation] only runs after
-     * the Mollie payment itself was created), so no null-check is needed here.
+     * Donations still unconfirmed [threshold] after creation whose `providerRef` starts with [prefix] — candidates
+     * for a provider's reconciler (e.g. [org.commonlink.service.MolliePaymentReconciler] with `mollie:`): either the
+     * provider's notification was never delivered, or it was delivered and failed processing.
+     *
+     * Filters by **prefix only**, never by the association's current payment provider: a payment started before a
+     * provider change must still be settled by the provider that took it. `providerRef` is always set by this point
+     * ([org.commonlink.service.DonationService.initiatePendingDonation] only runs after the payment itself was
+     * created), so no null-check is needed here.
+     *
+     * @param prefix provider reference prefix, colon included ([org.commonlink.payment.PaymentProviderId.refPrefix]).
+     * @param threshold only donations created strictly before this instant.
+     * @param createdAfter only donations created strictly after this instant — a reconciler that gives up on old
+     *   checkouts (HelloAsso's abandon delay) excludes them here; [Instant.EPOCH] for no lower bound (Mollie).
      */
     @Query("""
         SELECT d FROM Donation d
         WHERE d.confirmedAt IS NULL
           AND d.createdAt < :threshold
+          AND d.createdAt > :createdAfter
+          AND d.providerRef LIKE CONCAT(:prefix, '%')
     """)
-    fun findStalePending(@Param("threshold") threshold: Instant): List<Donation>
+    fun findStalePendingByProviderRefPrefix(
+        @Param("prefix") prefix: String,
+        @Param("threshold") threshold: Instant,
+        @Param("createdAfter") createdAfter: Instant,
+    ): List<Donation>
 
     // ── Donor dashboard (Sprint 2 — allocation & campaign report) ─────────
 
     /**
-     * All confirmed donations of a campaign, oldest first — FIFO input for
-     * [org.commonlink.service.DonationAllocationService], all donors combined.
+     * All available donations of a campaign ([org.commonlink.entity.Donation.fundsAvailableAt] set),
+     * earliest available first — FIFO input for [org.commonlink.service.DonationAllocationService], all
+     * donors combined. Ties on `fundsAvailableAt` are broken by `confirmedAt`, then by id, so the
+     * allocation is identical on every read.
      */
-    fun findByCampaignIdAndConfirmedAtIsNotNullOrderByConfirmedAtAsc(campaignId: UUID): List<Donation>
+    fun findByCampaignIdAndFundsAvailableAtIsNotNullOrderByFundsAvailableAtAscConfirmedAtAscIdAsc(
+        campaignId: UUID,
+    ): List<Donation>
 
     /**
      * This donor's total confirmed amount on one campaign — for the campaign report's "votre

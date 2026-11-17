@@ -74,6 +74,7 @@ class SecurityConfig(
                 auth.requestMatchers("/api/compliance/**").hasRole(UserRole.COMPLIANCE_OFFICER.name)
                 auth.requestMatchers("/api/admin/onchain/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/admin/verifications/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
+                auth.requestMatchers("/api/admin/associations/**").hasAnyRole(UserRole.CURATOR.name, "ADMIN")
                 auth.requestMatchers("/api/association/**").hasRole(UserRole.ASSOCIATION.toString())
                 auth.requestMatchers("/api/mollie/**").hasRole(UserRole.ASSOCIATION.toString())
                 // Campaign sub-resources (payouts, reporting, donor aggregates) are all

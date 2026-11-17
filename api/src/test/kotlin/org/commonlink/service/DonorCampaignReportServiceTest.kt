@@ -89,7 +89,7 @@ class DonorCampaignReportServiceTest {
             amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel",
             status = PayoutStatus.CONFIRMED, confirmedAt = Instant.parse("2026-02-01T00:00:00Z"),
         )
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(payout)
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns listOf(payout)
         every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal("150")
         every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
         every { campaignStoryService.getPublishedStory(campaignId) } returns null
@@ -112,7 +112,7 @@ class DonorCampaignReportServiceTest {
         stubDonated()
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { campaignMilestoneRepository.findAllByCampaignIdOrderBySortOrder(campaignId) } returns emptyList()
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
         every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal.ZERO
         every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
         every { campaignStoryService.getPublishedStory(campaignId) } returns null
@@ -127,7 +127,7 @@ class DonorCampaignReportServiceTest {
         stubDonated()
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { campaignMilestoneRepository.findAllByCampaignIdOrderBySortOrder(campaignId) } returns emptyList()
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
         every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal.ZERO
         every { reportingService.getVarianceForDonor(campaignId, donorId) } returns emptyVariance
         val storyDto = CampaignStoryDto(storyText = "Un récit publié.", storySummary = "Résumé.", publishedAt = Instant.now())
@@ -143,7 +143,7 @@ class DonorCampaignReportServiceTest {
         stubDonated()
         every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
         every { campaignMilestoneRepository.findAllByCampaignIdOrderBySortOrder(campaignId) } returns emptyList()
-        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
+        every { payoutRepository.findByCampaignIdAndStatusOrderByConfirmedAtAscIdAsc(campaignId, PayoutStatus.CONFIRMED) } returns emptyList()
         // The repository query itself is donor-scoped; asserting the exact call proves the service
         // never falls back to a campaign-wide sum.
         every { donationRepository.sumConfirmedAmountByDonorIdAndCampaignId(donorId, campaignId) } returns BigDecimal("75")

@@ -19,6 +19,22 @@ app:
   jwt:
     secret: ${COMMON_LINK_SECRET:test-secret-key-for-automated-tests-only-not-production!!}
   frontend-url: http://localhost:3000
+  # Unit-test contexts seed their own legal documents; LegalDocumentSeeder is tested on its own.
+  legal:
+    seed-on-startup: false
+    source: classpath:legal/landing-fr.json
+    site-base-url: https://www.common-link.org
+  # HelloAssoRedirectUrlGuard: the real HelloAsso needs an https return URL.
+  helloasso:
+    redirect-base-url: https://localhost:3000
+  # Cash-out tracking passes are driven by the tests themselves, never by the scheduler.
+  payments:
+    helloasso:
+      cashout-sync-enabled: false
+  # The audit-log chain check is exercised directly by its tests, never by the scheduler.
+  compliance:
+    audit-chain-check:
+      enabled: false
   # Unroutable on purpose: tests never call geo.api.gouv.fr (geocoding is best-effort or mocked).
   geo:
     base-url: http://localhost:1

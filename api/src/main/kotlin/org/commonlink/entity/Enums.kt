@@ -251,8 +251,18 @@ enum class PayoutKind {
     }
 }
 
-/** Lifecycle status of a [org.commonlink.entity.Payout]. */
-enum class PayoutStatus { PENDING, CONFIRMED, FAILED }
+/**
+ * Lifecycle status of a [org.commonlink.entity.Payout].
+ *
+ * - [PENDING]: created, not settled. Reserved on the campaign's available balance.
+ * - [CONFIRMED]: settled at the bank. The only status the donor FIFO allocation consumes.
+ * - [FAILED]: refused by the bank. Terminal, reserves nothing.
+ * - [CANCELLED]: withdrawn by the association while no transfer was in progress
+ *   ([org.commonlink.entity.Payout.bridgeStatus] null). Terminal, reserves nothing.
+ *
+ * Values must stay identical to the `payouts_status_check` constraint.
+ */
+enum class PayoutStatus { PENDING, CONFIRMED, FAILED, CANCELLED }
 
 /**
  * A business rule preventing a payout from being issued, surfaced to the association
@@ -495,6 +505,15 @@ enum class AssociationStatus { ACTIVE, ALERT, SUSPENDED }
 /** A versioned legal document text (notice ACPR / art. 1740 A CGI — preuve d'acceptation). */
 enum class LegalDocumentType { CGU, CGV }
 
+/**
+ * How [org.commonlink.entity.LegalDocument.content] must be read — mirrors the
+ * `legal_document_content_format_check` constraint (V97).
+ * - `TEXT`: plain text (the V73 placeholder rows).
+ * - `JSON_V1`: structured text ([org.commonlink.dto.LegalTextV1]) injected at startup by
+ *   [org.commonlink.bootstrap.LegalDocumentSeeder] — no HTML, no CSS.
+ */
+enum class LegalContentFormat { TEXT, JSON_V1 }
+
 /** Who accepted a [LegalDocumentType] — see [org.commonlink.entity.LegalAcceptance]. */
 enum class LegalAcceptanceSubjectType { DONOR, ASSOCIATION }
 
@@ -581,4 +600,53 @@ enum class ActionPlaceType(val scope: CampaignScope) {
     FRANCE(CampaignScope.NATIONALE),
     /** A foreign country; code = ISO 3166-1 alpha-2 (never `FR`). */
     PAYS(CampaignScope.INTERNATIONALE),
+}
+
+/**
+ * Lifecycle of a [HelloAssoConnection].
+ *
+ * Stored as a string column with a CHECK constraint (V88) whose values must stay identical to these entries.
+ */
+enum class HelloAssoConnectionState {
+    /** Row created (notification token issued) but no API keys linked yet. */
+    NOT_LINKED,
+    /** Keys linked and the refresh token works. */
+    ACTIVE,
+    /** HelloAsso rejected the refresh token; the association must re-enter its keys. */
+    BROKEN,
+    /** Disconnected by the association: tokens erased, row and notification token kept for history. */
+    DISCONNECTED,
+}
+
+/**
+ * Where the money of a confirmed HelloAsso donation stands between HelloAsso and the association's bank account
+ * ([HelloAssoDonationFunds]). Only [AVAILABLE] money can fund a payout ([Donation.fundsAvailableAt]).
+ *
+ * Stored as a string column with a CHECK constraint (V92) whose values must stay identical to these entries.
+ */
+enum class FundsState {
+    /** Held by HelloAsso (on the payer's wallet, being transferred, or on the association's HelloAsso account). */
+    AT_PROVIDER,
+    /** HelloAsso is preparing the payout (`WaitingForCashOutConfirmation`). */
+    PAYOUT_PREPARING,
+    /** Paid out by HelloAsso (`CashedOut`), not yet considered arrived on the association's bank account. */
+    IN_TRANSIT,
+    /** Arrived: settlement delay elapsed or transfer receipt confirmed. Terminal. */
+    AVAILABLE,
+    /** Refunded or contested: never spendable. Terminal. */
+    WITHDRAWN,
+}
+
+/**
+ * How a HelloAsso donation became [FundsState.AVAILABLE].
+ *
+ * Stored as a string column with a CHECK constraint (V92) whose values must stay identical to these entries.
+ */
+enum class ReceiptConfirmationMode {
+    /** The settlement delay after the payout elapsed. */
+    AUTO,
+    /** The association confirmed it received the transfer. */
+    MANUAL,
+    /** A curator released the funds on a bank statement line. */
+    CURATOR_RELEASE,
 }

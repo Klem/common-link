@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import org.commonlink.entity.MollieConnectionState
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.*
 import jakarta.persistence.EntityManager
@@ -15,6 +16,7 @@ import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MollieConnection
 import org.commonlink.exception.CollectionCapExceededException
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.MolliePaymentException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetItemRepository
@@ -29,6 +31,7 @@ import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
+import org.commonlink.payment.PaymentProviderId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -108,7 +111,10 @@ class PublicWidgetServiceIntegrationTest {
         associationProfileRepository.save(assoc)
 
         // Fully onboarded connection: KYC completed, payments authorised, link not broken.
-        val mockConnection = mockk<MollieConnection> { every { canCollectDonations() } returns true }
+        val mockConnection = mockk<MollieConnection> {
+            every { state } returns MollieConnectionState.ACTIVE
+            every { canCollectDonations() } returns true
+        }
         every { mollieConnectionRepository.findByAssociationId(any()) } returns mockConnection
         every { mollieConnectTokenManager.getValidAccessToken(any()) } returns "test_assoc_token"
 
@@ -166,11 +172,12 @@ class PublicWidgetServiceIntegrationTest {
         val acceptances = legalAcceptanceRepository.findAllBySubjectTypeAndSubjectIdOrderByAcceptedAtDesc(
             LegalAcceptanceSubjectType.DONOR, donation.donor.id!!,
         )
-        assertEquals(2, acceptances.size, "One row per document type (CGU, CGV)")
-        acceptances.forEach {
-            assertEquals(donation.id, it.donationId)
-            assertEquals(donation.campaign.id, it.campaignId)
-        }
+        // Donors accept the CGU only — the CGV document is the associations' terms.
+        val acceptance = acceptances.single()
+        assertEquals(LegalDocumentType.CGU, acceptance.documentType)
+        assertEquals("test", acceptance.documentVersion, "records the version the form displayed")
+        assertEquals(donation.id, acceptance.donationId)
+        assertEquals(donation.campaign.id, acceptance.campaignId)
     }
 
     @Test
@@ -356,6 +363,14 @@ class PublicWidgetServiceIntegrationTest {
     }
 
     @Test
+    fun `getLanding - donations disabled when the payment provider cannot collect`() {
+        every { mollieConnectionRepository.findByAssociationId(any()) } returns null
+
+        assertFalse(publicWidgetService.getLanding(widgetToken).donationsEnabled)
+        assertFalse(publicWidgetService.getWidget(widgetToken).collectAvailable)
+    }
+
+    @Test
     fun `getLanding - LIVE campaign ignores an invalid preview token`() {
         val dto = publicWidgetService.getLanding(widgetToken, "garbage")
 
@@ -414,6 +429,27 @@ class PublicWidgetServiceIntegrationTest {
         }
 
         assertEquals(hitEx.message, unavailableEx.message, "Freeze HIT and UNAVAILABLE must produce identical messages")
+    }
+
+    @Test
+    fun `createDonation - a Mollie payment without checkout URL leaves no pending donation and no acceptance proof`() {
+        every { mollieClient.createPayment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            MolliePayment(
+                id = "tr_no_checkout",
+                status = MolliePaymentStatus.OPEN,
+                amount = BigDecimal("25.00"),
+                checkoutUrl = null,
+                metadata = emptyMap(),
+            )
+        val donationsBefore = donationRepository.count()
+        val acceptancesBefore = legalAcceptanceRepository.count()
+
+        val ex = assertThrows<MolliePaymentException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+
+        assertEquals("Mollie returned no checkout URL for payment tr_no_checkout", ex.message)
+        assertNull(donationRepository.findByProviderRef("mollie:tr_no_checkout"))
+        assertEquals(donationsBefore, donationRepository.count(), "No pending donation may be left behind")
+        assertEquals(acceptancesBefore, legalAcceptanceRepository.count(), "No acceptance proof may be left behind")
     }
 
     // ── Collection cap ────────────────────────────────────────────────────────
@@ -482,6 +518,22 @@ class PublicWidgetServiceIntegrationTest {
             )
         }
         assertEquals(0, BigDecimal("25.00").compareTo(ex.remainingCapacity))
+    }
+
+    @Test
+    fun `widget and landing expose the association's payment provider`() {
+        val mollieWidget = publicWidgetService.getWidget(widgetToken)
+        assertEquals(PaymentProviderId.MOLLIE, mollieWidget.paymentProvider)
+        assertEquals(PaymentProviderId.MOLLIE, publicWidgetService.getLanding(widgetToken).paymentProvider)
+
+        val assoc = associationProfileRepository.findByWidgetToken(widgetToken).get()
+        assoc.paymentProvider = PaymentProviderId.HELLOASSO
+        associationProfileRepository.save(assoc)
+        entityManager.flush()
+        entityManager.clear()
+
+        assertEquals(PaymentProviderId.HELLOASSO, publicWidgetService.getWidget(widgetToken).paymentProvider)
+        assertEquals(PaymentProviderId.HELLOASSO, publicWidgetService.getLanding(widgetToken).paymentProvider)
     }
 
     @Test
@@ -693,7 +745,7 @@ class PublicWidgetServiceIntegrationTest {
         anonymousDisplay  = anonymousDisplay,
         consent           = true,
         cguAccepted       = true,
-        cgvAccepted       = true,
+        cguVersion        = "test",
         sourceSite        = sourceSite,
     )
 }

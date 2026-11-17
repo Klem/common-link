@@ -18,8 +18,10 @@ import java.time.Duration
  *
  * **Reservation TTL** — donations whose payment session is still open are counted against the cap
  * for [reservationTtl], so two donors checking out simultaneously cannot collectively overshoot.
- * The default sits above Mollie's ~15-minute expiry of an untouched payment: shorter than the
- * provider's own window would release capacity that is still payable.
+ * The default (50 minutes) sits above the window in which every provider may still confirm a
+ * payment — Mollie's ~15-minute expiry of an untouched payment, and HelloAsso's 45 minutes before a
+ * checkout is considered abandoned (its payment page lives 15 minutes, but the payment can be
+ * confirmed later): shorter than a provider's own window would release capacity that is still payable.
  *
  * **Pending session ceiling** — because a pending donation *is* a reservation, and because the
  * widget endpoint is unauthenticated, an outsider could reserve a campaign's entire remaining
@@ -33,6 +35,6 @@ import java.time.Duration
 @ConfigurationProperties(prefix = "app.donation.cap")
 data class DonationCapProperties(
     val marginPercent: BigDecimal = BigDecimal("10"),
-    val reservationTtl: Duration = Duration.ofMinutes(30),
+    val reservationTtl: Duration = Duration.ofMinutes(50),
     val maxPendingSessions: Int = 50,
 )

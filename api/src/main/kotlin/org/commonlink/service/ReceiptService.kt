@@ -375,14 +375,18 @@ class ReceiptService(
      * The receipt must state the mode really used, not the list of modes the platform accepts.
      * A null code means no webhook payload was available when the donation was confirmed
      * (reconciler path): "Non précisé" is stated rather than guessed. An unknown code is printed
-     * as-is so a new Mollie method never silently becomes a wrong statement.
+     * as-is so a new Mollie or HelloAsso method never silently becomes a wrong statement.
      */
     private fun paymentMethodLabel(code: String?): String {
         if (code.isNullOrBlank()) return "Non précisé"
         return when (code.lowercase()) {
-            "creditcard", "debitcard" -> "Carte bancaire"
+            // Mollie codes, then HelloAsso PaymentMeans (Card, Sepa, BankTransfer, Check, Cash). Same wording for
+            // the same means; an unknown code is printed as is rather than guessed.
+            "creditcard", "debitcard", "card" -> "Carte bancaire"
             "banktransfer"            -> "Virement bancaire"
-            "directdebit"             -> "Prélèvement SEPA"
+            "directdebit", "sepa"     -> "Prélèvement SEPA"
+            "check"                   -> "Chèque"
+            "cash"                    -> "Espèces"
             "bancontact", "ideal", "sofort", "eps", "giropay",
             "przelewy24", "trustly", "belfius", "kbc" -> "Virement bancaire en ligne"
             "paypal"                  -> "PayPal"

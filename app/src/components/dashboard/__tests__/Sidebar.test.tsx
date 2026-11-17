@@ -33,7 +33,6 @@ const donorUser: UserDto = {
   email: 'donor@test.com',
   role: UserRole.DONOR,
   displayName: 'Alice Dupont',
-  avatarUrl: null,
   provider: AuthProvider.EMAIL,
   emailVerified: true,
   createdAt: '2025-01-01T00:00:00Z',
@@ -90,8 +89,10 @@ describe('Sidebar', () => {
       verificationStatus: VerificationStatus.UNVERIFIED,
       bankStatus: BankSetupStatus.NOT_CONNECTED,
       rejectionReason: null,
-      mollieDashboardUrl: null,
-      mollieResolved: true,
+      bankActionUrl: null,
+      bankResolved: true,
+      paymentProvider: null,
+      helloasso: null,
     });
     render(<Sidebar user={associationUser} currentPath="/dashboard/association" />);
     expect(document.querySelector('.acc-mini')).toBeInTheDocument();

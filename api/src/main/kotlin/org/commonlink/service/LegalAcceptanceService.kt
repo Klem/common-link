@@ -8,6 +8,7 @@ import org.commonlink.entity.LegalAcceptance
 import org.commonlink.entity.LegalAcceptanceSubjectType
 import org.commonlink.entity.LegalDocument
 import org.commonlink.entity.LegalDocumentType
+import org.commonlink.exception.LegalDocumentVersionOutdatedException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.exception.UserNotFoundException
@@ -25,6 +26,12 @@ import java.util.UUID
  * Two distinct write shapes over the same [LegalAcceptance] table — see that entity's KDoc for why:
  * association rows are deduplicated per (association, document, version); donor rows are written
  * fresh on every donation.
+ *
+ * Every write records the version **the client displayed** and refuses it with
+ * [LegalDocumentVersionOutdatedException] when it is no longer the current one: a new text may have been
+ * published (at deploy time, see [org.commonlink.bootstrap.LegalDocumentSeeder]) while the form was open.
+ * Only the current version is ever asked for: versions published and superseded between two visits are
+ * never presented, so several changes in a row cost one acceptance.
  */
 @Service
 class LegalAcceptanceService(
@@ -62,37 +69,96 @@ class LegalAcceptanceService(
     }
 
     /**
+     * Records the association's acceptance of [acceptedVersion] of [documentType] outside any campaign
+     * publication: the post-login gate shown when a new version was published since the last acceptance.
+     * No-op when the current version is already accepted (double click, second tab). The signer is
+     * snapshotted exactly as at publication time: legal signatory's name, else the association's, and the
+     * account e-mail.
+     *
+     * @throws LegalDocumentVersionOutdatedException if [acceptedVersion] is not the current version.
+     */
+    @Transactional
+    fun acceptForAssociationUser(
+        userId: UUID,
+        documentType: LegalDocumentType,
+        acceptedVersion: String,
+    ): LegalAcceptanceStateDto {
+        val profile = associationProfileRepository.findByUserId(userId)
+            .orElseThrow { UserNotFoundException("Association profile not found for user $userId") }
+        val associationId = profile.id!!
+        val current = currentDocument(documentType)
+        if (hasAssociationAccepted(associationId, documentType, current.version)) {
+            return LegalAcceptanceStateDto(documentType, current.version, true)
+        }
+        requireCurrentVersion(current, acceptedVersion)
+        saveAssociationAcceptance(
+            associationId, current, signerName = profile.signerName ?: profile.name,
+            signerEmail = profile.user.email, campaignId = null,
+        )
+        return LegalAcceptanceStateDto(documentType, current.version, true)
+    }
+
+    /**
+     * Donation-time guard, called before anything is created: every document of [DONOR_DOCUMENTS] must be
+     * present in [acceptedVersions] with its current version.
+     *
+     * @throws LegalDocumentVersionOutdatedException otherwise.
+     */
+    @Transactional(readOnly = true)
+    fun requireCurrentDonorVersions(acceptedVersions: Map<LegalDocumentType, String>) {
+        for (documentType in DONOR_DOCUMENTS) {
+            requireCurrentVersion(currentDocument(documentType), acceptedVersions[documentType])
+        }
+    }
+
+    /**
      * Publish-time gate. No-op (writes nothing) if [associationId] already accepted the current
      * version — this is what makes the frontend's "auto-checked and greyed out for later
      * campaigns" behaviour safe rather than a stale rubber stamp: a version bump makes `already`
      * false again and the gate re-engages.
      *
+     * @param acceptedVersion the version the publish dialog displayed; ignored when already accepted.
      * @throws UnprocessableEntityException if not yet accepted and [accepted] is false.
+     * @throws LegalDocumentVersionOutdatedException if [accepted] but [acceptedVersion] is not the current one.
      */
     @Transactional
     fun requireAssociationAcceptance(
         associationId: UUID,
         documentType: LegalDocumentType,
         accepted: Boolean,
+        acceptedVersion: String?,
         signerName: String?,
         signerEmail: String?,
         campaignId: UUID,
     ) {
         val current = currentDocument(documentType)
-        val already = legalAcceptanceRepository.existsBySubjectTypeAndSubjectIdAndDocumentTypeAndDocumentVersion(
-            LegalAcceptanceSubjectType.ASSOCIATION, associationId, documentType, current.version,
-        )
-        if (already) return
+        if (hasAssociationAccepted(associationId, documentType, current.version)) return
         if (!accepted) {
             throw UnprocessableEntityException(
                 "You must accept the current $documentType (version ${current.version}) before publishing"
             )
         }
+        requireCurrentVersion(current, acceptedVersion)
+        saveAssociationAcceptance(associationId, current, signerName, signerEmail, campaignId)
+    }
+
+    private fun hasAssociationAccepted(associationId: UUID, documentType: LegalDocumentType, version: String): Boolean =
+        legalAcceptanceRepository.existsBySubjectTypeAndSubjectIdAndDocumentTypeAndDocumentVersion(
+            LegalAcceptanceSubjectType.ASSOCIATION, associationId, documentType, version,
+        )
+
+    private fun saveAssociationAcceptance(
+        associationId: UUID,
+        current: LegalDocument,
+        signerName: String?,
+        signerEmail: String?,
+        campaignId: UUID?,
+    ) {
         legalAcceptanceRepository.save(
             LegalAcceptance(
                 subjectType = LegalAcceptanceSubjectType.ASSOCIATION,
                 subjectId = associationId,
-                documentType = documentType,
+                documentType = current.documentType,
                 documentVersion = current.version,
                 signerName = signerName,
                 signerEmail = signerEmail,
@@ -100,16 +166,31 @@ class LegalAcceptanceService(
             )
         )
         logger.info(
-            "Legal acceptance recorded: subjectType=ASSOCIATION subjectId={} documentType={} version={}",
-            associationId, documentType, current.version,
+            "Legal acceptance recorded: subjectType=ASSOCIATION subjectId={} documentType={} version={} campaignId={}",
+            associationId, current.documentType, current.version, campaignId,
         )
     }
 
+    private fun requireCurrentVersion(current: LegalDocument, acceptedVersion: String?) {
+        if (acceptedVersion != current.version) {
+            logger.info(
+                "Legal acceptance refused, outdated version: documentType={} accepted={} current={}",
+                current.documentType, acceptedVersion, current.version,
+            )
+            throw LegalDocumentVersionOutdatedException(
+                "${current.documentType} version $acceptedVersion is not the current version (${current.version})"
+            )
+        }
+    }
+
     /**
-     * Records donor acceptance of every [LegalDocumentType] for one donation — a donation is a
+     * Records donor acceptance of [DONOR_DOCUMENTS] for one donation — a donation is a
      * transactional act, so acceptance is captured fresh every time rather than reused across
      * future donations. Idempotent per (donationId, documentType): a retried request writes
      * nothing twice.
+     *
+     * @param acceptedVersions the version of each document the donation form displayed, already checked
+     *   against the current ones by [requireCurrentDonorVersions] before the donation was created.
      */
     @Transactional
     fun recordDonorAcceptance(
@@ -118,16 +199,18 @@ class LegalAcceptanceService(
         campaignId: UUID,
         signerName: String?,
         signerEmail: String?,
+        acceptedVersions: Map<LegalDocumentType, String>,
     ) {
-        for (documentType in LegalDocumentType.entries) {
+        for (documentType in DONOR_DOCUMENTS) {
             if (legalAcceptanceRepository.existsByDonationIdAndDocumentType(donationId, documentType)) continue
-            val current = currentDocument(documentType)
+            val version = acceptedVersions[documentType]
+                ?: throw IllegalArgumentException("No accepted version given for $documentType")
             legalAcceptanceRepository.save(
                 LegalAcceptance(
                     subjectType = LegalAcceptanceSubjectType.DONOR,
                     subjectId = donorProfileId,
                     documentType = documentType,
-                    documentVersion = current.version,
+                    documentVersion = version,
                     signerName = signerName,
                     signerEmail = signerEmail,
                     donationId = donationId,
@@ -174,6 +257,7 @@ class LegalAcceptanceService(
     private fun LegalDocument.toDto() = LegalDocumentDto(
         documentType = documentType,
         version = version,
+        format = contentFormat,
         content = content,
         publishedAt = publishedAt,
     )
@@ -190,4 +274,19 @@ class LegalAcceptanceService(
         donationId = donationId,
         campaignId = campaignId,
     )
+
+    companion object {
+        /**
+         * What a donor accepts on every donation: the CGU (donor terms) only. The `CGV` document is the
+         * associations' CGU and does not concern donors (decision of 2026-11-16).
+         */
+        val DONOR_DOCUMENTS = listOf(LegalDocumentType.CGU)
+
+        /**
+         * What an association accepts — at campaign publication and at the post-login gate: the `CGV` document,
+         * which holds the beneficiary-organisation terms (the landing site's `cguAssociations`), not the donor
+         * CGU (decision of 2026-11-16).
+         */
+        val ASSOCIATION_DOCUMENT = LegalDocumentType.CGV
+    }
 }

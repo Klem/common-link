@@ -8,6 +8,9 @@ import { LegalDocumentType } from '@/types/legal';
 import { SUGGESTED_AMOUNTS } from '@/lib/donation/donationSchema';
 import { useGuestDonation, type DonationTrackingContext } from '@/lib/donation/useGuestDonation';
 import { AmountSource } from '@/lib/gtm';
+import { PaymentProviderId } from '@/types/paymentProvider';
+import HelloAssoPayButton, { HelloAssoPayButtonVariant } from '@/components/helloasso/HelloAssoPayButton';
+import { HELLOASSO_HOW_IT_WORKS_URL } from '@/lib/helloasso';
 
 type Skin = 'default' | 'landing';
 
@@ -64,7 +67,19 @@ interface DonationFormProps {
    * Undefined leaves the cap entirely to the backend — which checks it in every case (rule 8).
    */
   remainingCapacity?: number;
+  /**
+   * The association's payment provider cannot collect right now (`PublicWidgetDto.collectAvailable` false, or a
+   * landing page with donations disabled outside preview). Shows "temporarily unavailable" above an inert form
+   * instead of letting the donor fill everything in only to be refused on submit.
+   */
+  collectUnavailable?: boolean;
   onAmountChange?: (amount: number | undefined) => void;
+  /**
+   * The association's payment provider. HELLOASSO (flow §5bis): HelloAsso's cart text, verbatim, right above its
+   * official "Payer avec HelloAsso" button, which replaces the submit button, then the "Comment fonctionne HelloAsso"
+   * link. Anything else keeps the regular submit button.
+   */
+  paymentProvider?: PaymentProviderId | null;
 }
 
 export function DonationForm({
@@ -77,25 +92,29 @@ export function DonationForm({
   submitLabel,
   disabled = false,
   remainingCapacity,
+  collectUnavailable = false,
   onAmountChange,
+  paymentProvider,
 }: DonationFormProps) {
   const t = useTranslations('widget');
+  const tImposed = useTranslations('settings.helloasso.imposed');
+  const helloAsso = paymentProvider === PaymentProviderId.HELLOASSO;
   const s = SKINS[skin];
 
-  const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked, recordAmountChoice } =
+  const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked, recordAmountChoice, cguDocument } =
     useGuestDonation({ widgetToken, sourceSite, locale, tracking, parentOrigin });
 
-  const [openLegalDoc, setOpenLegalDoc] = useState<LegalDocumentType | null>(null);
+  const [showCgu, setShowCgu] = useState(false);
 
   // A full campaign cannot take any amount, so there is nothing to fill in. Never in preview
   // (`disabled`): an unpublished campaign has no meaningful capacity — its goal may still be zero —
   // and telling an association its own draft page is "already full" is the very confusion the
   // `disabled` state exists to avoid.
-  const campaignFull = !disabled && remainingCapacity === 0;
+  const campaignFull = !disabled && !collectUnavailable && remainingCapacity === 0;
 
   // `blocked` comes from the submission lifecycle; `disabled` is the caller's decision. Both make
   // every control inert, so the rest of the form reads a single flag.
-  const inert = blocked || disabled || campaignFull;
+  const inert = blocked || disabled || campaignFull || collectUnavailable;
 
   // At least one preset is disabled by the cap — explains the greyed-out buttons below without
   // disclosing the exact remaining amount.
@@ -130,6 +149,7 @@ export function DonationForm({
       {/* Amount selector */}
       <div style={styles.section}>
         <p style={styles.sectionLabel}>{t('amounts.title')}</p>
+        {collectUnavailable && <p className={s.error}>{t('errors.collectUnavailable')}</p>}
         {campaignFull && <p className={s.error}>{t('errors.capFull')}</p>}
         {nearingCap && <p style={styles.hint}>{t('amounts.nearingCap')}</p>}
         <div style={styles.amountGrid}>
@@ -379,7 +399,7 @@ export function DonationForm({
           />
           <label htmlFor="cguAccepted" style={styles.checkLabel}>
             {t('cgu.label')}{' '}
-            <LegalLinkButton className="btn-camp-link" disabled={inert} onClick={() => setOpenLegalDoc(LegalDocumentType.CGU)}>
+            <LegalLinkButton className="btn-camp-link" disabled={inert} onClick={() => setShowCgu(true)}>
               {t('cgu.link')}
             </LegalLinkButton> *
           </label>
@@ -389,24 +409,9 @@ export function DonationForm({
             {t(errors.cguAccepted.message as Parameters<typeof t>[0])}
           </p>
         )}
-
-        <div style={{ ...styles.checkRow, marginTop: 12 }}>
-          <input
-            id="cgvAccepted"
-            type="checkbox"
-            disabled={inert}
-            {...register('cgvAccepted')}
-          />
-          <label htmlFor="cgvAccepted" style={styles.checkLabel}>
-            {t('cgv.label')}{' '}
-            <LegalLinkButton className="btn-camp-link" disabled={inert} onClick={() => setOpenLegalDoc(LegalDocumentType.CGV)}>
-              {t('cgv.link')}
-            </LegalLinkButton> *
-          </label>
-        </div>
-        {errors.cgvAccepted && (
+        {errors.cguVersion && (
           <p className={s.error} style={{ marginTop: 4 }}>
-            {t(errors.cgvAccepted.message as Parameters<typeof t>[0])}
+            {t(errors.cguVersion.message as Parameters<typeof t>[0])}
           </p>
         )}
       </div>
@@ -417,18 +422,37 @@ export function DonationForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting || inert || capExceeded}
-        className={s.submit}
-      >
-        {isSubmitting
-          ? t('submitting')
-          : (resolvedSubmitLabel ?? t('submit'))}
-      </button>
+      {helloAsso ? (
+        <div className="ha-checkout">
+          {/* HelloAsso's cart text: mandatory before the redirection, never reworded nor translated by us. */}
+          <p className="ha-cart-text" data-testid="ha-cart-text">{tImposed('cartText')}</p>
+          <HelloAssoPayButton
+            variant={HelloAssoPayButtonVariant.SUBMIT}
+            payWith={t('helloasso.payWith')}
+            secured={t('helloasso.secured')}
+            ariaLabel={t('helloasso.payAria')}
+            disabled={isSubmitting || inert || capExceeded}
+            busy={isSubmitting}
+          />
+          {isSubmitting && <p className="ha-submitting" role="status">{t('submitting')}</p>}
+          <a className="ha-how-it-works" href={HELLOASSO_HOW_IT_WORKS_URL} target="_blank" rel="noopener noreferrer">
+            {t('helloasso.howItWorks')}
+          </a>
+        </div>
+      ) : (
+        <button
+          type="submit"
+          disabled={isSubmitting || inert || capExceeded}
+          className={s.submit}
+        >
+          {isSubmitting
+            ? t('submitting')
+            : (resolvedSubmitLabel ?? t('submit'))}
+        </button>
+      )}
 
-      {openLegalDoc && (
-        <LegalDocumentModal documentType={openLegalDoc} onClose={() => setOpenLegalDoc(null)} />
+      {showCgu && (
+        <LegalDocumentModal documentType={LegalDocumentType.CGU} document={cguDocument} onClose={() => setShowCgu(false)} />
       )}
     </form>
   );

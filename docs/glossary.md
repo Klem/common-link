@@ -75,6 +75,10 @@ A non-transferable digital attestation awarded to donors and associations for re
 Badges are categorized by scope: **org** (tied to the association overall, e.g. "100K Club"), **campaign** (tied to a specific campaign, e.g. "Objectif Atteint"), or **transparency** (tied to financial accountability, e.g. "Budget Équilibré").
 `functional`
 
+### Bank Setup Status / Payment Status (BankSetupStatus, PaymentStatus)
+The status of an association's bank-account (payment provider) setup, as shown on its dashboard: `NOT_CONNECTED`, `NEEDS_DATA`, `IN_REVIEW`, `COMPLETED` or `BROKEN`. Computed by the association's **Payment Provider** from stored data only, with an optional provider-side link to complete onboarding and optional warnings. A display status, not a gate: `COMPLETED` means the provider finished its verification, while collecting also requires the **Provider Readiness** to be `READY`.
+`technical` `functional`
+
 ### BCrypt
 The password hashing algorithm used by the backend (strength 12). Passwords are never stored in plain text — only their BCrypt hash is persisted.
 `security` `technical`
@@ -121,18 +125,36 @@ A public, unauthenticated report of a campaign's content, submitted via a "Repor
 
 ### CGU / CGV (Terms of Use / Terms of Sale)
 CGU (Conditions Générales d'Utilisation) and CGV (Conditions Générales de Vente) are versioned legal
-texts stored in `legal_document` (one immutable row per version). A `LegalAcceptance` row proves
-that a donor or an association expressly accepted a given version — document type, version,
-timestamp, and a snapshot of the signatory's name/e-mail taken at acceptance time (never re-read
-from the live profile, which could change afterwards). Donors accept both CGU and CGV fresh on
-every donation (a transactional act); an association accepts only the CGU, once per version, at
-campaign-publish time — reused for later campaigns until the CGU version changes. Required by the
-ACPR public-collection notice and, for the association, the sole protection CommonLink has under
-art. 1740 A CGI in the declarative tax-receipt model (no rescrit fiscal required as of the
-04/08/2026 decision) if a receipt is later challenged. Separate from the fiscal mandate
+texts stored in `legal_document` (one immutable row per version). Since 2026-11-16 they are the
+landing site's final texts: `CGU` = the donor terms (`legal.cguDonors`), `CGV` = — despite its
+historical name — the beneficiary-organisation terms (`legal.cguAssociations`); there are no separate
+terms of sale. See **Legal Document Version** for how they are injected and versioned. A
+`LegalAcceptance` row proves that a donor or an association expressly accepted a given version —
+document type, the version **displayed to them** (refused with 409 `LEGAL_VERSION_OUTDATED` if no
+longer current), timestamp, and a snapshot of the signatory's name/e-mail taken at acceptance time
+(never re-read from the live profile, which could change afterwards). Donors accept the CGU only,
+fresh on every donation (a transactional act; donations before 2026-11-16 also carry a CGV row); an
+association accepts its own terms — the `CGV` document (`LegalAcceptanceService.ASSOCIATION_DOCUMENT`;
+before 2026-11-16 it was `CGU`) — once per version, at login (post-login gate, UI only) or at
+campaign-publish time (server-enforced), reused for later campaigns until the version changes. The
+publish request fields keep their historical names `cguAccepted`/`cguVersion`, as does the refusal
+reason `CGU_NOT_ACCEPTED`. Required by the ACPR public-collection notice and, for the association, the sole protection
+CommonLink has under art. 1740 A CGI in the declarative tax-receipt model (no rescrit fiscal required
+as of the 04/08/2026 decision) if a receipt is later challenged. Separate from the fiscal mandate
 (`FiscalMandate` entity, `eligibility` + `accepted`), which authorises tax-receipt issuance and is
 signed independently.
 `functional` `security` `business`
+
+### Legal Document Version
+Identifier of one immutable CGU/CGV text in `legal_document.version`: `<effective date>-<first 12 hex
+of the SHA-256 of the content>` (e.g. `2026-09-09-a1b2c3d4e5f6`). The effective date is read from
+the text's "Version en vigueur au …" line, so two texts published the same day still get two
+versions. At startup `LegalDocumentSeeder` reads the landing site's `messages/fr.json` (bundled into
+the API jar at build time), converts each text into structured JSON (`content_format = JSON_V1`:
+title, intro, articles, paragraphs as text segments with absolute links — no HTML, no CSS) and
+inserts it if that version is absent; the newest row is the current version, in force at once. A
+version already stored with a different hash stops the boot. Rows are never updated or deleted.
+`functional` `technical`
 
 ### Campaign Category (Cause)
 What a **campaign** funds — not what the association is. Exactly one per campaign, chosen in the campaign editor (`CampaignCause` enum, stored in `campaigns.category`): Solidarité, Alimentation, Santé, Enfance & éducation, Animaux, Handicap, Environnement, Culture, Sport, Droits & citoyenneté, Autre. Boundaries: food aid and agriculture belong to Alimentation, disability sport to Handicap. **Autre** can be chosen but is never displayed publicly (no discovery chip, no badge). On `/projets` a cause chip only appears when at least one live campaign has it.
@@ -161,6 +183,60 @@ Bank account tab state meaning Mollie sent the dossier back for more information
 ### CORS (Cross-Origin Resource Sharing)
 A security mechanism that restricts which domains can communicate with the backend API. Only the authorized frontend URL is allowed — no other website can make requests to the API.
 `technical` `security`
+
+### Cash-out (HelloAsso) — Versement
+A HelloAsso payout: the transfer by which HelloAsso pays an association's collected money out to its bank account,
+on request (the association triggers it in its HelloAsso space; not possible through the public API) or monthly
+(around the 10th). Identified by `idCashOut`; one payout groups CommonLink donations of several campaigns with the
+association's other HelloAsso payments (memberships, ticketing) and may be lowered by refunds — hence the **Cash-out
+net total**. HelloAsso sends no notification for it: CommonLink polls each payment (**Cash-out tracking**).
+`functional` `association`
+
+### Cash-out tracking (HelloAsso) — Suivi des versements
+How CommonLink learns that the money of a confirmed HelloAsso donation reached the association's bank account. At
+confirmation, the paying HelloAsso payment is recorded (`helloasso_donation_funds`, one row per donation); a pass
+(`HelloAssoCashOutSyncExecutor`, scheduled and on-demand, at most one per association per 15 minutes; first scheduled pass minutes after startup, then every 24 hours) re-reads each payment (`GET /v5/payments/{id}`) and maps its `cashOutState` to a **Funds state**
+(`HelloAssoFundsStateMapper`): `AT_PROVIDER` → `PAYOUT_PREPARING` → `IN_TRANSIT` (paid out) → `AVAILABLE` after the
+**Settlement delay**, a **Transfer receipt confirmation** or a **Manual funds release**, or `WITHDRAWN` on
+refund/contestation. The way a row became available is kept (`receipt_confirmation_mode`: `AUTO`, `MANUAL`,
+`CURATOR_RELEASE`). Only `AVAILABLE` donations count in the **Available
+balance** and the **FIFO Donation Allocation**; `funds_available_at` is set at the transition, never back-dated. Only
+HelloAsso ids and states are stored, never payer data. See `docs/legal/mise-a-disposition-fonds-helloasso.md`.
+`functional` `technical` `association`
+
+### Cash-out net total (Montant net d'un versement)
+The amount of a HelloAsso payout as it reaches the association's bank account: Σ credits − Σ debits of HelloAsso's
+payout export (`GET /v5/organizations/{slug}/cash-out/{id}/export`). It can differ from the sum of CommonLink's
+donations in the payout: the payout also carries the association's other HelloAsso payments, and refunds or
+contestations are debited from it. Read lazily once per payout (`HelloAssoCashOutTotalService`); only the total is
+stored (`helloasso_cash_outs`), never an export row (third-party payers' data). Export unit (euros or cents) is
+configurable, `app.payments.helloasso.cashout-export-amount-unit`, provisional `EUROS` (question U3). Null when unreadable.
+`functional` `technical` `association`
+
+### Campaign funds (Où en sont vos dons)
+The server-computed read model of a campaign's money for the Payments tab (`CampaignFundsService`,
+`GET /api/association/campaigns/{id}/funds`): `raised`, split into `atProvider`, `payoutPreparing`, `inTransit`,
+`available` (they add up to `raised − withdrawn`), `paidOut`, `pendingPayouts`, `disbursable` (the **Available
+balance** function of the creation check, clamped at 0), the campaign's HelloAsso payouts (`cashOuts[]`), curator
+releases (`manualReleases[]`) and the tracking state (`lastSyncAt`, `syncError`, `nextRefreshAvailableAt`). Each
+donation counts by its own provider reference, not by the association's current provider. The front adds nothing.
+`POST …/funds/refresh` asks for a tracking pass (at most one per association per 15 minutes, always `200`).
+`functional` `technical` `association`
+
+### Settlement delay (settlement safety delay, Délai de sécurité)
+The number of **TARGET2 business days** after HelloAsso's payout date (or, missing it, after the payout was first
+seen) after which a paid-out HelloAsso donation becomes available on its own: 2 by default
+(`app.payments.helloasso.cashout-settlement-business-days`, provisional CEO decision Q1). TARGET2 business days exclude
+weekends, 1 January, Good Friday, Easter Monday, 1 May, 25 and 26 December (`BusinessDayCalendar`, Europe/Paris).
+`functional` `technical`
+
+### Cash-in eligibility (isCashInCompliant)
+Whether HelloAsso lets an organization receive payments right now, read from HelloAsso's API (`isCashInCompliant` of `GET /v5/organizations/{slug}`, returned to an organization admin, which an association API key is). CommonLink reads it at linking, on the association's request (at most once a minute), on its return to the page, every 2 h while not eligible, daily once eligible, and after any HelloAsso organization notification — never by creating a test payment. A linked HelloAsso association collects only while eligible; one that was eligible and is not any more is shown as suspended.
+`technical` `compliance`
+
+### Checkout Request / Checkout Session
+The provider-neutral input and output of a donation payment. The **Checkout Request** carries what the public donation flow knows once the cap, the guest donor and the asset-freeze screening have passed (association, campaign, amount, public reference, widget, locale, source site); each **Payment Provider** turns it into its own payment (return URLs, description, metadata). The **Checkout Session** returns the prefixed provider reference stored on the pending donation and the provider-hosted page the donor is redirected to — never empty: a provider that returns no payment page fails before any donation is recorded.
+`technical`
 
 ---
 
@@ -232,13 +308,33 @@ One of the three login methods. Users register with an email and a password (min
 Traditional government-issued currency (EUR in our case). On CommonLink, donors pay in euros — the platform is not a crypto payment system. The blockchain layer is used for certification, not for transferring funds.
 `business` `blockchain`
 
+### Funds availability (FundsState) — Mise à disposition des fonds
+Where the money of a confirmed HelloAsso donation stands between HelloAsso and the association's bank account
+(`helloasso_donation_funds.funds_state`): `AT_PROVIDER` (held by HelloAsso), `PAYOUT_PREPARING` (payout started),
+`IN_TRANSIT` (paid out, within the **Settlement delay**), `AVAILABLE` (arrived: usable for payments,
+`donations.funds_available_at` set), `WITHDRAWN` (refunded or contested, never usable). Mapped from HelloAsso's
+`cashOutState` by `HelloAssoFundsStateMapper`; transitions never go back, except to `WITHDRAWN`. Mollie donations have
+no such row: they are available at confirmation. See **Cash-out tracking**, **Campaign funds**.
+`functional` `technical` `association`
+
 ### FIFO Donation Allocation
-The engine that determines which confirmed donations funded which confirmed payouts of a campaign:
-donations and payouts are each sorted by `confirmedAt` ascending, and payouts consume donations
+The engine that determines which available donations funded which confirmed payouts of a campaign.
+Only donations whose funds reached the association's bank account (`funds_available_at` set) enter
+it: every donation at confirmation, except HelloAsso donations, which stay out until HelloAsso pays
+them out. Donations are sorted by (`funds_available_at`, `confirmedAt`, id) ascending, payouts by
+`confirmedAt` ascending, and payouts consume donations
 chronologically, oldest first, across all donors of the campaign combined — never per-donor. A
 single payout may span several donations; a single donation may (partially) fund several payouts.
 Computed on the fly (`DonationAllocationService`), not materialized. Feeds the "Part utilisée"
-column of the donor's donation history and the traceability modal.
+column of the donor's donation history and the traceability modal. The sort is total, so the
+allocation is identical on every read. Only `CONFIRMED` payouts consume
+donations ("used" means spent, never committed): a `PENDING` payout reserves its amount on the
+association's available balance but takes no donation, so a payout confirmed while an older one
+is still pending consumes the oldest donations. Payouts only join at the end. Donations almost
+always do too: a HelloAsso donation always does (available when paid out), but a Mollie donation
+confirmed late is dated, and made available, at the provider's payment time (see **Donation Date**)
+and may sort before donations confirmed in between, shifting the allocation already shown for those.
+See **Available balance**.
 `functional` `technical`
 
 ### Flyway
@@ -248,6 +344,10 @@ A database migration tool that manages the evolution of the database schema thro
 ---
 
 ## G
+
+### Freeze Clearance (Levée de correspondance)
+The effect of a compliance officer closing an asset-freeze alert as `FALSE_POSITIVE`: the (screened normalized name, register entry) pairs the alert screen displayed no longer block the next screening of the same subject, which journals `FREEZE_SCREENING_HIT_CLEARED` instead of raising a new alert (`FreezeClearanceService`). Applies to onboarding (association, representatives, beneficial owners) and to donations (scope: the donor profile, i.e. the e-mail address). Bounded by the `ALERT_CLOSED` journal entry; only the latest ruling counts (`SUSPICIOUS` afterwards cancels it); any uncovered pair re-blocks. For donors, an open donor freeze alert on the profile suspends every clearance.
+`functional` `compliance`
 
 ### Guest Donor
 A donor who makes a donation via the [[Donation Widget]] without having a CommonLink account. On form submission, `GuestDonorService.findOrCreateGuestDonor(email)` creates a `User` (role DONOR, `guest=true`, no usable password) and an associated `DonorProfile(anonymous=true)` — idempotent by email. The on-chain flow is identical to a registered donor: `DonationService.confirmDonation` derives a deterministic EVM wallet address via `DonorAddressGenerator.generate(donorProfile.id)` (HMAC-SHA256, no private key) and enqueues a `RECORD_DONATION` job. The fiscal identity (name, address) is captured in the donation form and stored as a snapshot on the `Donation` row — independent of `anonymousDisplay`, which only controls the public leaderboard.
@@ -276,6 +376,10 @@ One of the three login methods. Users click "Continue with Google" → a popup o
 ---
 
 ## I
+
+### HelloAsso Connection (HelloAssoConnection)
+The link between an association and its HelloAsso account in API keys mode: one row per association, created before the link so the association can be shown its notification URL (opaque token) while linking, then holding the organization slug, the `client_id` and the encrypted tokens. States: `NOT_LINKED`, `ACTIVE`, `BROKEN` (refresh token rejected, keys must be re-entered), `DISCONNECTED` (tokens erased, row and token kept). The `client_secret` is never stored. Kept when the association moves to another **Payment Provider**.
+`technical`
 
 ### IBAN (International Bank Account Number)
 Standardized unique identifier for a bank account at the international level (ISO 13616 standard). Composed of 2 country code letters, 2 check digits and the BBAN (Basic Bank Account Number), on a maximum of 34 characters. On CommonLink, beneficiary IBANs are validated via the mod-97 algorithm and can be verified via the VOP service.
@@ -309,6 +413,10 @@ A digitally signed token that the backend issues upon successful authentication.
 
 ## K
 
+### Key check (HelloAsso)
+The live check of the two HelloAsso API codes (client id, client secret) an association pastes on the "Relier" screen: once both are filled, the dashboard asks the server (`POST /api/association/helloasso/credentials/verify`, debounced, the previous request cancelled) whether HelloAsso accepts them and whether the organization they reach is the association verified on CommonLink. Outcomes: valid (the user still confirms "C'est bien nous"), invalid, another association (refused, nothing kept) or HelloAsso unavailable. The secret stays in the page's memory only and is erased after linking; the server re-checks everything when linking.
+`technical` `compliance`
+
 ### KYC (Know Your Customer)
 The identity verification process for associations. Involves validating the SIREN number through the Annuaire des Entreprises and confirming the RNA (Répertoire National des Associations) registration. Earning the "Organisation Vérifiée" badge proves KYC completion.
 `business` `security`
@@ -334,6 +442,17 @@ The French law governing non-profit associations. Only organizations registered 
 ### Magic Link
 A passwordless login method. The user enters their email → receives a link valid for 15 minutes → clicks it → is instantly authenticated. The link contains an opaque token whose SHA-256 hash is stored in the database. Each link can only be used once. Rate-limited to 3 requests per email per 10 minutes.
 `functional` `security`
+
+### Manual funds release (Déblocage manuel)
+A curator makes HelloAsso donations `AVAILABLE` by hand when HelloAsso cannot tell that their payout arrived
+(HelloAsso incident, payout shown in transit although received, HelloAsso link disconnected or broken — CEO decisions
+Q4/Q5). Requires a reason, the association's bank statement line copied as text and a file of that single line (PDF,
+JPEG, PNG ≤ 10 MB, sniffed), stored in `helloasso_funds_release_evidence` (retention undecided, Q8, no purge). Only
+tracked, non-terminal donations of that association; one transaction, rows locked; journal
+`HELLOASSO_FUNDS_MANUALLY_RELEASED` without the line nor the file. API only:
+`POST /api/admin/associations/{id}/helloasso-funds/release` (`HelloAssoFundsReleaseService`). Not available for a
+donation confirmed without a tracking row.
+`functional` `compliance` `technical`
 
 ### Milestone (Palier)
 A funding threshold within a campaign that unlocks a specific deliverable. Each milestone has a title, emoji, description, target amount, status, and sort order. Status (`MilestoneStatus`) can be: `LOCKED` (not yet funded), `CURRENT` (actively being targeted), or `REACHED` (funded). Milestones connect financial goals to measurable, concrete impact (e.g., "€5,000 → heating equipment for 8 families"). Managed via `POST /PUT /DELETE /api/association/campaigns/{id}/milestones`.
@@ -379,7 +498,7 @@ The OAuth `access_token` is short-lived (`expires_in` = 3600s) and refreshed sil
 `technical` `integration` `association`
 
 ### Token Encryption Key
-The `MONERIUM_TOKEN_ENC_KEY` env var (base64, 32 bytes = AES-256). Despite its Monerium-centric name it is a **shared** key: the same `MoneriumTokenConverter` encrypts both Monerium and Mollie Connect OAuth tokens at rest (AES-256-GCM). When unset the converter is a no-op (plaintext) — intended for dev/staging, **must be set in prod**. ⚠ Rotating or removing it breaks decryption of every stored token for both integrations (old rows throw → 500 on status read); any change requires a re-encryption migration. A neutrally-named key is deferred to keep the blast radius minimal.
+The `OAUTH_TOKEN_ENC_KEY` env var (property `app.oauth.token-enc-key`, base64, 32 bytes = AES-256), formerly `MOLLIE_TOKEN_ENC_KEY`. A **shared** key: `OAuthTokenConverter` encrypts the Mollie Connect and HelloAsso OAuth tokens at rest with it (AES-256-GCM). When unset the converter is a no-op (plaintext) — intended for dev/staging; under the prod profile a blank key is a startup failure. ⚠ Changing its value breaks decryption of every stored token of both providers (old rows throw → 500 on status read); a rotation requires a re-encryption migration. Renaming the env var while keeping its value needs no migration.
 `technical` `security`
 
 ### Mollie Capabilities API
@@ -434,7 +553,17 @@ A cryptographically random string (32 bytes, 64 hex characters) used for Magic L
 Where a campaign acts: a French commune (INSEE code) or department, the whole of France, or a foreign country (ISO code; France and its overseas departments are entered as departments). Validated and resolved server-side against geo.api.gouv.fr — label and commune coordinates never come from the client. Pre-filled with the association's headquarters commune at campaign creation. Recommended, not required, to publish. Drives the derived Geographic Scope and the proximity filter (town or postal code typed by the visitor, no browser geolocation; radius 10/20/50/100 km, 20 by default; a department campaign matches when the visitor's commune is in that department).
 `functional`
 
+### Provided KYB documents
+The KYB documents an association already gave CommonLink (statutes, RNA receipt, legal representative's ID), listed by id and type only (`GET /api/association/documents/kyb`) so it can re-download them and upload them itself to its payment provider (Mollie onboarding kit, HelloAsso "Retrouver mes fichiers"). Each download is journaled; CommonLink never sends a document to the provider.
+`technical` `compliance`
+
 ### Proximity Filter — see **Place of Action**
+
+### Payment Amount Guard (PaymentAmountGuard)
+Last check before a paid payment confirms its donation, for every provider (Mollie, HelloAsso): the amount re-read at the provider must equal the donation's amount exactly. Otherwise the donation stays pending (no receipt, no on-chain proof), with a `PAYMENT_AMOUNT_MISMATCH` technical alert and one compliance journal entry per donation (expected amount, paid amount and their delta). For HelloAsso, a voluntary contribution to HelloAsso is not part of the paid amount (observed in sandbox, 2026-11-10); an order that does not match the payment that confirms a donation (another total, several lines, a line that is not the donation) is reported by a `HELLOASSO_ORDER_AMOUNT_DELTA` alert without blocking the confirmation.
+
+### Donation Date (Donation.confirmedAt)
+The date of a donation everywhere (fiscal receipt year, yearly filters, statistics): the payment time reported by the provider (HelloAsso `payments[].date`, Mollie `paidAt`) when plausible — not in the future, not before the donation was created, 5 minutes of clock skew tolerated — else the time of confirmation.
 
 ### Payment Method
 The means by which a donor completes a donation. Supported methods: **Card** (Visa/Mastercard), **SEPA transfer** (instant bank transfer), **Crypto Wallet** (Polygon/USDC), and **Apple Pay**.
@@ -443,6 +572,22 @@ The means by which a donor completes a donation. Supported methods: **Card** (Vi
 ### Mode de versement (Payment Method on the Receipt)
 The line on the fiscal receipt stating how the donor actually paid. The provider's method code is captured when the payment is confirmed (`donations.payment_method`) and mapped to a French label — _Carte bancaire_, _Virement bancaire_, _Prélèvement SEPA_, _Virement bancaire en ligne_. An unrecognised provider code is printed verbatim rather than forced into a category, and a donation confirmed without a provider payload prints _Non précisé_. Previously the receipt printed the list of accepted methods, which was false for every individual donation. See `docs/legal/E5-recu-fiscal-mentions.md`.
 `functional` `business`
+
+### Payment Provider (PaymentProvider)
+The payment service provider (PSP) that collects donations on an association's behalf — **Mollie** today, **HelloAsso** planned. CommonLink never holds funds and takes no fee, whichever the provider. In the code, `PaymentProvider` is the port between the donation domain and a provider: readiness check, link status, checkout creation, payment re-read. Every donation's provider reference starts with the provider's prefix (`mollie:`, `helloasso:`).
+`technical` `business`
+
+### Payment Provider Change
+A curator (or admin) moving an association to another **Payment Provider** from its back-office dossier, with a mandatory reason (at most 500 characters). Only new payments are affected: the previous provider's connection is kept and payments already in flight stay with the provider that took them. Each effective change is written to the compliance journal (`PAYMENT_PROVIDER_CHANGED`: from, to, reason, curator) and emailed to the association without the reason; choosing the current provider changes nothing. New associations get HelloAsso by default; Mollie is set this way on an association's specific request.
+`functional` `compliance`
+
+### Payment Provider Registry (PaymentProviderRegistry)
+The component that picks the **Payment Provider** to use: by association for new payments and collection gates, by reference prefix for payments already in flight. In-flight payments always follow their prefix, never the association's current provider, so a donation started before a provider change is still settled by the provider that took it.
+`technical`
+
+### Provider Readiness (ProviderReadiness)
+Whether an association can collect donations through its **Payment Provider**: `NOT_CONNECTED` (no account linked), `BROKEN` (link revoked, must re-link), `PENDING` (provider verification under way) or `READY`. Every collection gate (campaign publication, widget, landing page, checkout) reads it. Computed from stored data only — never by calling the provider — because public pages read it on every view.
+`technical` `functional`
 
 ### Polygon
 A Layer 2 blockchain network used by CommonLink for on-chain certifications and wallet-based donations. Polygon offers low gas fees (~€0.08 per transaction) and fast confirmation times, making it suitable for micro-certifications.
@@ -581,6 +726,15 @@ An internal utility that generates cryptographically random tokens and computes 
 A recorded donation event. Each transaction has: a unique ID, a blockchain hash (for on-chain verification), the donor reference, campaign reference, amount, status (`confirmed`, `pending`, or `failed`), and date. Transactions are displayed in the campaign detail view.
 `functional` `blockchain`
 
+### Transfer receipt confirmation (cash-out receipt confirmation, Confirmation « Virement reçu »)
+The association states that a HelloAsso payout (`idCashOut`) reached its bank account, making its donations of that
+payout `AVAILABLE` before the **Settlement delay** ends (CEO decision Q3: the association alone). Never trusted on
+the click: each donation is re-read at HelloAsso and must be `CashedOut` in that payout, else
+`409 CASH_OUT_NOT_CASHED_OUT`; withdrawn donations are left out; no active HelloAsso link → `409 HELLOASSO_NOT_LINKED`.
+One transaction, idempotent, journal `CASHOUT_RECEIPT_CONFIRMED`. `POST /api/association/cash-outs/{idCashOut}/receipt`
+(`CashOutReceiptService`).
+`functional` `association` `compliance`
+
 ### Transparency Badge
 A badge category specifically tied to financial accountability. Examples: "Budget Équilibré" (published a balanced budget), "Transparence Totale" (all outgoing payments documented), "Rapport Certifié" (end-of-campaign report anchored on IPFS).
 `functional` `blockchain`
@@ -693,8 +847,25 @@ Google Analytics 4 ecommerce events delivered to the association's own page `win
 
 ## P (continued)
 
+### Available balance (disbursable balance, Solde disponible)
+What an association can still commit on a campaign: available donations − `CONFIRMED` payouts −
+`PENDING` payouts (`PayoutService.computeAvailableBalance`). Available donations are those whose
+funds reached the association's bank account (`funds_available_at` set,
+`DonationRepository.sumAvailableAmountByCampaignId`): Mollie donations at confirmation, HelloAsso
+donations only once paid out and the **Settlement delay** elapsed, never once withdrawn (refunded or contested, see
+**Cash-out tracking**). The same donation base backs the confirm-time check
+(`PayoutConfirmer`). A payout refused for this balance alone, at creation or confirmation, gets
+a `409` with `code: FUNDS_NOT_AVAILABLE`, `disbursable` (the amount still usable, never negative), `inTransit`
+and `atProvider` (HelloAsso donations paid out but not arrived, and still held by HelloAsso — zero for Mollie)
+— see `FundsNotAvailableException`; the Payments tab reads the same figure as **Campaign funds** `disbursable`; with any other blocking reason the `409` stays uncoded. `PENDING` payouts are reserved so that
+several pending payouts cannot together exceed the funds raised. Deliberately different from the
+donor-side **FIFO Donation Allocation**, which counts only `CONFIRMED` payouts: the two figures
+diverge by the amount of pending payouts. A `PENDING` payout nothing will resolve stops being
+reserved only once the association cancels it (`CANCELLED`).
+`functional` `association`
+
 ### Payout
-An outgoing payment from a campaign to a payee (beneficiary). Created as `PENDING` when the association initiates it. Confirmation initiates a real SEPA transfer through **Bridge API**, and the payout stays `PENDING` until the association has authorised that transfer with its own bank and the bank has settled it; only then does it become `CONFIRMED` and a `RECORD_PAYOUT` on-chain job get enqueued. A bank rejection is the one terminal failure: `FAILED`. A link that expires or is revoked without ever being authorised is not a failure — nobody asked the bank for anything, so the payout returns to a retryable `PENDING`, its authorisation URL is cleared and its amount goes back to the campaign's confirmable balance.
+An outgoing payment from a campaign to a payee (beneficiary). Created as `PENDING` when the association initiates it. Confirmation initiates a real SEPA transfer through **Bridge API**, and the payout stays `PENDING` until the association has authorised that transfer with its own bank and the bank has settled it; only then does it become `CONFIRMED` and a `RECORD_PAYOUT` on-chain job get enqueued. A bank rejection is the one terminal failure: `FAILED`. A link that expires or is revoked without ever being authorised is not a failure — nobody asked the bank for anything, so the payout returns to a retryable `PENDING`, its authorisation URL is cleared and its amount goes back to the campaign's confirmable balance. A `PENDING` payout with no transfer in progress (null Bridge status) can be withdrawn by the association: `CANCELLED`, after any known payment link has been revoked.
 `domain` `backend` `association`
 
 ### Bridge API
@@ -710,7 +881,7 @@ Bridge's read endpoints return a stored IBAN partially hidden (`FR76XXXXXXXXXXXX
 `technical` `backend` `external`
 
 ### BridgePaymentStatus
-State of the Bridge initiation for a payout. The first six values are Bridge's ISO 20022 transaction statuses: `CREA` (link created, not yet authorised at the bank), `ACTC` (accepted, awaiting bank authorisation), `PDNG` (authorised, settling), `ACSC` (settled — terminal success), `RJCT` (rejected by the bank — terminal failure), `PART` (partial, only meaningful for bulk transfers). The last two describe the payment link rather than a transfer: `LINK_EXPIRED`, `LINK_REVOKED`. They are neither failures nor states a payout is ever stored in — reaching one releases the payout back to a retryable `PENDING` with a null Bridge status. A `CREA` or `ACTC` request loses to a dead link, since the URL that would let the association authorise it no longer works; from `PDNG` on the bank is executing and the link's fate no longer matters. Kept deliberately separate from **PayoutStatus** so the three-state accounting lifecycle that balance, KPI and breakdown computations rely on keeps its meaning. Only `ACSC` promotes a payout to `CONFIRMED`.
+State of the Bridge initiation for a payout. The first six values are Bridge's ISO 20022 transaction statuses: `CREA` (link created, not yet authorised at the bank), `ACTC` (accepted, awaiting bank authorisation), `PDNG` (authorised, settling), `ACSC` (settled — terminal success), `RJCT` (rejected by the bank — terminal failure), `PART` (partial, only meaningful for bulk transfers). The last two describe the payment link rather than a transfer: `LINK_EXPIRED`, `LINK_REVOKED`. They are neither failures nor states a payout is ever stored in — reaching one releases the payout back to a retryable `PENDING` with a null Bridge status. A `CREA` or `ACTC` request loses to a dead link, since the URL that would let the association authorise it no longer works; from `PDNG` on the bank is executing and the link's fate no longer matters. Kept deliberately separate from **PayoutStatus** so the accounting lifecycle that balance, KPI and breakdown computations rely on keeps its meaning. Only `ACSC` promotes a payout to `CONFIRMED`.
 `technical` `backend`
 
 ### Bank authorisation URL
@@ -722,7 +893,7 @@ High-level category of a payout used for budget variance reporting: `REMUNERATIO
 `technical` `backend`
 
 ### PayoutStatus
-CommonLink's accounting lifecycle for a payout: `PENDING` (created, awaiting confirmation) → `CONFIRMED` (the bank settled the transfer, on-chain job enqueued) or `FAILED` (terminal error; on the Bridge path, a transfer the association's bank refused). `PENDING` is also returned to: an initiation that never reached Bridge, or a link that died unauthorised, releases the payout so it can be confirmed again. `CONFIRMED` means the bank settled, **not** merely that an order was accepted — see **BridgePaymentStatus** for the bank-side state.
+CommonLink's accounting lifecycle for a payout: `PENDING` (created, awaiting confirmation) → `CONFIRMED` (the bank settled the transfer, on-chain job enqueued) or `FAILED` (terminal error; on the Bridge path, a transfer the association's bank refused). `PENDING` is also returned to: an initiation that never reached Bridge, or a link that died unauthorised, releases the payout so it can be confirmed again. `CANCELLED` (terminal): withdrawn by the association while `PENDING` with a null Bridge status — never sent, or released after a failed initiation or a dead link; refused while a transfer may be under authorisation at the bank. `FAILED` and `CANCELLED` reserve nothing on the available balance. A settlement Bridge still reports on a `CANCELLED` payout is recorded (`CONFIRMED`) and raises `PAYOUT_SETTLED_AFTER_RELEASE`. `CONFIRMED` means the bank settled, **not** merely that an order was accepted — see **BridgePaymentStatus** for the bank-side state.
 `technical` `backend`
 
 ### typeCode (payout)

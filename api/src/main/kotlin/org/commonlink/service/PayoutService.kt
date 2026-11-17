@@ -14,6 +14,7 @@ import org.commonlink.entity.PayoutStatus
 import org.commonlink.exception.BridgeDestinationRefusedException
 import org.commonlink.exception.BridgeInitiationNotStartedException
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -99,9 +100,11 @@ class PayoutService(
      *
      * @throws NotFoundException if campaign, payee, or IBAN do not belong to the user's association.
      * @throws IllegalArgumentException if the IBAN does not belong to the requested payee.
+     * @throws FundsNotAvailableException if the available balance is the only [PayoutBlockingReason]: carries the
+     *         amount still disbursable.
      * @throws ConflictException if payouts are disabled on this environment (see
-     *         [assertPaymentsEnabled]), or if a [PayoutBlockingReason] applies (unverified IBAN,
-     *         insufficient balance, description too short).
+     *         [assertPaymentsEnabled]), or if several [PayoutBlockingReason]s apply, or one other than the
+     *         balance (unverified IBAN, description too short).
      */
     @Transactional
     fun create(campaignId: UUID, request: CreatePayoutRequest, userId: UUID): PayoutDto {
@@ -130,6 +133,9 @@ class PayoutService(
         if (payeeIban.payee.id != payee.id) throw NotFoundException("IBAN ${request.payeeIbanId} does not belong to payee ${request.payeeId}")
 
         val blockingReasons = blockingReasonsFor(campaignId, payeeIban, request.amount!!, request.label!!)
+        if (blockingReasons == listOf(PayoutBlockingReason.INSUFFICIENT_BALANCE)) {
+            throw donationRepository.fundsNotAvailable(campaignId, computeAvailableBalance(campaignId))
+        }
         if (blockingReasons.isNotEmpty()) {
             throw ConflictException("Payout blocked: ${blockingReasons.joinToString()}")
         }
@@ -172,7 +178,9 @@ class PayoutService(
      * @throws ConflictException if payouts are disabled on this environment (see
      *         [assertPaymentsEnabled] — a payout created before the environment was closed must
      *         not be settleable either), if the payout is not PENDING, if its IBAN is no longer
-     *         VERIFIED, or if confirming it would exceed the confirmable balance.
+     *         VERIFIED. A [FundsNotAvailableException] (a [ConflictException]) if confirming it would exceed the
+     *         confirmable balance: thrown by [PayoutConfirmer.reserve] and left to propagate — its transaction
+     *         rolled back, nothing is engaged and the payout stays PENDING, confirmable again.
      * @throws org.commonlink.exception.BadGatewayException if Bridge is unreachable or refuses the
      *         initiation — nothing has been debited, the reservation is released and the payout is
      *         left PENDING so it can be confirmed again.
@@ -254,6 +262,41 @@ class PayoutService(
                 .onFailure { log.error("Payout {} left engaged: releasing it failed too", payoutId, it) }
             throw ex
         }
+    }
+
+    /**
+     * Cancels a PENDING payout that has no transfer in progress, so its amount stops being reserved
+     * on the campaign's available balance.
+     *
+     * Covers every PENDING payout nothing will ever resolve on its own: created but never
+     * confirmed, or released after a failed initiation or a dead link. A payout with a Bridge
+     * status may be authorised at the bank right now and is refused.
+     *
+     * Not gated by [assertPaymentsEnabled]: withdrawing a payout moves no money, and an
+     * environment closed to payouts must still let an association clear what was created before.
+     *
+     * Deliberately **not** `@Transactional`, like [confirm]: a known payment link is revoked before
+     * the payout is cancelled, never after — the reasoning of a bank rejection
+     * ([BridgeWebhookService]): Bridge does not burn a link on its own, and the amount must not go
+     * back to the balance while an authorisation URL for it may still be live.
+     *
+     * @param campaignId Campaign owning the payout.
+     * @param payoutId Payout to cancel.
+     * @param userId Authenticated association user.
+     * @return the cancelled payout.
+     * @throws NotFoundException if payout or campaign cannot be found for the user's association.
+     * @throws ConflictException if the payout is not PENDING or has a transfer in progress.
+     * @throws org.commonlink.exception.BadGatewayException if a known link could not be revoked —
+     *         the payout is left PENDING and the cancellation can be retried.
+     */
+    fun cancel(campaignId: UUID, payoutId: UUID, userId: UUID): PayoutDto {
+        val associationId = resolveAssociationId(userId)
+        assertCampaignOwnership(campaignId, associationId)
+
+        confirmer.loadForCancel(campaignId, payoutId, associationId)
+            ?.let { bridgeInitiation.revokePaymentLink(it) }
+
+        return confirmer.cancel(campaignId, payoutId).toDto()
     }
 
     /** Where Bridge returns the association once the bank flow is over. */
@@ -370,26 +413,32 @@ class PayoutService(
     }
 
     /**
-     * Available funds still allocatable = confirmed donations − CONFIRMED payouts − **PENDING** payouts.
+     * Available funds still allocatable = available donations − CONFIRMED payouts − **PENDING** payouts.
      * PENDING payouts are reserved (H2): without this, N pending payouts each ≤ balance could be created
-     * and later confirmed to collectively exceed the funds raised.
+     * and later confirmed to collectively exceed the funds raised. A PENDING payout nothing will
+     * resolve stops being reserved only once [cancel]led; FAILED and CANCELLED reserve nothing.
+     *
+     * Public as the single source of the campaign's disbursable amount: the creation check ([create]), the
+     * Payments tab summary ([getSummary]) and the funds read model ([CampaignFundsService]) all call it. No
+     * ownership check: callers check it. May be negative (payouts confirmed before a withdrawal).
      */
-    private fun computeAvailableBalance(campaignId: UUID): BigDecimal {
+    fun computeAvailableBalance(campaignId: UUID): BigDecimal {
         val pending = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING)
             ?: BigDecimal.ZERO
         return computeConfirmableBalance(campaignId) - pending
     }
 
     /**
-     * Funds confirmable right now = confirmed donations − already-CONFIRMED payouts (PENDING excluded).
-     * Used at confirm time: the payout being confirmed is itself still PENDING, so it must be checked
-     * against the balance net of *other* CONFIRMED payouts only.
+     * Available donations − already-CONFIRMED payouts (PENDING excluded): the base of
+     * [computeAvailableBalance]. Available donations are those whose funds have reached the
+     * association's bank account ([DonationRepository.sumAvailableAmountByCampaignId]). The check at
+     * confirm time is [PayoutConfirmer]'s own, under the campaign lock.
      */
     private fun computeConfirmableBalance(campaignId: UUID): BigDecimal {
         val confirmedAmount = payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED)
             ?: BigDecimal.ZERO
-        val totalRaised = donationRepository.sumConfirmedAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
-        return totalRaised - confirmedAmount
+        val available = donationRepository.sumAvailableAmountByCampaignId(campaignId) ?: BigDecimal.ZERO
+        return available - confirmedAmount
     }
 
     private fun assertCampaignOwnership(campaignId: UUID, associationId: UUID) {

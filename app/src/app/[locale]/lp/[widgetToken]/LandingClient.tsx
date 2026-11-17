@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { DonationPanel } from './DonationPanel';
 import { StickyBar } from './StickyBar';
 import type { DonationTrackingContext } from '@/lib/donation/useGuestDonation';
+import type { PaymentProviderId } from '@/types/paymentProvider';
 
 interface Props {
   widgetToken: string;
@@ -12,12 +13,19 @@ interface Props {
   locale: string;
   campaignName: string;
   tracking: DonationTrackingContext;
-  /** False in preview mode on an unpublished campaign — the form is then rendered disabled. */
+  /** False in preview mode on an unpublished campaign, or when the provider cannot collect — the form is then disabled. */
   donationsEnabled?: boolean;
   /** Amount the campaign may still accept; forwarded to the donation form's collection-cap guard. */
   remainingCapacity?: number;
+  /**
+   * Donations disabled outside preview: the association's payment provider cannot collect right now. The form then
+   * says "temporarily unavailable" (in preview, the preview banner explains the disabled form instead).
+   */
+  collectUnavailable?: boolean;
   /** Validated host origin (see `resolveParentOrigin` in `page.tsx`) — forwarded to the `begin_checkout` bridge. */
   parentOrigin?: string | null;
+  /** The association's payment provider; forwarded to the donation panel. */
+  paymentProvider?: PaymentProviderId | null;
   children: ReactNode;
 }
 
@@ -29,7 +37,9 @@ export function LandingClient({
   tracking,
   donationsEnabled = true,
   remainingCapacity,
+  collectUnavailable = false,
   parentOrigin,
+  paymentProvider,
   children,
 }: Props) {
   const [selectedAmount, setSelectedAmount] = useState<number | undefined>(undefined);
@@ -60,8 +70,10 @@ export function LandingClient({
               tracking={tracking}
               disabled={!donationsEnabled}
               remainingCapacity={remainingCapacity}
+              collectUnavailable={collectUnavailable}
               onAmountChange={setSelectedAmount}
               parentOrigin={parentOrigin}
+              paymentProvider={paymentProvider}
             />
           </div>
         </aside>

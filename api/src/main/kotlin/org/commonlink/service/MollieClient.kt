@@ -12,6 +12,8 @@ import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Instant
+import java.time.OffsetDateTime
 
 /**
  * Known Mollie payment statuses.
@@ -38,6 +40,7 @@ enum class MolliePaymentStatus {
  * @param method Payment method actually used by the payer (Mollie code, e.g. `creditcard`,
  *   `banktransfer`, `bancontact`). Null until the payer picks one on the hosted checkout page —
  *   so it is only reliably present once the payment reaches [MolliePaymentStatus.PAID].
+ * @param paidAt Payment time (`paidAt`), present once [MolliePaymentStatus.PAID]; null when absent or unparsable.
  */
 data class MolliePayment(
     val id: String,
@@ -46,6 +49,7 @@ data class MolliePayment(
     val checkoutUrl: String?,
     val metadata: Map<String, String>,
     val method: String? = null,
+    val paidAt: Instant? = null,
 )
 
 // ── Internal JSON DTOs (Mollie wire format) ──────────────────────────────────
@@ -67,6 +71,8 @@ private data class MolliePaymentResponseJson(
     val metadata: Map<String, String>?,
     /** Method chosen by the payer; absent while the payment is still `open`. */
     val method: String? = null,
+    /** ISO-8601 payment time, present once the payment is `paid`. */
+    val paidAt: String? = null,
     @JsonProperty("_links") val links: MollieLinksJson?
 )
 
@@ -235,6 +241,7 @@ class MollieClient(
             checkoutUrl = links?.checkout?.href,
             metadata = metadata ?: emptyMap(),
             method = method?.takeIf { it.isNotBlank() },
+            paidAt = paidAt?.let { runCatching { OffsetDateTime.parse(it).toInstant() }.getOrNull() },
         )
     }
 }

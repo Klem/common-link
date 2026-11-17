@@ -1,0 +1,1 @@
+DROP TABLE helloasso_funds_release_evidence;

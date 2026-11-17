@@ -3,7 +3,9 @@ package org.commonlink.controller
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
+import org.commonlink.dto.OnboardingProvidedDocumentDto
 import org.commonlink.dto.OptionalDocumentDto
+import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationDocumentMetadata
@@ -12,6 +14,7 @@ import org.commonlink.security.JwtAuthenticationFilter
 import org.commonlink.security.JwtService
 import org.commonlink.security.SecurityConfig
 import org.commonlink.security.UserDetailsServiceImpl
+import org.commonlink.service.KybDocumentService
 import org.commonlink.service.VerificationService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,6 +46,7 @@ class AssociationDocumentControllerTest {
     @Autowired private lateinit var mockMvc: MockMvc
 
     @MockkBean private lateinit var verificationService: VerificationService
+    @MockkBean private lateinit var kybDocumentService: KybDocumentService
     @MockkBean private lateinit var jwtService: JwtService
     @MockkBean private lateinit var userDetailsService: UserDetailsServiceImpl
     @MockkBean private lateinit var userRepository: UserRepository
@@ -90,6 +94,43 @@ class AssociationDocumentControllerTest {
     @Test
     fun `listDocuments - 401 when not authenticated`() {
         mockMvc.perform(get("/api/association/documents"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/association/documents/kyb
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `listKybDocuments - 200 with type and id only`() {
+        every { kybDocumentService.listProvidedForUser(userId) } returns listOf(
+            OnboardingProvidedDocumentDto(id = docId, type = AssociationDocumentType.VERIF_STATUTS),
+        )
+
+        mockMvc.perform(get("/api/association/documents/kyb").with(user(userId.toString()).roles("ASSOCIATION")))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].id").value(docId.toString()))
+            .andExpect(jsonPath("$[0].type").value("VERIF_STATUTS"))
+            .andExpect(jsonPath("$[0].fileName").doesNotExist())
+    }
+
+    @Test
+    fun `listKybDocuments - 404 without an association profile`() {
+        every { kybDocumentService.listProvidedForUser(userId) } throws NotFoundException("Association not found")
+
+        mockMvc.perform(get("/api/association/documents/kyb").with(user(userId.toString()).roles("ASSOCIATION")))
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `listKybDocuments - 403 for a donor`() {
+        mockMvc.perform(get("/api/association/documents/kyb").with(user(userId.toString()).roles("DONOR")))
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `listKybDocuments - 401 when not authenticated`() {
+        mockMvc.perform(get("/api/association/documents/kyb"))
             .andExpect(status().isUnauthorized)
     }
 

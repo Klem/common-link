@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   createPayment,
   confirmPayment,
+  cancelPayment,
   listPayments,
   getPaymentSummary,
 } from '@/lib/api/payment';
@@ -79,7 +80,15 @@ export interface UsePaymentsReturn {
    * backend for a fresh one and returns the payout carrying its new authorisation URL.
    */
   retry: (payoutId: string) => Promise<PayoutDto>;
-  refetch: () => Promise<void>;
+  /**
+   * Cancels a PENDING payout with no transfer in progress (see `canCancelPayout`).
+   *
+   * Nothing resolves such a payout on its own — never sent, or released after a failed initiation
+   * or a dead link — and until it is cancelled its amount stays reserved on the available balance.
+   */
+  cancel: (payoutId: string) => Promise<PayoutDto>;
+  /** Re-reads the payouts and the summary; `silent` keeps the journal from showing its loading state. */
+  refetch: (silent?: boolean) => Promise<void>;
   /**
    * The payout the association has just come back from its bank for, while its fate is still
    * unknown — null otherwise.
@@ -207,6 +216,20 @@ export function usePayments(campaignId: string, returningPayoutId?: string | nul
     [campaignId, fetchAll],
   );
 
+  const cancel = useCallback(
+    async (payoutId: string): Promise<PayoutDto> => {
+      setIsSaving(true);
+      try {
+        const cancelled = await cancelPayment(campaignId, payoutId);
+        await fetchAll();
+        return cancelled;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [campaignId, fetchAll],
+  );
+
   return {
     payouts,
     summary,
@@ -215,6 +238,7 @@ export function usePayments(campaignId: string, returningPayoutId?: string | nul
     error,
     submit,
     retry,
+    cancel,
     refetch: fetchAll,
     awaitingReturnPayoutId: awaitingReturn ? returningPayoutId : null,
   };

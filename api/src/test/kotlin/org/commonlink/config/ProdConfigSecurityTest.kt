@@ -106,6 +106,25 @@ class ProdConfigSecurityTest {
     }
 
     @Test
+    fun `helloasso mock is false in prod`() {
+        assertEquals(false, prop("app.helloasso.mock"))
+    }
+
+    @Test
+    fun `helloasso URLs and webhook IPs are required with no default in prod`() {
+        assertEquals("\${HELLOASSO_API_BASE_URL}", prop("app.helloasso.api-base-url"))
+        assertEquals("\${HELLOASSO_OAUTH_TOKEN_URL}", prop("app.helloasso.oauth-token-url"))
+        assertEquals("\${HELLOASSO_REDIRECT_BASE_URL}", prop("app.helloasso.redirect-base-url"))
+        assertEquals("\${HELLOASSO_WEBHOOK_URL}", prop("app.helloasso.webhook-url"))
+        assertEquals("\${HELLOASSO_WEBHOOK_ALLOWED_IPS}", prop("app.helloasso.webhook-allowed-ips"))
+    }
+
+    @Test
+    fun `new associations default to HELLOASSO in prod`() {
+        assertEquals("\${PAYMENTS_DEFAULT_PROVIDER:HELLOASSO}", prop("app.payments.default-provider"))
+    }
+
+    @Test
     fun `curator email is required with no empty default in prod`() {
         assertEquals("\${APP_CURATOR_EMAIL}", prop("app.curator.email"))
     }
@@ -140,8 +159,8 @@ class ProdConfigSecurityTest {
     }
 
     @Test
-    fun `mollie token-enc-key is required with no plaintext-inheriting default in prod`() {
-        assertEquals("\${MOLLIE_TOKEN_ENC_KEY}", prop("app.mollie.token-enc-key"))
+    fun `oauth token-enc-key is required with no plaintext-inheriting default in prod`() {
+        assertEquals("\${OAUTH_TOKEN_ENC_KEY}", prop("app.oauth.token-enc-key"))
     }
 
     @Test
@@ -242,5 +261,14 @@ class ProdConfigSecurityTest {
         // unset would fall back to the base-profile value of 0, i.e. every request behind the Clever
         // Cloud proxy sharing one bucket (security audit 2026-08-20, M2).
         assertEquals("\${APP_TRUSTED_PROXY_COUNT:1}", prop("app.security.trusted-proxy-count"))
+    }
+
+    @Test
+    fun `forwarded headers are processed by the framework filter in prod`() {
+        // HSTS is only emitted on requests seen as secure, which behind the Clever Cloud proxy needs
+        // X-Forwarded-Proto handling (security audit 2026-08-20, M9). ClientIpResolver relies on this
+        // being a wrapping filter: `native` would rewrite the container request it reads the raw
+        // X-Forwarded-For from.
+        assertEquals("framework", prop("server.forward-headers-strategy"))
     }
 }

@@ -26,7 +26,7 @@ class DonationCapServiceTest {
 
     private val donationRepository = mockk<DonationRepository>()
 
-    private fun service(marginPercent: String = "10", ttl: Duration = Duration.ofMinutes(30)) =
+    private fun service(marginPercent: String = "10", ttl: Duration = DonationCapProperties().reservationTtl) =
         DonationCapService(
             donationRepository,
             DonationCapProperties(
@@ -156,11 +156,17 @@ class DonationCapServiceTest {
         every { donationRepository.sumPendingAmountByCampaignIdSince(any(), capture(cutoffs)) } returns BigDecimal.ZERO
         val c = campaign(goal = "1000", raised = "0")
 
-        service(ttl = Duration.ofMinutes(30)).remainingCapacity(c)
+        service().remainingCapacity(c)
 
         val elapsed = Duration.between(cutoffs.single(), Instant.now())
-        assert(elapsed >= Duration.ofMinutes(30)) { "cutoff must be at least the TTL in the past, was $elapsed" }
-        assert(elapsed < Duration.ofMinutes(31)) { "cutoff must not exceed the TTL, was $elapsed" }
+        assert(elapsed >= Duration.ofMinutes(50)) { "cutoff must be at least the TTL in the past, was $elapsed" }
+        assert(elapsed < Duration.ofMinutes(51)) { "cutoff must not exceed the TTL, was $elapsed" }
+    }
+
+    /** 50 min covers HelloAsso's 45-minute abandonment window, beyond Mollie's ~15 minutes (lot E). */
+    @Test
+    fun `default reservation TTL is 50 minutes`() {
+        assertEquals(Duration.ofMinutes(50), DonationCapProperties().reservationTtl)
     }
 
     /**

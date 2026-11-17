@@ -379,7 +379,13 @@
       "SPORT": "Sport",
       "DROITS_CITOYENNETE": "Droits & citoyenneté",
       "AUTRE": "Autre"
-    }
+    },
+    "helloasso": {
+      "disconnected": "HelloAsso déconnecté. Nous ne gardons plus aucun accès."
+    },
+    "paymentCancelled": "Paiement annulé : son montant est de nouveau disponible.",
+    "paymentCancelError": "Impossible d'annuler ce paiement. Veuillez réessayer.",
+    "cashOutConfirmed": "Virement confirmé : les fonds sont disponibles"
   },
   "compliance": {
     "alerts": {
@@ -856,6 +862,38 @@
         "reviewFrequency": "Fréquence de contrôle :",
         "title": "Mesures de vigilance applicables",
         "version": "Référentiel"
+      },
+      "paymentProvider": {
+        "title": "Prestataire de paiement",
+        "loading": "Chargement du prestataire…",
+        "error": "Impossible de charger le prestataire de paiement.",
+        "current": "Prestataire actuel : <strong>{provider}</strong>",
+        "providers": {
+          "MOLLIE": "Mollie",
+          "HELLOASSO": "HelloAsso"
+        },
+        "readiness": {
+          "READY": "Prêt à encaisser",
+          "PENDING": "Vérification en cours",
+          "BROKEN": "Liaison rompue",
+          "NOT_CONNECTED": "Non relié",
+          "UNAVAILABLE": "Non disponible (pas encore intégré)"
+        },
+        "target": "Nouveau prestataire",
+        "reason": "Motif du changement (obligatoire, interne)",
+        "reasonHint": "{count} / {max} caractères. Le motif reste au journal de conformité ; il n'est jamais envoyé à l'association.",
+        "reasonRequired": "Le motif est obligatoire.",
+        "reasonTooLong": "Le motif ne doit pas dépasser {max} caractères.",
+        "submit": "Changer de prestataire",
+        "confirmTitle": "Confirmer le changement de prestataire",
+        "confirmMessage": "Les nouveaux dons passeront de {from} à {to}. Impact : {liveCampaigns} campagne(s) en ligne, widget {widget}, {pendingDonations} don(s) en cours chez {from} (ils restent encaissés par {from}). État chez {to} : {targetReadiness}. Tant que l'association n'est pas prête chez {to}, elle ne peut plus recevoir de dons. L'association sera prévenue par e-mail.",
+        "widgetOn": "actif",
+        "widgetOff": "inactif",
+        "confirm": "Confirmer le changement",
+        "success": "Prestataire changé. L'association a été prévenue par e-mail.",
+        "invalidReason": "Motif refusé : obligatoire, {max} caractères maximum.",
+        "failed": "Le changement a échoué. Réessayez.",
+        "targetOption": "{provider} — {readiness}"
       }
     },
     "freezeScreen": {
@@ -918,14 +956,40 @@
               },
               "title": "Vérification de l'association"
             },
-            "validated": "✓ Validée"
+            "validated": "✓ Validée",
+            "helloAssoBank": {
+              "title": "Compte HelloAsso",
+              "NOT_CONNECTED": {
+                "desc": "Compte HelloAsso non relié — requis pour publier",
+                "cta": "Relier mon compte →"
+              },
+              "IN_REVIEW": {
+                "desc": "Vérification HelloAsso en cours — requise pour publier",
+                "cta": "Mon dossier →"
+              },
+              "NEEDS_DATA": {
+                "desc": "Encaissement suspendu par HelloAsso — à régulariser pour publier",
+                "cta": "Ouvrir ma page de vérification →"
+              },
+              "COMPLETED": {
+                "desc": "Compte HelloAsso relié, dons ouverts"
+              },
+              "BROKEN": {
+                "desc": "Accès HelloAsso à renouveler — recollez votre clé pour publier",
+                "cta": "Recoller ma clé →"
+              }
+            }
           },
           "dismiss": "Masquer",
           "sub": {
             "allDone": "Votre compte est complet : votre association est vérifiée et votre compte bancaire est opérationnel.",
             "bankOnly": "Votre association est vérifiée ! Finalisez la connexion de votre compte bancaire pour pouvoir recevoir des dons.",
             "notVerified": "En attendant la validation de votre association, vous pouvez créer et publier vos campagnes en mode privé (lien direct uniquement).",
-            "rejected": "Votre dossier de vérification a été refusé. Corrigez vos documents pour pouvoir publier publiquement."
+            "rejected": "Votre dossier de vérification a été refusé. Corrigez vos documents pour pouvoir publier publiquement.",
+            "helloAsso": {
+              "allDone": "Votre compte est complet : votre association est vérifiée et votre compte HelloAsso est relié, dons ouverts.",
+              "bankOnly": "Votre association est vérifiée ! Reliez votre compte HelloAsso pour pouvoir recevoir des dons."
+            }
           },
           "title": "⚙️ Finalisez votre compte CommonLink"
         },
@@ -1113,7 +1177,7 @@
         },
         "success": "Profil mis à jour.",
         "tabs": {
-          "bank": "Compte bancaire",
+          "bank": "Encaissement des dons",
           "bankBadge": {
             "notConnected": "Non connecté",
             "active": "Actif",
@@ -1137,6 +1201,14 @@
             "pending": "En cours",
             "rejected": "Rejetée",
             "todo": "À faire"
+          },
+          "helloAssoBadge": {
+            "BROKEN": "Accès à renouveler",
+            "SUSPENDED": "Encaissement suspendu",
+            "WEBHOOK_MISSING": "Notification à vérifier",
+            "ACTIVE": "Actif",
+            "PENDING": "En attente de HelloAsso",
+            "NOT_LINKED": "Non relié"
           }
         },
         "title": "Paramètres",
@@ -1490,7 +1562,19 @@
           "submit": "Émettre le paiement →",
           "title": "Émettre un paiement",
           "typeCode": "Type de dépense",
-          "typeCodePlaceholder": "— Type —"
+          "typeCodePlaceholder": "— Type —",
+          "funds": {
+            "computing": "Calcul du montant disponible…",
+            "available": "Disponible pour vos paiements : {amount}",
+            "exceeds": "Ce montant dépasse les fonds arrivés sur votre compte ({amount}).",
+            "inTransit": "{amount} sont en route : confirmez leur réception dès qu'ils apparaissent sur votre relevé.",
+            "none": "Aucun fonds disponible pour un paiement.",
+            "noneUsed": "Les dons arrivés sur votre compte sont déjà utilisés par vos paiements. Les autres n'y sont pas encore.",
+            "noneUsedAtProvider": "Les dons arrivés sur votre compte sont déjà utilisés par vos paiements. Les autres n'y sont pas encore ({amount} chez HelloAsso).",
+            "notPaidOut": "Les dons de cette campagne n'ont pas encore été versés sur votre compte bancaire.",
+            "notPaidOutAtProvider": "Les dons de cette campagne n'ont pas encore été versés sur votre compte bancaire ({amount} chez HelloAsso).",
+            "payWhenArrived": "Vous pourrez payer dès leur arrivée."
+          }
         },
         "history": {
           "authorise": "Autoriser",
@@ -1527,7 +1611,16 @@
           "inTransit": "Virement en cours d'exécution par la banque",
           "lastAttemptFailed": "Échec de la dernière tentative : {error}",
           "retry": "Réessayer",
-          "retryHint": "Réémettre ce virement avec un nouveau lien d'autorisation bancaire"
+          "retryHint": "Réémettre ce virement avec un nouveau lien d'autorisation bancaire",
+          "cancel": "Annuler le paiement",
+          "cancelShort": "Annuler",
+          "cancelHint": "Retirer ce paiement : son montant redevient disponible",
+          "cancelConfirm": {
+            "title": "Annuler ce paiement ?",
+            "message": "Le paiement de {amount} à {payee} sera annulé et son montant redeviendra disponible. Cette action est définitive.",
+            "submit": "Annuler le paiement",
+            "keep": "Garder le paiement"
+          }
         },
         "ibanSelect": "IBAN",
         "journal": {
@@ -1569,6 +1662,7 @@
           },
           "pills": {
             "ALL": "Tous",
+            "CANCELLED": "Annulés",
             "DONE": "Exécutés",
             "FAILED": "Refusés",
             "PENDING": "En attente",
@@ -1588,14 +1682,16 @@
           "FAILED": "Refusé",
           "IN_TRANSIT": "Virement en cours",
           "PENDING": "Enregistré",
-          "RETRYABLE": "Échec — à relancer"
+          "RETRYABLE": "Échec — à relancer",
+          "CANCELLED": "Annulé"
         },
         "stats": {
-          "availableBalance": "Solde disponible",
+          "availableBalance": "Disponible pour paiement",
           "confirmed": "Confirmées",
           "paid": "Déjà versé",
           "pending": "En attente",
-          "transactions": "Transactions"
+          "transactions": "Transactions",
+          "availableSub": "arrivé sur votre compte"
         },
         "status": {
           "CONFIRMED": "Confirmé",
@@ -1618,6 +1714,89 @@
           "operational": "Charges opérationnelles",
           "other": "Autres",
           "personnel": "Personnel"
+        },
+        "funds": {
+          "title": "Où en sont vos dons",
+          "updated": "Mis à jour {relative}",
+          "refresh": "Actualiser",
+          "refreshing": "Actualisation…",
+          "nextRefresh": "Prochaine actualisation possible à {time}",
+          "barLabel": "Répartition des dons collectés",
+          "steps": {
+            "atProvider": {
+              "label": "Chez HelloAsso",
+              "sub": "Pas encore versé"
+            },
+            "payoutPreparing": {
+              "label": "En préparation",
+              "sub": "Versement lancé par HelloAsso"
+            },
+            "inTransit": {
+              "label": "En route",
+              "sub": "Virement émis par HelloAsso"
+            },
+            "available": {
+              "label": "Arrivé sur votre compte",
+              "sub": "Utilisable pour vos paiements"
+            }
+          },
+          "toConfirm": "{count, plural, one {# virement à confirmer} other {# virements à confirmer}}",
+          "total": {
+            "label": "Disponible pour vos paiements",
+            "formula": "{available} arrivés − {paid} déjà payés − {pending} en cours"
+          },
+          "foot": "Chaque paiement est relié aux dons qui l'ont financé. Seuls les dons arrivés sur votre compte bancaire peuvent donc être utilisés. Survolez une section pour le détail.",
+          "tips": {
+            "atProvider": {
+              "text": "Ces dons attendent d'être versés sur votre compte. Selon votre réglage HelloAsso : à la demande (disponibles 7 jours ouvrés après chaque don) ou automatiquement une fois par mois.",
+              "link": "Demander le versement sur HelloAsso ↗"
+            },
+            "payoutPreparing": {
+              "text": "HelloAsso a lancé le versement, le virement sera émis sous peu. Rien à faire de votre côté."
+            },
+            "inTransit": {
+              "text": "HelloAsso a émis le virement. Il devient utilisable dès que vous confirmez l'avoir reçu, ou automatiquement après le délai de sécurité.",
+              "cashOutTitle": "Virement du {date}",
+              "cashOutTitleNoDate": "Virement en cours",
+              "ofTotal": "sur {total} reçus au total · ",
+              "autoOn": "disponible automatiquement le {date}",
+              "confirm": "J'ai reçu ce virement"
+            },
+            "available": {
+              "text": "Dons versés par HelloAsso et arrivés sur votre compte bancaire. Seuls ces dons peuvent financer vos paiements.",
+              "confirmedManual": "réception confirmée par vous le {date}",
+              "confirmedAuto": "disponible depuis le {date}",
+              "confirmedCurator": "rendu disponible par l'équipe CommonLink le {date}",
+              "releaseTitle": "Rendu disponible le {date}",
+              "releaseSub": "par l'équipe CommonLink, sur présentation de votre relevé",
+              "none": "Aucun virement reçu pour le moment."
+            }
+          },
+          "syncError": {
+            "title": "HelloAsso ne répond pas pour le moment.",
+            "since": "Les montants ci-dessous datent du {date}. Un virement arrivé depuis peut ne pas encore apparaître.",
+            "noDate": "Un virement arrivé récemment peut ne pas encore apparaître."
+          },
+          "loadError": "Impossible d'afficher l'état de vos dons pour le moment.",
+          "receipt": {
+            "title": "Avez-vous reçu ce virement ?",
+            "subtitle": "Vérifiez qu'il apparaît sur le relevé de votre compte bancaire.",
+            "issuer": "Émetteur",
+            "issuerValue": "HelloAsso",
+            "issueDate": "Date d'émission",
+            "statementAmount": "Montant sur votre relevé",
+            "effect": "En confirmant, <strong>{amount}</strong> de dons de cette campagne deviennent disponibles pour vos paiements.",
+            "rest": "Le reste ({amount}) concerne vos autres campagnes ou formulaires HelloAsso.",
+            "auto": "Votre confirmation est enregistrée dans votre historique. Sans confirmation, ces fonds deviendront disponibles automatiquement le {date}",
+            "notYet": "Pas encore",
+            "confirm": "Oui, je l'ai reçu",
+            "errors": {
+              "notCashedOut": "HelloAsso n'indique pas encore ce virement comme versé. Réessayez plus tard.",
+              "notLinked": "Votre compte HelloAsso n'est plus relié à CommonLink : la réception ne peut pas être vérifiée.",
+              "unavailable": "HelloAsso ne répond pas pour le moment. Réessayez plus tard.",
+              "notFound": "Ce virement n'est plus à confirmer."
+            }
+          }
         }
       },
       "publish": {
@@ -1638,6 +1817,13 @@
             "REJECTED": "Votre dossier de vérification a été refusé (vous pouvez quand même publier)",
             "UNVERIFIED": "Votre dossier n'est pas encore vérifié (vous pouvez quand même publier)",
             "VERIFIED": "Votre association est vérifiée"
+          },
+          "helloAssoBank": {
+            "COMPLETED": "Compte HelloAsso relié, dons ouverts",
+            "NOT_CONNECTED": "Compte HelloAsso non relié — requis pour publier",
+            "IN_REVIEW": "Vérification HelloAsso en cours — requise pour publier",
+            "NEEDS_DATA": "Encaissement suspendu par HelloAsso — à régulariser pour publier",
+            "BROKEN": "Accès HelloAsso à renouveler — recollez votre clé pour publier"
           }
         },
         "add": "Ajouter",
@@ -2382,12 +2568,21 @@
   },
   "legal": {
     "close": "Fermer",
+    "gate": {
+      "accept": "Accepter et continuer",
+      "checkbox": "J'ai lu et j'accepte ces conditions au nom de l'association",
+      "error": "L'acceptation n'a pas pu être enregistrée. Veuillez réessayer.",
+      "intro": "Merci de lire et d'accepter les conditions d'utilisation de CommonLink en vigueur pour continuer.",
+      "title": "Conditions d'utilisation"
+    },
     "loadError": "Impossible de charger ce document. Veuillez réessayer.",
     "loading": "Chargement…",
+    "outdated": "Ces conditions viennent d'être mises à jour. Merci de relire la nouvelle version avant de l'accepter.",
     "title": {
       "CGU": "Conditions Générales d'Utilisation",
-      "CGV": "Conditions Générales de Vente"
+      "CGV": "Conditions générales d'utilisation des associations"
     },
+    "tocTitle": "Sommaire",
     "version": "Version {version}"
   },
   "settings": {
@@ -3043,6 +3238,372 @@
           "codeHint": "La hauteur s'ajuste toute seule."
         }
       }
+    },
+    "helloasso": {
+      "imposed": {
+        "presentation": "HelloAsso aide les associations à collecter des paiements en ligne et propose ses services gratuitement. Elle prend à sa charge tous les frais de transaction pour que vous puissiez bénéficier de la totalité des sommes versées par vos publics, sans frais. Les contributions volontaires laissées par ces derniers sont leur unique source de revenus.",
+        "cartText": "Le modèle solidaire de HelloAsso garantit que 100% de votre paiement sera versé à l'association choisie. Vous pouvez soutenir l'aide qu'ils apportent aux associations en laissant une contribution volontaire à HelloAsso au moment de votre paiement.",
+        "approval": "HelloAsso est un établissement de paiement agréé par l'ACPR en France le 08/06/2023 sous le numéro 17678Q."
+      },
+      "onboarding": {
+        "stepper": {
+          "label": "Étapes pour recevoir vos dons",
+          "steps": {
+            "account": "Compte de paiement HelloAsso",
+            "link": "Relier à CommonLink",
+            "review": "Vérification",
+            "active": "Actif"
+          },
+          "skippedSub": "Déjà fait",
+          "state": {
+            "done": "{label} — terminé",
+            "skipped": "{label} — déjà fait",
+            "current": "{label} — en cours",
+            "upcoming": "{label} — à venir"
+          }
+        },
+        "checkedAt": "Statut vérifié à {time}",
+        "loading": {
+          "aria": "Chargement de l'état de votre encaissement",
+          "text": "Chargement de l'état de votre liaison HelloAsso…"
+        },
+        "broken": {
+          "title": "Votre accès HelloAsso est à renouveler",
+          "text": "HelloAsso n'accepte plus l'accès que vous nous aviez ouvert. Cela arrive quand la clé a été régénérée ou supprimée dans votre espace HelloAsso, ou si notre accès n'a pas pu être renouvelé à temps. Votre compte HelloAsso et l'argent déjà reçu ne sont pas concernés. En attendant, vos boutons de don sont en pause.",
+          "keep": "<strong>Comme nous ne gardons pas votre clé secrète, nous ne pouvons pas rétablir l'accès seuls :</strong> il faut nous la recoller, une fois.",
+          "replace": "Recoller ma clé",
+          "help": "Besoin d'aide ?",
+          "hint": "Personne dans votre bureau n'a touché à la clé ? Prévenez-nous : nous regarderons ensemble."
+        },
+        "linkedBanner": "<strong>Compte relié. Votre clé secrète a été effacée de nos serveurs.</strong> Nous l'avons utilisée une seule fois pour ouvrir l'accès, à {time}. Si vous l'aviez notée quelque part pour nous la transmettre, vous pouvez supprimer cette note.",
+        "welcome": {
+          "title": "Recevoir vos dons",
+          "groupLabel": "Votre situation",
+          "existing": {
+            "badge": "Le plus rapide",
+            "title": "Notre association a déjà un compte HelloAsso",
+            "text": "Vous reliez votre compte à CommonLink en collant deux codes et une adresse. Si HelloAsso a déjà vérifié votre association, vous pouvez recevoir des dons tout de suite après.",
+            "cta": "Relier notre compte"
+          },
+          "new": {
+            "badge": "Accompagné",
+            "title": "Nous n'avons pas encore de compte HelloAsso",
+            "text": "Vous ouvrez le compte de paiement de l'association chez HelloAsso, avec les informations de votre association prêtes à copier. Puis vous le reliez à CommonLink.",
+            "cta": "Commencer"
+          }
+        },
+        "open": {
+          "title": "Ouvrir le compte de paiement de l'association",
+          "badge": "Sur helloasso.com",
+          "lead": "Cette étape se fait chez HelloAsso, notre prestataire de paiement : c'est votre association qui ouvre son compte, à son nom. Ouvrez HelloAsso dans un nouvel onglet et gardez cette page à côté.",
+          "windowLabel": "HelloAsso, dans un nouvel onglet",
+          "domain": "www.<b>helloasso.com</b>",
+          "cardTitle": "Ouvrir HelloAsso",
+          "cardText": "S'ouvre dans un nouvel onglet. Revenez ici dès que le compte est ouvert.",
+          "cta": "Ouvrir HelloAsso ↗",
+          "safety": "Vérifiez que l'adresse est bien <strong>helloasso.com</strong>. CommonLink ne voit jamais votre mot de passe.",
+          "back": "← Retour",
+          "continue": "Notre compte est ouvert, continuer"
+        },
+        "link": {
+          "title": "Relier votre compte HelloAsso",
+          "badge": "Non relié",
+          "lead": "Trois gestes dans votre espace HelloAsso. Gardez cet onglet à côté, nous vous guidons.",
+          "replaceBanner": "<strong>Renouvellement de l'accès.</strong> Collez la clé de votre association à l'étape 2 (la nouvelle, si elle a été régénérée). Si l'adresse de notification est toujours en place chez HelloAsso, rien d'autre à refaire.",
+          "toConfirm": "À confirmer avec HelloAsso",
+          "crumbs": {
+            "label": "Chemin dans votre espace HelloAsso",
+            "account": "Mon compte",
+            "api": "Intégrations et API"
+          },
+          "step1": {
+            "title": "Ouvrir la page des clés",
+            "where": "Dans votre espace HelloAsso :",
+            "openAdmin": "Ouvrir mon espace HelloAsso ↗",
+            "existingKeyQ": "Une clé existe déjà et sert à un autre outil ?",
+            "existingKeyA": "Ne la régénérez pas : l'autre outil (votre site, un logiciel de gestion…) cesserait de fonctionner. Copiez simplement les valeurs affichées. Si la clé secrète n'est plus visible, écrivez-nous avant de toucher à quoi que ce soit.",
+            "severalQ": "Vous gérez plusieurs associations ?",
+            "severalA": "Sélectionnez d'abord <strong>{name}</strong> dans HelloAsso : chaque association a sa propre clé.",
+            "severalAnoName": "Sélectionnez d'abord votre association dans HelloAsso : chaque association a sa propre clé."
+          },
+          "step2": {
+            "title": "Coller vos deux codes",
+            "validBadge": "Codes valides",
+            "clientIdLabel": "Identifiant client",
+            "clientIdHint": "(client ID)",
+            "clientIdPlaceholder": "ex. 9fdc22226bf24ff99b875f4a7c503715",
+            "secretLabel": "Clé secrète",
+            "secretHint": "(client secret)",
+            "secretPlaceholder": "Collez la clé secrète",
+            "paste": "Coller",
+            "pasteClientIdAria": "Coller l'identifiant client",
+            "pasteSecretAria": "Coller la clé secrète",
+            "pasteFailed": "Votre navigateur n'autorise pas le collage automatique : collez le code directement dans le champ.",
+            "show": "Afficher",
+            "hide": "Masquer",
+            "secretNote": "<strong>Utilisée une seule fois pour ouvrir l'accès, puis effacée.</strong> Nous ne l'enregistrons pas.",
+            "checking": "Nous demandons à HelloAsso si ces codes fonctionnent…",
+            "okLabel": "HelloAsso reconnaît l'association",
+            "okMatch": "Correspond à l'association vérifiée sur CommonLink",
+            "confirm": "C'est bien nous",
+            "invalidTitle": "HelloAsso ne reconnaît pas ces codes.",
+            "nothingSaved": "Rien n'a été enregistré.",
+            "invalidTips": {
+              "whole": "Vérifiez que chaque code est copié en entier.",
+              "regenerated": "Vous venez de régénérer la clé ? Collez la nouvelle.",
+              "sandbox": "Codes d'un compte de test (sandbox) ? Ils ne fonctionnent pas ici."
+            },
+            "mismatchTitle": "Ces codes appartiennent à « {orgName} ».",
+            "mismatchText": "Ce n'est pas l'association vérifiée sur CommonLink. Rien n'a été enregistré.",
+            "mismatchHint": "Sélectionnez la bonne association dans HelloAsso, puis copiez ses codes.",
+            "mismatchHelp": "C'est bien vous, sous un autre nom ? <link>Écrivez-nous</link>.",
+            "unavailable": "HelloAsso ne nous répond pas pour le moment. Rien n'a été enregistré : réessayez dans quelques minutes."
+          },
+          "step3": {
+            "title": "Coller notre adresse de notification",
+            "text": "Sur la même page HelloAsso, dans le champ des notifications. C'est ainsi que HelloAsso nous prévient qu'un don est payé. HelloAsso y envoie aussi les événements de vos autres formulaires : nous les ignorons, sans les conserver.",
+            "addressLabel": "Adresse",
+            "copy": "Copier",
+            "copied": "Copié",
+            "copyAria": "Copier l'adresse de notification",
+            "urlLoading": "Préparation de votre adresse…",
+            "urlUnavailable": "Votre adresse de notification n'est pas disponible pour le moment. Réessayez dans quelques minutes.",
+            "existingQ": "Une adresse est déjà renseignée ?",
+            "existingA": "Elle sert sans doute à un autre outil de votre association. Ne la remplacez pas : HelloAsso semble n'en accepter qu'une. Écrivez-nous, nous trouverons une solution.",
+            "ack": "C'est collé et enregistré chez HelloAsso"
+          },
+          "mandate": "Au nom de l'association, j'autorise CommonLink à utiliser l'accès ouvert par cette clé uniquement pour créer les paiements de nos campagnes CommonLink, suivre ces paiements et vérifier que HelloAsso accepte les paiements pour notre association. Je peux retirer cet accès à tout moment.",
+          "hint": {
+            "remaining": "Il reste : {items}.",
+            "ready": "Tout est prêt.",
+            "separator": ", ",
+            "KEYS": "coller vos codes",
+            "ORG_CONFIRM": "confirmer que c'est bien votre association",
+            "WEBHOOK_ACK": "coller l'adresse de notification",
+            "MANDATE": "cocher l'autorisation"
+          },
+          "submit": "Relier mon compte",
+          "submitReplace": "Enregistrer la nouvelle clé",
+          "submitting": "Liaison en cours…",
+          "back": "← Retour",
+          "blocked": "Bloqué ? Réservez une visio, nous le faisons avec vous.",
+          "errors": {
+            "expired": "La vérification de vos codes a expiré. Collez-les à nouveau pour relier votre compte.",
+            "mandate": "Cochez l'autorisation pour relier votre compte.",
+            "generic": "La liaison n'a pas abouti. Rien n'a été enregistré : réessayez dans quelques minutes."
+          }
+        },
+        "review": {
+          "title": "Vérification de votre association par HelloAsso",
+          "badge": "En attente de HelloAsso",
+          "lead": "Votre compte est bien relié à CommonLink. HelloAsso doit encore vérifier votre association : la réglementation l'impose avant tout paiement. Dès que c'est fait, vos dons s'ouvrent automatiquement.",
+          "cardTitle": "Mon dossier",
+          "cardSub": "sur admin.helloasso.com",
+          "text": "Déjà déposé en ouvrant le compte ? Vous n'avez rien à faire, HelloAsso l'examine. Sinon, déposez vos pièces sur votre page de vérification : HelloAsso vous indique ce qu'il attend.",
+          "pageLabel": "Votre page",
+          "openVerification": "Ouvrir ma page de vérification ↗",
+          "files": "Retrouver mes fichiers",
+          "lastCheck": "Dernière vérification : {time}",
+          "refresh": "Vérifier mon dossier",
+          "refreshing": "Vérification…",
+          "tooSoon": "Vous venez de vérifier : réessayez dans une minute.",
+          "refreshError": "HelloAsso ne nous répond pas pour le moment. Réessayez dans quelques minutes.",
+          "foot": "Vous pouvez fermer cette page : nous vous écrivons dès que c'est ouvert."
+        },
+        "files": {
+          "title": "Les documents fournis à CommonLink",
+          "loading": "Chargement de vos documents…",
+          "error": "Impossible de charger vos documents pour le moment.",
+          "empty": "Aucun document n'a été fourni à CommonLink.",
+          "download": "Télécharger",
+          "downloading": "Téléchargement…",
+          "downloadError": "Le téléchargement a échoué. Réessayez.",
+          "types": {
+            "VERIF_STATUTS": "Statuts",
+            "VERIF_RNA_RECEIPT": "Récépissé de déclaration",
+            "VERIF_REPRESENTATIVE_ID": "Pièce d'identité du représentant légal"
+          }
+        },
+        "active": {
+          "title": "Votre association peut recevoir des dons",
+          "text": "HelloAsso accepte les paiements pour votre association. Votre widget de don et votre page de collecte sont ouverts.",
+          "badge": "Actif",
+          "disconnect": "Se déconnecter de HelloAsso",
+          "suspended": {
+            "text": "<strong>Encaissement suspendu par HelloAsso.</strong> HelloAsso indique que votre association ne peut plus recevoir de paiements pour l'instant. Vos boutons de don sont en pause.",
+            "hint": "HelloAsso peut demander une mise à jour de vos informations, par exemple après un changement de bureau ou de statuts. Regardez les emails reçus de HelloAsso et votre page de vérification.",
+            "contact": "Nous contacter"
+          },
+          "test": {
+            "title": "Dernière vérification : un don test",
+            "badge": {
+              "UNKNOWN": "Conseillé",
+              "RECEIVED": "Vérifié",
+              "MISSING": "À corriger"
+            },
+            "unknownText": "Faites un don de <strong>1 €</strong> à votre association depuis votre page de collecte. C'est un vrai paiement : l'euro arrive sur votre compte HelloAsso. Il nous permet de vérifier, de bout en bout, que l'adresse de notification est en place et que votre don est bien suivi par CommonLink.",
+            "contribution": "Sur la page de paiement, HelloAsso vous proposera une contribution volontaire : c'est elle qui finance son service gratuit pour les associations. Elle reste facultative.",
+            "cta": "Faire mon don test de 1 €",
+            "ctaAlt": "Vous pouvez aussi attendre votre premier vrai don : nous ferons la même vérification.",
+            "noPage": "Votre page de collecte n'est pas encore prête : configurez-la dans l'onglet Diffusion.",
+            "received": "<strong>Tout est branché.</strong> HelloAsso nous a bien prévenus de votre don. Il apparaît dans votre reporting, suivi par CommonLink.",
+            "missing": "<strong>Le don est payé, mais HelloAsso ne nous a pas prévenus.</strong> L'adresse de notification n'est probablement pas enregistrée chez HelloAsso.",
+            "missingImpact": "Vos dons sont bien encaissés par HelloAsso. Mais nous les voyons avec du retard, car nous devons aller les chercher nous-mêmes, et nous ne serons pas prévenus d'un remboursement ou d'une contestation.",
+            "missingFixBefore": "Dans votre espace HelloAsso,",
+            "missingFixAfter": ", collez cette adresse dans le champ des notifications, puis enregistrez :",
+            "retry": "C'est corrigé, refaire un don test",
+            "visio": "Le faire avec vous en visio"
+          },
+          "payoutMode": "<strong>Conseil : choisissez le versement « à la demande »</strong> dans votre espace HelloAsso, puis demandez vos versements dès que les sommes sont disponibles. Vous pourrez utiliser vos dons plus tôt pour payer vos dépenses depuis CommonLink.",
+          "payoutModeLearnMore": "En savoir plus"
+        },
+        "disconnect": {
+          "title": "Se déconnecter de HelloAsso ?",
+          "close": "Fermer",
+          "pause": "<strong>Vos boutons de don se mettent en pause</strong> : plus aucun don ne pourra être reçu via CommonLink tant que vous n'aurez pas relié un compte HelloAsso.",
+          "erase": "Nous effaçons l'accès temporaire que nous gardions. Les dons déjà reçus restent sur votre compte HelloAsso et dans votre reporting.",
+          "secret": "Votre clé secrète, elle, est déjà effacée de chez nous depuis le {date}. Pour être certain qu'elle ne sert plus nulle part, régénérez-la dans votre espace HelloAsso.",
+          "secretNoDate": "Votre clé secrète, elle, est déjà effacée de chez nous. Pour être certain qu'elle ne sert plus nulle part, régénérez-la dans votre espace HelloAsso.",
+          "cancel": "Annuler",
+          "confirm": "Oui, me déconnecter",
+          "confirming": "Déconnexion…",
+          "notYetPaidOut": "<strong>{count, plural, one {# don ({amount}) n'a pas encore été versé} other {# dons ({amount}) n'ont pas encore été versés}} par HelloAsso</strong> sur votre compte bancaire. Après la déconnexion, nous ne pourrons plus {count, plural, one {le suivre} other {les suivre}} automatiquement.",
+          "notYetPaidOutRelease": "L'équipe CommonLink pourra {count, plural, one {le rendre disponible} other {les rendre disponibles}} pour vos paiements sur présentation de la ligne de votre relevé bancaire qui montre le virement."
+        },
+        "faq": {
+          "titleStart": "Vos questions avant de commencer",
+          "subStart": "Lisez à votre rythme, rien n'est engagé.",
+          "title": "Vos questions",
+          "groups": {
+            "how": "Comment ça marche",
+            "key": "Votre clé et votre dossier"
+          },
+          "imposedBadge": "Texte fourni par HelloAsso",
+          "roles": {
+            "q": "Qui fait quoi entre CommonLink et HelloAsso ?",
+            "intro": "Tout se passe sur CommonLink, sauf le paiement lui-même : c'est le rôle de HelloAsso, notre prestataire de paiement.",
+            "splitLabel": "Qui fait quoi",
+            "commonlink": "CommonLink",
+            "commonlinkItems": {
+              "campaigns": "Vos campagnes et votre page de collecte",
+              "widget": "Votre widget de don, sur votre site",
+              "certification": "Le suivi de chaque don",
+              "receipts": "Les reçus fiscaux de vos donateurs",
+              "reporting": "Votre reporting et la transparence de vos dépenses"
+            },
+            "helloasso": "HelloAsso, prestataire de paiement",
+            "helloassoItems": {
+              "page": "La page de paiement sécurisée",
+              "collection": "L'encaissement du don et son versement sur le compte bancaire de l'association",
+              "verification": "La vérification de votre association, imposée par la loi"
+            }
+          },
+          "cert": {
+            "q": "Quels dons sont suivis par CommonLink ? Et notre formulaire de don HelloAsso ?",
+            "yes": "Suivi par CommonLink",
+            "yesItems": {
+              "widget": "Votre widget CommonLink, sur votre site",
+              "page": "Votre page de collecte CommonLink"
+            },
+            "no": "Non vu par CommonLink",
+            "noItems": {
+              "form": "Un formulaire de don créé sur HelloAsso",
+              "link": "Un lien HelloAsso partagé directement"
+            },
+            "text": "Un formulaire de don HelloAsso continue de fonctionner, mais ses dons ne passent pas par CommonLink : ni suivis, ni couverts par nos reçus fiscaux (HelloAsso les gère). Pour une campagne suivie sur CommonLink, remplacez son bouton, sur votre site ou dans vos emails, par votre widget ou votre page de collecte. Vos adhésions et votre billetterie HelloAsso ne changent pas."
+          },
+          "why": {
+            "q": "Pourquoi HelloAsso, et comment peut-il être gratuit ?",
+            "intro": "Le paiement d'un don en ligne doit passer par un établissement agréé. Pour les associations françaises, nous avons choisi HelloAsso, qui se présente ainsi :",
+            "imposedLabel": "Présentation de HelloAsso",
+            "contribution": "<strong>La contribution volontaire</strong> est proposée par HelloAsso à votre donateur au moment de payer, en plus de son don. Elle va à HelloAsso, ni à votre association, ni à CommonLink, et reste facultative.",
+            "howItWorks": "Comment fonctionne HelloAsso ↗",
+            "approvalLine": "Son agrément : <em>« {approval} »</em> Vous pouvez le vérifier sur <link>regafi.fr</link>."
+          },
+          "donors": {
+            "q": "Que verront nos donateurs au moment de payer ?",
+            "intro": "Dans votre widget, juste avant le paiement, ce texte de HelloAsso et son bouton de paiement. La contribution volontaire leur est ensuite proposée sur la page de HelloAsso.",
+            "imposedLabel": "Texte affiché avant le paiement",
+            "payWith": "Payer avec",
+            "secured": "Paiement sécurisé"
+          },
+          "money": {
+            "q": "Où va l'argent, et quand arrive-t-il ?",
+            "intro": "Le don va sur le compte HelloAsso de l'association, puis sur son compte bancaire. <strong>Nous ne touchons jamais l'argent.</strong>",
+            "feesValue": "0 €",
+            "feesLabel": "de frais de paiement, grâce au modèle solidaire de HelloAsso",
+            "shareValue": "100 %",
+            "shareLabel": "des dons versés à l'association, selon les CGU de HelloAsso",
+            "heldValue": "0 €",
+            "heldLabel": "détenu par CommonLink, à aucun moment"
+          },
+          "receipts": {
+            "q": "Qui émet les reçus fiscaux de nos donateurs ?",
+            "text": "<strong>CommonLink</strong>, pour tous les dons faits via CommonLink, avec votre mandat fiscal. HelloAsso n'en génère pas pour ces paiements : pas de doublon pour vos donateurs."
+          },
+          "fees": {
+            "q": "Combien ça coûte ?",
+            "payment": "<strong>Côté paiement, rien</strong> : HelloAsso ne facture aucun frais à votre association.",
+            "platform": "CommonLink perçoit une commission de 8 % HT, soit 9,6 % TTC, sur les dons payés dans le mois. Elle vous est facturée à part en fin de mois et se règle par virement au plus tard à la fin du mois suivant : vous pouvez utiliser l'argent avant de la régler. Elle n'est jamais prélevée sur les dons."
+          },
+          "whyKey": {
+            "q": "Pourquoi une clé, et pas un bouton « Se connecter » ?",
+            "text": "HelloAsso réserve ce bouton aux plateformes partenaires qui relient déjà de nombreuses associations, ce qui n'est pas encore notre cas. Pour démarrer, HelloAsso nous a indiqué cette méthode : chaque association génère sa propre clé dans son espace HelloAsso et nous la transmet. Quand nous passerons au bouton, nous vous préviendrons : rien de compliqué à refaire."
+          },
+          "keyUse": {
+            "q": "Que pouvez-vous faire avec cette clé ?",
+            "use": "<strong>Nous l'utilisons pour</strong> créer les pages de paiement de vos campagnes CommonLink, suivre ces paiements (y compris le nom et l'email de vos donateurs) et savoir si HelloAsso accepte les paiements pour votre association.",
+            "transparency": "<strong>En toute transparence :</strong> HelloAsso donne à cette clé l'accès à tous les paiements de votre compte, y compris ceux de vos adhésions ou de votre billetterie. Nous ne les utilisons pas : l'autorisation que vous signez limite notre usage à vos campagnes CommonLink, et les notifications qui concernent vos autres formulaires sont ignorées, sans être conservées.",
+            "cannot": "<strong>Elle ne permet pas</strong> de rembourser un paiement, de modifier votre RIB ou vos informations, de déplacer de l'argent, ni de se connecter à votre compte HelloAsso. Ni vous ni nous ne pouvons élargir ces droits."
+          },
+          "keepKey": {
+            "q": "Gardez-vous notre clé ? Comment nous retirer l'accès ?",
+            "keep": "<strong>Nous ne gardons pas votre clé secrète.</strong> Nous l'utilisons une seule fois, en reliant votre compte, pour obtenir de HelloAsso un accès temporaire, chiffré, que nous renouvelons. Puis nous l'effaçons. Si cet accès est interrompu un jour, nous vous demanderons de recoller votre clé : nous ne pouvons pas le recréer sans vous.",
+            "revoke": "<strong>Pour nous retirer l'accès</strong>, à tout moment : « Se déconnecter de HelloAsso » dans CommonLink, ou régénérez votre clé dans votre espace HelloAsso. Attention, régénérer la clé coupe aussi les autres outils de votre association qui l'utiliseraient.",
+            "live": {
+              "title": "Votre accès aujourd'hui",
+              "works": "Fonctionne",
+              "secret": "Clé secrète",
+              "wiped": "Effacée",
+              "wipedAt": "le {date} à {time}, juste après usage",
+              "kept": "Ce que nous gardons",
+              "keptText": "Un accès temporaire, chiffré, renouvelé automatiquement",
+              "lastRefresh": "(dernier renouvellement : {date}, {time})",
+              "clientId": "Identifiant client",
+              "linked": "Relié le",
+              "linkedValue": "{date} par {by}",
+              "replace": "Recoller une clé",
+              "replaceHint": "Si vous avez régénéré votre clé chez HelloAsso."
+            }
+          },
+          "docs": {
+            "q": "Pourquoi HelloAsso demande des pièces, et qui les voit ?",
+            "law": "La loi oblige HelloAsso à vérifier qui se trouve derrière chaque association avant qu'elle reçoive le moindre paiement. Vous déposez vos pièces directement chez HelloAsso : <strong>elles ne nous sont pas transmises.</strong> HelloAsso nous indique seulement si votre association peut recevoir des paiements : oui ou non.",
+            "files": "Les documents fournis pour votre vérification CommonLink restent dans votre espace : « Retrouver mes fichiers » vous permet de les déposer vous-même chez HelloAsso."
+          },
+          "refused": {
+            "q": "Et si HelloAsso refuse notre dossier ?",
+            "text": "HelloAsso vous l'indique par email, à l'adresse administrateur de votre compte. Ses conditions générales lui permettent de refuser sans motiver sa décision. Dans ce cas, écrivez-nous : nous regardons la situation avec vous."
+          },
+          "real": {
+            "q": "Est-ce le vrai site HelloAsso ?",
+            "text": "Avant de saisir quoi que ce soit, regardez la barre d'adresse : elle doit afficher <strong>helloasso.com</strong> (votre espace d'administration est sur <strong>admin.helloasso.com</strong>). Sinon, fermez l'onglet et contactez-nous. <strong>CommonLink ne vous demandera jamais votre mot de passe HelloAsso</strong> : la clé n'est pas votre mot de passe."
+          },
+          "payoutMode": {
+            "q": "Quand l’argent arrive-t-il sur votre compte ?",
+            "intro": "HelloAsso vous propose deux rythmes de versement, à choisir dans votre espace HelloAsso :",
+            "onDemand": "À la demande (recommandé) : vous demandez un versement quand vous le souhaitez, dès que les sommes sont disponibles, environ 7 jours ouvrés après chaque don.",
+            "automatic": "Automatique : HelloAsso vous verse les sommes une fois par mois, sans action de votre part.",
+            "why": "Sur CommonLink, vous payez vos dépenses avec les dons déjà arrivés sur votre compte bancaire. Le versement à la demande vous permet de les utiliser plus tôt. Vous restez libre de votre choix.",
+            "ribNote": "Changer de RIB suspend les versements le temps de la vérification."
+          }
+        },
+        "help": {
+          "title": "Un doute ? Faites-le à deux.",
+          "text": "Un membre de l'équipe CommonLink vous guide en visio. Vous gardez la main sur votre écran et votre clavier. Nous ne vous demanderons jamais votre mot de passe HelloAsso.",
+          "book": "Réserver une visio"
+        }
+      }
     }
   },
   "widget": {
@@ -3064,10 +3625,6 @@
       "label": "J'accepte les",
       "link": "Conditions Générales d'Utilisation (CGU)"
     },
-    "cgv": {
-      "label": "J'accepte les",
-      "link": "Conditions Générales de Vente (CGV)"
-    },
     "consent": {
       "label": "Je consens au traitement de mes données personnelles pour ce don (RGPD)"
     },
@@ -3079,7 +3636,6 @@
       "capExceeded": "Ce montant dépasse ce que la campagne peut encore collecter. Merci de saisir un montant plus faible.",
       "capFull": "Cette campagne a atteint son plafond de collecte et n'accepte plus de dons.",
       "cguRequired": "Vous devez accepter les Conditions Générales d'Utilisation",
-      "cgvRequired": "Vous devez accepter les Conditions Générales de Vente",
       "consentRequired": "Vous devez consentir pour continuer",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
       "duplicateSubmit": "Ce don a déjà été envoyé. Merci de patienter une minute avant de réessayer.",
@@ -3089,7 +3645,10 @@
       "fieldTooLong": "Ce champ est trop long",
       "fullNameIncomplete": "Veuillez saisir votre prénom et votre nom",
       "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
-      "submitFailed": "Une erreur est survenue. Veuillez réessayer."
+      "submitFailed": "Une erreur est survenue. Veuillez réessayer.",
+      "collectUnavailable": "La collecte de dons en ligne est momentanément indisponible pour cette campagne. Merci de réessayer un peu plus tard.",
+      "legalOutdated": "Les conditions viennent d'être mises à jour : merci de les relire et de cocher à nouveau la case.",
+      "legalUnavailable": "Les conditions n'ont pas pu être chargées. Veuillez recharger la page."
     },
     "identity": {
       "addressLine1": "Adresse",
@@ -3134,6 +3693,12 @@
     },
     "submit": "Faire un don",
     "submitting": "Traitement en cours...",
-    "unavailable": "Ce widget n'est pas disponible."
+    "unavailable": "Ce widget n'est pas disponible.",
+    "helloasso": {
+      "payWith": "Payer avec",
+      "secured": "Paiement sécurisé",
+      "payAria": "Payer avec HelloAsso",
+      "howItWorks": "Comment fonctionne HelloAsso ↗"
+    }
   }
 }

@@ -125,6 +125,9 @@ tasks.withType<Test> {
             excludeTags("testcontainers")
         }
     }
+    // Repository tests run on H2, which stores a bound Instant shifted by the JVM zone offset: on a
+    // non-UTC machine every Instant read back was off by that offset. UTC makes runs machine-independent.
+    systemProperty("user.timezone", "UTC")
     // clevercloud/gradle.json builds with -quiet, which swallows Gradle's LIFECYCLE
     // task logs — println is raw stdout and shows up regardless, so this is the only
     // way to see in the Clever Cloud deploy logs that tests actually ran.
@@ -166,6 +169,21 @@ tasks.register<JavaExec>("generateRegistryWrapper") {
         "--package", "org.commonlink.onchain.generated",
         processedFile.absolutePath,
     )
+}
+
+// CGU/CGV single source of truth: the landing site's texts (landing-page/messages/fr.json), bundled into the
+// jar and injected into legal_document at startup by LegalDocumentSeeder. The build fails if the file is missing
+// (Clever Cloud clones the whole monorepo, APP_FOLDER=api).
+val landingLegalMessages = file("../landing-page/messages/fr.json")
+tasks.named<ProcessResources>("processResources") {
+    inputs.file(landingLegalMessages)
+    doFirst {
+        require(landingLegalMessages.exists()) { "Missing CGU/CGV source: ${landingLegalMessages.path}" }
+    }
+    from(landingLegalMessages) {
+        into("legal")
+        rename { "landing-fr.json" }
+    }
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {

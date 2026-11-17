@@ -9,9 +9,19 @@ vi.mock('next-intl', () => ({
 vi.mock('@/lib/api/public', () => ({
   getWidget: vi.fn(),
   createGuestDonation: vi.fn(),
+  getLegalDocument: vi.fn(),
 }));
 
-import { getWidget, createGuestDonation } from '@/lib/api/public';
+import { getWidget, createGuestDonation, getLegalDocument } from '@/lib/api/public';
+
+// The form loads the CGU text on mount and sends its version as the accepted one.
+vi.mocked(getLegalDocument).mockResolvedValue({
+  documentType: 'CGU',
+  version: '2026-09-09-0123456789ab',
+  format: 'TEXT',
+  content: 'Texte des CGU.',
+  publishedAt: '2026-09-09T00:00:00Z',
+});
 
 const mockGetWidget = getWidget as ReturnType<typeof vi.fn>;
 const mockCreateGuestDonation = createGuestDonation as ReturnType<typeof vi.fn>;
@@ -27,6 +37,8 @@ const sampleWidget = {
   campaignCoverImage: null,
   currency: 'EUR',
   widgetAllowedOrigin: null,
+  collectAvailable: true,
+  paymentProvider: 'MOLLIE',
 };
 
 function fillValidForm() {
@@ -51,7 +63,6 @@ function fillValidForm() {
   });
   fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
 }
 
 describe('EmbedDonateClient', () => {
@@ -79,6 +90,36 @@ describe('EmbedDonateClient', () => {
       expect(screen.getByText(/Collecte de livres/)).toBeInTheDocument();
     });
     expect(screen.getByText('Une belle campagne.')).toBeInTheDocument();
+  });
+
+  it('shows HelloAsso\'s official button and cart text for a HelloAsso association', async () => {
+    mockGetWidget.mockResolvedValue({ ...sampleWidget, paymentProvider: 'HELLOASSO' });
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
+
+    expect(await screen.findByRole('button', { name: 'helloasso.payAria' })).toBeInTheDocument();
+    expect(screen.getByTestId('ha-cart-text')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'submit' })).not.toBeInTheDocument();
+  });
+
+  it('shows collectUnavailable above an inert form when the association cannot collect', async () => {
+    mockGetWidget.mockResolvedValue({ ...sampleWidget, collectAvailable: false });
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.collectUnavailable')).toBeInTheDocument();
+    });
+    expect(screen.getByText('25 €')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
+  it('keeps the form live when the association can collect', async () => {
+    render(<EmbedDonateClient embedType="widget" widgetToken="clk_test" sourceSite={null} locale="fr" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Les Petits Écoliers')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('errors.collectUnavailable')).not.toBeInTheDocument();
+    expect(screen.getByText('25 €')).not.toBeDisabled();
   });
 
   it('shows error when widget token is 404', async () => {
@@ -114,7 +155,6 @@ describe('EmbedDonateClient', () => {
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -172,7 +212,6 @@ describe('EmbedDonateClient', () => {
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {
@@ -201,7 +240,6 @@ describe('EmbedDonateClient', () => {
     });
     fireEvent.click(screen.getByLabelText(/consent.label/i));
   fireEvent.click(screen.getByLabelText(/cgu.label/i));
-  fireEvent.click(screen.getByLabelText(/cgv.label/i));
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => {

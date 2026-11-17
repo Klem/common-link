@@ -4,6 +4,7 @@ import org.commonlink.entity.BudgetSide
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignCause
 import org.commonlink.entity.LandingTheme
+import org.commonlink.payment.PaymentProviderId
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -22,10 +23,10 @@ import java.util.UUID
  * @param budgetHash Integrity hash of the published budget, null when no budget has been published.
  * @param landingTheme Visual palette chosen by the association. Drives the `--lp-*` token overrides.
  * @param landingLogo Public serving path of the association logo, null when none was uploaded.
- * @param donationsEnabled False only in preview mode on a campaign that is not LIVE: the donation
- *   endpoint would refuse the payment, so the form must be rendered disabled instead of failing on
- *   submit. Always true on a normally served landing page, so nothing about the campaign lifecycle
- *   leaks to donors.
+ * @param donationsEnabled False when the donation endpoint would refuse the payment, so the form must be
+ *   rendered disabled instead of failing on submit: in preview mode on a campaign that is not LIVE, or when
+ *   the association's payment provider cannot collect right now (shown to donors as "temporarily
+ *   unavailable"). Nothing else about the campaign lifecycle leaks to donors.
  * @param campaignUpdatedAt Timestamp of the campaign's last modification. The cover image is
  *   served from a stable URL (campaign id only) with a 5-minute public cache, so the frontend must
  *   append it as a cache-busting version token — same pattern as `campaignCoverUrl` in the
@@ -69,6 +70,8 @@ data class PublicLandingDto(
     val remainingCapacity: BigDecimal,
     /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
     val gtmContainerId: String? = null,
+    /** The association's payment provider — same purpose and same absence of a default as [PublicWidgetDto.paymentProvider]. */
+    val paymentProvider: PaymentProviderId,
 )
 
 /**

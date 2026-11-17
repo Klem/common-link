@@ -1,6 +1,7 @@
 package org.commonlink.service
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
+import org.commonlink.config.PaymentsProperties
 import org.commonlink.dto.AssociationProfileRequestDto
 import org.commonlink.dto.AssociationProfileUpsertDto
 import org.commonlink.dto.AuthResponseDto
@@ -75,6 +76,7 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val emailService: EmailService,
     private val googleIdTokenVerifier: GoogleIdTokenVerifier,
+    private val paymentsProperties: PaymentsProperties,
     @Value("\${app.frontend-url}") private val frontendUrl: String
 ) {
 
@@ -244,6 +246,7 @@ class AuthService(
             // address, so it is claimed rather than left blocking sign-up (audit 2026-08-20, M1).
             existing.guest -> {
                 logger.info("Claiming guest account {} via Google sign-up as {}", existing.id, role)
+                discardUnprovenCredentials(existing)
                 existing.guest = false
                 existing.provider = AuthProvider.GOOGLE
                 existing.role = role
@@ -276,6 +279,8 @@ class AuthService(
      * 2. **Email-only account** (no `googleSub` yet): links the Google identity to the existing account
      *    (sets `googleSub`, marks email as verified), then issues tokens. This handles the case where a user
      *    registered with email/password and is now signing in with Google for the first time.
+     *    When that account was not yet verified, its password and refresh tokens are discarded first
+     *    ([discardUnprovenCredentials]).
      *
      * @param idToken The Google ID token from the frontend.
      * @return [AuthResponseDto] with a fresh access token and refresh token.
@@ -300,6 +305,7 @@ class AuthService(
             // Path 2: no Google account found by sub — try to merge with an existing email account.
             // Auto-merge is safe: email ownership is Google-verified (enforced by verifyGoogleToken above).
             userRepository.findByEmailIgnoreCase(email).map { existing ->
+                discardUnprovenCredentials(existing)
                 existing.googleSub = sub
                 existing.emailVerified = true
                 if (existing.guest) {
@@ -449,6 +455,8 @@ class AuthService(
      * Two resolution paths:
      * 1. **Existing account** (matched by email): marks the email as verified and issues tokens.
      *    No role or provider fields are changed — this handles returning users who log in via magic link.
+     *    When that account was not yet verified, its password and refresh tokens are discarded first
+     *    ([discardUnprovenCredentials]).
      * 2. **New account**: creates a [User] with `provider = MAGIC_LINK`, then creates the role
      *    profile. For associations, the profile data is read from the token's embedded fields.
      *
@@ -529,6 +537,7 @@ class AuthService(
                 existing.role = token.role
                 donorHistoryClaimed = token.role == UserRole.ASSOCIATION
             }
+            discardUnprovenCredentials(existing)
             existing.emailVerified = true
             existing.updatedAt = Instant.now()
             userRepository.save(existing).also {
@@ -731,6 +740,7 @@ class AuthService(
      *
      * If a profile already exists, all mutable fields are updated. If no profile exists,
      * a new one is created using [dto.nom] and [dto.identifier] as the immutable identity fields,
+     * with the configured [PaymentsProperties.defaultProvider] as its payment provider,
      * and a deterministic on-chain wallet address is derived and persisted for it.
      *
      * Only users with [UserRole.ASSOCIATION] may call this method.
@@ -769,7 +779,8 @@ class AuthService(
                     contactName = dto.contact,
                     contactEmail = user.email,
                     description = dto.description,
-                    siren = derivedSiren(dto.identifier)
+                    siren = derivedSiren(dto.identifier),
+                    paymentProvider = paymentsProperties.defaultProvider,
                 )
             )
             saved.walletAddress = associationAddressGenerator.generate(saved.id!!)
@@ -800,6 +811,29 @@ class AuthService(
      * the same reason — a claimed guest row is stored lower-cased whatever case the claimant typed.
      */
     private fun normalizeEmail(email: String): String = email.trim().lowercase()
+
+    /**
+     * Drops the password and every refresh token of an account whose address is about to be proven
+     * for the first time by another channel (Google token, magic link).
+     *
+     * Until that proof, anyone could have created the row — or claimed a guest row — with the
+     * victim's address and their own password: keeping that password once the real owner verifies
+     * would hand the attacker a working login (account pre-hijacking, audit 2026-11-12 H1). The
+     * owner can set a password afterwards. No-op on an already verified account.
+     *
+     * Does not cover activation through [verifyEmail], whose token is issued for the row as created:
+     * closing that path needs the pending credentials to live on the token (audit 2026-11-12, lot 3).
+     *
+     * @param user The account matched by e-mail, before `emailVerified` is set.
+     */
+    private fun discardUnprovenCredentials(user: User) {
+        if (user.emailVerified) return
+        if (user.passwordHash != null) {
+            logger.info("Discarding the unverified password of account {} on first proof of address", user.id)
+            user.passwordHash = null
+        }
+        refreshTokenRepository.revokeAllByUserId(user.id!!)
+    }
 
     private fun requireSelfAssignable(role: UserRole) {
         if (role !in UserRole.SELF_ASSIGNABLE) {
@@ -909,7 +943,8 @@ class AuthService(
      *
      * For [UserRole.DONOR], a blank [DonorProfile] is created.
      * For [UserRole.ASSOCIATION], an [AssociationProfile] is created only when [assocReq] is
-     * provided (magic-link and email/password sign-up), with a deterministic on-chain wallet
+     * provided (magic-link and email/password sign-up), with the configured
+     * [PaymentsProperties.defaultProvider] as its payment provider and a deterministic on-chain wallet
      * address derived and persisted for it. Google sign-ups for associations create the profile
      * in a separate step via [upsertAssociationProfile].
      *
@@ -940,7 +975,8 @@ class AuthService(
                             postalCode = assocReq.postalCode,
                             contactEmail = user.email,
                             description = assocReq.description,
-                            siren = derivedSiren(assocReq.identifier)
+                            siren = derivedSiren(assocReq.identifier),
+                            paymentProvider = paymentsProperties.defaultProvider,
                         )
                     )
                     saved.walletAddress = associationAddressGenerator.generate(saved.id!!)

@@ -4,6 +4,7 @@ import { PrePublishModal } from '../PrePublishModal';
 import type { CampaignDto } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
+import { PaymentProviderId } from '@/types/paymentProvider';
 import { getLegalAcceptanceState } from '@/lib/api/legal';
 import { getLegalDocument } from '@/lib/api/public';
 
@@ -12,7 +13,9 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'fr',
 }));
 
-vi.mock('@/lib/api/legal', () => ({
+vi.mock('@/lib/api/legal', async (importOriginal) => ({
+  // Keeps the real isLegalVersionOutdated: the 409 branch is part of what is tested.
+  ...(await importOriginal<typeof import('@/lib/api/legal')>()),
   getLegalAcceptanceState: vi.fn(),
 }));
 
@@ -50,8 +53,8 @@ function renderWith(overrides: Partial<React.ComponentProps<typeof PrePublishMod
     campaign: campaign(),
     verificationStatus: VerificationStatus.VERIFIED,
     bankStatus: BankSetupStatus.COMPLETED,
-    mollieResolved: true,
-    mollieDashboardUrl: null,
+    bankResolved: true,
+    bankActionUrl: null,
     onClose: vi.fn(),
     onConfirm: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -63,7 +66,7 @@ beforeEach(() => {
   // Default: CGU already accepted, so pre-existing tests exercising other gates aren't also
   // blocked on a checkbox they don't know about.
   vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-    documentType: 'CGU',
+    documentType: 'CGV',
     currentVersion: '2026-08-26',
     accepted: true,
   });
@@ -72,14 +75,14 @@ beforeEach(() => {
 describe('PrePublishModal — account status', () => {
   /** Regression guard: a loading Mollie status used to render as "no bank account connected". */
   it('shows a neutral loading row while the Mollie status is unresolved', () => {
-    renderWith({ mollieResolved: false, bankStatus: BankSetupStatus.NOT_CONNECTED });
+    renderWith({ bankResolved: false, bankStatus: BankSetupStatus.NOT_CONNECTED });
 
     expect(screen.getByText('account.loading')).toBeInTheDocument();
     expect(screen.queryByText('account.bank.NOT_CONNECTED')).not.toBeInTheDocument();
   });
 
   it('still shows the verification status while the Mollie status is unresolved', () => {
-    renderWith({ mollieResolved: false, verificationStatus: VerificationStatus.PENDING });
+    renderWith({ bankResolved: false, verificationStatus: VerificationStatus.PENDING });
 
     expect(screen.getByText('account.verif.PENDING')).toBeInTheDocument();
   });
@@ -102,6 +105,30 @@ describe('PrePublishModal — account status', () => {
     expect(screen.getByText(`account.bank.${bankStatus}`)).toBeInTheDocument();
   });
 
+  it.each([
+    BankSetupStatus.COMPLETED,
+    BankSetupStatus.NOT_CONNECTED,
+    BankSetupStatus.NEEDS_DATA,
+    BankSetupStatus.IN_REVIEW,
+    BankSetupStatus.BROKEN,
+  ])('renders the HelloAsso status %s with HelloAsso wording, never Mollie', (bankStatus) => {
+    // An unverified profile keeps the per-row details visible even when the bank row is complete.
+    renderWith({ bankStatus, paymentProvider: PaymentProviderId.HELLOASSO, verificationStatus: VerificationStatus.PENDING });
+
+    expect(screen.getByText(`account.helloAssoBank.${bankStatus}`)).toBeInTheDocument();
+    expect(screen.queryByText(`account.bank.${bankStatus}`)).not.toBeInTheDocument();
+  });
+
+  it('keeps the Mollie wording for a Mollie association', () => {
+    renderWith({
+      bankStatus: BankSetupStatus.COMPLETED,
+      paymentProvider: PaymentProviderId.MOLLIE,
+      verificationStatus: VerificationStatus.PENDING,
+    });
+
+    expect(screen.getByText('account.bank.COMPLETED')).toBeInTheDocument();
+  });
+
   /** Regression guard: PENDING and REJECTED used to render as "not yet verified". */
   it.each([
     VerificationStatus.UNVERIFIED,
@@ -116,7 +143,7 @@ describe('PrePublishModal — account status', () => {
   it('offers the Mollie wizard link only when onboarding data is missing', () => {
     renderWith({
       bankStatus: BankSetupStatus.NEEDS_DATA,
-      mollieDashboardUrl: 'https://my.mollie.com/dashboard/onboarding',
+      bankActionUrl: 'https://my.mollie.com/dashboard/onboarding',
     });
 
     expect(screen.getByText('account.completeBank')).toHaveAttribute(
@@ -126,7 +153,7 @@ describe('PrePublishModal — account status', () => {
   });
 
   it('the publish button is always initially enabled — backend enforces KYB, Mollie and account gates', () => {
-    renderWith({ mollieResolved: false });
+    renderWith({ bankResolved: false });
 
     expect(screen.getByText('confirm').closest('button')).toBeEnabled();
   });
@@ -176,7 +203,7 @@ describe('PrePublishModal — budget and expected outcome are blocking', () => {
 describe('PrePublishModal — CGU acceptance is blocking', () => {
   it('the publish button is always enabled — CGU acceptance is enforced by the backend', async () => {
     vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       currentVersion: '2026-08-26',
       accepted: false,
     });
@@ -204,13 +231,37 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
     fireEvent.click(screen.getByText('confirm'));
 
-    expect(onConfirm).toHaveBeenCalledWith(true);
+    expect(onConfirm).toHaveBeenCalledWith(true, '2026-08-26');
+  });
+
+  it('reloads the CGU state and asks again when publishing hits LEGAL_VERSION_OUTDATED', async () => {
+    vi.mocked(getLegalAcceptanceState).mockClear();
+    vi.mocked(getLegalAcceptanceState).mockResolvedValue({
+      documentType: 'CGV',
+      currentVersion: '2026-08-26',
+      accepted: false,
+    });
+    const onConfirm = vi.fn().mockRejectedValue({ response: { status: 409, data: { code: 'LEGAL_VERSION_OUTDATED' } } });
+    renderWith({ onConfirm });
+
+    const checkbox = await waitFor(() => screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement);
+    await waitFor(() => expect(checkbox).toBeEnabled());
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByText('confirm'));
+
+    await waitFor(() => expect(screen.getByText('outdated')).toBeInTheDocument());
+    expect(onConfirm).toHaveBeenCalledWith(true, '2026-08-26');
+    expect(getLegalAcceptanceState).toHaveBeenCalledTimes(2);
+    // Associations accept their own terms (document CGV), not the donor CGU.
+    expect(getLegalAcceptanceState).toHaveBeenCalledWith('CGV');
+    await waitFor(() => expect((screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement).checked).toBe(false));
   });
 
   it('opens the CGU text in a modal instead of navigating away', async () => {
     vi.mocked(getLegalDocument).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       version: '2026-08-26',
+      format: 'TEXT',
       content: 'Texte des CGU.',
       publishedAt: '2026-08-26T00:00:00Z',
     });
@@ -219,7 +270,7 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     await waitFor(() => expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeInTheDocument());
     fireEvent.click(screen.getByText('cgu.link'));
 
-    expect(getLegalDocument).toHaveBeenCalledWith('CGU');
+    expect(getLegalDocument).toHaveBeenCalledWith('CGV');
     await waitFor(() => {
       expect(screen.getByText('Texte des CGU.')).toBeInTheDocument();
     });
@@ -227,13 +278,14 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
 
   it('opening the CGU text does not itself check the unaccepted checkbox', async () => {
     vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       currentVersion: '2026-08-26',
       accepted: false,
     });
     vi.mocked(getLegalDocument).mockResolvedValue({
-      documentType: 'CGU',
+      documentType: 'CGV',
       version: '2026-08-26',
+      format: 'TEXT',
       content: 'Texte des CGU.',
       publishedAt: '2026-08-26T00:00:00Z',
     });

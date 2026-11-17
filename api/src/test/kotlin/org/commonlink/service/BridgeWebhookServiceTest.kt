@@ -123,6 +123,21 @@ class BridgeWebhookServiceTest {
     }
 
     @Test
+    fun `alerts when a settlement lands on a payout the association cancelled`() {
+        // Cancelling revokes the link first, but a transfer the bank had already authorised can
+        // still settle — the amount was given back, so this is the same double-spend risk.
+        every { payoutRepository.findRoutingByBridgePaymentLinkId(LINK_ID) } returns
+            routing(payoutStatus = PayoutStatus.CANCELLED, engaged = null)
+        every { bridgeInitiation.getPaymentLink(LINK_ID) } returns
+            BridgePaymentLinkState(BridgePaymentStatus.ACSC, "tx_1", null)
+
+        service.handlePaymentLinkNotification(LINK_ID)
+
+        verify { alerts.reportFailure(TechnicalAlertKind.PAYOUT_SETTLED_AFTER_RELEASE, any(), any(), any()) }
+        verify { confirmer.finaliseSettled(payout.id, "tx_1") }
+    }
+
+    @Test
     fun `stays silent when the settled amount was still engaged`() {
         stubState(BridgePaymentStatus.ACSC)
 

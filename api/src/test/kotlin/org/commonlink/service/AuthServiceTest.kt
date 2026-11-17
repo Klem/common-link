@@ -1,5 +1,7 @@
 package org.commonlink.service
 
+import org.commonlink.config.PaymentsProperties
+import org.commonlink.payment.PaymentProviderId
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
 import io.mockk.every
@@ -41,10 +43,13 @@ class AuthServiceTest {
 
     private val frontendUrl = "http://localhost:3000"
 
-    private val authService = AuthService(
+    private val authService = authServiceWith(PaymentsProperties())
+
+    /** Builds the service under test with the given payments configuration; every other collaborator is the shared mock. */
+    private fun authServiceWith(paymentsProperties: PaymentsProperties) = AuthService(
         userRepository, donorProfileRepository, associationProfileRepository, associationAddressGenerator,
         magicLinkTokenRepository, refreshTokenRepository, emailVerificationTokenRepository, jwtService, tokenHashService,
-        passwordEncoder, emailService, googleIdTokenVerifier, frontendUrl
+        passwordEncoder, emailService, googleIdTokenVerifier, paymentsProperties, frontendUrl
     )
 
     private val donorUser = User(
@@ -413,6 +418,36 @@ class AuthServiceTest {
         assertEquals("new-google-sub", emailUser.googleSub)
         assertTrue(emailUser.emailVerified)
         verify { userRepository.save(emailUser) }
+        // Already verified: the account's own password and sessions are kept.
+        assertEquals("hashed", emailUser.passwordHash)
+        verify(exactly = 0) { refreshTokenRepository.revokeAllByUserId(any()) }
+    }
+
+    /**
+     * Account pre-hijacking (audit 2026-11-12, H1): an attacker registers the victim's address with
+     * their own password; the row stays unverified. The victim's first Google login proves the
+     * address — the planted password must not survive it.
+     */
+    @Test
+    fun `loginWithGoogle - MERGE - unverified account loses its password and sessions`() {
+        val planted = User(
+            id = UUID.randomUUID(),
+            email = "victim@example.com",
+            role = UserRole.ASSOCIATION,
+            provider = AuthProvider.EMAIL,
+            passwordHash = "attacker-hash",
+            emailVerified = false
+        )
+        val payload = buildGooglePayload(sub = "victim-sub", email = "victim@example.com")
+        every { googleIdTokenVerifier.verify("valid-token") } returns buildGoogleToken(payload)
+        every { userRepository.findByGoogleSub("victim-sub") } returns Optional.empty()
+        every { userRepository.findByEmailIgnoreCase("victim@example.com") } returns Optional.of(planted)
+
+        authService.loginWithGoogle("valid-token")
+
+        assertNull(planted.passwordHash)
+        assertTrue(planted.emailVerified)
+        verify { refreshTokenRepository.revokeAllByUserId(planted.id!!) }
     }
 
     @Test
@@ -710,6 +745,29 @@ class AuthServiceTest {
         assertTrue(googleUser.emailVerified)
         assertEquals(AuthProvider.GOOGLE, googleUser.provider) // provider unchanged
         verify(exactly = 0) { donorProfileRepository.save(any()) }
+    }
+
+    /** Same pre-hijacking scenario as the Google merge (audit 2026-11-12, H1), proven by a magic link. */
+    @Test
+    fun `verifyMagicLink - MERGE - unverified account loses its password and sessions`() {
+        val planted = User(
+            id = UUID.randomUUID(),
+            email = "victim@example.com",
+            role = UserRole.DONOR,
+            provider = AuthProvider.EMAIL,
+            passwordHash = "attacker-hash",
+            emailVerified = false
+        )
+        val token = TestFixtures.magicLinkToken(email = planted.email, role = planted.role)
+        every { magicLinkTokenRepository.findByTokenHashAndUsedAtIsNull("hashedtoken") } returns Optional.of(token)
+        every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
+        every { userRepository.findByEmailIgnoreCase(planted.email) } returns Optional.of(planted)
+
+        authService.verifyMagicLink("rawtoken123")
+
+        assertNull(planted.passwordHash)
+        assertTrue(planted.emailVerified)
+        verify { refreshTokenRepository.revokeAllByUserId(planted.id!!) }
     }
 
     /**
@@ -1365,6 +1423,64 @@ class AuthServiceTest {
         )
 
         assertEquals("123456789", saved.captured.siren)
+    }
+
+    // -------------------------------------------------------------------------
+    // Payment provider given at creation (app.payments.default-provider)
+    // -------------------------------------------------------------------------
+
+    private fun registerAssociationWith(service: AuthService): AssociationProfile {
+        every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
+
+        service.register(
+            RegisterRequestDto(
+                email = "asso@example.com",
+                password = "password123",
+                role = UserRole.ASSOCIATION,
+                associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+            )
+        )
+        return saved.captured
+    }
+
+    private fun createAssociationProfileWith(service: AuthService): AssociationProfile {
+        every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
+        every { associationProfileRepository.findByUserId(assocUser.id!!) } returns Optional.empty()
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
+
+        service.upsertAssociationProfile(
+            assocUser.id!!,
+            AssociationProfileUpsertDto(nom = "MyAsso", identifier = "W123456789", ville = "Paris", codePostal = "75001")
+        )
+        return saved.captured
+    }
+
+    @Test
+    fun `register ASSOCIATION - new association gets HELLOASSO by default`() {
+        assertEquals(PaymentProviderId.HELLOASSO, registerAssociationWith(authService).paymentProvider)
+    }
+
+    @Test
+    fun `register ASSOCIATION - new association gets the configured default provider`() {
+        val service = authServiceWith(PaymentsProperties(defaultProvider = PaymentProviderId.MOLLIE))
+
+        assertEquals(PaymentProviderId.MOLLIE, registerAssociationWith(service).paymentProvider)
+    }
+
+    @Test
+    fun `upsertAssociationProfile - created profile gets HELLOASSO by default`() {
+        assertEquals(PaymentProviderId.HELLOASSO, createAssociationProfileWith(authService).paymentProvider)
+    }
+
+    @Test
+    fun `upsertAssociationProfile - created profile gets the configured default provider`() {
+        val service = authServiceWith(PaymentsProperties(defaultProvider = PaymentProviderId.MOLLIE))
+
+        assertEquals(PaymentProviderId.MOLLIE, createAssociationProfileWith(service).paymentProvider)
     }
 
     // -------------------------------------------------------------------------

@@ -42,8 +42,11 @@ class TokenExpiredException(message: String = "Expired token") :
 class InvalidTokenException(message: String = "Invalid token") :
     AppException(message, HttpStatus.UNAUTHORIZED)
 
-/** Thrown when a uniqueness constraint would be violated, e.g. duplicate email on registration (HTTP 409). */
-class ConflictException(message: String) :
+/**
+ * Thrown when a request conflicts with the current state, e.g. duplicate email on registration (HTTP 409).
+ * Open for coded refusals that must still be handled as conflicts ([FundsNotAvailableException]).
+ */
+open class ConflictException(message: String) :
     AppException(message, HttpStatus.CONFLICT)
 
 /**
@@ -133,6 +136,15 @@ class BridgeRequestRefusedException(message: String) :
  * recognising a cause from its wording breaks at the first rewording.
  */
 class BridgeDestinationRefusedException(message: String) :
+    BadGatewayException(message)
+
+/**
+ * Thrown when HelloAsso **answered** a checkout creation and refused it (HTTP 400/422): the request we built is
+ * wrong, HelloAsso is up. Same discipline as [BridgeRequestRefusedException]: no technical alert, the donor still
+ * gets a 502, and it stays loud in the logs. On 2026-11-05 a non-HTTPS return URL was reported as "HelloAsso
+ * unavailable" and alerted, which pointed at the wrong culprit.
+ */
+class HelloAssoCheckoutRefusedException(message: String) :
     BadGatewayException(message)
 
 /** Thrown when a request is semantically invalid, e.g. attempting VOP on an IBAN that is not FORMAT_VALID (HTTP 422). */

@@ -308,8 +308,9 @@ point 4.4, et les contrôles automatisés décrits au point 7.
 
 Chaque résultat de filtrage — qu'il s'agisse d'une correspondance, d'une absence de correspondance
 ou d'une impossibilité de contrôler — est inscrit dans un journal de contrôle de conformité
-protégé par une chaîne de hachage. Cette structure garantit qu'aucune entrée ne peut être
-modifiée ou supprimée sans que l'intégrité de la chaîne soit compromise. Pour chaque événement
+protégé par une chaîne de hachage. Cette structure rend détectable la modification ou la
+suppression d'une entrée, dans les limites décrites dans la fiche « Journal des contrôles de gel »
+(§ 4.2 et 4.3). Pour chaque événement
 journalisé, l'identifiant de la version du registre consultée est conservé, de sorte qu'un
 auditeur puisse vérifier quelle liste était en vigueur au moment du contrôle. La nature du sujet
 filtré — association, dirigeant publié, représentant légal saisi au dossier, bénéficiaire effectif —

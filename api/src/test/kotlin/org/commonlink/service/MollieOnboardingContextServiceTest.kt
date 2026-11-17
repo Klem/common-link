@@ -52,7 +52,7 @@ class MollieOnboardingContextServiceTest {
     private val complianceAuditLogService: ComplianceAuditLogService = mockk()
 
     private val service = MollieOnboardingContextService(
-        associationRepo, registryCheckRepo, beneficialOwnerRepo, documentRepo, complianceAuditLogService,
+        associationRepo, registryCheckRepo, beneficialOwnerRepo, KybDocumentService(associationRepo, documentRepo), complianceAuditLogService,
     )
 
     private val userId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
@@ -263,7 +263,7 @@ class MollieOnboardingContextServiceTest {
         val saved = slot<ComplianceAuditLog>()
         every { repo.save(capture(saved)) } answers { saved.captured }
         val serviceWithRealJournal = MollieOnboardingContextService(
-            associationRepo, registryCheckRepo, beneficialOwnerRepo, documentRepo,
+            associationRepo, registryCheckRepo, beneficialOwnerRepo, KybDocumentService(associationRepo, documentRepo),
             ComplianceAuditLogService(repo, ObjectMapper()),
         )
 

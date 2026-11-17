@@ -24,6 +24,7 @@ import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.User
 import org.commonlink.entity.UserRole
 import org.commonlink.exception.ConflictException
+import org.commonlink.exception.FundsNotAvailableException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
@@ -89,7 +90,8 @@ class PayoutServiceTest {
     private fun stubBalance(confirmed: String, pending: String = "0", raised: String) {
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.CONFIRMED) } returns BigDecimal(confirmed)
         every { payoutRepository.sumAmountByCampaignIdAndStatus(campaignId, PayoutStatus.PENDING) } returns BigDecimal(pending)
-        every { donationRepository.sumConfirmedAmountByCampaignId(campaignId) } returns BigDecimal(raised)
+        every { donationRepository.sumAvailableAmountByCampaignId(campaignId) } returns BigDecimal(raised)
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignId) } returns emptyList()
     }
 
     /** A payee belonging to a different association, used to pin the ownership checks. */
@@ -544,7 +546,162 @@ class PayoutServiceTest {
         assertThat(reasons).containsExactly(org.commonlink.entity.PayoutBlockingReason.DESCRIPTION_TOO_SHORT)
     }
 
+    // ── cancel ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `cancel - a never-initiated payout is cancelled without calling Bridge`() {
+        val cancelled = Payout(campaign = campaign, payee = payee, payeeIbanId = ibanId, payeeIbanValue = payeeIban.iban,
+            amount = BigDecimal("500"), kind = PayoutKind.EXPENSE, typeCode = "60-mat", label = "Achat matériel",
+            status = PayoutStatus.CANCELLED)
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns null
+        every { confirmer.cancel(campaignId, payoutId) } returns cancelled
+
+        val result = service.cancel(campaignId, payoutId, userId)
+
+        assertThat(result.status).isEqualTo(PayoutStatus.CANCELLED)
+        verify(exactly = 0) { bridgeInitiation.revokePaymentLink(any()) }
+    }
+
+    @Test
+    fun `cancel - a known link is revoked before the payout is cancelled`() {
+        // Never after: the amount must not return to the balance while an authorisation URL for it
+        // may still be live.
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns "link_dead"
+        every { bridgeInitiation.revokePaymentLink("link_dead") } returns Unit
+        every { confirmer.cancel(campaignId, payoutId) } returns pendingPayout
+
+        service.cancel(campaignId, payoutId, userId)
+
+        verifyOrder {
+            bridgeInitiation.revokePaymentLink("link_dead")
+            confirmer.cancel(campaignId, payoutId)
+        }
+    }
+
+    @Test
+    fun `cancel - a revocation Bridge could not confirm leaves the payout PENDING`() {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns "link_live"
+        every { bridgeInitiation.revokePaymentLink("link_live") } throws BadGatewayException("Bridge down")
+
+        assertThrows<BadGatewayException> { service.cancel(campaignId, payoutId, userId) }
+
+        verify(exactly = 0) { confirmer.cancel(any(), any()) }
+    }
+
+    @Test
+    fun `cancel - campaign of another association throws NotFoundException`() {
+        val otherCampaign = Campaign(association = AssociationProfile(user = assocUser, name = "Other", identifier = "987654321")
+            .also { it.javaClass.getDeclaredField("id").also { f -> f.isAccessible = true }.set(it, UUID.randomUUID()) },
+            name = "Other", emoji = "🌍", description = "desc", goal = BigDecimal("10000"), status = CampaignStatus.LIVE)
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(otherCampaign)
+
+        assertThrows<NotFoundException> { service.cancel(campaignId, payoutId, userId) }
+
+        verify(exactly = 0) { confirmer.loadForCancel(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancel - allowed in prod even while payouts are closed there`() {
+        // Withdrawing a payout moves no money: an association must be able to clear what was
+        // created before the environment was closed.
+        every { bridgeInitiation.isDemoMode } returns true
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findById(campaignId) } returns Optional.of(campaign)
+        every { confirmer.loadForCancel(campaignId, payoutId, assocId) } returns null
+        every { confirmer.cancel(campaignId, payoutId) } returns pendingPayout
+
+        prodService.cancel(campaignId, payoutId, userId)
+
+        verify { confirmer.cancel(campaignId, payoutId) }
+    }
+
     private companion object {
         const val FRONTEND_URL = "http://localhost:3000"
+    }
+
+    // ── FD2-01: coded FUNDS_NOT_AVAILABLE refusal ─────────────────────────────
+
+    private fun stubCreatable(iban: PayeeIban = payeeIban) {
+        every { associationProfileRepository.findByUserId(userId) } returns Optional.of(assoc)
+        every { campaignRepository.findByIdForUpdate(campaignId) } returns campaign
+        every { payeeRepository.findById(payeeId) } returns Optional.of(payee)
+        every { payeeIbanRepository.findById(ibanId) } returns Optional.of(iban)
+    }
+
+    private fun createRequest(amount: String, label: String = "Achat matériel pédagogique") =
+        CreatePayoutRequest(payeeId, ibanId, BigDecimal(amount), PayoutKind.EXPENSE, "60-mat", label)
+
+    @Test
+    fun `create - an amount equal to the available balance is accepted`() {
+        stubCreatable()
+        stubBalance(confirmed = "300", pending = "200", raised = "1000")
+        every { payoutRepository.save(any()) } returnsArgument 0
+
+        val result = service.create(campaignId, createRequest("500.00"), userId)
+
+        assertThat(result.amount).isEqualByComparingTo("500.00")
+    }
+
+    @Test
+    fun `create - one cent above the available balance is refused with the coded exception`() {
+        stubCreatable()
+        stubBalance(confirmed = "300", pending = "200", raised = "1000")
+
+        val ex = assertThrows<FundsNotAvailableException> { service.create(campaignId, createRequest("500.01"), userId) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("500.00")
+        verify(exactly = 0) { payoutRepository.save(any()) }
+    }
+
+    @Test
+    fun `create - the balance alongside another blocking reason keeps the plain conflict`() {
+        stubCreatable()
+        stubBalance(confirmed = "0", raised = "100")
+
+        val ex = assertThrows<ConflictException> { service.create(campaignId, createRequest("500", label = "Trop court"), userId) }
+
+        assertThat(ex).isNotInstanceOf(FundsNotAvailableException::class.java)
+        assertThat(ex.message).contains("INSUFFICIENT_BALANCE").contains("DESCRIPTION_TOO_SHORT")
+    }
+
+    @Test
+    fun `create - a negative available balance is reported as nothing disbursable`() {
+        stubCreatable()
+        stubBalance(confirmed = "800", pending = "300", raised = "1000")
+
+        val ex = assertThrows<FundsNotAvailableException> { service.create(campaignId, createRequest("10"), userId) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("0")
+    }
+
+    @Test
+    fun `create - the refusal carries the HelloAsso donations in transit and still at HelloAsso`() {
+        stubCreatable()
+        stubBalance(confirmed = "0", raised = "100")
+        every { donationRepository.sumConfirmedAmountsByCampaignIdGroupedByFundsState(campaignId) } returns listOf(
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.IN_TRANSIT, BigDecimal("371.00")),
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.AT_PROVIDER, BigDecimal("40.00")),
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.PAYOUT_PREPARING, BigDecimal("2.50")),
+            org.commonlink.repository.FundsStateAmount(org.commonlink.entity.FundsState.WITHDRAWN, BigDecimal("9.00")),
+        )
+
+        val ex = assertThrows<FundsNotAvailableException> { service.create(campaignId, createRequest("500"), userId) }
+
+        assertThat(ex.disbursable).isEqualByComparingTo("100")
+        assertThat(ex.inTransit).isEqualByComparingTo("371.00")
+        assertThat(ex.atProvider).isEqualByComparingTo("42.50")
+    }
+
+    @Test
+    fun `computeAvailableBalance - available donations minus confirmed and pending payouts`() {
+        stubBalance(confirmed = "300", pending = "200", raised = "1000")
+        assertThat(service.computeAvailableBalance(campaignId)).isEqualByComparingTo("500")
     }
 }

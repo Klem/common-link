@@ -144,6 +144,57 @@ class ComplianceAuditLogService(
          * [appendMollieSelfCompletionAttestedOnce]. A journal fact only: it never unlocks anything.
          */
         const val MOLLIE_SELF_COMPLETION_ATTESTED = "MOLLIE_SELF_COMPLETION_ATTESTED"
+
+        /**
+         * A curator moved an association to another payment provider
+         * ([org.commonlink.service.PaymentProviderChangeService.change]). Payload `{from, to, reason}`; actor =
+         * the curator. Never written for a no-op (same provider).
+         */
+        const val PAYMENT_PROVIDER_CHANGED = "PAYMENT_PROVIDER_CHANGED"
+
+        /**
+         * An association accepted the HelloAsso mandate and linked its account
+         * ([org.commonlink.service.HelloAssoLinkService.connect]). Payload `{version, organizationSlug,
+         * clientIdMasked}`; actor = the association user; neither IP nor user agent.
+         */
+        const val HELLOASSO_MANDATE_ACCEPTED = "HELLOASSO_MANDATE_ACCEPTED"
+
+        /**
+         * An association withdrew CommonLink's HelloAsso access
+         * ([org.commonlink.service.HelloAssoLinkService.disconnect]). Payload `{organizationSlug, notYetPaidOutCount,
+         * notYetPaidOutAmount}`: the donations HelloAsso had not paid out yet at that instant, which then need a
+         * curator release.
+         */
+        const val HELLOASSO_DISCONNECTED = "HELLOASSO_DISCONNECTED"
+
+        /**
+         * HelloAsso reports a confirmed donation as refunded, being refunded or contested
+         * ([org.commonlink.service.HelloAssoCheckoutService]). Payload `{providerRef, state}`; no actor.
+         */
+        const val HELLOASSO_PAYMENT_REVERSED = "HELLOASSO_PAYMENT_REVERSED"
+
+        /**
+         * A paid payment, re-read at the provider, does not carry its donation's amount: the donation is not confirmed
+         * ([org.commonlink.service.PaymentAmountGuard]). Written once per donation. Payload
+         * `{providerRef, expected, paid}`; no actor.
+         */
+        const val PAYMENT_AMOUNT_MISMATCH = "PAYMENT_AMOUNT_MISMATCH"
+
+        /**
+         * An association confirmed it received a HelloAsso payout on its bank account: its donations in it, re-read
+         * as paid out at HelloAsso, became available ([org.commonlink.service.CashOutReceiptService]). Subject
+         * ASSOCIATION. Payload `{idCashOut, donationCount, amount}` (donations actually made available); actor = the
+         * association's user.
+         */
+        const val CASHOUT_RECEIPT_CONFIRMED = "CASHOUT_RECEIPT_CONFIRMED"
+
+        /**
+         * A curator made HelloAsso donations available by hand, on a line of the association's bank statement
+         * ([org.commonlink.service.HelloAssoFundsReleaseService]). Subject ASSOCIATION. Payload `{associationId,
+         * donationIds, amount, reason, evidenceId}` — never the statement line nor the file, kept apart in the
+         * evidence table (the journal is never erased); actor = the curator.
+         */
+        const val HELLOASSO_FUNDS_MANUALLY_RELEASED = "HELLOASSO_FUNDS_MANUALLY_RELEASED"
     }
 
     /**
