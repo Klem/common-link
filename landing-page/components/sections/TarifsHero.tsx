@@ -1,41 +1,25 @@
 import { useTranslations } from 'next-intl';
+import type { SwitchButton } from './Tarifs';
+
+type TarifsHeroProps = { tAsso: SwitchButton; tDon: SwitchButton; pickAsso: () => void; pickDon: () => void };
 
 /**
- * Hero de la page Tarifs (« Qui paie quoi ») : deux cartes `.tarif-side`
- * pointant vers les ancres `#tarif-don` et `#tarif-asso`.
- * Markup, classes et styles inline repris à l'identique de la maquette
- * (`div.tarif-hero`, `p7-tarifs.html`). Ne pas remplacer par du Tailwind.
+ * Pricing hero with the « Je collecte / Je donne » profile switch.
  */
-export function TarifsHero() {
+export function TarifsHero({ tAsso, tDon, pickAsso, pickDon }: TarifsHeroProps) {
   const t = useTranslations('tarifs.hero');
 
   return (
-    <div className="tarif-hero">
-      <div className="max-w" style={{ maxWidth: '900px', textAlign: 'center' }}>
-        <div className="section-label">{t('label')}</div>
-        <h1 style={{ fontSize: '46px', margin: '10px 0 14px' }}>{t('title')}</h1>
-        <p className="tarif-hero-sub" style={{ margin: '0 auto 34px' }}>
-          {t('subtitle')}
-        </p>
-        <div className="tarif-split">
-          <a className="tarif-side don" href="#tarif-don">
-            <div className="tarif-side-who">{t('donWho')}</div>
-            <div className="tarif-side-num">
-              {t('donNum')}
-              <span>{t('donUnit')}</span>
-            </div>
-            <div className="tarif-side-line">{t('donLine')}</div>
-          </a>
-          <a className="tarif-side asso" href="#tarif-asso">
-            <div className="tarif-side-who">{t('assoWho')}</div>
-            <div className="tarif-side-num">
-              {t('assoNum')}
-              <span>{t('assoUnit')}</span>
-            </div>
-            <div className="tarif-side-line">{t('assoLine')}</div>
-          </a>
+    <section style={{ background: "#32327D", color: "#FFFFFF", padding: "80px 48px 72px" }}>
+      <div style={{ maxWidth: "1240px", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "26px", textAlign: "center" }}>
+        <span style={{ fontSize: "13px", fontWeight: "700", letterSpacing: "1.5px", textTransform: "uppercase", color: "#4ECDC4" }}>{t("tarifs")}</span>
+        <h1 style={{ margin: "0", fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "56px", lineHeight: "1.08" }}>{t.rich("quiPaieQuoi", { t0: (chunks) => <span style={{ fontFamily: "Lora, serif", fontStyle: "italic", fontWeight: "500", color: "#4ECDC4" }}>{chunks}</span> })}</h1>
+        <p style={{ margin: "0", fontSize: "19px", color: "rgba(255,255,255,0.82)" }}>{t("choisissezVotreProfil")}</p>
+        <div role="group" aria-label={t("choisirVotreProfil")} style={{ display: "inline-flex", gap: "6px", padding: "6px", borderRadius: "9999px", background: "rgba(255,255,255,0.12)" }}>
+          <button type="button" onClick={pickAsso} aria-pressed={tAsso.pressed} style={{ minHeight: "52px", padding: "0 28px", border: "none", borderRadius: "9999px", background: `${tAsso.bg}`, color: `${tAsso.color}`, fontFamily: "'Nunito Sans', sans-serif", fontWeight: "800", fontSize: "17px", cursor: "pointer", transition: "all 0.3s ease" }}>{t("jeCollecte")}</button>
+          <button type="button" onClick={pickDon} aria-pressed={tDon.pressed} style={{ minHeight: "52px", padding: "0 28px", border: "none", borderRadius: "9999px", background: `${tDon.bg}`, color: `${tDon.color}`, fontFamily: "'Nunito Sans', sans-serif", fontWeight: "800", fontSize: "17px", cursor: "pointer", transition: "all 0.3s ease" }}>{t("jeDonne")}</button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

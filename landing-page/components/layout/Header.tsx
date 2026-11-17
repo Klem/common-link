@@ -5,25 +5,27 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { APP_URL } from '@/lib/constants';
 
+const LINK_STYLE = { padding: '12px 14px', borderRadius: '9999px', fontWeight: '600', fontSize: '15px', textDecoration: 'none' };
+const LINK_ACTIVE = { ...LINK_STYLE, color: '#171744', background: '#E6E4F4' };
+const LINK_IDLE = { ...LINK_STYLE, color: '#4A4A66' };
+
 /**
- * Barre de navigation partagée.
- * Markup et classes repris à l'identique de la maquette (`nav.main-nav`,
- * `CommonLink UI V2 Julian.html`). Ne pas remplacer par des classes Tailwind :
- * le CSS de la maquette est la source de vérité.
+ * Shared header, markup and inline styles taken from the mockup
+ * (`commonlink-demo-nouveau-design.html`, `<header>` of every page). The current page's link is
+ * highlighted (`aria-current="page"`), as on the mockup's main pages.
  *
- * Ajout hors maquette : le bouton `.nav-toggle` et le conteneur `.nav-menu`,
- * qui n'existent que sous 900px (la maquette ne prévoit pas de menu mobile).
- * `.nav-menu` est en `display:contents` en desktop, donc `.nav-links` et
- * `.nav-actions` y restent les items flex directs de `.main-nav` : le rendu
- * desktop est strictement celui de la maquette.
+ * Out of mockup: the `.nav-toggle` burger and the `.nav-menu` wrapper, which only take effect
+ * below 900px (see the « mobile menu » block of globals.css). `.nav-menu` is `display:contents`
+ * on desktop, so the `<nav>` and the action buttons stay direct flex items of the row: the
+ * desktop rendering is exactly the mockup's.
  */
 export function Header() {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Une navigation ne démonte pas le header : sans cela le panneau resterait
-  // ouvert par-dessus la page d'arrivée.
+  // A navigation does not unmount the header: without this the panel would stay open
+  // over the destination page.
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
@@ -37,50 +39,44 @@ export function Header() {
   ];
 
   return (
-    <nav
-      className={menuOpen ? 'main-nav open' : 'main-nav'}
-      id="global-nav"
-      aria-label={t('main')}
-    >
-      <Link href="/" className="nav-logo" aria-label={t('home')}>
-        <span className="cl-logo" />
-        <span className="nav-logo-text">
-          Common<em>Link</em>
-        </span>
-      </Link>
-      <button
-        type="button"
-        className="nav-toggle"
-        aria-label={menuOpen ? t('menuClose') : t('menuOpen')}
-        aria-expanded={menuOpen}
-        aria-controls="global-nav-menu"
-        onClick={() => setMenuOpen((open) => !open)}
-      >
-        <span className="nav-toggle-bar" />
-        <span className="nav-toggle-bar" />
-        <span className="nav-toggle-bar" />
-      </button>
-      <div className="nav-menu" id="global-nav-menu">
-        <div className="nav-links" id="global-nav-links">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={pathname === link.href ? 'active' : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-        <div className="nav-actions">
-          <a className="btn btn-outline btn-sm nav-login" href={APP_URL}>
-            {t('login')}
-          </a>
-          <a className="btn btn-primary btn-sm" href={APP_URL}>
-            {t('donate')}
-          </a>
+    <header className={menuOpen ? 'site-header open' : 'site-header'} style={{ background: '#FFFFFF', borderBottom: '1px solid #E6E4F4' }}>
+      <div className="site-header-row" style={{ maxWidth: '1240px', margin: '0 auto', padding: '12px 48px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        <Link href="/" aria-label={t('home')} style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: '900', fontSize: '22px', color: '#171744', textDecoration: 'none' }}>
+          {t.rich('logo', { accent: (chunks) => <span style={{ color: '#2FB3AA' }}>{chunks}</span> })}
+        </Link>
+        <button
+          type="button"
+          className="nav-toggle"
+          aria-label={menuOpen ? t('menuClose') : t('menuOpen')}
+          aria-expanded={menuOpen}
+          aria-controls="global-nav-menu"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span className="nav-toggle-bar" />
+          <span className="nav-toggle-bar" />
+          <span className="nav-toggle-bar" />
+        </button>
+        <div className="nav-menu" id="global-nav-menu">
+          <nav className="site-nav" aria-label={t('main')} style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {navLinks.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link key={link.href} href={link.href} aria-current={active ? 'page' : undefined} style={active ? LINK_ACTIVE : LINK_IDLE}>
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="site-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <a href={APP_URL} style={{ display: 'inline-flex', alignItems: 'center', minHeight: '44px', padding: '0 18px', borderRadius: '9999px', border: '1.5px solid #32327D', color: '#32327D', fontWeight: '600', fontSize: '14px', textDecoration: 'none' }}>
+              {t('login')}
+            </a>
+            <a href={APP_URL} style={{ display: 'inline-flex', alignItems: 'center', minHeight: '44px', padding: '0 18px', borderRadius: '9999px', background: '#4ECDC4', color: '#171744', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>
+              {t('donate')}
+            </a>
+          </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }

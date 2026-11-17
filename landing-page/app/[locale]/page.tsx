@@ -2,7 +2,6 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Hero } from '@/components/sections/Hero';
 import { Why } from '@/components/sections/Why';
 import { Campaigns } from '@/components/sections/Campaigns';
-import { TransparencySection } from '@/components/sections/TransparencySection';
 import { AssoTeaser } from '@/components/sections/AssoTeaser';
 import { Trust } from '@/components/sections/Trust';
 import { Partners } from '@/components/sections/Partners';
@@ -57,7 +56,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <Hero />
       <Why />
       <Campaigns />
-      <TransparencySection />
       <AssoTeaser />
       <Trust />
       <Partners />

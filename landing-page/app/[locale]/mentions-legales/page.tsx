@@ -33,24 +33,27 @@ export default async function MentionsLegalesPage({ params }: { params: Promise<
 
   return (
     <main>
-      <LegalSubnav active="mentions" />
+      {/* The mockup scopes the legal-page classes under this container. */}
+      <div className="legal-page">
+        <LegalSubnav active="mentions" />
 
-      <div className="legal-hero">
-        <div className="max-w">
-          <h1>{t('title')}</h1>
-          <p className="legal-meta">{t('lastUpdated')}</p>
+        <div className="legal-hero">
+          <div className="max-w">
+            <h1>{t('title')}</h1>
+            <p className="legal-meta">{t('lastUpdated')}</p>
+          </div>
         </div>
-      </div>
 
-      <div className="legal-body">
-        {sections.map((section, i) => (
-          <Fragment key={i}>
-            <h2>{section.title}</h2>
-            {section.paragraphs.map((paragraph, j) => (
-              <p key={j}>{paragraph}</p>
-            ))}
-          </Fragment>
-        ))}
+        <div className="legal-body">
+          {sections.map((section, i) => (
+            <Fragment key={i}>
+              <h2>{section.title}</h2>
+              {section.paragraphs.map((paragraph, j) => (
+                <p key={j}>{paragraph}</p>
+              ))}
+            </Fragment>
+          ))}
+        </div>
       </div>
     </main>
   );

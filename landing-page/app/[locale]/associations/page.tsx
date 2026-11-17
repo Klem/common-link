@@ -1,6 +1,10 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AssociationHero } from '@/components/sections/AssociationHero';
-import { AssociationFeatures } from '@/components/sections/AssociationFeatures';
+import { AssociationTime } from '@/components/sections/AssociationTime';
+import { AssociationChannel } from '@/components/sections/AssociationChannel';
+import { AssociationDonors } from '@/components/sections/AssociationDonors';
+import { AssociationAutonomy } from '@/components/sections/AssociationAutonomy';
+import { AssociationCta } from '@/components/sections/AssociationCta';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -23,7 +27,11 @@ export default async function AssociationsPage({ params }: { params: Promise<{ l
   return (
     <main>
       <AssociationHero />
-      <AssociationFeatures />
+      <AssociationTime />
+      <AssociationChannel />
+      <AssociationDonors />
+      <AssociationAutonomy />
+      <AssociationCta />
     </main>
   );
 }

@@ -1,76 +1,103 @@
 {
   "associations": {
-    "features": {
-      "items": [
-        {
-          "icon": "🎯",
-          "text": "Photos, budget, objectif, votre histoire. En ligne dès l'ouverture de votre compte d'encaissement.",
-          "title": "Page de campagne"
-        },
-        {
-          "icon": "💳",
-          "text": "Carte, virement SEPA, Apple Pay, et bientôt le don mensuel. Les fonds vont sur votre compte, jamais sur le nôtre.",
-          "title": "Collecte multi-canaux"
-        },
-        {
-          "icon": "📊",
-          "text": "Payez depuis CommonLink, la publication est automatique. Aucun justificatif à fournir.",
-          "title": "Publication automatique"
-        },
-        {
-          "icon": "🧾",
-          "text": "Chaque donateur reçoit son Cerfa dans la minute. Rien à saisir, rien à envoyer.",
-          "title": "Reçus fiscaux"
-        },
-        {
-          "icon": "💬",
-          "text": "Avancement, nouvelles, résultats. Vos donateurs restent au courant tout seuls.",
-          "title": "Nouvelles aux donateurs"
-        }
-      ],
-      "label": "Fonctionnalités",
-      "title": "De la page de collecte au bilan final"
+    "autonomy": {
+      "acquisDesReception": "Acquis dès réception",
+      "bientotLeDonMensuel": "Bientôt le don mensuel",
+      "desDonsPrivesQui": "Des dons privés qui viennent compléter vos subventions, et qui vous appartiennent dès leur réception.",
+      "desDonsQuiVous": "Des dons qui vous appartiennent.",
+      "desDonsReguliersPour": "Des dons réguliers pour financer vos projets dans la durée.",
+      "lesDonsSontVotre": "Les dons sont à votre association dès qu'ils sont reçus.",
+      "lesFondsVontSur": "Les fonds vont sur votre compte, jamais sur le nôtre.",
+      "plusAutonomie": "Plus d'autonomie",
+      "sansSeuilAtteindre": "Sans seuil à atteindre",
+      "surVotreCompte": "Sur votre compte",
+      "vousDisposezDesDons": "Vous disposez des dons reçus, même si l'objectif n'est pas atteint."
+    },
+    "channel": {
+      "associationBordeaux": "Association, Bordeaux",
+      "budgetDuProjet": "BUDGET DU PROJET",
+      "cantineSolidairePourFamilles": "Cantine solidaire pour 150 familles bordelaises",
+      "commonLinkOrgLp": "common-link.org/lp/…",
+      "commonlinkLaGenerePartir": "CommonLink la génère à partir de votre projet. Vos formulaires HelloAsso continuent à côté.",
+      "denrees": "<t0></t0>Denrées <t1>60 %</t1>",
+      "equipement": "<t0></t0>Équipement <t1>15 %</t1>",
+      "genereePartirDeVotre": "Générée à partir de votre projet",
+      "integrableVotreSite": "Intégrable à votre site",
+      "jeFaisUnDon": "Je fais un don maintenant →",
+      "objectif": "Objectif 6 000 €",
+      "paiementSecuriseParHelloasso": "Paiement sécurisé par HelloAsso",
+      "recuFiscal": "Reçu fiscal",
+      "souriresSolidaires": "Sourires Solidaires",
+      "ss": "SS",
+      "transport": "<t0></t0>Transport <t1>25 %</t1>",
+      "unLienPartagerPartout": "Un lien à partager partout",
+      "unNouveauCanalDe": "Un nouveau canal de collecte",
+      "unRepasChaudChaque": "Un repas chaud chaque semaine pour les familles du quartier.",
+      "votrePageDeCollecte": "Votre page de collecte, prête à partager."
+    },
+    "cta": {
+      "creerMonCompteAssociation": "Créer mon compte association",
+      "voirLesTarifs": "Voir les tarifs",
+      "votreProchaineCollectePeut": "Votre prochaine collecte peut commencer aujourd'hui."
+    },
+    "donors": {
+      "achatDeDenrees": "Achat de denrées",
+      "ceQueVoitVotre": "Ce que voit votre donateur",
+      "deNouveauxDonateurs": "De nouveaux donateurs",
+      "exemple": "Exemple",
+      "lePremierFreinAu": "Le premier frein au don, cité à 65 % : le manque de confiance dans l'utilisation des fonds.",
+      "locationCamion": "Location camion",
+      "remboursementDeFrais": "Remboursement de frais",
+      "sourceBarometreDeLa": "Source : Baromètre de la confiance 2025, Le Don en Confiance et Viavoice (août 2025, 2 000 personnes).",
+      "surCommonlinkVosDonateurs": "Sur CommonLink, vos donateurs voient ce que chaque don a payé, au centime près. De quoi rassurer ceux que le doute retenait jusqu'ici.",
+      "touchezCeuxQuiHesitent": "Touchez ceux qui hésitent à donner.",
+      "toutUtilise": "tout utilisé",
+      "unDonDeReparti": "Un don de 11,77 € réparti : 45 % achat de denrées, 35 % location de camion, 20 % remboursement de frais"
     },
     "hero": {
-      "ctaCreate": "Créer mon compte association",
-      "ctaTarifs": "Voir les tarifs",
-      "expense1": {
-        "amount": "480 € ✓",
-        "label": "🍽 Repas bénévoles"
+      "autonomie": "Autonomie",
+      "ceuxQuiVeulentVoir": "Ceux qui veulent voir où va leur argent.",
+      "commonlinkPublieVosDepenses": "CommonLink publie vos dépenses à votre place. Vous gagnez du temps, vous touchez les donateurs qui veulent voir où va leur argent, et vous financez votre structure avec plus d'autonomie.",
+      "creerMonCompteAssociation": "Créer mon compte association",
+      "desDonsVousDes": "Des dons à vous, dès leur réception.",
+      "detenuParCommonlink": "détenu par CommonLink",
+      "documentFournirPourVos": "document à fournir pour vos dépenses",
+      "gainDeTemps": "Gain de temps",
+      "htDeCommissionSans": "HT de commission, sans autre frais",
+      "nouveauCanal": "Nouveau canal",
+      "nouveauxDonateurs": "Nouveaux donateurs",
+      "pourLesAssociations": "Pour les associations",
+      "unNouveauCanalDe": "Un nouveau canal de collecte, <t0>sans la paperasse.</t0>",
+      "unePageDeCollecte": "Une page de collecte en plus de vos canaux.",
+      "voirLesTarifs": "Voir les tarifs",
+      "vosPaiementsSePublient": "Vos paiements se publient tout seuls."
+    },
+    "time": {
+      "achatDeDenreesAlimentaires": "Achat de denrées alimentaires",
+      "achatDeDenreesAlimentaires2": "Achat de denrées alimentaires, Grossiste Bio Bordeaux",
+      "commonlinkMaintenant": "CommonLink, maintenant",
+      "data": {
+        "authorising": "Autorisation auprès de votre banque…",
+        "paid": "Payé ✓",
+        "pay": "Payer 480,00 €",
+        "totalAfter": "2 085,00 €",
+        "totalBefore": "1 605,00 €",
+        "transferring": "Virement en cours…"
       },
-      "expense2": {
-        "amount": "120 € ✓",
-        "label": "🚌 Transport matériel"
-      },
-      "label": "Pour les associations",
-      "lastExpensesLabel": "Dernières dépenses publiées",
-      "progressAmount": "4 280 / 6 000 €",
-      "progressLabel": "Progression campagne",
-      "progressPercent": "71%",
-      "stat1": {
-        "num": "10 %",
-        "text": "HT de commission, sans autre frais"
-      },
-      "stat2": {
-        "num": "0 €",
-        "text": "détenu par CommonLink"
-      },
-      "stat3": {
-        "num": "0",
-        "text": "justificatif demandé"
-      },
-      "statCollected": {
-        "label": "Dons collectés",
-        "value": "4 280 €"
-      },
-      "statDonors": {
-        "label": "Donateurs actifs",
-        "value": "94"
-      },
-      "text": "Créez votre page. Recevez les dons sur votre compte. Payez vos fournisseurs depuis la plateforme, et tout se publie tout seul.",
-      "title": "Collectez des dons,",
-      "titleAccent": "sans la paperasse.",
-      "visualLabel": "Vue association — Ce mois"
+      "demonstrationDonneesFictives": "Démonstration, données fictives",
+      "depensesPublieesPayesRien": "<t0>{bilanCount}</t0> dépenses publiées, <t1>{bilanTotal}</t1> payés. Rien à rédiger.",
+      "emettreUnPaiement": "Émettre un paiement",
+      "gainDeTemps": "Gain de temps",
+      "grossisteBioBordeaux": "Grossiste Bio Bordeaux",
+      "leVirementPartDe": "Le virement part de votre compte bancaire, après votre accord auprès de votre banque.",
+      "payezEstPublie": "Payez, c'est publié.",
+      "publieSurLaPage": "Publié sur la page du projet",
+      "recommencer": "Recommencer",
+      "unSeulGesteDe": "Un seul geste de votre côté. Le reste se fait tout seul.",
+      "vosDonateursSontPrevenus": "Vos donateurs sont prévenus",
+      "votreBilanSeComplete": "Votre bilan se complète",
+      "votreDonFinanceAchat": "Votre don a financé l'achat de denrées alimentaires.",
+      "votreEspaceAssociation": "VOTRE ESPACE ASSOCIATION"
     }
   },
   "common": {
@@ -85,108 +112,219 @@
     "submit": "Envoyer"
   },
   "donors": {
+    "demo": {
+      "associationPasEncoreRegle": "L'association n'a pas encore réglé de dépense avec ce don. Chaque paiement apparaîtra ici dès qu'il sera publié.",
+      "auCentimePresVoyez": "Au centime près, voyez ce que chaque don a payé",
+      "ceDonAttendSa": "Ce don attend sa première dépense.",
+      "chaqueDonEstReparti": "Chaque don est réparti entre les dépenses qu'il a financées, dans l'ordre d'arrivée des dons. Cliquez sur un don, puis survolez l'anneau.",
+      "data": {
+        "ariaBreakdown": "Répartition du don : {parts}",
+        "ariaUnused": "Ce don n'a pas encore été utilisé",
+        "categories": {
+          "denrees": {
+            "label": "Achat de denrées alimentaires",
+            "short": "Denrées"
+          },
+          "frais": {
+            "label": "Remboursement de frais de transport",
+            "short": "Frais"
+          },
+          "location": {
+            "label": "Location camion réfrigéré",
+            "short": "Location"
+          },
+          "reste": {
+            "label": "Pas encore utilisé",
+            "short": "À utiliser"
+          }
+        },
+        "donations": [
+          {
+            "campaign": "Cantine solidaire pour 150 familles bordelaises",
+            "asso": "Sourires Solidaires",
+            "date": "14 sept. 2026",
+            "amount": "35,00 €",
+            "used": "35,00 €",
+            "unused": "0,00 €",
+            "part": "35,00 € sur 35,00 €",
+            "lines": [
+              {
+                "date": "15 sept. 2026",
+                "amount": "35,00 €"
+              }
+            ]
+          },
+          {
+            "campaign": "Cantine solidaire pour 150 familles bordelaises",
+            "asso": "Sourires Solidaires",
+            "date": "03 oct. 2026",
+            "amount": "11,77 €",
+            "used": "11,77 €",
+            "unused": "0,00 €",
+            "part": "11,77 € sur 11,77 €",
+            "lines": [
+              {
+                "date": "05 oct. 2026",
+                "amount": "5,32 €"
+              },
+              {
+                "date": "06 oct. 2026",
+                "amount": "4,15 €"
+              },
+              {
+                "date": "09 oct. 2026",
+                "amount": "2,30 €"
+              }
+            ]
+          },
+          {
+            "campaign": "Cantine solidaire pour 150 familles bordelaises",
+            "asso": "Sourires Solidaires",
+            "date": "12 oct. 2026",
+            "amount": "176,00 €",
+            "used": "128,40 €",
+            "unused": "47,60 €",
+            "part": "128,40 € sur 176,00 €",
+            "lines": [
+              {
+                "date": "20 oct. 2026",
+                "amount": "96,00 €"
+              },
+              {
+                "date": "28 oct. 2026",
+                "amount": "32,40 €"
+              }
+            ]
+          },
+          {
+            "campaign": "Bibliothèque mobile dans les quartiers",
+            "asso": "Lire Ensemble",
+            "date": "20 oct. 2026",
+            "amount": "20,00 €",
+            "used": "0,00 €",
+            "unused": "20,00 €",
+            "part": "0,00 € sur 20,00 €",
+            "lines": []
+          }
+        ],
+        "used": "utilisé"
+      },
+      "demonstrationDonneesFictives": "Démonstration, données fictives",
+      "depensesFinanceesParCe": "Dépenses financées par ce don",
+      "essayez": "Essayez",
+      "mesDons": "Mes dons",
+      "montantDejaUtilise": "Montant déjà utilisé",
+      "montantPasEncoreUtilise": "Montant pas encore utilisé",
+      "partUtilisee": "PART UTILISÉE",
+      "tracabiliteDeVotreDon": "Traçabilité de votre don"
+    },
     "hero": {
-      "cta": "Créer mon compte",
-      "don1": {
-        "amount": "50 €",
-        "name": "Sourires Solidaires"
-      },
-      "don2": {
-        "amount": "25 €",
-        "name": "Lire Ensemble"
-      },
-      "items": [
-        {
-          "icon": "💸",
-          "text": "Carte ou virement SEPA, et bientôt le don mensuel",
-          "title": "Don en 3 clics"
-        },
-        {
-          "icon": "📊",
-          "text": "Votre espace, à jour en permanence",
-          "title": "Suivi en direct"
-        },
-        {
-          "icon": "🧾",
-          "text": "Cerfa n° 11580*05, prêt à télécharger",
-          "title": "Reçu fiscal automatique"
-        }
-      ],
-      "label": "Pour les donateurs",
-      "lastDonsLabel": "Derniers dons",
-      "profileName": "Marie Lambert",
-      "profileSince": "Donateur depuis mars 2024",
-      "statAssosLabel": "Associations",
-      "statAssosText": "suivies activement",
-      "statAssosValue": "6",
-      "statDonsChange": "↗ +120 € vs 2023",
-      "statDonsLabel": "Dons 2024",
-      "statDonsValue": "840 €",
-      "taxAmount": "554 €",
-      "taxNote": "estimation à 66 %",
-      "taxTitle": "Réduction d'impôt estimée 2024",
-      "text": "L'association paie ses fournisseurs depuis CommonLink. Chaque paiement s'affiche sur la page du projet. Vous savez ce que votre don a payé.",
-      "title": "Vous donnez. Vous voyez",
-      "titleAccent": "où ça va."
+      "associationRegleSesDepenses": "L'association règle ses dépenses depuis CommonLink. Chaque paiement s'affiche sur la page du projet. Vous savez ce que votre don a payé.",
+      "cerfaPretTelecharger": "Cerfa n° 11580*05, prêt à télécharger",
+      "creerMonCompte": "Créer mon compte",
+      "donEnQuelquesClics": "Don en quelques clics",
+      "parCarteBancaireEt": "Par carte bancaire, et bientôt le don mensuel",
+      "pourLesDonateurs": "Pour les donateurs",
+      "recuFiscalAutomatique": "Reçu fiscal automatique",
+      "suiviEnDirect": "Suivi en direct",
+      "votreEspaceJourEn": "Votre espace, à jour en permanence",
+      "vousDonnezVousVoyez": "Vous donnez. Vous voyez <t0>où ça va.</t0>"
     },
     "journey": {
-      "ctaShare": "Partager",
-      "ctaTrace": "Voir la traçabilité",
-      "label": "Après votre don",
-      "projectIcon": "📗",
-      "projectMeta": "Les Petits Écoliers · 15 mars 2025",
-      "projectTitle": "50 € pour la rénovation de l'école de Kaolack",
-      "steps": [
-        {
-          "date": "15 mars, 14h32",
-          "status": "done",
-          "text": "Votre don de 50 € est confirmé.",
-          "title": "Don reçu"
+      "achatDeKitsScolaires": "Achat de 25 kits scolaires<t0>, 28 mars</t0>",
+      "apresVotreDon": "Après votre don",
+      "associationPublieSonBilan": "L'association publie son bilan à la clôture. Vous recevez un email.",
+      "bilanDeCloture": "Bilan de clôture",
+      "bilanEtabliParAssociation": "Bilan établi par l'association à partir des paiements publiés sur CommonLink. Exemple fictif.",
+      "bilanImpact": "Bilan d'impact",
+      "bloc": "Bloc",
+      "ceQueCelaMontre": "Ce que cela montre<t0>{whatMark}</t0>",
+      "collectes": "collectés",
+      "commonLink": "Common<t0>Link</t0>",
+      "data": {
+        "segments": [
+          {
+            "label": "Achat de 25 kits scolaires",
+            "short": "Kits"
+          },
+          {
+            "label": "Transport du matériel",
+            "short": "Transport"
+          }
+        ],
+        "titles": {
+          "bilan": "Exemple de bilan, publié à la clôture",
+          "pays": "Traçabilité de votre don",
+          "verify": "Vérifier ce don"
         },
-        {
-          "date": "17 mars, 09h15",
-          "link": "Vérifier",
-          "status": "done",
-          "text": "Les fonds sont arrivés. Le don est scellé dans le registre public.",
-          "title": "Crédité sur le compte de l'association"
-        },
-        {
-          "date": "dernier paiement le 22 mars",
-          "link": "Voir les paiements",
-          "status": "done",
-          "text": "Vos 50 € ont contribué à l'achat de 25 kits scolaires.",
-          "title": "Utilisé pour des paiements"
-        },
-        {
-          "date": "à la clôture",
-          "status": "todo",
-          "text": "L'association publie son bilan à la clôture. Vous recevrez un email.",
-          "title": "Bilan d'impact"
-        }
-      ],
-      "subtitle": "Étape par étape, jusqu'au bilan final.",
-      "title": "Le parcours de votre don"
+        "used": "utilisé"
+      },
+      "depensesFinanceesParCe": "Dépenses financées par ce don",
+      "dernierPaiementLeAvril": "Dernier paiement le 2 avril",
+      "desactiveDansLaDemonstration": "désactivé dans la démonstration",
+      "detailsTechniques": "Détails techniques<t0>{techMark}</t0>",
+      "donRecu": "Don reçu",
+      "elevesAccueillis": "élèves accueillis",
+      "empreinteDuRecu": "Empreinte du reçu",
+      "etapeParEtapeJusqu": "Étape par étape, jusqu'au bilan final. Ouvrez chaque étape.",
+      "exemple": "Exemple",
+      "explorateurPublic": "Explorateur public",
+      "fermer": "Fermer",
+      "gnosis": "Gnosis",
+      "inscritAuRegistrePublic": "Inscrit au registre public",
+      "inscritAuRegistrePublic2": "Inscrit au registre public le 15 mars à 14h33",
+      "kitsDistribues": "kits distribués",
+      "kitsScolaires": "Kits scolaires",
+      "laCloture": "À la clôture",
+      "leMontantLaDate": "Le montant, la date et la campagne de votre don sont inscrits. Votre nom n'y figure jamais.",
+      "leParcoursDeVotre": "Le parcours de votre don",
+      "leRegistreNeDit": "Le registre ne dit rien de la qualité du projet : il garde la trace de votre don.",
+      "lesEnfantsOntEnfin": "« Les enfants ont enfin des salles lumineuses. » La directrice de l'école",
+      "lesPetitsEcoliersCampagne": "Les Petits Écoliers, campagne du 1er février au 30 juin",
+      "lesPetitsEcoliersMars": "Les Petits Écoliers, 15 mars",
+      "lesQuatreSallesDe": "Les quatre salles de classe ont été repeintes et équipées avant la rentrée. Chaque élève a reçu un kit scolaire complet. Les 180 € restants financeront des livres pour la bibliothèque de l'école.",
+      "mars": "15 mars, 14h32",
+      "mars2": "15 mars, 14h33",
+      "montantDejaUtilise": "Montant déjà utilisé",
+      "montantEnCentimes": "Montant en centimes",
+      "montantPasEncoreUtilise": "Montant pas encore utilisé",
+      "payesDepuisCommonlink": "payés depuis CommonLink",
+      "personnePasMemeCommonlink": "Personne, pas même CommonLink, ne peut l'effacer ni le modifier sans que cela se voie.",
+      "poste": "Poste",
+      "pourLaRenovationDe": "50 € pour la rénovation de l'école de Kaolack",
+      "prevu": "Prévu",
+      "prevuEtRealise": "Prévu et réalisé",
+      "realise": "Réalisé",
+      "recitDeAssociation": "Récit de l'association",
+      "referenceInscription": "Référence d'inscription",
+      "renovationDeEcoleDe": "Rénovation de l'école de Kaolack",
+      "repartitionDuDonKits": "Répartition du don : 70 % kits scolaires, 30 % transport du matériel",
+      "reseau": "Réseau",
+      "resteDisponible": "reste disponible",
+      "sallesRenovees": "salles rénovées",
+      "telechargerLePdf": "Télécharger le PDF",
+      "transportDuMateriel": "Transport du matériel",
+      "transportDuMaterielAvril": "Transport du matériel<t0>, 2 avril</t0>",
+      "travauxDeRenovation": "Travaux de rénovation",
+      "utilisePourDesDepenses": "Utilisé pour des dépenses",
+      "valeursLuesDirectementDans": "Valeurs lues directement dans le registre public : 50,00 €, le 15 mars, empreinte du reçu <t0>7f3a…c21e</t0>.",
+      "verifierCeDon": "Vérifier ce don",
+      "voirLaTracabilite": "Voir la traçabilité",
+      "voirLesDepensesFinancees": "Voir les dépenses financées",
+      "voirUnExempleDe": "Voir un exemple de bilan",
+      "vosOntFinanceDes": "Vos 50 € ont financé des kits scolaires et leur transport.",
+      "votreDonDeEst": "Votre don de 50 € est confirmé. Le reçu fiscal part aussitôt.",
+      "votreDonLaisseUne": "Votre don a laissé une trace que personne ne peut effacer ni modifier sans que cela se voie."
     },
     "steps": {
-      "items": [
-        {
-          "num": "1",
-          "text": "Parcourez les campagnes en cours. Choisissez celle qui vous parle.",
-          "title": "Choisissez votre projet"
-        },
-        {
-          "num": "2",
-          "text": "Vous choisissez le montant, vous payez en sécurité. Aucun frais pour vous, et le reçu fiscal part aussitôt.",
-          "title": "Faites votre don"
-        },
-        {
-          "num": "3",
-          "text": "Votre espace vous montre ce que l'association a payé, et quand.",
-          "title": "Suivez l'impact"
-        }
-      ],
-      "label": "Comment ça marche",
-      "title": "Trois étapes, deux minutes"
+      "choisissezVotreProjet": "Choisissez votre projet",
+      "commentCaMarche": "Comment ça marche",
+      "faitesVotreDon": "Faites votre don",
+      "parcourezLesCampagnesEn": "Parcourez les campagnes en cours. Choisissez celle qui vous parle.",
+      "suivezImpact": "Suivez l'impact",
+      "troisEtapesDeuxMinutes": "Trois étapes, deux minutes",
+      "votreEspaceVousMontre": "Votre espace vous montre ce que l'association a payé depuis CommonLink, et quand.",
+      "vousChoisissezLeMontant": "Vous choisissez le montant, puis vous payez en sécurité sur la page de paiement HelloAsso. Aucun frais pour vous : la contribution volontaire que HelloAsso vous propose est facultative. Le reçu fiscal part aussitôt."
     }
   },
   "footer": {
@@ -196,13 +334,12 @@
       "title": "Pour associations"
     },
     "bottom": {
-      "legal": "© {year} CommonLink SAS · RCS Antibes 105 153 928 · ORIAS 26010395",
-      "payments": "Paiements opérés par des prestataires agréés · Plateforme hébergée en France"
+      "legal": "© {year} CommonLink SAS, RCS Antibes 105 153 928, ORIAS 26010395",
+      "payments": "Paiements opérés par des prestataires agréés. Plateforme hébergée en France."
     },
     "brand": {
-      "badgeOrias": "ORIAS 26010395",
-      "badgeSecure": "Don sécurisé",
-      "description": "La plateforme de dons qui publie chaque paiement effectué par les associations."
+      "description": "La plateforme de dons qui publie chaque paiement effectué par les associations.",
+      "orias": "ORIAS 26010395"
     },
     "donors": {
       "donate": "Faire un don",
@@ -223,253 +360,176 @@
         "transparency": "Transparence"
       },
       "title": "Informations réglementaires"
-    }
+    },
+    "logo": "Common<accent>Link</accent>"
   },
   "landing": {
     "asso": {
-      "ctaCreate": "Créer ma campagne",
-      "ctaTarifs": "Voir les tarifs",
-      "label": "Pour les associations",
-      "monthLabel": "Ce mois-ci",
-      "progressAmount": "4 280 € collectés",
-      "progressLabel": "Avancement campagne principale",
-      "progressPercent": "71%",
-      "statCollected": "Dons collectés",
-      "statCollectedValue": "2 840 €",
-      "statExpenses": "Paiements publiés",
-      "statExpensesValue": "4",
-      "statNewDonors": "Nouveaux donateurs",
-      "statNewDonorsValue": "+23",
-      "steps": [
-        {
-          "num": "1",
-          "text": "Votre histoire, votre budget, votre objectif. La page part en ligne dès que votre compte d'encaissement est ouvert.",
-          "title": "Créez votre campagne"
-        },
-        {
-          "num": "2",
-          "text": "Carte ou virement SEPA, et bientôt le don mensuel. L'argent arrive sur votre compte bancaire, jamais sur le nôtre.",
-          "title": "Recevez les dons"
-        },
-        {
-          "num": "3",
-          "text": "Payez vos fournisseurs depuis CommonLink. Le paiement s'affiche aussitôt. Aucun justificatif à fournir.",
-          "title": "Payez depuis la plateforme"
-        }
-      ],
-      "text": "Votre page se monte simplement. Vos paiements se publient tout seuls. Vos donateurs voient le travail avancer.",
-      "title": "Collectez, et montrez ce que vous en faites",
-      "visualLabel": "Dashboard Association"
+      "avancementDeLaCampagne": "Avancement de la campagne principale",
+      "collectes": "4 280 € collectés",
+      "collectezEtMontrezCe": "Collectez, et montrez ce que vous en faites",
+      "creerMaCampagne": "Créer ma campagne",
+      "creezVotreCampagne": "Créez votre campagne",
+      "donsCollectes": "Dons collectés",
+      "exemple": "Exemple",
+      "nouveauxDonateurs": "Nouveaux donateurs",
+      "paiementsPublies": "Paiements publiés",
+      "parCarteBancaireEt": "Par carte bancaire, et bientôt le don mensuel. L'argent arrive sur votre compte, jamais sur le nôtre.",
+      "payezDepuisLaPlateforme": "Payez depuis la plateforme",
+      "pourLesAssociations": "Pour les associations",
+      "recevezLesDons": "Recevez les dons",
+      "reglezVosDepensesDepuis": "Réglez vos dépenses depuis CommonLink. Le paiement s'affiche aussitôt, sans aucun document à fournir.",
+      "tableauDeBordCe": "Tableau de bord, ce mois-ci",
+      "voirLesTarifs": "Voir les tarifs",
+      "votreHistoireVotreBudget": "Votre histoire, votre budget, votre objectif. La page part en ligne dès que votre compte de paiement est ouvert.",
+      "votrePageSeMonte": "Votre page se monte simplement. Vos paiements se publient tout seuls. Vos donateurs voient le travail avancer."
     },
     "campaigns": {
-      "ctaAll": "Voir tous les projets",
+      "campagnesEnCours": "Campagnes en cours",
       "ctaDonate": "Faire un don",
-      "emptyText": "Les premières campagnes arrivent. Revenez très vite.",
-      "emptyTitle": "Rien pour l'instant !",
-      "label": "Campagnes en cours",
+      "ilsCollectentEnCe": "Ils collectent en ce moment",
+      "lesPremieresCampagnesArrivent": "Les premières campagnes arrivent. Revenez très vite.",
       "milestones": "{count, plural, =0 {aucun jalon} one {# jalon} other {# jalons}}",
-      "title": "Ils collectent en ce moment"
+      "rienPourInstant": "Rien pour l'instant !",
+      "voirTousLesProjets": "Voir tous les projets"
+    },
+    "causes": {
+      "ALIMENTATION": "Alimentation",
+      "ANIMAUX": "Animaux",
+      "AUTRE": "Autre",
+      "CULTURE": "Culture",
+      "DROITS_CITOYENNETE": "Droits & citoyenneté",
+      "ENFANCE_EDUCATION": "Enfance & éducation",
+      "ENVIRONNEMENT": "Environnement",
+      "HANDICAP": "Handicap",
+      "SANTE": "Santé",
+      "SOLIDARITE": "Solidarité",
+      "SPORT": "Sport"
     },
     "hero": {
-      "ctaCreate": "Créer une campagne",
-      "ctaDonate": "Faire un don",
-      "floatAmount": "2 840 €",
-      "floatLabel": "collectés ce mois",
-      "floatLastExpense": "Repas bénévoles · 480 €",
-      "floatLastExpenseLabel": "Dernière dépense publiée",
-      "floatPublished": "Paiement publié",
-      "floatRealtime": "En temps réel",
-      "subtitle": "Donnez à une association. Elle paie ses fournisseurs depuis CommonLink. Chaque paiement s'affiche sur la page du projet.",
-      "title": "La plateforme de dons où chaque euro",
-      "titleAccent": "révèle son impact.",
-      "trust": [
-        {
-          "strong": "Chaque paiement",
-          "text": "publié"
-        },
-        {
-          "strong": "Reçu fiscal",
-          "text": "immédiat"
-        },
-        {
-          "strong": "0 €",
-          "text": "de frais pour vous"
-        }
-      ],
-      "visualAssoc": "Sourires Solidaires",
-      "visualProject": "Cantine solidaire — Bordeaux"
+      "achatDeDenreesAlimentaires": "Achat de denrées alimentaires<t0>, 15 sept. 2026</t0>",
+      "associationAcheteSesDenrees": "L'association achète ses denrées chez Grossiste Bio Bordeaux. Votre don y contribue.",
+      "chaquePaiementPublie": "<t0>Chaque paiement</t0> publié",
+      "creerUneCampagne": "Créer une campagne",
+      "data": {
+        "captionFlow": "Cliquez sur la dépense pour voir où est allé votre don.",
+        "captionTrace": "Survolez l'anneau pour voir chaque part de votre don.",
+        "cardTitleFlow": "Suivez un don",
+        "cardTitleTrace": "Traçabilité de votre don",
+        "segments": [
+          {
+            "label": "Achat de denrées alimentaires",
+            "short": "Denrées"
+          },
+          {
+            "label": "Location camion réfrigéré",
+            "short": "Location"
+          },
+          {
+            "label": "Remboursement de frais de transport",
+            "short": "Frais"
+          }
+        ],
+        "used": "utilisé"
+      },
+      "deFraisPourVous": "<t0>0 €</t0> de frais pour vous",
+      "depensesFinanceesParCe": "Dépenses financées par ce don",
+      "donRecu": "Don reçu",
+      "donnezUneAssociationElle": "Donnez à une association. Elle règle ses dépenses depuis CommonLink. Chaque paiement s'affiche sur la page du projet.",
+      "exemple": "Exemple",
+      "faireUnDon": "Faire un don",
+      "laPlateformeDeDons": "La plateforme de dons où chaque euro <t0>révèle son impact.</t0>",
+      "locationCamionRefrigereOct": "Location camion réfrigéré<t0>, 06 oct. 2026</t0>",
+      "montantDejaUtilise": "Montant déjà utilisé",
+      "montantEtDestinataireVisibles": "Montant et destinataire, visibles par tous.",
+      "montantPasEncoreUtilise": "Montant pas encore utilisé",
+      "niAssociationNiNous": "Ni l'association ni nous ne pouvons le modifier ensuite.",
+      "paiementPublie": "Paiement publié",
+      "payeDepuisCommonlink": "Payé depuis CommonLink",
+      "publieSurLaPage": "Publié sur la page du projet",
+      "recuFiscalImmediat": "<t0>Reçu fiscal</t0> immédiat",
+      "remboursementDeFraisDe": "Remboursement de frais de transport<t0>, 09 oct. 2026</t0>",
+      "repartitionDuDonAchat": "Répartition du don : 70 % achat de denrées, 20 % location de camion, 10 % remboursement de frais",
+      "retourAuParcours": "← Retour au parcours",
+      "scelleDansLeRegistre": "Scellé dans le registre public",
+      "vousDonnezLaCantine": "Vous donnez à la cantine solidaire de Sourires Solidaires. Le reçu fiscal part aussitôt."
     },
     "partners": {
-      "items": [
-        {
-          "href": "https://www.ekads.fr/",
-          "name": "Ekads",
-          "role": "Visibilité en ligne",
-          "text": "Agence 100 % dédiée aux associations et organisations à but non lucratif, spécialisée dans la gestion de la bourse Google Ad Grants et en publicité digitale. Certifiée Google Partner."
-        },
-        {
-          "href": "https://www.samson-conseil.org/",
-          "name": "Samson Conseil et Formation",
-          "role": "Structuration et gouvernance",
-          "text": "Cabinet de conseil et de formation pour les organismes de l'économie sociale et solidaire. Gouvernance, modèle économique, structuration."
-        }
-      ],
-      "label": "Nos partenaires",
-      "note": "Nos partenaires n'interviennent ni dans la collecte, ni dans le traitement des dons.",
-      "subtitle": "Nous avançons avec des acteurs installés dans le secteur, sur la visibilité en ligne et sur la structuration des organisations.",
-      "title": "Ils connaissent le monde associatif"
+      "agenceDedieeAuxAssociations": "Agence 100 % dédiée aux associations et organisations à but non lucratif, spécialisée dans la gestion de la bourse Google Ad Grants et en publicité digitale. Certifiée Google Partner.",
+      "cabinetDeConseilEt": "Cabinet de conseil et de formation pour les organismes de l'économie sociale et solidaire. Gouvernance, modèle économique, structuration.",
+      "ekads": "Ekads",
+      "ilsConnaissentLeMonde": "Ils connaissent le monde associatif",
+      "nosPartenaires": "Nos partenaires",
+      "nosPartenairesInterviennentNi": "Nos partenaires n'interviennent ni dans la collecte, ni dans le traitement des dons.",
+      "nousAvanconsAvecDes": "Nous avançons avec des acteurs installés dans le secteur, sur la visibilité en ligne et sur la structuration des organisations.",
+      "samsonConseilEtFormation": "Samson Conseil et Formation",
+      "structurationEtGouvernance": "Structuration et gouvernance",
+      "visibiliteEnLigne": "Visibilité en ligne"
     },
     "projects": {
-      "breadcrumbCurrent": "Projets",
-      "breadcrumbHome": "Accueil",
-      "emptyText": "Les premières campagnes arrivent. Revenez très vite.",
-      "emptyTitle": "Rien pour l'instant !",
-      "subtitle": "Chaque page indique le budget prévu, le résultat attendu et les dépenses déjà publiées.",
-      "title": "Tous les projets",
       "filters": {
         "all": "Tous",
-        "more": "Plus",
-        "less": "Moins",
         "causesLabel": "Filtrer par cause",
-        "seeAlso": "Voir aussi :",
-        "scopeLabel": "Filtrer par portée",
-        "scope": {
-          "all": "Toutes portées",
-          "LOCALE": "Locale",
-          "NATIONALE": "Nationale",
-          "INTERNATIONALE": "Internationale"
-        },
+        "less": "Moins",
+        "more": "Plus",
+        "noMatch": "Aucune campagne ne correspond à ces filtres.",
         "proximity": {
-          "toggle": "Près de chez moi",
+          "around": "Autour de {label}",
+          "change": "Changer",
+          "localEmpty": "Aucune campagne locale dans ce rayon.",
+          "nationalBlock": "Partout en France",
+          "noResult": "Aucune commune trouvée",
+          "off": "Désactiver",
           "placeholder": "Ville ou code postal",
           "radiusLabel": "Rayon",
           "radiusOption": "{km} km",
-          "around": "Autour de {label}",
-          "change": "Changer",
-          "off": "Désactiver",
-          "searching": "Recherche…",
-          "noResult": "Aucune commune trouvée",
           "searchError": "Recherche indisponible pour le moment",
-          "nationalBlock": "Partout en France",
-          "localEmpty": "Aucune campagne locale dans ce rayon."
+          "searching": "Recherche…",
+          "toggle": "Près de chez moi"
         },
-        "noMatch": "Aucune campagne ne correspond à ces filtres.",
-        "reset": "Réinitialiser les filtres"
+        "reset": "Réinitialiser les filtres",
+        "scope": {
+          "INTERNATIONALE": "Internationale",
+          "LOCALE": "Locale",
+          "NATIONALE": "Nationale",
+          "all": "Toutes portées"
+        },
+        "scopeLabel": "Filtrer par portée",
+        "seeAlso": "Voir aussi :"
       }
     },
-    "transparency": {
-      "ctaLabel": "Voir comment suivre un don",
-      "features": [
-        {
-          "icon": "📋",
-          "text": "Chaque paiement publié, avec son montant et son destinataire"
-        },
-        {
-          "icon": "🔐",
-          "text": "Chaque paiement scellé dans un registre public"
-        },
-        {
-          "icon": "📊",
-          "text": "Un bilan publié par l'association à la clôture"
-        },
-        {
-          "icon": "🧾",
-          "text": "Reçu fiscal automatique (Cerfa n° 11580*05)"
-        }
-      ],
-      "label": "Transparence",
-      "text": "L'association paie un fournisseur, le paiement apparaît sur la page du projet. Montant et bénéficiaire compris.",
-      "timeline": [
-        {
-          "date": "15 jan. 2025 · 14:32",
-          "status": "done",
-          "text": "50 € confirmés par carte",
-          "title": "Don reçu"
-        },
-        {
-          "date": "15 jan. 2025 · 14:33",
-          "status": "done",
-          "text": "Le don est scellé dans le registre public",
-          "title": "Crédité sur le compte de l'association"
-        },
-        {
-          "date": "18 jan. 2025 · 09:15",
-          "status": "done",
-          "text": "Achat de denrées — 480 €",
-          "title": "Paiement publié"
-        },
-        {
-          "date": "18 jan. 2025 · 10:02",
-          "status": "done",
-          "text": "Destinataire et montant sur la page du projet",
-          "title": "Visible par tous"
-        },
-        {
-          "date": "En cours…",
-          "status": "current",
-          "text": "Publié par l'association à la clôture",
-          "title": "Bilan d'impact"
-        }
-      ],
-      "timelineLabel": "Le parcours de votre don",
-      "title": "Suivez l'argent, étape par étape"
-    },
     "trust": {
-      "items": [
-        {
-          "icon": "🧾",
-          "text": "Votre reçu part dès que le don est confirmé. En général 66 % du montant en réduction d'impôt, selon votre situation.",
-          "title": "Reçu fiscal automatique"
-        },
-        {
-          "icon": "📑",
-          "text": "Montant, destinataire, date. Visible par tous, sur la page du projet.",
-          "title": "Paiements publiés"
-        },
-        {
-          "icon": "🔒",
-          "text": "Chaque paiement publié est scellé dans un registre public. Personne ne peut le modifier ensuite.",
-          "title": "Registre sécurisé"
-        }
-      ],
-      "label": "Confiance & Sécurité",
-      "title": "Trois engagements, sur chaque don"
+      "chaquePaiementPublieEst": "Chaque paiement publié est scellé dans un registre public. Personne ne peut le modifier ensuite.",
+      "confianceEtSecurite": "Confiance et sécurité",
+      "montantDestinataireDateVisible": "Montant, destinataire, date. Visible par tous, sur la page du projet.",
+      "paiementsPublies": "Paiements publiés",
+      "recuFiscalAutomatique": "Reçu fiscal automatique",
+      "registreSecurise": "Registre sécurisé",
+      "troisEngagementsSurChaque": "Trois engagements, sur chaque don",
+      "votreRecuPartDes": "Votre reçu part dès que le don est confirmé. En général 66 % du montant en réduction d'impôt, selon votre situation."
     },
     "why": {
-      "items": [
-        {
-          "icon": "💸",
-          "text": "Carte ou virement SEPA, et bientôt le don mensuel. Trois clics, et votre reçu arrive.",
-          "title": "Donnez simplement"
-        },
-        {
-          "icon": "📊",
-          "text": "Vos dons et ce qu'ils ont financé. Montants, dates, destinataires, à jour en direct.",
-          "title": "Suivez l'impact"
-        },
-        {
-          "icon": "🔒",
-          "text": "Chaque paiement publié est scellé dans un registre public. Ni l'association ni nous ne pouvons le modifier ensuite.",
-          "title": "Vérifiez par vous-même"
-        }
-      ],
-      "label": "Pourquoi CommonLink",
-      "subtitle": "Les associations paient leurs fournisseurs depuis la plateforme. Chaque paiement est publié aussitôt. Vous n'avez rien à demander.",
-      "title": "Donner sans se demander",
-      "titleAccent": "où va l'argent"
-    },
-    "causes": {
-      "SOLIDARITE": "Solidarité",
-      "ALIMENTATION": "Alimentation",
-      "SANTE": "Santé",
-      "ENFANCE_EDUCATION": "Enfance & éducation",
-      "ANIMAUX": "Animaux",
-      "HANDICAP": "Handicap",
-      "ENVIRONNEMENT": "Environnement",
-      "CULTURE": "Culture",
-      "SPORT": "Sport",
-      "DROITS_CITOYENNETE": "Droits & citoyenneté",
-      "AUTRE": "Autre"
+      "achatDeDenreesAlimentaires": "Achat de denrées alimentaires",
+      "cantineSolidaireSouriresSolidaires": "Cantine solidaire, Sourires Solidaires",
+      "chaquePaiementPublieEst": "Chaque paiement publié est scellé dans un registre public. Ni l'association ni nous ne pouvons le modifier ensuite.",
+      "donnerSansSeDemander": "Donner sans se demander où va l'argent",
+      "donnezSimplement": "Donnez simplement",
+      "empreinte": "Empreinte 7f3a…c21e",
+      "empreinte2": "Empreinte c4e0…9a7b",
+      "empreinteFd": "Empreinte 2b91…04fd",
+      "exemple": "Exemple",
+      "grossisteBioBordeauxJanv": "Grossiste Bio Bordeaux, 15 janv.",
+      "lesAssociationsReglentLeurs": "Les associations règlent leurs dépenses depuis la plateforme. Chaque paiement est publié aussitôt. Vous n'avez rien à demander.",
+      "locationCamionRefrigere": "Location camion réfrigéré",
+      "paiementsPublies": "Paiements publiés",
+      "parCarteBancaireEt": "Par carte bancaire, et bientôt le don mensuel. En quelques clics, votre reçu arrive.",
+      "personnePhysiqueNomNon": "Personne physique, nom non publié, 20 janv.",
+      "pourquoiCommonlink": "Pourquoi CommonLink",
+      "remboursementDeFraisDe": "Remboursement de frais de transport",
+      "steTransportRapideJanv": "Sté Transport Rapide, 18 janv.",
+      "suivezImpact": "Suivez l'impact",
+      "verifiezParVousMeme": "Vérifiez par vous-même",
+      "vosDonsEtCe": "Vos dons et ce qu'ils ont financé. Montants, dates, destinataires, à jour en direct."
     }
   },
   "legal": {
@@ -1196,7 +1256,8 @@
             "Par téléphone, au 04 23 40 02 06, au tarif normal depuis un poste fixe. Si nous ne pouvons pas répondre immédiatement à votre demande, nous vous inviterons à nous la confirmer par écrit. Les délais ci-dessous courent alors à compter de votre écrit."
           ],
           "paragraphs": [
-            "Si vous adressez votre réclamation à un autre de nos contacts, elle sera transmise à notre service réclamations. Vous n'aurez pas à refaire votre démarche."
+            "Si vous adressez votre réclamation à un autre de nos contacts, elle sera transmise à notre service réclamations. Vous n'aurez pas à refaire votre démarche.",
+            "Une réclamation sur le paiement de votre don est reçue et suivie par nous. Lorsque seul le prestataire de paiement peut y répondre, par exemple pour la contribution volontaire versée à HelloAsso, nous la lui transmettons, nous vous en informons et nous vous indiquons son service de réclamations."
           ],
           "title": "Comment nous saisir"
         },
@@ -1268,7 +1329,7 @@
       "privacy": "/politique-confidentialite"
     },
     "mentionsLegales": {
-      "lastUpdated": "Version en vigueur au 28 septembre 2026",
+      "lastUpdated": "Version en vigueur au 17 novembre 2026",
       "sections": [
         {
           "paragraphs": [
@@ -1293,9 +1354,9 @@
         },
         {
           "paragraphs": [
-            "Les dons ne transitent jamais par CommonLink. Chaque association dispose d'un compte ouvert à son nom auprès de Mollie, établissement de monnaie électronique agréé aux Pays-Bas et supervisé par la banque centrale néerlandaise. Les dons y sont encaissés pour le compte de l'association, sur des fonds cantonnés et séparés de ceux de Mollie, puis versés sur son compte bancaire.",
+            "Les dons ne transitent jamais par CommonLink. Chaque association dispose d'un compte ouvert à son nom auprès de l'un des prestataires de paiement de la plateforme : HelloAsso, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 17678Q, proposé en priorité aux associations et fonds de dotation établis en France, ou Mollie, établissement de monnaie électronique agréé aux Pays-Bas et supervisé par la banque centrale néerlandaise, pour les organismes qui n'encaissent pas par HelloAsso. Chez chacun de ces prestataires, les sommes de l'association sont cantonnées : elles sont séparées des fonds du prestataire. Le donateur règle son don sur la page de paiement du prestataire. Le don est encaissé sur le compte de l'association, puis versé sur son compte bancaire.",
             "CommonLink n'encaisse, ne conserve et ne reverse aucun don. Les sommes collectées ne figurent à aucun moment dans ses comptes, et elle ne peut ni se les approprier, ni en disposer.",
-            "CommonLink est rémunérée par l'association au moyen d'une facture mensuelle, réglée séparément des dons. Aucun montant n'est prélevé sur les dons collectés.",
+            "CommonLink est rémunérée par l'association par une commission, prélevée sur son compte séparément des dons. Aucun montant n'est déduit des dons collectés.",
             "Lorsqu'une association paie un bénéficiaire depuis la plateforme, le virement part de son propre compte bancaire, par l'intermédiaire de Bridge, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 16918. Il est autorisé par son représentant légal, qui s'authentifie auprès de sa banque. Ni CommonLink, ni Bridge ne détiennent les fonds à un quelconque moment. CommonLink ne peut pas déclencher ce virement à la place du représentant légal, ni l'annuler une fois qu'il a été autorisé."
           ],
           "title": "Circuit des fonds"
@@ -1345,13 +1406,13 @@
         {
           "paragraphs": [
             "L'organisme bénéficiaire établit et délivre le reçu fiscal. Il est seul responsable de son éligibilité au régime fiscal du mécénat et de la régularité du document.",
-            "CommonLink met à sa disposition un outil d'émission et transmet le reçu au donateur pour son compte. Elle ne vérifie pas l'éligibilité de l'organisme et ne garantit ni la validité du reçu, ni l'obtention d'une réduction d'impôt."
+            "CommonLink met à sa disposition un outil d'émission et transmet le reçu au donateur pour son compte. Elle ne vérifie pas l'éligibilité de l'organisme et ne garantit ni la validité du reçu, ni l'obtention d'une réduction d'impôt. Le reçu porte sur le seul montant du don."
           ],
           "title": "5. Reçu fiscal"
         },
         {
           "paragraphs": [
-            "Les sommes versées par le donateur sont encaissées sur un compte ouvert au nom de l'organisme bénéficiaire, puis versées sur son compte bancaire. Elles ne transitent à aucun moment par CommonLink."
+            "Le don est encaissé sur un compte ouvert au nom de l'organisme bénéficiaire auprès de son prestataire de paiement, puis versé sur son compte bancaire. Il ne transite à aucun moment par CommonLink. La contribution volontaire que le donateur peut verser à HelloAsso ne fait pas partie du don."
           ],
           "title": "6. Les fonds"
         },
@@ -1380,6 +1441,7 @@
         "title": "L'intermédiaire"
       },
       "intro": "Ce document décrit le cadre applicable à tout don effectué sur CommonLink. Il n'y a rien à signer : il est mis à votre disposition avant votre don, conformément à la réglementation applicable aux intermédiaires en financement participatif.",
+      "lastUpdated": "Version en vigueur au 17 novembre 2026",
       "meta": "Mis à disposition en application de l'article R.548-10 I du code monétaire et financier",
       "parties": {
         "donor": "Le donateur, personne physique identifiée lors de son don par ses nom, prénom, adresse postale et adresse électronique.",
@@ -1413,15 +1475,24 @@
         "donation": {
           "p1": "Nous collectons vos nom, prénom, adresse postale et adresse électronique, ainsi que la date, le montant et le moyen de paiement de votre don, et la version des conditions générales que vous avez acceptée avec sa date.",
           "p2": "Ces informations servent à réaliser votre don, à établir votre reçu fiscal, à vous permettre de suivre l'utilisation des fonds si vous créez un espace personnel, et à respecter nos obligations légales.",
-          "p3": "Vous pouvez également renseigner votre date de naissance. Elle est facultative, elle n'est pas conservée, et elle sert uniquement à éviter qu'une homonymie avec une personne figurant sur une liste de gel des avoirs fasse refuser votre don.",
+          "p3": "Votre don est réglé sur la page de paiement du prestataire de l'association, HelloAsso ou Mollie. Pour vous éviter une double saisie, nous lui transmettons vos nom, prénom, adresse électronique, adresse postale et pays. Vos données de carte bancaire sont saisies sur la page du prestataire ; nous n'y avons pas accès.",
+          "p4": "Vous pouvez également renseigner votre date de naissance. Elle est facultative, elle n'est pas conservée, et elle sert uniquement à éviter qu'une homonymie avec une personne figurant sur une liste de gel des avoirs fasse refuser votre don.",
           "title": "Si vous faites un don"
         },
         "org": {
           "p1": "Nous collectons la dénomination, l'adresse du siège, la forme juridique, l'année de création, le numéro d'enregistrement au répertoire national des associations ou le numéro SIREN, l'identité du représentant légal, les coordonnées bancaires, et la version des conditions générales acceptée avec sa date.",
-          "p2": "Nous vous demandons également trois documents : vos statuts, votre récépissé de déclaration ou votre insertion au Journal officiel, et la pièce d'identité de votre représentant légal.",
-          "p3": "Ces informations et ces documents servent à vérifier l'existence et l'identité de la structure, à permettre la collecte, et à respecter nos obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
-          "p4": "Nous produisons également, à partir de ces informations, des alertes de vigilance lorsqu'un contrôle le nécessite.",
+          "p2": "Vos coordonnées bancaires servent aussi au prélèvement de notre commission, sur la base du mandat de prélèvement SEPA que vous signez. Ce prélèvement est exécuté par notre banque, Qonto.",
+          "p3": "Nous vous demandons également trois documents : vos statuts, votre récépissé de déclaration ou votre insertion au Journal officiel, et la pièce d'identité de votre représentant légal.",
+          "p4": "Ces informations et ces documents servent à vérifier l'existence et l'identité de la structure, à permettre la collecte, et à respecter nos obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
+          "p5": "Nous produisons également, à partir de ces informations, des alertes de vigilance lorsqu'un contrôle le nécessite.",
+          "p6": "Si vous encaissez par HelloAsso, nous conservons aussi, sous forme chiffrée, les éléments d'accès à votre compte HelloAsso, et la trace de l'autorisation que vous nous donnez : qui l'a donnée, quand, et sur quelle version du texte. HelloAsso nous adresse également des notifications sur les autres paiements de votre association, comme les adhésions ou la billetterie : nous les écartons dès leur réception, sans les conserver ni les exploiter. Les documents que HelloAsso vous demande pour sa propre vérification lui sont transmis directement ; nous ne les recevons pas.",
           "title": "Si vous inscrivez une association ou un fonds de dotation"
+        },
+        "payee": {
+          "p1": "Lorsqu'une association vous verse une somme depuis CommonLink, elle nous communique votre nom, ou celui de votre entreprise, et vos coordonnées bancaires, avec le montant, la date et la nature de la dépense. Ces informations servent à préparer le virement, que Bridge exécute, à le publier sur la page de la campagne et à respecter nos obligations légales.",
+          "p2": "Si vous êtes une personne physique, votre nom n'est ni publié ni inscrit dans le registre public : le paiement apparaît avec la nature de la dépense et son montant, et une rémunération apparaît dans un montant groupé. Si vous êtes un professionnel immatriculé payé pour votre activité, votre nom est publié comme celui de toute entreprise.",
+          "p3": "Nous traitons ces informations au titre de notre intérêt légitime à rendre compte de l'usage des dons, et pour respecter nos obligations légales.",
+          "title": "Si une association vous paie depuis la plateforme"
         },
         "title": "Ce que nous collectons, et pourquoi"
       },
@@ -1436,7 +1507,7 @@
         "p3": "Une fois reçues, vos données sont traitées dans les conditions décrites sur la présente page.",
         "title": "Les pages de collecte hébergées par une association"
       },
-      "lastUpdated": "Version en vigueur au 28 septembre 2026",
+      "lastUpdated": "Version en vigueur au 17 novembre 2026",
       "protection": {
         "p1": "Cette page explique quelles informations nous collectons, pourquoi, combien de temps nous les gardons, qui y a accès et comment vous pouvez agir dessus.",
         "title": "Protection de vos données personnelles"
@@ -1444,7 +1515,7 @@
       "recipients": {
         "p1": "<b>L'organisme bénéficiaire de votre don.</b> Il connaît votre identité, notamment parce que c'est lui le déclarant de votre reçu fiscal. Il ne peut en faire aucun autre usage que ceux liés à cette obligation et à la relation avec ses donateurs. Si vous avez choisi de ne pas apparaître publiquement sur la page de campagne, votre nom n'est pas affiché, mais l'organisme le connaît.",
         "p2": "<b>Nos prestataires techniques.</b> Vercel, qui héberge le site vitrine. Clever Cloud, qui héberge la plateforme en France. Proton, qui achemine nos courriers électroniques, y compris votre reçu fiscal.",
-        "p3": "<b>Les prestataires de paiement.</b> Le prestataire qui encaisse les dons et l'établissement de paiement qui exécute les virements traitent vos données pour leur propre compte, dans les conditions qu'ils publient. Ils ne sont pas nos sous-traitants.",
+        "p3": "<b>Les prestataires de paiement.</b> HelloAsso ou Mollie, selon l'association que vous soutenez, encaisse votre don. Bridge exécute les virements que les associations font depuis la plateforme. Ils traitent vos données pour leur propre compte, dans les conditions qu'ils publient. Ils ne sont pas nos sous-traitants.",
         "p4": "Nous ne vendons ni ne louons vos données. La plateforme est hébergée dans l'Union européenne. Notre service de messagerie est établi en Suisse, pays reconnu par la Commission européenne comme offrant un niveau de protection adéquat. L'hébergeur du site vitrine, Vercel, est une société établie aux États-Unis : les données de connexion au site vitrine peuvent y être transférées, dans le respect des garanties prévues par le règlement européen sur la protection des données. Aucun autre transfert en dehors de l'Union européenne n'est effectué.",
         "title": "Qui d'autre y accède"
       },
@@ -1462,6 +1533,12 @@
         "row3col2": "sept jours au plus",
         "row4col1": "Les données de votre espace personnel",
         "row4col2": "jusqu'à sa clôture, sous réserve des durées ci-dessus",
+        "row5col1": "Les éléments d'accès à votre compte HelloAsso",
+        "row5col2": "jusqu'à la déconnexion ou la fin du contrat, puis suppression",
+        "row6col1": "La trace de votre autorisation",
+        "row6col2": "six ans à compter de la fin de l'autorisation, puis suppression",
+        "row7col1": "Les informations sur un paiement reçu d'une association",
+        "row7col2": "cinq ans à compter du paiement, puis suppression ; la publication reste visible sur la page de la campagne",
         "title": "Combien de temps"
       },
       "rights": {
@@ -1487,10 +1564,11 @@
       },
       "hostedPages": {
         "p1": "Sur la page de don d'une campagne, l'association qui la porte peut activer ses propres outils de mesure ou de publicité, par exemple pour suivre les résultats d'une campagne Google Ad Grants. Ces outils sont bloqués par défaut : un bandeau vous permet de les accepter ou de les refuser, aussi simplement l'un que l'autre, et rien n'est déposé tant que vous n'avez pas fait votre choix. Ce choix est conservé treize mois. Ces outils relèvent de l'association concernée, dont les coordonnées figurent sur la page de don.",
-        "p2": "Lorsqu'une association met en ligne, sur son propre site, une page de collecte fournie par CommonLink, elle en est l'éditrice, et ce sont ses propres mentions légales et sa propre politique de confidentialité qui s'appliquent à cette page.",
+        "p2": "Pour payer, vous êtes dirigé vers la page de paiement du prestataire de l'association, par exemple HelloAsso. Cette page relève de sa propre politique de cookies.",
+        "p3": "Lorsqu'une association met en ligne, sur son propre site, une page de collecte fournie par CommonLink, elle en est l'éditrice, et ce sont ses propres mentions légales et sa propre politique de confidentialité qui s'appliquent à cette page.",
         "title": "Les pages de don"
       },
-      "lastUpdated": "Version en vigueur au 28 septembre 2026",
+      "lastUpdated": "Version en vigueur au 17 novembre 2026",
       "logs": {
         "linkLabel": "politique de confidentialité",
         "p1": "Indépendamment des cookies, nos hébergeurs conservent pendant sept jours au plus des journaux de connexion contenant notamment votre adresse IP. Ils ne servent qu'au diagnostic d'incident et à la sécurité du service. Le détail figure dans notre <link>politique de confidentialité</link>.",
@@ -1593,56 +1671,57 @@
     "donors": "Donateurs",
     "home": "CommonLink — Accueil",
     "login": "Connexion",
+    "logo": "Common<accent>Link</accent>",
     "main": "Navigation principale",
     "menuClose": "Fermer le menu",
     "menuOpen": "Ouvrir le menu",
-    "mobile": "Navigation mobile",
     "projects": "Projets",
     "tarifs": "Tarifs"
   },
   "tarifs": {
     "asso": {
-      "billedText": "Sur la base des dons encaissés dans le mois. Réglé par virement, au plus tard à la fin du mois suivant.",
-      "billedTitle": "Facturé en fin de mois",
-      "flowClaimPre": "Sur 100 € collectés,",
-      "flowClaimStrong": "votre association reçoit 100 €.",
-      "flowNote": "La commission n'est jamais prélevée sur les dons. Elle est facturée à part, en fin de mois, et réglée par virement au plus tard à la fin du mois suivant.",
-      "flowTitle": "Ce qui arrive sur votre compte",
-      "footNote": "* Commission soumise à la TVA au taux normal.",
-      "label": "Pour les associations",
-      "notPayItems": [
-        "Abonnement",
-        "Frais d'ouverture",
-        "Frais par transaction",
-        "Frais de virement",
-        "Frais de sortie",
-        "Minimum de facturation"
-      ],
-      "notPayTitle": "Ce que vous ne payez pas",
-      "soloText": "Vous pouvez cesser d'utiliser CommonLink à tout moment, et vous ne payez que les mois où vous collectez.",
-      "soloTitle": "Sans engagement",
-      "title": "Une commission unique, rien d'autre"
+      "arretezQuandVousVoulez": "Arrêtez quand vous voulez, avec un préavis d'un mois. Vous ne payez que les mois où vous collectez.",
+      "arriventSurVotreCompte": "100 € arrivent sur votre compte.",
+      "associationsEtFondsDe": "Associations et fonds de dotation établis en France. 10 % HT hors de France, dès l'ouverture du service.",
+      "ceQueVousNe": "Ce que vous ne payez pas",
+      "ceQuiArriveSur": "Ce qui arrive sur votre compte",
+      "data": {
+        "fees": [
+          "Abonnement",
+          "Frais d'ouverture",
+          "Frais par transaction",
+          "Frais de virement",
+          "Frais de sortie",
+          "Minimum de facturation"
+        ]
+      },
+      "htSurLesDons": "8 % HT <t0>sur les dons collectés</t0>",
+      "laCommissionEstPrelevee": "La commission est prélevée trente jours ouvrés plus tard : vous pouvez utiliser l'argent avant.",
+      "notreSeuleCommission": "Notre seule commission",
+      "pourLesAssociations": "Pour les associations",
+      "preleveeAutomatiquement": "Prélevée automatiquement",
+      "sansEngagement": "Sans engagement",
+      "soitTtc": "Soit 9,6 % TTC.",
+      "surCollectes": "Sur 100 € collectés,",
+      "trenteJoursOuvresApres": "Trente jours ouvrés après chaque don. Une facture récapitule chaque mois."
     },
     "donor": {
-      "claimPre": "Vous donnez 100 €,",
-      "claimStrong": "l'association reçoit 100 €.",
-      "label": "Pour les donateurs",
-      "text1": "100 % de votre don part à l'association que vous soutenez. Votre reçu fiscal porte sur le montant total.",
-      "text2": "CommonLink est rémunérée par l'association, à hauteur de 10 % hors taxes de sa collecte, soit 10 euros pour un don de 100 euros. Cette somme lui est facturée à part, elle n'est jamais retirée de votre don.",
-      "title": "Donner ne vous coûte rien"
+      "associationRecoit": "L'association reçoit",
+      "auPaiementHelloassoVous": "Au paiement, HelloAsso vous propose une contribution pour son propre service. Libre à vous.",
+      "donnerNeVousCoute": "Donner ne vous coûte rien",
+      "pourLesDonateurs": "Pour les donateurs",
+      "toutVotreDon": "Tout votre don",
+      "uneContributionFacultative": "Une contribution facultative",
+      "vaAssociationVotreRecu": "100 % va à l'association. Votre reçu fiscal porte sur tout votre don.",
+      "vousDonnez": "Vous donnez"
     },
     "hero": {
-      "assoLine": "Hors taxes, sur les dons collectés. Aucun autre frais.",
-      "assoNum": "10",
-      "assoUnit": "%",
-      "assoWho": "Vous êtes une association",
-      "donLine": "Vous ne payez rien. 100 % de votre don part à l'association.",
-      "donNum": "0",
-      "donUnit": "€",
-      "donWho": "Vous faites un don",
-      "label": "Tarifs",
-      "subtitle": "Deux réponses, selon que vous donnez ou que vous collectez.",
-      "title": "Qui paie quoi"
+      "choisirVotreProfil": "Choisir votre profil",
+      "choisissezVotreProfil": "Choisissez votre profil.",
+      "jeCollecte": "Je collecte",
+      "jeDonne": "Je donne",
+      "quiPaieQuoi": "Qui paie <t0>quoi</t0>",
+      "tarifs": "Tarifs"
     }
   },
   "transparency": {
@@ -1675,9 +1754,9 @@
       "label": "Exclusions",
       "title": "Ce que nous ne finançons pas",
       "withdrawText1": "Une campagne publiée peut être retirée si elle relève d'un cas exclu.",
-      "withdrawText2": "Depuis votre compte, sur la page d'une campagne, vous pouvez nous signaler ce qui vous semble poser problème et nous l'expliquer librement. Le signalement arrive directement à notre équipe conformité.",
+      "withdrawText2": "En bas de chaque page de campagne, un lien permet à toute personne de nous signaler ce qui lui semble poser problème et de l'expliquer librement, qu'elle ait donné ou non, et sans avoir besoin de compte. Le signalement arrive directement à notre équipe conformité.",
       "withdrawText3": "Nous l'examinons au regard des cas exclus décrits ci-dessus. L'association est informée de la décision, peut présenter ses observations et la contester. Chaque retrait est consigné avec son motif et sa date.",
-      "withdrawText4": "Si vous n'avez pas de compte, écrivez-nous à contact@common-link.org",
+      "withdrawText4": "Vous pouvez aussi nous écrire à contact@common-link.org",
       "withdrawTitle": "Retrait d'une campagne"
     },
     "fonds": {
@@ -1690,10 +1769,10 @@
       "closeTitle": "À la clôture d'une campagne",
       "label": "Circulation des fonds",
       "spendText1": "Les dépenses d'une campagne sont imputées aux dons reçus dans leur ordre d'arrivée, du plus ancien au plus récent.",
-      "spendText2": "Une association ne peut engager, depuis CommonLink, que les montants effectivement disponibles sur la campagne concernée.",
+      "spendText2": "Une association ne peut engager, depuis CommonLink, que les montants effectivement disponibles sur la campagne concernée, c'est-à-dire des dons déjà arrivés sur son compte bancaire. Avec HelloAsso, un don est réputé arrivé deux jours ouvrés après le virement de HelloAsso qui le contient, ou plus tôt si l'association en confirme la réception.",
       "spendTitle": "Comment les dépenses sont rattachées à une campagne",
-      "text1": "Les dons sont encaissés sur un compte ouvert au nom de l'association, puis versés sur son compte bancaire. Aucun versement n'est conditionné à l'atteinte de l'objectif de collecte.",
-      "text2": "Le calendrier de versement dépend du moyen de paiement choisi par le donateur. L'association suit à tout moment, depuis son espace, les montants en attente et les montants disponibles.",
+      "text1": "Les dons sont encaissés sur un compte ouvert au nom de l'association auprès de son prestataire de paiement, HelloAsso en priorité pour les associations et fonds de dotation établis en France, puis versés sur son compte bancaire. Aucun versement n'est conditionné à l'atteinte de l'objectif de collecte.",
+      "text2": "Avec HelloAsso, l'association choisit le rythme de versement dans son espace HelloAsso. À sa demande, les sommes sont versables sept jours ouvrés après chaque paiement ; en versement automatique, elles sont versées une fois par mois, vers le 10 du mois suivant. Ce calendrier est indiqué par HelloAsso à titre d'information, et des délais bancaires peuvent s'ajouter. L'association suit à tout moment, depuis son espace, les montants en attente et les montants disponibles.",
       "title": "Comment les fonds arrivent à l'association"
     },
     "hero": {
@@ -1701,7 +1780,7 @@
       "switchExclus": "Ce que nous ne finançons pas",
       "switchFonds": "La circulation des fonds",
       "switchQui": "Qui peut collecter",
-      "text": "Nous ne demandons aucun justificatif aux associations et nous ne vérifions aucune facture. Ce que nous publions, ce sont les paiements qu'elles effectuent depuis la plateforme, avec leur destinataire et leur montant.",
+      "text": "Nous ne demandons aux associations aucun document sur leurs dépenses. Ce que nous publions, ce sont les paiements qu'elles effectuent depuis la plateforme, avec leur destinataire et leur montant. Lorsque le destinataire est une personne, son nom n'est pas publié.",
       "title": "Qui peut collecter,",
       "titleAccent": "et comment l'argent circule."
     },
@@ -1709,7 +1788,8 @@
       "acceptText1": "CommonLink ne juge pas la valeur d'un projet et n'établit aucun classement entre les causes soutenues. Notre rôle est de vérifier qu'une campagne est présentée de façon complète, et qu'elle ne relève pas d'un cas exclu.",
       "acceptText2": "Une campagne ne peut pas être publiée sans les cinq éléments suivants, et cette vérification est automatique.",
       "acceptTitle": "Comment un projet est accepté",
-      "checkCallout": "Vous renseignez le budget prévisionnel de votre projet directement dans le formulaire de campagne. Aucun document ne vous est demandé : ni bilan, ni compte de résultat, ni facture, ni justificatif de dépense, ni rapport d'activité.",
+      "checkCallout": "Vous renseignez le budget prévisionnel de votre projet directement dans le formulaire de campagne. Nous ne vous demandons aucun document sur votre activité ou vos dépenses : ni bilan, ni compte de résultat, ni rapport d'activité.",
+      "checkProvider": "Votre prestataire de paiement procède de son côté à ses propres vérifications avant que vous puissiez recevoir des dons. HelloAsso vous demande à cette occasion des documents, comme vos statuts, la liste à jour des membres du bureau ou la pièce d'identité de votre représentant légal. Vous les lui transmettez directement ; CommonLink ne les reçoit pas.",
       "checkText": "Avant toute collecte, nous vérifions l'existence et l'identité de votre structure auprès des registres publics. Nous recueillons à cette fin votre dénomination, l'adresse de votre siège, votre forme juridique, votre numéro d'enregistrement au répertoire national des associations ou votre numéro SIREN, l'identité de votre représentant légal et vos coordonnées bancaires.",
       "checkTitle": "Ce que nous vérifions et ce que nous vous demandons",
       "criteriaItems": [
@@ -1737,6 +1817,17 @@
       ],
       "okTitle": "Conditions à remplir",
       "title": "Qui peut collecter sur CommonLink"
+    }
+  },
+  "projects": {
+    "section": {
+      "accueil": "Accueil",
+      "chaquePageIndiqueLe": "Chaque page indique le budget prévu, le résultat attendu et les dépenses déjà publiées.",
+      "filAriane": "Fil d'Ariane",
+      "lesPremieresCampagnesArrivent": "Les premières campagnes arrivent. Revenez très vite.",
+      "projets": "Projets",
+      "rienPourInstant": "Rien pour l'instant !",
+      "tousLesProjets": "Tous les projets"
     }
   }
 }

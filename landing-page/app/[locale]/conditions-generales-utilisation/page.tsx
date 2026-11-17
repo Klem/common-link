@@ -53,40 +53,43 @@ export default async function CguDonorsPage({ params }: { params: Promise<{ loca
 
   return (
     <main>
-      <LegalSubnav active="cguDonors" />
+      {/* The mockup scopes the legal-page classes under this container. */}
+      <div className="legal-page">
+        <LegalSubnav active="cguDonors" />
 
-      <div className="legal-hero">
-        <div className="max-w">
-          <h1>{t('title')}</h1>
-          <p className="legal-meta">{t('lastUpdated')}</p>
-        </div>
-      </div>
-
-      <div className="legal-body">
-        <div className="legal-toc-auto">
-          <strong>{tl('tocTitle')}</strong>
-          <ol>
-            {articles.map((article, i) => (
-              <li key={i}>
-                <a href={`#p14-a${i}`}>{article.title}</a>
-              </li>
-            ))}
-          </ol>
+        <div className="legal-hero">
+          <div className="max-w">
+            <h1>{t('title')}</h1>
+            <p className="legal-meta">{t('lastUpdated')}</p>
+          </div>
         </div>
 
-        <p>{t('intro')}</p>
+        <div className="legal-body">
+          <div className="legal-toc-auto">
+            <strong>{tl('tocTitle')}</strong>
+            <ol>
+              {articles.map((article, i) => (
+                <li key={i}>
+                  <a href={`#p14-a${i}`}>{article.title}</a>
+                </li>
+              ))}
+            </ol>
+          </div>
 
-        {articles.map((article, i) => (
-          <Fragment key={i}>
-            <h3 id={`p14-a${i}`}>{article.title}</h3>
-            {article.callout && <div className="legal-callout">{article.callout}</div>}
-            {article.paragraphs?.map((paragraph, j) => (
-              <p key={j}>
-                {paragraph.includes('<') ? t.rich(`articles.${i}.paragraphs.${j}`, linkTags) : paragraph}
-              </p>
-            ))}
-          </Fragment>
-        ))}
+          <p>{t('intro')}</p>
+
+          {articles.map((article, i) => (
+            <Fragment key={i}>
+              <h3 id={`p14-a${i}`}>{article.title}</h3>
+              {article.callout && <p>{article.callout}</p>}
+              {article.paragraphs?.map((paragraph, j) => (
+                <p key={j}>
+                  {paragraph.includes('<') ? t.rich(`articles.${i}.paragraphs.${j}`, linkTags) : paragraph}
+                </p>
+              ))}
+            </Fragment>
+          ))}
+        </div>
       </div>
     </main>
   );
