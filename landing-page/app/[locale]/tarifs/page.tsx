@@ -1,7 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { TarifsHero } from '@/components/sections/TarifsHero';
-import { TarifsDonor } from '@/components/sections/TarifsDonor';
-import { TarifsAsso } from '@/components/sections/TarifsAsso';
+import { Tarifs } from '@/components/sections/Tarifs';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -22,9 +20,7 @@ export default async function TarifsPage({ params }: { params: Promise<{ locale:
 
   return (
     <main>
-      <TarifsHero />
-      <TarifsDonor />
-      <TarifsAsso />
+      <Tarifs />
     </main>
   );
 }

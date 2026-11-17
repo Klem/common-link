@@ -3,251 +3,90 @@ import { Link } from '@/i18n/navigation';
 import { APP_URL } from '@/lib/constants';
 
 /**
- * Hero de la page « Associations ».
- * Markup, classes et styles inline repris à l'identique de la maquette
- * (`CommonLink UI V2 Julian.html`, page 3 — `p3-associations.html`).
- * Ne pas remplacer par des classes Tailwind.
+ * Associations page hero.
  */
 export function AssociationHero() {
   const t = useTranslations('associations.hero');
 
   return (
-    <section
-      className="section"
-      style={{
-        background: 'var(--deep-indigo)',
-        color: 'var(--white)',
-      }}
-    >
-      <div className="max-w page-hero-grid">
-        <div>
-          <div className="section-label" style={{ color: 'var(--bright-teal)' }}>
-            {t('label')}
+    <section style={{ background: "#32327D", color: "#FFFFFF", padding: "88px 48px 96px" }}>
+      <div style={{ maxWidth: "1240px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 460px), 1fr))", gap: "56px", alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
+          <span style={{ fontSize: "13px", fontWeight: "700", letterSpacing: "1.5px", textTransform: "uppercase", color: "#4ECDC4" }}>{t("pourLesAssociations")}</span>
+          <h1 style={{ margin: "0", fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "54px", lineHeight: "1.08", letterSpacing: "-0.5px" }}>{t.rich("unNouveauCanalDe", { t0: (chunks) => <span style={{ fontFamily: "Lora, serif", fontStyle: "italic", fontWeight: "500", color: "#FFB347" }}>{chunks}</span> })}</h1>
+          <p style={{ margin: "0", fontSize: "19px", lineHeight: "1.65", color: "rgba(255,255,255,0.84)", maxWidth: "540px" }}>{t("commonlinkPublieVosDepenses")}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "14px" }}>
+            <a href={APP_URL} style={{ display: "inline-flex", alignItems: "center", minHeight: "52px", padding: "0 28px", borderRadius: "9999px", background: "#4ECDC4", color: "#171744", fontWeight: "700", fontSize: "16px", textDecoration: "none" }}>{t("creerMonCompteAssociation")}</a>
+            <Link href="/tarifs" style={{ display: "inline-flex", alignItems: "center", minHeight: "52px", padding: "0 28px", borderRadius: "9999px", border: "1.5px solid rgba(255,255,255,0.55)", color: "#FFFFFF", fontWeight: "600", fontSize: "16px", textDecoration: "none" }}>{t("voirLesTarifs")}</Link>
           </div>
-          <h1 className="page-hero-title" style={{ color: 'var(--white)' }}>
-            {t('title')}{' '}
-            <span className="italic-accent" style={{ color: 'var(--soft-amber)' }}>
-              {t('titleAccent')}
-            </span>
-          </h1>
-          <p
-            style={{
-              fontSize: '17px',
-              color: 'rgba(255,255,255,0.7)',
-              lineHeight: 1.7,
-              marginBottom: '36px',
-            }}
-          >
-            {t('text')}
-          </p>
-          <div className="flex gap-12" style={{ flexWrap: 'wrap' }}>
-            <a href={APP_URL} className="btn btn-primary btn-lg">
-              {t('ctaCreate')}
-            </a>
-            <Link href="/tarifs" className="btn btn-outline-white btn-lg">
-              {t('ctaTarifs')}
-            </Link>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '32px',
-              marginTop: '48px',
-              paddingTop: '32px',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-nunito-sans),sans-serif',
-                  fontWeight: 900,
-                  fontSize: '32px',
-                  color: 'var(--bright-teal)',
-                }}
-              >
-                {t('stat1.num')}
-              </div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-                {t('stat1.text')}
-              </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "20px", paddingTop: "26px", borderTop: "1px solid rgba(255,255,255,0.14)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "32px", color: "#4ECDC4", whiteSpace: "nowrap" }}>
+                8 %
+              </span>
+              <span style={{ fontSize: "14px", lineHeight: "1.45", color: "rgba(255,255,255,0.80)" }}>{t("htDeCommissionSans")}</span>
             </div>
-            <div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-nunito-sans),sans-serif',
-                  fontWeight: 900,
-                  fontSize: '32px',
-                  color: 'var(--soft-amber)',
-                }}
-              >
-                {t('stat2.num')}
-              </div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-                {t('stat2.text')}
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "32px", color: "#FFB347", whiteSpace: "nowrap" }}>
+                0 €
+              </span>
+              <span style={{ fontSize: "14px", lineHeight: "1.45", color: "rgba(255,255,255,0.80)" }}>{t("detenuParCommonlink")}</span>
             </div>
-            <div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-nunito-sans),sans-serif',
-                  fontWeight: 900,
-                  fontSize: '32px',
-                  color: 'var(--warm-coral)',
-                }}
-              >
-                {t('stat3.num')}
-              </div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-                {t('stat3.text')}
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "32px", color: "#FFFFFF", whiteSpace: "nowrap" }}>
+                0
+              </span>
+              <span style={{ fontSize: "14px", lineHeight: "1.45", color: "rgba(255,255,255,0.80)" }}>{t("documentFournirPourVos")}</span>
             </div>
           </div>
         </div>
-        <div>
-          {/* Mock dashboard preview */}
-          <div
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 'var(--radius-xl)',
-              padding: '24px',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '13px',
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.4)',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                marginBottom: '16px',
-              }}
-            >
-              {t('visualLabel')}
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '12px',
-                marginBottom: '20px',
-              }}
-            >
-              <div
-                style={{
-                  background: 'rgba(78,205,196,0.12)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '16px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontFamily: 'var(--font-nunito-sans),sans-serif',
-                    fontWeight: 900,
-                    color: 'var(--bright-teal)',
-                  }}
-                >
-                  {t('statCollected.value')}
-                </div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                  {t('statCollected.label')}
-                </div>
-              </div>
-              <div
-                style={{
-                  background: 'rgba(255,179,71,0.1)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '16px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontFamily: 'var(--font-nunito-sans),sans-serif',
-                    fontWeight: 900,
-                    color: 'var(--soft-amber)',
-                  }}
-                >
-                  {t('statDonors.value')}
-                </div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                  {t('statDonors.label')}
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '16px',
-                marginBottom: '16px',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '12px',
-                  color: 'rgba(255,255,255,0.4)',
-                  marginBottom: '8px',
-                }}
-              >
-                {t('progressLabel')}
-              </div>
-              <div className="progress-bar">
-                <div className="progress-fill progress-teal" style={{ width: '71%' }} />
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginTop: '6px',
-                  fontSize: '12px',
-                }}
-              >
-                <span style={{ color: 'rgba(255,255,255,0.5)' }}>{t('progressAmount')}</span>
-                <span style={{ color: 'var(--bright-teal)', fontWeight: 700 }}>
-                  {t('progressPercent')}
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.4)',
-                marginBottom: '8px',
-              }}
-            >
-              {t('lastExpensesLabel')}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '13px',
-                }}
-              >
-                <span style={{ color: 'rgba(255,255,255,0.7)' }}>{t('expense1.label')}</span>
-                <span style={{ color: 'var(--bright-teal)', fontWeight: 700 }}>
-                  {t('expense1.amount')}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '13px',
-                }}
-              >
-                <span style={{ color: 'rgba(255,255,255,0.7)' }}>{t('expense2.label')}</span>
-                <span style={{ color: 'var(--bright-teal)', fontWeight: 700 }}>
-                  {t('expense2.amount')}
-                </span>
-              </div>
-            </div>
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px" }}>
+          <a href="#associations-temps" style={{ background: "#FFFFFF", color: "#171744", borderRadius: "24px", padding: "28px", display: "flex", flexDirection: "column", gap: "14px", textDecoration: "none", minHeight: "240px", boxSizing: "border-box" }}>
+            <span aria-hidden="true" style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(78,205,196,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1E7F78" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="13" r="8" />
+                <path d="M12 9v4l2.5 2" />
+                <path d="M9 2h6" />
+              </svg>
+            </span>
+            <span style={{ fontSize: "13px", fontWeight: "800", letterSpacing: "1.2px", textTransform: "uppercase", color: "#1E7F78" }}>{t("gainDeTemps")}</span>
+            <strong style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "25px", lineHeight: "1.2" }}>{t("vosPaiementsSePublient")}</strong>
+          </a>
+          <a href="#associations-canal" style={{ background: "#FFFFFF", color: "#171744", borderRadius: "24px", padding: "28px", display: "flex", flexDirection: "column", gap: "14px", textDecoration: "none", minHeight: "240px", boxSizing: "border-box" }}>
+            <span aria-hidden="true" style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(255,107,91,0.16)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D9473A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" />
+                <path d="M16 8a5 5 0 0 1 0 8" />
+                <path d="M19 5a9 9 0 0 1 0 14" />
+              </svg>
+            </span>
+            <span style={{ fontSize: "13px", fontWeight: "800", letterSpacing: "1.2px", textTransform: "uppercase", color: "#D9473A" }}>{t("nouveauCanal")}</span>
+            <strong style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "25px", lineHeight: "1.2" }}>{t("unePageDeCollecte")}</strong>
+          </a>
+          <a href="#associations-donateurs" style={{ background: "#FFFFFF", color: "#171744", borderRadius: "24px", padding: "28px", display: "flex", flexDirection: "column", gap: "14px", textDecoration: "none", minHeight: "240px", boxSizing: "border-box" }}>
+            <span aria-hidden="true" style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(255,179,71,0.22)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A86A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="8" r="3.5" />
+                <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+                <path d="M16 4.5a3.5 3.5 0 0 1 0 7" />
+                <path d="M18 14a6.5 6.5 0 0 1 3.5 6" />
+              </svg>
+            </span>
+            <span style={{ fontSize: "13px", fontWeight: "800", letterSpacing: "1.2px", textTransform: "uppercase", color: "#A86A00" }}>{t("nouveauxDonateurs")}</span>
+            <strong style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "25px", lineHeight: "1.2" }}>{t("ceuxQuiVeulentVoir")}</strong>
+          </a>
+          <a href="#associations-autonomie" style={{ background: "#FFFFFF", color: "#171744", borderRadius: "24px", padding: "28px", display: "flex", flexDirection: "column", gap: "14px", textDecoration: "none", minHeight: "240px", boxSizing: "border-box" }}>
+            <span aria-hidden="true" style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(50,50,125,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#32327D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="15" r="4" />
+                <path d="M11 12l9-9" />
+                <path d="M17 6l3 3" />
+                <path d="M15 8l2 2" />
+              </svg>
+            </span>
+            <span style={{ fontSize: "13px", fontWeight: "800", letterSpacing: "1.2px", textTransform: "uppercase", color: "#32327D" }}>{t("autonomie")}</span>
+            <strong style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "25px", lineHeight: "1.2" }}>{t("desDonsVousDes")}</strong>
+          </a>
         </div>
       </div>
     </section>

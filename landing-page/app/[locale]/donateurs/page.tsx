@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { DonorHero } from '@/components/sections/DonorHero';
+import { DonorDemo } from '@/components/sections/DonorDemo';
 import { DonorJourney } from '@/components/sections/DonorJourney';
 import { DonorSteps } from '@/components/sections/DonorSteps';
 
@@ -24,6 +25,7 @@ export default async function DonorsPage({ params }: { params: Promise<{ locale:
   return (
     <main>
       <DonorHero />
+      <DonorDemo />
       <DonorJourney />
       <DonorSteps />
     </main>
