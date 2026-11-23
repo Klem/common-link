@@ -86,10 +86,11 @@ class EmailServiceStub : EmailService {
         associationName: String,
         receiptNumber: String,
         pdfBytes: ByteArray,
+        signupUrl: String?,
     ) {
         logger.info(
-            "Donation receipt {} for '{}' — would send PDF ({} bytes) to {}",
-            receiptNumber, associationName, pdfBytes.size, donorEmail,
+            "Donation receipt {} for '{}' — would send PDF ({} bytes) to {} (guest sign-up invitation: {})",
+            receiptNumber, associationName, pdfBytes.size, donorEmail, signupUrl ?: "none",
         )
     }
 

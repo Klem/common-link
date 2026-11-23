@@ -131,8 +131,12 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
         val campaign = campaignRepository.save(TestFixtures.campaign(association, status = CampaignStatus.LIVE))
         campaignId = campaign.id!!
         mollieDonationId = donationRepository.save(
-            TestFixtures.donation(donor, campaign, amount = BigDecimal("40.00"), providerRef = "mollie:tr_$tag")
-                .also { it.fundsAvailableAt = it.confirmedAt },
+            // Fixed date before the HelloAsso availability (16/11/2026) the FIFO test relies on: Instant.now() made the
+            // order depend on the day the suite runs.
+            TestFixtures.donation(
+                donor, campaign, amount = BigDecimal("40.00"), providerRef = "mollie:tr_$tag",
+                confirmedAt = Instant.parse("2026-11-02T09:00:00Z"),
+            ).also { it.fundsAvailableAt = it.confirmedAt },
         ).id!!
         val helloAsso = donationRepository.save(
             TestFixtures.donation(donor, campaign, amount = BigDecimal("10.00"), providerRef = "helloasso:$tag"),

@@ -107,8 +107,9 @@ class MandateController(
     @Operation(
         summary = "Sign a fiscal mandate",
         description = "Creates a new fiscal mandate with an electronic timestamp. " +
-            "Guards: association must be VERIFIED, both mandate documents must be uploaded, " +
-            "no active mandate must already exist, and `accepted` must be true."
+            "Guards: association must be VERIFIED, `accepted` must be true, the authorised signer name and role must " +
+            "be set, no receipt prerequisite may be missing (receipt signature, legal object, head-office address — " +
+            "see `receiptPrerequisitesMissing` in the state), and no active mandate must already exist."
     )
     @ApiResponses(
         ApiResponse(
@@ -118,7 +119,7 @@ class MandateController(
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
         ApiResponse(responseCode = "409", description = "Guard not met: not VERIFIED, docs missing, or active mandate exists", content = [Content()]),
-        ApiResponse(responseCode = "422", description = "accepted is false or eligibility missing", content = [Content()]),
+        ApiResponse(responseCode = "422", description = "accepted is false, eligibility missing, signer name/role missing, or a receipt prerequisite missing", content = [Content()]),
     )
     fun signMandate(
         @AuthenticationPrincipal principal: UserDetails,

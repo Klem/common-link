@@ -128,7 +128,5 @@ class MandatePdfService {
             "Organisme d'intérêt général — réduction d'impôt de 66 % (Art. 200 CGI)"
         MandateEligibility.OIG_75_COLUCHE ->
             "Organisme d'aide aux personnes en difficulté (loi Coluche) — réduction d'impôt de 75 % (Art. 200-1 ter CGI)"
-        MandateEligibility.PUBLIC_UTILITY_66 ->
-            "Reconnu d'utilité publique — réduction d'impôt de 66 % (décret en Conseil d'État)"
     }
 }

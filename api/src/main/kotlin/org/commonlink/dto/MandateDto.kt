@@ -3,6 +3,7 @@ package org.commonlink.dto
 import jakarta.validation.constraints.NotNull
 import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.MandateEligibility
+import org.commonlink.entity.ReceiptPrerequisite
 import java.time.Instant
 import java.util.UUID
 
@@ -35,6 +36,10 @@ data class MandateDocumentSlotDto(
  * @param revokedAt Timestamp of revocation if the last mandate was revoked; null on active mandates.
  * @param mandateDocs Metadata for the 2 required mandate document slots.
  * @param blocked True when the association is not yet VERIFIED — signing is gated on verification.
+ * @param receiptPrerequisitesMissing Receipt prerequisites the association is missing (signature, legal object,
+ *   head-office address), computed whether the mandate is signed or not; empty when receipts can be issued.
+ *   While non-empty the mandate cannot be signed, campaigns cannot be published and donations cannot be
+ *   collected (see [org.commonlink.service.ReceiptPrerequisiteService]).
  */
 data class MandateStateDto(
     val signed: Boolean,
@@ -44,6 +49,7 @@ data class MandateStateDto(
     val revokedAt: Instant?,
     val mandateDocs: List<MandateDocumentSlotDto>,
     val blocked: Boolean,
+    val receiptPrerequisitesMissing: List<ReceiptPrerequisite>,
 )
 
 /**

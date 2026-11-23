@@ -1,6 +1,7 @@
 package org.commonlink.repository
 
 import org.commonlink.entity.AssociationProfile
+import org.commonlink.entity.AssociationSignature
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.Campaign
 import org.commonlink.entity.CampaignMilestone
@@ -15,6 +16,7 @@ import org.commonlink.entity.MandateEligibility
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.Payee
 import org.commonlink.entity.RiskLevel
+import org.commonlink.entity.SignatureMode
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.entity.PayeeIban
 import org.commonlink.entity.Payout
@@ -256,6 +258,34 @@ object TestFixtures {
         eligibility = eligibility,
         reference = reference,
         signedAt = signedAt,
+    )
+
+    // ── Receipt prerequisites ────────────────────────────────────────────────
+
+    /** Smallest valid PNG (1x1, transparent) — a stand-in receipt signature image. */
+    val SIGNATURE_PNG: ByteArray = java.util.Base64.getDecoder().decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+    )
+
+    /**
+     * Fills the legal object and the full head-office address of [profile] — two of the receipt prerequisites
+     * ([org.commonlink.service.ReceiptPrerequisiteService.missing]). Returns the same, unsaved instance.
+     */
+    fun withReceiptPrerequisiteFields(profile: AssociationProfile): AssociationProfile = profile.apply {
+        legalObject = "Aide alimentaire et insertion sociale."
+        addressLine1 = "12 rue de la Paix"
+        postalCode = postalCode ?: "75001"
+        city = city ?: "Paris"
+    }
+
+    /** A receipt signature (UPLOAD, [SIGNATURE_PNG]) for the association [associationId] — the third prerequisite. */
+    fun associationSignature(associationId: UUID, at: Instant = Instant.now()) = AssociationSignature(
+        associationId = associationId,
+        mode = SignatureMode.UPLOAD,
+        image = SIGNATURE_PNG,
+        contentType = "image/png",
+        attestedAt = at,
+        updatedAt = at,
     )
 
     // ── Payees ───────────────────────────────────────────────────────────────

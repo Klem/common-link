@@ -30,7 +30,7 @@ Les textes définitifs sont ceux du site vitrine :
 | Texte du site vitrine | Nom dans la plateforme | Date de version actuelle |
 |---|---|---|
 | Conditions générales d'utilisation applicables aux donateurs (`/conditions-generales-utilisation`) | « CGU » | 17 novembre 2026 |
-| Conditions générales d'utilisation applicables aux organismes bénéficiaires (`/conditions-generales-utilisation-associations`), avec leurs annexes | « CGV » | 17 novembre 2026 |
+| Conditions générales d'utilisation applicables aux organismes bénéficiaires (`/conditions-generales-utilisation-associations`), avec leurs annexes | « CGV » | 23 novembre 2026 (article 17 : conservation des doubles des reçus fiscaux, voir `E5-recu-fiscal-mentions.md`, section 11) |
 
 Le nom « CGV » est historique : il n'existe pas de conditions générales de vente distinctes. Il désigne désormais les conditions applicables aux associations.
 

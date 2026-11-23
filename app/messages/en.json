@@ -358,6 +358,7 @@
     "publishCampaignSuccess": "🚀 Campaign published!",
     "save": "Save",
     "setPasswordUpdated": "Password set successfully.",
+    "signatorySaved": "Signer and signature saved.",
     "verificationDocDeleted": "Document removed.",
     "verificationDocUploaded": "Document uploaded.",
     "verificationOptDocDeleted": "Document deleted.",
@@ -479,7 +480,9 @@
           "GOAL_MISSING": "Fundraising goal missing or zero",
           "IMPACT_GOALS_MISSING": "Expected outcome missing or under 20 characters",
           "KYB_NOT_VERIFIED": "Association's identification file not verified",
-          "SCHEDULE_MISSING": "Start or end date missing"
+          "SCHEDULE_MISSING": "Start or end date missing",
+          "FISCAL_MANDATE_MISSING": "Fiscal mandate not signed",
+          "RECEIPT_PREREQUISITES_MISSING": "Tax receipt information incomplete (signature, purpose or registered office address)"
         },
         "title": "Publish-attempt history"
       },
@@ -1019,7 +1022,7 @@
       "newCampaign": "New campaign",
       "profile": {
         "addressLine1": "Registered office address",
-        "addressLine1Placeholder": "42 RUE DE CLICHY 75009 PARIS",
+        "addressLine1Placeholder": "42 RUE DE CLICHY",
         "cancel": "Cancel",
         "city": "City",
         "contactEmail": "Contact email",
@@ -1073,10 +1076,6 @@
             "oig75": {
               "desc": "75% tax reduction (Coluche law) · Art. 200 1 ter CGI",
               "label": "Organisation helping people in difficulty"
-            },
-            "public66": {
-              "desc": "Council of State decree · 66% reduction",
-              "label": "Recognised as of public utility"
             }
           },
           "legalText": {
@@ -1107,6 +1106,41 @@
             "confirm": "Confirm revocation",
             "title": "Revoke mandate?"
           },
+          "signatory": {
+            "title": "Authorised signer of tax receipts",
+            "intro": "The name, role and signature below appear on every tax receipt issued on behalf of the association.",
+            "badgeSaved": "Saved",
+            "badgeMissing": "To complete",
+            "savedTitle": "Currently saved signature",
+            "savedAlt": "Saved signature of the signer",
+            "savedAt": "Saved on {date}",
+            "modeLabel": "Signature",
+            "modes": {
+              "upload": "Upload an image",
+              "drawn": "Draw"
+            },
+            "upload": {
+              "inputLabel": "Signature image",
+              "cta": "Click to choose an image",
+              "hint": "PNG or JPEG, ideally on a white background. The image is resized automatically (200 KB maximum)."
+            },
+            "previewAlt": "Preview of the new signature",
+            "draw": {
+              "hint": "Sign inside the frame with your mouse, finger or a stylus.",
+              "padLabel": "Signature area",
+              "clear": "Clear"
+            },
+            "keepSaved": "Without a new signature, the saved signature is kept.",
+            "help": "The signature is printed on every tax receipt issued from now on. Receipts already sent are not changed.",
+            "attestation": "I certify that I am the signer named above or that I have their express authorisation to affix their signature to the tax receipts issued on behalf of the association.",
+            "save": "Save the signer",
+            "errors": {
+              "unsupportedType": "Unsupported format: upload a PNG or JPEG image.",
+              "unreadable": "This image cannot be read.",
+              "tooLarge": "The image is still too large after resizing (200 KB maximum). Try a simpler image on a plain background.",
+              "saveFailed": "Saving failed. Check the information entered and try again."
+            }
+          },
           "signed": {
             "detailsTitle": "Mandate details",
             "downloadPdf": "Download mandate (PDF)",
@@ -1118,12 +1152,6 @@
             "signedAt": "Signed on",
             "sub": "Tax receipts are automatically issued for each eligible donation received via CommonLink.",
             "title": "Mandate active"
-          },
-          "signerWarning": {
-            "close": "Close",
-            "missingSignerName": "An authorised signer name is required to sign the fiscal mandate: it appears on every tax receipt. Please fill in the Authorised signer name field in the Information tab and save.",
-            "missingSignerRole": "An authorised signer role is required to sign the fiscal mandate: it appears on every tax receipt. Please fill in the Signer role field in the Information tab and save.",
-            "title": "Authorised signer required"
           },
           "step1": {
             "declared": "Declared",
@@ -1140,6 +1168,19 @@
             "signBtn": "Sign the mandate",
             "timestampNote": "Timestamped electronic signature",
             "title": "2. Mandate Signature"
+          },
+          "prerequisites": {
+            "signGate": "To sign the mandate, first complete:",
+            "items": {
+              "SIGNATURE": "Signature of the authorised signer",
+              "LEGAL_OBJECT": "The association's purpose (objet social)",
+              "HEAD_OFFICE_ADDRESS": "Registered office address (street, postal code and city)"
+            },
+            "links": {
+              "signatory": "Complete the signer",
+              "infos": "Complete in Informations"
+            },
+            "suspendedBanner": "Donation collection is suspended: a tax receipt cannot be issued without the information below. Collection resumes as soon as it is completed."
           }
         },
         "memberSince": "Member since {date}",
@@ -1824,7 +1865,10 @@
             "IN_REVIEW": "HelloAsso verification in progress — required to publish",
             "NEEDS_DATA": "Collection suspended by HelloAsso — resolve to publish",
             "BROKEN": "HelloAsso access to renew — paste your key again to publish"
-          }
+          },
+          "receiptsMissing": "Tax receipt information incomplete (signature, purpose or registered office address) — required to publish",
+          "completeReceipts": "Complete",
+          "mandateMissing": "Fiscal mandate not signed — required to publish"
         },
         "add": "Add",
         "cgu": {
@@ -2087,7 +2131,7 @@
         "stats": {
           "receiptCount": "Number of receipts",
           "totalDeduction": "Estimated tax reduction",
-          "totalDeductionHint": "Estimate only — never a guaranteed amount.",
+          "totalDeductionHint": "Indicative estimate, depending on your situation.",
           "totalReceipted": "Total receipted"
         }
       },

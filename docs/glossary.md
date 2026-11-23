@@ -625,6 +625,14 @@ The authoritative French register of all persons and entities subject to an asse
 A security mechanism that restricts the number of certain actions within a time window. Example: a maximum of 3 Magic Link requests per email per 10 minutes. Returns HTTP 429 with a `Retry-After` header.
 `security` `technical`
 
+### Receipt prerequisites (Préalables du reçu fiscal)
+The three elements without which no fiscal receipt can be issued for an association (`ReceiptPrerequisite`): `SIGNATURE` (a saved **Receipt signature**), `LEGAL_OBJECT` (the association's purpose, `legalObject`) and `HEAD_OFFICE_ADDRESS` (`addressLine1`, `postalCode` and `city` all filled). Computed in one place (`ReceiptPrerequisiteService`) and exposed to the frontend as `MandateStateDto.receiptPrerequisitesMissing` (empty = ready). While any is missing: the fiscal mandate cannot be signed (422); with an active mandate, donation collection is suspended (widget, landing and checkout refuse with `COLLECTION_UNAVAILABLE`) and campaign publication is refused (`RECEIPT_PREREQUISITES_MISSING`); as a last resort `ReceiptService.generate` refuses to issue the receipt. Decided by management on 2026-11-23 (see `docs/legal/E5-recu-fiscal-mentions.md` §11).
+`functional` `association` `compliance`
+
+### Receipt signature (Signature des reçus)
+The image printed in the "Signature" box of every fiscal receipt (Cerfa 11580) an association issues. An **image signature, not an electronic signature in the eIDAS sense**: it reproduces the authorised signer's handwriting on the PDF, next to the signer's name and role in plain text. Two modes (`SignatureMode`): `UPLOAD` (PNG or JPEG imported) and `DRAWN` (drawn on screen, PNG); a name typed in a handwriting font is not accepted (withdrawn 2026-11-23). Stored one row per association in `association_signature` (V98), apart from `association_profiles` so the profile never loads the bytes; checked on its bytes (PNG/JPEG only, ≤ 200 KB, ≤ 1200×600 px, decodable). Written only through `PUT /api/association/me/signatory`, together with the **Signatory attestation**. One of the **Receipt prerequisites**: no receipt is issued without it. Receipts already issued never change (their PDF is stored once). See `docs/legal/E5-recu-fiscal-mentions.md` §10 and §11.
+`functional` `association` `technical`
+
 ### Refresh Token
 A long-lived credential (valid 30 days) stored in memory on the client side. Used to obtain a new Access Token without requiring the user to log in again. The raw token is held by the client; only its SHA-256 hash is stored in the database. Can be revoked (e.g., on logout).
 `technical` `security`
@@ -681,6 +689,10 @@ The association's declaration "Je confirme avoir rempli moi-même mon dossier Mo
 ### SHA-256
 A cryptographic hash function used to store sensitive tokens (Magic Links, Refresh Tokens) in the database. Only the hash is persisted — the original token cannot be reconstructed from the hash.
 `security` `technical`
+
+### Signatory attestation (Attestation du signataire)
+The sentence the association user must tick each time it saves the authorised receipt signer (name, role) and the **Receipt signature**: « J'atteste être le signataire désigné ci-dessus ou disposer de son autorisation expresse pour apposer sa signature sur les reçus fiscaux émis au nom de l'association. » Refused with a 422 when not ticked. Every save appends a `RECEIPT_SIGNATURE_ATTESTED` event to the hash-chained compliance audit log, in the same transaction: signer name and role, mode, SHA-256 of the image, the exact attested sentence, the acting user and the timestamp. Because the attestation guards the identity printed on receipts, the signer name and role are no longer editable through the profile `PATCH /api/association/me` — only through `PUT /api/association/me/signatory` (`SignatoryService`). It records a declaration; it does not prove the signer's identity.
+`functional` `compliance` `association`
 
 ### SIREN
 A 9-digit identification number assigned to each French company or association (Business Directory Identification System). Used on CommonLink to identify associations during registration (via the Business Directory) and to identify beneficiaries when added by an association (via the INSEE Sirene API).

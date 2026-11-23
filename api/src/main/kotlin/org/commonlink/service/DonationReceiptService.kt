@@ -9,6 +9,7 @@ import org.commonlink.repository.DonationReceiptRepository
 import org.commonlink.repository.DonationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Async
@@ -43,6 +44,7 @@ class DonationReceiptService(
     private val receiptNumberService: ReceiptNumberService,
     private val emailService: EmailService,
     private val outbox: OnchainOutboxService,
+    @Value("\${app.frontend-url}") private val frontendUrl: String,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val parisZone = ZoneId.of("Europe/Paris")
@@ -77,6 +79,11 @@ class DonationReceiptService(
      *
      * Idempotent: if a [DonationReceipt] already exists the same bytes are reused, and
      * [OnchainOutboxService.enqueue] deduplicates via `correlationKey`.
+     *
+     * When [ReceiptService.generate] refuses (no active mandate, receipt prerequisite missing, unreadable signature)
+     * the whole transaction rolls back — the receipt number claimed from `receipt_seq` included, so the series keeps
+     * no gap — and the exception reaches [onDonationConfirmed] / [reconcile], which log it at ERROR; the reconciler
+     * retries on every run until the association's data is fixed.
      */
     @Transactional
     fun enqueueOnchainJob(donationId: UUID) {
@@ -136,6 +143,8 @@ class DonationReceiptService(
      *
      * Called by [OnchainJobWorker] after RECORD_DONATION hits DONE.
      * The [DonationReceipt.emailedAt] guard prevents duplicate delivery on retries.
+     * A guest donor ([org.commonlink.entity.User.guest]) also gets an invitation to create an account
+     * with the same e-mail address (`<app.frontend-url>/login?view=signup&role=donor`).
      */
     @Transactional
     fun sendReceiptEmailIfNeeded(donationId: UUID) {
@@ -153,6 +162,9 @@ class DonationReceiptService(
         val donorEmail = donation.donor.user.email
         val donorName = donation.donorFullName ?: donation.donor.user.email
         val associationName = donation.campaign.association.name
+        // A guest donor is invited to register with the same address, which claims the guest account and
+        // its donations (AuthService). The address itself never goes into the URL.
+        val signupUrl = if (donation.donor.user.guest) "$frontendUrl/login?view=signup&role=donor" else null
 
         emailService.sendDonationReceipt(
             donorEmail      = donorEmail,
@@ -160,6 +172,7 @@ class DonationReceiptService(
             associationName = associationName,
             receiptNumber   = receipt.receiptNumber,
             pdfBytes        = receipt.pdfBytes,
+            signupUrl       = signupUrl,
         )
 
         receipt.emailedAt = Instant.now()

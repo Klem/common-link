@@ -3510,3 +3510,31 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .cashout-ov-actions{display:flex;gap:10px}
 .cashout-ov-actions .btn-secondary{flex:1}
 .cashout-ov-actions .btn-primary{flex:2}
+/* NEW COMPONENT: signatory card (fiscal receipt signature, SignatoryCard / SignatureDrawPad / MandateTab gate) */
+.sig-card{margin-bottom:16px}
+.sig-intro{font-size:14px;color:var(--slate-lavender);line-height:1.6;margin-bottom:16px}
+.sig-saved{margin-bottom:20px}
+.sig-preview{display:flex;align-items:center;justify-content:center;min-height:110px;padding:16px;border:1px solid var(--mist-lavender);border-radius:var(--radius-md);background:var(--soft-cream)}
+.sig-preview img{max-width:100%;max-height:160px;object-fit:contain}
+.sig-preview-new{margin-top:12px}
+.sig-modes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.sig-mode{display:flex;align-items:center;justify-content:center;padding:12px;border:2px solid var(--mist-lavender);border-radius:var(--radius-md);font-size:13px;font-weight:600;color:var(--ink-navy);text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.sig-mode:hover{border-color:var(--bright-teal)}
+.sig-mode.active{border-color:var(--bright-teal);background:rgba(78,205,196,.06)}
+.sig-mode:focus-within{box-shadow:0 0 0 3px rgba(78,205,196,.12)}
+.sig-mode-hint{margin:0 0 8px}
+.sig-pad{display:block;width:100%;height:200px;border:2px dashed var(--mist-lavender);border-radius:var(--radius-md);background:var(--white);color:var(--ink-navy);touch-action:none;cursor:crosshair}
+.sig-pad-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.sig-upload{display:block}
+.sig-upload:focus-within{border-color:var(--bright-teal);box-shadow:0 0 0 3px rgba(78,205,196,.12)}
+.sig-help{font-size:13px;margin-bottom:16px}
+.sig-attest{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5;cursor:pointer;margin-bottom:14px}
+.sig-attest input{margin-top:3px;width:18px;height:18px;accent-color:var(--bright-teal);flex-shrink:0;cursor:pointer}
+.sig-save-error{margin-bottom:12px}
+.sig-gate{margin-bottom:14px}
+.sig-gate .pp-row:last-child{margin-bottom:0}
+.sig-gate-intro{font-size:13px;font-weight:600;color:var(--ink-navy);margin-bottom:8px}
+.prereq-banner .pp-row{background:var(--white)}
+.prereq-banner .pp-row:last-child{margin-bottom:0}
+.prereq-banner-text{margin-bottom:10px}
+@media (max-width:640px){.sig-modes{grid-template-columns:1fr}}

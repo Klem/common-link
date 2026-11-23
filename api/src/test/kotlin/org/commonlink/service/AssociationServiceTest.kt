@@ -320,4 +320,25 @@ class AssociationServiceTest {
 
         verify { profile.siren = "123456789" }
     }
+
+    /** The signer identity only changes through SignatoryService, under the journaled attestation. */
+    @Test
+    fun `updateProfile - never writes the receipt signer`() {
+        val userId = UUID.randomUUID()
+        val profile = mockk<AssociationProfile>(relaxed = true)
+        every { profile.verificationStatus } returns VerificationStatus.PENDING
+        every { associationRepo.findByUserId(userId) } returns Optional.of(profile)
+        every { associationRepo.save(profile) } returns profile
+
+        val req = UpdateAssociationProfileRequest(
+            contactName = "Jean Martin", city = "Lyon", postalCode = "69001", description = "d",
+            siren = null, creationYear = null, contactEmail = null, phone = null,
+            widgetDestinationCampaignId = null, addressLine1 = "1 rue X", legalObject = "Objet",
+        )
+
+        service.updateProfile(userId, req)
+
+        verify(exactly = 0) { profile.signerName = any() }
+        verify(exactly = 0) { profile.signerRole = any() }
+    }
 }

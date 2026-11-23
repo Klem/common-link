@@ -289,7 +289,16 @@ class SmtpEmailService(
         associationName: String,
         receiptNumber: String,
         pdfBytes: ByteArray,
+        signupUrl: String?,
     ) {
+        // Guest donors only: registering with the same address claims the guest account and its donations.
+        // Kept on one line: it is interpolated into an indented template, and an unindented continuation line
+        // would defeat trimIndent for the whole body.
+        val signupInvitation = signupUrl?.let {
+            "<p>Vous avez donné sans créer de compte. En créant votre compte donateur CommonLink avec cette même " +
+                "adresse e-mail, vous retrouverez l'ensemble de vos dons et de vos reçus fiscaux au même endroit : " +
+                "<a href=\"$it\">créer mon compte</a>.</p>"
+        }.orEmpty()
         val message = mailSender.createMimeMessage()
         // multipart=true to support attachment
         val helper = MimeMessageHelper(message, true, "UTF-8")
@@ -301,8 +310,9 @@ class SmtpEmailService(
             """
             <p>Bonjour $donorName,</p>
             <p>Veuillez trouver ci-joint votre reçu fiscal (n° $receiptNumber) pour votre don à <strong>$associationName</strong>.</p>
-            <p>Ce reçu vous permet de bénéficier d'une réduction d'impôt conformément aux articles 200, 238 bis et 978 du CGI.
+            <p>Ce reçu vous permet de bénéficier d'une réduction d'impôt sur le revenu, selon votre situation (article 200 du CGI).
             Conservez-le précieusement.</p>
+            $signupInvitation
             <p>Merci pour votre générosité.</p>
             """.trimIndent(),
         )

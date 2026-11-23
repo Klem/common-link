@@ -202,8 +202,6 @@ enum class MandateEligibility {
     OIG_66,
     /** Organisme d'aide aux personnes en difficulté (loi Coluche) — 75 % reduction (Art. 200-1 ter CGI). */
     OIG_75_COLUCHE,
-    /** Reconnu d'utilité publique — 66 % reduction. */
-    PUBLIC_UTILITY_66,
 }
 
 /**
@@ -541,6 +539,10 @@ enum class CampaignReviewRefusalReason {
     BANK_NOT_CONNECTED,
     BANK_CONNECTION_BROKEN,
     BANK_KYC_INCOMPLETE,
+    /** No active fiscal mandate: no receipt could be issued for the donations. */
+    FISCAL_MANDATE_MISSING,
+    /** A [ReceiptPrerequisite] is missing: no receipt could be issued for the donations. */
+    RECEIPT_PREREQUISITES_MISSING,
     CGU_NOT_ACCEPTED,
 }
 
@@ -649,4 +651,32 @@ enum class ReceiptConfirmationMode {
     MANUAL,
     /** A curator released the funds on a bank statement line. */
     CURATOR_RELEASE,
+}
+
+/**
+ * How the receipt signature of an association ([AssociationSignature]) was produced. Every mode stores an image.
+ *
+ * Stored as a string column with a CHECK constraint (V98) whose values must stay identical to these entries.
+ */
+enum class SignatureMode {
+    /** An image file (PNG or JPEG) imported by the association. */
+    UPLOAD,
+    /** Drawn on screen and exported as a PNG. */
+    DRAWN,
+}
+
+/**
+ * Association data a fiscal receipt cannot be issued without, computed by
+ * [org.commonlink.service.ReceiptPrerequisiteService.missing]. Never persisted.
+ *
+ * Signing the fiscal mandate, publishing a campaign, collecting a donation and generating a receipt all
+ * require none of them to be missing.
+ */
+enum class ReceiptPrerequisite {
+    /** No receipt signature saved ([AssociationSignature] row absent). */
+    SIGNATURE,
+    /** [AssociationProfile.legalObject] blank: the receipt must state the beneficiary's object. */
+    LEGAL_OBJECT,
+    /** Any of [AssociationProfile.addressLine1], [AssociationProfile.postalCode], [AssociationProfile.city] blank. */
+    HEAD_OFFICE_ADDRESS,
 }

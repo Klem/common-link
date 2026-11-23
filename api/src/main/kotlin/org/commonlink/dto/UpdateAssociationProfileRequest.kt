@@ -14,6 +14,9 @@ import java.util.UUID
  * Constraints are enforced when a field is present (non-null); null skips validation.
  *
  * Fields that are not editable after creation (name, identifier/SIREN) are intentionally absent.
+ * The authorised receipt signer (name, role) is absent too: it only changes through
+ * `PUT /api/association/me/signatory`, which requires and journals the signatory attestation — an
+ * unknown `signerName` / `signerRole` sent here is ignored.
  *
  * @param contactName Name of the primary contact person (min 2 characters when provided).
  * @param city City of the association's headquarters.
@@ -70,12 +73,4 @@ data class UpdateAssociationProfileRequest(
     /** Official purpose / objet social. Printed on Cerfa receipts. */
     @field:Size(max = 2000)
     val legalObject: String? = null,
-
-    /** Full name of the authorised receipt signer. Printed on Cerfa receipts. */
-    @field:Size(max = 255)
-    val signerName: String? = null,
-
-    /** Role/title of the authorised signer (e.g. "Trésorier"). Printed on Cerfa receipts. */
-    @field:Size(max = 100)
-    val signerRole: String? = null,
 )

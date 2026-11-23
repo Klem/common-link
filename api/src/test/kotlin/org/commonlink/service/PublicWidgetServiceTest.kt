@@ -48,6 +48,11 @@ class PublicWidgetServiceTest {
     private val guestDonorService: GuestDonorService = mockk(relaxed = true)
     private val legalAcceptanceService: LegalAcceptanceService = mockk(relaxed = true)
 
+    /** Receipts can be issued by default; the receipt-gate tests below turn it off. */
+    private val receiptPrerequisiteService: ReceiptPrerequisiteService = mockk {
+        every { canIssueReceipts(any()) } returns true
+    }
+
     private val mollieProviderAdapter = MollieProviderAdapter(
         mollieConnectionRepository = mollieConnectionRepository,
         mollieOAuthStateRepository = mockk(relaxed = true),
@@ -70,6 +75,7 @@ class PublicWidgetServiceTest {
         donationCapService = donationCapService,
         legalAcceptanceService = legalAcceptanceService,
         paymentProviderRegistry = PaymentProviderRegistry(listOf(mollieProviderAdapter)),
+        receiptPrerequisiteService = receiptPrerequisiteService,
     )
 
     private fun campaign(status: CampaignStatus = CampaignStatus.LIVE) = Campaign(
@@ -221,5 +227,33 @@ class PublicWidgetServiceTest {
 
         verify(exactly = 0) { guestDonorService.findOrCreateGuestDonor(any(), any()) }
         verify(exactly = 0) { legalAcceptanceService.recordDonorAcceptance(any(), any(), any(), any(), any(), any()) }
+    }
+    // ── Receipt gate (arbitrage reçus fiscaux, 2026-11-23) ───────────────────
+
+    /** A ready provider is not enough: without an issuable receipt the donate button is hidden. */
+    @Test
+    fun `getWidget exposes collectAvailable false when no receipt could be issued`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign)
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns readyConnection()
+        every { receiptPrerequisiteService.canIssueReceipts(association) } returns false
+
+        assertFalse(service.getWidget("clk_x").collectAvailable)
+    }
+
+    /** The receipt is generated after payment: a donation that could get none is refused before anything is created. */
+    @Test
+    fun `createDonation refuses when no receipt could be issued, before creating any guest donor`() {
+        val campaign = campaign(CampaignStatus.LIVE)
+        val association = association(AssociationStatus.ACTIVE, campaign)
+        every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
+        every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns readyConnection()
+        every { receiptPrerequisiteService.canIssueReceipts(association) } returns false
+
+        assertThrows<CollectionUnavailableException> { service.createDonation("clk_x", request()) }
+
+        verify(exactly = 0) { guestDonorService.findOrCreateGuestDonor(any(), any()) }
+        verify(exactly = 0) { donationCapService.requireWithinCap(any(), any()) }
     }
 }

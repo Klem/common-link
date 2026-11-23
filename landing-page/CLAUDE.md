@@ -7,109 +7,70 @@
 > « jamais de couleurs en dur », `tailwind.config.ts`, `bg-primary`, `font-ui`,
 > `rounded-md` est **obsolète** et ne doit pas être suivi.
 >
-> ### Ce qui fait foi aujourd'hui
+> ### Ce qui fait foi aujourd'hui (depuis le 17/11/2026)
 >
-> 1. **La maquette `CommonLink UI V2 Julian.html` (racine du dépôt) est la source
->    de vérité du design.** Son bloc `<style>` complet est copié **verbatim** dans
->    `app/[locale]/globals.css`, entre les balises `MAQUETTE — DÉBUT/FIN DU BLOC
->    VERBATIM`. **Ne jamais retoucher les valeurs à l'intérieur de ce bloc.**
->    Seules adaptations autorisées, déjà appliquées et documentées en tête du
->    fichier : les 3 familles de police pointent vers les variables `next/font`,
->    et les règles `.page{display:none}` du navigateur SPA de la démo ont été
->    retirées.
->
-> 2. **Les composants réutilisent le markup et les noms de classes de la
->    maquette** (`.hero-title`, `.why-card`, `.tarif-split`, `.legal-body`…),
->    y compris les `style="…"` inline convertis en `style={{}}`. On ne
->    « simplifie » pas l'arborescence : plusieurs sections sont stylées par des
->    sélecteurs d'éléments imbriqués (`.journey-steps h4`, `.why-card h3`),
->    supprimer un `div` les casse silencieusement.
->
-> 3. **Tailwind a été retiré du projet** (`postcss.config.js`, plus de
->    `tailwind.config.ts`, plus de directives `@tailwind`). Ne pas le
->    réintroduire : il a causé deux régressions silencieuses coûteuses —
->    `border-none` dans une classe de base annulait `border-style` et rendait
->    invisibles **toutes** les bordures des boutons ; et les modificateurs
->    d'opacité (`bg-secondary/10`) rendent **transparent** quand la couleur est
->    une variable CSS hexadécimale, sans aucune erreur. Il générait aussi des
->    utilitaires pour des noms de classes absents de la maquette (`mb-20`),
->    écrasant le rendu attendu.
->
-> 4. **Les textes restent dans `messages/fr.json`** via `next-intl`. Si un texte
->    de `fr.json` diverge de la maquette, **la maquette gagne**. La maquette
->    n'emploie que l'apostrophe droite `'` et pas la ligature `œ` — `fr.json` a
->    été aligné dessus.
->
-> 5. **Le site est monolingue français.** `locales = ['fr']`, il n'y a plus de
->    `messages/en.json` ni de sélecteur de langue.
+> 1. **La maquette `landing-page/commonlink-demo-nouveau-design.html` est la source
+>    de vérité du design** (elle remplace `CommonLink UI V2 Julian.html`). C'est une
+>    SPA Vue : 5 pages en `<script type="text/x-template">` stylées **inline**
+>    (accueil, donateurs, associations, projets, tarifs) et 9 pages légales en
+>    classes CSS, toutes préfixées `.legal-page`.
+> 2. **Son bloc `<style>` est copié verbatim** dans `app/[locale]/globals.css`, entre
+>    `MOCKUP — START/END OF VERBATIM BLOCK`. Seule adaptation : les deux règles
+>    `.legal-page .page` du routeur de la démo sont retirées. Les familles de police
+>    restent littérales (`'Inter'`, `'Nunito Sans'`, `'Lora'`) : next/font les
+>    enregistre sous ces noms. Les requêtes next/font (`layout.tsx`) reprennent
+>    **exactement** celles de la maquette (Inter 400-700, Nunito Sans 700-900, Lora
+>    italique 500) : d'autres graisses = d'autres fichiers = glyphes différents.
+> 3. **Pages principales** : chaque `<section>` d'un template = un composant de
+>    `components/sections/`, styles inline repris en `style={{}}`. Les textes sont dans
+>    `messages/fr.json` (`t.rich` avec balises `<t0>…</t0>` pour le texte mixte). La
+>    logique des composants Vue (`renderVals`) est portée 1:1 dans un hook du
+>    composant (`useHeroDemo`, `useDonorDemo`, `useDonorJourney`, `usePaymentDemo`,
+>    `Tarifs`). Le texte mixte « valeur + littéral » s'écrit en **une seule chaîne**
+>    (`` {`${h.asso}, ${h.date}`} ``) : plusieurs nœuds texte décalent les glyphes au
+>    sous-pixel.
+> 4. **Pages légales** : leur contenu est dans un `<div className="legal-page">` (le
+>    CSS de la maquette est scopé dessous). L'annuaire `/projets` aussi.
+> 5. Tailwind est retiré (régressions silencieuses passées) : ne pas le réintroduire.
+> 6. Site monolingue français (`locales = ['fr']`).
 >
 > ### Vérifier une modification
 >
-> Ne jamais se fier à l'œil : `scripts/compare-maquette.js` confronte la maquette
-> et l'implémentation élément par élément (43 propriétés calculées + géométrie +
-> texte). Toute PR touchant au rendu doit le laisser à zéro écart, hors écarts
-> connus et documentés ci-dessous.
+> Ne jamais se fier à l'œil : `scripts/compare-maquette.js` rend la maquette
+> (`file://…#page`) et le site avec une horloge figée (animations au même instant),
+> compare les captures pixel par pixel et les éléments un à un (44 propriétés
+> calculées + géométrie + texte), en 1440px et 390px. Contre un build de prod :
 >
 > ```bash
-> npm run dev                                              # dans un terminal
-> npm run compare:maquette p3 http://localhost:3001/associations
-> npm run compare:maquette p1 http://localhost:3001/ -- --full   # détail complet
+> npm run build && npm run start                        # dans un terminal
+> npm run compare:maquette                              # toutes les pages, 1440 et 390
+> npm run compare:maquette -- accueil tarifs --width=1440 --full
 > ```
 >
-> Correspondance page maquette → route : `p1`→`/` · `p2`→`/donateurs` ·
-> `p3`→`/associations` · `p6`→`/transparence` · `p7`→`/tarifs` ·
-> `p13`→`/mentions-legales` · `p14`→`/conditions-generales-utilisation` ·
-> `p15`→`/conditions-generales-utilisation-associations` · `p16`→`/contrat-type` ·
-> `p17`→`/reclamations` · `p18`→`/contact` · `p19`→`/politique-confidentialite` ·
-> `p20`→`/politique-cookies`.
->
-> Si le comparateur signale soudain des dizaines d'écarts avec des polices
-> `Times New Roman` et des liens bleus, ce n'est pas le code : le serveur de dev
-> a corrompu son manifeste webpack. `rm -rf .next` puis relancer.
+> (Sous Git Bash, passer les noms de page de la maquette — `accueil`, `cgu-donateur`…
+> — plutôt que `/`, que Git Bash réécrit en chemin Windows.) Captures et images de
+> diff dans `test-results/maquette/`.
 >
 > **Écarts connus et assumés :**
-> - Le logo de la barre de navigation est un `<a>` (maquette : `<div onclick>`) —
->   accessibilité, zéro différence visuelle.
-> - `grid-2 mb-20` de la maquette rendu `grid-2` (page Donateurs) : `mb-20`
->   n'existe pas dans le CSS de la maquette et y vaut donc `margin-bottom:0`.
-> - **Trois classes ajoutées pour le responsive** (pages Donateurs et
->   Associations) : `section` sur la `<section>` du hero, `page-hero-grid` sur
->   son `.max-w`, `page-hero-title` sur son `<h1>`. Elles remplacent des
->   `style={{}}` inline — qu'aucune règle `@media` ne peut surcharger — par des
->   valeurs strictement identiques. Le comparateur signale la différence de
->   `class` ; aucune propriété calculée ni aucune géométrie ne diverge.
-> - Les dégradés sont sérialisés différemment par Chromium selon qu'ils
->   viennent d'un `file://` ou d'un serveur (`0%` vs `0px`, stops omis) :
->   `hero-blob`, `hero-photo-frame`, `tarif-hero`, `transparency-page-hero`.
->   Antérieur à tout travail responsive, purement cosmétique dans le rapport.
->
-> ### Responsive
->
-> **La maquette est desktop uniquement.** Tout le responsive vit donc **après**
-> `MAQUETTE — FIN DU BLOC VERBATIM`, sous `@media` — le rendu au-dessus de
-> 980px, seul comparé par `compare-maquette.js`, reste celui de la maquette.
-> Breakpoints en place : **980px** (grilles 3 → 2 colonnes), **900px** (la barre
-> de navigation passe en menu burger), **760px** (colonne unique, gouttières
-> 48px → 20px, typographie), **420px** (libellés de boutons sécables).
->
-> Deux ajouts hors maquette portent le menu mobile : `.nav-toggle` (le burger,
-> `display:none` au-dessus de 900px) et `.nav-menu` (`display:contents` en
-> desktop, donc sans effet sur le rendu). `compare-maquette.js` les neutralise
-> avant de comparer, sans quoi l'arborescence de la nav se décale d'un cran et
-> toute la zone devient illisible. Le panneau déroulant est en
-> `position:absolute` : la hauteur de `.main-nav` ne doit pas bouger à
-> l'ouverture, `.legal-subnav` est collée à `top:63px`.
->
-> Contrôle — détecte tout débordement horizontal et vérifie le menu :
->
-> ```bash
-> npm run check:responsive http://localhost:3001 375   # aussi 320, 768, 1024
-> ```
->
-> Doit afficher `0 page(s) en défaut`. Attention aux items de grille :
-> `min-width:auto` empêche une piste de descendre sous la largeur min-content de
-> son contenu, et un libellé de bouton non sécable suffit à élargir la colonne
-> au-delà du viewport.
+> - **Header mobile** : la maquette replie son header sur plusieurs lignes ; le site
+>   garde un menu burger sous 900px (`.nav-toggle`, `.nav-menu` en
+>   `display:contents` au-dessus). Le comparateur masque le header sous 900px.
+> - **Header/footer des pages légales** : la maquette les laisse sans police (rendu
+>   Times New Roman, bug d'export). Le site les rend en Inter, comme sur les pages
+>   principales (conteneur racine dans `layout.tsx`, qui ajoute un `<div>`).
+> - **Sous-nav légale** : sur Confidentialité et Cookies, la maquette n'active aucun
+>   onglet ; le site active celui de la page courante.
+> - **`.legal-page .grid-3` en mobile** : la maquette garde 3 colonnes et déborde à
+>   567px sur un écran de 390px (/transparence). Une colonne sous 760px.
+> - **`.legal-body h4`** : style inline de la maquette (annexe 2 des CGU association)
+>   porté en règle CSS, mêmes valeurs.
+> - **/projets avec campagnes** : la maquette n'a que l'état vide ; l'annuaire réel
+>   (filtres, cartes `.campaign-*`) le remplace dans un `.legal-page` transparent.
+> - **320px** : la maquette déborde (badges `nowrap` du hero d'accueil, montants
+>   « 0 € » des tarifs) ; le site reproduit fidèlement ce débordement.
+> - Dégradés sérialisés différemment par Chromium entre `file://` et serveur
+>   (`0%` vs `0px`) : cosmétique dans le rapport.
+> - Quelques pixels d'antialiasing par page : bruit de rastérisation.
 
 ## GETTING STARTED
 

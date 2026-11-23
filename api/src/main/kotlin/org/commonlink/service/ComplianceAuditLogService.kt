@@ -195,6 +195,16 @@ class ComplianceAuditLogService(
          * evidence table (the journal is never erased); actor = the curator.
          */
         const val HELLOASSO_FUNDS_MANUALLY_RELEASED = "HELLOASSO_FUNDS_MANUALLY_RELEASED"
+
+        /**
+         * An association saved its authorised receipt signer and receipt signature, attesting being that signer
+         * or holding their express authorisation ([org.commonlink.service.SignatoryService.saveSignatory]). Written
+         * on every save, in the same transaction. Subject ASSOCIATION (the association profile id). Payload
+         * `{signerName, signerRole, mode, imageSha256, attestation}` — `imageSha256` is the hex SHA-256 of the
+         * stored image; `attestation` is the exact sentence shown to the user. Actor =
+         * the association's user.
+         */
+        const val RECEIPT_SIGNATURE_ATTESTED = "RECEIPT_SIGNATURE_ATTESTED"
     }
 
     /**

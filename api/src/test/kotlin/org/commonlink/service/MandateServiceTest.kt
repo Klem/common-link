@@ -3,12 +3,16 @@ package org.commonlink.service
 import org.commonlink.dto.SignMandateRequest
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.MandateEligibility
+import org.commonlink.entity.ReceiptPrerequisite
 import org.commonlink.entity.VerificationStatus
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationSignatureRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Tag
@@ -22,7 +26,8 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 /**
- * Integration tests for [MandateService.signMandate] — specifically the authorised-signer guard.
+ * Integration tests for [MandateService.signMandate] — specifically the authorised-signer and
+ * receipt-prerequisite guards — and for the prerequisites exposed by [MandateService.getMandateState].
  *
  * The controller test mocks [MandateService], so the guard is only reachable at service level.
  * Mirrors the frontend warning modal in `MandateTab`: a mandate authorises CommonLink to issue tax
@@ -43,6 +48,7 @@ class MandateServiceTest {
     @Autowired private lateinit var mandateService: MandateService
     @Autowired private lateinit var userRepository: UserRepository
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
+    @Autowired private lateinit var signatureRepository: AssociationSignatureRepository
 
     private lateinit var association: AssociationProfile
     private lateinit var userId: UUID
@@ -85,8 +91,70 @@ class MandateServiceTest {
         assertThrows<UnprocessableEntityException> { mandateService.signMandate(userId, validRequest) }
     }
 
-    // Pas de test "passe quand les deux champs sont remplis" : la suite tourne sur un schéma généré
-    // par Hibernate (create-drop, Flyway désactivé), donc la séquence `fiscal_mandate_ref_seq` créée
-    // par la migration V35 n'existe pas et `signMandate` échoue en aval de la garde, sur la génération
-    // de la référence. Le chemin nominal reste couvert par MandateControllerTest (service mocké).
+    /**
+     * Every receipt issued under the mandate carries the signature, the legal object and the full head-office address:
+     * a new mandate needs all three first, and the 422 names each missing one.
+     */
+    @Test
+    fun `signMandate - refused listing every missing receipt prerequisite`() {
+        withSigner(name = "Marie Dupont", role = "Présidente")
+
+        val ex = assertThrows<UnprocessableEntityException> { mandateService.signMandate(userId, validRequest) }
+
+        assertTrue(ex.message!!.contains("SIGNATURE"), ex.message)
+        assertTrue(ex.message!!.contains("LEGAL_OBJECT"), ex.message)
+        assertTrue(ex.message!!.contains("HEAD_OFFICE_ADDRESS"), ex.message)
+    }
+
+    @Test
+    fun `signMandate - refused when only the receipt signature is missing`() {
+        withSigner(name = "Marie Dupont", role = "Présidente")
+        associationProfileRepository.save(TestFixtures.withReceiptPrerequisiteFields(association))
+
+        val ex = assertThrows<UnprocessableEntityException> { mandateService.signMandate(userId, validRequest) }
+
+        assertEquals("Receipt prerequisites missing before signing the fiscal mandate: SIGNATURE", ex.message)
+    }
+
+    /** The address counts as missing when any of street, postal code or city is blank. */
+    @Test
+    fun `signMandate - refused when the head-office city is blank`() {
+        withSigner(name = "Marie Dupont", role = "Présidente")
+        TestFixtures.withReceiptPrerequisiteFields(association).city = " "
+        associationProfileRepository.save(association)
+        signatureRepository.save(TestFixtures.associationSignature(association.id!!))
+
+        val ex = assertThrows<UnprocessableEntityException> { mandateService.signMandate(userId, validRequest) }
+
+        assertEquals("Receipt prerequisites missing before signing the fiscal mandate: HEAD_OFFICE_ADDRESS", ex.message)
+    }
+
+    // ── getMandateState.receiptPrerequisitesMissing ───────────────────────────
+
+    @Test
+    fun `getMandateState - lists the missing receipt prerequisites while unsigned`() {
+        association.addressLine1 = null
+        associationProfileRepository.save(association)
+
+        val state = mandateService.getMandateState(userId)
+
+        assertEquals(false, state.signed)
+        assertEquals(
+            listOf(ReceiptPrerequisite.SIGNATURE, ReceiptPrerequisite.LEGAL_OBJECT, ReceiptPrerequisite.HEAD_OFFICE_ADDRESS),
+            state.receiptPrerequisitesMissing,
+        )
+    }
+
+    @Test
+    fun `getMandateState - empty list once every receipt prerequisite is met`() {
+        associationProfileRepository.save(TestFixtures.withReceiptPrerequisiteFields(association))
+        signatureRepository.save(TestFixtures.associationSignature(association.id!!))
+
+        assertEquals(emptyList<ReceiptPrerequisite>(), mandateService.getMandateState(userId).receiptPrerequisitesMissing)
+    }
+
+    // No "passes when both fields are filled" test: the suite runs on a Hibernate-generated schema
+    // (create-drop, Flyway disabled), so the `fiscal_mandate_ref_seq` sequence created by migration V35
+    // does not exist and `signMandate` fails downstream of the guards, on reference generation. The
+    // nominal path stays covered by MandateControllerTest (mocked service).
 }

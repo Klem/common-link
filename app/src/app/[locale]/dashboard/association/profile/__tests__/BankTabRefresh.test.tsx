@@ -32,13 +32,14 @@ vi.mock('@/hooks/dashboard/useAssociationProfile', () => ({
 
 vi.mock('@/hooks/dashboard/useMandate', () => ({
   useMandate: () => ({
-    state: { signed: true, mandateDocs: [], blocked: false },
+    state: { signed: true, mandateDocs: [], blocked: false, receiptPrerequisitesMissing: [] },
     isLoading: false,
     uploadDoc: vi.fn(),
     deleteDoc: vi.fn(),
     sign: vi.fn(),
     revoke: vi.fn(),
     downloadPdf: vi.fn(),
+    refresh: vi.fn(),
   }),
 }));
 

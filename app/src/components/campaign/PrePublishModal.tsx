@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import type { CampaignDto, BudgetSectionDto } from '@/types/campaign';
 import { BudgetSide } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
@@ -9,6 +10,9 @@ import { ASSOCIATION_LEGAL_DOCUMENT } from '@/types/legal';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { PaymentProviderId } from '@/types/paymentProvider';
 import { getLegalAcceptanceState, isLegalVersionOutdated } from '@/lib/api/legal';
+import { getMandateState } from '@/lib/api/mandate';
+import { ROUTES } from '@/lib/routes';
+import type { ReceiptPrerequisite } from '@/types/mandate';
 import { LegalDocumentModal } from '@/components/legal/LegalDocumentModal';
 import { LegalLinkButton } from '@/components/legal/LegalLinkButton';
 
@@ -91,6 +95,7 @@ export function PrePublishModal({
   const bankLabels = paymentProvider === PaymentProviderId.HELLOASSO ? 'account.helloAssoBank' : 'account.bank';
   const tNav = useTranslations('dashboard.campaigns.editor.tabs');
   const tLegal = useTranslations('legal');
+  const locale = useLocale();
 
   // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
   // `cguState.accepted` means this association already has a standing acceptance of the current
@@ -106,6 +111,26 @@ export function PrePublishModal({
   }, []);
   useEffect(loadCguState, [loadCguState]);
   const cguAccepted = cguState?.accepted === true || cguChecked;
+
+  // Active fiscal mandate and fiscal receipt prerequisites (signature, legal object, head-office address):
+  // publishing is refused without either (`CampaignService.preparePublish`: FISCAL_MANDATE_MISSING,
+  // RECEIPT_PREREQUISITES_MISSING — rule 8). Null while loading or when the read failed — the rows then
+  // stay neutral instead of claiming something is missing.
+  const [mandateSigned, setMandateSigned] = useState<boolean | null>(null);
+  const [receiptMissing, setReceiptMissing] = useState<ReceiptPrerequisite[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getMandateState()
+      .then((state) => {
+        if (cancelled) return;
+        setMandateSigned(state.signed);
+        setReceiptMissing(state.receiptPrerequisitesMissing);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [showCguDoc, setShowCguDoc] = useState(false);
 
   const expenses = sumSide(campaign.budgetSections, BudgetSide.EXPENSE);
@@ -152,7 +177,8 @@ export function PrePublishModal({
 
   const bankReady = bankResolved && bankStatus === BankSetupStatus.COMPLETED;
   const kybReady = verificationStatus === VerificationStatus.VERIFIED;
-  const accountComplete = bankReady && kybReady;
+  const receiptsReady = mandateSigned === true && receiptMissing !== null && receiptMissing.length === 0;
+  const accountComplete = bankReady && kybReady && receiptsReady;
 
   const handlePublish = async () => {
     setAttempted(true);
@@ -181,7 +207,7 @@ export function PrePublishModal({
         </div>
 
         <div className="mod-b">
-          {/* — Requis — */}
+          {/* — Required — */}
           <div className="pp-section">
             <div className="pp-section-title">{t('required.section')}</div>
             {blockers.map(({ ok, labelKey, tab }) => (
@@ -201,7 +227,7 @@ export function PrePublishModal({
             ))}
           </div>
 
-          {/* — Recommandé — */}
+          {/* — Recommended — */}
           <div className="pp-section">
             <div className="pp-section-title">{t('recommended.section')}</div>
             {boosters.map(({ ok, warn, labelKey, tab }) => {
@@ -245,7 +271,7 @@ export function PrePublishModal({
             </div>
           </div>
 
-          {/* — Statut compte — */}
+          {/* — Account status — */}
           <div className="pp-section">
             <div className="pp-section-title">{t('account.section')}</div>
             {accountComplete ? (
@@ -280,6 +306,24 @@ export function PrePublishModal({
                   <div className="pp-row-ic">{VERIF_ROWS[verificationStatus].icon}</div>
                   <div className="pp-row-lbl">{t(`account.verif.${verificationStatus}`)}</div>
                 </div>
+                {mandateSigned === false && (
+                  <div className="pp-row missing">
+                    <div className="pp-row-ic">!</div>
+                    <div className="pp-row-lbl">{t('account.mandateMissing')}</div>
+                    <Link className="pp-row-link" href={`/${locale}${ROUTES.ASSOCIATION_PROFILE}?tab=mandate`}>
+                      {t('account.completeReceipts')}
+                    </Link>
+                  </div>
+                )}
+                {receiptMissing !== null && receiptMissing.length > 0 && (
+                  <div className="pp-row missing">
+                    <div className="pp-row-ic">!</div>
+                    <div className="pp-row-lbl">{t('account.receiptsMissing')}</div>
+                    <Link className="pp-row-link" href={`/${locale}${ROUTES.ASSOCIATION_PROFILE}?tab=mandate`}>
+                      {t('account.completeReceipts')}
+                    </Link>
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -24,6 +24,8 @@ import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
 import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationSignatureRepository
+import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.LegalDocumentRepository
 import org.commonlink.repository.MollieConnectionRepository
 import org.commonlink.repository.OnchainJobRepository
@@ -97,6 +99,12 @@ class CampaignServiceTest {
     @Autowired
     private lateinit var complianceAuditLogService: ComplianceAuditLogService
 
+    @Autowired
+    private lateinit var signatureRepository: AssociationSignatureRepository
+
+    @Autowired
+    private lateinit var fiscalMandateRepository: FiscalMandateRepository
+
     private lateinit var userId: UUID
     private lateinit var otherUserId: UUID
 
@@ -126,6 +134,9 @@ class CampaignServiceTest {
      * Also marks the KYB dossier VERIFIED, because that is the production invariant: connecting
      * Mollie requires a signed mandate, which requires VERIFIED. Tests that need a bank-ready but
      * unverified association (revoked dossier) pass `verifyKyb = false`.
+     *
+     * Likewise signs a fiscal mandate and meets every receipt prerequisite (signature, legal object,
+     * head-office address) unless `receiptReady = false`: publication requires a receipt can be issued.
      */
     private fun linkMollie(
         ownerId: UUID,
@@ -133,11 +144,19 @@ class CampaignServiceTest {
         onboardingStatus: MollieOnboardingStatus = MollieOnboardingStatus.COMPLETED,
         canReceivePayments: Boolean = true,
         verifyKyb: Boolean = true,
+        receiptReady: Boolean = true,
     ) {
         val assoc = associationProfileRepository.findByUserId(ownerId).get()
         if (verifyKyb) {
             assoc.verificationStatus = VerificationStatus.VERIFIED
             associationProfileRepository.save(assoc)
+        }
+        if (receiptReady) {
+            associationProfileRepository.save(TestFixtures.withReceiptPrerequisiteFields(assoc))
+            signatureRepository.save(TestFixtures.associationSignature(assoc.id!!))
+            fiscalMandateRepository.save(
+                TestFixtures.fiscalMandate(assoc, reference = "MND-T-${(10_000_000..99_999_999).random()}")
+            )
         }
         mollieConnectionRepository.save(MollieConnection(
             association        = assoc,
@@ -1350,6 +1369,48 @@ class CampaignServiceTest {
         val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
         assertEquals(1, history.size)
         assertTrue(history.single().payload.contains("KYB_NOT_VERIFIED"))
+    }
+
+    /** A receipt is generated for every donation: without an active fiscal mandate the campaign is not published. */
+    @Test
+    fun `publish - no active fiscal mandate is refused and journaled with FISCAL_MANDATE_MISSING`() {
+        linkMollie(userId, receiptReady = false)
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No mandate journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        val ex = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true, cguVersion = "test"))
+        }
+
+        assertEquals("An active fiscal mandate is required before going live", ex.message)
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("FISCAL_MANDATE_MISSING"))
+    }
+
+    /** A mandate without signature, legal object or full head-office address cannot issue a complete receipt. */
+    @Test
+    fun `publish - missing receipt prerequisite is refused and journaled with RECEIPT_PREREQUISITES_MISSING`() {
+        linkMollie(userId, receiptReady = false)
+        val assoc = associationProfileRepository.findByUserId(userId).get()
+        fiscalMandateRepository.save(TestFixtures.fiscalMandate(assoc, reference = "MND-T-00000001"))
+        associationProfileRepository.save(TestFixtures.withReceiptPrerequisiteFields(assoc))
+        val campaign = campaignService.createCampaign(
+            userId, CreateCampaignRequest(name = "No signature journal", goal = BigDecimal("10000"))
+        )
+        makePublishable(userId, campaign.id)
+
+        val ex = assertThrows<UnprocessableEntityException> {
+            campaignService.updateCampaign(userId, campaign.id, UpdateCampaignRequest(status = CampaignStatus.LIVE, cguAccepted = true, cguVersion = "test"))
+        }
+
+        assertEquals("Receipt prerequisites missing before going live: SIGNATURE", ex.message)
+        val history = complianceAuditLogService.findCampaignReviewHistory(campaign.id)
+        assertEquals(1, history.size)
+        assertTrue(history.single().payload.contains("RECEIPT_PREREQUISITES_MISSING"))
+        assertEquals(CampaignStatus.DRAFT, campaignService.getCampaign(userId, campaign.id).status)
     }
 
     @Test

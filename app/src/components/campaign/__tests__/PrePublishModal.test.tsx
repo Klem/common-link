@@ -7,6 +7,8 @@ import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { PaymentProviderId } from '@/types/paymentProvider';
 import { getLegalAcceptanceState } from '@/lib/api/legal';
 import { getLegalDocument } from '@/lib/api/public';
+import { getMandateState } from '@/lib/api/mandate';
+import type { MandateStateDto } from '@/types/mandate';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -22,6 +24,15 @@ vi.mock('@/lib/api/legal', async (importOriginal) => ({
 vi.mock('@/lib/api/public', () => ({
   getLegalDocument: vi.fn(),
 }));
+
+vi.mock('@/lib/api/mandate', () => ({
+  getMandateState: vi.fn(),
+}));
+
+/** Mandate state whose only relevant field here is the list of missing receipt prerequisites. */
+function mandateState(receiptPrerequisitesMissing: MandateStateDto['receiptPrerequisitesMissing']): MandateStateDto {
+  return { signed: true, blocked: false, mandateDocs: [], receiptPrerequisitesMissing };
+}
 
 /** Balanced budget: one expense section and one revenue section for the same total. */
 function balancedBudget(expenses = 10_000, revenues = 10_000) {
@@ -70,6 +81,8 @@ beforeEach(() => {
     currentVersion: '2026-08-26',
     accepted: true,
   });
+  // Default: every receipt prerequisite met, so other tests are not blocked on a row they don't know about.
+  vi.mocked(getMandateState).mockResolvedValue(mandateState([]));
 });
 
 describe('PrePublishModal — account status', () => {
@@ -87,10 +100,44 @@ describe('PrePublishModal — account status', () => {
     expect(screen.getByText('account.verif.PENDING')).toBeInTheDocument();
   });
 
-  it('collapses to a single "complete" row when verified and Mollie is COMPLETED', () => {
+  it('collapses to a single "complete" row when verified, Mollie COMPLETED and receipts ready', async () => {
     renderWith();
 
-    expect(screen.getByText('account.complete')).toBeInTheDocument();
+    expect(await screen.findByText('account.complete')).toBeInTheDocument();
+    expect(screen.queryByText('account.receiptsMissing')).not.toBeInTheDocument();
+  });
+
+  /** Mirror of the publish refusal of `CampaignService.preparePublish` (rule 8). */
+  it('flags missing receipt prerequisites even when bank and KYB are ready, linking to the mandate tab', async () => {
+    vi.mocked(getMandateState).mockResolvedValue(mandateState(['LEGAL_OBJECT']));
+    renderWith();
+
+    const row = (await screen.findByText('account.receiptsMissing')).closest('.pp-row');
+    expect(row).toHaveClass('missing');
+    expect(screen.getByText('account.completeReceipts')).toHaveAttribute(
+      'href',
+      '/fr/dashboard/association/profile?tab=mandate',
+    );
+    expect(screen.queryByText('account.complete')).not.toBeInTheDocument();
+  });
+
+  /** Mirror of the FISCAL_MANDATE_MISSING publish refusal (e.g. a revoked mandate). */
+  it('flags an unsigned fiscal mandate even when bank, KYB and receipt prerequisites are ready', async () => {
+    vi.mocked(getMandateState).mockResolvedValue({ ...mandateState([]), signed: false });
+    renderWith();
+
+    const row = (await screen.findByText('account.mandateMissing')).closest('.pp-row');
+    expect(row).toHaveClass('missing');
+    expect(screen.queryByText('account.complete')).not.toBeInTheDocument();
+  });
+
+  it('never claims receipts are missing, nor the account complete, when the mandate state cannot be read', async () => {
+    vi.mocked(getMandateState).mockRejectedValue(new Error('network'));
+    renderWith();
+
+    await waitFor(() => expect(getMandateState).toHaveBeenCalled());
+    expect(screen.queryByText('account.receiptsMissing')).not.toBeInTheDocument();
+    expect(screen.queryByText('account.complete')).not.toBeInTheDocument();
   });
 
   /** Regression guard: IN_REVIEW used to render as "no bank account connected". */

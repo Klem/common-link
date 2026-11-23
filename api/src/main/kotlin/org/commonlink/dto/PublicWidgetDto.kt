@@ -37,7 +37,8 @@ data class PublicWidgetDto(
     /** Google Tag Manager container ID for Ad Grants tracking. Null means no GTM injection. */
     val gtmContainerId: String? = null,
     /**
-     * Whether the association's payment provider can collect right now. False → the form must show "temporarily
+     * Whether a donation can be collected right now: the association's payment provider can collect and a fiscal
+     * receipt can be issued (see `PublicWidgetService.isCollectAvailable`). False → the form must show "temporarily
      * unavailable" instead of failing on submit. Deliberately without a default, like [remainingCapacity].
      */
     val collectAvailable: Boolean,

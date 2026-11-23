@@ -667,6 +667,7 @@
           "paragraphs": [
             "L'organisme déclare relever des catégories mentionnées aux articles 200 et 238 bis du code général des impôts, et être en mesure de délivrer des reçus fiscaux. CommonLink ne vérifie pas cette éligibilité.",
             "L'organisme donne mandat à CommonLink d'établir et de transmettre les reçus fiscaux en son nom et pour son compte, à partir des informations qu'il fournit. Les reçus sont émis sous la seule responsabilité de l'organisme, qui en est le déclarant.",
+            "CommonLink conserve les doubles des reçus pour le compte de l'organisme pendant six ans à compter de leur établissement, et les lui restitue sur demande.",
             "Le reçu porte sur le seul montant du don. La contribution volontaire que le donateur peut verser à HelloAsso n'est pas un don à l'organisme et n'y figure pas.",
             "Les dons reçus par l'organisme sur ses formulaires HelloAsso ne relèvent pas du présent mandat.",
             "L'organisme demeure seul redevable des obligations déclaratives lui incombant, notamment de la déclaration annuelle du montant global des dons et du nombre de reçus délivrés."
@@ -946,7 +947,7 @@
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 17 novembre 2026",
+      "lastUpdated": "Version en vigueur au 23 novembre 2026",
       "title": "Conditions générales d'utilisation applicables aux organismes bénéficiaires"
     },
     "cguDonors": {
@@ -1507,7 +1508,7 @@
         "p3": "Une fois reçues, vos données sont traitées dans les conditions décrites sur la présente page.",
         "title": "Les pages de collecte hébergées par une association"
       },
-      "lastUpdated": "Version en vigueur au 17 novembre 2026",
+      "lastUpdated": "Version en vigueur au 23 novembre 2026",
       "protection": {
         "p1": "Cette page explique quelles informations nous collectons, pourquoi, combien de temps nous les gardons, qui y a accès et comment vous pouvez agir dessus.",
         "title": "Protection de vos données personnelles"
@@ -1524,7 +1525,7 @@
         "col2": "Combien de temps",
         "p1": "Clôturer un espace personnel ne supprime pas immédiatement toutes les données. Nous conservons celles que la loi nous impose de garder, pendant les durées ci-dessus, puis nous les supprimons.",
         "row0col1": "Les données de votre don et votre reçu fiscal",
-        "row0col2": "six ans à compter du don, puis suppression",
+        "row0col2": "six ans à compter de l'établissement du reçu, puis suppression",
         "row1col1": "Les informations recueillies au titre de la vigilance, pour les organismes et leurs représentants",
         "row1col2": "cinq ans à compter de la fin de la relation, puis suppression",
         "row2col1": "Les dossiers de réclamation",

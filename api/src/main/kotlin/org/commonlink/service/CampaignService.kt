@@ -81,6 +81,7 @@ class CampaignService(
     private val outbox: OnchainOutboxService,
     private val legalAcceptanceService: LegalAcceptanceService,
     private val actionPlaceService: ActionPlaceService,
+    private val receiptPrerequisiteService: ReceiptPrerequisiteService,
 ) {
 
     private val logger = LoggerFactory.getLogger(CampaignService::class.java)
@@ -718,6 +719,12 @@ class CampaignService(
      * because "not connected", "broken link" and "KYC incomplete" call for different user actions.
      * A provider with no registered implementation (defensive; every provider has one today) is refused as
      * "not connected".
+     *
+     * The receipt guards ([ReceiptPrerequisiteService]) come next: a fiscal receipt is generated automatically for
+     * every donation, so a campaign is not published unless the association holds an active fiscal mandate
+     * ([CampaignReviewRefusalReason.FISCAL_MANDATE_MISSING]) and misses no receipt prerequisite — signature, legal
+     * object, head-office address ([CampaignReviewRefusalReason.RECEIPT_PREREQUISITES_MISSING]). Same rule as the
+     * collection gate (`PublicWidgetService.isCollectAvailable`).
      */
     private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean, cguVersion: String?) {
         if (campaign.goal <= BigDecimal.ZERO) {
@@ -766,6 +773,19 @@ class CampaignService(
                 throw UnprocessableEntityException("Association must complete the payment provider verification before going live")
             }
             ProviderReadinessStatus.READY -> Unit
+        }
+        // A receipt is generated automatically for every donation: a campaign is only published when one can be
+        // issued — the same rule gates collection (PublicWidgetService.isCollectAvailable).
+        if (!receiptPrerequisiteService.hasActiveMandate(profile)) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.FISCAL_MANDATE_MISSING)
+            throw UnprocessableEntityException("An active fiscal mandate is required before going live")
+        }
+        val missingPrerequisites = receiptPrerequisiteService.missing(profile)
+        if (missingPrerequisites.isNotEmpty()) {
+            logRefusal(campaign, associationId, CampaignReviewRefusalReason.RECEIPT_PREREQUISITES_MISSING)
+            throw UnprocessableEntityException(
+                "Receipt prerequisites missing before going live: ${missingPrerequisites.joinToString(", ")}"
+            )
         }
         // Art. 1740 A CGI proof of acceptance of the association terms (document CGV) — no-op once this
         // association has already accepted the current version (see LegalAcceptanceService KDoc).
