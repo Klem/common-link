@@ -476,7 +476,7 @@
           "BANK_KYC_INCOMPLETE": "Mollie identity verification incomplete",
           "BANK_NOT_CONNECTED": "No Mollie account connected",
           "BUDGET_UNBALANCED": "Budget forecast missing or unbalanced (EUR 1 tolerance)",
-          "CGU_NOT_ACCEPTED": "Terms of use not accepted (art. 1740 A CGI)",
+          "CGU_NOT_ACCEPTED": "Terms not accepted",
           "GOAL_MISSING": "Fundraising goal missing or zero",
           "IMPACT_GOALS_MISSING": "Expected outcome missing or under 20 characters",
           "KYB_NOT_VERIFIED": "Association's identification file not verified",
@@ -1874,7 +1874,7 @@
         "cgu": {
           "label": "By publishing this campaign, you accept the",
           "link": "Terms of Use (CGU)",
-          "section": "Terms of use"
+          "section": "Terms of use and privacy"
         },
         "complete": "Complete required fields",
         "confirm": "🚀 Publish",
@@ -1896,7 +1896,11 @@
           "name": "Campaign name",
           "section": "Required to publish"
         },
-        "title": "Before publishing your campaign"
+        "title": "Before publishing your campaign",
+        "privacy": {
+          "label": "I have read the",
+          "link": "privacy policy"
+        }
       },
       "stats": {
         "goal": "Total goal",
@@ -2613,18 +2617,28 @@
   "legal": {
     "close": "Close",
     "gate": {
-      "accept": "Accept and continue",
-      "checkbox": "I have read and accept these terms on behalf of the association",
+      "accept": {
+        "CGV": "Accept and continue",
+        "PRIVACY": "Continue"
+      },
+      "checkbox": {
+        "CGV": "I have read and accept this text on behalf of the association",
+        "PRIVACY": "I have read this text on behalf of the association"
+      },
       "error": "Your acceptance could not be recorded. Please try again.",
-      "intro": "Please read and accept the current CommonLink terms of use to continue.",
-      "title": "Terms of use"
+      "intro": {
+        "CGV": "Please read and accept the current CommonLink texts to continue.",
+        "PRIVACY": "Please read the current CommonLink privacy policy to continue."
+      },
+      "title": "Terms of use and privacy"
     },
     "loadError": "Could not load this document. Please try again.",
     "loading": "Loading…",
-    "outdated": "These terms were just updated. Please read the new version before accepting it.",
+    "outdated": "This text was just updated. Please read the new version before accepting it.",
     "title": {
       "CGU": "Terms of Use",
-      "CGV": "Terms of use for associations"
+      "CGV": "Terms of use for associations",
+      "PRIVACY": "Privacy policy"
     },
     "tocTitle": "Contents",
     "version": "Version {version}"
@@ -3670,7 +3684,8 @@
       "link": "Terms of Use (CGU)"
     },
     "consent": {
-      "label": "I consent to my personal data being processed for this donation (GDPR)"
+      "label": "I have read the",
+      "link": "privacy policy"
     },
     "errors": {
       "amountDecimals": "Amount can have at most 2 decimal places",
@@ -3680,7 +3695,7 @@
       "capExceeded": "This amount exceeds what the campaign can still collect. Please enter a lower amount.",
       "capFull": "This campaign has reached its collection cap and no longer accepts donations.",
       "cguRequired": "You must accept the Terms of Use",
-      "consentRequired": "You must consent to proceed",
+      "consentRequired": "You must read the privacy policy",
       "countryInvalid": "Please enter a valid 2-letter country code",
       "duplicateSubmit": "This donation was already submitted. Please wait a minute before trying again.",
       "emailInvalid": "Please enter a valid email address",
@@ -3691,8 +3706,8 @@
       "notCollecting": "This organisation cannot receive online donations yet. Please try again later.",
       "submitFailed": "An error occurred. Please try again.",
       "collectUnavailable": "Online donations are temporarily unavailable for this campaign. Please try again a little later.",
-      "legalOutdated": "The terms were just updated: please read them again and tick the box once more.",
-      "legalUnavailable": "The terms could not be loaded. Please reload the page."
+      "legalOutdated": "The terms or the privacy policy were just updated: please read them again and tick the boxes once more.",
+      "legalUnavailable": "The terms or the privacy policy could not be loaded. Please reload the page."
     },
     "identity": {
       "addressLine1": "Address",

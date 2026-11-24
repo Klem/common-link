@@ -24,8 +24,17 @@ const CGU_DOC = {
   content: 'Texte des CGU.',
   publishedAt: '2026-09-09T00:00:00Z',
 };
-// The form loads the CGU text on mount and sends its version as the accepted one.
-mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+const PRIVACY_DOC = {
+  documentType: 'PRIVACY',
+  version: '2026-11-24-3b459616ea44',
+  format: 'TEXT',
+  content: 'Texte de la politique de confidentialité.',
+  publishedAt: '2026-11-24T00:00:00Z',
+};
+/** Serves each legal text by type, as `GET /api/public/legal/{type}` does. */
+const legalDoc = async (type: string) => (type === 'PRIVACY' ? PRIVACY_DOC : CGU_DOC);
+// The form loads the CGU and privacy policy texts on mount and sends their versions as the accepted ones.
+mockGetLegalDocument.mockImplementation(legalDoc);
 
 const TRACKING_FIXTURE = {
   campaignId: 'campaign-1',
@@ -536,7 +545,7 @@ describe('DonationForm — date de naissance facultative', () => {
   });
 
   it('shows the very CGU version it will send, without toggling the checkbox', async () => {
-    mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+    mockGetLegalDocument.mockImplementation(legalDoc);
     render(
       <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
             tracking={TRACKING_FIXTURE} skin="default" />,
@@ -547,12 +556,13 @@ describe('DonationForm — date de naissance facultative', () => {
     fireEvent.click(screen.getByText('cgu.link'));
     await waitFor(() => screen.getByText('Texte des CGU.'));
 
-    expect(mockGetLegalDocument).toHaveBeenCalledTimes(1);
+    // Loaded once per text on mount (CGU, privacy policy), never again when opened.
+    expect(mockGetLegalDocument).toHaveBeenCalledTimes(2);
     expect(cguCheckbox.checked).toBe(false);
   });
 
   it('sends the CGU version it loaded', async () => {
-    mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+    mockGetLegalDocument.mockImplementation(legalDoc);
     mockCreateGuestDonation.mockResolvedValue({ checkoutUrl: 'https://pay.example/x', paymentId: 'p', publicRef: 'r' });
     render(
       <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
@@ -566,11 +576,28 @@ describe('DonationForm — date de naissance facultative', () => {
     const payload = mockCreateGuestDonation.mock.calls[0][1];
     expect(payload.cguAccepted).toBe(true);
     expect(payload.cguVersion).toBe(CGU_DOC.version);
+    expect(payload.consent).toBe(true);
+    expect(payload.privacyVersion).toBe(PRIVACY_DOC.version);
     expect(payload).not.toHaveProperty('cgvAccepted');
   });
 
+  it('links the GDPR checkbox to the privacy policy it accepts', async () => {
+    render(
+      <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
+            tracking={TRACKING_FIXTURE} skin="default" />,
+    );
+    await act(async () => {});
+
+    const consent = screen.getByLabelText(/consent.label/i) as HTMLInputElement;
+    fireEvent.click(screen.getByText('consent.link'));
+    await waitFor(() => screen.getByText('Texte de la politique de confidentialité.'));
+
+    expect(mockGetLegalDocument).toHaveBeenCalledWith('PRIVACY');
+    expect(consent.checked).toBe(false);
+  });
+
   it('reloads the CGU and asks again on 409 LEGAL_VERSION_OUTDATED', async () => {
-    mockGetLegalDocument.mockResolvedValue(CGU_DOC);
+    mockGetLegalDocument.mockImplementation(legalDoc);
     mockCreateGuestDonation.mockRejectedValue({ response: { status: 409, data: { code: 'LEGAL_VERSION_OUTDATED' } } });
     render(
       <DonationForm widgetToken="clk_test" sourceSite={null} locale="fr"
@@ -581,8 +608,10 @@ describe('DonationForm — date de naissance facultative', () => {
     fireEvent.click(screen.getByRole('button', { name: 'submit' }));
 
     await waitFor(() => expect(screen.getByText('errors.legalOutdated')).toBeInTheDocument());
-    expect(mockGetLegalDocument).toHaveBeenCalledTimes(2);
+    // Both texts reloaded, both boxes to tick again.
+    expect(mockGetLegalDocument).toHaveBeenCalledTimes(4);
     expect((screen.getByLabelText(/cgu.label/i) as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByLabelText(/consent.label/i) as HTMLInputElement).checked).toBe(false);
     // Not a blocking refusal: the donor can tick the box again and resubmit.
     expect(screen.getByRole('button', { name: 'submit' })).toBeEnabled();
   });

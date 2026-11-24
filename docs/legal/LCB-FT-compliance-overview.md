@@ -489,10 +489,12 @@ comptée parmi les seize fiches du dispositif. Aucune conclusion sur le disposit
 être tirée. Son nom de fichier ne porte volontairement aucun préfixe `E`.
 
 **Une huitième fiche, hors dispositif LCB-FT, a été ajoutée le 16 novembre 2026 :
-`acceptation-cgu-versionnees.md`.** Elle décrit l'acceptation des conditions générales définitives,
-reprises mot pour mot du site vitrine : une nouvelle version à chaque modification du texte, en
+`acceptation-cgu-versionnees.md`.** Elle décrit l'acceptation des conditions générales définitives
+et, depuis le 24 novembre 2026, de la politique de confidentialité, trois textes
+repris mot pour mot du site vitrine : une nouvelle version à chaque modification du texte, en
 vigueur dès la mise en production, l'historique conservé en base ; le donateur accepte les CGU
-donateurs à chaque don, l'association accepte les conditions qui lui sont destinées, dans leur
+donateurs et la politique de confidentialité à chaque don, l'association accepte les conditions
+qui lui sont destinées et la politique de confidentialité, dans leur
 version en vigueur, à sa connexion et, contrôle vérifié par le serveur, à la publication d'une
 campagne ; la preuve enregistre la version réellement affichée. Elle déclare ce qui reste ouvert
 (blocage limité à la publication, pas d'information préalable par courrier électronique). Elle n'est pas

@@ -6,7 +6,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import type { CampaignDto, BudgetSectionDto } from '@/types/campaign';
 import { BudgetSide } from '@/types/campaign';
 import { VerificationStatus } from '@/types/association';
-import { ASSOCIATION_LEGAL_DOCUMENT } from '@/types/legal';
+import {
+  ASSOCIATION_LEGAL_DOCUMENTS,
+  LegalDocumentType,
+  type PublishTermsAcceptances,
+} from '@/types/legal';
 import { BankSetupStatus } from '@/lib/bankSetupStatus';
 import { PaymentProviderId } from '@/types/paymentProvider';
 import { getLegalAcceptanceState, isLegalVersionOutdated } from '@/lib/api/legal';
@@ -68,10 +72,21 @@ interface PrePublishModalProps {
   paymentProvider?: PaymentProviderId | null;
   onClose: () => void;
   /**
-   * @param cguAccepted Whether to send `cguAccepted: true` on the publish request.
-   * @param cguVersion The CGU version this dialog displayed, sent back as the accepted version.
+   * @param terms For each association document (association terms, privacy policy): whether it is accepted, and
+   *   the version this dialog displayed, sent back as the accepted version.
    */
-  onConfirm: (cguAccepted: boolean, cguVersion: string | null) => Promise<void>;
+  onConfirm: (terms: PublishTermsAcceptances) => Promise<void>;
+}
+
+/** i18n key (`dashboard.campaigns.publish.<key>`) and checkbox id suffix of each association document. */
+const TERMS_KEYS: Partial<Record<LegalDocumentType, string>> = {
+  [LegalDocumentType.CGV]: 'cgu',
+  [LegalDocumentType.PRIVACY]: 'privacy',
+};
+
+interface TermsState {
+  accepted: boolean;
+  version: string;
 }
 
 function sumSide(sections: BudgetSectionDto[], side: BudgetSide): number {
@@ -97,20 +112,32 @@ export function PrePublishModal({
   const tLegal = useTranslations('legal');
   const locale = useLocale();
 
-  // Art. 1740 A CGI proof of acceptance. `cguState === null` while loading; once loaded,
-  // `cguState.accepted` means this association already has a standing acceptance of the current
-  // CGU version — the checkbox then renders pre-checked and disabled instead of blocking.
+  // Art. 1740 A CGI proof of acceptance, for each association document (terms, privacy policy).
+  // `termsState === null` while loading; once loaded, `termsState[type].accepted` means this association already
+  // has a standing acceptance of that document's current version — its checkbox then renders pre-checked and
+  // disabled instead of blocking.
   const [attempted, setAttempted] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
-  const [cguState, setCguState] = useState<{ accepted: boolean; version: string } | null>(null);
-  const [cguChecked, setCguChecked] = useState(false);
-  const loadCguState = useCallback(() => {
-    getLegalAcceptanceState(ASSOCIATION_LEGAL_DOCUMENT)
-      .then((state) => setCguState({ accepted: state.accepted, version: state.currentVersion }))
-      .catch(() => setCguState({ accepted: false, version: '' }));
+  const [termsState, setTermsState] = useState<Partial<Record<LegalDocumentType, TermsState>> | null>(null);
+  const [termsChecked, setTermsChecked] = useState<Partial<Record<LegalDocumentType, boolean>>>({});
+  const loadTermsState = useCallback(() => {
+    void (async () => {
+      const next: Partial<Record<LegalDocumentType, TermsState>> = {};
+      // One request after the other: the API client is never used in parallel.
+      for (const type of ASSOCIATION_LEGAL_DOCUMENTS) {
+        try {
+          const state = await getLegalAcceptanceState(type);
+          next[type] = { accepted: state.accepted, version: state.currentVersion };
+        } catch {
+          next[type] = { accepted: false, version: '' };
+        }
+      }
+      setTermsState(next);
+    })();
   }, []);
-  useEffect(loadCguState, [loadCguState]);
-  const cguAccepted = cguState?.accepted === true || cguChecked;
+  useEffect(loadTermsState, [loadTermsState]);
+  const isTermAccepted = (type: LegalDocumentType) =>
+    termsState?.[type]?.accepted === true || termsChecked[type] === true;
 
   // Active fiscal mandate and fiscal receipt prerequisites (signature, legal object, head-office address):
   // publishing is refused without either (`CampaignService.preparePublish`: FISCAL_MANDATE_MISSING,
@@ -131,7 +158,7 @@ export function PrePublishModal({
       cancelled = true;
     };
   }, []);
-  const [showCguDoc, setShowCguDoc] = useState(false);
+  const [shownDocument, setShownDocument] = useState<LegalDocumentType | null>(null);
 
   const expenses = sumSide(campaign.budgetSections, BudgetSide.EXPENSE);
   const revenues = sumSide(campaign.budgetSections, BudgetSide.REVENUE);
@@ -183,13 +210,20 @@ export function PrePublishModal({
   const handlePublish = async () => {
     setAttempted(true);
     try {
-      await onConfirm(cguAccepted, cguState?.version || null);
+      await onConfirm(
+        Object.fromEntries(
+          ASSOCIATION_LEGAL_DOCUMENTS.map((type) => [
+            type,
+            { accepted: isTermAccepted(type), version: termsState?.[type]?.version || null },
+          ]),
+        ),
+      );
     } catch (err) {
       if (isLegalVersionOutdated(err)) {
-        // A new CGU version was published while this dialog was open: show it, and ask again.
-        setCguChecked(false);
-        setCguState(null);
-        loadCguState();
+        // A new version was published while this dialog was open: show it, and ask again.
+        setTermsChecked({});
+        setTermsState(null);
+        loadTermsState();
         setAttempted(false);
         setPublishError(tLegal('outdated'));
         return;
@@ -251,24 +285,30 @@ export function PrePublishModal({
             })}
           </div>
 
-          {/* — CGU (art. 1740 A CGI) — */}
+          {/* — Association terms and privacy policy (art. 1740 A CGI) — */}
           <div className="pp-section">
             <div className="pp-section-title">{t('cgu.section')}</div>
-            <div className={`pp-row ${cguAccepted ? 'ok' : 'missing'}`}>
-              <input
-                type="checkbox"
-                id="pp-cgu-checkbox"
-                checked={cguAccepted}
-                disabled={cguState === null || cguState.accepted}
-                onChange={(e) => setCguChecked(e.target.checked)}
-              />
-              <label htmlFor="pp-cgu-checkbox" className="pp-row-lbl">
-                {t('cgu.label')}{' '}
-                <LegalLinkButton className="pp-row-link" onClick={() => setShowCguDoc(true)}>
-                  {t('cgu.link')}
-                </LegalLinkButton>
-              </label>
-            </div>
+            {ASSOCIATION_LEGAL_DOCUMENTS.map((type) => {
+              const key = TERMS_KEYS[type] ?? type.toLowerCase();
+              const accepted = isTermAccepted(type);
+              return (
+                <div key={type} className={`pp-row ${accepted ? 'ok' : 'missing'}`}>
+                  <input
+                    type="checkbox"
+                    id={`pp-${key}-checkbox`}
+                    checked={accepted}
+                    disabled={termsState === null || termsState[type]?.accepted === true}
+                    onChange={(e) => setTermsChecked((prev) => ({ ...prev, [type]: e.target.checked }))}
+                  />
+                  <label htmlFor={`pp-${key}-checkbox`} className="pp-row-lbl">
+                    {t(`${key}.label`)}{' '}
+                    <LegalLinkButton className="pp-row-link" onClick={() => setShownDocument(type)}>
+                      {t(`${key}.link`)}
+                    </LegalLinkButton>
+                  </label>
+                </div>
+              );
+            })}
           </div>
 
           {/* — Account status — */}
@@ -350,8 +390,8 @@ export function PrePublishModal({
         </div>
       </div>
 
-      {showCguDoc && (
-        <LegalDocumentModal documentType={ASSOCIATION_LEGAL_DOCUMENT} onClose={() => setShowCguDoc(false)} />
+      {shownDocument && (
+        <LegalDocumentModal documentType={shownDocument} onClose={() => setShownDocument(null)} />
       )}
     </div>
   );

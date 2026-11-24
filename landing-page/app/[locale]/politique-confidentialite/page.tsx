@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LegalSubnav } from '@/components/layout/LegalSubnav';
@@ -7,7 +8,29 @@ import { LegalSubnav } from '@/components/layout/LegalSubnav';
  * Markup and classes taken verbatim from the mockup (`p19-confidentialite.html`:
  * `.legal-subnav`, `.legal-hero`, `.legal-body`, `.legal-table`).
  * Do not replace with Tailwind classes: the mockup CSS is the source of truth.
+ *
+ * The texts (`legal.politiqueConfidentialite` in `messages/fr.json`) are also the privacy policy stored and
+ * accepted in the app (document type `PRIVACY`): the API bundles this file and injects every change at startup
+ * as a new version (`api/.../bootstrap/LegalDocumentSeeder.kt`). Same shape as the CGU texts, plus an optional
+ * `table` rendered before an article's paragraphs, and `<b>…</b>` for bold runs.
  */
+interface Table {
+  head: string[];
+  rows: string[][];
+}
+
+interface Subsection {
+  title: string;
+  paragraphs: string[];
+}
+
+interface Article {
+  title: string;
+  table?: Table;
+  paragraphs?: string[];
+  subsections?: Subsection[];
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'metadata.privacy' });
@@ -28,7 +51,26 @@ export default async function PolitiqueConfidentialitePage({
 }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'legal.politiqueConfidentialite' });
-  const bold = { b: (chunks: React.ReactNode) => <strong>{chunks}</strong> };
+  const tl = await getTranslations({ locale, namespace: 'legal' });
+  const articles = t.raw('articles') as Article[];
+  // Links are written `<cookies>…</cookies>` in the texts; `legal.linkTargets` maps each tag to its page.
+  // The API resolves the same tags the same way, so both renderings carry the same links.
+  const linkTargets = tl.raw('linkTargets') as Record<string, string>;
+  const richTags = {
+    ...Object.fromEntries(
+      Object.entries(linkTargets).map(([tag, href]) => [
+        tag,
+        (chunks: ReactNode) => (
+          <Link href={href} className="legal-link">
+            {chunks}
+          </Link>
+        ),
+      ]),
+    ),
+    b: (chunks: ReactNode) => <strong>{chunks}</strong>,
+  };
+  /** Plain paragraphs are rendered as-is; a paragraph carrying tags is resolved by `t.rich` from its path. */
+  const paragraph = (text: string, path: string) => (text.includes('<') ? t.rich(path, richTags) : text);
 
   return (
     <main>
@@ -44,116 +86,42 @@ export default async function PolitiqueConfidentialitePage({
         </div>
 
         <div className="legal-body">
-          <h2>{t('protection.title')}</h2>
-          <p>{t('protection.p1')}</p>
-
-          <h2>{t('controller.title')}</h2>
-          <p>{t('controller.p1')}</p>
-          <p>{t('controller.p2')}</p>
-
-          <h2>{t('collected.title')}</h2>
-          <h3>{t('collected.donation.title')}</h3>
-          <p>{t('collected.donation.p1')}</p>
-          <p>{t('collected.donation.p2')}</p>
-          <p>{t('collected.donation.p3')}</p>
-          <p>{t('collected.donation.p4')}</p>
-
-          <h3>{t('collected.org.title')}</h3>
-          <p>{t('collected.org.p1')}</p>
-          <p>{t('collected.org.p2')}</p>
-          <p>{t('collected.org.p3')}</p>
-          <p>{t('collected.org.p4')}</p>
-          <p>{t('collected.org.p5')}</p>
-          <p>{t('collected.org.p6')}</p>
-
-          <h3>{t('collected.payee.title')}</h3>
-          <p>{t('collected.payee.p1')}</p>
-          <p>{t('collected.payee.p2')}</p>
-          <p>{t('collected.payee.p3')}</p>
-
-          <h3>{t('collected.browsing.title')}</h3>
-          <p>{t('collected.browsing.p1')}</p>
-          <p>
-            {t.rich('collected.browsing.p2', {
-              link: (chunks) => (
-                <Link href="/politique-cookies" className="legal-link">
-                  {chunks}
-                </Link>
-              ),
-            })}
-          </p>
-
-          <h2>{t('basis.title')}</h2>
-          <p>{t('basis.p1')}</p>
-          <p>{t('basis.p2')}</p>
-
-          <h2>{t('retention.title')}</h2>
-          <table className="legal-table">
-            <thead>
-              <tr>
-                <th>{t('retention.col1')}</th>
-                <th>{t('retention.col2')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{t('retention.row0col1')}</td>
-                <td>{t('retention.row0col2')}</td>
-              </tr>
-              <tr>
-                <td>{t('retention.row1col1')}</td>
-                <td>{t('retention.row1col2')}</td>
-              </tr>
-              <tr>
-                <td>{t('retention.row2col1')}</td>
-                <td>{t('retention.row2col2')}</td>
-              </tr>
-              <tr>
-                <td>{t('retention.row3col1')}</td>
-                <td>{t('retention.row3col2')}</td>
-              </tr>
-              <tr>
-                <td>{t('retention.row4col1')}</td>
-                <td>{t('retention.row4col2')}</td>
-              </tr>
-              <tr>
-                <td>{t('retention.row5col1')}</td>
-                <td>{t('retention.row5col2')}</td>
-              </tr>
-              <tr>
-                <td>{t('retention.row6col1')}</td>
-                <td>{t('retention.row6col2')}</td>
-              </tr>
-              <tr>
-                <td>{t('retention.row7col1')}</td>
-                <td>{t('retention.row7col2')}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p>{t('retention.p1')}</p>
-
-          <h2>{t('recipients.title')}</h2>
-          <p>{t.rich('recipients.p1', bold)}</p>
-          <p>{t.rich('recipients.p2', bold)}</p>
-          <p>{t.rich('recipients.p3', bold)}</p>
-          <p>{t('recipients.p4')}</p>
-
-          <h2>{t('automated.title')}</h2>
-          <p>{t('automated.p1')}</p>
-
-          <h2>{t('rights.title')}</h2>
-          <p>{t('rights.p1')}</p>
-          <p>{t('rights.p2')}</p>
-          <p>{t('rights.p3')}</p>
-          <p>{t('rights.p4')}</p>
-
-          <h2>{t('hostedPages.title')}</h2>
-          <p>{t('hostedPages.p1')}</p>
-          <p>{t('hostedPages.p2')}</p>
-          <p>{t('hostedPages.p3')}</p>
-
-          <h2>{t('changes.title')}</h2>
-          <p>{t('changes.p1')}</p>
+          {articles.map((article, i) => (
+            <Fragment key={i}>
+              <h2>{article.title}</h2>
+              {article.table && (
+                <table className="legal-table">
+                  <thead>
+                    <tr>
+                      {article.table.head.map((cell, j) => (
+                        <th key={j}>{cell}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {article.table.rows.map((row, j) => (
+                      <tr key={j}>
+                        {row.map((cell, k) => (
+                          <td key={k}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {article.paragraphs?.map((text, j) => (
+                <p key={j}>{paragraph(text, `articles.${i}.paragraphs.${j}`)}</p>
+              ))}
+              {article.subsections?.map((subsection, j) => (
+                <Fragment key={j}>
+                  <h3>{subsection.title}</h3>
+                  {subsection.paragraphs.map((text, k) => (
+                    <p key={k}>{paragraph(text, `articles.${i}.subsections.${j}.paragraphs.${k}`)}</p>
+                  ))}
+                </Fragment>
+              ))}
+            </Fragment>
+          ))}
         </div>
       </div>
     </main>

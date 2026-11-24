@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.commonlink.dto.PublishTermsAcceptance
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.AuthProvider
 import org.commonlink.entity.LegalAcceptance
@@ -42,6 +43,24 @@ class LegalAcceptanceServiceTest {
     private val associationId = UUID.randomUUID()
     private val campaignId = UUID.randomUUID()
     private val cguDoc = LegalDocument(documentType = LegalDocumentType.CGU, version = "2026-08-26", content = "text")
+    private val cgvDoc = LegalDocument(documentType = LegalDocumentType.CGV, version = "2026-11-24-cgv", content = "text")
+    private val privacyDoc = LegalDocument(documentType = LegalDocumentType.PRIVACY, version = "2026-11-24-privacy", content = "text")
+
+    /** Publishes the current CGV and privacy policy, and says which of them [associationId] already accepted. */
+    private fun associationDocuments(alreadyAccepted: Set<LegalDocumentType> = emptySet()) {
+        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGV) } returns cgvDoc
+        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.PRIVACY) } returns privacyDoc
+        every {
+            legalAcceptanceRepository.existsBySubjectTypeAndSubjectIdAndDocumentTypeAndDocumentVersion(
+                LegalAcceptanceSubjectType.ASSOCIATION, associationId, any(), any(),
+            )
+        } answers { arg<LegalDocumentType>(2) in alreadyAccepted }
+    }
+
+    private fun bothTicked(cgvVersion: String? = cgvDoc.version, privacyVersion: String? = privacyDoc.version) = mapOf(
+        LegalDocumentType.CGV to PublishTermsAcceptance(true, cgvVersion),
+        LegalDocumentType.PRIVACY to PublishTermsAcceptance(true, privacyVersion),
+    )
 
     @Test
     fun `currentDocument throws when no document was ever published`() {
@@ -51,87 +70,104 @@ class LegalAcceptanceServiceTest {
     }
 
     @Test
-    fun `requireAssociationAcceptance is a no-op when already accepted the current version`() {
-        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) } returns cguDoc
-        every {
-            legalAcceptanceRepository.existsBySubjectTypeAndSubjectIdAndDocumentTypeAndDocumentVersion(
-                LegalAcceptanceSubjectType.ASSOCIATION, associationId, LegalDocumentType.CGU, "2026-08-26",
-            )
-        } returns true
+    fun `requireAssociationAcceptances is a no-op when both current versions are already accepted`() {
+        associationDocuments(alreadyAccepted = setOf(LegalDocumentType.CGV, LegalDocumentType.PRIVACY))
 
-        // accepted=false would normally throw — proves the no-op path is genuinely first.
-        service.requireAssociationAcceptance(associationId, LegalDocumentType.CGU, accepted = false, null, "Nom", "a@b.fr", campaignId)
+        // Nothing ticked would normally throw — proves the no-op path is genuinely first.
+        service.requireAssociationAcceptances(associationId, emptyMap(), "Nom", "a@b.fr", campaignId)
 
         verify(exactly = 0) { legalAcceptanceRepository.save(any()) }
     }
 
     @Test
-    fun `requireAssociationAcceptance throws when not yet accepted and accepted is false`() {
-        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) } returns cguDoc
-        every {
-            legalAcceptanceRepository.existsBySubjectTypeAndSubjectIdAndDocumentTypeAndDocumentVersion(any(), any(), any(), any())
-        } returns false
+    fun `requireAssociationAcceptances throws when a pending document is not ticked, and records nothing`() {
+        associationDocuments()
 
         val ex = assertThrows<UnprocessableEntityException> {
-            service.requireAssociationAcceptance(associationId, LegalDocumentType.CGU, accepted = false, null, "Nom", "a@b.fr", campaignId)
+            service.requireAssociationAcceptances(
+                associationId,
+                mapOf(
+                    LegalDocumentType.CGV to PublishTermsAcceptance(true, cgvDoc.version),
+                    LegalDocumentType.PRIVACY to PublishTermsAcceptance(false, null),
+                ),
+                "Nom", "a@b.fr", campaignId,
+            )
         }
-        assertTrue(ex.message!!.contains("CGU"))
+        assertTrue(ex.message!!.contains("PRIVACY"))
         verify(exactly = 0) { legalAcceptanceRepository.save(any()) }
     }
 
     @Test
-    fun `requireAssociationAcceptance records a snapshot row when accepted is true`() {
-        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) } returns cguDoc
-        every {
-            legalAcceptanceRepository.existsBySubjectTypeAndSubjectIdAndDocumentTypeAndDocumentVersion(any(), any(), any(), any())
-        } returns false
+    fun `requireAssociationAcceptances records one snapshot row per pending document`() {
+        associationDocuments()
+        val saved = mutableListOf<LegalAcceptance>()
+        every { legalAcceptanceRepository.save(capture(saved)) } answers { saved.last() }
+
+        service.requireAssociationAcceptances(associationId, bothTicked(), "Jean Dupont", "jean@asso.fr", campaignId)
+
+        assertEquals(listOf(LegalDocumentType.CGV, LegalDocumentType.PRIVACY), saved.map { it.documentType })
+        assertEquals(listOf(cgvDoc.version, privacyDoc.version), saved.map { it.documentVersion })
+        saved.forEach {
+            assertEquals(LegalAcceptanceSubjectType.ASSOCIATION, it.subjectType)
+            assertEquals(associationId, it.subjectId)
+            assertEquals("Jean Dupont", it.signerName)
+            assertEquals("jean@asso.fr", it.signerEmail)
+            assertEquals(campaignId, it.campaignId)
+        }
+    }
+
+    @Test
+    fun `requireAssociationAcceptances only asks for the document whose version changed`() {
+        // The CGV is already accepted: the privacy policy alone is pending, and the CGV checkbox is ignored.
+        associationDocuments(alreadyAccepted = setOf(LegalDocumentType.CGV))
         val saved = slot<LegalAcceptance>()
         every { legalAcceptanceRepository.save(capture(saved)) } answers { saved.captured }
 
-        service.requireAssociationAcceptance(associationId, LegalDocumentType.CGU, accepted = true, "2026-08-26", "Jean Dupont", "jean@asso.fr", campaignId)
+        service.requireAssociationAcceptances(
+            associationId,
+            mapOf(LegalDocumentType.PRIVACY to PublishTermsAcceptance(true, privacyDoc.version)),
+            "Jean Dupont", "jean@asso.fr", campaignId,
+        )
 
-        assertEquals(LegalAcceptanceSubjectType.ASSOCIATION, saved.captured.subjectType)
-        assertEquals(associationId, saved.captured.subjectId)
-        assertEquals("2026-08-26", saved.captured.documentVersion)
-        assertEquals("Jean Dupont", saved.captured.signerName)
-        assertEquals("jean@asso.fr", saved.captured.signerEmail)
-        assertEquals(campaignId, saved.captured.campaignId)
+        verify(exactly = 1) { legalAcceptanceRepository.save(any()) }
+        assertEquals(LegalDocumentType.PRIVACY, saved.captured.documentType)
     }
 
     @Test
     fun `recordDonorAcceptance is idempotent per donation`() {
         val donationId = UUID.randomUUID()
-        every { legalAcceptanceRepository.existsByDonationIdAndDocumentType(donationId, LegalDocumentType.CGU) } returns true
+        every { legalAcceptanceRepository.existsByDonationIdAndDocumentType(donationId, any()) } returns true
 
         service.recordDonorAcceptance(
             UUID.randomUUID(), donationId, campaignId, "Marie Curie", "marie@example.org",
-            acceptedVersions = mapOf(LegalDocumentType.CGU to "2026-08-26"),
+            acceptedVersions = mapOf(LegalDocumentType.CGU to "2026-08-26", LegalDocumentType.PRIVACY to privacyDoc.version),
         )
 
         verify(exactly = 0) { legalAcceptanceRepository.save(any()) }
     }
 
     @Test
-    fun `recordDonorAcceptance writes a single CGU row, never a CGV one`() {
+    fun `recordDonorAcceptance writes a CGU row and a privacy policy row, never a CGV one`() {
         val donorId = UUID.randomUUID()
         val donationId = UUID.randomUUID()
 
-        every { legalAcceptanceRepository.existsByDonationIdAndDocumentType(donationId, LegalDocumentType.CGU) } returns false
-        val saved = slot<LegalAcceptance>()
-        every { legalAcceptanceRepository.save(capture(saved)) } answers { saved.captured }
+        every { legalAcceptanceRepository.existsByDonationIdAndDocumentType(donationId, any()) } returns false
+        val saved = mutableListOf<LegalAcceptance>()
+        every { legalAcceptanceRepository.save(capture(saved)) } answers { saved.last() }
 
         service.recordDonorAcceptance(
             donorId, donationId, campaignId, "Marie Curie", "marie@example.org",
-            acceptedVersions = mapOf(LegalDocumentType.CGU to "2026-08-26"),
+            acceptedVersions = mapOf(LegalDocumentType.CGU to "2026-08-26", LegalDocumentType.PRIVACY to privacyDoc.version),
         )
 
-        verify(exactly = 1) { legalAcceptanceRepository.save(any()) }
-        assertEquals(LegalAcceptanceSubjectType.DONOR, saved.captured.subjectType)
-        assertEquals(LegalDocumentType.CGU, saved.captured.documentType)
-        assertEquals("2026-08-26", saved.captured.documentVersion, "records the version the form displayed")
+        assertEquals(listOf(LegalDocumentType.CGU, LegalDocumentType.PRIVACY), saved.map { it.documentType })
+        assertEquals(listOf("2026-08-26", privacyDoc.version), saved.map { it.documentVersion }, "records the versions the form displayed")
         verify(exactly = 0) { legalAcceptanceRepository.existsByDonationIdAndDocumentType(donationId, LegalDocumentType.CGV) }
-        assertEquals(donationId, saved.captured.donationId)
-        assertEquals(campaignId, saved.captured.campaignId)
+        saved.forEach {
+            assertEquals(LegalAcceptanceSubjectType.DONOR, it.subjectType)
+            assertEquals(donationId, it.donationId)
+            assertEquals(campaignId, it.campaignId)
+        }
     }
 
     @Test
@@ -213,20 +249,17 @@ class LegalAcceptanceServiceTest {
     }
 
     @Test
-    fun `requireAssociationAcceptance refuses an outdated displayed version and records nothing`() {
-        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) } returns cguDoc
-        every {
-            legalAcceptanceRepository.existsBySubjectTypeAndSubjectIdAndDocumentTypeAndDocumentVersion(any(), any(), any(), any())
-        } returns false
+    fun `requireAssociationAcceptances refuses an outdated displayed version and records nothing`() {
+        associationDocuments()
 
         assertThrows<LegalDocumentVersionOutdatedException> {
-            service.requireAssociationAcceptance(
-                associationId, LegalDocumentType.CGU, accepted = true, "2026-08-01", "Jean Dupont", "jean@asso.fr", campaignId,
+            service.requireAssociationAcceptances(
+                associationId, bothTicked(privacyVersion = "2026-08-01"), "Jean Dupont", "jean@asso.fr", campaignId,
             )
         }
         assertThrows<LegalDocumentVersionOutdatedException> {
-            service.requireAssociationAcceptance(
-                associationId, LegalDocumentType.CGU, accepted = true, null, "Jean Dupont", "jean@asso.fr", campaignId,
+            service.requireAssociationAcceptances(
+                associationId, bothTicked(cgvVersion = null), "Jean Dupont", "jean@asso.fr", campaignId,
             )
         }
         verify(exactly = 0) { legalAcceptanceRepository.save(any()) }
@@ -319,20 +352,34 @@ class LegalAcceptanceServiceTest {
     }
 
     @Test
-    fun `requireCurrentDonorVersions passes on the current CGU, without looking at the CGV`() {
+    fun `requireCurrentDonorVersions passes on the current CGU and privacy policy, without looking at the CGV`() {
         every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) } returns cguDoc
+        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.PRIVACY) } returns privacyDoc
 
-        service.requireCurrentDonorVersions(mapOf(LegalDocumentType.CGU to "2026-08-26"))
+        service.requireCurrentDonorVersions(
+            mapOf(LegalDocumentType.CGU to "2026-08-26", LegalDocumentType.PRIVACY to privacyDoc.version),
+        )
 
         verify(exactly = 0) { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGV) }
     }
 
     @Test
-    fun `requireCurrentDonorVersions refuses a stale or missing CGU version`() {
+    fun `requireCurrentDonorVersions refuses a stale or missing CGU or privacy policy version`() {
         every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) } returns cguDoc
+        every { legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.PRIVACY) } returns privacyDoc
 
         assertThrows<LegalDocumentVersionOutdatedException> {
-            service.requireCurrentDonorVersions(mapOf(LegalDocumentType.CGU to "2026-08-01"))
+            service.requireCurrentDonorVersions(
+                mapOf(LegalDocumentType.CGU to "2026-08-01", LegalDocumentType.PRIVACY to privacyDoc.version),
+            )
+        }
+        assertThrows<LegalDocumentVersionOutdatedException> {
+            service.requireCurrentDonorVersions(
+                mapOf(LegalDocumentType.CGU to "2026-08-26", LegalDocumentType.PRIVACY to "2026-08-01"),
+            )
+        }
+        assertThrows<LegalDocumentVersionOutdatedException> {
+            service.requireCurrentDonorVersions(mapOf(LegalDocumentType.CGU to "2026-08-26"))
         }
         assertThrows<LegalDocumentVersionOutdatedException> {
             service.requireCurrentDonorVersions(emptyMap())

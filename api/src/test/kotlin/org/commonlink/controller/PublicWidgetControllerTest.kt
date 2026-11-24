@@ -113,6 +113,7 @@ class PublicWidgetControllerTest {
         consent = true,
         cguAccepted = true,
         cguVersion = "test",
+        privacyVersion = "test",
         sourceSite = "https://example.org",
     )
 
@@ -221,7 +222,8 @@ class PublicWidgetControllerTest {
               "anonymousDisplay": false,
               "consent": true,
               "cguAccepted": true,
-              "cguVersion": "test"
+              "cguVersion": "test",
+              "privacyVersion": "test"
             }
         """.trimIndent()
 
@@ -255,7 +257,8 @@ class PublicWidgetControllerTest {
               "anonymousDisplay": false,
               "consent": true,
               "cguAccepted": true,
-              "cguVersion": "test"
+              "cguVersion": "test",
+              "privacyVersion": "test"
             }
         """.trimIndent()
 
@@ -309,6 +312,17 @@ class PublicWidgetControllerTest {
     @Test
     fun `createDonation - 422 when the displayed CGU version is missing`() {
         val req = validRequest.copy(cguVersion = "")
+        mockMvc.perform(
+            post("/api/public/widget/clk_valid/donations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req))
+        ).andExpect(status().isUnprocessableContent)
+        verify(exactly = 0) { publicWidgetService.createDonation(any(), any()) }
+    }
+
+    @Test
+    fun `createDonation - 422 when the displayed privacy policy version is missing`() {
+        val req = validRequest.copy(privacyVersion = "")
         mockMvc.perform(
             post("/api/public/widget/clk_valid/donations")
                 .contentType(MediaType.APPLICATION_JSON)

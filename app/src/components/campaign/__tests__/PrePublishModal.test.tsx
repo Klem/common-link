@@ -74,13 +74,13 @@ function renderWith(overrides: Partial<React.ComponentProps<typeof PrePublishMod
 }
 
 beforeEach(() => {
-  // Default: CGU already accepted, so pre-existing tests exercising other gates aren't also
-  // blocked on a checkbox they don't know about.
-  vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-    documentType: 'CGV',
+  // Default: association terms and privacy policy already accepted, so pre-existing tests exercising other
+  // gates aren't also blocked on a checkbox they don't know about.
+  vi.mocked(getLegalAcceptanceState).mockImplementation(async (documentType) => ({
+    documentType,
     currentVersion: '2026-08-26',
     accepted: true,
-  });
+  }));
   // Default: every receipt prerequisite met, so other tests are not blocked on a row they don't know about.
   vi.mocked(getMandateState).mockResolvedValue(mandateState([]));
 });
@@ -271,23 +271,48 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     expect(screen.getByText('confirm').closest('button')).toBeEnabled();
   });
 
-  it('passes cguAccepted=true to onConfirm when publishing', async () => {
+  it('passes both documents as accepted to onConfirm when publishing', async () => {
     const onConfirm = vi.fn();
     renderWith({ onConfirm });
 
-    await waitFor(() => expect(screen.getByText('confirm').closest('button')).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: /privacy\.label/ })).toBeChecked());
     fireEvent.click(screen.getByText('confirm'));
 
-    expect(onConfirm).toHaveBeenCalledWith(true, '2026-08-26');
+    expect(onConfirm).toHaveBeenCalledWith({
+      CGV: { accepted: true, version: '2026-08-26' },
+      PRIVACY: { accepted: true, version: '2026-08-26' },
+    });
+  });
+
+  it('asks for the privacy policy alone when only its version changed', async () => {
+    vi.mocked(getLegalAcceptanceState).mockImplementation(async (documentType) => ({
+      documentType,
+      currentVersion: documentType === 'PRIVACY' ? '2026-11-24-p' : '2026-08-26',
+      accepted: documentType !== 'PRIVACY',
+    }));
+    const onConfirm = vi.fn();
+    renderWith({ onConfirm });
+
+    const privacy = await waitFor(() => screen.getByRole('checkbox', { name: /privacy\.label/ }) as HTMLInputElement);
+    await waitFor(() => expect(privacy).toBeEnabled());
+    expect(privacy.checked).toBe(false);
+    expect(screen.getByRole('checkbox', { name: /cgu\.label/ })).toBeDisabled();
+    fireEvent.click(privacy);
+    fireEvent.click(screen.getByText('confirm'));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      CGV: { accepted: true, version: '2026-08-26' },
+      PRIVACY: { accepted: true, version: '2026-11-24-p' },
+    });
   });
 
   it('reloads the CGU state and asks again when publishing hits LEGAL_VERSION_OUTDATED', async () => {
     vi.mocked(getLegalAcceptanceState).mockClear();
-    vi.mocked(getLegalAcceptanceState).mockResolvedValue({
-      documentType: 'CGV',
+    vi.mocked(getLegalAcceptanceState).mockImplementation(async (documentType) => ({
+      documentType,
       currentVersion: '2026-08-26',
       accepted: false,
-    });
+    }));
     const onConfirm = vi.fn().mockRejectedValue({ response: { status: 409, data: { code: 'LEGAL_VERSION_OUTDATED' } } });
     renderWith({ onConfirm });
 
@@ -297,10 +322,16 @@ describe('PrePublishModal — CGU acceptance is blocking', () => {
     fireEvent.click(screen.getByText('confirm'));
 
     await waitFor(() => expect(screen.getByText('outdated')).toBeInTheDocument());
-    expect(onConfirm).toHaveBeenCalledWith(true, '2026-08-26');
-    expect(getLegalAcceptanceState).toHaveBeenCalledTimes(2);
-    // Associations accept their own terms (document CGV), not the donor CGU.
+    expect(onConfirm).toHaveBeenCalledWith({
+      CGV: { accepted: true, version: '2026-08-26' },
+      PRIVACY: { accepted: false, version: '2026-08-26' },
+    });
+    // Two documents, read twice: on opening, then after the 409.
+    expect(getLegalAcceptanceState).toHaveBeenCalledTimes(4);
+    // Associations accept their own terms (document CGV), not the donor CGU, and the privacy policy.
     expect(getLegalAcceptanceState).toHaveBeenCalledWith('CGV');
+    expect(getLegalAcceptanceState).toHaveBeenCalledWith('PRIVACY');
+    expect(getLegalAcceptanceState).not.toHaveBeenCalledWith('CGU');
     await waitFor(() => expect((screen.getByRole('checkbox', { name: /cgu\.label/ }) as HTMLInputElement).checked).toBe(false));
   });
 

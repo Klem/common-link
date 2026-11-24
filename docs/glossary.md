@@ -123,22 +123,30 @@ Enum representing the lifecycle of a campaign. Transitions are one-directional a
 A public, unauthenticated report of a campaign's content, submitted via a "Report this campaign" popup on the landing page (message + optional reporter e-mail, no account required). Raises a `CAMPAIGN_REPORT` `ComplianceAlert` on the owning association and moves its `AssociationStatus` to `ALERT`. Each submission writes its own append-only journal entry (`CAMPAIGN_REPORTED`), so a second report received while the first alert is still open is not lost. If the compliance officer rules the report founded (`SUSPICIOUS`), the association moves to `SUSPENDED`; otherwise it clears back to `ACTIVE` provided no other report is still open.
 `functional` `security`
 
-### CGU / CGV (Terms of Use / Terms of Sale)
-CGU (Conditions Générales d'Utilisation) and CGV (Conditions Générales de Vente) are versioned legal
-texts stored in `legal_document` (one immutable row per version). Since 2026-11-16 they are the
+### CGU / CGV / PRIVACY (Terms of Use / Terms of Sale / Privacy Policy)
+CGU (Conditions Générales d'Utilisation), CGV (Conditions Générales de Vente) and, since 2026-11-24,
+PRIVACY (the privacy policy) are versioned legal texts stored in `legal_document` (one immutable row per version). Since 2026-11-16 the CGU and CGV are the
 landing site's final texts: `CGU` = the donor terms (`legal.cguDonors`), `CGV` = — despite its
 historical name — the beneficiary-organisation terms (`legal.cguAssociations`); there are no separate
-terms of sale. See **Legal Document Version** for how they are injected and versioned. A
+terms of sale. `PRIVACY` = the privacy policy (`legal.politiqueConfidentialite`, page
+`/politique-confidentialite`; DB CHECK constraints widened by `V99__legal_document_privacy.sql`). See **Legal Document Version** for how they are injected and versioned. A
 `LegalAcceptance` row proves that a donor or an association expressly accepted a given version —
 document type, the version **displayed to them** (refused with 409 `LEGAL_VERSION_OUTDATED` if no
 longer current), timestamp, and a snapshot of the signatory's name/e-mail taken at acceptance time
-(never re-read from the live profile, which could change afterwards). Donors accept the CGU only,
-fresh on every donation (a transactional act; donations before 2026-11-16 also carry a CGV row); an
-association accepts its own terms — the `CGV` document (`LegalAcceptanceService.ASSOCIATION_DOCUMENT`;
-before 2026-11-16 it was `CGU`) — once per version, at login (post-login gate, UI only) or at
-campaign-publish time (server-enforced), reused for later campaigns until the version changes. The
-publish request fields keep their historical names `cguAccepted`/`cguVersion`, as does the refusal
-reason `CGU_NOT_ACCEPTED`. Required by the ACPR public-collection notice and, for the association, the sole protection
+(never re-read from the live profile, which could change afterwards). Donors accept the CGU and
+PRIVACY (`LegalAcceptanceService.DONOR_DOCUMENTS`), fresh on every donation, one row per document (a
+transactional act; donations before 2026-11-16 also carry a CGV row). PRIVACY is accepted through the
+GDPR checkbox (`consent`, "J'ai pris connaissance de la politique de confidentialité"), recorded since
+2026-11-24 with the displayed `privacyVersion`. An association accepts its own terms — the `CGV`
+document (before 2026-11-16 it was `CGU`) — and, since 2026-11-24, PRIVACY
+(`LegalAcceptanceService.ASSOCIATION_DOCUMENTS`), once per version, at login (post-login gate, UI
+only, pending documents shown one after the other, CGV first;
+`POST /api/association/legal-acceptance/{documentType}`) or at campaign-publish time
+(server-enforced, one checkbox per pending document, every pending document checked before any row
+is written), reused for later campaigns until the version changes. The CGV publish request fields keep
+their historical names `cguAccepted`/`cguVersion` (PRIVACY: `privacyAccepted`/`privacyVersion`); a
+missing acceptance of either is refused with the historical reason `CGU_NOT_ACCEPTED`. Registered
+donor accounts, compliance officers and admins accept nothing at login. CGU/CGV acceptance is required by the ACPR public-collection notice and, for the association, the sole protection
 CommonLink has under art. 1740 A CGI in the declarative tax-receipt model (no rescrit fiscal required
 as of the 04/08/2026 decision) if a receipt is later challenged. Separate from the fiscal mandate
 (`FiscalMandate` entity, `eligibility` + `accepted`), which authorises tax-receipt issuance and is
@@ -146,12 +154,14 @@ signed independently.
 `functional` `security` `business`
 
 ### Legal Document Version
-Identifier of one immutable CGU/CGV text in `legal_document.version`: `<effective date>-<first 12 hex
+Identifier of one immutable CGU/CGV/PRIVACY text in `legal_document.version`: `<effective date>-<first 12 hex
 of the SHA-256 of the content>` (e.g. `2026-09-09-a1b2c3d4e5f6`). The effective date is read from
 the text's "Version en vigueur au …" line, so two texts published the same day still get two
 versions. At startup `LegalDocumentSeeder` reads the landing site's `messages/fr.json` (bundled into
 the API jar at build time), converts each text into structured JSON (`content_format = JSON_V1`:
-title, intro, articles, paragraphs as text segments with absolute links — no HTML, no CSS) and
+title, optional intro, articles — optionally with a `table` —, paragraphs as text segments with
+absolute links and optional `bold` runs — no HTML, no CSS; unused optional fields are omitted from the
+serialized form, so adding them left the CGU and CGV versions unchanged) and
 inserts it if that version is absent; the newest row is the current version, in force at once. A
 version already stored with a different hash stops the boot. Rows are never updated or deleted.
 `functional` `technical`

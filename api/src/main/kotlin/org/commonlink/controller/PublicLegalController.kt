@@ -36,7 +36,7 @@ class PublicLegalController(
         ApiResponse(responseCode = "404", description = "No published document of this type", content = [Content()]),
     )
     fun getCurrent(
-        @Parameter(description = "CGU | CGV") @PathVariable documentType: LegalDocumentType,
+        @Parameter(description = "CGU | CGV | PRIVACY") @PathVariable documentType: LegalDocumentType,
     ): ResponseEntity<LegalDocumentDto> =
         ResponseEntity.ok(legalAcceptanceService.currentDocumentDto(documentType))
 }

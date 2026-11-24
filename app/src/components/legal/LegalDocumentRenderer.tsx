@@ -26,9 +26,9 @@ interface Props {
 }
 
 /**
- * Renders a CGU/CGV text the same way the landing site does (`/conditions-generales-utilisation*`):
- * effective date, table of contents, intro, then each article with its callout, paragraphs and
- * numbered subsections. The stored text carries no HTML: links are segments with an absolute URL,
+ * Renders a legal text the same way the landing site does (`/conditions-generales-utilisation*`,
+ * `/politique-confidentialite`): effective date, table of contents, intro when there is one, then each article
+ * with its callout, table, paragraphs and numbered subsections. The stored text carries no HTML: links are segments with an absolute URL,
  * opened in a new tab so the reader never leaves the donation or publication flow.
  *
  * The title is not rendered here — each container shows it in its own header (see `legalTitle`).
@@ -62,12 +62,37 @@ export function LegalDocumentRenderer({ document, idPrefix = `legal-${document.d
         </ol>
       </nav>
 
-      <p>{text.intro}</p>
+      {text.intro && <p>{text.intro}</p>}
 
       {text.articles.map((article, i) => (
         <section key={i}>
           <h3 id={`${idPrefix}-a${i}`}>{article.title}</h3>
           {article.callout && <div className="legal-doc-callout">{article.callout}</div>}
+          {article.table && (
+            <div className="overflow-x-auto tw">
+              <table className="legal-doc-table">
+                <caption className="sr-only">{article.title}</caption>
+                <thead>
+                  <tr>
+                    {article.table.head.map((cell, j) => (
+                      <th key={j} scope="col">
+                        {cell}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {article.table.rows.map((row, j) => (
+                    <tr key={j}>
+                      {row.map((cell, k) => (
+                        <td key={k}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           {article.paragraphs?.map((paragraph, j) => <Paragraph key={j} paragraph={paragraph} />)}
           {article.subsections?.map((subsection, j) => (
             <div key={`s${j}`}>
@@ -89,6 +114,8 @@ function Paragraph({ paragraph }: { paragraph: LegalParagraph }) {
           <a key={i} href={segment.href} target="_blank" rel="noopener noreferrer">
             {segment.text}
           </a>
+        ) : segment.bold ? (
+          <strong key={i}>{segment.text}</strong>
         ) : (
           <span key={i}>{segment.text}</span>
         ),

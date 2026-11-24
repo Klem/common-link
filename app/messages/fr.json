@@ -476,7 +476,7 @@
           "BANK_KYC_INCOMPLETE": "Vérification d'identité Mollie non aboutie",
           "BANK_NOT_CONNECTED": "Aucun compte Mollie connecté",
           "BUDGET_UNBALANCED": "Budget prévisionnel absent ou déséquilibré (tolérance d'un euro)",
-          "CGU_NOT_ACCEPTED": "Conditions générales d'utilisation non acceptées (art. 1740 A CGI)",
+          "CGU_NOT_ACCEPTED": "Conditions non acceptées",
           "GOAL_MISSING": "Objectif de collecte non renseigné ou nul",
           "IMPACT_GOALS_MISSING": "Résultat attendu absent ou inférieur à vingt caractères",
           "KYB_NOT_VERIFIED": "Dossier d'identification de l'association non vérifié",
@@ -1874,7 +1874,7 @@
         "cgu": {
           "label": "En publiant cette campagne, vous acceptez les",
           "link": "Conditions Générales d'Utilisation (CGU)",
-          "section": "Conditions d'utilisation"
+          "section": "Conditions d'utilisation et confidentialité"
         },
         "complete": "Complétez les champs requis",
         "confirm": "Publier",
@@ -1896,7 +1896,11 @@
           "name": "Nom de la campagne",
           "section": "Requis pour publier"
         },
-        "title": "Avant de publier votre campagne"
+        "title": "Avant de publier votre campagne",
+        "privacy": {
+          "label": "J'ai pris connaissance de la",
+          "link": "politique de confidentialité"
+        }
       },
       "stats": {
         "goal": "Objectif total",
@@ -2613,18 +2617,28 @@
   "legal": {
     "close": "Fermer",
     "gate": {
-      "accept": "Accepter et continuer",
-      "checkbox": "J'ai lu et j'accepte ces conditions au nom de l'association",
+      "accept": {
+        "CGV": "Accepter et continuer",
+        "PRIVACY": "Continuer"
+      },
+      "checkbox": {
+        "CGV": "J'ai lu et j'accepte ce texte au nom de l'association",
+        "PRIVACY": "J'ai pris connaissance de ce texte au nom de l'association"
+      },
       "error": "L'acceptation n'a pas pu être enregistrée. Veuillez réessayer.",
-      "intro": "Merci de lire et d'accepter les conditions d'utilisation de CommonLink en vigueur pour continuer.",
-      "title": "Conditions d'utilisation"
+      "intro": {
+        "CGV": "Merci de lire et d'accepter les textes de CommonLink en vigueur pour continuer.",
+        "PRIVACY": "Merci de prendre connaissance de la politique de confidentialité de CommonLink en vigueur pour continuer."
+      },
+      "title": "Conditions d'utilisation et confidentialité"
     },
     "loadError": "Impossible de charger ce document. Veuillez réessayer.",
     "loading": "Chargement…",
-    "outdated": "Ces conditions viennent d'être mises à jour. Merci de relire la nouvelle version avant de l'accepter.",
+    "outdated": "Ce texte vient d'être mis à jour. Merci de relire la nouvelle version avant de l'accepter.",
     "title": {
       "CGU": "Conditions Générales d'Utilisation",
-      "CGV": "Conditions générales d'utilisation des associations"
+      "CGV": "Conditions générales d'utilisation des associations",
+      "PRIVACY": "Politique de confidentialité"
     },
     "tocTitle": "Sommaire",
     "version": "Version {version}"
@@ -3670,7 +3684,8 @@
       "link": "Conditions Générales d'Utilisation (CGU)"
     },
     "consent": {
-      "label": "Je consens au traitement de mes données personnelles pour ce don (RGPD)"
+      "label": "J'ai pris connaissance de la",
+      "link": "politique de confidentialité"
     },
     "errors": {
       "amountDecimals": "Le montant ne peut avoir plus de 2 décimales",
@@ -3680,7 +3695,7 @@
       "capExceeded": "Ce montant dépasse ce que la campagne peut encore collecter. Merci de saisir un montant plus faible.",
       "capFull": "Cette campagne a atteint son plafond de collecte et n'accepte plus de dons.",
       "cguRequired": "Vous devez accepter les Conditions Générales d'Utilisation",
-      "consentRequired": "Vous devez consentir pour continuer",
+      "consentRequired": "Vous devez prendre connaissance de la politique de confidentialité",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
       "duplicateSubmit": "Ce don a déjà été envoyé. Merci de patienter une minute avant de réessayer.",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide",
@@ -3691,8 +3706,8 @@
       "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
       "submitFailed": "Une erreur est survenue. Veuillez réessayer.",
       "collectUnavailable": "La collecte de dons en ligne est momentanément indisponible pour cette campagne. Merci de réessayer un peu plus tard.",
-      "legalOutdated": "Les conditions viennent d'être mises à jour : merci de les relire et de cocher à nouveau la case.",
-      "legalUnavailable": "Les conditions n'ont pas pu être chargées. Veuillez recharger la page."
+      "legalOutdated": "Les conditions ou la politique de confidentialité viennent d'être mises à jour : merci de les relire et de cocher à nouveau les cases.",
+      "legalUnavailable": "Les conditions ou la politique de confidentialité n'ont pas pu être chargées. Veuillez recharger la page."
     },
     "identity": {
       "addressLine1": "Adresse",

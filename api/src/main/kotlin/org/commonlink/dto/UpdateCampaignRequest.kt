@@ -40,6 +40,8 @@ import java.time.LocalDate
  *   every other transition. Default false so unrelated updates need not think about it.
  * @param cguVersion The version of those terms the publish dialog displayed, required with [cguAccepted]:
  *   refused with 409 `LEGAL_VERSION_OUTDATED` when a newer version was published meanwhile.
+ * @param privacyAccepted Same as [cguAccepted], for the privacy policy (document `PRIVACY`).
+ * @param privacyVersion Same as [cguVersion], for the privacy policy.
  */
 data class UpdateCampaignRequest(
     @field:Size(max = 255)
@@ -74,4 +76,9 @@ data class UpdateCampaignRequest(
 
     @field:Size(max = 32)
     val cguVersion: String? = null,
+
+    val privacyAccepted: Boolean = false,
+
+    @field:Size(max = 32)
+    val privacyVersion: String? = null,
 )

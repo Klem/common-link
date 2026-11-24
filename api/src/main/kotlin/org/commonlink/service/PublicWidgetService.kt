@@ -115,9 +115,12 @@ class PublicWidgetService(
         // attempt leaves no guest profile and no screening journal entry behind.
         donationCapService.requireWithinCap(campaign, request.amount)
 
-        // The CGU version the form displayed must still be the current one: the acceptance proof records it,
-        // and must not name a text the donor never saw. Checked before anything is created.
-        val acceptedVersions = mapOf(LegalDocumentType.CGU to request.cguVersion)
+        // The CGU and privacy policy versions the form displayed must still be the current ones: the acceptance
+        // proof records them, and must not name a text the donor never saw. Checked before anything is created.
+        val acceptedVersions = mapOf(
+            LegalDocumentType.CGU to request.cguVersion,
+            LegalDocumentType.PRIVACY to request.privacyVersion,
+        )
         legalAcceptanceService.requireCurrentDonorVersions(acceptedVersions)
 
         // Provision guest donor (idempotent by email)

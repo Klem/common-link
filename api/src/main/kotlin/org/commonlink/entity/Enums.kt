@@ -500,8 +500,12 @@ enum class BeneficialOwnerType { BENEFICIAL_OWNER, REPRESENTATIVE }
  */
 enum class AssociationStatus { ACTIVE, ALERT, SUSPENDED }
 
-/** A versioned legal document text (notice ACPR / art. 1740 A CGI — preuve d'acceptation). */
-enum class LegalDocumentType { CGU, CGV }
+/**
+ * A versioned legal document text whose acceptance is recorded (ACPR notice / art. 1740 A CGI proof of acceptance):
+ * `CGU` donor terms, `CGV` association terms, `PRIVACY` privacy policy. Mirrored by the
+ * `legal_document_type_check` and `legal_acceptance_document_type_check` constraints (V99).
+ */
+enum class LegalDocumentType { CGU, CGV, PRIVACY }
 
 /**
  * How [org.commonlink.entity.LegalDocument.content] must be read — mirrors the

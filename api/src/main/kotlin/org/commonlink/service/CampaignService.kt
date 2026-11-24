@@ -5,6 +5,7 @@ import org.commonlink.dto.CampaignSummaryDto
 import org.commonlink.dto.CreateCampaignRequest
 import org.commonlink.dto.CreateMilestoneRequest
 import org.commonlink.dto.MilestoneDto
+import org.commonlink.dto.PublishTermsAcceptance
 import org.commonlink.dto.ReorderMilestonesRequest
 import org.commonlink.dto.SaveBudgetRequest
 import org.commonlink.dto.UpdateCampaignRequest
@@ -19,6 +20,7 @@ import org.commonlink.entity.CampaignCoverImage
 import org.commonlink.entity.CampaignBudgetSection
 import org.commonlink.entity.CampaignMilestone
 import org.commonlink.entity.CampaignStatus
+import org.commonlink.entity.LegalDocumentType
 import org.commonlink.entity.MilestoneStatus
 import org.commonlink.entity.MollieOnboardingStatus
 import org.commonlink.entity.OnchainJobAction
@@ -231,7 +233,13 @@ class CampaignService(
         if (req.status != null) {
             validateStatusTransition(campaign.status, req.status)
             if (previousStatus == CampaignStatus.DRAFT && req.status == CampaignStatus.LIVE) {
-                preparePublish(campaign, associationId, req.cguAccepted, req.cguVersion)
+                preparePublish(
+                    campaign, associationId,
+                    mapOf(
+                        LegalDocumentType.CGV to PublishTermsAcceptance(req.cguAccepted, req.cguVersion),
+                        LegalDocumentType.PRIVACY to PublishTermsAcceptance(req.privacyAccepted, req.privacyVersion),
+                    ),
+                )
             }
             if (req.status == CampaignStatus.REVERT_REQUESTED && campaign.raised > BigDecimal.ZERO) {
                 throw UnprocessableEntityException("Cannot revert to draft: campaign has raised ${campaign.raised}")
@@ -726,7 +734,11 @@ class CampaignService(
      * object, head-office address ([CampaignReviewRefusalReason.RECEIPT_PREREQUISITES_MISSING]). Same rule as the
      * collection gate (`PublicWidgetService.isCollectAvailable`).
      */
-    private fun preparePublish(campaign: Campaign, associationId: UUID, cguAccepted: Boolean, cguVersion: String?) {
+    private fun preparePublish(
+        campaign: Campaign,
+        associationId: UUID,
+        termsAcceptances: Map<LegalDocumentType, PublishTermsAcceptance>,
+    ) {
         if (campaign.goal <= BigDecimal.ZERO) {
             logRefusal(campaign, associationId, CampaignReviewRefusalReason.GOAL_MISSING)
             throw UnprocessableEntityException("Campaign goal must be greater than zero before publishing")
@@ -787,14 +799,13 @@ class CampaignService(
                 "Receipt prerequisites missing before going live: ${missingPrerequisites.joinToString(", ")}"
             )
         }
-        // Art. 1740 A CGI proof of acceptance of the association terms (document CGV) — no-op once this
-        // association has already accepted the current version (see LegalAcceptanceService KDoc).
+        // Art. 1740 A CGI proof of acceptance of the association terms (document CGV) and of the privacy policy —
+        // no-op for a document whose current version this association already accepted (see LegalAcceptanceService
+        // KDoc). Either one missing is journaled as CGU_NOT_ACCEPTED.
         try {
-            legalAcceptanceService.requireAssociationAcceptance(
+            legalAcceptanceService.requireAssociationAcceptances(
                 associationId = associationId,
-                documentType = LegalAcceptanceService.ASSOCIATION_DOCUMENT,
-                accepted = cguAccepted,
-                acceptedVersion = cguVersion,
+                acceptances = termsAcceptances,
                 signerName = profile.signerName ?: profile.name,
                 signerEmail = profile.user.email,
                 campaignId = campaign.id!!,

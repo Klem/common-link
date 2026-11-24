@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.commonlink.dto.LegalArticleV1
 import org.commonlink.dto.LegalSegmentV1
 import org.commonlink.dto.LegalSubsectionV1
+import org.commonlink.dto.LegalTableV1
 import org.commonlink.dto.LegalTextV1
 import org.commonlink.entity.LegalDocumentType
 import org.commonlink.exception.LegalTextSourceException
@@ -15,14 +16,19 @@ import java.security.MessageDigest
 import java.time.LocalDate
 
 /**
- * Reads the CGU/CGV texts from the landing site's `messages/fr.json` — the single source of truth, copied
+ * Reads the legal texts (CGU, CGV, privacy policy) from the landing site's `messages/fr.json` — the single source of truth, copied
  * into the jar at build time by `processResources` (see `api/build.gradle.kts`) — and turns each one into a
  * versioned, hashable [LegalTextV1].
  *
- * - `legal.cguDonors` → [LegalDocumentType.CGU], `legal.cguAssociations` → [LegalDocumentType.CGV].
+ * - `legal.cguDonors` → [LegalDocumentType.CGU], `legal.cguAssociations` → [LegalDocumentType.CGV],
+ *   `legal.politiqueConfidentialite` → [LegalDocumentType.PRIVACY].
+ * - Every text has `title`, `lastUpdated`, an optional `intro` and `articles[]`; an article has a `title`, an
+ *   optional `callout`, and at least one of `table` (`head[]` + `rows[][]`, plain cells), `paragraphs[]`,
+ *   `subsections[]`.
  * - Links are written `<privacy>text</privacy>` in the landing texts; the tag name is resolved through
  *   `legal.linkTargets` (site-relative path) and prefixed with [siteBaseUrl], so the stored text carries
- *   absolute URLs and no markup.
+ *   absolute URLs and no markup. `<b>text</b>` is the one formatting tag: it gives a bold segment, so `b`
+ *   can never be a link tag.
  * - The version is `<effective date>-<first 12 hex of the SHA-256>`: the date is read from `lastUpdated`
  *   ("Version en vigueur au 9 septembre 2026"), the hash covers the serialized [LegalTextV1]. Two changes
  *   on the same day therefore give two versions.
@@ -77,7 +83,7 @@ class LandingLegalTextSource(
         return LegalTextV1(
             title = plain(node, "title", "legal.$key"),
             lastUpdated = plain(node, "lastUpdated", "legal.$key"),
-            intro = plain(node, "intro", "legal.$key"),
+            intro = if (node.has("intro")) plain(node, "intro", "legal.$key") else null,
             articles = articles.mapIndexed { i, article ->
                 val where = "legal.$key.articles[$i]"
                 val converted = LegalArticleV1(
@@ -90,9 +96,10 @@ class LandingLegalTextSource(
                             paragraphs = paragraphs(sub.path("paragraphs"), linkTargets, "$where.subsections[$j].paragraphs"),
                         )
                     },
+                    table = if (article.has("table")) table(article.path("table"), "$where.table") else null,
                 )
-                if (converted.paragraphs.isEmpty() && converted.subsections.isEmpty()) {
-                    throw LegalTextSourceException("$where has neither paragraphs nor subsections")
+                if (converted.paragraphs.isEmpty() && converted.subsections.isEmpty() && converted.table == null) {
+                    throw LegalTextSourceException("$where has neither table, paragraphs nor subsections")
                 }
                 converted
             },
@@ -107,25 +114,53 @@ class LandingLegalTextSource(
         return value.asText()
     }
 
+    /** A table of markup-free cells: a non-empty header, then at least one row of the same width. */
+    private fun table(node: JsonNode, where: String): LegalTableV1 {
+        fun cells(row: JsonNode, rowWhere: String): List<String> {
+            if (!row.isArray || row.isEmpty) throw LegalTextSourceException("$rowWhere is empty")
+            return row.mapIndexed { i, cell ->
+                val value = cell.asText()
+                if (!cell.isTextual || value.isBlank()) throw LegalTextSourceException("$rowWhere[$i] is missing or blank")
+                if (MARKUP.containsMatchIn(value)) throw LegalTextSourceException("$rowWhere[$i] contains markup")
+                value
+            }
+        }
+        val head = cells(node.path("head"), "$where.head")
+        val rows = node.path("rows")
+        if (!rows.isArray || rows.isEmpty) throw LegalTextSourceException("$where.rows is empty")
+        return LegalTableV1(
+            head = head,
+            rows = rows.mapIndexed { i, row ->
+                cells(row, "$where.rows[$i]").also {
+                    if (it.size != head.size) throw LegalTextSourceException("$where.rows[$i] has ${it.size} cells, head has ${head.size}")
+                }
+            },
+        )
+    }
+
     private fun paragraphs(node: JsonNode, linkTargets: JsonNode, where: String): List<List<LegalSegmentV1>> =
         node.mapIndexed { i, p ->
             if (!p.isTextual || p.asText().isBlank()) throw LegalTextSourceException("$where[$i] is missing or blank")
             segments(p.asText(), linkTargets, "$where[$i]")
         }
 
-    /** Splits `a <privacy>b</privacy> c` into text / link / text segments. */
+    /** Splits `a <privacy>b</privacy> c <b>d</b>` into text / link / text / bold segments. */
     private fun segments(text: String, linkTargets: JsonNode, where: String): List<LegalSegmentV1> {
         val result = mutableListOf<LegalSegmentV1>()
         var cursor = 0
         for (match in LINK.findAll(text)) {
             if (match.range.first > cursor) result += LegalSegmentV1(text.substring(cursor, match.range.first))
             val (tag, label) = match.destructured
+            cursor = match.range.last + 1
+            if (tag == BOLD_TAG) {
+                result += LegalSegmentV1(label, bold = true)
+                continue
+            }
             val path = linkTargets.path(tag)
             if (!path.isTextual || !path.asText().startsWith("/")) {
                 throw LegalTextSourceException("$where uses link tag <$tag> with no site-relative target in legal.linkTargets")
             }
             result += LegalSegmentV1(label, "$siteBaseUrl${path.asText()}")
-            cursor = match.range.last + 1
         }
         if (cursor < text.length) result += LegalSegmentV1(text.substring(cursor))
         if (result.any { MARKUP.containsMatchIn(it.text) }) throw LegalTextSourceException("$where contains unsupported markup")
@@ -145,7 +180,11 @@ class LandingLegalTextSource(
         val SOURCE_KEYS = listOf(
             LegalDocumentType.CGU to "cguDonors",
             LegalDocumentType.CGV to "cguAssociations",
+            LegalDocumentType.PRIVACY to "politiqueConfidentialite",
         )
+
+        /** The formatting tag turned into a bold segment — never resolved as a link. */
+        private const val BOLD_TAG = "b"
 
         /** "2026-09-09-" + 12 hex = 23 characters, within `legal_document.version` VARCHAR(32). */
         const val VERSION_HASH_LENGTH = 12

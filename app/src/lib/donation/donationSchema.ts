@@ -31,13 +31,18 @@ export const donationSchema = z.object({
   donorCity: z.string().min(1, 'errors.fieldRequired').max(128, 'errors.fieldTooLong'),
   donorCountry: z.string().regex(/^[A-Za-z]{2}$/, 'errors.countryInvalid'),
   anonymousDisplay: z.boolean(),
+  // The GDPR checkbox, which is also the acceptance of the privacy policy (document PRIVACY), recorded with
+  // `privacyVersion` like the CGU.
   consent: z.boolean().refine((v) => v === true, { message: 'errors.consentRequired' }),
-  // Distinct from `consent` (RGPD only) — art. 1740 A CGI proof of acceptance. The donor accepts the
-  // CGU only: the CGV document is the associations' CGU.
+  // Distinct from `consent` (privacy policy) — art. 1740 A CGI proof of acceptance of the donor CGU. The CGV
+  // document is the associations' CGU and does not concern donors.
   cguAccepted: z.boolean().refine((v) => v === true, { message: 'errors.cguRequired' }),
   // Version of the CGU text loaded by the form, sent back as the accepted version. Empty while the text
   // could not be loaded — mirrors `@NotBlank @Size(max = 32)` on CreateGuestDonationRequest.cguVersion.
   cguVersion: z.string().min(1, 'errors.legalUnavailable').max(32, 'errors.legalUnavailable'),
+  // Same for the privacy policy shown next to `consent` — mirrors `@NotBlank @Size(max = 32)` on
+  // CreateGuestDonationRequest.privacyVersion.
+  privacyVersion: z.string().min(1, 'errors.legalUnavailable').max(32, 'errors.legalUnavailable'),
 });
 
 export type DonationFormData = z.infer<typeof donationSchema>;

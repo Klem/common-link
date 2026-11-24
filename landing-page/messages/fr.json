@@ -667,10 +667,10 @@
           "paragraphs": [
             "L'organisme déclare relever des catégories mentionnées aux articles 200 et 238 bis du code général des impôts, et être en mesure de délivrer des reçus fiscaux. CommonLink ne vérifie pas cette éligibilité.",
             "L'organisme donne mandat à CommonLink d'établir et de transmettre les reçus fiscaux en son nom et pour son compte, à partir des informations qu'il fournit. Les reçus sont émis sous la seule responsabilité de l'organisme, qui en est le déclarant.",
-            "CommonLink conserve les doubles des reçus pour le compte de l'organisme pendant six ans à compter de leur établissement, et les lui restitue sur demande.",
             "Le reçu porte sur le seul montant du don. La contribution volontaire que le donateur peut verser à HelloAsso n'est pas un don à l'organisme et n'y figure pas.",
             "Les dons reçus par l'organisme sur ses formulaires HelloAsso ne relèvent pas du présent mandat.",
-            "L'organisme demeure seul redevable des obligations déclaratives lui incombant, notamment de la déclaration annuelle du montant global des dons et du nombre de reçus délivrés."
+            "L'organisme demeure seul redevable des obligations déclaratives lui incombant, notamment de la déclaration annuelle du montant global des dons et du nombre de reçus délivrés.",
+            "CommonLink conserve les doubles des reçus pour le compte de l'organisme pendant six ans à compter de leur établissement, et les lui restitue sur demande."
           ],
           "title": "Article 17. Reçus fiscaux"
         },
@@ -709,12 +709,10 @@
         },
         {
           "paragraphs": [
-            "La commission due sur chaque don est réglée par prélèvement SEPA, trente jours ouvrés après la date de paiement du don.",
-            "À l'inscription, l'organisme indique le compte bancaire à débiter et signe en ligne un mandat de prélèvement SEPA au profit de CommonLink. La collecte ne peut commencer qu'après la signature de ce mandat.",
-            "CommonLink émet en fin de mois une facture récapitulative des commissions dues sur les dons encaissés au cours du mois. Aucune facture n'est émise pour un mois sans collecte. La facture indique le montant et la date de chaque prélèvement, et vaut pré-notification. Les parties conviennent qu'elle est adressée au moins cinq jours calendaires avant le premier prélèvement qu'elle annonce.",
+            "La commission est facturée en fin de mois, sur la base des dons encaissés au cours du mois. Aucune facture n'est émise pour un mois sans collecte.",
+            "La facture est réglée par virement, au plus tard à la fin du mois suivant celui de son émission.",
             "La commission n'est jamais déduite des dons.",
-            "Un don remboursé ou annulé avant le prélèvement de sa commission entraîne l'annulation de ce prélèvement. Après le prélèvement, la commission correspondante est déduite du prélèvement suivant ou remboursée à l'organisme.",
-            "En cas de rejet d'un prélèvement, CommonLink en informe l'organisme et peut le présenter à nouveau. Les articles 23 et 31 s'appliquent."
+            "Un don remboursé ou annulé après facturation donne lieu à régularisation sur la facture suivante. L'organisme informe sans délai CommonLink de tout remboursement ou de toute contestation de paiement intervenu sur son compte Mollie."
           ],
           "title": "Article 22. Facturation et règlement"
         },
@@ -947,7 +945,7 @@
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 23 novembre 2026",
+      "lastUpdated": "Version en vigueur au 24 novembre 2026",
       "title": "Conditions générales d'utilisation applicables aux organismes bénéficiaires"
     },
     "cguDonors": {
@@ -1058,7 +1056,7 @@
             "L'article précédent ne fait pas obstacle à la régularisation de ce qui n'est pas un don.",
             "Un double paiement ou une erreur technique constitue un paiement indu et donne lieu à régularisation.",
             "Une opération de paiement non autorisée, notamment en cas d'utilisation frauduleuse d'un moyen de paiement, relève de la réglementation applicable aux services de paiement, et les droits que le donateur en tire ne sont pas affectés par les présentes.",
-            "Lorsque le don a été réglé sur la page de paiement HelloAsso, le remboursement est effectué par l'organisme bénéficiaire depuis son espace HelloAsso. CommonLink reçoit la demande et la transmet à l'organisme. Une demande portant sur la contribution volontaire relève de HelloAsso.",
+            "Le remboursement est effectué par l'organisme bénéficiaire depuis son compte auprès de son prestataire de paiement, HelloAsso ou Mollie. CommonLink reçoit la demande et la transmet à l'organisme. Une demande portant sur la contribution volontaire relève de HelloAsso.",
             "Toute demande est adressée à contact@common-link.org"
           ],
           "title": "Article 14. Paiements indus et opérations non autorisées"
@@ -1235,7 +1233,7 @@
         }
       ],
       "intro": "CommonLink, société par actions simplifiée à capital variable au capital de 10 000 euros, siège social 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928. Courriel : contact@common-link.org. Immatriculation ORIAS 26010395.",
-      "lastUpdated": "Version en vigueur au 17 novembre 2026",
+      "lastUpdated": "Version en vigueur au 24 novembre 2026",
       "title": "Conditions générales d'utilisation applicables aux donateurs"
     },
     "complaints": {
@@ -1330,7 +1328,7 @@
       "privacy": "/politique-confidentialite"
     },
     "mentionsLegales": {
-      "lastUpdated": "Version en vigueur au 17 novembre 2026",
+      "lastUpdated": "Version en vigueur au 24 novembre 2026",
       "sections": [
         {
           "paragraphs": [
@@ -1357,7 +1355,7 @@
           "paragraphs": [
             "Les dons ne transitent jamais par CommonLink. Chaque association dispose d'un compte ouvert à son nom auprès de l'un des prestataires de paiement de la plateforme : HelloAsso, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 17678Q, proposé en priorité aux associations et fonds de dotation établis en France, ou Mollie, établissement de monnaie électronique agréé aux Pays-Bas et supervisé par la banque centrale néerlandaise, pour les organismes qui n'encaissent pas par HelloAsso. Chez chacun de ces prestataires, les sommes de l'association sont cantonnées : elles sont séparées des fonds du prestataire. Le donateur règle son don sur la page de paiement du prestataire. Le don est encaissé sur le compte de l'association, puis versé sur son compte bancaire.",
             "CommonLink n'encaisse, ne conserve et ne reverse aucun don. Les sommes collectées ne figurent à aucun moment dans ses comptes, et elle ne peut ni se les approprier, ni en disposer.",
-            "CommonLink est rémunérée par l'association par une commission, prélevée sur son compte séparément des dons. Aucun montant n'est déduit des dons collectés.",
+            "CommonLink est rémunérée par l'association par une commission, facturée séparément des dons. Aucun montant n'est déduit des dons collectés.",
             "Lorsqu'une association paie un bénéficiaire depuis la plateforme, le virement part de son propre compte bancaire, par l'intermédiaire de Bridge, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 16918. Il est autorisé par son représentant légal, qui s'authentifie auprès de sa banque. Ni CommonLink, ni Bridge ne détiennent les fonds à un quelconque moment. CommonLink ne peut pas déclencher ce virement à la place du représentant légal, ni l'annuler une fois qu'il a été autorisé."
           ],
           "title": "Circuit des fonds"
@@ -1453,102 +1451,152 @@
       "title": "Contrat type entre le donateur et l'organisme bénéficiaire"
     },
     "politiqueConfidentialite": {
-      "automated": {
-        "p1": "Aucune décision produisant des effets juridiques à votre égard n'est prise sans intervention humaine. Notre dispositif de vigilance peut signaler une situation, mais la décision est toujours prise par une personne.",
-        "title": "Décisions automatisées"
-      },
-      "basis": {
-        "p1": "Nous traitons vos données pour exécuter le contrat qui nous lie, lorsqu'il s'agit de réaliser votre don ou de faire fonctionner votre espace personnel. Pour respecter une obligation légale, lorsqu'il s'agit du reçu fiscal, des vérifications de vigilance ou de la conservation des dossiers. Et au titre de notre intérêt légitime à assurer la sécurité du service et à prévenir la fraude.",
-        "p2": "Nous ne vous demandons pas votre consentement pour ces traitements, car ils ne reposent pas dessus. Vous demander un accord que nous ne pourrions pas respecter, puisque la loi nous impose de conserver certaines données, serait trompeur.",
-        "title": "Sur quelle base"
-      },
-      "changes": {
-        "p1": "Cette page peut évoluer. La date de dernière mise à jour figure en tête. En cas de changement important, nous en informons les personnes disposant d'un espace personnel.",
-        "title": "Modifications"
-      },
-      "collected": {
-        "browsing": {
-          "linkLabel": "page dédiée",
-          "p1": "Nos hébergeurs conservent des journaux techniques pendant sept jours au plus : date et heure de connexion, adresse IP, page demandée, type de navigateur. Ils servent uniquement à diagnostiquer un incident et à détecter une utilisation anormale du service. Au-delà de sept jours, ils sont supprimés.",
-          "p2": "Les cookies utilisés sont décrits sur notre <link>page dédiée</link>.",
-          "title": "En naviguant sur le site"
+      "articles": [
+        {
+          "paragraphs": [
+            "Cette page explique quelles informations nous collectons, pourquoi, combien de temps nous les gardons, qui y a accès et comment vous pouvez agir dessus."
+          ],
+          "title": "Protection de vos données personnelles"
         },
-        "donation": {
-          "p1": "Nous collectons vos nom, prénom, adresse postale et adresse électronique, ainsi que la date, le montant et le moyen de paiement de votre don, et la version des conditions générales que vous avez acceptée avec sa date.",
-          "p2": "Ces informations servent à réaliser votre don, à établir votre reçu fiscal, à vous permettre de suivre l'utilisation des fonds si vous créez un espace personnel, et à respecter nos obligations légales.",
-          "p3": "Votre don est réglé sur la page de paiement du prestataire de l'association, HelloAsso ou Mollie. Pour vous éviter une double saisie, nous lui transmettons vos nom, prénom, adresse électronique, adresse postale et pays. Vos données de carte bancaire sont saisies sur la page du prestataire ; nous n'y avons pas accès.",
-          "p4": "Vous pouvez également renseigner votre date de naissance. Elle est facultative, elle n'est pas conservée, et elle sert uniquement à éviter qu'une homonymie avec une personne figurant sur une liste de gel des avoirs fasse refuser votre don.",
-          "title": "Si vous faites un don"
+        {
+          "paragraphs": [
+            "CommonLink SAS, 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928.",
+            "Pour toute question relative à vos données : contact@common-link.org"
+          ],
+          "title": "Qui est responsable"
         },
-        "org": {
-          "p1": "Nous collectons la dénomination, l'adresse du siège, la forme juridique, l'année de création, le numéro d'enregistrement au répertoire national des associations ou le numéro SIREN, l'identité du représentant légal, les coordonnées bancaires, et la version des conditions générales acceptée avec sa date.",
-          "p2": "Vos coordonnées bancaires servent aussi au prélèvement de notre commission, sur la base du mandat de prélèvement SEPA que vous signez. Ce prélèvement est exécuté par notre banque, Qonto.",
-          "p3": "Nous vous demandons également trois documents : vos statuts, votre récépissé de déclaration ou votre insertion au Journal officiel, et la pièce d'identité de votre représentant légal.",
-          "p4": "Ces informations et ces documents servent à vérifier l'existence et l'identité de la structure, à permettre la collecte, et à respecter nos obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
-          "p5": "Nous produisons également, à partir de ces informations, des alertes de vigilance lorsqu'un contrôle le nécessite.",
-          "p6": "Si vous encaissez par HelloAsso, nous conservons aussi, sous forme chiffrée, les éléments d'accès à votre compte HelloAsso, et la trace de l'autorisation que vous nous donnez : qui l'a donnée, quand, et sur quelle version du texte. HelloAsso nous adresse également des notifications sur les autres paiements de votre association, comme les adhésions ou la billetterie : nous les écartons dès leur réception, sans les conserver ni les exploiter. Les documents que HelloAsso vous demande pour sa propre vérification lui sont transmis directement ; nous ne les recevons pas.",
-          "title": "Si vous inscrivez une association ou un fonds de dotation"
+        {
+          "subsections": [
+            {
+              "paragraphs": [
+                "Nous collectons vos nom, prénom, adresse postale et adresse électronique, ainsi que la date, le montant et le moyen de paiement de votre don, et la version des conditions générales que vous avez acceptée avec sa date.",
+                "Ces informations servent à réaliser votre don, à établir votre reçu fiscal, à vous permettre de suivre l'utilisation des fonds si vous créez un espace personnel, et à respecter nos obligations légales.",
+                "Votre don est réglé sur la page de paiement du prestataire de l'association, HelloAsso ou Mollie. Pour vous éviter une double saisie, nous lui transmettons vos nom, prénom, adresse électronique, adresse postale et pays. Vos données de carte bancaire sont saisies sur la page du prestataire ; nous n'y avons pas accès.",
+                "Vous pouvez également renseigner votre date de naissance. Elle est facultative, elle n'est pas conservée, et elle sert uniquement à éviter qu'une homonymie avec une personne figurant sur une liste de gel des avoirs fasse refuser votre don."
+              ],
+              "title": "Si vous faites un don"
+            },
+            {
+              "paragraphs": [
+                "Nous collectons la dénomination, l'adresse du siège, la forme juridique, l'année de création, le numéro d'enregistrement au répertoire national des associations ou le numéro SIREN, l'identité du représentant légal, les coordonnées bancaires, et la version des conditions générales acceptée avec sa date.",
+                "Nous vous demandons également trois documents : vos statuts, votre récépissé de déclaration ou votre insertion au Journal officiel, et la pièce d'identité de votre représentant légal.",
+                "Ces informations et ces documents servent à vérifier l'existence et l'identité de la structure, à permettre la collecte, et à respecter nos obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.",
+                "Nous produisons également, à partir de ces informations, des alertes de vigilance lorsqu'un contrôle le nécessite.",
+                "Si vous encaissez par HelloAsso, nous conservons aussi, sous forme chiffrée, les éléments d'accès à votre compte HelloAsso, et la trace de l'autorisation que vous nous donnez : qui l'a donnée, quand, et sur quelle version du texte. HelloAsso nous adresse également des notifications sur les autres paiements de votre association, comme les adhésions ou la billetterie : nous les écartons dès leur réception, sans les conserver ni les exploiter. Les documents que HelloAsso vous demande pour sa propre vérification lui sont transmis directement ; nous ne les recevons pas."
+              ],
+              "title": "Si vous inscrivez une association ou un fonds de dotation"
+            },
+            {
+              "paragraphs": [
+                "Lorsqu'une association vous verse une somme depuis CommonLink, elle nous communique votre nom, ou celui de votre entreprise, et vos coordonnées bancaires, avec le montant, la date et la nature de la dépense. Ces informations servent à préparer le virement, que Bridge exécute, à le publier sur la page de la campagne et à respecter nos obligations légales.",
+                "Si vous êtes une personne physique, votre nom n'est ni publié ni inscrit dans le registre public : le paiement apparaît avec la nature de la dépense et son montant, et une rémunération apparaît dans un montant groupé. Si vous êtes un professionnel immatriculé payé pour votre activité, votre nom est publié comme celui de toute entreprise.",
+                "Nous traitons ces informations au titre de notre intérêt légitime à rendre compte de l'usage des dons, et pour respecter nos obligations légales."
+              ],
+              "title": "Si une association vous paie depuis la plateforme"
+            },
+            {
+              "paragraphs": [
+                "Nos hébergeurs conservent des journaux techniques pendant sept jours au plus : date et heure de connexion, adresse IP, page demandée, type de navigateur. Ils servent uniquement à diagnostiquer un incident et à détecter une utilisation anormale du service. Au-delà de sept jours, ils sont supprimés.",
+                "Les cookies utilisés sont décrits sur notre <cookies>page dédiée</cookies>."
+              ],
+              "title": "En naviguant sur le site"
+            }
+          ],
+          "title": "Ce que nous collectons, et pourquoi"
         },
-        "payee": {
-          "p1": "Lorsqu'une association vous verse une somme depuis CommonLink, elle nous communique votre nom, ou celui de votre entreprise, et vos coordonnées bancaires, avec le montant, la date et la nature de la dépense. Ces informations servent à préparer le virement, que Bridge exécute, à le publier sur la page de la campagne et à respecter nos obligations légales.",
-          "p2": "Si vous êtes une personne physique, votre nom n'est ni publié ni inscrit dans le registre public : le paiement apparaît avec la nature de la dépense et son montant, et une rémunération apparaît dans un montant groupé. Si vous êtes un professionnel immatriculé payé pour votre activité, votre nom est publié comme celui de toute entreprise.",
-          "p3": "Nous traitons ces informations au titre de notre intérêt légitime à rendre compte de l'usage des dons, et pour respecter nos obligations légales.",
-          "title": "Si une association vous paie depuis la plateforme"
+        {
+          "paragraphs": [
+            "Nous traitons vos données pour exécuter le contrat qui nous lie, lorsqu'il s'agit de réaliser votre don ou de faire fonctionner votre espace personnel. Pour respecter une obligation légale, lorsqu'il s'agit du reçu fiscal, des vérifications de vigilance ou de la conservation des dossiers. Et au titre de notre intérêt légitime à assurer la sécurité du service et à prévenir la fraude.",
+            "Nous ne vous demandons pas votre consentement pour ces traitements, car ils ne reposent pas dessus. Vous demander un accord que nous ne pourrions pas respecter, puisque la loi nous impose de conserver certaines données, serait trompeur."
+          ],
+          "title": "Sur quelle base"
         },
-        "title": "Ce que nous collectons, et pourquoi"
-      },
-      "controller": {
-        "p1": "CommonLink SAS, 1047 Chemin des Impiniers, 06220 Vallauris, immatriculée au registre du commerce et des sociétés d'Antibes sous le numéro 105 153 928.",
-        "p2": "Pour toute question relative à vos données : contact@common-link.org",
-        "title": "Qui est responsable"
-      },
-      "hostedPages": {
-        "p1": "Une association peut mettre en ligne, sur son propre site, une page de collecte fournie par CommonLink. Elle en est alors l'éditrice, et ses propres mentions légales et sa propre politique de confidentialité s'appliquent à cette page, en dehors du formulaire de don.",
-        "p2": "Pour les données que vous saisissez dans ce formulaire, l'association et CommonLink sont responsables conjoints de leur collecte et de leur transmission à CommonLink. Elles ont convenu que CommonLink vous informe, répond à vos demandes et assure la sécurité de cette collecte. Vous pouvez néanmoins exercer vos droits auprès de l'une ou de l'autre.",
-        "p3": "Une fois reçues, vos données sont traitées dans les conditions décrites sur la présente page.",
-        "title": "Les pages de collecte hébergées par une association"
-      },
-      "lastUpdated": "Version en vigueur au 23 novembre 2026",
-      "protection": {
-        "p1": "Cette page explique quelles informations nous collectons, pourquoi, combien de temps nous les gardons, qui y a accès et comment vous pouvez agir dessus.",
-        "title": "Protection de vos données personnelles"
-      },
-      "recipients": {
-        "p1": "<b>L'organisme bénéficiaire de votre don.</b> Il connaît votre identité, notamment parce que c'est lui le déclarant de votre reçu fiscal. Il ne peut en faire aucun autre usage que ceux liés à cette obligation et à la relation avec ses donateurs. Si vous avez choisi de ne pas apparaître publiquement sur la page de campagne, votre nom n'est pas affiché, mais l'organisme le connaît.",
-        "p2": "<b>Nos prestataires techniques.</b> Vercel, qui héberge le site vitrine. Clever Cloud, qui héberge la plateforme en France. Proton, qui achemine nos courriers électroniques, y compris votre reçu fiscal.",
-        "p3": "<b>Les prestataires de paiement.</b> HelloAsso ou Mollie, selon l'association que vous soutenez, encaisse votre don. Bridge exécute les virements que les associations font depuis la plateforme. Ils traitent vos données pour leur propre compte, dans les conditions qu'ils publient. Ils ne sont pas nos sous-traitants.",
-        "p4": "Nous ne vendons ni ne louons vos données. La plateforme est hébergée dans l'Union européenne. Notre service de messagerie est établi en Suisse, pays reconnu par la Commission européenne comme offrant un niveau de protection adéquat. L'hébergeur du site vitrine, Vercel, est une société établie aux États-Unis : les données de connexion au site vitrine peuvent y être transférées, dans le respect des garanties prévues par le règlement européen sur la protection des données. Aucun autre transfert en dehors de l'Union européenne n'est effectué.",
-        "title": "Qui d'autre y accède"
-      },
-      "retention": {
-        "col1": "Ce que nous gardons",
-        "col2": "Combien de temps",
-        "p1": "Clôturer un espace personnel ne supprime pas immédiatement toutes les données. Nous conservons celles que la loi nous impose de garder, pendant les durées ci-dessus, puis nous les supprimons.",
-        "row0col1": "Les données de votre don et votre reçu fiscal",
-        "row0col2": "six ans à compter de l'établissement du reçu, puis suppression",
-        "row1col1": "Les informations recueillies au titre de la vigilance, pour les organismes et leurs représentants",
-        "row1col2": "cinq ans à compter de la fin de la relation, puis suppression",
-        "row2col1": "Les dossiers de réclamation",
-        "row2col2": "cinq ans à compter de la clôture du dossier, puis suppression",
-        "row3col1": "Les journaux techniques de connexion",
-        "row3col2": "sept jours au plus",
-        "row4col1": "Les données de votre espace personnel",
-        "row4col2": "jusqu'à sa clôture, sous réserve des durées ci-dessus",
-        "row5col1": "Les éléments d'accès à votre compte HelloAsso",
-        "row5col2": "jusqu'à la déconnexion ou la fin du contrat, puis suppression",
-        "row6col1": "La trace de votre autorisation",
-        "row6col2": "six ans à compter de la fin de l'autorisation, puis suppression",
-        "row7col1": "Les informations sur un paiement reçu d'une association",
-        "row7col2": "cinq ans à compter du paiement, puis suppression ; la publication reste visible sur la page de la campagne",
-        "title": "Combien de temps"
-      },
-      "rights": {
-        "p1": "Vous pouvez demander à accéder à vos données, à les faire corriger, à en obtenir une copie, à en limiter l'usage, à vous opposer à certains traitements, ou à les faire supprimer.",
-        "p2": "Sur la suppression, nous devons être précis. Nous supprimons ce que nous pouvons supprimer. Nous ne pouvons pas supprimer ce que la loi nous impose de conserver, notamment les informations recueillies au titre de la vigilance et les éléments liés à un reçu fiscal déjà émis. Nous vous indiquons alors ce qui a été supprimé et ce qui a été conservé, avec le motif.",
-        "p3": "Écrivez à contact@common-link.org. Nous répondons dans un délai d'un mois, qui peut être porté à trois mois si la demande est complexe, auquel cas nous vous le disons.",
-        "p4": "Si notre réponse ne vous satisfait pas, vous pouvez saisir la Commission nationale de l'informatique et des libertés, 3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, ou sur www.cnil.fr",
-        "title": "Vos droits"
-      },
+        {
+          "paragraphs": [
+            "Clôturer un espace personnel ne supprime pas immédiatement toutes les données. Nous conservons celles que la loi nous impose de garder, pendant les durées ci-dessus, puis nous les supprimons."
+          ],
+          "table": {
+            "head": [
+              "Ce que nous gardons",
+              "Combien de temps"
+            ],
+            "rows": [
+              [
+                "Les données de votre don et votre reçu fiscal",
+                "six ans à compter de l'établissement du reçu, puis suppression"
+              ],
+              [
+                "Les informations recueillies au titre de la vigilance, pour les organismes et leurs représentants",
+                "cinq ans à compter de la fin de la relation, puis suppression"
+              ],
+              [
+                "Les dossiers de réclamation",
+                "cinq ans à compter de la clôture du dossier, puis suppression"
+              ],
+              [
+                "Les journaux techniques de connexion",
+                "sept jours au plus"
+              ],
+              [
+                "Les données de votre espace personnel",
+                "jusqu'à sa clôture, sous réserve des durées ci-dessus"
+              ],
+              [
+                "Les éléments d'accès à votre compte HelloAsso",
+                "jusqu'à la déconnexion ou la fin du contrat, puis suppression"
+              ],
+              [
+                "La trace de votre autorisation",
+                "six ans à compter de la fin de l'autorisation, puis suppression"
+              ],
+              [
+                "Les informations sur un paiement reçu d'une association",
+                "cinq ans à compter du paiement, puis suppression ; la publication reste visible sur la page de la campagne"
+              ]
+            ]
+          },
+          "title": "Combien de temps"
+        },
+        {
+          "paragraphs": [
+            "<b>L'organisme bénéficiaire de votre don.</b> Il connaît votre identité, notamment parce que c'est lui le déclarant de votre reçu fiscal. Il ne peut en faire aucun autre usage que ceux liés à cette obligation et à la relation avec ses donateurs. Si vous avez choisi de ne pas apparaître publiquement sur la page de campagne, votre nom n'est pas affiché, mais l'organisme le connaît.",
+            "<b>Nos prestataires techniques.</b> Vercel, qui héberge le site vitrine. Clever Cloud, qui héberge la plateforme en France. Proton, qui achemine nos courriers électroniques, y compris votre reçu fiscal.",
+            "<b>Les prestataires de paiement.</b> HelloAsso ou Mollie, selon l'association que vous soutenez, encaisse votre don. Bridge exécute les virements que les associations font depuis la plateforme. Ils traitent vos données pour leur propre compte, dans les conditions qu'ils publient. Ils ne sont pas nos sous-traitants.",
+            "Nous ne vendons ni ne louons vos données. La plateforme est hébergée dans l'Union européenne. Notre service de messagerie est établi en Suisse, pays reconnu par la Commission européenne comme offrant un niveau de protection adéquat. L'hébergeur du site vitrine, Vercel, est une société établie aux États-Unis : les données de connexion au site vitrine peuvent y être transférées, dans le respect des garanties prévues par le règlement européen sur la protection des données. Aucun autre transfert en dehors de l'Union européenne n'est effectué."
+          ],
+          "title": "Qui d'autre y accède"
+        },
+        {
+          "paragraphs": [
+            "Aucune décision produisant des effets juridiques à votre égard n'est prise sans intervention humaine. Notre dispositif de vigilance peut signaler une situation, mais la décision est toujours prise par une personne."
+          ],
+          "title": "Décisions automatisées"
+        },
+        {
+          "paragraphs": [
+            "Vous pouvez demander à accéder à vos données, à les faire corriger, à en obtenir une copie, à en limiter l'usage, à vous opposer à certains traitements, ou à les faire supprimer.",
+            "Sur la suppression, nous devons être précis. Nous supprimons ce que nous pouvons supprimer. Nous ne pouvons pas supprimer ce que la loi nous impose de conserver, notamment les informations recueillies au titre de la vigilance et les éléments liés à un reçu fiscal déjà émis. Nous vous indiquons alors ce qui a été supprimé et ce qui a été conservé, avec le motif.",
+            "Écrivez à contact@common-link.org. Nous répondons dans un délai d'un mois, qui peut être porté à trois mois si la demande est complexe, auquel cas nous vous le disons.",
+            "Si notre réponse ne vous satisfait pas, vous pouvez saisir la Commission nationale de l'informatique et des libertés, 3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, ou sur www.cnil.fr"
+          ],
+          "title": "Vos droits"
+        },
+        {
+          "paragraphs": [
+            "Une association peut mettre en ligne, sur son propre site, une page de collecte fournie par CommonLink. Elle en est alors l'éditrice, et ses propres mentions légales et sa propre politique de confidentialité s'appliquent à cette page, en dehors du formulaire de don.",
+            "Pour les données que vous saisissez dans ce formulaire, l'association et CommonLink sont responsables conjoints de leur collecte et de leur transmission à CommonLink. Elles ont convenu que CommonLink vous informe, répond à vos demandes et assure la sécurité de cette collecte. Vous pouvez néanmoins exercer vos droits auprès de l'une ou de l'autre.",
+            "Une fois reçues, vos données sont traitées dans les conditions décrites sur la présente page."
+          ],
+          "title": "Les pages de collecte hébergées par une association"
+        },
+        {
+          "paragraphs": [
+            "Cette page peut évoluer. La date de dernière mise à jour figure en tête. En cas de changement important, nous en informons les personnes disposant d'un espace personnel."
+          ],
+          "title": "Modifications"
+        }
+      ],
+      "lastUpdated": "Version en vigueur au 24 novembre 2026",
       "title": "Politique de confidentialité"
     },
     "politiqueCookies": {
@@ -1696,15 +1744,15 @@
           "Minimum de facturation"
         ]
       },
+      "factureeEnFinDe": "Facturée en fin de mois",
       "htSurLesDons": "8 % HT <t0>sur les dons collectés</t0>",
-      "laCommissionEstPrelevee": "La commission est prélevée trente jours ouvrés plus tard : vous pouvez utiliser l'argent avant.",
+      "laCommissionEstFacturee": "La commission est facturée ensuite : vous pouvez utiliser l'argent avant de la régler.",
       "notreSeuleCommission": "Notre seule commission",
       "pourLesAssociations": "Pour les associations",
-      "preleveeAutomatiquement": "Prélevée automatiquement",
       "sansEngagement": "Sans engagement",
       "soitTtc": "Soit 9,6 % TTC.",
       "surCollectes": "Sur 100 € collectés,",
-      "trenteJoursOuvresApres": "Trente jours ouvrés après chaque don. Une facture récapitule chaque mois."
+      "surLesDonsDu": "Sur les dons du mois, réglée par virement le mois suivant."
     },
     "donor": {
       "associationRecoit": "L'association reçoit",

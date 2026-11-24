@@ -2618,8 +2618,8 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
    the shared .modal's 480px max-width is tuned for short forms/confirmations, not paragraphs. */
 .modal-wide { max-width: 760px; }
 
-/* CGU/CGV text (LegalDocumentRenderer) - same rules as the landing site's legal pages
-   (landing-page globals.css: .legal-meta, .legal-body, .legal-callout, .legal-toc-auto, .legal-link),
+/* Legal text - CGU, CGV, privacy policy (LegalDocumentRenderer) - same rules as the landing site's legal pages
+   (landing-page globals.css: .legal-meta, .legal-body, .legal-callout, .legal-toc-auto, .legal-link, .legal-table),
    without the page padding so it fits the donation, publication and post-login modals. */
 .legal-doc-meta { font-size: 14px; color: var(--slate-lavender); margin-bottom: 16px; }
 .legal-doc h3 { font-size: 19px; margin: 32px 0 10px; }
@@ -2627,6 +2627,9 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .legal-doc p { margin-bottom: 14px; line-height: 1.75; color: var(--ink-navy); }
 .legal-doc p a { color: var(--deep-indigo); text-decoration: underline; }
 .legal-doc-plain { white-space: pre-wrap; }
+.legal-doc-table { width: 100%; border-collapse: collapse; margin: 8px 0 18px; font-size: 14px; }
+.legal-doc-table th, .legal-doc-table td { border-bottom: 1px solid var(--mist-lavender); padding: 10px 8px; text-align: left; vertical-align: top; line-height: 1.6; color: var(--ink-navy); }
+.legal-doc-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--slate-lavender); }
 .legal-doc-callout { background: var(--soft-cream); border-left: 3px solid var(--bright-teal); border-radius: var(--radius-lg); padding: 18px 22px; margin: 22px 0; line-height: 1.7; }
 .legal-doc-toc { background: var(--soft-cream); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 36px; }
 .legal-doc-toc strong { display: block; margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--slate-lavender); }

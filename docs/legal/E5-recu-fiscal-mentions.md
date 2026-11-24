@@ -468,7 +468,7 @@ jour ; elle valide elle-même la rédaction, sur la base de cette vérification.
 | **Courriel** | `api/src/main/kotlin/org/commonlink/service/SmtpEmailService.kt` |
 | **Préalables** | `api/src/main/kotlin/org/commonlink/service/ReceiptPrerequisiteService.kt` ; appliqués par `MandateService.kt` (signature du mandat), `PublicWidgetService.kt` (collecte), `CampaignService.kt` (publication), `ReceiptService.kt` (émission) |
 | **Base de données** | migration `V98__association_signature.sql` (contraintes de la signature et des catégories du mandat), retour arrière `U98__association_signature.sql` |
-| **Textes publiés** | `landing-page/messages/fr.json` : `legal.cguAssociations` (article 17) et `legal.politiqueConfidentialite.retention` |
+| **Textes publiés** | `landing-page/messages/fr.json` : `legal.cguAssociations` (article 17) et `legal.politiqueConfidentialite.articles[4].table` (article « Combien de temps ») |
 | **Écrans** | `app/src/components/settings/MandateTab.tsx`, `SignatoryCard.tsx`, `app/src/components/campaign/PrePublishModal.tsx` |
 | **Contrôles automatisés** | `ReceiptServiceTest.kt`, `SmtpEmailServiceTest.kt`, `MandateServiceTest.kt`, `MandateControllerTest.kt`, `PublicWidgetServiceTest.kt`, `PublicWidgetServiceIntegrationTest.kt`, `CampaignServiceTest.kt`, `DonationReceiptServiceTest.kt`, `AssociationSignatureRepositoryTest.kt`, `SignatoryServiceTest.kt` ; côté écran `MandateTab.test.tsx`, `SignatoryCard.test.tsx`, `PrePublishModal.test.tsx` |
 

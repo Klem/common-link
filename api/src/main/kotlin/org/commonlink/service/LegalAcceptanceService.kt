@@ -4,6 +4,7 @@ import org.commonlink.dto.DonorLegalAcceptanceGroupDto
 import org.commonlink.dto.LegalAcceptanceDto
 import org.commonlink.dto.LegalAcceptanceStateDto
 import org.commonlink.dto.LegalDocumentDto
+import org.commonlink.dto.PublishTermsAcceptance
 import org.commonlink.entity.LegalAcceptance
 import org.commonlink.entity.LegalAcceptanceSubjectType
 import org.commonlink.entity.LegalDocument
@@ -21,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 /**
- * Proof-of-acceptance engine for CGU/CGV (notice ACPR ; art. 1740 A CGI).
+ * Proof-of-acceptance engine for the legal documents — CGU, CGV and privacy policy (ACPR notice; art. 1740 A
+ * CGI; GDPR transparency).
  *
  * Two distinct write shapes over the same [LegalAcceptance] table — see that entity's KDoc for why:
  * association rows are deduplicated per (association, document, version); donor rows are written
@@ -112,34 +114,39 @@ class LegalAcceptanceService(
     }
 
     /**
-     * Publish-time gate. No-op (writes nothing) if [associationId] already accepted the current
-     * version — this is what makes the frontend's "auto-checked and greyed out for later
-     * campaigns" behaviour safe rather than a stale rubber stamp: a version bump makes `already`
-     * false again and the gate re-engages.
+     * Publish-time gate over every document of [ASSOCIATION_DOCUMENTS]. A document [associationId] already
+     * accepted in its current version is skipped — this is what makes the frontend's "auto-checked and greyed
+     * out for later campaigns" behaviour safe rather than a stale rubber stamp: a version bump makes it pending
+     * again and the gate re-engages. Every pending document is checked before any is recorded, so a refusal
+     * writes nothing.
      *
-     * @param acceptedVersion the version the publish dialog displayed; ignored when already accepted.
-     * @throws UnprocessableEntityException if not yet accepted and [accepted] is false.
-     * @throws LegalDocumentVersionOutdatedException if [accepted] but [acceptedVersion] is not the current one.
+     * @param acceptances what the publish dialog sent for each document; a document missing from the map counts
+     *   as not accepted. Ignored for the documents already accepted.
+     * @throws UnprocessableEntityException if a pending document is not accepted.
+     * @throws LegalDocumentVersionOutdatedException if a pending document is accepted in a version that is not
+     *   the current one.
      */
     @Transactional
-    fun requireAssociationAcceptance(
+    fun requireAssociationAcceptances(
         associationId: UUID,
-        documentType: LegalDocumentType,
-        accepted: Boolean,
-        acceptedVersion: String?,
+        acceptances: Map<LegalDocumentType, PublishTermsAcceptance>,
         signerName: String?,
         signerEmail: String?,
         campaignId: UUID,
     ) {
-        val current = currentDocument(documentType)
-        if (hasAssociationAccepted(associationId, documentType, current.version)) return
-        if (!accepted) {
-            throw UnprocessableEntityException(
-                "You must accept the current $documentType (version ${current.version}) before publishing"
-            )
+        val pending = ASSOCIATION_DOCUMENTS
+            .map { currentDocument(it) }
+            .filterNot { hasAssociationAccepted(associationId, it.documentType, it.version) }
+        for (current in pending) {
+            val acceptance = acceptances[current.documentType]
+            if (acceptance?.accepted != true) {
+                throw UnprocessableEntityException(
+                    "You must accept the current ${current.documentType} (version ${current.version}) before publishing"
+                )
+            }
+            requireCurrentVersion(current, acceptance.version)
         }
-        requireCurrentVersion(current, acceptedVersion)
-        saveAssociationAcceptance(associationId, current, signerName, signerEmail, campaignId)
+        pending.forEach { saveAssociationAcceptance(associationId, it, signerName, signerEmail, campaignId) }
     }
 
     private fun hasAssociationAccepted(associationId: UUID, documentType: LegalDocumentType, version: String): Boolean =
@@ -228,7 +235,7 @@ class LegalAcceptanceService(
             .map { it.toDto() }
 
     /**
-     * Donor CGU/CGV acceptance proof for one campaign, grouped by donor. Rows are read most-recent
+     * Donor acceptance proof (CGU and privacy policy) for one campaign, grouped by donor. Rows are read most-recent
      * first, and `groupBy` preserves that order per key (Kotlin backs it with a `LinkedHashMap`), so
      * no separate sort is needed for either the group order or a group's own [donorName]/[donorEmail]
      * snapshot to land on that donor's latest acceptance.
@@ -277,16 +284,17 @@ class LegalAcceptanceService(
 
     companion object {
         /**
-         * What a donor accepts on every donation: the CGU (donor terms) only. The `CGV` document is the
-         * associations' CGU and does not concern donors (decision of 2026-11-16).
+         * What a donor accepts on every donation: the CGU (donor terms) and the privacy policy (decision of
+         * 2026-11-24, accepted through the form's GDPR checkbox). The `CGV` document is the associations' CGU and
+         * does not concern donors (decision of 2026-11-16).
          */
-        val DONOR_DOCUMENTS = listOf(LegalDocumentType.CGU)
+        val DONOR_DOCUMENTS = listOf(LegalDocumentType.CGU, LegalDocumentType.PRIVACY)
 
         /**
          * What an association accepts — at campaign publication and at the post-login gate: the `CGV` document,
          * which holds the beneficiary-organisation terms (the landing site's `cguAssociations`), not the donor
-         * CGU (decision of 2026-11-16).
+         * CGU (decision of 2026-11-16), and the privacy policy (decision of 2026-11-24).
          */
-        val ASSOCIATION_DOCUMENT = LegalDocumentType.CGV
+        val ASSOCIATION_DOCUMENTS = listOf(LegalDocumentType.CGV, LegalDocumentType.PRIVACY)
     }
 }

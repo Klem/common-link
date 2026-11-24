@@ -1,15 +1,32 @@
-/** A versioned legal document (notice ACPR ; art. 1740 A CGI — preuve d'acceptation). */
+/**
+ * A versioned legal document whose acceptance is recorded (ACPR notice; art. 1740 A CGI proof of acceptance):
+ * `CGU` donor terms, `CGV` association terms, `PRIVACY` privacy policy.
+ */
 export const LegalDocumentType = {
   CGU: 'CGU',
   CGV: 'CGV',
+  PRIVACY: 'PRIVACY',
 } as const;
 export type LegalDocumentType = typeof LegalDocumentType[keyof typeof LegalDocumentType];
 
 /**
- * What an association accepts (campaign publication, post-login gate): the `CGV` document, which holds the
- * beneficiary-organisation terms. Donors accept `CGU` only. Mirrors `LegalAcceptanceService.ASSOCIATION_DOCUMENT`.
+ * What an association accepts (campaign publication, post-login gate), in this order: the `CGV` document, which
+ * holds the beneficiary-organisation terms, then the privacy policy. Mirrors
+ * `LegalAcceptanceService.ASSOCIATION_DOCUMENTS`.
  */
-export const ASSOCIATION_LEGAL_DOCUMENT = LegalDocumentType.CGV;
+export const ASSOCIATION_LEGAL_DOCUMENTS: readonly LegalDocumentType[] = [
+  LegalDocumentType.CGV,
+  LegalDocumentType.PRIVACY,
+];
+
+/** One publish-dialog checkbox: ticked or not, and the version displayed. Mirrors `PublishTermsAcceptance`. */
+export interface PublishTermsAcceptance {
+  accepted: boolean;
+  version: string | null;
+}
+
+/** The publish dialog's checkboxes, per association document (`ASSOCIATION_LEGAL_DOCUMENTS`). */
+export type PublishTermsAcceptances = Partial<Record<LegalDocumentType, PublishTermsAcceptance>>;
 
 /** Who accepted a document — donor at donation time, association at campaign publish time. */
 export const LegalAcceptanceSubjectType = {
@@ -29,10 +46,11 @@ export const LegalContentFormat = {
 } as const;
 export type LegalContentFormat = typeof LegalContentFormat[keyof typeof LegalContentFormat];
 
-/** A run of text; a link (absolute URL, opened in a new tab) when `href` is set. */
+/** A run of text; a link (absolute URL, opened in a new tab) when `href` is set, bold when `bold` is true. */
 export interface LegalSegment {
   text: string;
   href?: string;
+  bold?: boolean;
 }
 
 /** One paragraph = a sequence of segments. */
@@ -43,23 +61,32 @@ export interface LegalSubsection {
   paragraphs: LegalParagraph[];
 }
 
+/** Plain-text table: one header row, then body rows of the same width. */
+export interface LegalTable {
+  head: string[];
+  rows: string[][];
+}
+
+/** One article, read in this order: title, callout, table, paragraphs, subsections. */
 export interface LegalArticle {
   title: string;
   callout?: string;
+  table?: LegalTable;
   paragraphs?: LegalParagraph[];
   subsections?: LegalSubsection[];
 }
 
-/** Structured CGU/CGV text — mirrors `LegalTextV1` on the backend. No HTML, no CSS. */
+/** Structured legal text (CGU, CGV, privacy policy) — mirrors `LegalTextV1` on the backend. No HTML, no CSS. */
 export interface LegalTextV1 {
   title: string;
   /** Effective date as shown to the reader, e.g. "Version en vigueur au 9 septembre 2026". */
   lastUpdated: string;
-  intro: string;
+  /** Absent from the privacy policy. */
+  intro?: string;
   articles: LegalArticle[];
 }
 
-/** Current published text of a CGU/CGV document. */
+/** Current published text of a legal document. */
 export interface LegalDocumentDto {
   documentType: LegalDocumentType;
   /** Opaque identifier (date + hash) to send back when accepting this exact text. */

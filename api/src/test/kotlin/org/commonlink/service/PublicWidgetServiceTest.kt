@@ -146,6 +146,7 @@ class PublicWidgetServiceTest {
             consent = true,
             cguAccepted = true,
             cguVersion = "test",
+            privacyVersion = "test",
         )
 
         assertThrows<ConflictException> { service.createDonation("clk_x", request) }
@@ -168,6 +169,7 @@ class PublicWidgetServiceTest {
         consent = true,
         cguAccepted = true,
         cguVersion = "test",
+        privacyVersion = "test",
     )
 
     @Test
@@ -220,7 +222,9 @@ class PublicWidgetServiceTest {
         every { associationProfileRepository.findByWidgetToken("clk_x") } returns Optional.of(association)
         every { mollieConnectionRepository.findByAssociationId(association.id!!) } returns readyConnection()
         every {
-            legalAcceptanceService.requireCurrentDonorVersions(mapOf(LegalDocumentType.CGU to "test"))
+            legalAcceptanceService.requireCurrentDonorVersions(
+                mapOf(LegalDocumentType.CGU to "test", LegalDocumentType.PRIVACY to "test"),
+            )
         } throws LegalDocumentVersionOutdatedException("CGU version test is not the current version")
 
         assertThrows<LegalDocumentVersionOutdatedException> { service.createDonation("clk_x", request()) }

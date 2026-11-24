@@ -48,11 +48,14 @@ export interface CreateGuestDonationRequest {
   donorCity: string;
   donorCountry: string;
   anonymousDisplay: boolean;
+  /** GDPR checkbox — also the acceptance of the privacy policy whose version is `privacyVersion`. */
   consent: boolean;
   /** Express acceptance of the donor CGU (art. 1740 A CGI). */
   cguAccepted: boolean;
   /** `LegalDocumentDto.version` of the CGU text displayed — 409 `LEGAL_VERSION_OUTDATED` if no longer current. */
   cguVersion: string;
+  /** `LegalDocumentDto.version` of the privacy policy displayed — 409 `LEGAL_VERSION_OUTDATED` if no longer current. */
+  privacyVersion: string;
   sourceSite?: string | null;
   /** UI locale (e.g. "fr", "en"). Used by the backend to build locale-prefixed redirect URLs. */
   locale?: string;

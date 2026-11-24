@@ -101,10 +101,11 @@ export function DonationForm({
   const helloAsso = paymentProvider === PaymentProviderId.HELLOASSO;
   const s = SKINS[skin];
 
-  const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked, recordAmountChoice, cguDocument } =
+  const { register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked, recordAmountChoice, cguDocument, privacyDocument } =
     useGuestDonation({ widgetToken, sourceSite, locale, tracking, parentOrigin });
 
   const [showCgu, setShowCgu] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // A full campaign cannot take any amount, so there is nothing to fill in. Never in preview
   // (`disabled`): an unpublished campaign has no meaningful capacity — its goal may still be zero —
@@ -381,12 +382,20 @@ export function DonationForm({
             {...register('consent')}
           />
           <label htmlFor="consent" style={styles.checkLabel}>
-            {t('consent.label')} *
+            {t('consent.label')}{' '}
+            <LegalLinkButton className="btn-camp-link" disabled={inert} onClick={() => setShowPrivacy(true)}>
+              {t('consent.link')}
+            </LegalLinkButton> *
           </label>
         </div>
         {errors.consent && (
           <p className={s.error} style={{ marginTop: 4 }}>
             {t(errors.consent.message as Parameters<typeof t>[0])}
+          </p>
+        )}
+        {errors.privacyVersion && (
+          <p className={s.error} style={{ marginTop: 4 }}>
+            {t(errors.privacyVersion.message as Parameters<typeof t>[0])}
           </p>
         )}
 
@@ -453,6 +462,13 @@ export function DonationForm({
 
       {showCgu && (
         <LegalDocumentModal documentType={LegalDocumentType.CGU} document={cguDocument} onClose={() => setShowCgu(false)} />
+      )}
+      {showPrivacy && (
+        <LegalDocumentModal
+          documentType={LegalDocumentType.PRIVACY}
+          document={privacyDocument}
+          onClose={() => setShowPrivacy(false)}
+        />
       )}
     </form>
   );

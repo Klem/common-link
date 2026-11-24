@@ -47,7 +47,7 @@ export function TarifsAsso({ fees, info0, info1, watch }: TarifsAssoProps) {
               <span style={{ fontSize: "13px", fontWeight: "700", letterSpacing: "1.5px", textTransform: "uppercase", color: "rgba(255,255,255,0.78)" }}>{t("ceQuiArriveSur")}</span>
               <span style={{ fontSize: "20px" }}>{t("surCollectes")}</span>
               <span style={{ fontFamily: "'Nunito Sans', sans-serif", fontWeight: "900", fontSize: "32px", lineHeight: "1.2", color: "#4ECDC4" }}>{t("arriventSurVotreCompte")}</span>
-              <span style={{ fontSize: "16px", lineHeight: "1.6", color: "rgba(255,255,255,0.86)" }}>{t("laCommissionEstPrelevee")}</span>
+              <span style={{ fontSize: "16px", lineHeight: "1.6", color: "rgba(255,255,255,0.86)" }}>{t("laCommissionEstFacturee")}</span>
             </div>
             <div style={{ background: "#FFFFFF", border: "1px solid #ECEAF5", borderRadius: "24px", padding: "32px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontSize: "13px", fontWeight: "700", letterSpacing: "1.5px", textTransform: "uppercase", color: "#4A4A66" }}>{t("notreSeuleCommission")}</span>
@@ -78,8 +78,8 @@ export function TarifsAsso({ fees, info0, info1, watch }: TarifsAssoProps) {
                 </svg>
               </span>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <strong style={{ fontFamily: "'Nunito Sans', sans-serif", fontSize: "19px" }}>{t("preleveeAutomatiquement")}</strong>
-                <span style={{ fontSize: "15px", lineHeight: "1.5", color: "#4A4A66" }}>{t("trenteJoursOuvresApres")}</span>
+                <strong style={{ fontFamily: "'Nunito Sans', sans-serif", fontSize: "19px" }}>{t("factureeEnFinDe")}</strong>
+                <span style={{ fontSize: "15px", lineHeight: "1.5", color: "#4A4A66" }}>{t("surLesDonsDu")}</span>
               </div>
             </div>
           </div>

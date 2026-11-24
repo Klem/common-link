@@ -145,13 +145,12 @@ class PublicWidgetServiceIntegrationTest {
         every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.CLEAR
 
         // legal_document rows are seeded by Flyway (V73) in real environments; this suite runs on
-        // a Hibernate-only schema (no Flyway, see FlywayMigrationTest KDoc), so the CGU/CGV gate in
+        // a Hibernate-only schema (no Flyway, see FlywayMigrationTest KDoc), so the legal documents gate in
         // createDonation would otherwise 404 on a document that simply was never inserted here.
-        if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) == null) {
-            legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGU, version = "test", content = "test CGU"))
-        }
-        if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGV) == null) {
-            legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGV, version = "test", content = "test CGV"))
+        for (type in LegalDocumentType.entries) {
+            if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(type) == null) {
+                legalDocumentRepository.save(LegalDocument(documentType = type, version = "test", content = "test $type"))
+            }
         }
     }
 
@@ -185,12 +184,17 @@ class PublicWidgetServiceIntegrationTest {
         val acceptances = legalAcceptanceRepository.findAllBySubjectTypeAndSubjectIdOrderByAcceptedAtDesc(
             LegalAcceptanceSubjectType.DONOR, donation.donor.id!!,
         )
-        // Donors accept the CGU only — the CGV document is the associations' terms.
-        val acceptance = acceptances.single()
-        assertEquals(LegalDocumentType.CGU, acceptance.documentType)
-        assertEquals("test", acceptance.documentVersion, "records the version the form displayed")
-        assertEquals(donation.id, acceptance.donationId)
-        assertEquals(donation.campaign.id, acceptance.campaignId)
+        // Donors accept the CGU and the privacy policy — the CGV document is the associations' terms.
+        assertEquals(
+            setOf(LegalDocumentType.CGU, LegalDocumentType.PRIVACY),
+            acceptances.map { it.documentType }.toSet(),
+        )
+        assertEquals(2, acceptances.size)
+        for (acceptance in acceptances) {
+            assertEquals("test", acceptance.documentVersion, "records the version the form displayed")
+            assertEquals(donation.id, acceptance.donationId)
+            assertEquals(donation.campaign.id, acceptance.campaignId)
+        }
     }
 
     @Test
@@ -783,6 +787,7 @@ class PublicWidgetServiceIntegrationTest {
         consent           = true,
         cguAccepted       = true,
         cguVersion        = "test",
+        privacyVersion    = "test",
         sourceSite        = sourceSite,
     )
 }
