@@ -9,6 +9,8 @@
 server:
   port: 8080
   address: 0.0.0.0   # Required: CC reverse proxy needs to reach the app
+  ssl:
+    enabled: false   # TLS terminates at the CC proxy; the base file enables it for local dev only
   # Makes Spring honour X-Forwarded-Proto/Host from the CC proxy, so requests are seen as HTTPS.
   # Without it Strict-Transport-Security is never emitted — the header writer skips insecure
   # requests, and every request looks insecure behind the proxy (security audit 2026-08-20, M9).
