@@ -58,7 +58,7 @@ class AssociationRegistryCheckService(
          * announcements predating the registry, where it holds `ASS` + the announcement number within
          * its issue — a counter that restarts at every issue and identifies no legal entity.
          */
-        val RNA_PATTERN = Regex("^W[0-9A-Za-z]{9}$")
+        val RNA_PATTERN = RechercheEntreprisesResults.RNA_PATTERN
 
         /** A SIREN: 9 digits. */
         val SIREN_PATTERN = Regex("^[0-9]{9}$")
@@ -132,20 +132,15 @@ class AssociationRegistryCheckService(
             try {
                 val url = "$rechercheEntreprisesBaseUrl/search?q=${enc(searchKey)}&per_page=10"
                 restTemplate.getForObject(url, String::class.java)?.let { body ->
-                    val results: JsonNode = objectMapper.readTree(body).path("results")
-                    val candidates = if (results.isArray) (0 until results.size()).map { results[it] } else emptyList()
+                    val candidates = RechercheEntreprisesResults.entries(objectMapper.readTree(body))
                     // The endpoint is a full-text search: it is not guaranteed to rank the right entity
                     // first, on either key. Both paths therefore accept only a record whose own identifier
                     // matches the dossier exactly — the SIREN path used to keep the top hit, which could
                     // bind an unrelated entity and then drive the perimeter verdict and the screening scope.
                     val match: JsonNode? = if (sirenFromProfile != null) {
-                        candidates.firstOrNull {
-                            it.path("siren").asText("") == sirenFromProfile
-                        }
+                        RechercheEntreprisesResults.findBySiren(candidates, sirenFromProfile)
                     } else {
-                        candidates.firstOrNull {
-                            it.path("identifiant_association").asText("").equals(rnaFromProfile, ignoreCase = true)
-                        }
+                        RechercheEntreprisesResults.findByRna(candidates, rnaFromProfile!!)
                     }
                     if (match != null) {
                         val estAssociation = match.path("complements").path("est_association").asBoolean(false)
@@ -159,8 +154,9 @@ class AssociationRegistryCheckService(
                         // curator needs to see.
                         associationExists = estAssociation || natureJuridique in ACCEPTED_LEGAL_CATEGORIES
                         rnaActive = estAssociation  // RNA-native: recherche-entreprises aggregates from RNA
-                        rnaFromSearch = match.path("identifiant_association").asText("").takeIf { it.isNotBlank() }
-                        sirenFromSearch = match.path("siren").asText("").takeIf { it.isNotBlank() }
+                        // Pattern-checked: this value is interpolated into the JOAFE query at step 3.
+                        rnaFromSearch = RechercheEntreprisesResults.rnaOf(match)?.takeIf { RNA_PATTERN.matches(it) }
+                        sirenFromSearch = RechercheEntreprisesResults.sirenOf(match)
                         val dirigeants: JsonNode = match.path("dirigeants")
                         if (dirigeants.isArray) {
                             (0 until dirigeants.size()).forEach { i ->

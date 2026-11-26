@@ -42,6 +42,7 @@ type VerifyStatus = 'idle' | 'verifying' | 'success' | 'error';
  *   is malformed or already consumed — GlobalExceptionHandler never emits a distinct "used" code —
  *   so both read as "this link has already been used" to the user)
  * - `SIREN_ALREADY_REGISTERED` → `errors.sirenAlreadyRegistered` (SIREN claimed since the link was sent)
+ * - `RNA_ALREADY_REGISTERED` → `errors.rnaAlreadyRegistered` (RNA claimed since the link was sent)
  * - Other errors → `errors.genericError`
  *
  * @param token - The raw magic link token from the URL query string, or null.
@@ -93,6 +94,9 @@ export function useMagicLinkVerify(
             // Reachable when someone else registers the SIREN between the link being sent and
             // clicked: profile creation happens here, so the guard fires at verification time.
             setError('errors.sirenAlreadyRegistered');
+          } else if (problemDetail?.code === 'RNA_ALREADY_REGISTERED') {
+            // Same race as above, on the RNA the backend resolves from the SIREN at profile creation.
+            setError('errors.rnaAlreadyRegistered');
           } else {
             setError('errors.genericError');
           }

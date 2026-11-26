@@ -391,6 +391,10 @@ One of the three login methods. Users click "Continue with Google" → a popup o
 The link between an association and its HelloAsso account in API keys mode: one row per association, created before the link so the association can be shown its notification URL (opaque token) while linking, then holding the organization slug, the `client_id` and the encrypted tokens. States: `NOT_LINKED`, `ACTIVE`, `BROKEN` (refresh token rejected, keys must be re-entered), `DISCONNECTED` (tokens erased, row and token kept). The `client_secret` is never stored. Kept when the association moves to another **Payment Provider**.
 `technical`
 
+### HelloAsso link attempt (Tentative de liaison HelloAsso)
+One HelloAsso key check by an association, successful or not, recorded in the append-only `helloasso_link_attempts` table: outcome (`MATCHED`, `NAME_MISMATCH`, `RNA_MISMATCH`, `ORGANIZATION_ALREADY_LINKED`, `INVALID_KEYS`, `ORGANIZATION_UNRESOLVED`, `HELLOASSO_UNAVAILABLE`, `HELLOASSO_RATE_LIMITED`), what HelloAsso returned (organization slug, name, type, RNA), the RNA CommonLink knew at that moment and the masked client id — never the secret nor a token. An operational statistics journal, distinct from the compliance audit log; curators read it on the "Liaisons HelloAsso" admin screen (`/api/admin/helloasso/link-attempts`). No retention period set yet.
+`technical` `functional`
+
 ### IBAN (International Bank Account Number)
 Standardized unique identifier for a bank account at the international level (ISO 13616 standard). Composed of 2 country code letters, 2 check digits and the BBAN (Basic Bank Account Number), on a maximum of 34 characters. On CommonLink, beneficiary IBANs are validated via the mod-97 algorithm and can be verified via the VOP service.
 `technical` `functional`
@@ -424,7 +428,7 @@ A digitally signed token that the backend issues upon successful authentication.
 ## K
 
 ### Key check (HelloAsso)
-The live check of the two HelloAsso API codes (client id, client secret) an association pastes on the "Relier" screen: once both are filled, the dashboard asks the server (`POST /api/association/helloasso/credentials/verify`, debounced, the previous request cancelled) whether HelloAsso accepts them and whether the organization they reach is the association verified on CommonLink. Outcomes: valid (the user still confirms "C'est bien nous"), invalid, another association (refused, nothing kept) or HelloAsso unavailable. The secret stays in the page's memory only and is erased after linking; the server re-checks everything when linking.
+The live check of the two HelloAsso API codes (client id, client secret) an association pastes on the "Relier" screen: once both are filled, the dashboard asks the server (`POST /api/association/helloasso/credentials/verify`, debounced, the previous request cancelled) whether HelloAsso accepts them and whether the organization they reach is the association verified on CommonLink. Outcomes: valid (the user still confirms "C'est bien nous"), invalid, another association (refused, nothing kept — the screen shows why: different RNA, or different name with both RNAs when CommonLink knows its own), organization already linked to another association (refused while another association's row holds it — active, broken or disconnected; that association frees it only by linking another organization) or HelloAsso unavailable. Every check reaching HelloAsso is recorded as a HelloAsso link attempt. The secret stays in the page's memory only and is erased after linking; the server re-checks everything when linking.
 `technical` `compliance`
 
 ### KYC (Know Your Customer)
@@ -660,8 +664,12 @@ The AML/CFT (LCB-FT) risk classification assigned to an association or a donatio
 `security` `business`
 
 ### RNA (Répertoire National des Associations)
-The official French registry of associations. Used in conjunction with the SIREN to verify the legal identity and legitimacy of an association during KYC.
+The official French registry of associations. Used in conjunction with the SIREN to verify the legal identity and legitimacy of an association during KYC. The Recherche d'entreprises registry exposes an entity's RNA under `complements.identifiant_association`, not at the root of the entry (misread until 2026-11-26). An RNA can be the identifier of a single association profile: a second sign-up with the same RNA is refused (`RNA_ALREADY_REGISTERED`) — software only, and blind to a profile whose identifier stayed its SIREN.
 `business`
+
+### Resolved RNA (RNA retrouvé)
+The RNA the server looks up from a SIREN when an association signs up with its SIREN: Recherche d'entreprises, exact SIREN match only, value shaped like a RNA, 2-second timeout, best effort (any failure keeps the SIREN). When found it becomes the profile's `identifier`, the SIREN staying in `siren`. Never taken from the browser, and never a verification — the curator registry pre-check still is. Existing profiles are not modified.
+`technical` `business`
 
 ### Role
 A user's type on the platform. Set at registration and determines the dashboard layout, available features, and profile structure. Cannot be changed after account creation.
@@ -709,7 +717,7 @@ A 9-digit identification number assigned to each French company or association (
 `business` `technical`
 
 ### SIREN-only Signup (Inscription sans RNA)
-The sign-up path for an association that holds a SIREN but no RNA, and is therefore absent from the RNA (JOAFE) search the standard flow relies on. The user types a SIREN, the browser queries the Recherche d'entreprises open registry directly — keyless and CORS-open, exactly as the standard flow queries the JOAFE dataset for RNA numbers — and the returned name and registered-office address are displayed for confirmation — read-only, as in the RNA flow. The SIREN is written to both `identifier` (the mandatory primary identifier) and `siren`, since Mollie's `registrationNumber`, the Cerfa receipt and the mandate PDF read `siren` directly. No schema change: `identifier` stays mandatory, and its "RNA or SIREN" semantics predate this path. Eligibility is unaffected — a non-association or inactive SIREN is flagged to the user but never blocked at sign-up, the ruling staying with the curator registry pre-check at KYC.
+The sign-up path for an association that holds a SIREN but no RNA, and is therefore absent from the RNA (JOAFE) search the standard flow relies on. The user types a SIREN, the browser queries the Recherche d'entreprises open registry directly — keyless and CORS-open, exactly as the standard flow queries the JOAFE dataset for RNA numbers — and the returned name and registered-office address are displayed for confirmation — read-only, as in the RNA flow. The SIREN is written to `siren` and, unless the server finds a Resolved RNA for it at profile creation (2026-11-26), to `identifier` too (the mandatory primary identifier), since Mollie's `registrationNumber`, the Cerfa receipt and the mandate PDF read `siren` directly. No schema change: `identifier` stays mandatory, and its "RNA or SIREN" semantics predate this path. Eligibility is unaffected — a non-association or inactive SIREN is flagged to the user but never blocked at sign-up, the ruling staying with the curator registry pre-check at KYC.
 `functional` `business`
 
 ### SIRET

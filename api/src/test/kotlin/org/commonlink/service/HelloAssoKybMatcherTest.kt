@@ -1,47 +1,78 @@
 package org.commonlink.service
 
-import org.commonlink.entity.AssociationProfile
-import org.commonlink.repository.TestFixtures
+import org.commonlink.entity.HelloAssoKybOutcome
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 /** RNA first, else normalized name (decision 2026-11-02). */
 class HelloAssoKybMatcherTest {
 
-    private fun association(name: String, identifier: String) =
-        AssociationProfile(user = TestFixtures.associationUser(), name = name, identifier = identifier)
-
     @Test
     fun `same RNA matches, case and spaces ignored`() {
-        assertTrue(HelloAssoKybMatcher.matches(association("Asso", "W751121684"), "Another name", " w751 121684 "))
+        assertEquals(
+            HelloAssoKybOutcome.MATCH_RNA,
+            HelloAssoKybMatcher.evaluate("W751121684", "Asso", "Another name", " w751 121684 "),
+        )
     }
 
     @Test
     fun `a different RNA refuses even with the same name`() {
-        assertFalse(HelloAssoKybMatcher.matches(association("Techno Plus", "W751121684"), "Techno Plus", "W000000001"))
+        assertEquals(
+            HelloAssoKybOutcome.RNA_MISMATCH,
+            HelloAssoKybMatcher.evaluate("W751121684", "Techno Plus", "Techno Plus", "W000000001"),
+        )
     }
 
     @Test
-    fun `association identified by SIREN falls back to the name`() {
-        val siren = association("Les Restos du Cœur", "775671356")
-        assertTrue(HelloAssoKybMatcher.matches(siren, "LES RESTOS DU COEUR", "W751121684"))
-        assertFalse(HelloAssoKybMatcher.matches(siren, "Les Restos", "W751121684"))
+    fun `association RNA unknown falls back to the name`() {
+        assertEquals(
+            HelloAssoKybOutcome.MATCH_NAME,
+            HelloAssoKybMatcher.evaluate(null, "Les Restos du Cœur", "LES RESTOS DU COEUR", "W751121684"),
+        )
+        assertEquals(
+            HelloAssoKybOutcome.NAME_MISMATCH,
+            HelloAssoKybMatcher.evaluate(null, "Les Restos du Cœur", "Les Restos", "W751121684"),
+        )
+    }
+
+    @Test
+    fun `a SIREN passed as association RNA is ignored`() {
+        assertEquals(
+            HelloAssoKybOutcome.NAME_MISMATCH,
+            HelloAssoKybMatcher.evaluate("775671356", "Asso", "Autre", "775671356"),
+        )
     }
 
     @Test
     fun `no RNA on HelloAsso falls back to the name`() {
-        assertTrue(HelloAssoKybMatcher.matches(association("Techno+ (T+)", "W751121684"), "techno t", null))
+        assertEquals(
+            HelloAssoKybOutcome.MATCH_NAME,
+            HelloAssoKybMatcher.evaluate("W751121684", "Techno+ (T+)", "techno t", null),
+        )
+    }
+
+    @Test
+    fun `blank HelloAsso RNA counts as no RNA - FC Mougins case`() {
+        assertEquals(
+            HelloAssoKybOutcome.NAME_MISMATCH,
+            HelloAssoKybMatcher.evaluate("W061006975", "FOOTBALL CLUB DE MOUGINS", "FC Mougins", ""),
+        )
     }
 
     @Test
     fun `a blank organization name never matches`() {
-        assertFalse(HelloAssoKybMatcher.matches(association("Asso", "775671356"), " ", null))
+        assertEquals(HelloAssoKybOutcome.NAME_MISMATCH, HelloAssoKybMatcher.evaluate(null, "Asso", " ", null))
     }
 
     @Test
     fun `name normalization drops case, accents, punctuation and spaces`() {
         assertEquals("ecoleelementaire", HelloAssoKybMatcher.normalizeName(" École - Élémentaire ! "))
+    }
+
+    @Test
+    fun `RNA normalization upper-cases, drops spaces, blank is null`() {
+        assertEquals("W061006975", HelloAssoKybMatcher.normalizeRna(" w061 006975 "))
+        assertNull(HelloAssoKybMatcher.normalizeRna("  "))
     }
 }

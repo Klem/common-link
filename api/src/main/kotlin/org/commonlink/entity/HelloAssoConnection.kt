@@ -40,8 +40,11 @@ class HelloAssoConnection(
     @Column(name = "state", nullable = false, length = 16)
     var state: HelloAssoConnectionState = HelloAssoConnectionState.NOT_LINKED,
 
-    /** HelloAsso organization slug the keys belong to; null until linked. */
-    @Column(name = "organization_slug")
+    /**
+     * HelloAsso organization slug the keys belong to; null until linked. Unique (V101): while this row holds it, whatever
+     * the link state, no other association can link the organization; linking another one frees it.
+     */
+    @Column(name = "organization_slug", unique = true)
     var organizationSlug: String? = null,
 
     /** The association's HelloAsso API `client_id` (not a secret); null until linked. */

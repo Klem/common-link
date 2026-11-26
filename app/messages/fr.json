@@ -19,7 +19,8 @@
       "verifStatuts": "Statuts de l'association"
     },
     "nav": {
-      "verifications": "Associations / Vérifications"
+      "verifications": "Associations / Vérifications",
+      "helloassoLinkAttempts": "Liaisons HelloAsso"
     },
     "registryCheck": {
       "bodacc": {
@@ -112,6 +113,57 @@
         "verified": "Vérifiées"
       },
       "title": "Vérifications"
+    },
+    "helloassoLinkAttempts": {
+      "title": "Liaisons HelloAsso",
+      "subtitle": "Chaque vérification de clés HelloAsso faite par une association, réussie ou non, et sa raison.",
+      "period": "{days} derniers jours",
+      "error": "Impossible de charger les statistiques. Réessayez dans quelques instants.",
+      "empty": "Aucune vérification sur cette période.",
+      "none": "—",
+      "percent": "{value} %",
+      "sortAscendingAria": "Trier par {column}, ordre croissant",
+      "sortDescendingAria": "Trier par {column}, ordre décroissant",
+      "kpi": {
+        "total": "Vérifications",
+        "associations": "Associations",
+        "successRate": "Taux de réussite"
+      },
+      "chart": {
+        "aria": "Répartition de {total} vérifications par résultat",
+        "center": "vérifications",
+        "caption": "Vérifications par résultat",
+        "tooltip": "{outcome} : {count} ({percent} %)"
+      },
+      "col": {
+        "outcome": "Résultat",
+        "count": "Nombre",
+        "share": "Part",
+        "date": "Date",
+        "association": "Association",
+        "organization": "Organisation HelloAsso",
+        "organizationRna": "RNA HelloAsso",
+        "associationRna": "RNA CommonLink"
+      },
+      "list": {
+        "title": "Vérifications",
+        "empty": "Aucune vérification à afficher.",
+        "missingRna": "non renseigné",
+        "clearFilter": "Retirer le filtre « {outcome} »",
+        "pageOf": "Page {current} sur {total}",
+        "previous": "Page précédente",
+        "next": "Page suivante"
+      },
+      "outcome": {
+        "MATCHED": "Réussie",
+        "NAME_MISMATCH": "Nom différent (RNA absent d'un côté)",
+        "RNA_MISMATCH": "RNA différent",
+        "ORGANIZATION_ALREADY_LINKED": "Organisation déjà liée à une autre association",
+        "INVALID_KEYS": "Clés refusées par HelloAsso",
+        "ORGANIZATION_UNRESOLVED": "Clés sans organisation unique",
+        "HELLOASSO_UNAVAILABLE": "HelloAsso indisponible",
+        "HELLOASSO_RATE_LIMITED": "Limite HelloAsso atteinte"
+      }
     }
   },
   "association": {
@@ -163,7 +215,8 @@
       "rateLimited": "Trop de tentatives. Réessayez dans 10 minutes.",
       "sirenAlreadyRegistered": "Ce SIREN est déjà rattaché à un compte CommonLink. Connectez-vous, ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
       "tokenExpired": "Ce lien a expiré. Demandez-en un nouveau.",
-      "tokenUsed": "Ce lien a déjà été utilisé."
+      "tokenUsed": "Ce lien a déjà été utilisé.",
+      "rnaAlreadyRegistered": "Cette association (même numéro RNA) est déjà rattachée à un compte CommonLink. Connectez-vous, ou contactez-nous si vous pensez qu'il s'agit d'une erreur."
     },
     "gdpr": "Données traitées conformément au RGPD.",
     "hints": {
@@ -3415,7 +3468,16 @@
             "mismatchText": "Ce n'est pas l'association vérifiée sur CommonLink. Rien n'a été enregistré.",
             "mismatchHint": "Sélectionnez la bonne association dans HelloAsso, puis copiez ses codes.",
             "mismatchHelp": "C'est bien vous, sous un autre nom ? <link>Écrivez-nous</link>.",
-            "unavailable": "HelloAsso ne nous répond pas pour le moment. Rien n'a été enregistré : réessayez dans quelques minutes."
+            "unavailable": "HelloAsso ne nous répond pas pour le moment. Rien n'a été enregistré : réessayez dans quelques minutes.",
+            "mismatchRnaText": "Ce n'est pas l'association vérifiée sur CommonLink. Vérifiez que le nom de l'association et le numéro RNA sont bien identiques entre CommonLink et HelloAsso. Rien n'a été enregistré.",
+            "rnaCommonLink": "RNA sur CommonLink :",
+            "rnaHelloAsso": "RNA sur HelloAsso :",
+            "rnaMissing": "non renseigné",
+            "nameCommonLink": "Nom sur CommonLink :",
+            "nameHelloAsso": "Nom sur HelloAsso :",
+            "renameHelloAsso": "Changer de nom",
+            "needHelp": "Besoin d'aide ?",
+            "alreadyLinked": "Cette organisation HelloAsso est déjà reliée à une autre association sur CommonLink. Rien n'a été enregistré. Écrivez-nous si vous pensez qu'il s'agit d'une erreur."
           },
           "step3": {
             "title": "Coller notre adresse de notification",
@@ -3448,7 +3510,8 @@
           "errors": {
             "expired": "La vérification de vos codes a expiré. Collez-les à nouveau pour relier votre compte.",
             "mandate": "Cochez l'autorisation pour relier votre compte.",
-            "generic": "La liaison n'a pas abouti. Rien n'a été enregistré : réessayez dans quelques minutes."
+            "generic": "La liaison n'a pas abouti. Rien n'a été enregistré : réessayez dans quelques minutes.",
+            "alreadyLinked": "Cette organisation HelloAsso vient d'être reliée à une autre association sur CommonLink. Rien n'a été enregistré."
           }
         },
         "review": {

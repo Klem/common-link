@@ -46,6 +46,15 @@ describe('useEmailRegister — conflict mapping', () => {
     expect(result.current.error).toBe('errors.sirenAlreadyRegistered');
   });
 
+  it('reports a duplicate RNA distinctly from a duplicate email', async () => {
+    mockPost.mockRejectedValue(conflict({ code: 'RNA_ALREADY_REGISTERED' }));
+    const { result } = renderHook(() => useEmailRegister());
+
+    await registerAsso(result);
+
+    expect(result.current.error).toBe('errors.rnaAlreadyRegistered');
+  });
+
   it('still reports a duplicate email as an existing account', async () => {
     mockPost.mockRejectedValue(conflict({ code: 'EMAIL_ALREADY_EXISTS' }));
     const { result } = renderHook(() => useEmailRegister());

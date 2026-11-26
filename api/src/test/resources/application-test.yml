@@ -38,6 +38,9 @@ app:
   # Unroutable on purpose: tests never call geo.api.gouv.fr (geocoding is best-effort or mocked).
   geo:
     base-url: http://localhost:1
+  # Unroutable on purpose: a SIREN sign-up never calls the real registry from tests (RnaBySirenResolver is best effort).
+  recherche-entreprises:
+    base-url: http://localhost:1
 
 onchain:
   registry-address: "0x0000000000000000000000000000000000000001"

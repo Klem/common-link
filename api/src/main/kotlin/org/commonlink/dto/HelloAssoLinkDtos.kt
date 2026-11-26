@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import org.commonlink.entity.HelloAssoKybOutcome
 import java.util.UUID
 
 /**
@@ -22,7 +23,7 @@ data class HelloAssoVerifyRequest(
 }
 
 /**
- * Result of the key verification. Nothing is persisted at this stage.
+ * Result of the key verification. No link is persisted at this stage (the attempt itself is journaled).
  *
  * @property verifyId one-time handle of the verified link, valid 10 minutes, to confirm it with the mandate; null when
  *   the organization does not match the association (nothing is kept then).
@@ -30,6 +31,11 @@ data class HelloAssoVerifyRequest(
  * @property slug HelloAsso organization slug.
  * @property matchesKyb whether the organization is the association verified on CommonLink (RNA, else name).
  * @property canCollect HelloAsso `isCashInCompliant`: whether the organization can collect right now.
+ * @property mismatchReason why the organization does not match ([HelloAssoKybOutcome.RNA_MISMATCH] or
+ *   [HelloAssoKybOutcome.NAME_MISMATCH]); null when it matches.
+ * @property associationRna the association's RNA as known by CommonLink, null when unknown — shown so the association
+ *   can compare it with HelloAsso's.
+ * @property organizationRna HelloAsso `rnaNumber`, null when blank.
  */
 data class HelloAssoVerifyResponse(
     val verifyId: UUID?,
@@ -37,6 +43,9 @@ data class HelloAssoVerifyResponse(
     val slug: String,
     val matchesKyb: Boolean,
     val canCollect: Boolean,
+    val mismatchReason: HelloAssoKybOutcome? = null,
+    val associationRna: String? = null,
+    val organizationRna: String? = null,
 )
 
 /**
@@ -83,4 +92,6 @@ data class HelloAssoOrganizationJson(
     @field:JsonProperty("rnaNumber") val rnaNumber: String? = null,
     /** Returned to an organization admin only (an association key has that role). */
     @field:JsonProperty("isCashInCompliant") val cashInCompliant: Boolean? = null,
+    /** HelloAsso `OrganizationType` (`Association1901`, `Entreprise`, …), kept as text: the list is HelloAsso's. */
+    @field:JsonProperty("type") val type: String? = null,
 )

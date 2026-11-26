@@ -183,6 +183,14 @@ class GlobalExceptionHandler(
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
     }
 
+    /** Handles [RnaAlreadyRegisteredException] with a `code: RNA_ALREADY_REGISTERED` property (HTTP 409). */
+    @ExceptionHandler(RnaAlreadyRegisteredException::class)
+    fun handleRnaAlreadyRegistered(ex: RnaAlreadyRegisteredException): ResponseEntity<ProblemDetail> {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "RNA already registered")
+        problem.setProperty("code", "RNA_ALREADY_REGISTERED")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem)
+    }
+
     /**
      * Handles [HelloAssoFundsConflictException] (transfer receipt confirmation, curator release) with its `code`
      * property (HTTP 409). More specific than [handleConflict], which it takes precedence over.

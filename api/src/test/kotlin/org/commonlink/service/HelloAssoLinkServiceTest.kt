@@ -12,6 +12,8 @@ import org.commonlink.entity.HelloAssoConnection
 import org.commonlink.entity.HelloAssoConnectionState
 import org.commonlink.exception.HelloAssoMandateRequiredException
 import org.commonlink.exception.HelloAssoNotAssociationProviderException
+import org.commonlink.exception.HelloAssoOrganizationAlreadyLinkedException
+import org.springframework.dao.DataIntegrityViolationException
 import org.commonlink.exception.HelloAssoVerificationExpiredException
 import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
@@ -59,6 +61,8 @@ class HelloAssoLinkServiceTest {
         every { connectionRepo.findByAssociationId(associationId) } returns row
         every { connectionRepo.findByAssociationIdForUpdate(associationId) } returns row
         every { connectionRepo.save(any()) } answers { firstArg() }
+        every { connectionRepo.saveAndFlush(any()) } answers { firstArg() }
+        every { connectionRepo.existsByOrganizationSlugAndAssociationIdNot(any(), any()) } returns false
         every { fundsRepo.sumNotPaidOutByAssociationId(associationId) } returns NotPaidOutTotal(0, null)
     }
 
@@ -138,7 +142,28 @@ class HelloAssoLinkServiceTest {
         association.paymentProvider = PaymentProviderId.MOLLIE
 
         assertThrows<HelloAssoNotAssociationProviderException> { service.connect(userId, HelloAssoConnectRequest(verified(), mandate)) }
-        verify(exactly = 0) { connectionRepo.save(any()) }
+        verify(exactly = 0) { connectionRepo.saveAndFlush(any()) }
+    }
+
+    @Test
+    fun `an organization linked by another association since the key check is refused, nothing written`() {
+        every { connectionRepo.existsByOrganizationSlugAndAssociationIdNot("techno-plus", associationId) } returns true
+
+        assertThrows<HelloAssoOrganizationAlreadyLinkedException> {
+            service.connect(userId, HelloAssoConnectRequest(verified(), mandate))
+        }
+        verify(exactly = 0) { connectionRepo.saveAndFlush(any()) }
+        verify(exactly = 0) { auditLog.append(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a concurrent link of the same organization hitting the unique index is refused, mandate not journaled`() {
+        every { connectionRepo.saveAndFlush(any()) } throws DataIntegrityViolationException("uq_helloasso_connections_organization_slug")
+
+        assertThrows<HelloAssoOrganizationAlreadyLinkedException> {
+            service.connect(userId, HelloAssoConnectRequest(verified(), mandate))
+        }
+        verify(exactly = 0) { auditLog.append(any(), any(), any(), any(), any()) }
     }
 
     @Test

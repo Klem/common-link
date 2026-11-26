@@ -295,6 +295,67 @@ describe('screen 4 — key check and link', () => {
     expect(linkAccount).not.toHaveBeenCalled();
   });
 
+  it('with a RNA on CommonLink, asks to check name and RNA on both sides, shows both RNAs and the help link', async () => {
+    vi.stubEnv('NEXT_PUBLIC_HELLOASSO_VISIO_URL', 'https://visio.example/book');
+    vi.mocked(verifyCredentials).mockResolvedValue({
+      ...okVerify, verifyId: null, matchesKyb: false, orgName: 'FC Mougins',
+      mismatchReason: 'NAME_MISMATCH', associationRna: 'W061006975', organizationRna: null,
+    });
+    openLink();
+    typeKeys('id', 'secret');
+
+    expect(await screen.findByText('step2.mismatchRnaText', { exact: false }, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.getByText('W061006975')).toBeInTheDocument();
+    expect(screen.getByText('step2.rnaMissing')).toBeInTheDocument();
+    expect(screen.queryByText('step2.mismatchHint')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'step2.needHelp' })).toHaveAttribute('href', 'https://visio.example/book');
+    expect(screen.getByText('step2.nameCommonLink', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Les Amis')).toBeInTheDocument();
+    expect(screen.getByText('FC Mougins')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'step2.renameHelloAsso' })).toHaveAttribute(
+      'href',
+      'https://centredaide.helloasso.com/association?question=comment-modifier-le-nom-de-mon-association',
+    );
+  });
+
+  it('without a RNA on CommonLink, keeps the original mismatch texts', async () => {
+    vi.mocked(verifyCredentials).mockResolvedValue({
+      ...okVerify, verifyId: null, matchesKyb: false, orgName: 'Autre',
+      mismatchReason: 'NAME_MISMATCH', associationRna: null, organizationRna: null,
+    });
+    openLink();
+    typeKeys('id', 'secret');
+
+    expect(await screen.findByText('step2.mismatchHint', { exact: false }, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByText('step2.mismatchRnaText', { exact: false })).not.toBeInTheDocument();
+  });
+
+  it('refuses an organization already linked to another association, nothing sent to /connection', async () => {
+    vi.mocked(verifyCredentials).mockRejectedValue(apiError(409, HelloAssoErrorCode.ORGANIZATION_ALREADY_LINKED));
+    openLink();
+    typeKeys('id', 'secret');
+
+    expect(await screen.findByText('step2.alreadyLinked', { exact: false }, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'step2.confirm' })).not.toBeInTheDocument();
+    expect(screen.queryByText('step2.unavailable')).not.toBeInTheDocument();
+    expect(linkAccount).not.toHaveBeenCalled();
+  });
+
+  it('turns a link refused as already linked into the same refusal, button disabled', async () => {
+    vi.mocked(verifyCredentials).mockResolvedValue(okVerify);
+    vi.mocked(linkAccount).mockRejectedValue(apiError(409, HelloAssoErrorCode.ORGANIZATION_ALREADY_LINKED));
+    openLink();
+    typeKeys('id', 'secret');
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'step2.confirm' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'step3.ack' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'mandate' }));
+    fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+
+    expect(await screen.findByText('errors.alreadyLinked')).toBeInTheDocument();
+    expect(screen.getByText('step2.alreadyLinked', { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
+  });
+
   it('tells an outage apart from invalid codes', async () => {
     vi.mocked(verifyCredentials).mockRejectedValue(apiError(502));
     openLink();

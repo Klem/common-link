@@ -684,3 +684,42 @@ enum class ReceiptPrerequisite {
     /** Any of [AssociationProfile.addressLine1], [AssociationProfile.postalCode], [AssociationProfile.city] blank. */
     HEAD_OFFICE_ADDRESS,
 }
+
+/**
+ * Verdict of [org.commonlink.service.HelloAssoKybMatcher]: is the HelloAsso organization the association verified on
+ * CommonLink? Never persisted as such (see [HelloAssoLinkAttemptOutcome]).
+ */
+enum class HelloAssoKybOutcome(val matches: Boolean) {
+    /** Both sides have a RNA and they are equal. */
+    MATCH_RNA(true),
+    /** No RNA on one side; the normalized names are equal. */
+    MATCH_NAME(true),
+    /** Both sides have a RNA and they differ: refused even when the names agree. */
+    RNA_MISMATCH(false),
+    /** No RNA on one side; the normalized names differ. */
+    NAME_MISMATCH(false),
+}
+
+/**
+ * Outcome of one HelloAsso key check by an association ([HelloAssoLinkAttempt]).
+ *
+ * Stored as a string column with a CHECK constraint (V100) whose values must stay identical to these entries.
+ */
+enum class HelloAssoLinkAttemptOutcome {
+    /** The organization is the association's: the check can be confirmed with the mandate. */
+    MATCHED,
+    /** No RNA on one side and the names differ. */
+    NAME_MISMATCH,
+    /** Both RNAs known and different. */
+    RNA_MISMATCH,
+    /** The organization is already linked to another association. */
+    ORGANIZATION_ALREADY_LINKED,
+    /** HelloAsso refused the keys. */
+    INVALID_KEYS,
+    /** The keys reach no organization, or several. */
+    ORGANIZATION_UNRESOLVED,
+    /** HelloAsso unreachable, failing, or refusing the request. */
+    HELLOASSO_UNAVAILABLE,
+    /** HelloAsso rate limit reached. */
+    HELLOASSO_RATE_LIMITED,
+}

@@ -9,6 +9,7 @@ import type { HelloAssoVerifyResponse } from '@/types/helloasso';
 import {
   HELLOASSO_ADMIN_URL,
   HELLOASSO_MANDATE_VERSION,
+  HELLOASSO_RENAME_HELP_URL,
   KEY_CHECK_DEBOUNCE_MS,
   KEY_MAX_LENGTH,
   helloAssoVisioUrl,
@@ -19,10 +20,25 @@ import { CopyRow, PathCrumbs } from './FlowStates';
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>;
 
+/** Outcome of a refused key check, from the ProblemDetail `code`; anything unknown is an outage (not cached). */
+function refusedKeyCheck(code: string | null): KeyCheck {
+  switch (code) {
+    case HelloAssoErrorCode.INVALID_KEYS:
+    case HelloAssoErrorCode.ORGANIZATION_UNRESOLVED:
+      return KeyCheck.INVALID;
+    case HelloAssoErrorCode.ORGANIZATION_ALREADY_LINKED:
+      return KeyCheck.ALREADY_LINKED;
+    default:
+      return KeyCheck.UNAVAILABLE;
+  }
+}
+
 /** Error shown under the submit button after a refused link. */
 const SubmitError = {
   EXPIRED: 'expired',
   MANDATE: 'mandate',
+  /** The organization got linked to another CommonLink association since the key check. */
+  ALREADY_LINKED: 'alreadyLinked',
   GENERIC: 'generic',
 } as const;
 type SubmitError = typeof SubmitError[keyof typeof SubmitError];
@@ -46,7 +62,10 @@ interface LinkScreenProps {
   replacing: boolean;
   /** Notification URL of the status; created on open when null. */
   notificationUrl: string | null;
-  /** Association name (KYB), shown in "Vous gérez plusieurs associations ?". */
+  /**
+   * Association name (KYB), shown in "Vous gérez plusieurs associations ?" and beside the HelloAsso name when the
+   * RNA comparison is shown.
+   */
   associationName: string | null;
   /** "← Retour". */
   onBack: () => void;
@@ -137,13 +156,9 @@ export default function LinkScreen({
         .catch((error: unknown) => {
           // Never log `error`: its request config carries the secret.
           if (controller.signal.aborted) return;
-          const code = helloAssoErrorCode(error);
-          const outcome =
-            code === HelloAssoErrorCode.INVALID_KEYS || code === HelloAssoErrorCode.ORGANIZATION_UNRESOLVED
-              ? KeyCheck.INVALID
-              : KeyCheck.UNAVAILABLE;
-          // An outage is not cached: the same codes may work a minute later.
-          if (outcome === KeyCheck.INVALID) lastChecked.current = { pair, outcome, result: null };
+          const outcome = refusedKeyCheck(helloAssoErrorCode(error));
+          // An outage is not cached: the same codes may work a minute later. A refusal is final for these codes.
+          if (outcome !== KeyCheck.UNAVAILABLE) lastChecked.current = { pair, outcome, result: null };
           setKeyCheck(outcome);
         });
     }, KEY_CHECK_DEBOUNCE_MS);
@@ -193,6 +208,13 @@ export default function LinkScreen({
       } else if (code === HelloAssoErrorCode.MANDATE_REQUIRED) {
         setMandateAccepted(false);
         setSubmitError(SubmitError.MANDATE);
+      } else if (code === HelloAssoErrorCode.ORGANIZATION_ALREADY_LINKED) {
+        // Linked elsewhere since the key check: final for these codes, so step 2 turns to the same refusal as a
+        // check would, and the button stays disabled until other codes are pasted.
+        lastChecked.current = { pair: `${clientId}\n${clientSecret}`, outcome: KeyCheck.ALREADY_LINKED, result: null };
+        setVerified(null);
+        setKeyCheck(KeyCheck.ALREADY_LINKED);
+        setSubmitError(SubmitError.ALREADY_LINKED);
       } else {
         setSubmitError(SubmitError.GENERIC);
       }
@@ -205,6 +227,12 @@ export default function LinkScreen({
   const ok = keyCheck === KeyCheck.OK;
   const inputState = invalid ? ' error' : ok ? ' success' : '';
   const crumbs = [t('crumbs.account'), t('crumbs.api')];
+  /** "Besoin d'aide ?" visio booking link; nothing when no booking URL is configured. */
+  const needHelp = visioUrl ? (
+    <div className="small hao-mismatch-hint">
+      <a href={visioUrl} target="_blank" rel="noopener noreferrer">{t('step2.needHelp')}</a>
+    </div>
+  ) : null;
 
   return (
     <section className="screen visible" aria-labelledby="hao-s4-title">
@@ -376,19 +404,52 @@ export default function LinkScreen({
           {keyCheck === KeyCheck.MISMATCH && verified && (
             <div className="alert alert-warning" role="alert">
               <span className="alert-icon" aria-hidden="true">🔀</span>
-              <div className="hao-grow">
-                <strong>{t('step2.mismatchTitle', { orgName: verified.orgName })}</strong> {t('step2.mismatchText')}
-                <div className="small hao-mismatch-hint">
-                  {t('step2.mismatchHint')}
-                  {visioUrl && (
-                    <>
-                      {' '}
-                      {t.rich('step2.mismatchHelp', {
-                        link: (chunks) => <a href={visioUrl} target="_blank" rel="noopener noreferrer">{chunks}</a>,
-                      })}
-                    </>
-                  )}
+              {verified.associationRna ? (
+                // CommonLink knows the RNA: point at the two identifiers to compare. HelloAsso takes its RNA from the
+                // documents supplied at registration, so the user is never told to type it there.
+                <div className="hao-grow">
+                  <strong>{t('step2.mismatchTitle', { orgName: verified.orgName })}</strong> {t('step2.mismatchRnaText')}
+                  <div className="small hao-mismatch-hint">
+                    {t('step2.rnaCommonLink')} <strong>{verified.associationRna}</strong>
+                    <span aria-hidden="true"> · </span>
+                    {t('step2.rnaHelloAsso')} <strong>{verified.organizationRna ?? t('step2.rnaMissing')}</strong>
+                  </div>
+                  <div className="small hao-mismatch-hint">
+                    {t('step2.nameCommonLink')} <strong>{associationName ?? t('step2.rnaMissing')}</strong>
+                    <span aria-hidden="true"> · </span>
+                    {t('step2.nameHelloAsso')} <strong>{verified.orgName}</strong>
+                    <span aria-hidden="true"> · </span>
+                    <a href={HELLOASSO_RENAME_HELP_URL} target="_blank" rel="noopener noreferrer">
+                      {t('step2.renameHelloAsso')}
+                    </a>
+                  </div>
+                  {needHelp}
                 </div>
+              ) : (
+                <div className="hao-grow">
+                  <strong>{t('step2.mismatchTitle', { orgName: verified.orgName })}</strong> {t('step2.mismatchText')}
+                  <div className="small hao-mismatch-hint">
+                    {t('step2.mismatchHint')}
+                    {visioUrl && (
+                      <>
+                        {' '}
+                        {t.rich('step2.mismatchHelp', {
+                          link: (chunks) => <a href={visioUrl} target="_blank" rel="noopener noreferrer">{chunks}</a>,
+                        })}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {keyCheck === KeyCheck.ALREADY_LINKED && (
+            <div className="alert alert-error" role="alert">
+              <span className="alert-icon" aria-hidden="true">✋</span>
+              <div className="hao-grow">
+                {t('step2.alreadyLinked')}
+                {needHelp}
               </div>
             </div>
           )}

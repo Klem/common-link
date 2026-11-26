@@ -17,10 +17,15 @@ interface RegistryResult {
   siren?: string;
   nom_raison_sociale?: string;
   nom_complet?: string;
+  /** Legacy root-level RNA. The live API exposes it under `complements` instead; kept as a fallback. */
   identifiant_association?: string;
   nature_juridique?: string;
   etat_administratif?: string;
-  complements?: { est_association?: boolean };
+  complements?: {
+    est_association?: boolean;
+    /** RNA of the association (e.g. "W061006975"), where the live API actually exposes it. */
+    identifiant_association?: string;
+  };
   siege?: RegistrySiege;
 }
 
@@ -40,7 +45,10 @@ export interface AssociationLookupResult {
   postalCode: string | null;
   /** Full street address of the registered office, null when absent. */
   address: string | null;
-  /** RNA the registry associates with this SIREN, when one exists. Informational only. */
+  /**
+   * RNA the registry associates with this SIREN, when one exists. Display only: it is never sent to
+   * the backend, which resolves the RNA itself from the SIREN when it creates the profile.
+   */
   rna: string | null;
   /** INSEE legal category code (e.g. "9220"), null when absent. */
   legalCategory: string | null;
@@ -90,7 +98,7 @@ function mapRegistryResult(siren: string, entry: RegistryResult): AssociationLoo
     city: textOrNull(entry.siege?.libelle_commune),
     postalCode: textOrNull(entry.siege?.code_postal),
     address: textOrNull(entry.siege?.adresse),
-    rna: textOrNull(entry.identifiant_association),
+    rna: textOrNull(entry.complements?.identifiant_association ?? entry.identifiant_association),
     legalCategory: textOrNull(entry.nature_juridique),
     isAssociation: entry.complements?.est_association ?? false,
     active: entry.etat_administratif === 'A',

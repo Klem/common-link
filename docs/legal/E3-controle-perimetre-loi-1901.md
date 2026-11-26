@@ -10,7 +10,7 @@
 | **Référence de suivi interne** | Tâche Asana n° `1216210976716070` — « Contrôle automatique catégorie 9220 (loi 1901) » |
 | **Lien de suivi** | https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210976716070 |
 | **Priorité assignée** | P1 |
-| **Date d'établissement** | 10 août 2026 — état décrit arrêté au 13 août 2026 |
+| **Date d'établissement** | 10 août 2026 — état décrit arrêté au 13 août 2026, complété le 26 novembre 2026 (défaut de captation pour les dossiers identifiés par leur seul numéro RNA, point 4.1) |
 | **État** | Réalisé et vérifié par contrôles automatisés. Non encore déployé — la mise en production de la plateforme est conditionnée à l'achèvement de l'ensemble du dispositif. |
 | **Rédacteur** | Équipe technique CommonLink |
 
@@ -77,6 +77,16 @@ relation de telles associations est aujourd'hui restreinte lorsque leurs annonce
 officiel sont antérieures à 2010, leur numéro RNA n'étant alors retrouvable par aucune des sources
 consultées. Le constat, la correction apportée et l'arbitrage demandé sont exposés à la
 section 4.2 ter de la fiche *E3 — Contrôle des registres publics d'associations*.
+
+*Complément du 26 novembre 2026 — l'énoncé ci-dessus ne se vérifiait pas en pratique.* Un défaut de
+lecture de la réponse du registre national des entreprises, constaté et corrigé dans le code le
+26 novembre 2026, empêchait de retrouver l'enregistrement d'une association identifiée par son seul
+numéro RNA. Pour ces dossiers, aucune catégorie juridique n'était captée : le verdict de périmètre
+restait « indéterminé », qui n'est pas bloquant, et **le présent verrou n'a donc pu bloquer aucun
+d'entre eux** avant la correction. Celle-ci n'est pas encore déployée. Les consultations antérieures
+conservent leur contenu (lignes inaltérables) : un dossier déjà instruit ne reçoit un verdict établi
+qu'après une nouvelle consultation déclenchée par le curateur. Le constat et la correction sont
+exposés à la section 4.2 quater de la fiche *E3 — Contrôle des registres publics d'associations*.
 
 ### 4.2 Le périmètre accepté
 

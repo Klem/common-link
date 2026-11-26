@@ -63,6 +63,15 @@ export function AdminShell({ children }: AdminShellProps) {
                 {t('nav.verifications')}
               </Link>
             </li>
+            <li>
+              <Link
+                href={`/${locale}${ROUTES.admin.helloassoLinkAttempts}`}
+                className={pathname.startsWith(ROUTES.admin.helloassoLinkAttempts) ? 'active' : ''}
+              >
+                <span className="icon">🔗</span>
+                {t('nav.helloassoLinkAttempts')}
+              </Link>
+            </li>
           </ul>
         </div>
 

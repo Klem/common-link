@@ -8,6 +8,9 @@ import type {
   BeneficialOwnerDto,
   AddBeneficialOwnerRequest,
   FreezeScreenStatusDto,
+  HelloAssoLinkAttemptPage,
+  HelloAssoLinkAttemptQuery,
+  HelloAssoLinkAttemptStats,
   RegistryPreCheckDto,
   VigilanceMeasuresDto,
 } from '@/types/admin';
@@ -162,4 +165,38 @@ export const changePaymentProvider = (
 ): Promise<PaymentProviderPreview> =>
   api
     .put<PaymentProviderPreview>(`/api/admin/associations/${associationId}/payment-provider`, request)
+    .then((r) => r.data);
+
+/**
+ * Counts the associations' HelloAsso key checks per outcome over `[from, to)`, every outcome listed (0 included).
+ * `GET /api/admin/helloasso/link-attempts/stats?from&to` (CURATOR / ADMIN).
+ *
+ * @param period ISO-8601 bounds of the period.
+ */
+export const getHelloAssoLinkAttemptStats = (
+  period: Pick<HelloAssoLinkAttemptQuery, 'from' | 'to'>,
+): Promise<HelloAssoLinkAttemptStats> =>
+  api
+    .get<HelloAssoLinkAttemptStats>('/api/admin/helloasso/link-attempts/stats', {
+      params: { from: period.from, to: period.to },
+    })
+    .then((r) => r.data);
+
+/**
+ * Lists the HelloAsso key checks of `[from, to)`, newest first, optionally of one outcome.
+ * `GET /api/admin/helloasso/link-attempts?from&to&outcome&page&size` (CURATOR / ADMIN; size at most 100).
+ *
+ * @param query period, optional outcome filter and page (defaults: page 0, size 20).
+ */
+export const listHelloAssoLinkAttempts = ({
+  from,
+  to,
+  outcome,
+  page = 0,
+  size = 20,
+}: HelloAssoLinkAttemptQuery): Promise<HelloAssoLinkAttemptPage> =>
+  api
+    .get<HelloAssoLinkAttemptPage>('/api/admin/helloasso/link-attempts', {
+      params: { from, to, page, size, ...(outcome ? { outcome } : {}) },
+    })
     .then((r) => r.data);

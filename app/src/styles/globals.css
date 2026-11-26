@@ -3541,3 +3541,22 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .prereq-banner .pp-row:last-child{margin-bottom:0}
 .prereq-banner-text{margin-bottom:10px}
 @media (max-width:640px){.sig-modes{grid-template-columns:1fr}}
+/* ── Admin · HelloAsso link attempts (curator statistics) ── */
+.hla-subtitle{color:var(--slate-lavender);margin-top:4px}
+.hla-error{color:var(--warm-coral);margin-top:16px}
+.hla-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px}
+.hla-chart{display:flex;flex-wrap:wrap;align-items:center;gap:24px}
+.hla-grow{flex:1;min-width:280px}
+.hla-donut{width:220px;height:220px;flex-shrink:0}
+.hla-segment{stroke:var(--white);stroke-width:2;cursor:pointer;transition:opacity .15s}
+.hla-segment.dimmed{opacity:.35}
+.hla-donut-total{font-size:30px;font-weight:700;fill:var(--ink-navy)}
+.hla-donut-caption{font-size:11px;fill:var(--slate-lavender)}
+.hla-legend-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:none;padding:0;font:inherit;color:var(--ink-navy);cursor:pointer;text-align:left}
+.hla-selected td{font-weight:700}
+.hla-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--hla-swatch);flex-shrink:0}
+.hla-outcome{display:inline-flex;align-items:center;gap:6px}
+.hla-muted{color:var(--slate-lavender);font-size:12px}
+.hla-mono{font-family:monospace;font-size:13px}
+.hla-list-head{display:flex;align-items:center;gap:12px;margin:24px 0 12px}
+.hla-pager{display:flex;align-items:center;gap:12px;margin-top:20px}

@@ -151,6 +151,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var cashOutReceiptService: CashOutReceiptService
     @MockkBean private lateinit var campaignFundsService: org.commonlink.service.CampaignFundsService
     @MockkBean private lateinit var helloAssoFundsReleaseService: HelloAssoFundsReleaseService
+    @MockkBean private lateinit var helloAssoLinkAttemptStatsService: org.commonlink.service.HelloAssoLinkAttemptStatsService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test

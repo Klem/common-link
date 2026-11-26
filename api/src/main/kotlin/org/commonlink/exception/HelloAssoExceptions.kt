@@ -52,6 +52,17 @@ class HelloAssoOrganizationUnresolvedException :
         "HELLOASSO_ORGANIZATION_UNRESOLVED",
     )
 
+/**
+ * The HelloAsso organization the keys reach is held by another association's link, even disconnected (HTTP 409;
+ * CEO decision 2026-11-26, V101).
+ */
+class HelloAssoOrganizationAlreadyLinkedException :
+    HelloAssoLinkException(
+        "This HelloAsso organization is already linked to another association",
+        HttpStatus.CONFLICT,
+        "HELLOASSO_ORGANIZATION_ALREADY_LINKED",
+    )
+
 /** The association's payment provider is not HELLOASSO: HelloAsso linking steps are refused (HTTP 409). */
 class HelloAssoNotAssociationProviderException :
     HelloAssoLinkException(

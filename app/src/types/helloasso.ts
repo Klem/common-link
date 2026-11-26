@@ -53,6 +53,18 @@ export interface HelloAssoVerifyRequest {
   clientSecret: string;
 }
 
+/**
+ * Why the HelloAsso organization is not the association verified on CommonLink: the two refusing values of the backend
+ * `HelloAssoKybOutcome`.
+ */
+export const HelloAssoMismatchReason = {
+  /** Both sides carry an RNA and they differ. */
+  RNA_MISMATCH: 'RNA_MISMATCH',
+  /** No RNA on one side or both: the names were compared, and they differ. */
+  NAME_MISMATCH: 'NAME_MISMATCH',
+} as const;
+export type HelloAssoMismatchReason = typeof HelloAssoMismatchReason[keyof typeof HelloAssoMismatchReason];
+
 /** Result of the key verification. Nothing is persisted at this stage. */
 export interface HelloAssoVerifyResponse {
   /** One-time handle (10 minutes) to confirm the link; null when the organization is not the association's. */
@@ -63,6 +75,15 @@ export interface HelloAssoVerifyResponse {
   matchesKyb: boolean;
   /** Whether HelloAsso accepts payments for the organization right now. */
   canCollect: boolean;
+  /** Why the organization does not match; null (or absent) when it matches. */
+  mismatchReason?: HelloAssoMismatchReason | null;
+  /** RNA of the association as known by CommonLink; null when it has none. */
+  associationRna?: string | null;
+  /**
+   * RNA of the HelloAsso organization (`rnaNumber`), null when blank. HelloAsso fills it from the documents supplied at
+   * registration: the organization cannot type it.
+   */
+  organizationRna?: string | null;
 }
 
 /** The association's mandate to CommonLink over its HelloAsso access. */
@@ -87,6 +108,8 @@ export const HelloAssoErrorCode = {
   VERIFICATION_EXPIRED: 'HELLOASSO_VERIFICATION_EXPIRED',
   NOT_LINKED: 'HELLOASSO_NOT_LINKED',
   NOTIFICATION_URL_NOT_CONFIGURED: 'HELLOASSO_NOTIFICATION_URL_NOT_CONFIGURED',
+  /** HTTP 409: the organization is already linked to another CommonLink association, for good. */
+  ORGANIZATION_ALREADY_LINKED: 'HELLOASSO_ORGANIZATION_ALREADY_LINKED',
 } as const;
 export type HelloAssoErrorCode = typeof HelloAssoErrorCode[keyof typeof HelloAssoErrorCode];
 
@@ -101,6 +124,8 @@ export const KeyCheck = {
   INVALID: 'INVALID',
   /** The codes belong to another organization: refused, nothing kept. */
   MISMATCH: 'MISMATCH',
+  /** The organization is already linked to another CommonLink association: refused for good, nothing kept. */
+  ALREADY_LINKED: 'ALREADY_LINKED',
   /** HelloAsso or our API did not answer (outage, rate limit): retry later. */
   UNAVAILABLE: 'UNAVAILABLE',
 } as const;
