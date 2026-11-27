@@ -34,7 +34,18 @@ data class AcceptLegalDocumentRequest(
 )
 
 /**
- * Whether an association already has a standing acceptance of the current CGU version.
+ * One document's checkbox as sent by the campaign publish dialog.
+ *
+ * @property accepted whether the box was ticked.
+ * @property version the version the dialog displayed, required when [accepted].
+ */
+data class PublishTermsAcceptance(
+    val accepted: Boolean,
+    val version: String?,
+)
+
+/**
+ * Whether an association already has a standing acceptance of the current version of a document.
  * Drives the pre-checked/disabled state of the publish-time checkbox.
  */
 data class LegalAcceptanceStateDto(

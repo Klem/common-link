@@ -57,14 +57,17 @@ data class CreateGuestDonationRequest(
     /** When true, the donor appears as anonymous on public donation listings. Does not affect the fiscal receipt. */
     val anonymousDisplay: Boolean = false,
 
+    /**
+     * The GDPR checkbox, which is also the express acceptance of the privacy policy (document `PRIVACY`), recorded
+     * with [privacyVersion] on every donation like the CGU.
+     */
     @field:AssertTrue(message = "RGPD consent is required")
     val consent: Boolean,
 
     /**
-     * Distinct from [consent] (RGPD only) — express acceptance of the platform's Conditions
+     * Distinct from [consent] (privacy policy) — express acceptance of the platform's Conditions
      * Générales d'Utilisation for donors, required on every donation (art. 1740 A CGI proof of
-     * acceptance). The CGU is the only document a donor accepts: the `CGV` document is the
-     * associations' CGU and does not concern donors.
+     * acceptance). The `CGV` document is the associations' CGU and does not concern donors.
      */
     @field:AssertTrue(message = "CGU acceptance is required")
     val cguAccepted: Boolean,
@@ -76,6 +79,14 @@ data class CreateGuestDonationRequest(
     @field:NotBlank(message = "CGU version is required")
     @field:Size(max = 32)
     val cguVersion: String,
+
+    /**
+     * The privacy policy version the donation form displayed next to the [consent] checkbox. Recorded as the
+     * accepted version; refused with 409 `LEGAL_VERSION_OUTDATED` when no longer current.
+     */
+    @field:NotBlank(message = "Privacy policy version is required")
+    @field:Size(max = 32)
+    val privacyVersion: String,
 
     /**
      * Date de naissance — **facultative** et **jamais persistée** pour un don widget.

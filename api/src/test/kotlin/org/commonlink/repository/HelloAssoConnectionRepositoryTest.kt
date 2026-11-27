@@ -41,12 +41,13 @@ class HelloAssoConnectionRepositoryTest(
         association: AssociationProfile,
         state: HelloAssoConnectionState = HelloAssoConnectionState.ACTIVE,
         token: String = "wh_${UUID.randomUUID()}",
+        slug: String = "asso-test",
     ) = repository.save(
         HelloAssoConnection(
             association = association,
             webhookToken = token,
             state = state,
-            organizationSlug = "asso-test",
+            organizationSlug = slug,
             clientId = "client_123",
             refreshToken = "refresh-secret-value",
             accessToken = "access-secret-value",
@@ -176,9 +177,10 @@ class HelloAssoConnectionRepositoryTest(
 
     @Test
     fun `existsActiveForHelloAssoAssociations ignores links not ACTIVE and links kept after a move to Mollie`() {
-        connection(association(), state = HelloAssoConnectionState.BROKEN)
-        connection(association(), state = HelloAssoConnectionState.DISCONNECTED)
-        connection(association(PaymentProviderId.MOLLIE))
+        // Distinct slugs: an organization belongs to one association (V101).
+        connection(association(), state = HelloAssoConnectionState.BROKEN, slug = "asso-broken")
+        connection(association(), state = HelloAssoConnectionState.DISCONNECTED, slug = "asso-disconnected")
+        connection(association(PaymentProviderId.MOLLIE), slug = "asso-mollie")
         flushAndClear()
 
         assertThat(repository.existsActiveForHelloAssoAssociations()).isFalse
@@ -208,6 +210,29 @@ class HelloAssoConnectionRepositoryTest(
         assertThat(found.map { it.association.id }).containsExactly(pending.id)
         // Fetched with its association: usable outside a transaction (scheduled task).
         assertThat(found.single().association.name).isNotBlank
+    }
+
+    @Test
+    fun `an organization slug held by one association cannot be stored on another, whatever the state`() {
+        connection(association(), state = HelloAssoConnectionState.DISCONNECTED, slug = "shared-org")
+        flushAndClear()
+
+        // TestEntityManager.flush() surfaces Hibernate's exception, not Spring's translated one.
+        assertThrows<org.hibernate.exception.ConstraintViolationException> {
+            connection(association(), slug = "shared-org")
+            em.flush()
+        }
+    }
+
+    @Test
+    fun `existsByOrganizationSlugAndAssociationIdNot sees another association's row only`() {
+        val owner = association()
+        connection(owner, state = HelloAssoConnectionState.DISCONNECTED, slug = "owned-org")
+        flushAndClear()
+
+        assertThat(repository.existsByOrganizationSlugAndAssociationIdNot("owned-org", owner.id!!)).isFalse()
+        assertThat(repository.existsByOrganizationSlugAndAssociationIdNot("owned-org", UUID.randomUUID())).isTrue()
+        assertThat(repository.existsByOrganizationSlugAndAssociationIdNot("other-org", UUID.randomUUID())).isFalse()
     }
 
     @Test

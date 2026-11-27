@@ -153,6 +153,26 @@ class AssociationControllerTest {
             .andExpect(jsonPath("$.description").value("Nouvelle description"))
     }
 
+    /**
+     * The signer identity only changes through the attested signatory endpoint. A PATCH still carrying the
+     * old fields (stale frontend, replayed request) is accepted but they are dropped before the service.
+     */
+    @Test
+    fun `updateProfile - ignores signer fields`() {
+        val req = slot<org.commonlink.dto.UpdateAssociationProfileRequest>()
+        every { associationService.updateProfile(userId, capture(req)) } returns sampleProfile
+
+        mockMvc.perform(
+            patch("/api/association/me")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"city":"Lyon","signerName":"Mallory","signerRole":"Président"}""")
+        )
+            .andExpect(status().isOk)
+
+        assertEquals("Lyon", req.captured.city)
+    }
+
     @Test
     fun `updateProfile - 401 when not authenticated`() {
         mockMvc.perform(

@@ -17,11 +17,20 @@ interface UseMandateReturn {
   isLoading: boolean;
   uploadDoc: (docType: MandateDocType, file: File) => Promise<void>;
   deleteDoc: (docType: MandateDocType) => Promise<void>;
-  sign: (request: SignMandateRequest) => Promise<void>;
+  /**
+   * Signs the mandate.
+   *
+   * @return true on success; false when the API refused it (the state is then re-read, so a
+   *   prerequisite that went missing meanwhile shows up in the signing gate).
+   */
+  sign: (request: SignMandateRequest) => Promise<boolean>;
   revoke: () => Promise<void>;
   downloadPdf: () => Promise<void>;
+  /** Re-reads the mandate state silently (no loading flag), e.g. after the profile or the signer changed. */
+  refresh: () => Promise<void>;
 }
 
+/** Loads the fiscal mandate state of the authenticated association and exposes its actions. */
 export function useMandate(): UseMandateReturn {
   const [state, setState] = useState<MandateStateDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,13 +70,16 @@ export function useMandate(): UseMandateReturn {
     }
   };
 
-  const sign = async (request: SignMandateRequest) => {
+  const sign = async (request: SignMandateRequest): Promise<boolean> => {
     try {
       const updated = await apiSignMandate(request);
       setState(updated);
       addToast('success', 'mandateSigned');
+      return true;
     } catch {
       addToast('error', 'errors.serverError');
+      await load();
+      return false;
     }
   };
 
@@ -89,5 +101,5 @@ export function useMandate(): UseMandateReturn {
     }
   };
 
-  return { state, isLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf };
+  return { state, isLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf, refresh: load };
 }

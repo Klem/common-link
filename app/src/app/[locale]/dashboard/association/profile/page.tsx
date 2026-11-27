@@ -66,9 +66,13 @@ const profileSchema = z.object({
     .optional()
     .refine((v) => !v || /^[0-9 +().\-]{6,20}$/.test(v), 'dashboard.association.profile.errors.phoneFormat'),
   addressLine1: z.string().max(255).optional(),
+  // Mirrors of the backend `UpdateAssociationProfileRequest` constraints (rule 8).
+  postalCode: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d{5}$/.test(v), 'dashboard.association.profile.errors.postalCodeFormat'),
+  city: z.string().max(255).optional(),
   legalObject: z.string().max(2000).optional(),
-  signerName: z.string().max(255).optional(),
-  signerRole: z.string().max(100).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -81,9 +85,9 @@ const EMPTY_PROFILE_FORM: ProfileFormData = {
   contactEmail: '',
   phone: '',
   addressLine1: '',
+  postalCode: '',
+  city: '',
   legalObject: '',
-  signerName: '',
-  signerRole: '',
 };
 
 /** Maps the server profile onto the form fields. */
@@ -95,9 +99,9 @@ function toFormData(profile: AssociationProfileDto): ProfileFormData {
     contactEmail: profile.contactEmail ?? '',
     phone: profile.phone ?? '',
     addressLine1: profile.addressLine1 ?? '',
+    postalCode: profile.postalCode ?? '',
+    city: profile.city ?? '',
     legalObject: profile.legalObject ?? '',
-    signerName: profile.signerName ?? '',
-    signerRole: profile.signerRole ?? '',
   };
 }
 
@@ -179,8 +183,16 @@ export default function AssociationProfilePage() {
     refresh: refreshMollie,
     forceRefresh: forceRefreshMollie,
   } = mollieKyc;
-  const { state: mandateState, isLoading: mandateLoading, uploadDoc, deleteDoc, sign, revoke, downloadPdf } =
-    useMandate();
+  const {
+    state: mandateState,
+    isLoading: mandateLoading,
+    uploadDoc,
+    deleteDoc,
+    sign,
+    revoke,
+    downloadPdf,
+    refresh: refreshMandate,
+  } = useMandate();
 
   // ─── Sequential tab locking ────────────────────────────────────────────────
   // Each tab unlocks once its DIRECT prerequisite is done (= the condition of the
@@ -311,7 +323,8 @@ export default function AssociationProfilePage() {
 
   /**
    * Debounced autosave (800 ms) — same contract as `CampaignInfoTab`:
-   * merged patches, confirmation toast, flush on unmount.
+   * merged patches, confirmation toast, flush on unmount. The mandate state is re-read after each
+   * save: its receipt prerequisites (legal object, head-office address) come from these fields.
    * `reset(getValues())` moves the `isDirty` baseline to the current values without touching
    * the input in progress — but only when the whole form is valid. Rebasing while another
    * field is invalid would clear its error message and install its invalid value as the
@@ -326,6 +339,7 @@ export default function AssociationProfilePage() {
       await updateProfile(patch, true);
       if (Object.keys(errorsRef.current).length === 0) reset(getValues());
       addToast('success', 'profileUpdated');
+      await refreshMandate();
     },
   );
 
@@ -361,11 +375,12 @@ export default function AssociationProfilePage() {
       contactEmail: data.contactEmail || undefined,
       phone: data.phone || undefined,
       addressLine1: data.addressLine1 || undefined,
+      postalCode: data.postalCode || undefined,
+      city: data.city || undefined,
       legalObject: data.legalObject || undefined,
-      signerName: data.signerName || undefined,
-      signerRole: data.signerRole || undefined,
     });
     reset(data);
+    await refreshMandate();
   });
 
   const handlePasswordSubmit = async (password: string): Promise<void> => {
@@ -503,7 +518,7 @@ export default function AssociationProfilePage() {
                   </p>
                 ) : (
                   <form onSubmit={onSubmit} noValidate>
-                    {/* Ligne 1 : Nom (read-only) | N° RNA */}
+                    {/* Row 1: Name (read-only) | RNA number */}
                     <div className="frow">
                       <div className="fg">
                         <label className="fl">{t('association.profile.name')}</label>
@@ -621,7 +636,7 @@ export default function AssociationProfilePage() {
                       </div>
                     </div>
 
-                    {/* Ligne 4 : Adresse postale (full width) */}
+                    {/* Row 5: Head-office street address (full width) */}
                     <div className="frow">
                       <div className="fg" style={{ flex: '1 1 100%' }}>
                         <label htmlFor="addressLine1" className="fl">
@@ -637,7 +652,41 @@ export default function AssociationProfilePage() {
                       </div>
                     </div>
 
-                    {/* Ligne 5 : Objet social (full width) */}
+                    {/* Row 6: Head-office postal code | city */}
+                    <div className="frow">
+                      <div className="fg">
+                        <label htmlFor="postalCode" className="fl">
+                          {t('association.profile.postalCode')}
+                        </label>
+                        <input
+                          id="postalCode"
+                          type="text"
+                          inputMode="numeric"
+                          className="fi"
+                          maxLength={5}
+                          placeholder="75009"
+                          {...autosave('postalCode')}
+                        />
+                        {errors.postalCode && (
+                          <p className="fhint error">{t(errors.postalCode.message as Parameters<typeof t>[0])}</p>
+                        )}
+                      </div>
+                      <div className="fg">
+                        <label htmlFor="city" className="fl">
+                          {t('association.profile.city')}
+                        </label>
+                        <input
+                          id="city"
+                          type="text"
+                          className="fi"
+                          maxLength={255}
+                          placeholder="Paris"
+                          {...autosave('city')}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 7: Legal object (full width) */}
                     <div className="frow">
                       <div className="fg" style={{ flex: '1 1 100%' }}>
                         <label htmlFor="legalObject" className="fl">
@@ -649,36 +698,6 @@ export default function AssociationProfilePage() {
                           className="fi"
                           placeholder={t('association.profile.legalObjectPlaceholder')}
                           {...autosave('legalObject')}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Ligne 6 : Signataire nom | Fonction */}
-                    <div className="frow">
-                      <div className="fg">
-                        <label htmlFor="signerName" className="fl">
-                          {t('association.profile.signerName')}<span className="text-red-500 ml-0.5">*</span>{' '}
-                          <span className="tip" data-tip={t('association.profile.signerNameTip')}>?</span>
-                        </label>
-                        <input
-                          id="signerName"
-                          type="text"
-                          className="fi"
-                          placeholder={t('association.profile.signerNamePlaceholder')}
-                          {...autosave('signerName')}
-                        />
-                      </div>
-                      <div className="fg">
-                        <label htmlFor="signerRole" className="fl">
-                          {t('association.profile.signerRole')}<span className="text-red-500 ml-0.5">*</span>{' '}
-                          <span className="tip" data-tip={t('association.profile.signerRoleTip')}>?</span>
-                        </label>
-                        <input
-                          id="signerRole"
-                          type="text"
-                          className="fi"
-                          placeholder={t('association.profile.signerRolePlaceholder')}
-                          {...autosave('signerRole')}
                         />
                       </div>
                     </div>
@@ -779,9 +798,9 @@ export default function AssociationProfilePage() {
               onGoToVerif={() => setActiveTab('verif')}
               onUploadDoc={uploadDoc}
               onDeleteDoc={deleteDoc}
-              onSign={async (request) => { await sign(request); setActiveTab('bank'); }}
-              signerName={profile?.signerName}
-              signerRole={profile?.signerRole}
+              onSign={async (request) => { if (await sign(request)) setActiveTab('bank'); }}
+              onSignatorySaved={async () => { await Promise.all([refreshProfile(), refreshMandate()]); }}
+              onGoToInfos={() => setActiveTab('infos')}
               onRevoke={revoke}
               onDownloadPdf={downloadPdf}
             />

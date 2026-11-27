@@ -7,14 +7,19 @@ import io.mockk.every
 import io.mockk.verify
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignRepository
+import org.commonlink.repository.DonationReceiptRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.DonorProfileRepository
 import org.commonlink.repository.OnchainJobRepository
 import org.commonlink.repository.TestFixtures
 import org.commonlink.repository.TestcontainersConfig
 import org.commonlink.repository.UserRepository
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -47,6 +52,7 @@ class DonationReceiptServiceTest {
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var donationRepository: DonationRepository
     @Autowired private lateinit var onchainJobRepository: OnchainJobRepository
+    @Autowired private lateinit var donationReceiptRepository: DonationReceiptRepository
     @Autowired private lateinit var donationService: DonationService
     // PDF generation uses Postgres-specific SQL — mock to keep tests H2-compatible
     @MockkBean private lateinit var receiptService: ReceiptService
@@ -120,6 +126,26 @@ class DonationReceiptServiceTest {
             .filter { it.correlationKey == "DONATION:$donationId" }
         assertEquals(1, jobs.size, "onDonationConfirmed must enqueue exactly one RECORD_DONATION job")
         assertNotNull(jobs[0].payloadJson)
+    }
+
+    // ── Receipt refused (prerequisite missing after payment) ─────────────────
+
+    /**
+     * [ReceiptService.generate] refuses when a receipt prerequisite went missing between payment and generation: no
+     * receipt row, no on-chain job, and the reconciler logs the failure without throwing, so it retries on its next run.
+     */
+    @Test
+    fun `a refused receipt leaves no receipt and no job, and the reconciler survives it`() {
+        val (donationId) = setupConfirmedDonation()
+        every { receiptService.generate(any(), any()) } throws
+            IllegalStateException("Receipt prerequisites missing for association x: [SIGNATURE]")
+
+        assertThrows<IllegalStateException> { donationReceiptService.enqueueOnchainJob(donationId) }
+        assertDoesNotThrow { donationReceiptService.reconcile() }
+
+        assertNull(donationReceiptRepository.findByDonationId(donationId))
+        assertEquals(0, onchainJobRepository.findAll().count { it.correlationKey == "DONATION:$donationId" })
+        assertTrue(donationRepository.findConfirmedWithoutOnchainJob().any { it.id == donationId }, "still pending for the reconciler")
     }
 
     // ── Receipt year = year of the provider payment ─────────────────────────

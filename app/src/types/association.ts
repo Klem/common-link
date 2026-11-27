@@ -138,10 +138,8 @@ export interface UpdateAssociationProfileRequest {
   addressLine1?: string;
   /** Official purpose / objet social. */
   legalObject?: string;
-  /** Full name of the authorised receipt signer. */
-  signerName?: string;
-  /** Role/title of the authorised signer (e.g. "Trésorier"). */
-  signerRole?: string;
+  // signerName / signerRole are not patchable: they only change through PUT /api/association/me/signatory,
+  // which requires the signer attestation (see lib/api/signatory.ts).
 }
 
 /** Activity event types surfaced in the dashboard recent-activity feed. */

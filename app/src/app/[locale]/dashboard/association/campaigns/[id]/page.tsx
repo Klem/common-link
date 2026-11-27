@@ -24,6 +24,7 @@ import { useAccStatusStore } from '@/stores/accStatusStore';
 import { useToastStore } from '@/stores/toastStore';
 import { CampaignStatus } from '@/types/campaign';
 import type { CampaignDto, UpdateCampaignRequest } from '@/types/campaign';
+import type { PublishTermsAcceptances } from '@/types/legal';
 
 /**
  * Campaign editor page.
@@ -89,8 +90,8 @@ export default function CampaignEditorPage() {
     if (campaign) updateCampaignInfo({ name: campaign.name, emoji: campaign.emoji });
   };
 
-  const handleConfirmPublish = async (cguAccepted: boolean, cguVersion: string | null) => {
-    const updated = await publishCampaign(campaignId, cguAccepted, cguVersion);
+  const handleConfirmPublish = async (terms: PublishTermsAcceptances) => {
+    const updated = await publishCampaign(campaignId, terms);
     setCampaign(updated);
     setShowPublishModal(false);
     addToast('success', 'publishCampaignSuccess');

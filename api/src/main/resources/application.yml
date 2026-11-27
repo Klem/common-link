@@ -1,5 +1,15 @@
 server:
   port: ${PORT:8080}
+  # Local HTTPS. The frontend runs `next dev --experimental-https` (https://localhost:3000), and
+  # browsers treat http://localhost and https://localhost as different sites: over plain HTTP the
+  # SameSite=Strict `cl-refresh` cookie is never sent, so every reload logs the user out.
+  # Reuses the mkcert pair Next generates (trusted by the browser and by Next's Node process via
+  # NODE_EXTRA_CA_CERTS). Paths are relative to `api/`, the bootRun working directory.
+  # Staging and prod disable it: TLS terminates at the Clever Cloud proxy.
+  ssl:
+    enabled: ${SERVER_SSL_ENABLED:true}
+    certificate: ${SERVER_SSL_CERTIFICATE:file:../app/certificates/localhost.pem}
+    certificate-private-key: ${SERVER_SSL_CERTIFICATE_PRIVATE_KEY:file:../app/certificates/localhost-key.pem}
 
 spring:
   application:
@@ -45,7 +55,7 @@ app:
   jwt:
     secret: ${COMMON_LINK_SECRET}
     access-token-expiration: P3650D
-  frontend-url: ${COMMON_LINK_FRONTEND_URL:http://localhost:3000}
+  frontend-url: ${COMMON_LINK_FRONTEND_URL:https://localhost:3000}
   # CGU/CGV injected at startup from the landing site's texts (LegalDocumentSeeder). The source file is
   # landing-page/messages/fr.json, copied into the jar by processResources. site-base-url prefixes the
   # links of the stored texts: changing it publishes new versions.
@@ -147,7 +157,7 @@ app:
   mollie:
     api-key: ${MOLLIE_API_KEY:}
     api-base-url: ${MOLLIE_API_BASE_URL:https://api.mollie.com}
-    redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:http://localhost:3000}
+    redirect-base-url: ${MOLLIE_REDIRECT_BASE_URL:https://localhost:3000}
     webhook-url: ${MOLLIE_WEBHOOK_URL:}
     test-mode: ${MOLLIE_TEST_MODE:true}
     # api-key ci-dessus = clé de PAIEMENT, ne sert PAS au Connect (incapable d'appeler /v2/client-links)

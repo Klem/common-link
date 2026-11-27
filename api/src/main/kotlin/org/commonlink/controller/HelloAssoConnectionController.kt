@@ -75,19 +75,24 @@ class HelloAssoConnectionController(
         summary = "Verify the association's HelloAsso API keys",
         description = "Exchanges the keys for tokens at HelloAsso, identifies the single organization they reach, reads " +
             "its eligibility (isCashInCompliant) and checks it is the association verified on CommonLink (RNA, else " +
-            "name). Persists nothing; the client secret is never stored, logged nor returned. A matching result is " +
+            "name). Persists no link; the client secret is never stored, logged nor returned. Every check reaching " +
+            "HelloAsso is journaled (outcome, organization name/type/RNA) for curator statistics. A matching result is " +
             "kept 10 minutes under verifyId, to be confirmed with the mandate. 5 checks per 10 minutes.",
     )
     @ApiResponses(
         ApiResponse(
-            responseCode = "200", description = "Keys verified; matchesKyb false (and verifyId null) for another organization",
+            responseCode = "200",
+            description = "Keys verified; for another organization: matchesKyb false, verifyId null, mismatchReason " +
+                "RNA_MISMATCH or NAME_MISMATCH, with both RNAs when known",
             content = [Content(schema = Schema(implementation = HelloAssoVerifyResponse::class))],
         ),
         ApiResponse(responseCode = "401", description = "Missing or invalid JWT", content = [Content()]),
         ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
         ApiResponse(
-            responseCode = "409", description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER)",
+            responseCode = "409",
+            description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER), or organization " +
+                "already linked to another association (code HELLOASSO_ORGANIZATION_ALREADY_LINKED)",
             content = [Content()],
         ),
         ApiResponse(
@@ -119,7 +124,9 @@ class HelloAssoConnectionController(
         ApiResponse(responseCode = "403", description = "Not an association account", content = [Content()]),
         ApiResponse(responseCode = "404", description = "Association profile not found", content = [Content()]),
         ApiResponse(
-            responseCode = "409", description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER)",
+            responseCode = "409",
+            description = "Association not on HelloAsso (code HELLOASSO_NOT_ASSOCIATION_PROVIDER), or organization " +
+                "linked to another association since the key check (code HELLOASSO_ORGANIZATION_ALREADY_LINKED)",
             content = [Content()],
         ),
         ApiResponse(

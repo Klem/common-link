@@ -13,6 +13,7 @@ import type {
   CampaignStoryImageDto,
 } from '@/types/campaign';
 import type { CampaignStoryDto } from '@/types/donor';
+import { LegalDocumentType, type PublishTermsAcceptances } from '@/types/legal';
 
 /**
  * Fetches the list of campaigns for the current association.
@@ -175,13 +176,22 @@ export const deleteMilestone = (campaignId: string, milestoneId: string): Promis
  * @returns The updated campaign DTO.
  */
 /**
- * @param cguAccepted Must be true on the first publish for this association's current CGU
- *   version (art. 1740 A CGI proof of acceptance); ignored once already accepted.
- * @param cguVersion The CGU version the publish dialog displayed; answered 409 `LEGAL_VERSION_OUTDATED`
- *   when a newer one was published meanwhile.
+ * @param terms The publish dialog's checkbox for each association document — the association terms (`CGV`, sent as
+ *   `cguAccepted`/`cguVersion`) and the privacy policy (`PRIVACY`, sent as `privacyAccepted`/`privacyVersion`). Each
+ *   must be ticked on the first publish for this association's current version (art. 1740 A CGI proof of
+ *   acceptance) and is ignored once already accepted; a displayed version that is no longer current is answered
+ *   409 `LEGAL_VERSION_OUTDATED`.
  */
-export const publishCampaign = (id: string, cguAccepted: boolean, cguVersion: string | null): Promise<CampaignDto> =>
-  api.put<CampaignDto>(`/api/association/campaigns/${id}`, { status: 'LIVE', cguAccepted, cguVersion }).then((r) => r.data);
+export const publishCampaign = (id: string, terms: PublishTermsAcceptances): Promise<CampaignDto> =>
+  api
+    .put<CampaignDto>(`/api/association/campaigns/${id}`, {
+      status: 'LIVE',
+      cguAccepted: terms[LegalDocumentType.CGV]?.accepted ?? false,
+      cguVersion: terms[LegalDocumentType.CGV]?.version ?? null,
+      privacyAccepted: terms[LegalDocumentType.PRIVACY]?.accepted ?? false,
+      privacyVersion: terms[LegalDocumentType.PRIVACY]?.version ?? null,
+    })
+    .then((r) => r.data);
 
 /**
  * Reorders milestones for a campaign.

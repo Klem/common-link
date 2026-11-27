@@ -26,6 +26,7 @@ export const ROUTES = {
     root: '/admin',
     verifications: '/admin/verifications',
     verificationDetail: (id: string) => `/admin/verifications/${id}`,
+    helloassoLinkAttempts: '/admin/helloasso-link-attempts',
   },
   compliance: {
     root: '/compliance',

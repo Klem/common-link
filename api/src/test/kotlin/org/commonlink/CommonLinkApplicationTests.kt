@@ -56,6 +56,7 @@ import org.commonlink.service.DonorDashboardService
 import org.commonlink.service.DonorService
 import org.commonlink.service.MandatePdfService
 import org.commonlink.service.MandateService
+import org.commonlink.service.SignatoryService
 import org.commonlink.service.MollieConnectService
 import org.commonlink.service.MollieOnboardingContextService
 import org.commonlink.service.MollieConnectTokenManager
@@ -114,6 +115,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var reportingService: ReportingService
     @MockkBean private lateinit var verificationService: VerificationService
     @MockkBean private lateinit var mandateService: MandateService
+    @MockkBean private lateinit var signatoryService: SignatoryService
     @MockkBean private lateinit var mandatePdfService: MandatePdfService
     @MockkBean private lateinit var associationRegistryCheckService: AssociationRegistryCheckService
     @MockkBean private lateinit var beneficialOwnerService: BeneficialOwnerService
@@ -149,6 +151,7 @@ class CommonLinkApplicationTests {
     @MockkBean private lateinit var cashOutReceiptService: CashOutReceiptService
     @MockkBean private lateinit var campaignFundsService: org.commonlink.service.CampaignFundsService
     @MockkBean private lateinit var helloAssoFundsReleaseService: HelloAssoFundsReleaseService
+    @MockkBean private lateinit var helloAssoLinkAttemptStatsService: org.commonlink.service.HelloAssoLinkAttemptStatsService
     @MockkBean private lateinit var objectMapper: ObjectMapper
 
     @Test

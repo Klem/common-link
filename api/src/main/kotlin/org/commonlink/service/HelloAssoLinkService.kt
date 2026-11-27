@@ -6,6 +6,8 @@ import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.ComplianceAuditSubjectType
 import org.commonlink.entity.HelloAssoConnectionState
 import org.commonlink.exception.HelloAssoMandateRequiredException
+import org.commonlink.exception.HelloAssoOrganizationAlreadyLinkedException
+import org.springframework.dao.DataIntegrityViolationException
 import org.commonlink.exception.HelloAssoVerificationExpiredException
 import org.commonlink.exception.UserNotFoundException
 import org.commonlink.repository.AssociationProfileRepository
@@ -59,6 +61,8 @@ class HelloAssoLinkService(
      * @throws org.commonlink.exception.HelloAssoNotAssociationProviderException when the association is not on HELLOASSO.
      * @throws HelloAssoMandateRequiredException when the mandate is not accepted in [MANDATE_VERSION].
      * @throws HelloAssoVerificationExpiredException when the verification is unknown, expired, used or another's.
+     * @throws HelloAssoOrganizationAlreadyLinkedException when another association holds the organization (checked
+     *   again here, and enforced by the unique index on the slug).
      */
     @Transactional
     fun connect(userId: UUID, request: HelloAssoConnectRequest) {
@@ -67,6 +71,11 @@ class HelloAssoLinkService(
         if (!request.mandate.accepted || request.mandate.version != MANDATE_VERSION) throw HelloAssoMandateRequiredException()
         val associationId = association.id!!
         val pending = pendingLinks.take(request.verifyId, associationId) ?: throw HelloAssoVerificationExpiredException()
+        // Re-checked here: another association may have linked the organization since the key check.
+        if (connectionRepository.existsByOrganizationSlugAndAssociationIdNot(pending.slug, associationId)) {
+            log.info("HelloAsso organization {} linked elsewhere since the key check; refused for {}", pending.slug, associationId)
+            throw HelloAssoOrganizationAlreadyLinkedException()
+        }
 
         val connection = rows.findOrCreate(association)
         val now = Instant.now()
@@ -87,7 +96,13 @@ class HelloAssoLinkService(
             linkedBy = userId
             updatedAt = now
         }
-        connectionRepository.save(connection)
+        try {
+            // Flushed now so a concurrent link of the same organization hits the unique index (V101) here.
+            connectionRepository.saveAndFlush(connection)
+        } catch (ex: DataIntegrityViolationException) {
+            log.info("HelloAsso organization {} linked concurrently by another association; refused for {}", pending.slug, associationId)
+            throw HelloAssoOrganizationAlreadyLinkedException()
+        }
         complianceAuditLogService.append(
             eventType = ComplianceAuditLogService.HELLOASSO_MANDATE_ACCEPTED,
             subjectType = ComplianceAuditSubjectType.ASSOCIATION,

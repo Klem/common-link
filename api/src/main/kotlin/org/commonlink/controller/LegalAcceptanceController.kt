@@ -24,14 +24,14 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/api/association/legal-acceptance")
-@Tag(name = "LegalAcceptance", description = "CGU/CGV acceptance state for the authenticated association")
+@Tag(name = "LegalAcceptance", description = "Legal documents acceptance state for the authenticated association")
 class LegalAcceptanceController(
     private val legalAcceptanceService: LegalAcceptanceService,
 ) {
 
     @GetMapping("/{documentType}")
     @Operation(
-        summary = "Get CGU/CGV acceptance state",
+        summary = "Get a legal document's acceptance state",
         description = "Returns the current document version and whether this association already has a " +
             "standing acceptance of it — drives the pre-checked/disabled state of the publish-time checkbox."
     )
@@ -42,7 +42,7 @@ class LegalAcceptanceController(
     )
     fun getState(
         @AuthenticationPrincipal principal: UserDetails,
-        @Parameter(description = "CGU | CGV") @PathVariable documentType: LegalDocumentType,
+        @Parameter(description = "CGU | CGV | PRIVACY") @PathVariable documentType: LegalDocumentType,
     ): ResponseEntity<LegalAcceptanceStateDto> =
         ResponseEntity.ok(
             legalAcceptanceService.associationAcceptanceStateForUser(UUID.fromString(principal.username), documentType)
@@ -50,7 +50,7 @@ class LegalAcceptanceController(
 
     @PostMapping("/{documentType}")
     @Operation(
-        summary = "Accept the current CGU/CGV version",
+        summary = "Accept the current version of a legal document",
         description = "Records the association's acceptance of the version the post-login gate displayed. No-op " +
             "if the current version is already accepted. Only the current version can be accepted: versions " +
             "superseded since the last acceptance are never asked for."
@@ -68,7 +68,7 @@ class LegalAcceptanceController(
     )
     fun accept(
         @AuthenticationPrincipal principal: UserDetails,
-        @Parameter(description = "CGU | CGV") @PathVariable documentType: LegalDocumentType,
+        @Parameter(description = "CGU | CGV | PRIVACY") @PathVariable documentType: LegalDocumentType,
         @Valid @RequestBody request: AcceptLegalDocumentRequest,
     ): ResponseEntity<LegalAcceptanceStateDto> =
         ResponseEntity.ok(

@@ -25,7 +25,8 @@ import java.util.UUID
  * @param landingLogo Public serving path of the association logo, null when none was uploaded.
  * @param donationsEnabled False when the donation endpoint would refuse the payment, so the form must be
  *   rendered disabled instead of failing on submit: in preview mode on a campaign that is not LIVE, or when
- *   the association's payment provider cannot collect right now (shown to donors as "temporarily
+ *   the association's payment provider cannot collect right now or no fiscal receipt could be issued
+ *   (`PublicWidgetService.isCollectAvailable`) (shown to donors as "temporarily
  *   unavailable"). Nothing else about the campaign lifecycle leaks to donors.
  * @param campaignUpdatedAt Timestamp of the campaign's last modification. The cover image is
  *   served from a stable URL (campaign id only) with a 5-minute public cache, so the frontend must

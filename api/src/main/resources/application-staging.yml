@@ -6,6 +6,8 @@
 server:
   port: 8080
   address: 0.0.0.0   # Required: CC reverse proxy needs to reach the app
+  ssl:
+    enabled: false   # TLS terminates at the CC proxy; the base file enables it for local dev only
   # Same reason as production: without it the app sees plain HTTP behind the CC proxy and never
   # emits Strict-Transport-Security (security audit 2026-08-20, M9).
   forward-headers-strategy: framework

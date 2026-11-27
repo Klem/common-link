@@ -52,24 +52,35 @@ export function useGuestDonation({
       anonymousDisplay: false,
       cguAccepted: false,
       cguVersion: '',
+      privacyVersion: '',
     },
   });
 
-  // The CGU text the donor can open from the form. Its version is the one sent as accepted, so the proof
-  // names exactly the text that was on offer.
+  // The CGU and privacy policy texts the donor can open from the form. Their versions are the ones sent as
+  // accepted, so the proof names exactly the texts that were on offer.
   const [cguDocument, setCguDocument] = useState<LegalDocumentDto | null>(null);
-  const loadCgu = useCallback(async () => {
+  const [privacyDocument, setPrivacyDocument] = useState<LegalDocumentDto | null>(null);
+  const loadLegal = useCallback(async () => {
+    // One request after the other: the API client is never used in parallel. A text that fails to load leaves
+    // its version empty: submitting then fails validation with `errors.legalUnavailable`.
     try {
       const doc = await getLegalDocument(LegalDocumentType.CGU);
       setCguDocument(doc);
       setValue('cguVersion', doc.version);
     } catch {
-      // Left empty: submitting then fails validation with `errors.legalUnavailable`.
+      // See above.
+    }
+    try {
+      const doc = await getLegalDocument(LegalDocumentType.PRIVACY);
+      setPrivacyDocument(doc);
+      setValue('privacyVersion', doc.version);
+    } catch {
+      // See above.
     }
   }, [setValue]);
   useEffect(() => {
-    void loadCgu();
-  }, [loadCgu]);
+    void loadLegal();
+  }, [loadLegal]);
 
   const onSubmit = handleSubmit(async (data) => {
     setSubmitError(null);
@@ -109,9 +120,10 @@ export function useGuestDonation({
           ? (err as { response?: { status?: number; data?: { code?: string } } }).response
           : undefined;
       if (isLegalVersionOutdated(err)) {
-        // A new CGU was published since the form loaded: show it and ask for acceptance again.
+        // A new CGU or privacy policy was published since the form loaded: show it and ask for acceptance again.
         setValue('cguAccepted', false);
-        await loadCgu();
+        setValue('consent', false);
+        await loadLegal();
         setSubmitError(t('errors.legalOutdated'));
       } else if (response?.status === 409 && response.data?.code === 'COLLECTION_CAP_EXCEEDED') {
         // Refused on the collection cap, not on the association's ability to collect. The donor can
@@ -139,6 +151,8 @@ export function useGuestDonation({
     register, onSubmit, setValue, watch, errors, isSubmitting, submitError, blocked,
     /** Current CGU text, `null` until loaded — passed to the viewer so it shows the version being accepted. */
     cguDocument,
+    /** Current privacy policy, `null` until loaded — same role as `cguDocument`, for the `consent` checkbox. */
+    privacyDocument,
     /** Feeds the amount stats of the `begin_checkout` push — see `AmountChoiceTracker.record`. */
     recordAmountChoice: amountChoice.record,
   };

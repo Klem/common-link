@@ -45,6 +45,7 @@ class PublicWidgetService(
     private val donationCapService: DonationCapService,
     private val legalAcceptanceService: LegalAcceptanceService,
     private val paymentProviderRegistry: PaymentProviderRegistry,
+    private val receiptPrerequisiteService: ReceiptPrerequisiteService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -68,12 +69,21 @@ class PublicWidgetService(
     }
 
     /**
-     * Whether [association]'s payment provider can collect right now. Database reads only, no network call (contract
-     * of [org.commonlink.payment.PaymentProvider.readiness]) — safe on these unauthenticated public GETs. A provider
+     * Whether a donation to [association] can be collected right now: its payment provider can collect, **and** a
+     * fiscal receipt can be issued for it ([ReceiptPrerequisiteService.canIssueReceipts]: active fiscal mandate,
+     * receipt signature, legal object, head-office address). The receipt is generated automatically once the payment
+     * is confirmed, so it must be guaranteed before the donor pays, not after.
+     *
+     * Single gate for every donation entry point ([createDonation]) and for the donate button ([getWidget]
+     * `collectAvailable`, [getLanding] `donationsEnabled`). Database reads only, no network call (contract of
+     * [org.commonlink.payment.PaymentProvider.readiness]) — safe on these unauthenticated public GETs. A provider
      * with no registered implementation (defensive; every provider has one today) is not available.
      */
-    private fun isCollectAvailable(association: AssociationProfile): Boolean =
-        paymentProviderRegistry.findForAssociation(association)?.readiness(association.id!!)?.isReady ?: false
+    private fun isCollectAvailable(association: AssociationProfile): Boolean {
+        val providerReady =
+            paymentProviderRegistry.findForAssociation(association)?.readiness(association.id!!)?.isReady ?: false
+        return providerReady && receiptPrerequisiteService.canIssueReceipts(association)
+    }
 
     /**
      * Orchestrates a guest donation:
@@ -85,14 +95,19 @@ class PublicWidgetService(
      * The donation remains pending until the provider confirms the payment (notification or live re-read).
      * The provider's payment id is returned to the frontend for sessionStorage before redirect.
      *
-     * @throws CollectionUnavailableException when the association's provider cannot collect right now — checked
-     *   first, before anything is created.
+     * @throws CollectionUnavailableException when the association's provider cannot collect right now, or when no
+     *   fiscal receipt could be issued for the donation (see [isCollectAvailable]) — checked first, before anything
+     *   is created.
      */
     fun createDonation(widgetToken: String, request: CreateGuestDonationRequest): CreateGuestDonationResponse {
         val (association, campaign) = resolveWidget(widgetToken)
 
-        // Provider readiness first: a refused attempt must leave no guest donor and no screening journal entry.
-        if (!isCollectAvailable(association)) throw CollectionUnavailableException()
+        // Provider and receipt readiness first: a refused attempt must leave no guest donor and no screening
+        // journal entry.
+        if (!isCollectAvailable(association)) {
+            logger.info("Donation refused, collection unavailable: association={} campaign={}", association.id, campaign.id)
+            throw CollectionUnavailableException()
+        }
 
         // Collection cap — refuse before anything is created. A donation above the cap could only be
         // refunded, and a refund after collection is precisely what must not happen: the receipt is
@@ -100,9 +115,12 @@ class PublicWidgetService(
         // attempt leaves no guest profile and no screening journal entry behind.
         donationCapService.requireWithinCap(campaign, request.amount)
 
-        // The CGU version the form displayed must still be the current one: the acceptance proof records it,
-        // and must not name a text the donor never saw. Checked before anything is created.
-        val acceptedVersions = mapOf(LegalDocumentType.CGU to request.cguVersion)
+        // The CGU and privacy policy versions the form displayed must still be the current ones: the acceptance
+        // proof records them, and must not name a text the donor never saw. Checked before anything is created.
+        val acceptedVersions = mapOf(
+            LegalDocumentType.CGU to request.cguVersion,
+            LegalDocumentType.PRIVACY to request.privacyVersion,
+        )
         legalAcceptanceService.requireCurrentDonorVersions(acceptedVersions)
 
         // Provision guest donor (idempotent by email)

@@ -14,6 +14,8 @@ import org.commonlink.entity.LegalDocumentType
 import org.commonlink.payment.BankSetupStatus
 import org.commonlink.payment.PaymentProviderId
 import org.commonlink.repository.AssociationProfileRepository
+import org.commonlink.repository.AssociationSignatureRepository
+import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.CampaignRepository
 import org.commonlink.repository.DonationRepository
 import org.commonlink.repository.HelloAssoConnectionRepository
@@ -65,6 +67,8 @@ class HelloAssoEndToEndMockTest {
 
     @Autowired private lateinit var userRepository: UserRepository
     @Autowired private lateinit var associationProfileRepository: AssociationProfileRepository
+    @Autowired private lateinit var signatureRepository: AssociationSignatureRepository
+    @Autowired private lateinit var fiscalMandateRepository: FiscalMandateRepository
     @Autowired private lateinit var campaignRepository: CampaignRepository
     @Autowired private lateinit var donationRepository: DonationRepository
     @Autowired private lateinit var connectionRepository: HelloAssoConnectionRepository
@@ -91,7 +95,7 @@ class HelloAssoEndToEndMockTest {
     @Test
     fun `verification, link, eligibility, checkout, notification and confirmation in mock mode`() {
         every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.CLEAR
-        for (type in listOf(LegalDocumentType.CGU, LegalDocumentType.CGV)) {
+        for (type in listOf(LegalDocumentType.CGU, LegalDocumentType.CGV, LegalDocumentType.PRIVACY)) {
             if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(type) == null) {
                 legalDocumentRepository.save(LegalDocument(documentType = type, version = "test", content = "test $type"))
             }
@@ -120,7 +124,10 @@ class HelloAssoEndToEndMockTest {
         assertEquals(BankSetupStatus.COMPLETED, status.status)
         assertEquals(url, status.helloasso!!.notificationUrl)
 
-        // 4. A real donation through the public widget.
+        // 4. A real donation through the public widget — only once a receipt can be issued (collection gate).
+        TestFixtures.withReceiptPrerequisiteFields(association)
+        signatureRepository.save(TestFixtures.associationSignature(association.id!!))
+        fiscalMandateRepository.save(TestFixtures.fiscalMandate(association, reference = "MND-H-${System.nanoTime() % 100_000_000}"))
         val campaign = campaignRepository.save(TestFixtures.campaign(association, status = CampaignStatus.LIVE))
         val widgetToken = "clk_ha_${System.nanoTime()}"
         association.widgetToken = widgetToken
@@ -132,7 +139,7 @@ class HelloAssoEndToEndMockTest {
             CreateGuestDonationRequest(
                 amount = BigDecimal("25.00"), donorEmail = "donor-${System.nanoTime()}@example.com", donorFullName = "Jean Dupont",
                 donorAddressLine1 = "12 rue de la Paix", donorPostalCode = "75001", donorCity = "Paris", donorCountry = "FR",
-                consent = true, cguAccepted = true, cguVersion = "test",
+                consent = true, cguAccepted = true, cguVersion = "test", privacyVersion = "test",
             ),
         )
         assertTrue(donation.checkoutUrl.contains("code=succeeded"))

@@ -112,29 +112,29 @@ class AssociationRegistryCheckServiceTest {
     )
 
     private val rechercheOk =
-        """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220"}]}"""
+        """{"results":[{"siren":"123456789","complements":{"identifiant_association":"W123456789","est_association":true},"nature_juridique":"9220"}]}"""
     /** 5710 = SAS — a commercial company, genuinely outside the loi 1901 perimeter. */
     private val rechercheOutOfScope =
-        """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":false},"nature_juridique":"5710"}]}"""
+        """{"results":[{"siren":"123456789","complements":{"identifiant_association":"W123456789","est_association":false},"nature_juridique":"5710"}]}"""
     /** 9230 = association déclarée reconnue d'utilité publique — inside the perimeter. */
     private val rechercheArup =
-        """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9230"}]}"""
+        """{"results":[{"siren":"123456789","complements":{"identifiant_association":"W123456789","est_association":true},"nature_juridique":"9230"}]}"""
     /** 9260 = association de droit local (Alsace-Moselle) — inside the perimeter. */
     private val rechercheDroitLocal =
-        """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9260"}]}"""
+        """{"results":[{"siren":"123456789","complements":{"identifiant_association":"W123456789","est_association":true},"nature_juridique":"9260"}]}"""
     private val rechercheWithOfficers =
-        """{"results":[{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220","dirigeants":[{"nom":"DUPONT","prenoms":"Jean","qualite":"Président"},{"nom":"MARTIN","prenoms":"Marie","qualite":"Trésorière"}]}]}"""
+        """{"results":[{"siren":"123456789","complements":{"identifiant_association":"W123456789","est_association":true},"nature_juridique":"9220","dirigeants":[{"nom":"DUPONT","prenoms":"Jean","qualite":"Président"},{"nom":"MARTIN","prenoms":"Marie","qualite":"Trésorière"}]}]}"""
     /** Full-text search on a W-number: the exact match is not necessarily ranked first. */
     private val rechercheByRna =
-        """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9230","dirigeants":[{"nom":"WRONG","prenoms":"Person"}]},{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220","dirigeants":[{"nom":"DUPONT","prenoms":"Jean"}]}]}"""
+        """{"results":[{"siren":"999999999","complements":{"identifiant_association":"W999999999","est_association":true},"nature_juridique":"9230","dirigeants":[{"nom":"WRONG","prenoms":"Person"}]},{"siren":"123456789","complements":{"identifiant_association":"W123456789","est_association":true},"nature_juridique":"9220","dirigeants":[{"nom":"DUPONT","prenoms":"Jean"}]}]}"""
     private val rechercheRnaMismatch =
-        """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9230","dirigeants":[{"nom":"WRONG","prenoms":"Person"}]}]}"""
+        """{"results":[{"siren":"999999999","complements":{"identifiant_association":"W999999999","est_association":true},"nature_juridique":"9230","dirigeants":[{"nom":"WRONG","prenoms":"Person"}]}]}"""
     /** Full-text search on a SIREN: the engine ranks by relevance, the dossier's entity may be absent. */
     private val rechercheSirenMismatch =
-        """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9220"}]}"""
+        """{"results":[{"siren":"999999999","complements":{"identifiant_association":"W999999999","est_association":true},"nature_juridique":"9220"}]}"""
     /** Same, but the dossier's entity is present — second, behind a more relevant one. */
     private val rechercheSirenNotFirst =
-        """{"results":[{"siren":"999999999","identifiant_association":"W999999999","complements":{"est_association":true},"nature_juridique":"9230"},{"siren":"123456789","identifiant_association":"W123456789","complements":{"est_association":true},"nature_juridique":"9220"}]}"""
+        """{"results":[{"siren":"999999999","complements":{"identifiant_association":"W999999999","est_association":true},"nature_juridique":"9230"},{"siren":"123456789","complements":{"identifiant_association":"W123456789","est_association":true},"nature_juridique":"9220"}]}"""
     private val rechercheEmpty =
         """{"results":[]}"""
     private val inseeOk =

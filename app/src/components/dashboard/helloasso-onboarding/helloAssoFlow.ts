@@ -121,7 +121,8 @@ export interface StepperItem {
 
 /**
  * Stepper of the journey (mockup `renderStepper`): every step done once collecting; on the "existing" path step 1 is
- * skipped; the current step warns when suspended, or on screen 4 with invalid codes / another association.
+ * skipped; the current step warns when suspended, or on screen 4 with invalid codes / another association / an
+ * organization already linked elsewhere.
  */
 export function stepperItems(
   screen: HelloAssoScreen,
@@ -131,7 +132,9 @@ export function stepperItems(
 ): StepperItem[] {
   const step = SCREEN_TO_STEP[screen];
   const done = canCollectDonations(status);
-  const keyProblem = screen === HelloAssoScreen.LINK && (keyCheck === KeyCheck.INVALID || keyCheck === KeyCheck.MISMATCH);
+  const keyProblem =
+    screen === HelloAssoScreen.LINK &&
+    (keyCheck === KeyCheck.INVALID || keyCheck === KeyCheck.MISMATCH || keyCheck === KeyCheck.ALREADY_LINKED);
   return HELLOASSO_STEPS.map((key, index) => {
     const n = index + 1;
     const skipped = path === HelloAssoPath.EXISTING && n === 1 && !done;
@@ -247,6 +250,10 @@ export const HELLOASSO_ADMIN_URL = 'https://admin.helloasso.com';
  * the exact sign-up URL is known.
  */
 export const HELLOASSO_SIGNUP_URL = 'https://www.helloasso.com/';
+
+/** HelloAsso help-centre article on renaming an association (shown when the names differ on screen 4). */
+export const HELLOASSO_RENAME_HELP_URL =
+  'https://centredaide.helloasso.com/association?question=comment-modifier-le-nom-de-mon-association';
 
 /** Public register of authorised payment institutions, where HelloAsso's ACPR approval can be checked. */
 export const REGAFI_URL = 'https://www.regafi.fr';

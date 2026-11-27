@@ -19,7 +19,8 @@
       "verifStatuts": "Statuts de l'association"
     },
     "nav": {
-      "verifications": "Associations / Vérifications"
+      "verifications": "Associations / Vérifications",
+      "helloassoLinkAttempts": "Liaisons HelloAsso"
     },
     "registryCheck": {
       "bodacc": {
@@ -112,6 +113,57 @@
         "verified": "Vérifiées"
       },
       "title": "Vérifications"
+    },
+    "helloassoLinkAttempts": {
+      "title": "Liaisons HelloAsso",
+      "subtitle": "Chaque vérification de clés HelloAsso faite par une association, réussie ou non, et sa raison.",
+      "period": "{days} derniers jours",
+      "error": "Impossible de charger les statistiques. Réessayez dans quelques instants.",
+      "empty": "Aucune vérification sur cette période.",
+      "none": "—",
+      "percent": "{value} %",
+      "sortAscendingAria": "Trier par {column}, ordre croissant",
+      "sortDescendingAria": "Trier par {column}, ordre décroissant",
+      "kpi": {
+        "total": "Vérifications",
+        "associations": "Associations",
+        "successRate": "Taux de réussite"
+      },
+      "chart": {
+        "aria": "Répartition de {total} vérifications par résultat",
+        "center": "vérifications",
+        "caption": "Vérifications par résultat",
+        "tooltip": "{outcome} : {count} ({percent} %)"
+      },
+      "col": {
+        "outcome": "Résultat",
+        "count": "Nombre",
+        "share": "Part",
+        "date": "Date",
+        "association": "Association",
+        "organization": "Organisation HelloAsso",
+        "organizationRna": "RNA HelloAsso",
+        "associationRna": "RNA CommonLink"
+      },
+      "list": {
+        "title": "Vérifications",
+        "empty": "Aucune vérification à afficher.",
+        "missingRna": "non renseigné",
+        "clearFilter": "Retirer le filtre « {outcome} »",
+        "pageOf": "Page {current} sur {total}",
+        "previous": "Page précédente",
+        "next": "Page suivante"
+      },
+      "outcome": {
+        "MATCHED": "Réussie",
+        "NAME_MISMATCH": "Nom différent (RNA absent d'un côté)",
+        "RNA_MISMATCH": "RNA différent",
+        "ORGANIZATION_ALREADY_LINKED": "Organisation déjà liée à une autre association",
+        "INVALID_KEYS": "Clés refusées par HelloAsso",
+        "ORGANIZATION_UNRESOLVED": "Clés sans organisation unique",
+        "HELLOASSO_UNAVAILABLE": "HelloAsso indisponible",
+        "HELLOASSO_RATE_LIMITED": "Limite HelloAsso atteinte"
+      }
     }
   },
   "association": {
@@ -163,7 +215,8 @@
       "rateLimited": "Trop de tentatives. Réessayez dans 10 minutes.",
       "sirenAlreadyRegistered": "Ce SIREN est déjà rattaché à un compte CommonLink. Connectez-vous, ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
       "tokenExpired": "Ce lien a expiré. Demandez-en un nouveau.",
-      "tokenUsed": "Ce lien a déjà été utilisé."
+      "tokenUsed": "Ce lien a déjà été utilisé.",
+      "rnaAlreadyRegistered": "Cette association (même numéro RNA) est déjà rattachée à un compte CommonLink. Connectez-vous, ou contactez-nous si vous pensez qu'il s'agit d'une erreur."
     },
     "gdpr": "Données traitées conformément au RGPD.",
     "hints": {
@@ -358,6 +411,7 @@
     "publishCampaignSuccess": "🚀 Campagne publiée !",
     "save": "Enregistrer",
     "setPasswordUpdated": "Mot de passe défini avec succès.",
+    "signatorySaved": "Signataire et signature enregistrés.",
     "verificationDocDeleted": "Document retiré.",
     "verificationDocUploaded": "Document téléversé.",
     "verificationOptDocDeleted": "Document supprimé.",
@@ -475,11 +529,13 @@
           "BANK_KYC_INCOMPLETE": "Vérification d'identité Mollie non aboutie",
           "BANK_NOT_CONNECTED": "Aucun compte Mollie connecté",
           "BUDGET_UNBALANCED": "Budget prévisionnel absent ou déséquilibré (tolérance d'un euro)",
-          "CGU_NOT_ACCEPTED": "Conditions générales d'utilisation non acceptées (art. 1740 A CGI)",
+          "CGU_NOT_ACCEPTED": "Conditions non acceptées",
           "GOAL_MISSING": "Objectif de collecte non renseigné ou nul",
           "IMPACT_GOALS_MISSING": "Résultat attendu absent ou inférieur à vingt caractères",
           "KYB_NOT_VERIFIED": "Dossier d'identification de l'association non vérifié",
-          "SCHEDULE_MISSING": "Date de début ou de fin non renseignée"
+          "SCHEDULE_MISSING": "Date de début ou de fin non renseignée",
+          "FISCAL_MANDATE_MISSING": "Mandat fiscal non signé",
+          "RECEIPT_PREREQUISITES_MISSING": "Informations des reçus fiscaux incomplètes (signature, objet social ou adresse du siège)"
         },
         "title": "Historique des tentatives de publication"
       },
@@ -1019,7 +1075,7 @@
       "newCampaign": "Nouvelle campagne",
       "profile": {
         "addressLine1": "Adresse du siège social",
-        "addressLine1Placeholder": "42 RUE DE CLICHY 75009 PARIS",
+        "addressLine1Placeholder": "42 RUE DE CLICHY",
         "cancel": "Annuler",
         "city": "Ville",
         "contactEmail": "Email de contact",
@@ -1073,10 +1129,6 @@
             "oig75": {
               "desc": "Réduction d'impôt de 75% (loi Coluche) · Art. 200 1 ter CGI",
               "label": "Organisme d'aide aux personnes en difficulté"
-            },
-            "public66": {
-              "desc": "Décret en Conseil d'État · Réduction 66%",
-              "label": "Reconnu d'utilité publique"
             }
           },
           "legalText": {
@@ -1107,6 +1159,41 @@
             "confirm": "Confirmer la révocation",
             "title": "Révoquer le mandat ?"
           },
+          "signatory": {
+            "title": "Signataire habilité des reçus fiscaux",
+            "intro": "Le nom, la fonction et la signature ci-dessous figurent sur chaque reçu fiscal émis au nom de l'association.",
+            "badgeSaved": "Enregistré",
+            "badgeMissing": "À compléter",
+            "savedTitle": "Signature actuellement enregistrée",
+            "savedAlt": "Signature enregistrée du signataire",
+            "savedAt": "Enregistrée le {date}",
+            "modeLabel": "Signature",
+            "modes": {
+              "upload": "Importer une image",
+              "drawn": "Dessiner"
+            },
+            "upload": {
+              "inputLabel": "Image de la signature",
+              "cta": "Cliquez pour choisir une image",
+              "hint": "PNG ou JPEG, de préférence sur fond blanc. L'image est réduite automatiquement (200 Ko maximum)."
+            },
+            "previewAlt": "Aperçu de la nouvelle signature",
+            "draw": {
+              "hint": "Signez dans le cadre avec la souris, le doigt ou un stylet.",
+              "padLabel": "Zone de signature",
+              "clear": "Effacer"
+            },
+            "keepSaved": "Sans nouvelle signature, la signature enregistrée est conservée.",
+            "help": "La signature est imprimée sur chaque reçu fiscal émis à partir de maintenant. Les reçus déjà envoyés ne sont pas modifiés.",
+            "attestation": "J'atteste être le signataire désigné ci-dessus ou disposer de son autorisation expresse pour apposer sa signature sur les reçus fiscaux émis au nom de l'association.",
+            "save": "Enregistrer le signataire",
+            "errors": {
+              "unsupportedType": "Format non pris en charge : importez une image PNG ou JPEG.",
+              "unreadable": "Impossible de lire cette image.",
+              "tooLarge": "L'image reste trop lourde après réduction (200 Ko maximum). Essayez une image plus simple, sur fond uni.",
+              "saveFailed": "L'enregistrement a échoué. Vérifiez les informations saisies et réessayez."
+            }
+          },
           "signed": {
             "detailsTitle": "Détails du mandat",
             "downloadPdf": "Télécharger le mandat (PDF)",
@@ -1118,12 +1205,6 @@
             "signedAt": "Signé le",
             "sub": "Les reçus fiscaux sont émis automatiquement pour chaque don éligible reçu via CommonLink.",
             "title": "Mandat actif"
-          },
-          "signerWarning": {
-            "close": "Fermer",
-            "missingSignerName": "Un nom de signataire habilité est requis pour signer le mandat fiscal : il apparaît sur chaque reçu fiscal. Veuillez d'abord renseigner le champ Nom du signataire habilité dans l'onglet Informations et enregistrer.",
-            "missingSignerRole": "Une fonction du signataire est requise pour signer le mandat fiscal : elle apparaît sur chaque reçu fiscal. Veuillez d'abord renseigner le champ Fonction du signataire dans l'onglet Informations et enregistrer.",
-            "title": "Signataire habilité requis"
           },
           "step1": {
             "declared": "Déclaré",
@@ -1140,6 +1221,19 @@
             "signBtn": "Signer le mandat",
             "timestampNote": "Signature électronique horodatée",
             "title": "2. Signature du mandat"
+          },
+          "prerequisites": {
+            "signGate": "Pour signer le mandat, complétez d'abord :",
+            "items": {
+              "SIGNATURE": "Signature du signataire habilité",
+              "LEGAL_OBJECT": "Objet social de l'association",
+              "HEAD_OFFICE_ADDRESS": "Adresse du siège social (adresse, code postal et ville)"
+            },
+            "links": {
+              "signatory": "Compléter le signataire",
+              "infos": "Compléter dans Informations"
+            },
+            "suspendedBanner": "La collecte de dons est suspendue : un reçu fiscal ne peut pas être émis sans les informations ci-dessous. Elle reprend dès qu'elles sont complétées."
           }
         },
         "memberSince": "Membre depuis {date}",
@@ -1824,13 +1918,16 @@
             "IN_REVIEW": "Vérification HelloAsso en cours — requise pour publier",
             "NEEDS_DATA": "Encaissement suspendu par HelloAsso — à régulariser pour publier",
             "BROKEN": "Accès HelloAsso à renouveler — recollez votre clé pour publier"
-          }
+          },
+          "receiptsMissing": "Informations des reçus fiscaux incomplètes (signature, objet social ou adresse du siège) — requises pour publier",
+          "completeReceipts": "Compléter",
+          "mandateMissing": "Mandat fiscal non signé — requis pour publier"
         },
         "add": "Ajouter",
         "cgu": {
           "label": "En publiant cette campagne, vous acceptez les",
           "link": "Conditions Générales d'Utilisation (CGU)",
-          "section": "Conditions d'utilisation"
+          "section": "Conditions d'utilisation et confidentialité"
         },
         "complete": "Complétez les champs requis",
         "confirm": "Publier",
@@ -1852,7 +1949,11 @@
           "name": "Nom de la campagne",
           "section": "Requis pour publier"
         },
-        "title": "Avant de publier votre campagne"
+        "title": "Avant de publier votre campagne",
+        "privacy": {
+          "label": "J'ai pris connaissance de la",
+          "link": "politique de confidentialité"
+        }
       },
       "stats": {
         "goal": "Objectif total",
@@ -2087,7 +2188,7 @@
         "stats": {
           "receiptCount": "Nombre de reçus",
           "totalDeduction": "Réduction fiscale estimée",
-          "totalDeductionHint": "Estimation uniquement — jamais un montant garanti.",
+          "totalDeductionHint": "Estimation indicative, selon votre situation.",
           "totalReceipted": "Total receipté"
         }
       },
@@ -2569,18 +2670,28 @@
   "legal": {
     "close": "Fermer",
     "gate": {
-      "accept": "Accepter et continuer",
-      "checkbox": "J'ai lu et j'accepte ces conditions au nom de l'association",
+      "accept": {
+        "CGV": "Accepter et continuer",
+        "PRIVACY": "Continuer"
+      },
+      "checkbox": {
+        "CGV": "J'ai lu et j'accepte ce texte au nom de l'association",
+        "PRIVACY": "J'ai pris connaissance de ce texte au nom de l'association"
+      },
       "error": "L'acceptation n'a pas pu être enregistrée. Veuillez réessayer.",
-      "intro": "Merci de lire et d'accepter les conditions d'utilisation de CommonLink en vigueur pour continuer.",
-      "title": "Conditions d'utilisation"
+      "intro": {
+        "CGV": "Merci de lire et d'accepter les textes de CommonLink en vigueur pour continuer.",
+        "PRIVACY": "Merci de prendre connaissance de la politique de confidentialité de CommonLink en vigueur pour continuer."
+      },
+      "title": "Conditions d'utilisation et confidentialité"
     },
     "loadError": "Impossible de charger ce document. Veuillez réessayer.",
     "loading": "Chargement…",
-    "outdated": "Ces conditions viennent d'être mises à jour. Merci de relire la nouvelle version avant de l'accepter.",
+    "outdated": "Ce texte vient d'être mis à jour. Merci de relire la nouvelle version avant de l'accepter.",
     "title": {
       "CGU": "Conditions Générales d'Utilisation",
-      "CGV": "Conditions générales d'utilisation des associations"
+      "CGV": "Conditions générales d'utilisation des associations",
+      "PRIVACY": "Politique de confidentialité"
     },
     "tocTitle": "Sommaire",
     "version": "Version {version}"
@@ -3357,7 +3468,16 @@
             "mismatchText": "Ce n'est pas l'association vérifiée sur CommonLink. Rien n'a été enregistré.",
             "mismatchHint": "Sélectionnez la bonne association dans HelloAsso, puis copiez ses codes.",
             "mismatchHelp": "C'est bien vous, sous un autre nom ? <link>Écrivez-nous</link>.",
-            "unavailable": "HelloAsso ne nous répond pas pour le moment. Rien n'a été enregistré : réessayez dans quelques minutes."
+            "unavailable": "HelloAsso ne nous répond pas pour le moment. Rien n'a été enregistré : réessayez dans quelques minutes.",
+            "mismatchRnaText": "Ce n'est pas l'association vérifiée sur CommonLink. Vérifiez que le nom de l'association et le numéro RNA sont bien identiques entre CommonLink et HelloAsso. Rien n'a été enregistré.",
+            "rnaCommonLink": "RNA sur CommonLink :",
+            "rnaHelloAsso": "RNA sur HelloAsso :",
+            "rnaMissing": "non renseigné",
+            "nameCommonLink": "Nom sur CommonLink :",
+            "nameHelloAsso": "Nom sur HelloAsso :",
+            "renameHelloAsso": "Changer de nom",
+            "needHelp": "Besoin d'aide ?",
+            "alreadyLinked": "Cette organisation HelloAsso est déjà reliée à une autre association sur CommonLink. Rien n'a été enregistré. Écrivez-nous si vous pensez qu'il s'agit d'une erreur."
           },
           "step3": {
             "title": "Coller notre adresse de notification",
@@ -3390,7 +3510,8 @@
           "errors": {
             "expired": "La vérification de vos codes a expiré. Collez-les à nouveau pour relier votre compte.",
             "mandate": "Cochez l'autorisation pour relier votre compte.",
-            "generic": "La liaison n'a pas abouti. Rien n'a été enregistré : réessayez dans quelques minutes."
+            "generic": "La liaison n'a pas abouti. Rien n'a été enregistré : réessayez dans quelques minutes.",
+            "alreadyLinked": "Cette organisation HelloAsso vient d'être reliée à une autre association sur CommonLink. Rien n'a été enregistré."
           }
         },
         "review": {
@@ -3626,7 +3747,8 @@
       "link": "Conditions Générales d'Utilisation (CGU)"
     },
     "consent": {
-      "label": "Je consens au traitement de mes données personnelles pour ce don (RGPD)"
+      "label": "J'ai pris connaissance de la",
+      "link": "politique de confidentialité"
     },
     "errors": {
       "amountDecimals": "Le montant ne peut avoir plus de 2 décimales",
@@ -3636,7 +3758,7 @@
       "capExceeded": "Ce montant dépasse ce que la campagne peut encore collecter. Merci de saisir un montant plus faible.",
       "capFull": "Cette campagne a atteint son plafond de collecte et n'accepte plus de dons.",
       "cguRequired": "Vous devez accepter les Conditions Générales d'Utilisation",
-      "consentRequired": "Vous devez consentir pour continuer",
+      "consentRequired": "Vous devez prendre connaissance de la politique de confidentialité",
       "countryInvalid": "Veuillez saisir un code pays valide sur 2 lettres",
       "duplicateSubmit": "Ce don a déjà été envoyé. Merci de patienter une minute avant de réessayer.",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide",
@@ -3647,8 +3769,8 @@
       "notCollecting": "Cette association ne peut pas encore recevoir de dons en ligne. Merci de réessayer plus tard.",
       "submitFailed": "Une erreur est survenue. Veuillez réessayer.",
       "collectUnavailable": "La collecte de dons en ligne est momentanément indisponible pour cette campagne. Merci de réessayer un peu plus tard.",
-      "legalOutdated": "Les conditions viennent d'être mises à jour : merci de les relire et de cocher à nouveau la case.",
-      "legalUnavailable": "Les conditions n'ont pas pu être chargées. Veuillez recharger la page."
+      "legalOutdated": "Les conditions ou la politique de confidentialité viennent d'être mises à jour : merci de les relire et de cocher à nouveau les cases.",
+      "legalUnavailable": "Les conditions ou la politique de confidentialité n'ont pas pu être chargées. Veuillez recharger la page."
     },
     "identity": {
       "addressLine1": "Adresse",

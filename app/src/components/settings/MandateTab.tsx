@@ -2,7 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { ReceiptPrerequisite } from '@/types/mandate';
 import type { MandateStateDto, MandateDocType, SignMandateRequest, MandateEligibility } from '@/types/mandate';
+import { useSignatory } from '@/hooks/dashboard/useSignatory';
+import { SignatoryCard, SIGNATORY_CARD_ID } from '@/components/settings/SignatoryCard';
+import type { SaveSignatoryRequest } from '@/types/signatory';
 
 const MANDATE_SLOTS: { docType: MandateDocType; icon: string; labelKey: string; descKey: string }[] = [
   {
@@ -30,14 +34,35 @@ const ELIGIBILITY_OPTIONS: { value: MandateEligibility; labelKey: string; descKe
     labelKey: 'association.profile.mandate.eligibility.oig75.label',
     descKey: 'association.profile.mandate.eligibility.oig75.desc',
   },
-  {
-    value: 'PUBLIC_UTILITY_66',
-    labelKey: 'association.profile.mandate.eligibility.public66.label',
-    descKey: 'association.profile.mandate.eligibility.public66.desc',
-  },
 ];
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.docx';
+
+const PREREQ_KEY = 'association.profile.mandate.prerequisites';
+
+/** Where the association completes a missing receipt prerequisite. */
+const PrerequisiteTarget = {
+  /** The authorised signer card of this tab. */
+  SIGNATORY: 'SIGNATORY',
+  /** The "Informations" tab of the profile page. */
+  INFOS: 'INFOS',
+} as const;
+type PrerequisiteTarget = (typeof PrerequisiteTarget)[keyof typeof PrerequisiteTarget];
+
+/** Label and completion target of each receipt prerequisite (a new enum value fails type-checking). */
+const PREREQUISITE_ITEMS: Record<ReceiptPrerequisite, { labelKey: string; target: PrerequisiteTarget }> = {
+  [ReceiptPrerequisite.SIGNATURE]: { labelKey: `${PREREQ_KEY}.items.SIGNATURE`, target: PrerequisiteTarget.SIGNATORY },
+  [ReceiptPrerequisite.LEGAL_OBJECT]: { labelKey: `${PREREQ_KEY}.items.LEGAL_OBJECT`, target: PrerequisiteTarget.INFOS },
+  [ReceiptPrerequisite.HEAD_OFFICE_ADDRESS]: {
+    labelKey: `${PREREQ_KEY}.items.HEAD_OFFICE_ADDRESS`,
+    target: PrerequisiteTarget.INFOS,
+  },
+};
+
+const PREREQUISITE_LINK_KEYS: Record<PrerequisiteTarget, string> = {
+  [PrerequisiteTarget.SIGNATORY]: `${PREREQ_KEY}.links.signatory`,
+  [PrerequisiteTarget.INFOS]: `${PREREQ_KEY}.links.infos`,
+};
 
 // Temporarily hides the mandate "Pièces justificatives" (supporting documents) step and drops
 // the doc-upload precondition for signing. Set back to true to restore the step.
@@ -69,12 +94,23 @@ interface MandateTabProps {
   onSign: (request: SignMandateRequest) => Promise<void>;
   onRevoke: () => Promise<void>;
   onDownloadPdf: () => Promise<void>;
-  /** Nom du signataire habilité — imprimé sur les reçus fiscaux. Absent ⇒ signature bloquée. */
-  signerName?: string | null;
-  /** Fonction du signataire habilité — imprimée sur les reçus fiscaux. Absente ⇒ signature bloquée. */
-  signerRole?: string | null;
+  /**
+   * Called after the authorised signer was saved, so the page can refresh the profile (signer name/role)
+   * and the mandate state (its `receiptPrerequisitesMissing` drops SIGNATURE).
+   */
+  onSignatorySaved?: () => Promise<void> | void;
+  /** Opens the "Informations" tab, where the legal object and the head-office address are completed. */
+  onGoToInfos: () => void;
 }
 
+/**
+ * Fiscal mandate tab. Also hosts the authorised signer card ({@link SignatoryCard}).
+ *
+ * Signing is disabled while the server reports missing receipt prerequisites
+ * (`state.receiptPrerequisitesMissing`: signature, legal object, head-office address), each listed with a
+ * link to where it is completed — mirror of the 422 of `MandateService.signMandate`. Once signed, the same
+ * list drives a banner: donation collection is suspended until the items are completed.
+ */
 export function MandateTab({
   state,
   isLoading,
@@ -84,8 +120,8 @@ export function MandateTab({
   onSign,
   onRevoke,
   onDownloadPdf,
-  signerName,
-  signerRole,
+  onSignatorySaved,
+  onGoToInfos,
 }: MandateTabProps) {
   const t = useTranslations('dashboard');
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -93,9 +129,16 @@ export function MandateTab({
   const [selectedEligibility, setSelectedEligibility] = useState<MandateEligibility | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [showRevokeModal, setShowRevokeModal] = useState(false);
-  const [showSignerWarning, setShowSignerWarning] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
+  // Called before the early return below (rules of hooks).
+  const {
+    signatory,
+    isLoading: signatoryLoading,
+    savedImage,
+    savedImageUrl,
+    save: saveSignatory,
+  } = useSignatory();
 
   if (isLoading || !state) {
     return (
@@ -107,9 +150,18 @@ export function MandateTab({
     );
   }
 
+  // Computed server-side (a saved signature always carries the signer name and role); re-read by the
+  // page after the signer or the profile is saved.
+  const missingPrerequisites = state.receiptPrerequisitesMissing;
+  const prerequisitesReady = missingPrerequisites.length === 0;
+
   const uploadedCount = state.mandateDocs.filter((d) => d.uploaded).length;
   const canSign =
-    selectedEligibility !== null && (!SHOW_MANDATE_DOCS || uploadedCount === 2) && accepted && !state.signed;
+    selectedEligibility !== null &&
+    (!SHOW_MANDATE_DOCS || uploadedCount === 2) &&
+    accepted &&
+    prerequisitesReady &&
+    !state.signed;
   const canUpload = !state.signed;
 
   const eligibilityLabel = (e: MandateEligibility | null | undefined): string => {
@@ -117,25 +169,43 @@ export function MandateTab({
     return opt ? t(opt.labelKey as Parameters<typeof t>[0]) : '—';
   };
 
-  const missingSignerName = !signerName?.trim();
-  const missingSignerRole = !signerRole?.trim();
-
   const handleSign = async () => {
     if (!canSign || !selectedEligibility) return;
-    // Le mandat autorise CommonLink à émettre des reçus fiscaux au nom du signataire habilité :
-    // sans nom ni fonction, les reçus seraient invalides. Garde volontairement placée ici et non
-    // dans `canSign` — un bouton `disabled` ne pourrait pas ouvrir la modale d'alerte.
-    // Miroir de la garde backend dans `MandateService.signMandate`.
-    if (missingSignerName || missingSignerRole) {
-      setShowSignerWarning(true);
-      return;
-    }
     setIsSigning(true);
     await onSign({ eligibility: selectedEligibility, accepted: true });
     setIsSigning(false);
     setAccepted(false);
     setSelectedEligibility(null);
   };
+
+  const handleSaveSignatory = async (request: SaveSignatoryRequest): Promise<boolean> => {
+    const ok = await saveSignatory(request);
+    if (ok) await onSignatorySaved?.();
+    return ok;
+  };
+
+  const scrollToSignatory = () => {
+    document.getElementById(SIGNATORY_CARD_ID)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
+
+  /** One row per missing prerequisite, with a link to where it is completed. */
+  const renderPrerequisiteRows = () =>
+    missingPrerequisites.map((prerequisite) => {
+      const item = PREREQUISITE_ITEMS[prerequisite];
+      return (
+        <div key={prerequisite} className="pp-row missing">
+          <div className="pp-row-ic">!</div>
+          <div className="pp-row-lbl">{t(item.labelKey as Parameters<typeof t>[0])}</div>
+          <button
+            type="button"
+            className="pp-row-link"
+            onClick={item.target === PrerequisiteTarget.SIGNATORY ? scrollToSignatory : onGoToInfos}
+          >
+            {t(PREREQUISITE_LINK_KEYS[item.target] as Parameters<typeof t>[0])}
+          </button>
+        </div>
+      );
+    });
 
   const handleRevoke = async () => {
     setIsRevoking(true);
@@ -146,7 +216,7 @@ export function MandateTab({
 
   return (
     <>
-      {/* ── Bandeau pédagogique ───────────────────────────────────────────── */}
+      {/* ── Educational banner ────────────────────────────────────────────── */}
       <div className="acc-card" style={{ marginBottom: 20 }}>
         <div className="acc-card-head">
           <div>
@@ -160,7 +230,7 @@ export function MandateTab({
         </div>
       </div>
 
-      {/* ── Vue : bloqué (association non vérifiée) ────────────────────────── */}
+      {/* ── View: blocked (association not verified) ─────────────────────── */}
       {state.blocked && (
         <div
           className="card no-hover"
@@ -182,10 +252,29 @@ export function MandateTab({
         </div>
       )}
 
-      {/* ── Vue : non signé (3 étapes) ────────────────────────────────────── */}
+      {/* ── Signed mandate with missing receipt prerequisites: donation collection is suspended ── */}
+      {state.signed && !prerequisitesReady && (
+        <div className="alert alert-warning alert-spaced prereq-banner" role="alert">
+          <p className="prereq-banner-text">{t(`${PREREQ_KEY}.suspendedBanner`)}</p>
+          {renderPrerequisiteRows()}
+        </div>
+      )}
+
+      {/* ── Authorised signer of the fiscal receipts (signed or not) ─────────── */}
+      {!state.blocked && !signatoryLoading && (
+        <SignatoryCard
+          key={signatory?.updatedAt ?? 'none'}
+          signatory={signatory}
+          savedImage={savedImage}
+          savedImageUrl={savedImageUrl}
+          onSave={handleSaveSignatory}
+        />
+      )}
+
+      {/* ── View: not signed (3 steps) ────────────────────────────────────── */}
       {!state.blocked && !state.signed && (
         <>
-          {/* Étape 1 — Éligibilité */}
+          {/* Step 1 — Eligibility */}
           <div className="card no-hover" style={{ marginBottom: 16 }}>
             <div className="card-h">
               <h3>{t('association.profile.mandate.step1.title')}</h3>
@@ -235,7 +324,7 @@ export function MandateTab({
             </div>
           </div>
 
-          {/* Étape 2 — Pièces justificatives (masquée temporairement — voir SHOW_MANDATE_DOCS) */}
+          {/* Step 2 — Supporting documents (temporarily hidden — see SHOW_MANDATE_DOCS) */}
           {SHOW_MANDATE_DOCS && (
           <div className="card no-hover" style={{ marginBottom: 16 }}>
             <div className="card-h">
@@ -330,7 +419,7 @@ export function MandateTab({
           </div>
           )}
 
-          {/* Étape 3 — Signature */}
+          {/* Step 3 — Signature */}
           <div className="card no-hover" style={{ marginBottom: 16 }}>
             <div className="card-h">
               <h3>{t('association.profile.mandate.step3.title')}</h3>
@@ -379,6 +468,12 @@ export function MandateTab({
                   {t('association.profile.mandate.step3.acceptLabel')}
                 </span>
               </label>
+              {!prerequisitesReady && (
+                <div className="sig-gate">
+                  <p className="sig-gate-intro">{t(`${PREREQ_KEY}.signGate`)}</p>
+                  {renderPrerequisiteRows()}
+                </div>
+              )}
               <button
                 className="btn btn-primary"
                 disabled={!canSign || isSigning}
@@ -395,7 +490,7 @@ export function MandateTab({
         </>
       )}
 
-      {/* ── Vue : signé ───────────────────────────────────────────────────── */}
+      {/* ── View: signed ──────────────────────────────────────────────────── */}
       {state.signed && (
         <>
           <div
@@ -465,39 +560,7 @@ export function MandateTab({
         </>
       )}
 
-      {/* ── Modal d'alerte : signataire habilité manquant ─────────────────── */}
-      {showSignerWarning && (
-        <div className="ov on" onClick={() => setShowSignerWarning(false)}>
-          <div className="mod" onClick={(e) => e.stopPropagation()}>
-            <div className="mod-h">
-              <h3>{t('association.profile.mandate.signerWarning.title')}</h3>
-              <button className="mod-x" onClick={() => setShowSignerWarning(false)}>✕</button>
-            </div>
-            <div className="mod-b">
-              {missingSignerName && (
-                <p className="alert alert-warning alert-spaced">
-                  {t('association.profile.mandate.signerWarning.missingSignerName')}
-                </p>
-              )}
-              {missingSignerRole && (
-                <p className="alert alert-warning alert-spaced">
-                  {t('association.profile.mandate.signerWarning.missingSignerRole')}
-                </p>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setShowSignerWarning(false)}
-                >
-                  {t('association.profile.mandate.signerWarning.close')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal de confirmation de révocation ──────────────────────────── */}
+      {/* ── Revocation confirmation modal ─────────────────────────────────── */}
       {showRevokeModal && (
         <div className="ov on" onClick={() => setShowRevokeModal(false)}>
           <div className="mod" onClick={(e) => e.stopPropagation()}>

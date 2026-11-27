@@ -6,12 +6,14 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.verify
 import org.commonlink.dto.MandateDocumentSlotDto
 import org.commonlink.dto.MandateStateDto
 import org.commonlink.entity.AssociationDocumentType
 import org.commonlink.entity.AssociationProfile
 import org.commonlink.entity.FiscalMandate
 import org.commonlink.entity.MandateEligibility
+import org.commonlink.entity.ReceiptPrerequisite
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.NotFoundException
 import org.commonlink.exception.UnprocessableEntityException
@@ -75,6 +77,7 @@ class MandateControllerTest {
             MandateDocumentSlotDto(AssociationDocumentType.MANDATE_RESCRIT, false, null, null, null, null),
         ),
         blocked = false,
+        receiptPrerequisitesMissing = listOf(ReceiptPrerequisite.SIGNATURE, ReceiptPrerequisite.LEGAL_OBJECT),
     )
 
     private val signedState = unsignedState.copy(
@@ -82,6 +85,7 @@ class MandateControllerTest {
         reference = "MND-2026-0001",
         signedAt = now,
         eligibility = MandateEligibility.OIG_66,
+        receiptPrerequisitesMissing = emptyList(),
     )
 
     // ── GET /api/association/mandate ─────────────────────────────────────
@@ -96,6 +100,8 @@ class MandateControllerTest {
             .andExpect(jsonPath("$.blocked").value(false))
             .andExpect(jsonPath("$.mandateDocs").isArray)
             .andExpect(jsonPath("$.mandateDocs.length()").value(2))
+            .andExpect(jsonPath("$.receiptPrerequisitesMissing[0]").value("SIGNATURE"))
+            .andExpect(jsonPath("$.receiptPrerequisitesMissing[1]").value("LEGAL_OBJECT"))
     }
 
     @Test
@@ -107,6 +113,7 @@ class MandateControllerTest {
             .andExpect(jsonPath("$.signed").value(true))
             .andExpect(jsonPath("$.reference").value("MND-2026-0001"))
             .andExpect(jsonPath("$.eligibility").value("OIG_66"))
+            .andExpect(jsonPath("$.receiptPrerequisitesMissing").isEmpty)
     }
 
     @Test
@@ -333,7 +340,7 @@ class MandateControllerTest {
     fun `signMandate after revocation - 200 with new reference`() {
         val newSignedState = signedState.copy(reference = "MND-2026-0002")
         every { mandateService.signMandate(userId, any()) } returns newSignedState
-        val body = mapOf("eligibility" to "PUBLIC_UTILITY_66", "accepted" to true)
+        val body = mapOf("eligibility" to "OIG_75_COLUCHE", "accepted" to true)
 
         mockMvc.perform(
             post("/api/association/mandate/sign")
@@ -343,5 +350,37 @@ class MandateControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.reference").value("MND-2026-0002"))
+    }
+
+    // ── receipt prerequisites / withdrawn eligibility ──────────────────────
+
+    @Test
+    fun `signMandate - 422 when a receipt prerequisite is missing`() {
+        every { mandateService.signMandate(userId, any()) } throws
+            UnprocessableEntityException("Receipt prerequisites missing before signing the fiscal mandate: SIGNATURE")
+        val body = mapOf("eligibility" to "OIG_66", "accepted" to true)
+
+        mockMvc.perform(
+            post("/api/association/mandate/sign")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body))
+        )
+            .andExpect(status().isUnprocessableContent)
+    }
+
+    /** PUBLIC_UTILITY_66 ("reconnu d'utilité publique") was withdrawn: it no longer binds and the service is never reached. */
+    @Test
+    fun `signMandate - 400 for the withdrawn public utility eligibility`() {
+        val body = mapOf("eligibility" to "PUBLIC_UTILITY_66", "accepted" to true)
+
+        mockMvc.perform(
+            post("/api/association/mandate/sign")
+                .with(user(userId.toString()).roles("ASSOCIATION"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body))
+        )
+            .andExpect(status().isBadRequest)
+        verify(exactly = 0) { mandateService.signMandate(any(), any()) }
     }
 }

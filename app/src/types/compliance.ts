@@ -219,6 +219,8 @@ export const CampaignReviewRefusalReason = {
   BANK_CONNECTION_BROKEN: 'BANK_CONNECTION_BROKEN',
   BANK_KYC_INCOMPLETE: 'BANK_KYC_INCOMPLETE',
   CGU_NOT_ACCEPTED: 'CGU_NOT_ACCEPTED',
+  FISCAL_MANDATE_MISSING: 'FISCAL_MANDATE_MISSING',
+  RECEIPT_PREREQUISITES_MISSING: 'RECEIPT_PREREQUISITES_MISSING',
 } as const;
 export type CampaignReviewRefusalReason =
   typeof CampaignReviewRefusalReason[keyof typeof CampaignReviewRefusalReason];

@@ -123,22 +123,30 @@ Enum representing the lifecycle of a campaign. Transitions are one-directional a
 A public, unauthenticated report of a campaign's content, submitted via a "Report this campaign" popup on the landing page (message + optional reporter e-mail, no account required). Raises a `CAMPAIGN_REPORT` `ComplianceAlert` on the owning association and moves its `AssociationStatus` to `ALERT`. Each submission writes its own append-only journal entry (`CAMPAIGN_REPORTED`), so a second report received while the first alert is still open is not lost. If the compliance officer rules the report founded (`SUSPICIOUS`), the association moves to `SUSPENDED`; otherwise it clears back to `ACTIVE` provided no other report is still open.
 `functional` `security`
 
-### CGU / CGV (Terms of Use / Terms of Sale)
-CGU (Conditions Générales d'Utilisation) and CGV (Conditions Générales de Vente) are versioned legal
-texts stored in `legal_document` (one immutable row per version). Since 2026-11-16 they are the
+### CGU / CGV / PRIVACY (Terms of Use / Terms of Sale / Privacy Policy)
+CGU (Conditions Générales d'Utilisation), CGV (Conditions Générales de Vente) and, since 2026-11-24,
+PRIVACY (the privacy policy) are versioned legal texts stored in `legal_document` (one immutable row per version). Since 2026-11-16 the CGU and CGV are the
 landing site's final texts: `CGU` = the donor terms (`legal.cguDonors`), `CGV` = — despite its
 historical name — the beneficiary-organisation terms (`legal.cguAssociations`); there are no separate
-terms of sale. See **Legal Document Version** for how they are injected and versioned. A
+terms of sale. `PRIVACY` = the privacy policy (`legal.politiqueConfidentialite`, page
+`/politique-confidentialite`; DB CHECK constraints widened by `V99__legal_document_privacy.sql`). See **Legal Document Version** for how they are injected and versioned. A
 `LegalAcceptance` row proves that a donor or an association expressly accepted a given version —
 document type, the version **displayed to them** (refused with 409 `LEGAL_VERSION_OUTDATED` if no
 longer current), timestamp, and a snapshot of the signatory's name/e-mail taken at acceptance time
-(never re-read from the live profile, which could change afterwards). Donors accept the CGU only,
-fresh on every donation (a transactional act; donations before 2026-11-16 also carry a CGV row); an
-association accepts its own terms — the `CGV` document (`LegalAcceptanceService.ASSOCIATION_DOCUMENT`;
-before 2026-11-16 it was `CGU`) — once per version, at login (post-login gate, UI only) or at
-campaign-publish time (server-enforced), reused for later campaigns until the version changes. The
-publish request fields keep their historical names `cguAccepted`/`cguVersion`, as does the refusal
-reason `CGU_NOT_ACCEPTED`. Required by the ACPR public-collection notice and, for the association, the sole protection
+(never re-read from the live profile, which could change afterwards). Donors accept the CGU and
+PRIVACY (`LegalAcceptanceService.DONOR_DOCUMENTS`), fresh on every donation, one row per document (a
+transactional act; donations before 2026-11-16 also carry a CGV row). PRIVACY is accepted through the
+GDPR checkbox (`consent`, "J'ai pris connaissance de la politique de confidentialité"), recorded since
+2026-11-24 with the displayed `privacyVersion`. An association accepts its own terms — the `CGV`
+document (before 2026-11-16 it was `CGU`) — and, since 2026-11-24, PRIVACY
+(`LegalAcceptanceService.ASSOCIATION_DOCUMENTS`), once per version, at login (post-login gate, UI
+only, pending documents shown one after the other, CGV first;
+`POST /api/association/legal-acceptance/{documentType}`) or at campaign-publish time
+(server-enforced, one checkbox per pending document, every pending document checked before any row
+is written), reused for later campaigns until the version changes. The CGV publish request fields keep
+their historical names `cguAccepted`/`cguVersion` (PRIVACY: `privacyAccepted`/`privacyVersion`); a
+missing acceptance of either is refused with the historical reason `CGU_NOT_ACCEPTED`. Registered
+donor accounts, compliance officers and admins accept nothing at login. CGU/CGV acceptance is required by the ACPR public-collection notice and, for the association, the sole protection
 CommonLink has under art. 1740 A CGI in the declarative tax-receipt model (no rescrit fiscal required
 as of the 04/08/2026 decision) if a receipt is later challenged. Separate from the fiscal mandate
 (`FiscalMandate` entity, `eligibility` + `accepted`), which authorises tax-receipt issuance and is
@@ -146,12 +154,14 @@ signed independently.
 `functional` `security` `business`
 
 ### Legal Document Version
-Identifier of one immutable CGU/CGV text in `legal_document.version`: `<effective date>-<first 12 hex
+Identifier of one immutable CGU/CGV/PRIVACY text in `legal_document.version`: `<effective date>-<first 12 hex
 of the SHA-256 of the content>` (e.g. `2026-09-09-a1b2c3d4e5f6`). The effective date is read from
 the text's "Version en vigueur au …" line, so two texts published the same day still get two
 versions. At startup `LegalDocumentSeeder` reads the landing site's `messages/fr.json` (bundled into
 the API jar at build time), converts each text into structured JSON (`content_format = JSON_V1`:
-title, intro, articles, paragraphs as text segments with absolute links — no HTML, no CSS) and
+title, optional intro, articles — optionally with a `table` —, paragraphs as text segments with
+absolute links and optional `bold` runs — no HTML, no CSS; unused optional fields are omitted from the
+serialized form, so adding them left the CGU and CGV versions unchanged) and
 inserts it if that version is absent; the newest row is the current version, in force at once. A
 version already stored with a different hash stops the boot. Rows are never updated or deleted.
 `functional` `technical`
@@ -381,6 +391,10 @@ One of the three login methods. Users click "Continue with Google" → a popup o
 The link between an association and its HelloAsso account in API keys mode: one row per association, created before the link so the association can be shown its notification URL (opaque token) while linking, then holding the organization slug, the `client_id` and the encrypted tokens. States: `NOT_LINKED`, `ACTIVE`, `BROKEN` (refresh token rejected, keys must be re-entered), `DISCONNECTED` (tokens erased, row and token kept). The `client_secret` is never stored. Kept when the association moves to another **Payment Provider**.
 `technical`
 
+### HelloAsso link attempt (Tentative de liaison HelloAsso)
+One HelloAsso key check by an association, successful or not, recorded in the append-only `helloasso_link_attempts` table: outcome (`MATCHED`, `NAME_MISMATCH`, `RNA_MISMATCH`, `ORGANIZATION_ALREADY_LINKED`, `INVALID_KEYS`, `ORGANIZATION_UNRESOLVED`, `HELLOASSO_UNAVAILABLE`, `HELLOASSO_RATE_LIMITED`), what HelloAsso returned (organization slug, name, type, RNA), the RNA CommonLink knew at that moment and the masked client id — never the secret nor a token. An operational statistics journal, distinct from the compliance audit log; curators read it on the "Liaisons HelloAsso" admin screen (`/api/admin/helloasso/link-attempts`). No retention period set yet.
+`technical` `functional`
+
 ### IBAN (International Bank Account Number)
 Standardized unique identifier for a bank account at the international level (ISO 13616 standard). Composed of 2 country code letters, 2 check digits and the BBAN (Basic Bank Account Number), on a maximum of 34 characters. On CommonLink, beneficiary IBANs are validated via the mod-97 algorithm and can be verified via the VOP service.
 `technical` `functional`
@@ -414,7 +428,7 @@ A digitally signed token that the backend issues upon successful authentication.
 ## K
 
 ### Key check (HelloAsso)
-The live check of the two HelloAsso API codes (client id, client secret) an association pastes on the "Relier" screen: once both are filled, the dashboard asks the server (`POST /api/association/helloasso/credentials/verify`, debounced, the previous request cancelled) whether HelloAsso accepts them and whether the organization they reach is the association verified on CommonLink. Outcomes: valid (the user still confirms "C'est bien nous"), invalid, another association (refused, nothing kept) or HelloAsso unavailable. The secret stays in the page's memory only and is erased after linking; the server re-checks everything when linking.
+The live check of the two HelloAsso API codes (client id, client secret) an association pastes on the "Relier" screen: once both are filled, the dashboard asks the server (`POST /api/association/helloasso/credentials/verify`, debounced, the previous request cancelled) whether HelloAsso accepts them and whether the organization they reach is the association verified on CommonLink. Outcomes: valid (the user still confirms "C'est bien nous"), invalid, another association (refused, nothing kept — the screen shows why: different RNA, or different name with both RNAs when CommonLink knows its own), organization already linked to another association (refused while another association's row holds it — active, broken or disconnected; that association frees it only by linking another organization) or HelloAsso unavailable. Every check reaching HelloAsso is recorded as a HelloAsso link attempt. The secret stays in the page's memory only and is erased after linking; the server re-checks everything when linking.
 `technical` `compliance`
 
 ### KYC (Know Your Customer)
@@ -625,6 +639,14 @@ The authoritative French register of all persons and entities subject to an asse
 A security mechanism that restricts the number of certain actions within a time window. Example: a maximum of 3 Magic Link requests per email per 10 minutes. Returns HTTP 429 with a `Retry-After` header.
 `security` `technical`
 
+### Receipt prerequisites (Préalables du reçu fiscal)
+The three elements without which no fiscal receipt can be issued for an association (`ReceiptPrerequisite`): `SIGNATURE` (a saved **Receipt signature**), `LEGAL_OBJECT` (the association's purpose, `legalObject`) and `HEAD_OFFICE_ADDRESS` (`addressLine1`, `postalCode` and `city` all filled). Computed in one place (`ReceiptPrerequisiteService`) and exposed to the frontend as `MandateStateDto.receiptPrerequisitesMissing` (empty = ready). While any is missing: the fiscal mandate cannot be signed (422); with an active mandate, donation collection is suspended (widget, landing and checkout refuse with `COLLECTION_UNAVAILABLE`) and campaign publication is refused (`RECEIPT_PREREQUISITES_MISSING`); as a last resort `ReceiptService.generate` refuses to issue the receipt. Decided by management on 2026-11-23 (see `docs/legal/E5-recu-fiscal-mentions.md` §11).
+`functional` `association` `compliance`
+
+### Receipt signature (Signature des reçus)
+The image printed in the "Signature" box of every fiscal receipt (Cerfa 11580) an association issues. An **image signature, not an electronic signature in the eIDAS sense**: it reproduces the authorised signer's handwriting on the PDF, next to the signer's name and role in plain text. Two modes (`SignatureMode`): `UPLOAD` (PNG or JPEG imported) and `DRAWN` (drawn on screen, PNG); a name typed in a handwriting font is not accepted (withdrawn 2026-11-23). Stored one row per association in `association_signature` (V98), apart from `association_profiles` so the profile never loads the bytes; checked on its bytes (PNG/JPEG only, ≤ 200 KB, ≤ 1200×600 px, decodable). Written only through `PUT /api/association/me/signatory`, together with the **Signatory attestation**. One of the **Receipt prerequisites**: no receipt is issued without it. Receipts already issued never change (their PDF is stored once). See `docs/legal/E5-recu-fiscal-mentions.md` §10 and §11.
+`functional` `association` `technical`
+
 ### Refresh Token
 A long-lived credential (valid 30 days) stored in memory on the client side. Used to obtain a new Access Token without requiring the user to log in again. The raw token is held by the client; only its SHA-256 hash is stored in the database. Can be revoked (e.g., on logout).
 `technical` `security`
@@ -642,8 +664,12 @@ The AML/CFT (LCB-FT) risk classification assigned to an association or a donatio
 `security` `business`
 
 ### RNA (Répertoire National des Associations)
-The official French registry of associations. Used in conjunction with the SIREN to verify the legal identity and legitimacy of an association during KYC.
+The official French registry of associations. Used in conjunction with the SIREN to verify the legal identity and legitimacy of an association during KYC. The Recherche d'entreprises registry exposes an entity's RNA under `complements.identifiant_association`, not at the root of the entry (misread until 2026-11-26). An RNA can be the identifier of a single association profile: a second sign-up with the same RNA is refused (`RNA_ALREADY_REGISTERED`) — software only, and blind to a profile whose identifier stayed its SIREN.
 `business`
+
+### Resolved RNA (RNA retrouvé)
+The RNA the server looks up from a SIREN when an association signs up with its SIREN: Recherche d'entreprises, exact SIREN match only, value shaped like a RNA, 2-second timeout, best effort (any failure keeps the SIREN). When found it becomes the profile's `identifier`, the SIREN staying in `siren`. Never taken from the browser, and never a verification — the curator registry pre-check still is. Existing profiles are not modified.
+`technical` `business`
 
 ### Role
 A user's type on the platform. Set at registration and determines the dashboard layout, available features, and profile structure. Cannot be changed after account creation.
@@ -682,12 +708,16 @@ The association's declaration "Je confirme avoir rempli moi-même mon dossier Mo
 A cryptographic hash function used to store sensitive tokens (Magic Links, Refresh Tokens) in the database. Only the hash is persisted — the original token cannot be reconstructed from the hash.
 `security` `technical`
 
+### Signatory attestation (Attestation du signataire)
+The sentence the association user must tick each time it saves the authorised receipt signer (name, role) and the **Receipt signature**: « J'atteste être le signataire désigné ci-dessus ou disposer de son autorisation expresse pour apposer sa signature sur les reçus fiscaux émis au nom de l'association. » Refused with a 422 when not ticked. Every save appends a `RECEIPT_SIGNATURE_ATTESTED` event to the hash-chained compliance audit log, in the same transaction: signer name and role, mode, SHA-256 of the image, the exact attested sentence, the acting user and the timestamp. Because the attestation guards the identity printed on receipts, the signer name and role are no longer editable through the profile `PATCH /api/association/me` — only through `PUT /api/association/me/signatory` (`SignatoryService`). It records a declaration; it does not prove the signer's identity.
+`functional` `compliance` `association`
+
 ### SIREN
 A 9-digit identification number assigned to each French company or association (Business Directory Identification System). Used on CommonLink to identify associations during registration (via the Business Directory) and to identify beneficiaries when added by an association (via the INSEE Sirene API).
 `business` `technical`
 
 ### SIREN-only Signup (Inscription sans RNA)
-The sign-up path for an association that holds a SIREN but no RNA, and is therefore absent from the RNA (JOAFE) search the standard flow relies on. The user types a SIREN, the browser queries the Recherche d'entreprises open registry directly — keyless and CORS-open, exactly as the standard flow queries the JOAFE dataset for RNA numbers — and the returned name and registered-office address are displayed for confirmation — read-only, as in the RNA flow. The SIREN is written to both `identifier` (the mandatory primary identifier) and `siren`, since Mollie's `registrationNumber`, the Cerfa receipt and the mandate PDF read `siren` directly. No schema change: `identifier` stays mandatory, and its "RNA or SIREN" semantics predate this path. Eligibility is unaffected — a non-association or inactive SIREN is flagged to the user but never blocked at sign-up, the ruling staying with the curator registry pre-check at KYC.
+The sign-up path for an association that holds a SIREN but no RNA, and is therefore absent from the RNA (JOAFE) search the standard flow relies on. The user types a SIREN, the browser queries the Recherche d'entreprises open registry directly — keyless and CORS-open, exactly as the standard flow queries the JOAFE dataset for RNA numbers — and the returned name and registered-office address are displayed for confirmation — read-only, as in the RNA flow. The SIREN is written to `siren` and, unless the server finds a Resolved RNA for it at profile creation (2026-11-26), to `identifier` too (the mandatory primary identifier), since Mollie's `registrationNumber`, the Cerfa receipt and the mandate PDF read `siren` directly. No schema change: `identifier` stays mandatory, and its "RNA or SIREN" semantics predate this path. Eligibility is unaffected — a non-association or inactive SIREN is flagged to the user but never blocked at sign-up, the ruling staying with the curator registry pre-check at KYC.
 `functional` `business`
 
 ### SIRET

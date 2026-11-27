@@ -2,9 +2,23 @@
 export const MandateEligibility = {
   OIG_66: 'OIG_66',
   OIG_75_COLUCHE: 'OIG_75_COLUCHE',
-  PUBLIC_UTILITY_66: 'PUBLIC_UTILITY_66',
 } as const;
 export type MandateEligibility = (typeof MandateEligibility)[keyof typeof MandateEligibility];
+
+/**
+ * Information a fiscal receipt (Cerfa 11580) cannot be issued without. While any is missing, the
+ * mandate cannot be signed and, once signed, donation collection is suspended (backend
+ * `MandateService` / collection guard).
+ */
+export const ReceiptPrerequisite = {
+  /** No receipt signature saved for the authorised signer. */
+  SIGNATURE: 'SIGNATURE',
+  /** Profile `legalObject` (objet social) is blank. */
+  LEGAL_OBJECT: 'LEGAL_OBJECT',
+  /** Any of the profile `addressLine1`, `postalCode`, `city` is blank. */
+  HEAD_OFFICE_ADDRESS: 'HEAD_OFFICE_ADDRESS',
+} as const;
+export type ReceiptPrerequisite = (typeof ReceiptPrerequisite)[keyof typeof ReceiptPrerequisite];
 
 /** The two document types required for the fiscal mandate. */
 export const MandateDocType = {
@@ -33,6 +47,8 @@ export interface MandateStateDto {
   mandateDocs: MandateDocumentSlotDto[];
   /** True when association is not yet VERIFIED — signing is gated. */
   blocked: boolean;
+  /** Receipt prerequisites still missing; always present, empty when receipts can be issued. */
+  receiptPrerequisitesMissing: ReceiptPrerequisite[];
 }
 
 /** Request body for POST /api/association/mandate/sign. */

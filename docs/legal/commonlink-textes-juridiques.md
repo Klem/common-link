@@ -1,6 +1,6 @@
 # CommonLink, textes juridiques et réglementaires
 
-Version à jour de la maquette de conformité : migration HelloAsso et prélèvement de la commission compris. Les mentions « Version en vigueur au [date de mise en ligne] » reçoivent toutes la même date, le jour de la publication.
+Version à jour de la maquette de conformité : migration HelloAsso, facturation mensuelle de la commission (règlement par virement, sans mandat de prélèvement) et conservation des doubles des reçus comprises. Les mentions « Version en vigueur au [date de mise en ligne] » reçoivent toutes la même date, le jour de la publication.
 
 ## Sommaire
 1. Mentions légales
@@ -51,7 +51,7 @@ Les dons ne transitent jamais par CommonLink. Chaque association dispose d'un co
 
 CommonLink n'encaisse, ne conserve et ne reverse aucun don. Les sommes collectées ne figurent à aucun moment dans ses comptes, et elle ne peut ni se les approprier, ni en disposer.
 
-CommonLink est rémunérée par l'association par une commission, prélevée sur son compte séparément des dons. Aucun montant n'est déduit des dons collectés.
+CommonLink est rémunérée par l'association par une commission, facturée séparément des dons. Aucun montant n'est déduit des dons collectés.
 
 Lorsqu'une association paie un bénéficiaire depuis la plateforme, le virement part de son propre compte bancaire, par l'intermédiaire de Bridge, établissement de paiement agréé par l'Autorité de contrôle prudentiel et de résolution sous le numéro 16918. Il est autorisé par son représentant légal, qui s'authentifie auprès de sa banque. Ni CommonLink, ni Bridge ne détiennent les fonds à un quelconque moment. CommonLink ne peut pas déclencher ce virement à la place du représentant légal, ni l'annuler une fois qu'il a été autorisé.
 
@@ -177,7 +177,7 @@ Un double paiement ou une erreur technique constitue un paiement indu et donne l
 
 Une opération de paiement non autorisée, notamment en cas d'utilisation frauduleuse d'un moyen de paiement, relève de la réglementation applicable aux services de paiement, et les droits que le donateur en tire ne sont pas affectés par les présentes.
 
-Lorsque le don a été réglé sur la page de paiement HelloAsso, le remboursement est effectué par l'organisme bénéficiaire depuis son espace HelloAsso. CommonLink reçoit la demande et la transmet à l'organisme. Une demande portant sur la contribution volontaire relève de HelloAsso.
+Le remboursement est effectué par l'organisme bénéficiaire depuis son compte auprès de son prestataire de paiement, HelloAsso ou Mollie. CommonLink reçoit la demande et la transmet à l'organisme. Une demande portant sur la contribution volontaire relève de HelloAsso.
 
 Toute demande est adressée à contact@common-link.org
 
@@ -485,6 +485,8 @@ Les dons reçus par l'organisme sur ses formulaires HelloAsso ne relèvent pas d
 
 L'organisme demeure seul redevable des obligations déclaratives lui incombant, notamment de la déclaration annuelle du montant global des dons et du nombre de reçus délivrés.
 
+CommonLink conserve les doubles des reçus pour le compte de l'organisme pendant six ans à compter de leur établissement, et les lui restitue sur demande.
+
 #### Article 18. Garantie sur les reçus fiscaux
 
 L'organisme garantit CommonLink contre les conséquences d'une déclaration inexacte de sa part relative à son éligibilité ou aux informations portées sur les reçus.
@@ -520,17 +522,13 @@ Il n'existe aucun autre frais : ni abonnement, ni frais d'ouverture, ni frais pa
 
 #### Article 22. Facturation et règlement
 
-La commission due sur chaque don est réglée par prélèvement SEPA, trente jours ouvrés après la date de paiement du don.
+La commission est facturée en fin de mois, sur la base des dons encaissés au cours du mois. Aucune facture n'est émise pour un mois sans collecte.
 
-À l'inscription, l'organisme indique le compte bancaire à débiter et signe en ligne un mandat de prélèvement SEPA au profit de CommonLink. La collecte ne peut commencer qu'après la signature de ce mandat.
-
-CommonLink émet en fin de mois une facture récapitulative des commissions dues sur les dons encaissés au cours du mois. Aucune facture n'est émise pour un mois sans collecte. La facture indique le montant et la date de chaque prélèvement, et vaut pré-notification. Les parties conviennent qu'elle est adressée au moins cinq jours calendaires avant le premier prélèvement qu'elle annonce.
+La facture est réglée par virement, au plus tard à la fin du mois suivant celui de son émission.
 
 La commission n'est jamais déduite des dons.
 
-Un don remboursé ou annulé avant le prélèvement de sa commission entraîne l'annulation de ce prélèvement. Après le prélèvement, la commission correspondante est déduite du prélèvement suivant ou remboursée à l'organisme.
-
-En cas de rejet d'un prélèvement, CommonLink en informe l'organisme et peut le présenter à nouveau. Les articles 23 et 31 s'appliquent.
+Un don remboursé ou annulé après facturation donne lieu à régularisation sur la facture suivante. L'organisme informe sans délai CommonLink de tout remboursement ou de toute contestation de paiement intervenu sur son compte Mollie.
 
 #### Article 23. Retard de paiement
 
@@ -846,8 +844,6 @@ Vous pouvez également renseigner votre date de naissance. Elle est facultative,
 
 Nous collectons la dénomination, l'adresse du siège, la forme juridique, l'année de création, le numéro d'enregistrement au répertoire national des associations ou le numéro SIREN, l'identité du représentant légal, les coordonnées bancaires, et la version des conditions générales acceptée avec sa date.
 
-Vos coordonnées bancaires servent aussi au prélèvement de notre commission, sur la base du mandat de prélèvement SEPA que vous signez. Ce prélèvement est exécuté par notre banque, Qonto.
-
 Nous vous demandons également trois documents : vos statuts, votre récépissé de déclaration ou votre insertion au Journal officiel, et la pièce d'identité de votre représentant légal.
 
 Ces informations et ces documents servent à vérifier l'existence et l'identité de la structure, à permettre la collecte, et à respecter nos obligations de lutte contre le blanchiment des capitaux et le financement du terrorisme.
@@ -880,7 +876,7 @@ Nous ne vous demandons pas votre consentement pour ces traitements, car ils ne r
 
 | Ce que nous gardons | Combien de temps |
 |---|---|
-| Les données de votre don et votre reçu fiscal | six ans à compter du don, puis suppression |
+| Les données de votre don et votre reçu fiscal | six ans à compter de l'établissement du reçu, puis suppression |
 | Les informations recueillies au titre de la vigilance, pour les organismes et leurs représentants | cinq ans à compter de la fin de la relation, puis suppression |
 | Les dossiers de réclamation | cinq ans à compter de la clôture du dossier, puis suppression |
 | Les journaux techniques de connexion | sept jours au plus |

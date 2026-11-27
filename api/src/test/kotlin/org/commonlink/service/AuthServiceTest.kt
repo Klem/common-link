@@ -40,6 +40,7 @@ class AuthServiceTest {
     private val passwordEncoder: PasswordEncoder = mockk()
     private val emailService: EmailService = mockk()
     private val googleIdTokenVerifier: GoogleIdTokenVerifier = mockk()
+    private val rnaBySirenResolver: RnaBySirenResolver = mockk()
 
     private val frontendUrl = "http://localhost:3000"
 
@@ -49,7 +50,7 @@ class AuthServiceTest {
     private fun authServiceWith(paymentsProperties: PaymentsProperties) = AuthService(
         userRepository, donorProfileRepository, associationProfileRepository, associationAddressGenerator,
         magicLinkTokenRepository, refreshTokenRepository, emailVerificationTokenRepository, jwtService, tokenHashService,
-        passwordEncoder, emailService, googleIdTokenVerifier, paymentsProperties, frontendUrl
+        passwordEncoder, emailService, googleIdTokenVerifier, paymentsProperties, rnaBySirenResolver, frontendUrl
     )
 
     private val donorUser = User(
@@ -83,6 +84,8 @@ class AuthServiceTest {
         // duplicate is the subject of the test.
         every { associationProfileRepository.existsByIdentifier(any()) } returns false
         every { associationProfileRepository.existsBySiren(any()) } returns false
+        // Default: the registry knows no RNA for the SIREN (the SIREN stays the identifier).
+        every { rnaBySirenResolver.resolve(any()) } returns null
         every { associationAddressGenerator.generate(any()) } returns "0x1111111111111111111111111111111111111111"
         // Default: no profile exists yet. createProfile is idempotent since a claimed guest account
         // already carries a DonorProfile (audit 2026-08-20, M1), so it looks before writing.
@@ -1313,22 +1316,79 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `register ASSOCIATION with an already registered RNA still succeeds - RNA flow untouched`() {
+    fun `register ASSOCIATION with an already registered RNA is rejected`() {
         every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
         every { passwordEncoder.encode("password123") } returns "hashed"
         every { associationProfileRepository.save(any()) } answers { firstArg<AssociationProfile>().withGeneratedId() }
         every { associationProfileRepository.existsByIdentifier("W123456789") } returns true
+
+        assertThrows<RnaAlreadyRegisteredException> {
+            authService.register(
+                RegisterRequestDto(
+                    email = "asso@example.com",
+                    password = "password123",
+                    role = UserRole.ASSOCIATION,
+                    associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+                )
+            )
+        }
+
+        verify(exactly = 0) { associationProfileRepository.save(any()) }
+    }
+
+    @Test
+    fun `register ASSOCIATION with a SIREN - stores the RNA the registry resolves, SIREN kept in siren`() {
+        every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        every { rnaBySirenResolver.resolve("402328694") } returns "W061006975"
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
 
         authService.register(
             RegisterRequestDto(
                 email = "asso@example.com",
                 password = "password123",
                 role = UserRole.ASSOCIATION,
-                associationProfile = AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+                associationProfile = AssociationProfileRequestDto(name = "FC Mougins", identifier = "402328694")
             )
         )
 
-        verify { associationProfileRepository.save(any()) }
+        assertEquals("W061006975", saved.captured.identifier)
+        assertEquals("402328694", saved.captured.siren)
+    }
+
+    @Test
+    fun `register ASSOCIATION with a SIREN whose resolved RNA is already registered is rejected`() {
+        every { userRepository.findByEmailIgnoreCase("asso@example.com") } returns Optional.empty()
+        every { passwordEncoder.encode("password123") } returns "hashed"
+        every { rnaBySirenResolver.resolve("402328694") } returns "W061006975"
+        every { associationProfileRepository.existsByIdentifier("W061006975") } returns true
+
+        assertThrows<RnaAlreadyRegisteredException> {
+            authService.register(
+                RegisterRequestDto(
+                    email = "asso@example.com",
+                    password = "password123",
+                    role = UserRole.ASSOCIATION,
+                    associationProfile = AssociationProfileRequestDto(name = "FC Mougins", identifier = "402328694")
+                )
+            )
+        }
+
+        verify(exactly = 0) { associationProfileRepository.save(any()) }
+    }
+
+    @Test
+    fun `upsertAssociationProfile - SIREN creation stores the resolved RNA`() {
+        every { userRepository.findById(assocUser.id!!) } returns Optional.of(assocUser)
+        every { rnaBySirenResolver.resolve("402328694") } returns "W061006975"
+        val saved = slot<AssociationProfile>()
+        every { associationProfileRepository.save(capture(saved)) } answers { firstArg<AssociationProfile>().withGeneratedId() }
+
+        authService.upsertAssociationProfile(assocUser.id!!, AssociationProfileUpsertDto(nom = "X", identifier = "402328694"))
+
+        assertEquals("W061006975", saved.captured.identifier)
+        assertEquals("402328694", saved.captured.siren)
     }
 
     @Test
@@ -1373,20 +1433,22 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `sendMagicLink - already registered RNA still sends - RNA flow untouched`() {
+    fun `sendMagicLink - already registered RNA is rejected before sending`() {
         every { magicLinkTokenRepository.countByEmailAndCreatedAtAfter(any(), any()) } returns 0
         every { userRepository.findByEmailIgnoreCase("asso-new@example.com") } returns Optional.empty()
         every { magicLinkTokenRepository.save(any()) } answers { firstArg() }
         justRun { emailService.sendMagicLink(any(), any()) }
         every { associationProfileRepository.existsByIdentifier("W123456789") } returns true
 
-        authService.sendMagicLink(
-            "asso-new@example.com",
-            UserRole.ASSOCIATION,
-            AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
-        )
+        assertThrows<RnaAlreadyRegisteredException> {
+            authService.sendMagicLink(
+                "asso-new@example.com",
+                UserRole.ASSOCIATION,
+                AssociationProfileRequestDto(name = "MyAsso", identifier = "W123456789")
+            )
+        }
 
-        verify { emailService.sendMagicLink("asso-new@example.com", any()) }
+        verify(exactly = 0) { emailService.sendMagicLink(any(), any()) }
     }
 
     @Test

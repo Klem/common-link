@@ -10,8 +10,8 @@
 | **Référence de suivi interne** | Tâche Asana n° `1216210976716067` — « Intégrer l'API Entreprise (RNA + SIRENE, DJEPVA) » |
 | **Lien de suivi** | https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210976716067 |
 | **Priorité assignée** | P1 |
-| **Date d'établissement** | 7 août 2026 — état décrit arrêté au 18 septembre 2026 |
-| **État** | Réalisé et vérifié par contrôles automatisés. Non encore déployé — la mise en production de la plateforme est conditionnée à l'achèvement de l'ensemble du dispositif. |
+| **Date d'établissement** | 7 août 2026 — état décrit arrêté au 26 novembre 2026 |
+| **État** | Réalisé et vérifié par contrôles automatisés. Non encore déployé — la mise en production de la plateforme est conditionnée à l'achèvement de l'ensemble du dispositif. Un défaut de lecture du numéro RNA, constaté et corrigé dans le code le 26 novembre 2026, est décrit au point 4.2 quater ; la correction n'est pas encore déployée. |
 | **Rédacteur** | Équipe technique CommonLink |
 
 ---
@@ -157,7 +157,10 @@ ne consulte aucun registre : elle enregistre ce que l'association déclare. La v
 entièrement portée par la consultation des registres décrite dans la présente fiche, déclenchée
 ultérieurement par le curateur lors de l'instruction du dossier. Ce séquencement est inchangé et
 c'est le verrou de vérification avant ouverture de collecte qui garantit qu'aucune collecte ne
-s'ouvre sur un dossier non instruit.
+s'ouvre sur un dossier non instruit. *(Mise à jour du 26 novembre 2026 : la création du compte
+consulte désormais le registre national des entreprises pour un seul usage — retrouver le numéro
+RNA associé au numéro SIREN déclaré ; voir le point 4.2 quater. Cette consultation ne vérifie pas
+le dossier et ne se substitue pas à celle du curateur.)*
 
 **Un même numéro SIREN ne peut pas être enregistré deux fois.** La création du compte est refusée
 lorsque le numéro déclaré est déjà porté par une autre association, les deux emplacements où ce
@@ -166,7 +169,10 @@ contrainte de la base de données** : les colonnes concernées n'en portent pas.
 effectué par un autre chemin que la création de compte — reprise de données, intervention directe en
 base — n'est donc pas couvert. Le contrôle est par ailleurs délibérément limité au numéro SIREN : la
 voie d'entrée par numéro RNA conserve son comportement antérieur et n'oppose aucun refus en cas de
-doublon.
+doublon. *(Mise à jour du 26 novembre 2026 : ce n'est plus le cas. Un numéro RNA déjà porté par une
+autre association est désormais refusé à la création du compte, qu'il ait été choisi par
+l'association ou retrouvé à partir de son numéro SIREN — voir le point 4.2 quater. Cette unicité est,
+elle aussi, assurée par le logiciel seul, sans contrainte de la base de données.)*
 
 **Écart signalé le 21 août 2026, corrigé le 18 septembre 2026 — la garantie de correspondance exacte n'était pas symétrique.** Le point 4.2 énonce
 qu'un enregistrement du registre national des entreprises n'est retenu que si son numéro RNA
@@ -233,6 +239,69 @@ numéro RNA n'est retrouvable par aucune des sources consultées — aucune des 
 en 4.2, selon lequel une association identifiée par son seul numéro RNA accède à la totalité des
 consultations ; elle appelle un arbitrage, porté en section 7.3 de la synthèse fonctionnelle.
 
+### 4.2 quater Complément du 26 novembre 2026 — le numéro RNA n'était pas lu dans la réponse du registre
+
+**Le constat.** Le registre national des entreprises place le numéro RNA d'une entité dans une
+rubrique de « compléments » de sa réponse, et non au premier niveau de celle-ci. Le contrôle le
+cherchait au premier niveau et ne le trouvait donc jamais. Le défaut a été mis en évidence le
+26 novembre 2026 en comparant la réponse réelle du registre aux données conservées : en production,
+la ligne de contrôle du dossier identifié par son numéro RNA ne porte aucun numéro SIREN, et celle
+du dossier identifié par son numéro SIREN ne porte aucun numéro RNA. Les contrôles automatisés ne
+l'avaient pas révélé parce que les réponses simulées qu'ils utilisaient plaçaient le numéro RNA au
+premier niveau, contrairement à la réponse réelle.
+
+**Ce que le défaut rendait inexact dans la présente fiche, jusqu'à sa correction.**
+
+- *Dossiers identifiés par leur numéro RNA.* La correspondance exacte du numéro RNA exigée au point
+  4.2 n'était jamais satisfaite : aucun enregistrement n'était retenu, aucun numéro SIREN n'était
+  résolu, et les consultations du fichier Sirene et du bulletin des annonces civiles et commerciales
+  n'avaient pas lieu. Aucune catégorie juridique n'était captée — le verdict de périmètre restait
+  « indéterminé », qui n'est pas bloquant — et aucun représentant n'était collecté auprès de ce
+  registre. L'énoncé du point 4.2 selon lequel « une association identifiée par son seul RNA
+  bénéficie ainsi de la totalité des consultations » ne se vérifiait pas. La consultation du Journal
+  officiel, qui s'effectue sur le numéro RNA du dossier, avait bien lieu.
+- *Dossiers identifiés par leur numéro SIREN.* L'enregistrement était retenu, mais son numéro RNA
+  n'était pas lu : la consultation du Journal officiel n'avait jamais lieu pour ces dossiers, même
+  lorsque le registre leur connaissait un numéro RNA.
+
+**La correction.** Le numéro RNA est désormais lu à l'emplacement où le registre le place, le
+premier niveau restant lu à titre de repli ; un numéro retrouvé n'est retenu que s'il a la forme
+d'un numéro RNA. La lecture de la réponse du registre est commune au présent contrôle et à la
+création de compte décrite ci-dessous, afin que les deux ne puissent plus diverger. Les réponses
+simulées des contrôles automatisés ont été alignées sur la réponse réelle. Correction livrée dans le
+code, non encore déployée.
+
+**Ce que la correction ne fait pas.** Les lignes de contrôle étant inaltérables, les consultations
+effectuées avant la correction — y compris celles retenues comme fondement d'une décision
+d'approbation — conservent leur contenu incomplet. Aucune reconsultation automatique n'est lancée et
+aucune reprise de données n'est effectuée : obtenir un résultat complet pour un dossier déjà
+instruit suppose une nouvelle consultation déclenchée par le curateur.
+
+**Numéro RNA retrouvé à la création d'un compte par numéro SIREN.** Lorsqu'une association crée son
+compte avec son numéro SIREN, le serveur — et non le navigateur — interroge le registre national
+des entreprises, ne retient que l'enregistrement portant exactement ce numéro SIREN et en lit le
+numéro RNA, s'il en a la forme. Ce numéro devient l'identifiant principal du dossier ; le numéro
+SIREN est conservé dans son emplacement propre. La consultation est limitée à deux secondes et
+n'est jamais bloquante : en cas d'échec ou d'absence de numéro RNA, le numéro SIREN reste
+l'identifiant principal, comme auparavant. Les dossiers existants ne sont pas modifiés. Cette
+consultation ne vérifie rien : elle ne fait que compléter l'identifiant, la vérification restant
+celle du curateur.
+
+**Effet sur l'écart signalé au point 4.2.** Une association identifiée par son numéro SIREN
+échappait à la consultation du Journal officiel lorsque son enregistrement ne portait aucun numéro
+RNA. Cet écart est désormais refermé pour les associations dont le registre connaît un numéro RNA —
+qu'il ait été retrouvé à la création du compte ou lu lors de la consultation du curateur. Il demeure
+pour celles auxquelles le registre n'en associe aucun.
+
+**Unicité du numéro RNA.** Un numéro RNA déjà porté par une autre association est refusé à la
+création du compte, sur les deux voies d'entrée : numéro RNA retenu par l'association, ou numéro
+RNA retrouvé à partir de son numéro SIREN. Sans ce refus, la même association aurait pu être
+enregistrée deux fois, une fois par chaque voie. Comme pour le numéro SIREN, cette unicité est
+assurée par le logiciel et non par une contrainte de la base de données. **Elle n'est pas complète** :
+le refus porte sur l'identifiant principal des dossiers existants. Un dossier dont l'identifiant
+principal est resté le numéro SIREN — créé avant le 26 novembre 2026, ou créé alors que le registre
+était injoignable — n'empêche pas la même association de s'inscrire ensuite par son numéro RNA.
+
 ### 4.3 Deux caractéristiques à souligner devant la commission
 
 **Le contrôle est informatif, à une exception près.** Ni le résultat des consultations, ni la
@@ -242,7 +311,10 @@ l'opérateur chargé de l'examen, qui seul peut prendre une décision. **L'excep
 périmètre** : établi à partir de la catégorie juridique captée ici, il est bloquant — une entité
 établie hors du périmètre de la loi de 1901 ne peut être approuvée. Ce verdict s'applique à tout
 dossier dont la catégorie juridique est connue, y compris ceux identifiés par leur seul numéro RNA.
-Ses effets sont décrits par la fiche de périmètre.
+Ses effets sont décrits par la fiche de périmètre. *(Mise à jour du 26 novembre 2026 : jusqu'à la
+correction décrite au point 4.2 quater, la catégorie juridique n'était jamais captée pour les
+dossiers identifiés par leur numéro RNA ; le verdict y restait « indéterminé » et n'a donc pu
+bloquer aucun d'entre eux.)*
 
 **Le contrôle est déclenché exclusivement à la main d'un opérateur.** Aucun événement dans le cycle
 de vie d'un dossier — dépôt, modification, première connexion — ne déclenche automatiquement une
@@ -274,7 +346,11 @@ du logiciel.
 | La source du statut RNA répond | Le statut d'activité au RNA est conservé dans la ligne de contrôle |
 | La source du statut RNA est indisponible | Un avertissement est tracé, le statut reste indéterminé, le contrôle aboutit malgré tout |
 | Une seconde consultation est déclenchée | Deux enregistrements distincts sont créés, le précédent n'est pas modifié (caractère immuable) |
-| Association identifiée par son seul RNA, présente dans les registres | Le registre est interrogé par le RNA, le SIREN est résolu, les consultations INSEE et annonces civiles s'exécutent, statut d'activité et représentants sont conservés |
+| Association identifiée par son seul RNA, présente dans les registres | Le registre est interrogé par le RNA, le SIREN est résolu, les consultations INSEE et annonces civiles s'exécutent, statut d'activité et représentants sont conservés *(scénario vérifié jusqu'au 26 novembre 2026 sur une réponse simulée non conforme à la réponse réelle ; voir le point 4.2 quater)* |
+| Réponse du registre sous sa forme réelle, numéro RNA placé dans les « compléments » *(ajouté le 26 novembre 2026)* | Le numéro RNA est lu ; il est retenu pour la consultation du Journal officiel |
+| Création de compte par numéro SIREN, registre connaissant un numéro RNA *(ajouté le 26 novembre 2026)* | Le numéro RNA devient l'identifiant principal, le numéro SIREN est conservé à part |
+| Création de compte par numéro SIREN, registre indisponible, sans numéro RNA, ou réponse portant un autre SIREN en tête *(ajouté le 26 novembre 2026)* | Aucune erreur ; seul l'enregistrement au SIREN exact est lu ; à défaut le numéro SIREN reste l'identifiant principal |
+| Création de compte avec un numéro RNA — choisi ou retrouvé — déjà porté par une autre association *(ajouté le 26 novembre 2026)* | La création est refusée, rien n'est enregistré |
 | Le registre retourne une entité dont le RNA ne correspond pas | L'enregistrement est écarté, aucune donnée n'est retenue, aucun SIREN n'est adopté |
 | Association sans SIREN absente du registre des entreprises | L'existence reste indéterminée, et non « inexistante » |
 | Association absente du registre, publication au Journal officiel sans dissolution | Le statut d'activité est établi comme actif |
@@ -316,11 +392,16 @@ particulier, il ne couvre pas :
 - les **effets du verdict de périmètre** et la liste des formes juridiques acceptées, qui relèvent
   de la fiche *E3 — Contrôle automatique du périmètre d'intervention de la plateforme*, **livrée** ;
 - la **vérification du numéro déclaré au moment de la création du compte** — depuis le 18 septembre
-  2026 son **format** est contrôlé à la création comme à la mise à jour du profil, mais aucun registre
-  n'est consulté à ce moment : la vérification reste portée par la consultation décrite ici,
-  déclenchée ultérieurement par le curateur ;
-- l'**unicité du numéro SIREN au niveau de la base de données** — elle est assurée par le logiciel
-  sur la seule voie de création de compte, sans contrainte de schéma *(voir le point 4.2 bis)* ;
+  2026 son **format** est contrôlé à la création comme à la mise à jour du profil ; depuis le
+  26 novembre 2026, le registre est consulté à ce moment pour retrouver le numéro RNA associé à un
+  numéro SIREN, sans rien vérifier : la vérification reste portée par la consultation décrite ici,
+  déclenchée ultérieurement par le curateur *(voir le point 4.2 quater)* ;
+- l'**unicité des numéros SIREN et RNA au niveau de la base de données** — elle est assurée par le
+  logiciel sur la seule voie de création de compte, sans contrainte de schéma *(voir les points
+  4.2 bis et 4.2 quater)* ;
+- la **reconsultation des dossiers instruits avant le 26 novembre 2026** — leurs lignes de contrôle
+  restent incomplètes tant que le curateur n'a pas déclenché une nouvelle consultation *(voir le
+  point 4.2 quater)* ;
 - la **reconsultation périodique des registres** pour les associations déjà en relation d'affaires
   — la consultation reste déclenchée à la main d'un opérateur (décision interne D9) et **aucune
   reconsultation programmée n'est en place** ; un changement de dirigeant, une dissolution ou une
@@ -341,6 +422,8 @@ référentiel interne de gestion de projet aux références suivantes.
 | Conservation des pièces justificatives et rapport annuel *(épique E6)* | [1216210853624518](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624518) · [1216210853624517](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624517) · [1216210853624520](https://app.asana.com/1/1213718564226627/project/1213723193546726/task/1216210853624520) |
 | Correspondance exacte du numéro SIREN sur l'enregistrement retenu, par symétrie avec la voie du numéro RNA | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Contrainte d'unicité du numéro SIREN au niveau du schéma de base de données | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Contrainte d'unicité du numéro RNA au niveau du schéma de base de données, et refus d'une inscription par numéro RNA lorsqu'un dossier identifié par numéro SIREN porte déjà la même association | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
+| Nouvelle consultation, par le curateur, des dossiers instruits avant la correction du 26 novembre 2026 | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 | Reconsultation périodique programmée des registres publics | *Aucune tâche de suivi identifiée dans le référentiel de projet* |
 
 ## 7. Situation de ce contrôle dans le dispositif d'ensemble
@@ -370,5 +453,5 @@ qu'une évolution ultérieure ne puisse pas les remettre en cause par inadvertan
 
 ---
 
-*Document établi le 7 août 2026, état arrêté au 13 août 2026, complété le 21 août 2026 (point 4.2 bis — entrée par un numéro SIREN auto-déclaré). Une fiche de même nature est produite
+*Document établi le 7 août 2026, état arrêté au 13 août 2026, complété le 21 août 2026 (point 4.2 bis — entrée par un numéro SIREN auto-déclaré) et le 26 novembre 2026 (point 4.2 quater — lecture du numéro RNA corrigée, numéro RNA retrouvé à la création de compte, unicité du numéro RNA). Une fiche de même nature est produite
 pour chaque contrôle du dispositif LCB-FT au fur et à mesure de sa réalisation.*

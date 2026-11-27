@@ -21,6 +21,7 @@ import org.commonlink.exception.EmailNotVerifiedException
 import org.commonlink.exception.InvalidTokenException
 import org.commonlink.exception.PasswordNotSetException
 import org.commonlink.exception.RateLimitException
+import org.commonlink.exception.RnaAlreadyRegisteredException
 import org.commonlink.exception.SirenAlreadyRegisteredException
 import org.commonlink.exception.TokenExpiredException
 import org.commonlink.exception.UnprocessableEntityException
@@ -77,6 +78,7 @@ class AuthService(
     private val emailService: EmailService,
     private val googleIdTokenVerifier: GoogleIdTokenVerifier,
     private val paymentsProperties: PaymentsProperties,
+    private val rnaBySirenResolver: RnaBySirenResolver,
     @Value("\${app.frontend-url}") private val frontendUrl: String
 ) {
 
@@ -376,9 +378,13 @@ class AuthService(
             }
         }
 
-        // Surface a duplicate SIREN now rather than after the user has clicked the emailed link,
-        // where profile creation would fail. No-op for the RNA sign-up flow.
-        associationProfile?.let { guardSirenNotAlreadyRegistered(it.identifier) }
+        // Surface a duplicate SIREN or RNA now rather than after the user has clicked the emailed link,
+        // where profile creation would fail. The RNA a SIREN resolves to is only known at profile creation,
+        // where [resolveNewAssociationIdentity] checks it again.
+        associationProfile?.let {
+            guardSirenNotAlreadyRegistered(it.identifier)
+            guardRnaNotAlreadyRegistered(it.identifier)
+        }
 
         // If role is not supplied, the caller expects an existing account (login flow).
         // Look up the existing user's role; fail if no account is found.
@@ -768,18 +774,18 @@ class AuthService(
             associationProfileRepository.save(profile)
         } else {
             // Create path: first-time profile setup using the immutable identity fields from the DTO.
-            guardSirenNotAlreadyRegistered(dto.identifier)
+            val identity = resolveNewAssociationIdentity(dto.identifier)
             val saved = associationProfileRepository.save(
                 AssociationProfile(
                     user = user,
                     name = dto.nom,
-                    identifier = dto.identifier,
+                    identifier = identity.identifier,
                     city = dto.ville,
                     postalCode = dto.codePostal,
                     contactName = dto.contact,
                     contactEmail = user.email,
                     description = dto.description,
-                    siren = derivedSiren(dto.identifier),
+                    siren = identity.siren,
                     paymentProvider = paymentsProperties.defaultProvider,
                 )
             )
@@ -901,8 +907,9 @@ class AuthService(
     /**
      * Derives the secondary [AssociationProfile.siren] value from the primary identifier.
      *
-     * Associations that hold a SIREN but no RNA sign up through the manual form, which stores the
-     * SIREN in `identifier`. Several downstream consumers never read `identifier` and go straight
+     * Associations sign up with their SIREN through the manual form. The SIREN stays in `identifier` only
+     * when the registry knows no RNA for it ([resolveNewAssociationIdentity]). Several downstream consumers
+     * never read `identifier` and go straight
      * to [AssociationProfile.siren] — Mollie's `registrationNumber`, the Cerfa receipt and the
      * mandate PDF — so the value is copied over. No schema change is involved.
      *
@@ -939,6 +946,49 @@ class AuthService(
     }
 
     /**
+     * Rejects an association sign-up whose RNA is already the identifier of another profile.
+     *
+     * Since 2026-11-26 a SIREN sign-up stores the RNA the registry associates with it
+     * ([resolveNewAssociationIdentity]): without this guard the same association could exist twice, once
+     * through each sign-up path. RNAs are compared upper-cased, the form both the JOAFE search and the registry
+     * return them in (the plain `identifier` index backs the lookup). No-op when [identifier] is not a RNA.
+     *
+     * @param identifier Identifier about to be stored (RNA or SIREN).
+     * @throws RnaAlreadyRegisteredException if a profile already carries this RNA.
+     */
+    private fun guardRnaNotAlreadyRegistered(identifier: String) {
+        val rna = identifier.trim().uppercase().takeIf { RechercheEntreprisesResults.RNA_PATTERN.matches(it) } ?: return
+        if (associationProfileRepository.existsByIdentifier(rna)) {
+            throw RnaAlreadyRegisteredException()
+        }
+    }
+
+    /** Legal identity stored on a new [AssociationProfile]: primary [identifier] and secondary [siren]. */
+    private data class AssociationIdentity(val identifier: String, val siren: String?)
+
+    /**
+     * Resolves the legal identity of a new association profile and refuses one already registered.
+     *
+     * - RNA captured at sign-up: stored as is, no SIREN.
+     * - SIREN captured at sign-up: the SIREN goes to [AssociationProfile.siren]; the RNA the Recherche
+     *   d'entreprises registry associates with it, when there is one, becomes the identifier
+     *   ([RnaBySirenResolver], server-side and best effort). Otherwise the SIREN stays the identifier.
+     *
+     * @param identifier Identifier captured at sign-up (RNA or SIREN).
+     * @throws SirenAlreadyRegisteredException if the SIREN is already registered.
+     * @throws RnaAlreadyRegisteredException if the RNA (captured or resolved) is already registered.
+     */
+    private fun resolveNewAssociationIdentity(identifier: String): AssociationIdentity {
+        guardSirenNotAlreadyRegistered(identifier)
+        val siren = derivedSiren(identifier)
+        val resolvedRna = siren?.let { rnaBySirenResolver.resolve(it) }
+        val stored = resolvedRna ?: identifier
+        guardRnaNotAlreadyRegistered(stored)
+        if (resolvedRna != null) logger.info("SIREN sign-up: RNA {} resolved from the registry", resolvedRna)
+        return AssociationIdentity(stored, siren)
+    }
+
+    /**
      * Creates the role-appropriate profile record for a newly registered user.
      *
      * For [UserRole.DONOR], a blank [DonorProfile] is created.
@@ -965,17 +1015,17 @@ class AuthService(
                 if (assocReq != null &&
                     (userId == null || associationProfileRepository.findByUserId(userId).isEmpty)
                 ) {
-                    guardSirenNotAlreadyRegistered(assocReq.identifier)
+                    val identity = resolveNewAssociationIdentity(assocReq.identifier)
                     val saved = associationProfileRepository.save(
                         AssociationProfile(
                             user = user,
                             name = assocReq.name,
-                            identifier = assocReq.identifier,
+                            identifier = identity.identifier,
                             city = assocReq.city,
                             postalCode = assocReq.postalCode,
                             contactEmail = user.email,
                             description = assocReq.description,
-                            siren = derivedSiren(assocReq.identifier),
+                            siren = identity.siren,
                             paymentProvider = paymentsProperties.defaultProvider,
                         )
                     )

@@ -115,8 +115,12 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
         loggers.forEach { it.detachAppender(appender) }
     }
 
+    /** This test's organization slug: unique per test, an organization belongs to one association (V101). */
+    private lateinit var slug: String
+
     private fun seed() {
         val tag = UUID.randomUUID().toString().take(8)
+        slug = "asso-exemple-$tag"
         val donor = donorProfileRepository.save(TestFixtures.donorProfile(userRepository.save(TestFixtures.donorUser(email = "d-$tag@example.com"))))
         val association = associationProfileRepository.save(
             TestFixtures.associationProfile(
@@ -126,13 +130,17 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
         )
         associationId = association.id!!
         connectionRepository.save(
-            HelloAssoConnection(association = association, webhookToken = "wh-$tag", state = HelloAssoConnectionState.ACTIVE, organizationSlug = "asso-exemple"),
+            HelloAssoConnection(association = association, webhookToken = "wh-$tag", state = HelloAssoConnectionState.ACTIVE, organizationSlug = slug),
         )
         val campaign = campaignRepository.save(TestFixtures.campaign(association, status = CampaignStatus.LIVE))
         campaignId = campaign.id!!
         mollieDonationId = donationRepository.save(
-            TestFixtures.donation(donor, campaign, amount = BigDecimal("40.00"), providerRef = "mollie:tr_$tag")
-                .also { it.fundsAvailableAt = it.confirmedAt },
+            // Fixed date before the HelloAsso availability (16/11/2026) the FIFO test relies on: Instant.now() made the
+            // order depend on the day the suite runs.
+            TestFixtures.donation(
+                donor, campaign, amount = BigDecimal("40.00"), providerRef = "mollie:tr_$tag",
+                confirmedAt = Instant.parse("2026-11-02T09:00:00Z"),
+            ).also { it.fundsAvailableAt = it.confirmedAt },
         ).id!!
         val helloAsso = donationRepository.save(
             TestFixtures.donation(donor, campaign, amount = BigDecimal("10.00"), providerRef = "helloasso:$tag"),
@@ -218,7 +226,7 @@ class HelloAssoCashOutTrackingIntegrationTest : RealPostgresTest() {
     fun `transfer received re-reads at HelloAsso, makes available now, stores the net total, journals once`() {
         serve("payment-cashedout.json")
         serve("payment-cashedout.json")
-        server.expect(ExpectedCount.once(), requestTo("$api/organizations/asso-exemple/cash-out/60001/export"))
+        server.expect(ExpectedCount.once(), requestTo("$api/organizations/$slug/cash-out/60001/export"))
             .andRespond(withSuccess(javaClass.getResource("/helloasso/cashout/cashout-export.json")!!.readText(), MediaType.APPLICATION_JSON))
 
         at("2026-11-13T08:00:00Z")

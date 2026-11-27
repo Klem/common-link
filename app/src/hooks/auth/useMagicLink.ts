@@ -36,7 +36,8 @@ interface MagicLinkState {
  * `role` and `associationData` are optional: omit them for a pure login flow
  * (existing user), provide them for a signup flow (new user).
  *
- * 429 (rate limit) is surfaced as `errors.rateLimited` to the UI.
+ * 429 (rate limit) is surfaced as `errors.rateLimited` to the UI. A sign-up on an association already
+ * registered surfaces as `errors.sirenAlreadyRegistered` / `errors.rnaAlreadyRegistered`.
  *
  * @returns `sendLink` function, `status`, `error` (i18n key), and `reset`.
  */
@@ -58,6 +59,8 @@ export function useMagicLink() {
         : undefined;
       if (code === 'SIREN_ALREADY_REGISTERED') {
         setState({ status: 'error', error: 'errors.sirenAlreadyRegistered' });
+      } else if (code === 'RNA_ALREADY_REGISTERED') {
+        setState({ status: 'error', error: 'errors.rnaAlreadyRegistered' });
       } else if (isAxiosError(err) && err.response?.status === 429) {
         setState({ status: 'error', error: 'errors.rateLimited' });
       } else if (isAxiosError(err) && err.response?.status === 409) {

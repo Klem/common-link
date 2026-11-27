@@ -133,7 +133,7 @@ class SmtpEmailServiceTest {
             "sendHelloAssoOnboardingReminder" to { smtp.sendHelloAssoOnboardingReminder("Asso", to, url, true) },
             "sendHelloAssoConnectionBroken" to { smtp.sendHelloAssoConnectionBroken("Asso", to, url) },
             "sendMollieOnboardingCompleted" to { smtp.sendMollieOnboardingCompleted("Asso", to) },
-            "sendDonationReceipt" to { smtp.sendDonationReceipt(to, "Donor", "Asso", "2026-0001", byteArrayOf(1, 2, 3)) },
+            "sendDonationReceipt" to { smtp.sendDonationReceipt(to, "Donor", "Asso", "2026-0001", byteArrayOf(1, 2, 3), null) },
             "sendCampaignReportAlertOpened" to { smtp.sendCampaignReportAlertOpened(to, UUID.randomUUID(), url) },
             "sendDonorFreezeAlertOpened" to { smtp.sendDonorFreezeAlertOpened(to, UUID.randomUUID(), "HIGH", url) },
             "sendTechnicalAlert" to { smtp.sendTechnicalAlert(to, "ERROR", "Titre", mapOf("k" to "v"), null) },
@@ -151,6 +151,51 @@ class SmtpEmailServiceTest {
             assertEquals(1, html.split("L'équipe CommonLink</p>").size - 1, "$name: closing formula count")
             assertTrue(html.contains("Immatriculation ORIAS : 26010395"), name)
         }
+    }
+
+    /** Sends a receipt mail on a real [MimeMessage] and returns its HTML body. */
+    private fun receiptHtml(signupUrl: String?): String {
+        every { env.activeProfiles } returns arrayOf("prod")
+        val sent = mutableListOf<MimeMessage>()
+        val realSender: JavaMailSender = mockk()
+        every { realSender.createMimeMessage() } answers { MimeMessage(Session.getInstance(Properties())).also { sent += it } }
+        every { realSender.send(any<MimeMessage>()) } returns Unit
+        SmtpEmailService(realSender, from, env)
+            .sendDonationReceipt("donor@example.com", "Donor", "Asso", "2026-0001", byteArrayOf(1, 2, 3), signupUrl)
+        return htmlOf(sent.single().apply { saveChanges() })
+    }
+
+    /** A guest donor is invited to create an account with the same address; the link never carries the e-mail. */
+    @Test
+    fun `receipt mail invites a guest donor to create an account`() {
+        val url = "https://app.example.org/login?view=signup&role=donor"
+
+        val html = receiptHtml(url)
+
+        assertTrue(html.contains("<a href=\"$url\">créer mon compte</a>"), html)
+        assertTrue(html.contains("cette même adresse e-mail"), html)
+        assertFalse(html.contains("donor@example.com"), "The donor address must not appear in the body")
+    }
+
+    @Test
+    fun `receipt mail carries no invitation for a registered donor`() {
+        val html = receiptHtml(null)
+
+        assertFalse(html.contains("créer mon compte"), html)
+        assertTrue(html.contains("Merci pour votre générosité."), html)
+    }
+
+    /** Individual donors only: article 200 (income tax), never 238 bis (companies) nor 978 (IFI). */
+    @Test
+    fun `receipt mail cites the income tax reduction of article 200 only`() {
+        val html = receiptHtml(null)
+
+        assertTrue(
+            html.contains("Ce reçu vous permet de bénéficier d'une réduction d'impôt sur le revenu, selon votre situation (article 200 du CGI)."),
+            html,
+        )
+        assertFalse(html.contains("238 bis"), html)
+        assertFalse(html.contains("978"), html)
     }
 
     /** The HTML body of [part], descending into multipart containers (the receipt mail carries an attachment). */

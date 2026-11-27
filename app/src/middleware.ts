@@ -41,7 +41,10 @@ function buildCsp(pathname: string, nonce: string): string {
     // Both public registries are queried straight from the browser during association sign-up:
     // JOAFE for RNA numbers, Recherche d'entreprises for associations that only have a SIREN.
     `connect-src 'self' ${API_URL} https://accounts.google.com/ https://journal-officiel-datadila.opendatasoft.com https://recherche-entreprises.api.gouv.fr https://geo.api.gouv.fr`,
-    `img-src 'self' data: https: ${API_URL}`,
+    // blob: — signature previews (receipt signatory card) are rendered from object URLs created by
+    // our own scripts (authenticated image fetch, processed upload); a blob URL can only be minted
+    // by same-origin code, so this does not widen what third parties can inject.
+    `img-src 'self' data: blob: https: ${API_URL}`,
     `frame-ancestors ${frameAncestors}`,
   ].join('; ');
 }

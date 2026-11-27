@@ -202,8 +202,6 @@ enum class MandateEligibility {
     OIG_66,
     /** Organisme d'aide aux personnes en difficulté (loi Coluche) — 75 % reduction (Art. 200-1 ter CGI). */
     OIG_75_COLUCHE,
-    /** Reconnu d'utilité publique — 66 % reduction. */
-    PUBLIC_UTILITY_66,
 }
 
 /**
@@ -502,8 +500,12 @@ enum class BeneficialOwnerType { BENEFICIAL_OWNER, REPRESENTATIVE }
  */
 enum class AssociationStatus { ACTIVE, ALERT, SUSPENDED }
 
-/** A versioned legal document text (notice ACPR / art. 1740 A CGI — preuve d'acceptation). */
-enum class LegalDocumentType { CGU, CGV }
+/**
+ * A versioned legal document text whose acceptance is recorded (ACPR notice / art. 1740 A CGI proof of acceptance):
+ * `CGU` donor terms, `CGV` association terms, `PRIVACY` privacy policy. Mirrored by the
+ * `legal_document_type_check` and `legal_acceptance_document_type_check` constraints (V99).
+ */
+enum class LegalDocumentType { CGU, CGV, PRIVACY }
 
 /**
  * How [org.commonlink.entity.LegalDocument.content] must be read — mirrors the
@@ -541,6 +543,10 @@ enum class CampaignReviewRefusalReason {
     BANK_NOT_CONNECTED,
     BANK_CONNECTION_BROKEN,
     BANK_KYC_INCOMPLETE,
+    /** No active fiscal mandate: no receipt could be issued for the donations. */
+    FISCAL_MANDATE_MISSING,
+    /** A [ReceiptPrerequisite] is missing: no receipt could be issued for the donations. */
+    RECEIPT_PREREQUISITES_MISSING,
     CGU_NOT_ACCEPTED,
 }
 
@@ -649,4 +655,71 @@ enum class ReceiptConfirmationMode {
     MANUAL,
     /** A curator released the funds on a bank statement line. */
     CURATOR_RELEASE,
+}
+
+/**
+ * How the receipt signature of an association ([AssociationSignature]) was produced. Every mode stores an image.
+ *
+ * Stored as a string column with a CHECK constraint (V98) whose values must stay identical to these entries.
+ */
+enum class SignatureMode {
+    /** An image file (PNG or JPEG) imported by the association. */
+    UPLOAD,
+    /** Drawn on screen and exported as a PNG. */
+    DRAWN,
+}
+
+/**
+ * Association data a fiscal receipt cannot be issued without, computed by
+ * [org.commonlink.service.ReceiptPrerequisiteService.missing]. Never persisted.
+ *
+ * Signing the fiscal mandate, publishing a campaign, collecting a donation and generating a receipt all
+ * require none of them to be missing.
+ */
+enum class ReceiptPrerequisite {
+    /** No receipt signature saved ([AssociationSignature] row absent). */
+    SIGNATURE,
+    /** [AssociationProfile.legalObject] blank: the receipt must state the beneficiary's object. */
+    LEGAL_OBJECT,
+    /** Any of [AssociationProfile.addressLine1], [AssociationProfile.postalCode], [AssociationProfile.city] blank. */
+    HEAD_OFFICE_ADDRESS,
+}
+
+/**
+ * Verdict of [org.commonlink.service.HelloAssoKybMatcher]: is the HelloAsso organization the association verified on
+ * CommonLink? Never persisted as such (see [HelloAssoLinkAttemptOutcome]).
+ */
+enum class HelloAssoKybOutcome(val matches: Boolean) {
+    /** Both sides have a RNA and they are equal. */
+    MATCH_RNA(true),
+    /** No RNA on one side; the normalized names are equal. */
+    MATCH_NAME(true),
+    /** Both sides have a RNA and they differ: refused even when the names agree. */
+    RNA_MISMATCH(false),
+    /** No RNA on one side; the normalized names differ. */
+    NAME_MISMATCH(false),
+}
+
+/**
+ * Outcome of one HelloAsso key check by an association ([HelloAssoLinkAttempt]).
+ *
+ * Stored as a string column with a CHECK constraint (V100) whose values must stay identical to these entries.
+ */
+enum class HelloAssoLinkAttemptOutcome {
+    /** The organization is the association's: the check can be confirmed with the mandate. */
+    MATCHED,
+    /** No RNA on one side and the names differ. */
+    NAME_MISMATCH,
+    /** Both RNAs known and different. */
+    RNA_MISMATCH,
+    /** The organization is already linked to another association. */
+    ORGANIZATION_ALREADY_LINKED,
+    /** HelloAsso refused the keys. */
+    INVALID_KEYS,
+    /** The keys reach no organization, or several. */
+    ORGANIZATION_UNRESOLVED,
+    /** HelloAsso unreachable, failing, or refusing the request. */
+    HELLOASSO_UNAVAILABLE,
+    /** HelloAsso rate limit reached. */
+    HELLOASSO_RATE_LIMITED,
 }

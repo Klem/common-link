@@ -1,5 +1,6 @@
 package org.commonlink.service
 
+import org.commonlink.exception.CollectionUnavailableException
 import org.commonlink.entity.MollieConnectionState
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.*
@@ -18,6 +19,8 @@ import org.commonlink.exception.CollectionCapExceededException
 import org.commonlink.exception.ConflictException
 import org.commonlink.exception.MolliePaymentException
 import org.commonlink.exception.NotFoundException
+import org.commonlink.repository.AssociationSignatureRepository
+import org.commonlink.repository.FiscalMandateRepository
 import org.commonlink.repository.AssociationProfileRepository
 import org.commonlink.repository.CampaignBudgetItemRepository
 import org.commonlink.repository.CampaignBudgetSectionRepository
@@ -85,6 +88,8 @@ class PublicWidgetServiceIntegrationTest {
     @Autowired private lateinit var landingPreviewTokenService: LandingPreviewTokenService
     @Autowired private lateinit var legalDocumentRepository: LegalDocumentRepository
     @Autowired private lateinit var legalAcceptanceRepository: LegalAcceptanceRepository
+    @Autowired private lateinit var fiscalMandateRepository: FiscalMandateRepository
+    @Autowired private lateinit var signatureRepository: AssociationSignatureRepository
 
     @MockkBean
     private lateinit var mollieClient: MollieClient
@@ -100,10 +105,18 @@ class PublicWidgetServiceIntegrationTest {
 
     private val widgetToken = "clk_integ_test"
 
+    private lateinit var associationId: java.util.UUID
+
     @BeforeEach
     fun setup() {
         val assocUser = userRepository.save(TestFixtures.associationUser(email = "wi-assoc-${System.nanoTime()}@example.com"))
-        val assoc = associationProfileRepository.save(TestFixtures.associationProfile(assocUser))
+        val assoc = associationProfileRepository.save(
+            TestFixtures.withReceiptPrerequisiteFields(TestFixtures.associationProfile(assocUser))
+        )
+        // Receipts can be issued (collection gate): active fiscal mandate + receipt signature.
+        fiscalMandateRepository.save(TestFixtures.fiscalMandate(assoc, reference = "MND-W-${(10_000_000..99_999_999).random()}"))
+        signatureRepository.save(TestFixtures.associationSignature(assoc.id!!))
+        associationId = assoc.id!!
         val campaign = campaignRepository.save(TestFixtures.campaign(assoc, status = CampaignStatus.LIVE))
 
         assoc.widgetToken = widgetToken
@@ -132,13 +145,12 @@ class PublicWidgetServiceIntegrationTest {
         every { freezeScreeningDonationService.runFreezeCheck(any(), any(), any()) } returns ScreeningOutcome.CLEAR
 
         // legal_document rows are seeded by Flyway (V73) in real environments; this suite runs on
-        // a Hibernate-only schema (no Flyway, see FlywayMigrationTest KDoc), so the CGU/CGV gate in
+        // a Hibernate-only schema (no Flyway, see FlywayMigrationTest KDoc), so the legal documents gate in
         // createDonation would otherwise 404 on a document that simply was never inserted here.
-        if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGU) == null) {
-            legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGU, version = "test", content = "test CGU"))
-        }
-        if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(LegalDocumentType.CGV) == null) {
-            legalDocumentRepository.save(LegalDocument(documentType = LegalDocumentType.CGV, version = "test", content = "test CGV"))
+        for (type in LegalDocumentType.entries) {
+            if (legalDocumentRepository.findTopByDocumentTypeOrderByPublishedAtDesc(type) == null) {
+                legalDocumentRepository.save(LegalDocument(documentType = type, version = "test", content = "test $type"))
+            }
         }
     }
 
@@ -172,12 +184,17 @@ class PublicWidgetServiceIntegrationTest {
         val acceptances = legalAcceptanceRepository.findAllBySubjectTypeAndSubjectIdOrderByAcceptedAtDesc(
             LegalAcceptanceSubjectType.DONOR, donation.donor.id!!,
         )
-        // Donors accept the CGU only — the CGV document is the associations' terms.
-        val acceptance = acceptances.single()
-        assertEquals(LegalDocumentType.CGU, acceptance.documentType)
-        assertEquals("test", acceptance.documentVersion, "records the version the form displayed")
-        assertEquals(donation.id, acceptance.donationId)
-        assertEquals(donation.campaign.id, acceptance.campaignId)
+        // Donors accept the CGU and the privacy policy — the CGV document is the associations' terms.
+        assertEquals(
+            setOf(LegalDocumentType.CGU, LegalDocumentType.PRIVACY),
+            acceptances.map { it.documentType }.toSet(),
+        )
+        assertEquals(2, acceptances.size)
+        for (acceptance in acceptances) {
+            assertEquals("test", acceptance.documentVersion, "records the version the form displayed")
+            assertEquals(donation.id, acceptance.donationId)
+            assertEquals(donation.campaign.id, acceptance.campaignId)
+        }
     }
 
     @Test
@@ -368,6 +385,30 @@ class PublicWidgetServiceIntegrationTest {
 
         assertFalse(publicWidgetService.getLanding(widgetToken).donationsEnabled)
         assertFalse(publicWidgetService.getWidget(widgetToken).collectAvailable)
+    }
+
+    /** Receipt gate: a revoked mandate hides the donate button on both surfaces and refuses the donation. */
+    @Test
+    fun `donations disabled and refused without an active fiscal mandate`() {
+        fiscalMandateRepository.findByAssociationIdAndRevokedAtIsNull(associationId)!!.revokedAt = java.time.Instant.now()
+        entityManager.flush()
+
+        assertFalse(publicWidgetService.getLanding(widgetToken).donationsEnabled)
+        assertFalse(publicWidgetService.getWidget(widgetToken).collectAvailable)
+        assertThrows<CollectionUnavailableException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+        assertEquals(0, donationRepository.count())
+    }
+
+    /** Receipt gate: no receipt signature saved — same outcome, nothing created. */
+    @Test
+    fun `donations disabled and refused without a receipt signature`() {
+        signatureRepository.deleteById(associationId)
+        entityManager.flush()
+
+        assertFalse(publicWidgetService.getLanding(widgetToken).donationsEnabled)
+        assertFalse(publicWidgetService.getWidget(widgetToken).collectAvailable)
+        assertThrows<CollectionUnavailableException> { publicWidgetService.createDonation(widgetToken, validRequest()) }
+        assertEquals(0, donationRepository.count())
     }
 
     @Test
@@ -746,6 +787,7 @@ class PublicWidgetServiceIntegrationTest {
         consent           = true,
         cguAccepted       = true,
         cguVersion        = "test",
+        privacyVersion    = "test",
         sourceSite        = sourceSite,
     )
 }

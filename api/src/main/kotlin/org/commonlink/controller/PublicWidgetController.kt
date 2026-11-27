@@ -56,7 +56,9 @@ class PublicWidgetController(
     @Operation(
         summary = "Get widget campaign info",
         description = "Resolves a widget token to the campaign details needed for the donation iframe. No authentication required. " +
-            "`collectAvailable` is false when the association's payment provider cannot collect right now: the form must then " +
+            "`collectAvailable` is false when the association's payment provider cannot collect right now, or when no fiscal " +
+            "receipt could be issued (no active fiscal mandate, or receipt signature / legal object / head-office address " +
+            "missing): the form must then " +
             "show \"temporarily unavailable\" instead of failing on submit."
     )
     @ApiResponses(
@@ -95,7 +97,8 @@ class PublicWidgetController(
         ApiResponse(
             responseCode = "409",
             description = "Donation refused before anything is created. `code: COLLECTION_UNAVAILABLE` = the association's " +
-                "payment provider cannot collect right now (checked first, no guest donor created); " +
+                "payment provider cannot collect right now, or no fiscal receipt could be issued for the donation " +
+                "(checked first, no guest donor created); " +
                 "`code: COLLECTION_CAP_EXCEEDED` = amount above the campaign cap; no code = campaign not accepting " +
                 "donations or donor screening refusal",
             content = [Content()],
@@ -168,7 +171,8 @@ class PublicWidgetController(
         summary = "Get landing page data",
         description = "Returns full association and campaign data for the landing page. Includes budget projection and milestones. " +
             "No authentication required. A `preview` token issued to the owning association allows rendering a non-LIVE campaign. " +
-            "`donationsEnabled` is false on a non-LIVE preview or when the association's payment provider cannot collect right now."
+            "`donationsEnabled` is false on a non-LIVE preview, when the association's payment provider cannot collect right now, " +
+            "or when no fiscal receipt could be issued (same rule as `collectAvailable` on the widget)."
     )
     @ApiResponses(
         ApiResponse(

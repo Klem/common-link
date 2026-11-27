@@ -50,6 +50,38 @@ describe('LegalDocumentRenderer', () => {
     expect(screen.getByText('Texte de la sous-section.')).toBeInTheDocument();
   });
 
+  it('renders a privacy policy: no intro, a table before the paragraphs, bold runs', () => {
+    const privacy: LegalTextV1 = {
+      title: 'Politique de confidentialité',
+      lastUpdated: 'Version en vigueur au 24 novembre 2026',
+      articles: [
+        {
+          title: 'Combien de temps',
+          table: { head: ['Ce que nous gardons', 'Combien de temps'], rows: [['Votre reçu', 'six ans']] },
+          paragraphs: [[{ text: 'Après la table.' }]],
+        },
+        {
+          title: "Qui d'autre y accède",
+          paragraphs: [[{ text: "L'organisme.", bold: true }, { text: ' Il connaît votre identité.' }]],
+        },
+      ],
+    };
+    const { container } = render(
+      <LegalDocumentRenderer
+        document={{ ...jsonDoc, documentType: LegalDocumentType.PRIVACY, content: JSON.stringify(privacy) }}
+      />,
+    );
+
+    const table = screen.getByRole('table', { name: 'Combien de temps' });
+    expect(table).toHaveClass('legal-doc-table');
+    expect(screen.getByRole('columnheader', { name: 'Ce que nous gardons' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'six ans' })).toBeInTheDocument();
+    expect(table.compareDocumentPosition(screen.getByText('Après la table.')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("L'organisme.").tagName).toBe('STRONG');
+    // No intro paragraph: the first paragraph of the text is the one after the table.
+    expect(container.querySelector('nav + p')).toBeNull();
+  });
+
   it('renders link segments as external links opened in a new tab', () => {
     render(<LegalDocumentRenderer document={jsonDoc} />);
 

@@ -21,6 +21,12 @@ interface HelloAssoConnectionRepository : JpaRepository<HelloAssoConnection, UUI
     /** The association's HelloAsso row, or null when it has none yet. Read only: never save it back without the lock. */
     fun findByAssociationId(associationId: UUID): HelloAssoConnection?
 
+    /**
+     * Whether another association's row holds [organizationSlug], whatever its state (active, broken or disconnected):
+     * such an organization cannot be linked here (V101, backed by `uq_helloasso_connections_organization_slug`).
+     */
+    fun existsByOrganizationSlugAndAssociationIdNot(organizationSlug: String, associationId: UUID): Boolean
+
     /** Records a notification recognised as CommonLink's on [connectionId]; touches no other column. */
     @Transactional
     @Modifying

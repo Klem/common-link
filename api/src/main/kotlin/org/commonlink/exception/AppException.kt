@@ -62,6 +62,16 @@ class SirenAlreadyRegisteredException(
 ) : AppException(message, HttpStatus.CONFLICT)
 
 /**
+ * Thrown when an association sign-up carries — or its SIREN resolves to — a RNA already registered.
+ *
+ * Kept distinct from [SirenAlreadyRegisteredException] for the same reason that one is distinct from a plain
+ * conflict: the screen names the identifier at fault. Returns HTTP 409 with a `code: RNA_ALREADY_REGISTERED` property.
+ */
+class RnaAlreadyRegisteredException(
+    message: String = "RNA already registered"
+) : AppException(message, HttpStatus.CONFLICT)
+
+/**
  * Thrown when a caller exceeds the allowed request rate for a sensitive operation (HTTP 429).
  *
  * @param retryAfterSeconds Sent as the `Retry-After` header by [org.commonlink.exception.GlobalExceptionHandler] —

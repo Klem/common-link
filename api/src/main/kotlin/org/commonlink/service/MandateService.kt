@@ -52,10 +52,14 @@ class MandateService(
     private val associationProfileRepository: AssociationProfileRepository,
     private val documentRepository: AssociationDocumentRepository,
     private val fiscalMandateRepository: FiscalMandateRepository,
+    private val receiptPrerequisiteService: ReceiptPrerequisiteService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    /** Returns the full mandate state: active mandate metadata + 2 document slots + blocked flag. */
+    /**
+     * Returns the full mandate state: active mandate metadata + 2 document slots + blocked flag + the receipt
+     * prerequisites still missing ([ReceiptPrerequisiteService.missing], computed signed or not).
+     */
     @Transactional(readOnly = true)
     fun getMandateState(userId: UUID): MandateStateDto {
         val profile = resolveProfile(userId)
@@ -113,12 +117,17 @@ class MandateService(
      * Signs a new fiscal mandate.
      *
      * Guards (in order): accepted == true, verificationStatus == VERIFIED, authorised signer identity
-     * present, no active mandate exists. The mandate-documents precondition is temporarily disabled
-     * (see the body and MandateTab SHOW_MANDATE_DOCS on the frontend).
+     * present, no receipt prerequisite missing ([ReceiptPrerequisiteService.missing]: receipt signature,
+     * legal object, head-office address), no active mandate exists. The mandate-documents precondition is
+     * temporarily disabled (see the body and MandateTab SHOW_MANDATE_DOCS on the frontend).
      *
-     * @throws UnprocessableEntityException if the terms are not accepted, or if
+     * Mandates already active without these prerequisites stay active, but cannot collect: the same rule
+     * gates campaign publication and donation collection ([PublicWidgetService]).
+     *
+     * @throws UnprocessableEntityException if the terms are not accepted, if
      *   [AssociationProfile.signerName] / [AssociationProfile.signerRole] is missing — both are printed
-     *   on the tax receipts the mandate authorises, so the mandate cannot be signed without them.
+     *   on the tax receipts the mandate authorises, so the mandate cannot be signed without them — or if
+     *   any [org.commonlink.entity.ReceiptPrerequisite] is missing (the message lists them).
      */
     @Transactional
     fun signMandate(userId: UUID, request: SignMandateRequest): MandateStateDto {
@@ -133,6 +142,15 @@ class MandateService(
         if (profile.signerName.isNullOrBlank() || profile.signerRole.isNullOrBlank()) {
             throw UnprocessableEntityException(
                 "The authorised signer name and role must be set before signing the fiscal mandate"
+            )
+        }
+        // Every receipt issued under the mandate carries the signature, the legal object and the head-office
+        // address — mirrors the frontend MandateTab, which disables the signature button while any is missing.
+        val missing = receiptPrerequisiteService.missing(profile)
+        if (missing.isNotEmpty()) {
+            logger.info("Fiscal mandate signature refused: association={} missing={}", profile.id, missing)
+            throw UnprocessableEntityException(
+                "Receipt prerequisites missing before signing the fiscal mandate: ${missing.joinToString(", ")}"
             )
         }
         if (fiscalMandateRepository.findByAssociationIdAndRevokedAtIsNull(profile.id!!) != null) {
@@ -255,5 +273,6 @@ class MandateService(
         revokedAt = mandate?.revokedAt,
         mandateDocs = slots,
         blocked = profile.verificationStatus != VerificationStatus.VERIFIED,
+        receiptPrerequisitesMissing = receiptPrerequisiteService.missing(profile),
     )
 }

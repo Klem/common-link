@@ -26,3 +26,16 @@ describe('middleware — API bypass', () => {
     expect(res.headers.get('location')).toContain('/login');
   });
 });
+
+describe('middleware — Content-Security-Policy', () => {
+  it('allows blob: images (signature previews are object URLs)', () => {
+    const res = middleware(requestFor('/fr/login'));
+    const imgSrc = (res.headers.get('Content-Security-Policy') ?? '')
+      .split(';')
+      .map((d) => d.trim())
+      .find((d) => d.startsWith('img-src'));
+
+    expect(imgSrc).toBeDefined();
+    expect(imgSrc!.split(' ')).toContain('blob:');
+  });
+});

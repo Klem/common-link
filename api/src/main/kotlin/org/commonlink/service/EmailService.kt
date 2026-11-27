@@ -132,6 +132,9 @@ interface EmailService {
      * @param associationName Name of the receiving association.
      * @param receiptNumber   Receipt reference, e.g. `2026-0042`.
      * @param pdfBytes        Raw PDF to attach — exact bytes whose hash is on-chain.
+     * @param signupUrl       For a guest donor (no account yet): donor sign-up page, appended as an
+     *   invitation to create an account with the same e-mail address to find all donations and receipts
+     *   in one place. Never carries the e-mail address. Null for a registered donor: no invitation.
      */
     fun sendDonationReceipt(
         donorEmail: String,
@@ -139,6 +142,7 @@ interface EmailService {
         associationName: String,
         receiptNumber: String,
         pdfBytes: ByteArray,
+        signupUrl: String?,
     )
 
     /**

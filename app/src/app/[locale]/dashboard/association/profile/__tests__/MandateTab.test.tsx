@@ -2,12 +2,50 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MandateTab } from '@/components/settings/MandateTab';
 import type { MandateStateDto } from '@/types/mandate';
+import type { UseSignatoryReturn } from '@/hooks/dashboard/useSignatory';
+import type { SignatoryDto } from '@/types/signatory';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
+
+/** Signer saved with a signature by default, so the mandate flow tests keep their meaning. */
+const savedSignatory: SignatoryDto = {
+  signerName: 'Marie Dupont',
+  signerRole: 'Présidente',
+  mode: 'DRAWN',
+  hasSignature: true,
+  attestedAt: '2026-11-20T10:00:00Z',
+  updatedAt: '2026-11-20T10:00:00Z',
+};
+
+const signatoryHook = vi.hoisted(() => ({ current: null as unknown as UseSignatoryReturn }));
+
+vi.mock('@/hooks/dashboard/useSignatory', () => ({
+  useSignatory: () => signatoryHook.current,
+}));
+
+// The card has its own test file (SignatoryCard.test.tsx); only its presence matters here.
+vi.mock('@/components/settings/SignatoryCard', () => ({
+  SIGNATORY_CARD_ID: 'signatory-card',
+  SignatoryCard: () => <div data-testid="signatory-card" />,
+}));
+
+function mockSignatory(signatory: SignatoryDto | null, isLoading = false) {
+  signatoryHook.current = {
+    signatory,
+    isLoading,
+    savedImage: null,
+    savedImageUrl: null,
+    save: vi.fn().mockResolvedValue(true),
+  };
+}
+
+beforeEach(() => {
+  mockSignatory(savedSignatory);
+});
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -22,15 +60,15 @@ const fullDocs: MandateStateDto['mandateDocs'] = [
 ];
 
 const blockedState: MandateStateDto = {
-  signed: false, blocked: true, mandateDocs: emptyDocs,
+  signed: false, blocked: true, mandateDocs: emptyDocs, receiptPrerequisitesMissing: [],
 };
 
 const unSignedState: MandateStateDto = {
-  signed: false, blocked: false, mandateDocs: emptyDocs,
+  signed: false, blocked: false, mandateDocs: emptyDocs, receiptPrerequisitesMissing: [],
 };
 
 const unSignedWithDocs: MandateStateDto = {
-  signed: false, blocked: false, mandateDocs: fullDocs,
+  signed: false, blocked: false, mandateDocs: fullDocs, receiptPrerequisitesMissing: [],
 };
 
 const signedState: MandateStateDto = {
@@ -41,7 +79,16 @@ const signedState: MandateStateDto = {
   eligibility: 'OIG_66',
   revokedAt: null,
   mandateDocs: fullDocs,
+  receiptPrerequisitesMissing: [],
 };
+
+const ALL_PREREQUISITES: MandateStateDto['receiptPrerequisitesMissing'] = [
+  'SIGNATURE',
+  'LEGAL_OBJECT',
+  'HEAD_OFFICE_ADDRESS',
+];
+
+const P = 'association.profile.mandate.prerequisites';
 
 function makeProps(state: MandateStateDto, overrides = {}) {
   return {
@@ -53,10 +100,8 @@ function makeProps(state: MandateStateDto, overrides = {}) {
     onSign: vi.fn().mockResolvedValue(undefined),
     onRevoke: vi.fn().mockResolvedValue(undefined),
     onDownloadPdf: vi.fn().mockResolvedValue(undefined),
-    // Signataire habilité renseigné par défaut : sans lui la signature ouvre la modale d'alerte
-    // au lieu d'appeler onSign (voir le describe « garde signataire habilité »).
-    signerName: 'Marie Dupont',
-    signerRole: 'Présidente',
+    onSignatorySaved: vi.fn(),
+    onGoToInfos: vi.fn(),
     ...overrides,
   };
 }
@@ -71,7 +116,7 @@ describe('MandateTab — loading', () => {
   });
 });
 
-// ── État bloqué ──────────────────────────────────────────────────────────────
+// ── Blocked state ─────────────────────────────────────────────────────────────
 
 describe('MandateTab — bloqué', () => {
   it('affiche la bannière de blocage', () => {
@@ -91,9 +136,14 @@ describe('MandateTab — bloqué', () => {
     render(<MandateTab {...makeProps(blockedState)} />);
     expect(screen.queryByText('association.profile.mandate.step1.title')).not.toBeInTheDocument();
   });
+
+  it('hides the signatory card', () => {
+    render(<MandateTab {...makeProps(blockedState)} />);
+    expect(screen.queryByTestId('signatory-card')).not.toBeInTheDocument();
+  });
 });
 
-// ── Non signé : activation progressive ───────────────────────────────────────
+// ── Not signed: progressive activation ───────────────────────────────────────
 
 describe('MandateTab — non signé', () => {
   it('affiche les étapes visibles, la carte docs étant masquée (SHOW_MANDATE_DOCS=false)', () => {
@@ -101,6 +151,14 @@ describe('MandateTab — non signé', () => {
     expect(screen.getByText('association.profile.mandate.step1.title')).toBeInTheDocument();
     expect(screen.queryByText('association.profile.mandate.step2.title')).not.toBeInTheDocument();
     expect(screen.getByText('association.profile.mandate.step3.title')).toBeInTheDocument();
+  });
+
+  it('offers only the two general-interest eligibility categories (no public utility option)', () => {
+    render(<MandateTab {...makeProps(unSignedState)} />);
+    expect(screen.getAllByRole('radio').map((r) => (r as HTMLInputElement).value)).toEqual([
+      'OIG_66',
+      'OIG_75_COLUCHE',
+    ]);
   });
 
   it('bouton signer désactivé sans radio et sans checkbox', () => {
@@ -151,34 +209,68 @@ describe('MandateTab — non signé', () => {
     );
   });
 
-  // ── Garde signataire habilité ──────────────────────────────────────────────
+  // ── Receipt prerequisites gate (mirror of MandateService.signMandate) ──────
 
-  /** Prépare une signature valide (éligibilité + acceptation) puis clique sur « Signer ». */
-  async function attemptSign() {
+  /** Fills a valid signing (eligibility + acceptance) and returns the sign button. */
+  function fillSigning() {
     fireEvent.click(screen.getAllByRole('radio')[0]);
     fireEvent.click(screen.getByRole('checkbox'));
-    const signBtn = screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
-    await act(async () => { fireEvent.click(signBtn); });
+    return screen.getByRole('button', { name: /association\.profile\.mandate\.step3\.signBtn/i });
   }
 
-  it('ouvre la modale d\'alerte et n\'appelle pas onSign si le nom du signataire manque', async () => {
-    const props = makeProps(unSignedWithDocs, { signerName: null });
+  it('renders the signatory card', () => {
+    render(<MandateTab {...makeProps(unSignedState)} />);
+    expect(screen.getByTestId('signatory-card')).toBeInTheDocument();
+  });
+
+  it('blocks signing and lists every missing prerequisite', async () => {
+    const props = makeProps({ ...unSignedWithDocs, receiptPrerequisitesMissing: ALL_PREREQUISITES });
     render(<MandateTab {...props} />);
-    await attemptSign();
-    expect(
-      screen.getByText('association.profile.mandate.signerWarning.missingSignerName')
-    ).toBeInTheDocument();
+    const signBtn = fillSigning();
+    expect(signBtn).toBeDisabled();
+    expect(screen.getByText(`${P}.signGate`)).toBeInTheDocument();
+    expect(screen.getByText(`${P}.items.SIGNATURE`)).toBeInTheDocument();
+    expect(screen.getByText(`${P}.items.LEGAL_OBJECT`)).toBeInTheDocument();
+    expect(screen.getByText(`${P}.items.HEAD_OFFICE_ADDRESS`)).toBeInTheDocument();
+    await act(async () => { fireEvent.click(signBtn); });
     expect(props.onSign).not.toHaveBeenCalled();
   });
 
-  it('ouvre la modale d\'alerte et n\'appelle pas onSign si la fonction du signataire manque', async () => {
-    const props = makeProps(unSignedWithDocs, { signerRole: '   ' });
+  it('blocks signing when only the head-office address is missing, and lists only it', () => {
+    render(<MandateTab {...makeProps({ ...unSignedWithDocs, receiptPrerequisitesMissing: ['HEAD_OFFICE_ADDRESS'] })} />);
+    expect(fillSigning()).toBeDisabled();
+    expect(screen.getByText(`${P}.items.HEAD_OFFICE_ADDRESS`)).toBeInTheDocument();
+    expect(screen.queryByText(`${P}.items.SIGNATURE`)).not.toBeInTheDocument();
+    expect(screen.queryByText(`${P}.items.LEGAL_OBJECT`)).not.toBeInTheDocument();
+  });
+
+  it('links the legal object and the address to the Informations tab', () => {
+    const props = makeProps({ ...unSignedWithDocs, receiptPrerequisitesMissing: ['LEGAL_OBJECT', 'HEAD_OFFICE_ADDRESS'] });
     render(<MandateTab {...props} />);
-    await attemptSign();
-    expect(
-      screen.getByText('association.profile.mandate.signerWarning.missingSignerRole')
-    ).toBeInTheDocument();
-    expect(props.onSign).not.toHaveBeenCalled();
+    const links = screen.getAllByRole('button', { name: `${P}.links.infos` });
+    expect(links).toHaveLength(2);
+    fireEvent.click(links[1]);
+    expect(props.onGoToInfos).toHaveBeenCalledOnce();
+  });
+
+  it('links the missing signature to the signatory card', () => {
+    const scrollIntoView = vi.fn();
+    const anchor = document.createElement('div');
+    anchor.id = 'signatory-card';
+    anchor.scrollIntoView = scrollIntoView;
+    document.body.appendChild(anchor);
+    const props = makeProps({ ...unSignedWithDocs, receiptPrerequisitesMissing: ['SIGNATURE'] });
+    render(<MandateTab {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: `${P}.links.signatory` }));
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+    expect(props.onGoToInfos).not.toHaveBeenCalled();
+    anchor.remove();
+  });
+
+  it('shows no gate when every prerequisite is met', () => {
+    render(<MandateTab {...makeProps(unSignedWithDocs)} />);
+    expect(fillSigning()).not.toBeDisabled();
+    expect(screen.queryByText(`${P}.signGate`)).not.toBeInTheDocument();
   });
 
   // NOTE: the "Pièces justificatives" card (upload/delete UI + filename display) is hidden while
@@ -186,7 +278,7 @@ describe('MandateTab — non signé', () => {
   // removed with it and should be restored (git history) when the docs step comes back.
 });
 
-// ── Vue signée ────────────────────────────────────────────────────────────────
+// ── Signed view ───────────────────────────────────────────────────────────────
 
 describe('MandateTab — signé', () => {
   it('affiche la bannière verte et la référence', () => {
@@ -198,6 +290,24 @@ describe('MandateTab — signé', () => {
   it('n\'affiche pas les étapes du flux', () => {
     render(<MandateTab {...makeProps(signedState)} />);
     expect(screen.queryByText('association.profile.mandate.step1.title')).not.toBeInTheDocument();
+  });
+
+  it('keeps the signatory card visible once the mandate is signed', () => {
+    render(<MandateTab {...makeProps(signedState)} />);
+    expect(screen.getByTestId('signatory-card')).toBeInTheDocument();
+  });
+
+  it('warns that collection is suspended and lists the missing prerequisites', () => {
+    render(<MandateTab {...makeProps({ ...signedState, receiptPrerequisitesMissing: ['SIGNATURE', 'LEGAL_OBJECT'] })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(`${P}.suspendedBanner`);
+    expect(screen.getByText(`${P}.items.SIGNATURE`)).toBeInTheDocument();
+    expect(screen.getByText(`${P}.items.LEGAL_OBJECT`)).toBeInTheDocument();
+    expect(screen.queryByText(`${P}.items.HEAD_OFFICE_ADDRESS`)).not.toBeInTheDocument();
+  });
+
+  it('shows no suspension banner when every prerequisite is met', () => {
+    render(<MandateTab {...makeProps(signedState)} />);
+    expect(screen.queryByText(`${P}.suspendedBanner`)).not.toBeInTheDocument();
   });
 
   it('appelle onDownloadPdf au clic PDF', async () => {

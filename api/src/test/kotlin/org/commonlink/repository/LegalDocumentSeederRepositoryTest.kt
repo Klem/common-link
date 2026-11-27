@@ -45,13 +45,26 @@ class LegalDocumentSeederRepositoryTest : AbstractRepositoryTest() {
         seeder.run(DefaultApplicationArguments())
 
         val rows = legalDocumentRepository.findAll().filter { it.contentFormat == LegalContentFormat.JSON_V1 }
-        assertEquals(setOf(LegalDocumentType.CGU, LegalDocumentType.CGV), rows.map { it.documentType }.toSet())
-        assertEquals(2, rows.size, "a second run inserts nothing")
+        assertEquals(LegalDocumentType.entries.toSet(), rows.map { it.documentType }.toSet())
+        assertEquals(3, rows.size, "a second run inserts nothing")
 
+        // The current versions are those of the bundled texts ("<effective date>-<12 hex>"), whatever their date: the
+        // texts are re-dated at every legal update, so no date is hard-coded here.
+        val bundled = source.load().associate { it.documentType to it.version }
+        val versionFormat = Regex("\\d{4}-\\d{2}-\\d{2}-[0-9a-f]{12}")
         val cgu = service.currentDocumentDto(LegalDocumentType.CGU)
         assertEquals(LegalContentFormat.JSON_V1, cgu.format)
-        assertTrue(Regex("2026-09-09-[0-9a-f]{12}").matches(cgu.version), cgu.version)
+        assertTrue(versionFormat.matches(cgu.version), cgu.version)
+        assertEquals(bundled[LegalDocumentType.CGU], cgu.version)
         assertTrue(jacksonObjectMapper().readValue<LegalTextV1>(cgu.content).title.contains("donateurs"))
-        assertTrue(Regex("2026-10-05-[0-9a-f]{12}").matches(service.currentDocumentDto(LegalDocumentType.CGV).version))
+        val cgv = service.currentDocumentDto(LegalDocumentType.CGV)
+        assertTrue(versionFormat.matches(cgv.version), cgv.version)
+        assertEquals(bundled[LegalDocumentType.CGV], cgv.version)
+        val privacy = service.currentDocumentDto(LegalDocumentType.PRIVACY)
+        assertTrue(versionFormat.matches(privacy.version), privacy.version)
+        assertEquals(bundled[LegalDocumentType.PRIVACY], privacy.version)
+        val privacyText = jacksonObjectMapper().readValue<LegalTextV1>(privacy.content)
+        assertTrue(privacyText.title.contains("confidentialité"))
+        assertTrue(privacyText.articles.any { it.table != null }, "the retention periods keep their table")
     }
 }

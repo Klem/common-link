@@ -62,7 +62,8 @@ class AssociationService(
      * Partially updates the association profile with the non-null fields from the request.
      *
      * Only the fields explicitly provided by the caller are updated; null fields in [req]
-     * are ignored, preserving the existing values.
+     * are ignored, preserving the existing values. The authorised receipt signer is never
+     * written here — see [SignatoryService.saveSignatory].
      *
      * @param userId UUID of the authenticated association user.
      * @param req Partial update request; null fields are left unchanged.
@@ -123,8 +124,8 @@ class AssociationService(
         }
         req.addressLine1?.let { profile.addressLine1 = it }
         req.legalObject?.let { profile.legalObject = it }
-        req.signerName?.let { profile.signerName = it }
-        req.signerRole?.let { profile.signerRole = it }
+        // The authorised receipt signer is deliberately not editable here: it only changes through
+        // SignatoryService.saveSignatory, under the journaled signatory attestation.
         return associationProfileRepository.save(profile).toDto()
     }
 

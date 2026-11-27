@@ -113,7 +113,9 @@ vocation réglementaire — l'énumération a été alignée sur le code réel :
 | `BANK_NOT_CONNECTED` | Aucun compte Mollie connecté, ou, pour une association rattachée à HelloAsso, aucune liaison active (clé jamais liée ou liaison retirée) *(depuis le 2 novembre 2026)* |
 | `BANK_CONNECTION_BROKEN` | Connexion Mollie rompue, ou liaison HelloAsso rompue *(depuis le 2 novembre 2026)* |
 | `BANK_KYC_INCOMPLETE` | Vérification d'identité Mollie non aboutie, ou organisation HelloAsso non éligible à l'encaissement — éligibilité en attente ou suspendue *(depuis le 2 novembre 2026)* |
-| `CGU_NOT_ACCEPTED` | Conditions générales d'utilisation applicables aux associations non acceptées (art. 1740 A CGI) ; le code garde son nom historique, voir `acceptation-cgu-versionnees.md` |
+| `CGU_NOT_ACCEPTED` | Conditions générales d'utilisation applicables aux associations non acceptées (art. 1740 A CGI) ou, depuis le 24 novembre 2026, politique de confidentialité non acceptée ; le code garde son nom historique, voir `acceptation-cgu-versionnees.md` |
+| `FISCAL_MANDATE_MISSING` | Aucun mandat fiscal actif (jamais signé ou révoqué) *(depuis le 23 novembre 2026)* |
+| `RECEIPT_PREREQUISITES_MISSING` | Signature du signataire habilité, objet social ou adresse du siège (voie, code postal, ville) manquants : aucun reçu fiscal ne pourrait être émis — voir `E5-recu-fiscal-mentions.md`, section 11 *(depuis le 23 novembre 2026)* |
 
 **`FREEZE_HIT`, `OUT_OF_SCOPE_9220` et `MANUAL_CURATOR` ne figurent pas dans cette liste.**
 `preparePublish()` ne vérifie que `verificationStatus == VERIFIED` — une valeur binaire au sens
@@ -182,7 +184,9 @@ publication, puis vérifie l'événement inscrit sur le journal de conformité.
 | Aucun compte Mollie connecté | `CAMPAIGN_REVIEW_REFUSED` | `BANK_NOT_CONNECTED` | Vérifié |
 | Connexion Mollie rompue | `CAMPAIGN_REVIEW_REFUSED` | `BANK_CONNECTION_BROKEN` | Vérifié |
 | KYC Mollie incomplet | `CAMPAIGN_REVIEW_REFUSED` | `BANK_KYC_INCOMPLETE` | Vérifié |
-| CGU non acceptées | `CAMPAIGN_REVIEW_REFUSED` | `CGU_NOT_ACCEPTED` | Vérifié |
+| Conditions non acceptées | `CAMPAIGN_REVIEW_REFUSED` | `CGU_NOT_ACCEPTED` | Vérifié |
+| Aucun mandat fiscal actif *(23 novembre 2026)* | `CAMPAIGN_REVIEW_REFUSED` | `FISCAL_MANDATE_MISSING` | Vérifié |
+| Préalable du reçu fiscal manquant *(23 novembre 2026)* | `CAMPAIGN_REVIEW_REFUSED` | `RECEIPT_PREREQUISITES_MISSING` | Vérifié |
 
 L'intégralité de la suite `CampaignServiceTest` (66 tests, dont les 56 préexistants) a été
 réexécutée après la correction, sans régression. Les suites `ComplianceAuditLogServiceLogicTest`

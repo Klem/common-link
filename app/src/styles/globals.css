@@ -2618,8 +2618,8 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
    the shared .modal's 480px max-width is tuned for short forms/confirmations, not paragraphs. */
 .modal-wide { max-width: 760px; }
 
-/* CGU/CGV text (LegalDocumentRenderer) - same rules as the landing site's legal pages
-   (landing-page globals.css: .legal-meta, .legal-body, .legal-callout, .legal-toc-auto, .legal-link),
+/* Legal text - CGU, CGV, privacy policy (LegalDocumentRenderer) - same rules as the landing site's legal pages
+   (landing-page globals.css: .legal-meta, .legal-body, .legal-callout, .legal-toc-auto, .legal-link, .legal-table),
    without the page padding so it fits the donation, publication and post-login modals. */
 .legal-doc-meta { font-size: 14px; color: var(--slate-lavender); margin-bottom: 16px; }
 .legal-doc h3 { font-size: 19px; margin: 32px 0 10px; }
@@ -2627,6 +2627,9 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .legal-doc p { margin-bottom: 14px; line-height: 1.75; color: var(--ink-navy); }
 .legal-doc p a { color: var(--deep-indigo); text-decoration: underline; }
 .legal-doc-plain { white-space: pre-wrap; }
+.legal-doc-table { width: 100%; border-collapse: collapse; margin: 8px 0 18px; font-size: 14px; }
+.legal-doc-table th, .legal-doc-table td { border-bottom: 1px solid var(--mist-lavender); padding: 10px 8px; text-align: left; vertical-align: top; line-height: 1.6; color: var(--ink-navy); }
+.legal-doc-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--slate-lavender); }
 .legal-doc-callout { background: var(--soft-cream); border-left: 3px solid var(--bright-teal); border-radius: var(--radius-lg); padding: 18px 22px; margin: 22px 0; line-height: 1.7; }
 .legal-doc-toc { background: var(--soft-cream); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 36px; }
 .legal-doc-toc strong { display: block; margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--slate-lavender); }
@@ -3510,3 +3513,50 @@ textarea.cm-fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .cashout-ov-actions{display:flex;gap:10px}
 .cashout-ov-actions .btn-secondary{flex:1}
 .cashout-ov-actions .btn-primary{flex:2}
+/* NEW COMPONENT: signatory card (fiscal receipt signature, SignatoryCard / SignatureDrawPad / MandateTab gate) */
+.sig-card{margin-bottom:16px}
+.sig-intro{font-size:14px;color:var(--slate-lavender);line-height:1.6;margin-bottom:16px}
+.sig-saved{margin-bottom:20px}
+.sig-preview{display:flex;align-items:center;justify-content:center;min-height:110px;padding:16px;border:1px solid var(--mist-lavender);border-radius:var(--radius-md);background:var(--soft-cream)}
+.sig-preview img{max-width:100%;max-height:160px;object-fit:contain}
+.sig-preview-new{margin-top:12px}
+.sig-modes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.sig-mode{display:flex;align-items:center;justify-content:center;padding:12px;border:2px solid var(--mist-lavender);border-radius:var(--radius-md);font-size:13px;font-weight:600;color:var(--ink-navy);text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.sig-mode:hover{border-color:var(--bright-teal)}
+.sig-mode.active{border-color:var(--bright-teal);background:rgba(78,205,196,.06)}
+.sig-mode:focus-within{box-shadow:0 0 0 3px rgba(78,205,196,.12)}
+.sig-mode-hint{margin:0 0 8px}
+.sig-pad{display:block;width:100%;height:200px;border:2px dashed var(--mist-lavender);border-radius:var(--radius-md);background:var(--white);color:var(--ink-navy);touch-action:none;cursor:crosshair}
+.sig-pad-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.sig-upload{display:block}
+.sig-upload:focus-within{border-color:var(--bright-teal);box-shadow:0 0 0 3px rgba(78,205,196,.12)}
+.sig-help{font-size:13px;margin-bottom:16px}
+.sig-attest{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5;cursor:pointer;margin-bottom:14px}
+.sig-attest input{margin-top:3px;width:18px;height:18px;accent-color:var(--bright-teal);flex-shrink:0;cursor:pointer}
+.sig-save-error{margin-bottom:12px}
+.sig-gate{margin-bottom:14px}
+.sig-gate .pp-row:last-child{margin-bottom:0}
+.sig-gate-intro{font-size:13px;font-weight:600;color:var(--ink-navy);margin-bottom:8px}
+.prereq-banner .pp-row{background:var(--white)}
+.prereq-banner .pp-row:last-child{margin-bottom:0}
+.prereq-banner-text{margin-bottom:10px}
+@media (max-width:640px){.sig-modes{grid-template-columns:1fr}}
+/* ── Admin · HelloAsso link attempts (curator statistics) ── */
+.hla-subtitle{color:var(--slate-lavender);margin-top:4px}
+.hla-error{color:var(--warm-coral);margin-top:16px}
+.hla-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px}
+.hla-chart{display:flex;flex-wrap:wrap;align-items:center;gap:24px}
+.hla-grow{flex:1;min-width:280px}
+.hla-donut{width:220px;height:220px;flex-shrink:0}
+.hla-segment{stroke:var(--white);stroke-width:2;cursor:pointer;transition:opacity .15s}
+.hla-segment.dimmed{opacity:.35}
+.hla-donut-total{font-size:30px;font-weight:700;fill:var(--ink-navy)}
+.hla-donut-caption{font-size:11px;fill:var(--slate-lavender)}
+.hla-legend-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:none;padding:0;font:inherit;color:var(--ink-navy);cursor:pointer;text-align:left}
+.hla-selected td{font-weight:700}
+.hla-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--hla-swatch);flex-shrink:0}
+.hla-outcome{display:inline-flex;align-items:center;gap:6px}
+.hla-muted{color:var(--slate-lavender);font-size:12px}
+.hla-mono{font-family:monospace;font-size:13px}
+.hla-list-head{display:flex;align-items:center;gap:12px;margin:24px 0 12px}
+.hla-pager{display:flex;align-items:center;gap:12px;margin-top:20px}
